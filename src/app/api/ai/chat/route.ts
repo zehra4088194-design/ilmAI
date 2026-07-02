@@ -1,0 +1,91 @@
+import { NextRequest } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { gatewayChat, type AiProviderId, type ModelTier } from '@/lib/ai/gateway';
+import { checkAiMessageLimit, checkModelTierLimit } from '@/lib/rate-limit';
+import type { SubscriptionTier } from '@/types';
+
+export const runtime = 'nodejs';
+export const maxDuration = 30;
+
+const SYSTEM_PROMPT = `You are StudyVerse AI, an expert tutor for Pakistani students (Grades 9-12, O/A Levels, FBISE & provincial boards).
+Rules:
+- Explain concepts clearly, step by step
+- Mix English with Roman Urdu phrases naturally when it helps understanding
+- For MCQs: explain why each option is right/wrong
+- For math/physics: show full working
+- Be encouraging and patient
+- Keep responses focused and well-formatted with markdown`;
+
+export async function POST(req: NextRequest) {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return new Response(JSON.stringify({ error: 'Login required hai' }), { status: 401 });
+    }
+
+    const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
+    const userTier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
+
+    const { message, history = [], provider: requestedProvider, tier: requestedTier } = await req.json();
+    if (!message || typeof message !== 'string') {
+      return new Response(JSON.stringify({ error: 'Message required hai' }), { status: 400 });
+    }
+
+    // FREE tier is hard-locked to Groq, no matter what the client sends
+    const provider: AiProviderId = userTier === 'FREE' ? 'groq' : (requestedProvider || 'groq');
+    const tier: ModelTier = requestedTier || 'mini';
+
+    // Quota check: Groq uses the daily AI-message pool; other providers use the
+    // mini/medium/pro tiered pool (10/7/3 per day) since they cost real money per call.
+    if (provider === 'groq') {
+      const limitCheck = await checkAiMessageLimit(user.id, userTier);
+      if (!limitCheck.success) {
+        return new Response(JSON.stringify({ error: `Aaj ke AI messages khatam ho gaye. ${userTier === 'FREE' ? 'Pro plan lo zyada messages ke liye!' : 'Kal phir try karo.'}` }), { status: 429 });
+      }
+    } else {
+      if (userTier === 'FREE') {
+        return new Response(JSON.stringify({ error: 'Ye AI model sirf Pro/Elite users ke liye hai. Free plan mein Groq available hai.' }), { status: 403 });
+      }
+      const tierCheck = await checkModelTierLimit(user.id, provider, tier);
+      if (!tierCheck.success) {
+        return new Response(JSON.stringify({ error: `Is model (${tier}) ki aaj ki limit khatam ho gayi. Kal phir try karo ya doosra model select karo.` }), { status: 429 });
+      }
+    }
+
+    const messages = [
+      { role: 'system' as const, content: SYSTEM_PROMPT },
+      ...history.filter((m: { role: string; content: string }) => m.content).map((m: { role: string; content: string }) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+      { role: 'user' as const, content: message },
+    ];
+
+    const result = await gatewayChat({ provider, tier, messages, maxTokens: 2048, temperature: 0.7 });
+
+    // Simulate a stream so the existing chat UI (which reads response.body as a stream)
+    // keeps its "typing" experience, even though the gateway itself is non-streaming
+    // (necessary for safe key-rotation — see docs for why).
+    const encoder = new TextEncoder();
+    const text = result.text;
+    const readableStream = new ReadableStream({
+      async start(controller) {
+        const chunkSize = 4;
+        for (let i = 0; i < text.length; i += chunkSize) {
+          controller.enqueue(encoder.encode(text.slice(i, i + chunkSize)));
+          await new Promise((r) => setTimeout(r, 8));
+        }
+        controller.close();
+      },
+    });
+
+    return new Response(readableStream, {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'X-Provider-Used': result.providerUsed,
+        'X-Fallback-Triggered': String(result.fallbackTriggered || false),
+      },
+    });
+  } catch (error) {
+    console.error('AI chat error:', error);
+    return new Response(JSON.stringify({ error: 'AI response generate nahi ho saka. Dobara try karo.' }), { status: 500 });
+  }
+}

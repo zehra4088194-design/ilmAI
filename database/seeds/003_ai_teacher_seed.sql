@@ -1,0 +1,24 @@
+-- ============================================
+-- SEED 003: AI-Operated Teacher Account
+-- This creates an AI persona that acts as a teacher on the Doubt Board.
+-- Students interact with it thinking it's a human teacher.
+-- Admin can create more AI teacher accounts from the admin panel.
+-- ============================================
+
+-- Note: We can't directly insert into auth.users via SQL here —
+-- do this via the Supabase dashboard or the admin seed script (scripts/seed-ai-teacher.js)
+-- This SQL just documents the expected profile row format.
+
+-- After creating the auth user manually, insert this:
+-- INSERT INTO public.profiles (
+--   id,                            -- UUID from auth.users
+--   email,                         -- e.g. teacher-ai-1@studyverse.internal
+--   full_name,                     -- e.g. "Sir Zafar" (realistic Pakistani teacher name)
+--   role,                          -- 'teacher'
+--   is_ai_operated,                -- true
+--   ai_persona_provider,           -- 'groq'
+--   ai_persona_tier,               -- 'medium'
+--   subscription_tier,             -- 'ELITE' (no limits)
+--   is_profile_complete,           -- true
+--   onboarding_step                -- 99
+-- ) VALUES (...);
