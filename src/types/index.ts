@@ -12,7 +12,7 @@ export type AiProvider = 'groq' | 'anthropic' | 'openai';
 export type ConversationRole = 'user' | 'assistant' | 'system';
 
 export type AiProviderId = 'groq' | 'claude' | 'gpt' | 'gemini';
-export type UserRole = 'student' | 'teacher' | 'admin';
+export type UserRole = 'student' | 'parent' | 'teacher' | 'admin';
 
 // User & Profile
 export interface UserProfile {

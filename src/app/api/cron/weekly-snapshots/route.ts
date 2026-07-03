@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     const byUser: Record<string, typeof sessions> = {};
     for (const s of sessions) {
       if (!byUser[s.user_id]) byUser[s.user_id] = [];
-      byUser[s.user_id].push(s);
+      byUser[s.user_id]!.push(s);
     }
 
     const userIds = Object.keys(byUser);
@@ -38,8 +38,8 @@ export async function GET(req: NextRequest) {
     const quizByUser: Record<string, { count: number; totalScore: number }> = {};
     for (const q of quizSessions || []) {
       if (!quizByUser[q.user_id]) quizByUser[q.user_id] = { count: 0, totalScore: 0 };
-      quizByUser[q.user_id].count += 1;
-      quizByUser[q.user_id].totalScore += q.score || 0;
+      quizByUser[q.user_id]!.count += 1;
+      quizByUser[q.user_id]!.totalScore += q.score || 0;
     }
 
     const { data: profiles } = await supabase.from('profiles').select('id, streak').in('id', userIds);

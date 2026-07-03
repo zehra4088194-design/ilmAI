@@ -4,7 +4,7 @@ import { Crown, Medal, Flame } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { formatXP } from '@/lib/utils/format';
 
-interface LeaderUser { id: string; full_name: string; avatar_url?: string; board?: string; xp: number; level: number; streak: number; }
+interface LeaderUser { id: string; full_name: string; avatar_url?: string | null; board?: string | null; xp: number; level: number; streak: number; }
 
 export function LeaderboardTable({ users, currentUserId }: { users: LeaderUser[]; currentUserId: string }) {
   const top3 = users.slice(0, 3);

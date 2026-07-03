@@ -40,7 +40,7 @@ export function FullTestSetup({
   const [gradeResults, setGradeResults] = useState<any[]>([]);
   const isFreeTier = userTier === 'FREE';
 
-  const bp = BOARD_PATTERNS[grade] || BOARD_PATTERNS['GRADE_10'];
+  const bp = BOARD_PATTERNS[grade] || BOARD_PATTERNS['GRADE_10']!;
   const counts = pattern === 'board' ? { mcq: bp.mcq, short: bp.short, long: bp.long } : custom;
   const selectedSubject = subjects.find(s => s.id === subject);
 

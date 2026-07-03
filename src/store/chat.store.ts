@@ -32,7 +32,7 @@ export const useChatStore = create<ChatState>()(
         const id = nanoid();
         set((state) => {
           state.conversations.unshift({
-            id, userId: '', title, subjectId: subjectId ?? null,
+            id, userId: '', title, subjectId,
             messages: [], createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(), totalMessages: 0, provider: 'groq',
           });

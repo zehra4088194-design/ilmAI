@@ -14,6 +14,7 @@ export interface OcrResult {
   text: string;
   provider: 'ocr-space' | 'gemini-vision';
   fallbackTriggered?: boolean;
+  confidence?: number;
 }
 
 export interface OcrRequest {

@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils/cn';
 
 export function NoteEditor({ note }: { note: any }) {
   const [title, setTitle] = useState(note.title || '');
-  const [content, setContent] = useState(note.content || '');
+  const [content, setContent] = useState<string>(note.content || '');
   const [starred, setStarred] = useState(note.is_starred || false);
   const [saving, setSaving] = useState(false);
   const [aiSummarizing, setAiSummarizing] = useState(false);

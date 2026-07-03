@@ -21,7 +21,7 @@ export default async function ResultsPage() {
                 <p className="font-medium text-sm">{session.mode} Quiz</p>
                 <p className="text-xs text-muted-foreground">{session.completed_at && formatRelativeTime(session.completed_at)} · {session.correct_count}/{session.questions?.length || 0} correct</p>
               </div>
-              <Badge variant={session.score >= 70 ? 'success' : session.score >= 50 ? 'warning' : 'destructive'}>{session.score}%</Badge>
+              <Badge variant={(session.score ?? 0) >= 70 ? 'success' : (session.score ?? 0) >= 50 ? 'warning' : 'destructive'}>{session.score ?? 0}%</Badge>
             </CardContent>
           </Card>
         ))}
