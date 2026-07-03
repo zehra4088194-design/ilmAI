@@ -49,3 +49,4 @@ cloudflare-worker/      AI Gateway Worker source
 scripts/                Setup and maintenance scripts
 ```
 # study-verse-ai
+# study-verse-ai
