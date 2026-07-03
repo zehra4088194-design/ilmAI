@@ -24,7 +24,7 @@ export function TestimonialsSection() {
             <motion.div key={i} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }}
               className="glass rounded-2xl p-6 border border-border/50 hover:border-violet-500/30 transition-all duration-300">
               <Quote className="w-6 h-6 text-violet-400 mb-4 opacity-50" />
-              <p className="text-sm text-muted-foreground mb-4 leading-relaxed">"{t.text}"</p>
+              <p className="text-sm text-muted-foreground mb-4 leading-relaxed">&ldquo;{t.text}&rdquo;</p>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm">{t.avatar}</div>

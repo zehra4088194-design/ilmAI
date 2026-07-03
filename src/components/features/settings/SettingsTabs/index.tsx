@@ -89,7 +89,7 @@ export function SettingsTabs({ profile }: { profile: any }) {
                 <Input value={inviteCode} onChange={e => setInviteCode(e.target.value.toUpperCase())} placeholder="e.g. SV-A1B2C3" className="font-mono" />
                 <Button variant="gradient" onClick={handleLinkParent} loading={linking}>Link Karo</Button>
               </div>
-              <p className="text-xs text-muted-foreground">Parent apne dashboard se "Generate Invite Code" pe click kar ke ye code bana sakte hain.</p>
+              <p className="text-xs text-muted-foreground">Parent apne dashboard se &ldquo;Generate Invite Code&rdquo; pe click kar ke ye code bana sakte hain.</p>
             </div>
           )}
           {activeTab === 'notifications' && <p className="text-sm text-muted-foreground">Notification preferences jald aayengi.</p>}

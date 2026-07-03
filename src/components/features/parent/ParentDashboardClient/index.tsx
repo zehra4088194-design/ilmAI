@@ -122,7 +122,7 @@ export function ParentDashboardClient({ links, snapshots, parentId }: ParentDash
                 </Button>
               ) : (
                 <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground">Ye code student ko do — wo Settings mein jaake "Parent Link" mein enter karega:</p>
+                  <p className="text-xs text-muted-foreground">Ye code student ko do — wo Settings mein jaake &ldquo;Parent Link&rdquo; mein enter karega:</p>
                   <div className="flex gap-2">
                     <Input value={inviteCode} readOnly className="font-mono text-center text-lg tracking-widest" />
                     <Button variant="outline" onClick={copyCode}><Copy className="w-4 h-4" /></Button>
