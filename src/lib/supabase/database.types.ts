@@ -13,18 +13,12 @@ export interface Database {
           last_active_date: string | null; total_study_time: number; is_email_verified: boolean;
           is_profile_complete: boolean; onboarding_step: number; role: string;
           is_ai_operated: boolean; ai_persona_provider: string | null; ai_persona_tier: string | null;
-<<<<<<< HEAD
           ai_onboarding_complete: boolean; target_marks_percentage: number | null;
           total_marks_percentage: number | null; previous_roll_number: string | null;
           optional_subject_ids: string[];
           created_at: string; updated_at: string;
         };
         Insert: Omit<Database['public']['Tables']['profiles']['Row'], 'ai_onboarding_complete' | 'ai_persona_provider' | 'ai_persona_tier' | 'avatar_url' | 'bio' | 'board' | 'created_at' | 'grade_level' | 'is_ai_operated' | 'is_email_verified' | 'is_profile_complete' | 'last_active_date' | 'level' | 'location' | 'onboarding_step' | 'optional_subject_ids' | 'phone' | 'previous_roll_number' | 'role' | 'streak' | 'subjects' | 'subscription_expires_at' | 'subscription_tier' | 'target_marks_percentage' | 'total_marks_percentage' | 'total_study_time' | 'updated_at' | 'xp'> & { ai_onboarding_complete?: boolean; ai_persona_provider?: string | null; ai_persona_tier?: string | null; avatar_url?: string | null; bio?: string | null; board?: string | null; created_at?: string; grade_level?: string | null; is_ai_operated?: boolean; is_email_verified?: boolean; is_profile_complete?: boolean; last_active_date?: string | null; level?: number; location?: string | null; onboarding_step?: number; optional_subject_ids?: string[]; phone?: string | null; previous_roll_number?: string | null; role?: string; streak?: number; subjects?: string[] | null; subscription_expires_at?: string | null; subscription_tier?: string; target_marks_percentage?: number | null; total_marks_percentage?: number | null; total_study_time?: number; updated_at?: string; xp?: number; };
-=======
-          created_at: string; updated_at: string;
-        };
-        Insert: Omit<Database['public']['Tables']['profiles']['Row'], 'ai_persona_provider' | 'ai_persona_tier' | 'avatar_url' | 'bio' | 'board' | 'created_at' | 'grade_level' | 'is_ai_operated' | 'is_email_verified' | 'is_profile_complete' | 'last_active_date' | 'level' | 'location' | 'onboarding_step' | 'phone' | 'role' | 'streak' | 'subjects' | 'subscription_expires_at' | 'subscription_tier' | 'total_study_time' | 'updated_at' | 'xp'> & { ai_persona_provider?: string | null; ai_persona_tier?: string | null; avatar_url?: string | null; bio?: string | null; board?: string | null; created_at?: string; grade_level?: string | null; is_ai_operated?: boolean; is_email_verified?: boolean; is_profile_complete?: boolean; last_active_date?: string | null; level?: number; location?: string | null; onboarding_step?: number; phone?: string | null; role?: string; streak?: number; subjects?: string[] | null; subscription_expires_at?: string | null; subscription_tier?: string; total_study_time?: number; updated_at?: string; xp?: number; };
->>>>>>> 29e37865797a6eecb802e1c882a3ed078d46bec5
         Update: Partial<Database['public']['Tables']['profiles']['Insert']>;
         Relationships: [];
       };
@@ -34,15 +28,9 @@ export interface Database {
           code: string; description: string | null; icon_url: string | null;
           color: string; boards: string[]; grade_levels: string[];
           is_active: boolean; total_chapters: number; total_questions: number;
-<<<<<<< HEAD
           is_optional: boolean; stream: string | null; created_at: string;
         };
         Insert: Omit<Database['public']['Tables']['subjects']['Row'], 'boards' | 'color' | 'created_at' | 'description' | 'grade_levels' | 'icon_url' | 'id' | 'is_active' | 'is_optional' | 'stream' | 'total_chapters' | 'total_questions'> & { boards?: string[]; color?: string; created_at?: string; description?: string | null; grade_levels?: string[]; icon_url?: string | null; id?: string; is_active?: boolean; is_optional?: boolean; stream?: string | null; total_chapters?: number; total_questions?: number; };
-=======
-          created_at: string;
-        };
-        Insert: Omit<Database['public']['Tables']['subjects']['Row'], 'boards' | 'color' | 'created_at' | 'description' | 'grade_levels' | 'icon_url' | 'id' | 'is_active' | 'total_chapters' | 'total_questions'> & { boards?: string[]; color?: string; created_at?: string; description?: string | null; grade_levels?: string[]; icon_url?: string | null; id?: string; is_active?: boolean; total_chapters?: number; total_questions?: number; };
->>>>>>> 29e37865797a6eecb802e1c882a3ed078d46bec5
         Update: Partial<Database['public']['Tables']['subjects']['Insert']>;
         Relationships: [];
       };
@@ -51,15 +39,9 @@ export interface Database {
           id: string; subject_id: string; name: string;
           slug: string; description: string | null; order_index: number;
           is_active: boolean; total_topics: number; total_questions: number;
-<<<<<<< HEAD
           boards: string[]; created_at: string;
         };
         Insert: Omit<Database['public']['Tables']['chapters']['Row'], 'boards' | 'created_at' | 'description' | 'id' | 'is_active' | 'order_index' | 'total_questions' | 'total_topics'> & { boards?: string[]; created_at?: string; description?: string | null; id?: string; is_active?: boolean; order_index?: number; total_questions?: number; total_topics?: number; };
-=======
-          created_at: string;
-        };
-        Insert: Omit<Database['public']['Tables']['chapters']['Row'], 'created_at' | 'description' | 'id' | 'is_active' | 'order_index' | 'total_questions' | 'total_topics'> & { created_at?: string; description?: string | null; id?: string; is_active?: boolean; order_index?: number; total_questions?: number; total_topics?: number; };
->>>>>>> 29e37865797a6eecb802e1c882a3ed078d46bec5
         Update: Partial<Database['public']['Tables']['chapters']['Insert']>;
         Relationships: [
           {
@@ -530,7 +512,6 @@ export interface Database {
           },
         ];
       };
-<<<<<<< HEAD
       parent_messages: {
         Row: {
           id: string; link_id: string; sender_id: string;
@@ -588,8 +569,6 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['ai_answer_feedback']['Insert']>;
         Relationships: [];
       };
-=======
->>>>>>> 29e37865797a6eecb802e1c882a3ed078d46bec5
       student_weekly_snapshots: {
         Row: {
           id: string; student_id: string; week_start: string;
@@ -627,11 +606,7 @@ export interface Database {
       session_type: 'READING' | 'QUIZ' | 'FLASHCARD' | 'AI_CHAT' | 'PAST_PAPER';
       notification_type: 'ACHIEVEMENT' | 'STREAK' | 'REMINDER' | 'SYSTEM' | 'SOCIAL';
       paper_type: 'ANNUAL' | 'SUPPLEMENTARY' | 'MODEL';
-<<<<<<< HEAD
       user_role: 'student' | 'parent' | 'teacher' | 'admin';
-=======
-      user_role: 'student' | 'teacher' | 'admin';
->>>>>>> 29e37865797a6eecb802e1c882a3ed078d46bec5
     };
     CompositeTypes: { [_ in never]: never };
   };
