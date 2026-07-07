@@ -52,4 +52,9 @@ database/         SQL migrations, RLS policies, functions, seeds
 cloudflare-worker/ AI Gateway Worker source
 scripts/          Setup and maintenance scripts
 ```
+<<<<<<< HEAD
 # ilmAI
+=======
+# study-verse-ai
+# study-verse-ai
+>>>>>>> 29e37865797a6eecb802e1c882a3ed078d46bec5

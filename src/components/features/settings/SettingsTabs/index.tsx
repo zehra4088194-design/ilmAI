@@ -113,6 +113,7 @@ export function SettingsTabs({ profile }: { profile: any }) {
                 <h3 className="font-semibold mb-1 flex items-center gap-2"><Users className="w-4 h-4 text-violet-400" />Parent Se Link Karo</h3>
                 <p className="text-sm text-muted-foreground mb-4">Apne parent se invite code lo aur yahan enter karo — wo tumhari progress dekh sakenge.</p>
               </div>
+<<<<<<< HEAD
 
               {loadingLink ? (
                 <p className="text-sm text-muted-foreground">Loading...</p>
@@ -133,6 +134,13 @@ export function SettingsTabs({ profile }: { profile: any }) {
                   <p className="text-xs text-muted-foreground">Parent apne dashboard se &ldquo;Generate Invite Code&rdquo; pe click kar ke ye code bana sakte hain.</p>
                 </>
               )}
+=======
+              <div className="flex gap-2">
+                <Input value={inviteCode} onChange={e => setInviteCode(e.target.value.toUpperCase())} placeholder="e.g. SV-A1B2C3" className="font-mono" />
+                <Button variant="gradient" onClick={handleLinkParent} loading={linking}>Link Karo</Button>
+              </div>
+              <p className="text-xs text-muted-foreground">Parent apne dashboard se &ldquo;Generate Invite Code&rdquo; pe click kar ke ye code bana sakte hain.</p>
+>>>>>>> 29e37865797a6eecb802e1c882a3ed078d46bec5
             </div>
           )}
           {activeTab === 'notifications' && <p className="text-sm text-muted-foreground">Notification preferences jald aayengi.</p>}

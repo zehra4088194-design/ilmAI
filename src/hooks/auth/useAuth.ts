@@ -26,11 +26,14 @@ export function useAuth() {
       role: (data.role as UserProfile['role']) ?? 'student',
       isAiOperated: data.is_ai_operated ?? false,
       aiPersonaProvider: (data.ai_persona_provider as UserProfile['aiPersonaProvider']) ?? undefined,
+<<<<<<< HEAD
       aiOnboardingComplete: data.ai_onboarding_complete ?? false,
       targetMarksPercentage: data.target_marks_percentage ?? undefined,
       totalMarksPercentage: data.total_marks_percentage ?? undefined,
       previousRollNumber: data.previous_roll_number ?? undefined,
       optionalSubjectIds: data.optional_subject_ids ?? [],
+=======
+>>>>>>> 29e37865797a6eecb802e1c882a3ed078d46bec5
       createdAt: data.created_at, updatedAt: data.updated_at,
     };
   }, [supabase]);
@@ -39,7 +42,11 @@ export function useAuth() {
     supabase.auth.getUser().then(async ({ data: { user: authUser } }) => {
       if (authUser) {
         const profile = await fetchProfile(authUser.id);
+<<<<<<< HEAD
         setUser(profile || { id: authUser.id, email: authUser.email!, fullName: authUser.email!.split('@')[0]!, subscriptionTier: 'FREE', xp: 0, level: 1, streak: 0, totalStudyTime: 0, isEmailVerified: authUser.email_confirmed_at != null, isProfileComplete: false, onboardingStep: 0, role: 'student', isAiOperated: false, aiOnboardingComplete: false, optionalSubjectIds: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+=======
+        setUser(profile || { id: authUser.id, email: authUser.email!, fullName: authUser.email!.split('@')[0]!, subscriptionTier: 'FREE', xp: 0, level: 1, streak: 0, totalStudyTime: 0, isEmailVerified: authUser.email_confirmed_at != null, isProfileComplete: false, onboardingStep: 0, role: 'student', isAiOperated: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+>>>>>>> 29e37865797a6eecb802e1c882a3ed078d46bec5
       } else {
         setUser(null);
       }
