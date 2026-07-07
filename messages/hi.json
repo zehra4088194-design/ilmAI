@@ -1,0 +1,106 @@
+{
+  "common": {
+    "save": "सेव करें",
+    "saving": "सेव हो रहा है...",
+    "cancel": "रद्द करें",
+    "loading": "लोड हो रहा है..."
+  },
+  "navbar": {
+    "features": "विशेषताएं",
+    "boards": "बोर्ड्स",
+    "pricing": "कीमतें",
+    "blog": "ब्लॉग",
+    "login": "लॉग इन",
+    "getStartedFree": "मुफ़्त शुरू करें",
+    "dashboard": "डैशबोर्ड",
+    "startFree": "मुफ़्त शुरू करें"
+  },
+  "auth": {
+    "login": {
+      "title": "वापसी पर स्वागत है! 👋",
+      "subtitle": "अपने अकाउंट में लॉग इन करें",
+      "orEmail": "या ईमेल से",
+      "emailPlaceholder": "ईमेल पता",
+      "passwordPlaceholder": "पासवर्ड",
+      "forgotPassword": "पासवर्ड भूल गए?",
+      "submit": "लॉग इन करें",
+      "noAccount": "अकाउंट नहीं है?",
+      "registerLink": "रजिस्टर करें"
+    },
+    "register": {
+      "title": "अकाउंट बनाएं 🚀",
+      "subtitle": "मुफ़्त में जुड़ें, रोज़ाना 10 AI मैसेज पाएं!",
+      "student": "छात्र",
+      "parent": "अभिभावक",
+      "orEmail": "या ईमेल से",
+      "fullNamePlaceholder": "पूरा नाम",
+      "emailPlaceholder": "ईमेल पता",
+      "boardLabel": "बोर्ड",
+      "boardPlaceholder": "बोर्ड चुनें",
+      "gradeLabel": "कक्षा",
+      "gradePlaceholder": "कक्षा चुनें",
+      "passwordPlaceholder": "पासवर्ड (8+ अक्षर)",
+      "confirmPasswordPlaceholder": "पासवर्ड की पुष्टि करें",
+      "submitStudent": "मुफ़्त अकाउंट बनाएं",
+      "submitParent": "अभिभावक अकाउंट बनाएं",
+      "haveAccount": "पहले से अकाउंट है?",
+      "loginLink": "लॉग इन करें"
+    }
+  },
+  "dashboard": {
+    "greetingMorning": "सुप्रभात",
+    "greetingAfternoon": "नमस्कार",
+    "greetingEvening": "शुभ संध्या",
+    "subtitle": "आज क्या सीखना है? चलिए शुरू करते हैं।",
+    "dayStreak": "दिन की स्ट्रीक!",
+    "keepItUp": "ऐसे ही जारी रखें!"
+  },
+  "pricing": {
+    "title1": "सरल, ",
+    "titleHighlight": "किफ़ायती",
+    "titleSuffix": " कीमतें",
+    "subtitle": "हर बजट के लिए बेहतरीन प्लान्स",
+    "monthly": "मासिक",
+    "annual": "वार्षिक",
+    "save20": "20% बचाएं",
+    "perMonth": "/माह",
+    "plans": {
+      "free": {
+        "name": "फ्री",
+        "badge": null,
+        "cta": "मुफ़्त शुरू करें",
+        "features": ["10 AI मैसेज/दिन", "5 क्विज़/दिन", "50 फ्लैशकार्ड", "बेसिक प्रगति", "कम्युनिटी एक्सेस"]
+      },
+      "pro": {
+        "name": "प्रो",
+        "badge": "सबसे लोकप्रिय",
+        "cta": "प्रो शुरू करें",
+        "features": ["100 AI मैसेज/दिन", "असीमित क्विज़", "1,000 फ्लैशकार्ड", "सभी पुराने पेपर", "PDF डाउनलोड", "प्राथमिकता सहायता", "प्रगति विश्लेषण"]
+      },
+      "elite": {
+        "name": "एलीट",
+        "badge": "सर्वश्रेष्ठ मूल्य",
+        "cta": "एलीट लें",
+        "features": ["असीमित AI मैसेज", "सब कुछ असीमित", "ऑफलाइन मोड", "पेरेंट डैशबोर्ड", "परीक्षा अभ्यास", "1-on-1 AI सेशन", "कस्टम स्टडी प्लान"]
+      }
+    }
+  },
+  "settings": {
+    "tabs": {
+      "profile": "प्रोफाइल",
+      "parentLink": "पेरेंट लिंक",
+      "notifications": "सूचनाएं",
+      "security": "सुरक्षा",
+      "appearance": "दिखावट",
+      "language": "भाषा"
+    },
+    "language": {
+      "title": "भाषा",
+      "description": "ऐप के लिए अपनी पसंदीदा भाषा चुनें।",
+      "saved": "भाषा बदल दी गई!"
+    }
+  },
+  "languageSwitcher": {
+    "label": "भाषा"
+  }
+}

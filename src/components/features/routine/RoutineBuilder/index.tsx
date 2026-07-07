@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, Clock, Brain, CheckCircle2, Sparkles, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,9 +7,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils/cn';
 import { toast } from 'sonner';
+import { createClient } from '@/lib/supabase/client';
+import { useSubjects } from '@/hooks/data/useSubjects';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-const SUBJECTS_LIST = ['Physics', 'Chemistry', 'Biology', 'Mathematics', 'Computer Science', 'English', 'Urdu', 'Islamiat', 'Pakistan Studies'];
 const TIME_OPTIONS = ['morning', 'afternoon', 'evening', 'night', 'flexible'];
 const HOUR_OPTIONS = [1, 2, 3, 4, 5, 6];
 
@@ -34,11 +35,27 @@ export function RoutineBuilder({ existingRoutine, userId, userTier }: {
   existingRoutine: any; userId: string; userTier: string;
 }) {
   const [step, setStep] = useState<'form' | 'loading' | 'result'>(existingRoutine ? 'result' : 'form');
+  const [board, setBoard] = useState<string | undefined>(undefined);
+  const supabase = createClient();
+
+  // Subjects are board-scoped (a Pakistani board shows Urdu/Islamiat/Pakistan
+  // Studies, an Indian board shows Hindi/Social Science) — never hardcoded,
+  // so this automatically stays correct as more boards/subjects are added.
+  useEffect(() => {
+    supabase.from('profiles').select('board').eq('id', userId).single()
+      .then(({ data }) => setBoard(data?.board || undefined));
+  }, [userId, supabase]);
+
+  const { data: availableSubjects = [] } = useSubjects(board);
+  const subjectNames = availableSubjects.length > 0
+    ? availableSubjects.map(s => s.name)
+    : ['Physics', 'Chemistry', 'Biology', 'Mathematics', 'English']; // fallback while board loads
+
   const [prefs, setPrefs] = useState<Prefs>({
     availableDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
     hoursPerDay: 3,
     preferredTime: 'evening',
-    subjects: ['Physics', 'Chemistry', 'Mathematics'],
+    subjects: [],
     examDate: '',
     weakSubjects: [],
     goals: '',
@@ -132,12 +149,12 @@ export function RoutineBuilder({ existingRoutine, userId, userTier }: {
               </CardContent>
             </Card>
 
-            {/* Subjects */}
+            {/* Subjects — dynamic, board-scoped */}
             <Card>
               <CardContent className="p-6">
                 <p className="text-sm font-bold mb-3 flex items-center gap-2"><Brain className="w-4 h-4 text-green-400" />Kaunse subjects padhne hain?</p>
                 <div className="flex flex-wrap gap-2">
-                  {SUBJECTS_LIST.map(sub => (
+                  {subjectNames.map(sub => (
                     <button key={sub} onClick={() => toggleSubject(sub)}
                       className={cn('px-3 py-1.5 rounded-lg text-xs font-medium border transition-all', prefs.subjects.includes(sub) ? 'bg-green-500/20 border-green-500 text-green-300' : 'border-border text-muted-foreground hover:border-green-500/50')}>
                       {sub}

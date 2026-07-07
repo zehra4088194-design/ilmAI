@@ -4,6 +4,7 @@ import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { Badge } from '@/components/ui/badge';
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 
 export function DashboardNavbar() {
   const { theme, setTheme } = useTheme();
@@ -24,6 +25,8 @@ export function DashboardNavbar() {
             ⚡ {user.xp.toLocaleString()} XP
           </Badge>
         )}
+        {/* Language */}
+        <LanguageSwitcher />
         {/* Theme */}
         <Button variant="ghost" size="icon" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
           {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}

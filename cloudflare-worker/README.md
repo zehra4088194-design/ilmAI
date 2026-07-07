@@ -1,7 +1,7 @@
-# StudyVerse AI Gateway — Cloudflare Worker
+# ilm AI Gateway — Cloudflare Worker
 
 This is the secret vault + failover router for every AI/OCR call the app makes.
-Full guided steps are in **StudyVerse AI - Deployment Guide.docx** (section "Cloudflare Worker Setup").
+Full guided steps are in **ilm AI - Deployment Guide.docx** (section "Cloudflare Worker Setup").
 
 Quick version:
 1. Cloudflare Dashboard → Workers & Pages → Create → "Create Worker"
@@ -10,7 +10,7 @@ Quick version:
 4. Deploy
 5. In your Next.js project's `.env.local`, set:
    ```
-   AI_GATEWAY_URL=https://studyverse-ai1.noorhusnain791.workers.dev
+   AI_GATEWAY_URL=https://ilm-ai1.noorhusnain791.workers.dev
    AI_GATEWAY_SECRET=<same value you set as GATEWAY_SECRET in step 3>
    ```
-6. Test it: `curl https://studyverse-ai1.noorhusnain791.workers.dev/health`
+6. Test it: `curl https://ilm-ai1.noorhusnain791.workers.dev/health`

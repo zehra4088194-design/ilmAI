@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { persist, immer } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
+import { immer } from 'zustand/middleware/immer';
 import type { UserProfile } from '@/types';
 
 interface AuthState {
@@ -33,6 +34,6 @@ export const useAuthStore = create<AuthState>()(
       resetStreak: () => set((state) => { if (state.user) state.user.streak = 0; }),
       logout: () => set((state) => { state.user = null; state.isHydrated = true; }),
     })),
-    { name: 'studyverse-auth', partialize: (state) => ({ user: state.user }) }
+    { name: 'ilm-ai-auth', partialize: (state) => ({ user: state.user }) }
   )
 );

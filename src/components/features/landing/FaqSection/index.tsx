@@ -5,7 +5,7 @@ import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
 const FAQS = [
-  { q: 'StudyVerse bilkul free hai?', a: 'Haan! Free plan mein roz 10 AI messages, 5 quizzes aur 50 flashcards milte hain. Zyada chahiye to Pro ya Elite plan lo.' },
+  { q: 'ilm AI bilkul free hai?', a: 'Haan! Free plan mein roz 10 AI messages, 5 quizzes aur 50 flashcards milte hain. Zyada chahiye to Pro ya Elite plan lo.' },
   { q: 'Kaunse boards support kiye jaate hain?', a: 'FBISE, BISE Lahore, BISE Karachi, BISE Rawalpindi, BISE Faisalabad, Aga Khan University aur bahut saare boards support kiye jaate hain.' },
   { q: 'AI Tutor kis language mein jawab deta hai?', a: 'AI Tutor English aur Urdu dono mein jawab de sakta hai. Aap jo language prefer karo usi mein likh sakte ho.' },
   { q: 'Subscription cancel kaise karte hain?', a: 'Kabhi bhi settings se subscription cancel kar sakte ho. Billing period khatam hone tak Pro access rehti hai.' },

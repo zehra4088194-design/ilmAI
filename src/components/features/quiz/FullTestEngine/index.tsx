@@ -38,9 +38,12 @@ export function FullTestSetup({
   const [paper, setPaper] = useState<any>(null);
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [gradeResults, setGradeResults] = useState<any[]>([]);
+  const [scanningWhole, setScanningWhole] = useState(false);
+  const [scanProgress, setScanProgress] = useState<{ current: number; total: number } | null>(null);
+  const wholeTestFileRef = useRef<HTMLInputElement>(null);
   const isFreeTier = userTier === 'FREE';
 
-  const bp = BOARD_PATTERNS[grade] || BOARD_PATTERNS['GRADE_10'];
+  const bp = BOARD_PATTERNS[grade] || BOARD_PATTERNS['GRADE_10']!;
   const counts = pattern === 'board' ? { mcq: bp.mcq, short: bp.short, long: bp.long } : custom;
   const selectedSubject = subjects.find(s => s.id === subject);
 
@@ -74,6 +77,63 @@ export function FullTestSetup({
     } catch { toast.error('Test generate nahi hua'); setState('setup'); }
   };
 
+  const handleScanWholeTest = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const writeQuestions = [...(paper.shortQs || []), ...(paper.longQs || [])];
+    const emptyQuestions = writeQuestions.filter((q: any) => !(answers[q.id] || '').trim());
+    if (emptyQuestions.length === 0) {
+      toast.error('Saare written answers already bhare hue hain');
+      if (wholeTestFileRef.current) wholeTestFileRef.current.value = '';
+      return;
+    }
+
+    setScanningWhole(true);
+    const recognizedTexts: string[] = [];
+    let hitLimit = false;
+
+    for (let i = 0; i < files.length; i++) {
+      setScanProgress({ current: i + 1, total: files.length });
+      try {
+        const compressed = await compressImageForOcr(files[i]!);
+        const formData = new FormData();
+        formData.append('file', new File([compressed.blob], `page-${i + 1}.jpg`, { type: 'image/jpeg' }));
+        const res = await fetch('/api/ocr', { method: 'POST', body: formData });
+        if (res.status === 429) {
+          hitLimit = true;
+          const json = await res.json().catch(() => null);
+          toast.error(`${json?.error || 'Daily scan limit khatam ho gayi'} — ${recognizedTexts.length} page(s) scan ho chuke the.`);
+          break;
+        }
+        const json = await res.json();
+        if (json.data?.text) recognizedTexts.push(json.data.text);
+      } catch {
+        // Best effort — skip a page that fails and keep going with the rest
+      }
+    }
+
+    if (recognizedTexts.length > 0) {
+      setAnswers(a => {
+        const updated = { ...a };
+        let ti = 0;
+        for (const q of emptyQuestions) {
+          if (ti >= recognizedTexts.length) break;
+          updated[q.id] = recognizedTexts[ti];
+          ti++;
+        }
+        return updated;
+      });
+      if (!hitLimit) toast.success('Scan ho gaya — jawabaat check kar lo, zaroorat ho to edit karo.');
+    } else if (!hitLimit) {
+      toast.error('Koi text scan nahi ho saka');
+    }
+
+    setScanningWhole(false);
+    setScanProgress(null);
+    if (wholeTestFileRef.current) wholeTestFileRef.current.value = '';
+  };
+
   const submitTest = async () => {
     const mcqCorrect = (paper.mcqs || []).filter((_: any, i: number) => answers[`mcq_${i}`] === i).length;
     // Actually mcq answer is stored as index. Fix:
@@ -96,7 +156,7 @@ export function FullTestSetup({
       const res = await fetch('/api/ai/grade-test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ questions: writeQuestions, answers: writeAnswers, subjectName: selectedSubject?.name, className: grade.replace('GRADE_', 'Class ') }),
+        body: JSON.stringify({ questions: writeQuestions, answers: writeAnswers, subjectName: selectedSubject?.name, className: grade.replace('GRADE_', 'Class '), provider, aiTier }),
       });
       const json = await res.json();
       const writeEvals = json.data || writeQuestions.map(() => ({ score: 0, grade: '?', feedback: 'Grading pending' }));
@@ -213,7 +273,14 @@ export function FullTestSetup({
                 {paper.timeAllowed && <span><Clock className="inline w-3.5 h-3.5" /> {paper.timeAllowed} min</span>}
               </p>
             </div>
-            <Button variant="gradient" onClick={submitTest}><FileCheck className="w-4 h-4" />Submit Test</Button>
+            <div className="flex items-center gap-2 flex-wrap">
+              <input ref={wholeTestFileRef} type="file" accept="image/*" multiple capture="environment" className="hidden" onChange={handleScanWholeTest} />
+              <Button variant="outline" onClick={() => wholeTestFileRef.current?.click()} disabled={scanningWhole}>
+                <Camera className="w-4 h-4" />
+                {scanningWhole ? `Scanning page ${scanProgress?.current} of ${scanProgress?.total}...` : 'Poora Test Scan Karo'}
+              </Button>
+              <Button variant="gradient" onClick={submitTest}><FileCheck className="w-4 h-4" />Submit Test</Button>
+            </div>
           </div>
 
           {/* MCQ Section */}

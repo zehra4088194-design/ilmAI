@@ -3,7 +3,7 @@ import { updateSession } from '@/lib/supabase/middleware';
 
 const PUBLIC_ROUTES = ['/', '/about', '/pricing', '/blog', '/contact', '/login', '/register', '/forgot-password', '/reset-password', '/verify-email'];
 const AUTH_ROUTES = ['/login', '/register', '/forgot-password', '/reset-password'];
-const PROTECTED_PREFIXES = ['/dashboard', '/study', '/practice', '/ai-tutor', '/past-papers', '/progress', '/leaderboard', '/settings', '/mcq', '/flashcards', '/notes', '/results', '/subscription', '/bookmarks', '/library', '/doubts', '/routine', '/guess-paper', '/full-test', '/parent'];
+const PROTECTED_PREFIXES = ['/dashboard', '/study', '/practice', '/ai-tutor', '/past-papers', '/progress', '/leaderboard', '/settings', '/mcq', '/flashcards', '/notes', '/results', '/subscription', '/bookmarks', '/library', '/doubts', '/routine', '/guess-paper', '/full-test', '/parent', '/essay-writer', '/age-counter'];
 const ADMIN_PREFIXES = ['/admin'];
 
 export async function middleware(request: NextRequest) {

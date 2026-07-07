@@ -13,8 +13,8 @@ const supabase = createClient(
 );
 
 async function main() {
-  const email = 'ai-teacher-1@studyverse.internal';
-  const password = `StudyVerse-AI-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const email = 'ai-teacher-1@ilm-ai.internal';
+  const password = `ilm-AI-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
   console.log('Creating AI teacher auth account...');
   const { data: authUser, error: authError } = await supabase.auth.admin.createUser({

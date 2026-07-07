@@ -32,7 +32,7 @@ export const useChatStore = create<ChatState>()(
         const id = nanoid();
         set((state) => {
           state.conversations.unshift({
-            id, userId: '', title, subjectId: subjectId ?? null,
+            id, userId: '', title, subjectId,
             messages: [], createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(), totalMessages: 0, provider: 'groq',
           });
@@ -66,6 +66,6 @@ export const useChatStore = create<ChatState>()(
       }),
       clearAll: () => set((state) => { state.conversations = []; state.activeConversationId = null; }),
     })),
-    { name: 'studyverse-chat', partialize: (s) => ({ conversations: s.conversations.slice(0, 20), activeConversationId: s.activeConversationId }) }
+    { name: 'ilm-ai-chat', partialize: (s) => ({ conversations: s.conversations.slice(0, 20), activeConversationId: s.activeConversationId }) }
   )
 );

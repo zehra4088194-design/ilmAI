@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import { Navbar } from '@/components/features/landing/Navbar';
 import { LandingFooter } from '@/components/features/landing/Footer';
 import { Target, Users, Heart } from 'lucide-react';
-export const metadata: Metadata = { title: 'About Us - StudyVerse AI' };
+export const metadata: Metadata = { title: 'About Us - ilm AI' };
 
 export default function AboutPage() {
   return (
@@ -11,7 +11,7 @@ export default function AboutPage() {
       <main className="pt-32 pb-20 container mx-auto px-4 max-w-3xl">
         <h1 className="text-4xl font-bold mb-6">Hamare Baare Mein</h1>
         <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
-          StudyVerse AI 2024 mein shuru hua ek mission ke saath: Pakistan ke har student ko quality education tak AI-powered access dena, chahe wo kisi bhi shehar ya board se ho.
+          ilm AI 2024 mein shuru hua ek mission ke saath: Pakistan ke har student ko quality education tak AI-powered access dena, chahe wo kisi bhi shehar ya board se ho.
         </p>
         <div className="grid md:grid-cols-3 gap-6 mb-12">
           {[
@@ -27,7 +27,7 @@ export default function AboutPage() {
           ))}
         </div>
         <p className="text-muted-foreground leading-relaxed">
-          Aaj StudyVerse AI 50,000+ students ki madad kar raha hai apne board exams mein behtar scores lene mein. Hum FBISE se lekar provincial boards tak, sab ke liye design karte hain.
+          Aaj ilm AI 50,000+ students ki madad kar raha hai apne board exams mein behtar scores lene mein. Hum FBISE se lekar provincial boards tak, sab ke liye design karte hain.
         </p>
       </main>
       <LandingFooter />

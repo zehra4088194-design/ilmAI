@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, BookOpen, Brain, FileText, TrendingUp, Trophy, Settings,
   Zap, StickyNote, Bookmark, Star, CreditCard, ChevronRight, X, Menu,
-  Library, CalendarClock, HelpCircle, Target, LogOut, Users
+  Library, CalendarClock, HelpCircle, Target, LogOut, Users, PenLine, Cake
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useAuth } from '@/hooks/auth/useAuth';
@@ -37,8 +37,15 @@ const NAV_GROUPS = [
     items: [
       { icon: Target, label: 'Guess Paper', href: '/guess-paper', badge: 'AI' },
       { icon: FileText, label: 'Full Test', href: '/full-test', badge: 'AI' },
+      { icon: PenLine, label: 'Essay Writer', href: '/essay-writer', badge: 'AI' },
       { icon: HelpCircle, label: 'Ask a Teacher', href: '/doubts' },
       { icon: CalendarClock, label: 'Study Routine', href: '/routine' },
+    ],
+  },
+  {
+    label: 'Tools',
+    items: [
+      { icon: Cake, label: 'Age Counter', href: '/age-counter' },
     ],
   },
   {
@@ -72,7 +79,7 @@ export function DashboardSidebar() {
         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
           <BookOpen className="w-4 h-4 text-white" />
         </div>
-        <span className="font-bold text-sidebar-foreground">StudyVerse <span className="text-violet-400">AI</span></span>
+        <span className="font-bold text-sidebar-foreground">ilm <span className="text-violet-400">AI</span></span>
       </Link>
 
       {/* Nav groups */}

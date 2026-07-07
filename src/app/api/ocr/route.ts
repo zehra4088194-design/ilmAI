@@ -1,94 +1,100 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { performOcr, validateOcrFile, OCR_FREE_DAILY_LIMIT } from '@/lib/ocr';
-import { checkOcrLimit } from '@/lib/rate-limit';
-import type { SubscriptionTier } from '@/types';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
+import slugify from 'slugify';
 
-export const runtime = 'nodejs';
-export const maxDuration = 30;
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '')
+  .split(',')
+  .map((e) => e.trim().toLowerCase())
+  .filter(Boolean);
 
-export async function POST(req: NextRequest) {
-  try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ status: 'error', error: 'Login required hai' }, { status: 401 });
-    }
-
-    // Fetch user's subscription tier to decide OCR provider + rate limit
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('subscription_tier')
-      .eq('id', user.id)
-      .single();
-    const tier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
-
-    // Enforce daily limit (Free: 5/day via OCR.space, Pro/Elite: 200/day via Gemini Vision)
-    const limitCheck = await checkOcrLimit(user.id, tier);
-    if (!limitCheck.success) {
-      return NextResponse.json({
-        status: 'error',
-        error: tier === 'FREE'
-          ? `Aaj ke ${OCR_FREE_DAILY_LIMIT} free scans khatam ho gaye. Pro plan lo unlimited scans ke liye!`
-          : 'Daily scan limit khatam ho gayi, kal phir try karo.',
-        remaining: 0,
-      }, { status: 429 });
-    }
-
-    const formData = await req.formData();
-    const file = formData.get('file') as File | null;
-    if (!file) {
-      return NextResponse.json({ status: 'error', error: 'Koi file nahi mili' }, { status: 400 });
-    }
-
-    const validation = validateOcrFile(file.type, file.size);
-    if (!validation.valid) {
-      return NextResponse.json({ status: 'error', error: validation.error }, { status: 400 });
-    }
-
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    const result = await performOcr({ imageBuffer: buffer, mimeType: file.type, userTier: tier });
-
-    if (!result.text) {
-      return NextResponse.json({
-        status: 'error',
-        error: 'Is image mein text detect nahi ho saka. Behtar lighting/quality ke saath try karo.',
-      }, { status: 422 });
-    }
-
-    return NextResponse.json({
-      status: 'success',
-      data: {
-        text: result.text,
-        provider: result.provider,
-        fallbackTriggered: result.fallbackTriggered || false,
-        remaining: limitCheck.remaining,
-      },
-    });
-  } catch (error) {
-    console.error('OCR API error:', error);
-    return NextResponse.json({ status: 'error', error: 'OCR processing failed. Dobara try karo.' }, { status: 500 });
+async function requireAdmin() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user || !ADMIN_EMAILS.includes((user.email || '').toLowerCase())) {
+    return null;
   }
+  return user;
 }
 
+// GET /api/admin/chapters?subjectId=...
+// Lists all chapters for a subject, ordered the way students will see them.
 export async function GET(req: NextRequest) {
-  // Quick endpoint for the UI to check remaining scans before showing the upload button
-  try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ status: 'error', error: 'Login required' }, { status: 401 });
+  const admin = await requireAdmin();
+  if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
-    const tier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
-    const limitCheck = await checkOcrLimit(user.id, tier);
+  const subjectId = req.nextUrl.searchParams.get('subjectId');
+  if (!subjectId) return NextResponse.json({ error: 'subjectId required hai' }, { status: 400 });
 
-    return NextResponse.json({
-      status: 'success',
-      data: { remaining: limitCheck.remaining, tier, provider: tier === 'FREE' ? 'ocr-space' : 'gemini-vision' },
-    });
-  } catch {
-    return NextResponse.json({ status: 'error', error: 'Could not check limit' }, { status: 500 });
+  const adminClient = await createAdminClient();
+  const { data, error } = await adminClient
+    .from('chapters')
+    .select('*')
+    .eq('subject_id', subjectId)
+    .order('order_index', { ascending: true });
+
+  if (error) return NextResponse.json({ error: 'Chapters load nahi hue' }, { status: 500 });
+  return NextResponse.json({ chapters: data });
+}
+
+// POST /api/admin/chapters
+// body: { subjectId: string, name: string, boards?: string[], orderIndex?: number }
+// `boards` empty/omitted = applies to every board the subject supports.
+// Pass specific boards (e.g. ['CBSE','ICSE','STATE_BOARD_IN']) to keep this
+// chapter scoped to just those boards — this is how Pakistan vs India
+// chapters stay separate under a shared subject like Physics.
+export async function POST(req: NextRequest) {
+  const admin = await requireAdmin();
+  if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+  const body = (await req.json()) as { subjectId?: string; name?: string; boards?: string[]; orderIndex?: number };
+  const { subjectId, name, boards = [], orderIndex } = body;
+
+  if (!subjectId || !name?.trim()) {
+    return NextResponse.json({ error: 'Subject aur chapter ka naam dono zaroori hain' }, { status: 400 });
   }
+
+  const adminClient = await createAdminClient();
+
+  // Auto-number this chapter after the current max order_index for this
+  // subject+board-scope if the caller didn't specify one.
+  let finalOrderIndex = orderIndex;
+  if (finalOrderIndex === undefined) {
+    const { data: existing } = await adminClient
+      .from('chapters')
+      .select('order_index')
+      .eq('subject_id', subjectId)
+      .order('order_index', { ascending: false })
+      .limit(1);
+    finalOrderIndex = (existing?.[0]?.order_index ?? -1) + 1;
+  }
+
+  const baseSlug = slugify(name, { lower: true, strict: true });
+  // Chapters have a unique(subject_id, slug) constraint — suffix with the
+  // order index if a name collides (e.g. two boards both have a chapter
+  // literally named "Introduction").
+  const slug = `${baseSlug}-${finalOrderIndex}`;
+
+  const { data, error } = await adminClient
+    .from('chapters')
+    .insert({
+      subject_id: subjectId,
+      name: name.trim(),
+      slug,
+      boards,
+      order_index: finalOrderIndex,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('chapter create error:', error);
+    return NextResponse.json({ error: 'Chapter add nahi hua' }, { status: 500 });
+  }
+
+  // Keep subjects.total_chapters roughly in sync for the admin overview cards.
+  try { await adminClient.rpc('refresh_subject_counts'); } catch {}
+
+  return NextResponse.json({ chapter: data });
 }

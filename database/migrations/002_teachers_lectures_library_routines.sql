@@ -4,7 +4,6 @@
 -- ============================================
 
 -- ---------- ROLES + AI-OPERATED ACCOUNTS ----------
-create type user_role as enum ('student', 'teacher', 'admin');
 
 alter table public.profiles add column if not exists role user_role not null default 'student';
 alter table public.profiles add column if not exists is_ai_operated boolean not null default false;

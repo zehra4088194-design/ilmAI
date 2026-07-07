@@ -12,7 +12,7 @@
 -- After creating the auth user manually, insert this:
 -- INSERT INTO public.profiles (
 --   id,                            -- UUID from auth.users
---   email,                         -- e.g. teacher-ai-1@studyverse.internal
+--   email,                         -- e.g. teacher-ai-1@ilm-ai.internal
 --   full_name,                     -- e.g. "Sir Zafar" (realistic Pakistani teacher name)
 --   role,                          -- 'teacher'
 --   is_ai_operated,                -- true

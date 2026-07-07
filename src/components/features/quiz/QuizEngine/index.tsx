@@ -7,7 +7,7 @@ import { QuizResult } from '@/components/features/quiz/QuizResult';
 import { QuizTimer } from '@/components/features/quiz/QuizTimer';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Flag } from 'lucide-react';
+import { ChevronLeft, Zap } from 'lucide-react';
 import type { QuizSession } from '@/types';
 
 export function QuizEngine() {
@@ -64,16 +64,18 @@ export function QuizEngine() {
         </div>
       </div>
 
-      {currentQuestion && <QuizCard question={currentQuestion} />}
+      {/* Auto-advances on its own once answered — correct is quick, wrong
+          pauses 2s so the student reads the right answer. No button needed. */}
+      {currentQuestion && <QuizCard question={currentQuestion} isLast={isLast} />}
 
       <div className="flex items-center justify-between">
         <Button variant="outline" onClick={previousQuestion} disabled={session.currentIndex === 0}>
           <ChevronLeft className="w-4 h-4" />Previous
         </Button>
-        {isLast ? (
-          <Button variant="gradient" onClick={submitQuiz}><Flag className="w-4 h-4" />Submit Quiz</Button>
-        ) : (
-          <Button variant="gradient" onClick={nextQuestion}>Next<ChevronRight className="w-4 h-4" /></Button>
+        {!hasAnswered && (
+          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+            <Zap className="w-3.5 h-3.5 text-violet-400" />Answer select karo — agla sawaal khud aa jayega
+          </p>
         )}
       </div>
     </div>

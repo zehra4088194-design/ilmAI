@@ -39,7 +39,10 @@ export async function POST(req: NextRequest) {
     }
     case 'customer.subscription.deleted': {
       const subscription = event.data.object as Stripe.Subscription;
-      await supabase.from('profiles').update({ subscription_tier: 'FREE' }).eq('id', subscription.metadata?.userId);
+      const userId = subscription.metadata?.userId;
+      if (userId) {
+        await supabase.from('profiles').update({ subscription_tier: 'FREE' }).eq('id', userId);
+      }
       break;
     }
   }

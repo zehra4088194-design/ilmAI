@@ -5,7 +5,7 @@
 // here we enforce a per-USER 5/day cap ourselves — see rate-limit below).
 // Docs: https://ocr.space/ocrapi
 // ============================================
-import type { OcrResult } from './google-vision';
+import type { OcrResult } from './index';
 
 const OCR_SPACE_URL = 'https://api.ocr.space/parse/image';
 

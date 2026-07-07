@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://studyverse.ai';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ilm.ai';
   const routes = ['', '/about', '/pricing', '/blog', '/contact', '/login', '/register'];
   return routes.map((route) => ({
     url: `${baseUrl}${route}`,

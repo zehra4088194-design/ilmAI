@@ -1,5 +1,5 @@
 -- ============================================
--- STUDYVERSE AI - INITIAL SCHEMA
+-- ILM AI - INITIAL SCHEMA
 -- ============================================
 
 -- Enable extensions

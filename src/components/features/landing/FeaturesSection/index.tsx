@@ -16,7 +16,7 @@ export function FeaturesSection() {
     <section id="features" className="py-24">
       <div className="container mx-auto px-4">
         <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Sab Kuch Ek Jagah <span className="gradient-text">StudyVerse</span> Mein</h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">Sab Kuch Ek Jagah <span className="gradient-text">ilm AI</span> Mein</h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">Pakistani students ke liye specially designed features jo board exams ki tayari ko asaan banate hain.</p>
         </motion.div>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">

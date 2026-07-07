@@ -13,7 +13,7 @@ import type { ChatMessage } from '@/types';
 export type AiProviderId = 'groq' | 'claude' | 'gpt' | 'gemini';
 export type ModelTier = 'mini' | 'medium' | 'pro';
 
-const GATEWAY_URL = process.env.AI_GATEWAY_URL || 'https://studyverse-ai1.noorhusnain791.workers.dev';
+const GATEWAY_URL = process.env.AI_GATEWAY_URL || 'https://ilm-ai1.noorhusnain791.workers.dev';
 const GATEWAY_SECRET = process.env.AI_GATEWAY_SECRET || '';
 
 export interface GatewayChatRequest {
@@ -69,19 +69,33 @@ export async function sendAiMessage(opts: {
   return result.text;
 }
 
+// Shared formatting instruction appended to every prompt whose output is
+// rendered through <AiAnswerRenderer> as a structured "document" (headings,
+// numbered steps, tables, LaTeX) rather than a flat paragraph of text.
+export const MARKDOWN_ANSWER_FORMAT_INSTRUCTION = `Format your answer as a well-structured document using Markdown:
+- Start with a short one-line heading or summary (use "### " for it)
+- Break the explanation into clear steps or points — use numbered lists ("1. 2. 3.") for sequential/procedural steps and bullet points for non-sequential facts
+- **Bold** key terms, formulas, and final answers
+- Write any math using LaTeX: inline as $x^2$ and standalone equations as $$E = mc^2$$
+- Use a short code block for any code
+- Keep paragraphs short (2-3 sentences max) — favor structure over long prose`;
+
 function buildSystemPrompt(subject?: string): string {
-  const base = `You are StudyVerse AI, an expert tutor for Pakistani students (Grades 9-12, O/A Levels).
+  const base = `You are ilm AI, an expert tutor for Pakistani students (Grades 9-12, O/A Levels).
 You specialize in FBISE and provincial board curricula.
 - Explain concepts clearly, mixing in Roman Urdu phrases naturally when helpful
 - For MCQs, explain why each option is correct or incorrect
 - Encourage and motivate students
-- Be concise but thorough`;
+- Be concise but thorough
+
+${MARKDOWN_ANSWER_FORMAT_INSTRUCTION}`;
   return subject ? `${base}\n\nCurrent subject: ${subject}.` : base;
 }
 
 export async function generateQuizViaGateway(params: { subjectId: string; chapterIds: string[]; count: number; difficulty?: string; provider?: AiProviderId; tier?: ModelTier }): Promise<string> {
   const prompt = `Generate ${params.count} MCQ questions for Pakistani board exam students.
 Difficulty: ${params.difficulty || 'MEDIUM'}
+Each "explanation" should be 2-4 sentences of Markdown: bold the key term, use LaTeX ($...$) for any formula, and a short numbered list if the reasoning has multiple steps.
 Return ONLY valid JSON array: [{"text":"...","options":[{"id":"a","text":"..."}],"correctAnswer":"a","explanation":"...","difficulty":"MEDIUM","marks":1}]`;
   const result = await gatewayChat({
     provider: params.provider || 'groq',
@@ -100,7 +114,7 @@ export async function explainConceptViaGateway(concept: string, subject: string,
   const result = await gatewayChat({
     provider, tier,
     messages: [
-      { role: 'system', content: `Expert ${subject} tutor for Pakistani ${gradeLevel} students. Roman Urdu mixed with English where helpful.` },
+      { role: 'system', content: `Expert ${subject} tutor for Pakistani ${gradeLevel} students. Roman Urdu mixed with English where helpful.\n\n${MARKDOWN_ANSWER_FORMAT_INSTRUCTION}` },
       { role: 'user', content: `Explain this concept clearly: ${concept}. Use simple language, examples, and key points.` },
     ],
     maxTokens: 1024,
@@ -120,4 +134,23 @@ export async function generateFlashcardsViaGateway(topic: string, subject: strin
     temperature: 0.4,
   });
   return result.text;
+}
+
+// ============================================
+// LIVE VOICE CALL
+// The gateway mints a short-lived, single-use ephemeral Gemini token with
+// the AI Teacher persona locked in server-side. The browser then connects
+// directly to Gemini Live using that token; the raw Gemini key never leaves
+// the Worker, and audio never flows through our own servers.
+// ============================================
+export interface LiveVoiceSession {
+  token: string;
+  expireTime: string;
+  newSessionExpireTime: string;
+  model: string;
+  wsUrl: string;
+}
+
+export async function mintLiveVoiceToken(subject?: string): Promise<LiveVoiceSession> {
+  return gatewayFetch('/live/token', { subject });
 }

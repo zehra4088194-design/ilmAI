@@ -21,7 +21,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             <BookOpen className="w-10 h-10 text-white" />
           </div>
           <h2 className="text-3xl font-bold mb-4">Pakistan Ka #1<br /><span className="gradient-text">AI Study Platform</span></h2>
-          <p className="text-muted-foreground mb-8">50,000+ students already scoring higher with StudyVerse AI</p>
+          <p className="text-muted-foreground mb-8">50,000+ students already scoring higher with ilm AI</p>
           <div className="grid grid-cols-2 gap-4">
             {[['50K+', 'Students'], ['50K+', 'MCQs'], ['24/7', 'AI Tutor'], ['98%', 'Success']].map(([val, label]) => (
               <div key={label} className="glass rounded-xl p-4 border border-white/10">

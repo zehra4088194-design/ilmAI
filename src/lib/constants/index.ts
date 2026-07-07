@@ -1,40 +1,96 @@
 export const BOARDS = [
-  { value: 'FBISE', label: 'FBISE (Federal Board)', province: 'Federal' },
-  { value: 'BISE_LHR', label: 'BISE Lahore', province: 'Punjab' },
-  { value: 'BISE_KHI', label: 'BISE Karachi', province: 'Sindh' },
-  { value: 'BISE_RWP', label: 'BISE Rawalpindi', province: 'Punjab' },
-  { value: 'BISE_FSD', label: 'BISE Faisalabad', province: 'Punjab' },
-  { value: 'AKU', label: 'Aga Khan University', province: 'International' },
-  { value: 'OTHER', label: 'Other', province: '' },
+  { value: 'FBISE', label: 'FBISE (Federal Board)', province: 'Federal', country: 'PK' },
+  { value: 'BISE_LHR', label: 'BISE Lahore', province: 'Punjab', country: 'PK' },
+  { value: 'BISE_KHI', label: 'BISE Karachi', province: 'Sindh', country: 'PK' },
+  { value: 'BISE_RWP', label: 'BISE Rawalpindi', province: 'Punjab', country: 'PK' },
+  { value: 'BISE_FSD', label: 'BISE Faisalabad', province: 'Punjab', country: 'PK' },
+  { value: 'AKU', label: 'Aga Khan University', province: 'International', country: 'PK' },
+  { value: 'CBSE', label: 'CBSE', province: 'All India', country: 'IN' },
+  { value: 'ICSE', label: 'ICSE', province: 'All India', country: 'IN' },
+  { value: 'STATE_BOARD_IN', label: 'State Board (India)', province: '', country: 'IN' },
+  { value: 'OTHER', label: 'Other', province: '', country: '' },
 ] as const;
 
 export const GRADE_LEVELS = [
-  { value: 'GRADE_9', label: 'Grade 9 (Matric Part-I)', level: 'Matric' },
-  { value: 'GRADE_10', label: 'Grade 10 (Matric Part-II)', level: 'Matric' },
-  { value: 'GRADE_11', label: 'Grade 11 (Inter Part-I)', level: 'Inter' },
-  { value: 'GRADE_12', label: 'Grade 12 (Inter Part-II)', level: 'Inter' },
+  { value: 'GRADE_9', label: 'Grade 9 / Class 9', level: 'Matric' },
+  { value: 'GRADE_10', label: 'Grade 10 / Class 10 (Matric)', level: 'Matric' },
+  { value: 'GRADE_11', label: 'Grade 11 / Class 11 (Inter Part-I)', level: 'Inter' },
+  { value: 'GRADE_12', label: 'Grade 12 / Class 12 (Inter Part-II)', level: 'Inter' },
   { value: 'O_LEVEL', label: 'O Level', level: 'Cambridge' },
   { value: 'A_LEVEL', label: 'A Level', level: 'Cambridge' },
 ] as const;
 
+// Used to auto-detect Pakistan vs India (and default the boards dropdown +
+// payment region) from the visitor's country. See app/api/geo/route.ts.
+export const COUNTRY_BOARD_DEFAULTS: Record<string, string> = {
+  PK: 'FBISE',
+  IN: 'CBSE',
+};
+
+// ============================================
+// CURRENCY LOCALIZATION (Module 8)
+// ============================================
+// Pakistan is the app's primary/default market, so PKR ("Rs.") is the
+// fallback everywhere below — India ("₹"/INR) is the only opt-in case.
+export type Currency = 'PKR' | 'INR';
+
+export const CURRENCY_SYMBOLS: Record<Currency, string> = {
+  PKR: 'Rs.',
+  INR: '₹',
+};
+
+/**
+ * Resolve a student's country from their `profiles.board` value, using the
+ * same `country` field already on each BOARDS entry. Falls back to 'PK' for
+ * unset/unknown/'OTHER' boards, matching the app's Pakistan-first default.
+ */
+export function getCountryForBoard(board?: string | null): 'PK' | 'IN' {
+  const entry = BOARDS.find((b) => b.value === board);
+  return entry?.country === 'IN' ? 'IN' : 'PK';
+}
+
+/** Country code (from /api/geo or a resolved board) -> display currency. */
+export function getCurrencyForCountry(country?: string | null): Currency {
+  return country === 'IN' ? 'INR' : 'PKR';
+}
+
+/**
+ * profile.board -> currency. Prefer this over IP geolocation whenever a
+ * logged-in user's board is known — it's set once at signup and doesn't
+ * change if the student is travelling or using a VPN.
+ */
+export function getCurrencyForBoard(board?: string | null): Currency {
+  return getCurrencyForCountry(getCountryForBoard(board));
+}
+
 export const SUBSCRIPTION_PLANS = {
   FREE: {
     name: 'Free',
-    price: 0,
+    price: {
+      PKR: { monthly: 0, annual: 0 },
+      INR: { monthly: 0, annual: 0 },
+    },
     limits: { aiMessages: 10, quizzes: 5, flashcards: 50, pastPapers: false, downloadPDF: false },
     features: ['10 AI messages/day', '5 quizzes/day', '50 flashcards', 'Basic progress tracking'],
   },
   PRO: {
     name: 'Pro',
-    priceMonthly: 499,
-    priceAnnual: 4990,
+    // INR amounts are deliberately NOT a straight FX conversion — picked to
+    // match what similar edtech subscriptions charge Indian students
+    // (round, competitive numbers), not PKR × exchange rate.
+    price: {
+      PKR: { monthly: 499, annual: 4990 },
+      INR: { monthly: 149, annual: 1499 },
+    },
     limits: { aiMessages: 100, quizzes: -1, flashcards: 1000, pastPapers: true, downloadPDF: true },
     features: ['100 AI messages/day', 'Unlimited quizzes', '1000 flashcards', 'All past papers', 'PDF downloads', 'Priority support'],
   },
   ELITE: {
     name: 'Elite',
-    priceMonthly: 999,
-    priceAnnual: 9990,
+    price: {
+      PKR: { monthly: 999, annual: 9990 },
+      INR: { monthly: 299, annual: 2999 },
+    },
     limits: { aiMessages: -1, quizzes: -1, flashcards: -1, pastPapers: true, downloadPDF: true },
     features: ['Unlimited AI messages', 'Unlimited everything', 'Offline mode', '1-on-1 AI sessions', 'Exam simulations', 'Parent dashboard'],
   },
@@ -51,6 +107,8 @@ export const XP_REWARDS = {
   PROFILE_COMPLETE: 100,
 } as const;
 
+// Fallback colors used before a subject's own `color` (from the DB) loads.
+// Includes both Pakistani-board and Indian-board subjects.
 export const SUBJECTS_COLORS: Record<string, string> = {
   mathematics: '#7c3aed',
   physics: '#2563eb',
@@ -61,6 +119,8 @@ export const SUBJECTS_COLORS: Record<string, string> = {
   computer: '#7c3aed',
   islamiat: '#059669',
   pakistan_studies: '#6d28d9',
+  hindi: '#ea580c',
+  social_science: '#6d28d9',
 };
 
 export const AI_PROVIDERS_CONFIG = {

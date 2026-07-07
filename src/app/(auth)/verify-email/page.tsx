@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { MailCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-export const metadata: Metadata = { title: 'Verify Email - StudyVerse AI' };
+export const metadata: Metadata = { title: 'Verify Email - ilm AI' };
 export default function VerifyEmailPage() {
   return (
     <div className="text-center">

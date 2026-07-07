@@ -1,0 +1,159 @@
+'use client';
+import { useState, useRef, useEffect } from 'react';
+import { useChatStore } from '@/store/chat.store';
+import { ChatMessage } from '@/components/features/ai-tutor/ChatMessage';
+import { ChatInput } from '@/components/features/ai-tutor/ChatInput';
+import { TypingIndicator } from '@/components/features/ai-tutor/TypingIndicator';
+import { SuggestionChips } from '@/components/features/ai-tutor/SuggestionChips';
+import { ConversationSidebar } from '@/components/features/ai-tutor/ConversationSidebar';
+import { SubjectPicker } from '@/components/features/ai-tutor/SubjectPicker';
+import { LiveVoiceCall, type VoiceSessionTranscript } from '@/components/features/ai-tutor/LiveVoiceCall';
+import { TeacherIdentityCard } from '@/components/features/teacher/TeacherIdentityCard';
+import { AIProviderSelector } from '@/components/features/ai-selector/AIProviderSelector';
+import { Menu } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/auth/useAuth';
+import type { AiProviderId, ModelTier } from '@/lib/ai/gateway';
+import { toast } from 'sonner';
+import { createClient } from '@/lib/supabase/client';
+
+export function ChatInterface() {
+  const { activeConversationId, conversations, createConversation, addMessage, updateLastMessage, isStreaming, setStreaming } = useChatStore();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [provider, setProvider] = useState<AiProviderId>('groq');
+  const [tier, setTier] = useState<ModelTier>('mini');
+  const [subjects, setSubjects] = useState<{ id: string; name: string }[]>([]);
+  const [subject, setSubject] = useState<{ id: string; name: string } | null>(null);
+  const [subjectPicked, setSubjectPicked] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
+  const isFreeTier = !user || user.subscriptionTier === 'FREE';
+  // Live Voice Call is Elite-only (a stricter gate than the FREE/paid split
+  // used everywhere else in this file for provider selection etc.) — see
+  // /api/ai/live/session for the server-side enforcement of this.
+  const canUseLiveVoice = !!user && user.subscriptionTier === 'ELITE';
+
+  const activeConversation = conversations.find(c => c.id === activeConversationId);
+  const messages = activeConversation?.messages || [];
+
+  useEffect(() => {
+    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.from('subjects').select('id, name').order('name').then(({ data }) => {
+      if (data) setSubjects(data);
+    });
+  }, []);
+
+  const handleSend = async (text: string) => {
+    let convId = activeConversationId;
+    if (!convId) convId = createConversation();
+
+    addMessage({ role: 'user', content: text });
+    addMessage({ role: 'assistant', content: '' });
+    setStreaming(true);
+
+    try {
+      const response = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, conversationId: convId, history: messages.slice(-10), provider, tier, subject: subject?.name }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Failed to get response');
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let fullText = '';
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value);
+          fullText += chunk;
+          updateLastMessage(fullText);
+        }
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Kuch ghalat ho gaya');
+      updateLastMessage('Sorry, kuch error aa gaya. Dobara try karo.');
+    } finally {
+      setStreaming(false);
+    }
+  };
+
+  // Voice Lesson Magic Notes: fired by LiveVoiceCall once a call ends with a
+  // substantial transcript. Best-effort — a failure here should never
+  // interrupt the student's flow, so errors just show a soft toast.
+  const handleVoiceSessionEnd = async (transcript: VoiceSessionTranscript) => {
+    try {
+      const res = await fetch('/api/voice/session-end', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transcript: transcript.text, subjectId: subject?.id, subjectName: subject?.name }),
+      });
+      const json = await res.json();
+      if (json.status === 'error') {
+        console.error('Voice session-end error:', json.error);
+        return;
+      }
+      if (json.data?.noteId || json.data?.deckId) {
+        toast.success('Voice lesson se Notes aur Flashcards ban gaye! Notes/Flashcards section mein dekho.');
+      }
+    } catch (error) {
+      console.error('Voice session-end request failed:', error);
+    }
+  };
+
+  const showSubjectPicker = !subjectPicked && messages.length === 0 && subjects.length > 0;
+
+  return (
+    <div className="flex h-full">
+      <div className="hidden lg:block w-72 border-r border-border shrink-0">
+        <ConversationSidebar />
+      </div>
+
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Header */}
+        <div className="flex items-center gap-3 p-4 border-b border-border">
+          <Button variant="ghost" size="icon-sm" className="lg:hidden" onClick={() => setSidebarOpen(true)}><Menu className="w-4 h-4" /></Button>
+          <TeacherIdentityCard subjectName={subject?.name} size="md" className="flex-1" />
+          <LiveVoiceCall subject={subject?.name} hasAccess={canUseLiveVoice} onSessionEnd={handleVoiceSessionEnd} />
+          <AIProviderSelector provider={provider} tier={tier} onChange={(p, t) => { setProvider(p); setTier(t); }} isFreeTier={isFreeTier} compact />
+        </div>
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {showSubjectPicker ? (
+            <SubjectPicker
+              subjects={subjects}
+              onSelect={(s) => { setSubject(s); setSubjectPicked(true); }}
+            />
+          ) : messages.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-center px-4">
+              <TeacherIdentityCard subjectName={subject?.name} size="lg" className="flex-col text-center mb-4 [&>div:last-child]:mt-2" />
+              <h2 className="text-xl font-bold mb-2">AI Tutor Se Puchho!</h2>
+              <p className="text-muted-foreground text-sm mb-6 max-w-sm">Koi bhi sawal puchho - Physics, Chemistry, Math, ya kuch bhi. Photo bhi scan kar sakte ho! Ya phir Voice Call se seedha baat karo.</p>
+              <SuggestionChips onSelect={handleSend} />
+            </div>
+          ) : (
+            <>
+              {messages.map((msg) => <ChatMessage key={msg.id} message={msg} subject={subject?.name} />)}
+              {isStreaming && messages[messages.length - 1]?.content === '' && <TypingIndicator />}
+            </>
+          )}
+          <div ref={scrollRef} />
+        </div>
+
+        {/* Input */}
+        {!showSubjectPicker && <ChatInput onSend={handleSend} disabled={isStreaming} />}
+      </div>
+    </div>
+  );
+}

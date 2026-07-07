@@ -5,19 +5,37 @@ import { Progress } from '@/components/ui/progress';
 export async function SubjectHeatmap({ userId }: { userId: string }) {
   const supabase = await createClient();
   const { data: subjects } = await supabase.from('subjects').select('id, name, color').limit(5);
+
+  const { data: sessions } = await supabase
+    .from('quiz_sessions')
+    .select('subject_id, score')
+    .eq('user_id', userId)
+    .eq('status', 'COMPLETED')
+    .not('score', 'is', null);
+
+  const scoresBySubject = new Map<string, number[]>();
+  for (const s of sessions || []) {
+    if (!s.subject_id || s.score === null) continue;
+    const arr = scoresBySubject.get(s.subject_id) || [];
+    arr.push(Number(s.score));
+    scoresBySubject.set(s.subject_id, arr);
+  }
+
   return (
     <Card>
       <CardHeader><CardTitle className="text-lg">Subject Performance</CardTitle></CardHeader>
       <CardContent className="space-y-4">
-        {(subjects || []).map((subject, i) => {
-          const score = [85, 72, 90, 65, 78][i] || 70;
+        {(subjects || []).map((subject) => {
+          const scores = scoresBySubject.get(subject.id);
+          const hasData = !!scores && scores.length > 0;
+          const avg = hasData ? Math.round(scores!.reduce((a, b) => a + b, 0) / scores!.length) : 0;
           return (
             <div key={subject.id}>
               <div className="flex items-center justify-between text-sm mb-1.5">
                 <span className="font-medium">{subject.name}</span>
-                <span className="text-muted-foreground">{score}%</span>
+                <span className="text-muted-foreground">{hasData ? `${avg}%` : 'Abhi tak koi quiz nahi'}</span>
               </div>
-              <Progress value={score} indicatorClassName="bg-current" style={{ color: subject.color }} />
+              <Progress value={avg} indicatorClassName="bg-current" style={{ color: subject.color }} />
             </div>
           );
         })}

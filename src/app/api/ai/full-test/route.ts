@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
       '11': { totalMarks: 100, time: 195 }, '12': { totalMarks: 100, time: 195 },
     };
     const classNum = className?.replace(/\D/g, '') || '10';
-    const pattern = BOARD_PATTERNS[classNum] || BOARD_PATTERNS['10'];
+    const pattern = BOARD_PATTERNS[classNum] || BOARD_PATTERNS['10']!;
 
     const prompt = `Generate a complete exam paper for Pakistan board exam:
 Subject: ${subjectName}

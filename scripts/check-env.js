@@ -9,7 +9,10 @@ const required = [
   'AI_GATEWAY_SECRET',
 ];
 const optional = [
-  'STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET',
+  'PADDLE_API_KEY', 'PADDLE_WEBHOOK_SECRET', 'NEXT_PUBLIC_PADDLE_CLIENT_TOKEN',
+  'PADDLE_PRICE_ID_PRO_MONTHLY', 'PADDLE_PRICE_ID_PRO_ANNUAL',
+  'PADDLE_PRICE_ID_ELITE_MONTHLY', 'PADDLE_PRICE_ID_ELITE_ANNUAL',
+  'PAYPRO_API_KEY', 'PAYPRO_WEBHOOK_SECRET',
   'UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN',
   'NEXT_PUBLIC_ADSENSE_CLIENT_ID', 'ADMIN_EMAILS',
   'RESEND_API_KEY',
@@ -27,10 +30,10 @@ required.forEach(key => {
 });
 optional.forEach(key => {
   if (!process.env[key]) {
-    console.warn(`⚠️  MISSING (optional): ${key}`);
+    console.warn(`⚠️ MISSING (optional): ${key}`);
   } else {
     console.log(`✅ ${key}`);
   }
 });
 console.log(ok ? '\n✅ All required env vars are set!\n' : '\n❌ Fix missing required vars before deploying.\n');
-process.exit(ok ? 0 : 1);
+process.exit(ok ? 0 : 1)

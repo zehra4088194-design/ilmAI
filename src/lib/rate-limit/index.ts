@@ -1,6 +1,7 @@
 // ============================================
 // RATE LIMITING (Upstash Redis)
-// Used for: AI messages/day, quizzes/day, OCR scans/day — all tier-based limits
+// Used for: AI messages/day, quizzes/day, OCR scans/day, live voice calls/day
+// — all tier-based limits
 // ============================================
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
@@ -28,12 +29,12 @@ async function checkMemoryLimit(key: string, limit: number, windowMs: number): P
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** Generic daily limiter, used for AI messages, quizzes, and OCR scans. */
-export async function checkDailyLimit(userId: string, feature: 'ai_message' | 'quiz' | 'ocr_scan', limit: number): Promise<{ success: boolean; remaining: number; reset: number }> {
+/** Generic daily limiter, used for AI messages, quizzes, OCR scans, and live voice calls. */
+export async function checkDailyLimit(userId: string, feature: 'ai_message' | 'quiz' | 'ocr_scan' | 'live_voice_call', limit: number): Promise<{ success: boolean; remaining: number; reset: number }> {
   const key = `ratelimit:${feature}:${userId}:${new Date().toISOString().slice(0, 10)}`;
 
   if (redis) {
-    const ratelimit = new Ratelimit({ redis, limiter: Ratelimit.fixedWindow(limit, '1 d'), prefix: 'studyverse' });
+    const ratelimit = new Ratelimit({ redis, limiter: Ratelimit.fixedWindow(limit, '1 d'), prefix: 'ilm-ai' });
     const result = await ratelimit.limit(key);
     return { success: result.success, remaining: result.remaining, reset: result.reset };
   }
@@ -63,9 +64,9 @@ export async function checkQuizLimit(userId: string, tier: SubscriptionTier) {
 // PREMIUM AI MODEL TIER LIMITS (Pro/Elite only)
 // Claude, GPT, and Gemini cost real money per call, so even paid users
 // get a small daily allowance per model SIZE (not per provider):
-//   mini   -> 10 calls/day   (cheap small models)
-//   medium -> 7 calls/day    (mid-size models)
-//   pro    -> 3 calls/day    (largest/most expensive models)
+// mini -> 10 calls/day (cheap small models)
+// medium -> 7 calls/day (mid-size models)
+// pro -> 3 calls/day (largest/most expensive models)
 // Groq is unmetered here — it uses the normal AI-message pool instead,
 // since it's fast/cheap enough to treat as the "default" provider.
 // ============================================
@@ -80,9 +81,22 @@ export async function checkModelTierLimit(userId: string, provider: string, tier
   // Key includes provider so Claude-mini and GPT-mini have separate pools per provider+tier
   const key = `ratelimit:model_tier:${provider}:${tier}:${userId}:${new Date().toISOString().slice(0, 10)}`;
   if (redis) {
-    const ratelimit = new Ratelimit({ redis, limiter: Ratelimit.fixedWindow(limit, '1 d'), prefix: 'studyverse' });
+    const ratelimit = new Ratelimit({ redis, limiter: Ratelimit.fixedWindow(limit, '1 d'), prefix: 'ilm-ai' });
     const result = await ratelimit.limit(key);
     return { success: result.success, remaining: result.remaining, reset: result.reset };
   }
   return checkMemoryLimit(key, limit, DAY_MS);
+}
+
+// ============================================
+// LIVE VOICE CALL (Elite only — real Gemini audio session cost per call)
+// Elite: 15 calls/day. FREE and PRO never reach this check (blocked earlier
+// in the API route by the Elite-only tier gate), but it's handled safely
+// here too in case that check ever changes.
+// ============================================
+const LIVE_VOICE_DAILY_LIMIT_ELITE = 15;
+
+export async function checkLiveVoiceLimit(userId: string, tier: SubscriptionTier) {
+  if (tier !== 'ELITE') return { success: false, remaining: 0, reset: 0 };
+  return checkDailyLimit(userId, 'live_voice_call', LIVE_VOICE_DAILY_LIMIT_ELITE);
 }

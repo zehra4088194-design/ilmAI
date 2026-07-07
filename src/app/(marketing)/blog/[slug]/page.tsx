@@ -3,9 +3,9 @@ import { LandingFooter } from '@/components/features/landing/Footer';
 import { notFound } from 'next/navigation';
 
 const POSTS: Record<string, { title: string; date: string; content: string }> = {
-  'fbise-exam-tips-2026': { title: 'FBISE Exam Ki Tayari Kaise Karein - Complete Guide 2026', date: '2026-05-15', content: 'FBISE exams ki tayari ke liye sabse zaroori cheez hai consistent practice. Past papers solve karo, MCQs ki practice karo, aur apni weak areas identify karo. StudyVerse AI Tutor se concepts clear karo jo samajh nahi aate.' },
+  'fbise-exam-tips-2026': { title: 'FBISE Exam Ki Tayari Kaise Karein - Complete Guide 2026', date: '2026-05-15', content: 'FBISE exams ki tayari ke liye sabse zaroori cheez hai consistent practice. Past papers solve karo, MCQs ki practice karo, aur apni weak areas identify karo. ilm AI Tutor se concepts clear karo jo samajh nahi aate.' },
   'ai-tutoring-benefits': { title: 'AI Tutoring Ke Fawaid Pakistani Students Ke Liye', date: '2026-04-22', content: 'AI tutoring 24/7 available hoti hai, personalized explanations deti hai, aur traditional tuition se kaafi affordable hai. Pakistani students ke liye ye game-changer ban raha hai.' },
-  'time-management-students': { title: 'Students Ke Liye Time Management Tips', date: '2026-03-10', content: 'Pomodoro technique use karo, daily goals set karo, aur distractions minimize karo. StudyVerse ka Study Timer feature isme madad karta hai.' },
+  'time-management-students': { title: 'Students Ke Liye Time Management Tips', date: '2026-03-10', content: 'Pomodoro technique use karo, daily goals set karo, aur distractions minimize karo. ilm AI ka Study Timer feature isme madad karta hai.' },
 };
 
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {

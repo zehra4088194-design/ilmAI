@@ -29,8 +29,8 @@ export function AIProviderSelector({ provider, tier, onChange, isFreeTier, compa
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const activeProvider = AI_PROVIDERS.find((p) => p.id === provider) || AI_PROVIDERS[0];
-  const activeTier = MODEL_TIERS.find((t) => t.id === tier) || MODEL_TIERS[0];
+const activeProvider = AI_PROVIDERS.find((p) => p.id === provider) || AI_PROVIDERS[0]!;
+const activeTier = MODEL_TIERS.find((t) => t.id === tier) || MODEL_TIERS[0]!;
 
   return (
     <div className="relative" ref={ref}>

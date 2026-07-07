@@ -1,20 +1,23 @@
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { gatewayChat, type AiProviderId, type ModelTier } from '@/lib/ai/gateway';
+import { gatewayChat, type AiProviderId, type ModelTier, MARKDOWN_ANSWER_FORMAT_INSTRUCTION } from '@/lib/ai/gateway';
 import { checkAiMessageLimit, checkModelTierLimit } from '@/lib/rate-limit';
 import type { SubscriptionTier } from '@/types';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
 
-const SYSTEM_PROMPT = `You are StudyVerse AI, an expert tutor for Pakistani students (Grades 9-12, O/A Levels, FBISE & provincial boards).
+function buildSystemPrompt(subject?: string) {
+  return `You are ilm AI, an expert tutor for Pakistani students (Grades 9-12, O/A Levels, FBISE & provincial boards).${subject ? `\nThe student has chosen to focus this session on: ${subject}. Keep your answers scoped to that subject unless they explicitly ask about something else.` : ''}
 Rules:
 - Explain concepts clearly, step by step
 - Mix English with Roman Urdu phrases naturally when it helps understanding
 - For MCQs: explain why each option is right/wrong
 - For math/physics: show full working
 - Be encouraging and patient
-- Keep responses focused and well-formatted with markdown`;
+
+${MARKDOWN_ANSWER_FORMAT_INSTRUCTION}`;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,7 +30,7 @@ export async function POST(req: NextRequest) {
     const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
     const userTier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
 
-    const { message, history = [], provider: requestedProvider, tier: requestedTier } = await req.json();
+    const { message, history = [], provider: requestedProvider, tier: requestedTier, subject } = await req.json();
     if (!message || typeof message !== 'string') {
       return new Response(JSON.stringify({ error: 'Message required hai' }), { status: 400 });
     }
@@ -54,7 +57,7 @@ export async function POST(req: NextRequest) {
     }
 
     const messages = [
-      { role: 'system' as const, content: SYSTEM_PROMPT },
+      { role: 'system' as const, content: buildSystemPrompt(typeof subject === 'string' ? subject : undefined) },
       ...history.filter((m: { role: string; content: string }) => m.content).map((m: { role: string; content: string }) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
       { role: 'user' as const, content: message },
     ];

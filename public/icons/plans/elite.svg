@@ -1,0 +1,14 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="elite-bg" x1="18" y1="18" x2="110" y2="110" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F59E0B"/>
+      <stop offset="1" stop-color="#EA580C"/>
+    </linearGradient>
+  </defs>
+  <rect x="10" y="10" width="108" height="108" rx="28" fill="url(#elite-bg)"/>
+  <path d="M32 84L38 48L55 63L64 42L73 63L90 48L96 84H32Z" fill="white"/>
+  <path d="M38 92H90" stroke="white" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="38" cy="48" r="5" fill="white"/>
+  <circle cx="64" cy="42" r="5" fill="white"/>
+  <circle cx="90" cy="48" r="5" fill="white"/>
+</svg>

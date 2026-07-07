@@ -6,18 +6,21 @@ import { Menu, X, Zap, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
 import { useAuth } from '@/hooks/auth/useAuth';
-
-const NAV_LINKS = [
-  { label: 'Features', href: '#features' },
-  { label: 'Boards', href: '#boards' },
-  { label: 'Pricing', href: '/pricing' },
-  { label: 'Blog', href: '/blog' },
-];
+import { useTranslations } from '@/providers/I18nProvider';
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const { user } = useAuth();
+  const t = useTranslations();
+
+  const NAV_LINKS = [
+    { label: t('navbar.features'), href: '#features' },
+    { label: t('navbar.boards'), href: '#boards' },
+    { label: t('navbar.pricing'), href: '/pricing' },
+    { label: t('navbar.blog'), href: '/blog' },
+  ];
 
   useEffect(() => {
     const handler = () => setIsScrolled(window.scrollY > 20);
@@ -36,7 +39,7 @@ export function Navbar() {
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/30 group-hover:scale-110 transition-transform">
             <BookOpen className="w-5 h-5 text-white" />
           </div>
-          <span className="font-bold text-xl">Study<span className="gradient-text">Verse</span></span>
+          <span className="font-bold text-xl">ilm <span className="gradient-text">AI</span></span>
         </Link>
         <nav className="hidden md:flex items-center gap-6">
           {NAV_LINKS.map(link => (
@@ -44,18 +47,22 @@ export function Navbar() {
           ))}
         </nav>
         <div className="hidden md:flex items-center gap-3">
+          <LanguageSwitcher />
           {user ? (
-            <Button asChild variant="gradient" size="sm"><Link href="/dashboard"><Zap className="w-4 h-4" />Dashboard</Link></Button>
+            <Button asChild variant="gradient" size="sm"><Link href="/dashboard"><Zap className="w-4 h-4" />{t('navbar.dashboard')}</Link></Button>
           ) : (
             <>
-              <Button asChild variant="ghost" size="sm"><Link href="/login">Login</Link></Button>
-              <Button asChild variant="gradient" size="sm"><Link href="/register"><Zap className="w-4 h-4" />Get Started Free</Link></Button>
+              <Button asChild variant="ghost" size="sm"><Link href="/login">{t('navbar.login')}</Link></Button>
+              <Button asChild variant="gradient" size="sm"><Link href="/register"><Zap className="w-4 h-4" />{t('navbar.getStartedFree')}</Link></Button>
             </>
           )}
         </div>
-        <button className="md:hidden p-2 rounded-lg hover:bg-accent" onClick={() => setIsMobileOpen(!isMobileOpen)}>
-          {isMobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
+        <div className="md:hidden flex items-center gap-1">
+          <LanguageSwitcher />
+          <button className="p-2 rounded-lg hover:bg-accent" onClick={() => setIsMobileOpen(!isMobileOpen)}>
+            {isMobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
       </div>
       <AnimatePresence>
         {isMobileOpen && (
@@ -66,9 +73,9 @@ export function Navbar() {
                 <Link key={link.href} href={link.href} onClick={() => setIsMobileOpen(false)} className="text-sm font-medium py-2 text-muted-foreground hover:text-foreground">{link.label}</Link>
               ))}
               <div className="flex gap-3 pt-2 border-t border-border">
-                {user ? <Button asChild variant="gradient" className="flex-1"><Link href="/dashboard">Dashboard</Link></Button> : (
-                  <><Button asChild variant="outline" className="flex-1"><Link href="/login">Login</Link></Button>
-                  <Button asChild variant="gradient" className="flex-1"><Link href="/register">Start Free</Link></Button></>
+                {user ? <Button asChild variant="gradient" className="flex-1"><Link href="/dashboard">{t('navbar.dashboard')}</Link></Button> : (
+                  <><Button asChild variant="outline" className="flex-1"><Link href="/login">{t('navbar.login')}</Link></Button>
+                  <Button asChild variant="gradient" className="flex-1"><Link href="/register">{t('navbar.startFree')}</Link></Button></>
                 )}
               </div>
             </div>

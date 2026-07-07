@@ -1,0 +1,106 @@
+{
+  "common": {
+    "save": "محفوظ کریں",
+    "saving": "محفوظ ہو رہا ہے...",
+    "cancel": "منسوخ کریں",
+    "loading": "لوڈ ہو رہا ہے..."
+  },
+  "navbar": {
+    "features": "خصوصیات",
+    "boards": "بورڈز",
+    "pricing": "قیمتیں",
+    "blog": "بلاگ",
+    "login": "لاگ ان",
+    "getStartedFree": "مفت شروع کریں",
+    "dashboard": "ڈیش بورڈ",
+    "startFree": "مفت شروع کریں"
+  },
+  "auth": {
+    "login": {
+      "title": "خوش آمدید! 👋",
+      "subtitle": "اپنے اکاؤنٹ میں لاگ ان کریں",
+      "orEmail": "یا ای میل کے ذریعے",
+      "emailPlaceholder": "ای میل ایڈریس",
+      "passwordPlaceholder": "پاس ورڈ",
+      "forgotPassword": "پاس ورڈ بھول گئے؟",
+      "submit": "لاگ ان کریں",
+      "noAccount": "اکاؤنٹ نہیں ہے؟",
+      "registerLink": "رجسٹر کریں"
+    },
+    "register": {
+      "title": "اکاؤنٹ بنائیں 🚀",
+      "subtitle": "مفت میں شامل ہوں، روزانہ 10 AI میسج پائیں!",
+      "student": "طالب علم",
+      "parent": "والدین",
+      "orEmail": "یا ای میل کے ذریعے",
+      "fullNamePlaceholder": "پورا نام",
+      "emailPlaceholder": "ای میل ایڈریس",
+      "boardLabel": "بورڈ",
+      "boardPlaceholder": "بورڈ منتخب کریں",
+      "gradeLabel": "جماعت / کلاس",
+      "gradePlaceholder": "کلاس منتخب کریں",
+      "passwordPlaceholder": "پاس ورڈ (8+ حروف)",
+      "confirmPasswordPlaceholder": "پاس ورڈ دوبارہ لکھیں",
+      "submitStudent": "مفت اکاؤنٹ بنائیں",
+      "submitParent": "والدین کا اکاؤنٹ بنائیں",
+      "haveAccount": "پہلے سے اکاؤنٹ ہے؟",
+      "loginLink": "لاگ ان کریں"
+    }
+  },
+  "dashboard": {
+    "greetingMorning": "صبح بخیر",
+    "greetingAfternoon": "دوپہر بخیر",
+    "greetingEvening": "شام بخیر",
+    "subtitle": "آج کیا سیکھنا ہے؟ چلیں شروع کرتے ہیں۔",
+    "dayStreak": "دن کا اسٹریک!",
+    "keepItUp": "جاری رکھیں!"
+  },
+  "pricing": {
+    "title1": "سادہ، ",
+    "titleHighlight": "سستی",
+    "titleSuffix": " قیمتیں",
+    "subtitle": "پاکستانی طلبہ کے بجٹ کے مطابق پلانز",
+    "monthly": "ماہانہ",
+    "annual": "سالانہ",
+    "save20": "20% بچائیں",
+    "perMonth": "/ماہ",
+    "plans": {
+      "free": {
+        "name": "فری",
+        "badge": null,
+        "cta": "مفت شروع کریں",
+        "features": ["روزانہ 10 AI میسجز", "روزانہ 5 کوئز", "50 فلیش کارڈز", "بنیادی پیش رفت", "کمیونٹی رسائی"]
+      },
+      "pro": {
+        "name": "پرو",
+        "badge": "سب سے مقبول",
+        "cta": "پرو شروع کریں",
+        "features": ["روزانہ 100 AI میسجز", "لامحدود کوئز", "1,000 فلیش کارڈز", "تمام پرانے پیپرز", "PDF ڈاؤن لوڈز", "ترجیحی سپورٹ", "پیش رفت کا تجزیہ"]
+      },
+      "elite": {
+        "name": "ایلیٹ",
+        "badge": "بہترین قیمت",
+        "cta": "ایلیٹ حاصل کریں",
+        "features": ["لامحدود AI میسجز", "ہر چیز لامحدود", "آف لائن موڈ", "والدین کا ڈیش بورڈ", "امتحان کی مشق", "ون آن ون AI سیشنز", "کسٹم اسٹڈی پلانز"]
+      }
+    }
+  },
+  "settings": {
+    "tabs": {
+      "profile": "پروفائل",
+      "parentLink": "والدین کا لنک",
+      "notifications": "اطلاعات",
+      "security": "سیکیورٹی",
+      "appearance": "ظاہری شکل",
+      "language": "زبان"
+    },
+    "language": {
+      "title": "زبان",
+      "description": "ایپ کے لیے اپنی پسندیدہ زبان منتخب کریں۔",
+      "saved": "زبان تبدیل ہو گئی!"
+    }
+  },
+  "languageSwitcher": {
+    "label": "زبان"
+  }
+}

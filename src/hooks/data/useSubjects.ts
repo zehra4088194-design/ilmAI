@@ -20,10 +20,20 @@ export function useSubjects(board?: string, gradeLevel?: string) {
         gradeLevels: s.grade_levels as Subject['gradeLevels'],
         isActive: s.is_active, totalChapters: s.total_chapters,
         totalQuestions: s.total_questions, createdAt: s.created_at,
+        // --- Added by migration 006_ai_features_onboarding.sql ---
+        isOptional: s.is_optional ?? false,
+        stream: s.stream ?? undefined,
       }));
     },
     staleTime: 5 * 60 * 1000,
   });
+}
+
+/** Optional subjects for a given board/grade — used by the AI-personalization
+ *  onboarding modal to let the student pick e.g. Biology vs Computer Science. */
+export function useOptionalSubjects(board?: string, gradeLevel?: string) {
+  const { data, ...rest } = useSubjects(board, gradeLevel);
+  return { data: (data || []).filter(s => s.isOptional), ...rest };
 }
 
 export function useChapters(subjectId?: string) {

@@ -10,6 +10,9 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils/cn';
 import { formatDuration, formatXP, formatRelativeTime } from '@/lib/utils/format';
 import { toast } from 'sonner';
+import { RoutineTestsWidget } from '@/components/ui/RoutineTestsWidget';
+import { ParentMessageThread } from '@/components/ui/ParentMessageThread';
+import { ParentAttachments } from '@/components/ui/ParentAttachments';
 
 interface ParentDashboardClientProps {
   links: any[];
@@ -122,7 +125,7 @@ export function ParentDashboardClient({ links, snapshots, parentId }: ParentDash
                 </Button>
               ) : (
                 <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground">Ye code student ko do — wo Settings mein jaake "Parent Link" mein enter karega:</p>
+                  <p className="text-xs text-muted-foreground">Ye code student ko do — wo Settings mein jaake &ldquo;Parent Link&rdquo; mein enter karega:</p>
                   <div className="flex gap-2">
                     <Input value={inviteCode} readOnly className="font-mono text-center text-lg tracking-widest" />
                     <Button variant="outline" onClick={copyCode}><Copy className="w-4 h-4" /></Button>
@@ -249,6 +252,15 @@ export function ParentDashboardClient({ links, snapshots, parentId }: ParentDash
                     Student ka profile complete nahi — board aur grade set karna baqi hai
                   </div>
                 )}
+
+                {/* Routine tests for this student */}
+                <RoutineTestsWidget studentId={student.id} readOnly />
+
+                {/* Live chat + shared files with this student */}
+                <div className="flex flex-wrap gap-2">
+                  <ParentMessageThread linkId={link.id} currentUserId={parentId} />
+                  <ParentAttachments linkId={link.id} currentUserId={parentId} />
+                </div>
               </CardContent>
             </Card>
           </motion.div>

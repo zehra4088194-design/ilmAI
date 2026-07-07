@@ -69,7 +69,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
           <Send className="w-4 h-4" />
         </Button>
       </div>
-      <p className="text-xs text-muted-foreground text-center mt-2">StudyVerse AI mistakes kar sakta hai. Important info verify kar lena.</p>
+      <p className="text-xs text-muted-foreground text-center mt-2">ilm AI mistakes kar sakta hai. Important info verify kar lena.</p>
     </div>
   );
 }

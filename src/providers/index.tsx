@@ -4,8 +4,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Toaster } from 'sonner';
 import { useState, type ReactNode } from 'react';
+import { I18nProvider } from '@/providers/I18nProvider';
+import type { Locale } from '@/lib/i18n/config';
 
-export function Providers({ children }: { children: ReactNode }) {
+export function Providers({ children, locale }: { children: ReactNode; locale: Locale }) {
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
       queries: { staleTime: 60 * 1000, retry: 1, refetchOnWindowFocus: false },
@@ -15,16 +17,18 @@ export function Providers({ children }: { children: ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange={false}>
-        {children}
-        <Toaster
-          position="top-right"
-          richColors
-          expand
-          duration={4000}
-          toastOptions={{ classNames: { toast: 'glass', title: 'font-semibold', description: 'text-muted-foreground' } }}
-        />
-      </ThemeProvider>
+      <I18nProvider initialLocale={locale}>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange={false}>
+          {children}
+          <Toaster
+            position="top-right"
+            richColors
+            expand
+            duration={4000}
+            toastOptions={{ classNames: { toast: 'glass', title: 'font-semibold', description: 'text-muted-foreground' } }}
+          />
+        </ThemeProvider>
+      </I18nProvider>
       {process.env.NODE_ENV === 'development' && <ReactQueryDevtools initialIsOpen={false} />}
     </QueryClientProvider>
   );

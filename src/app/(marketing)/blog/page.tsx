@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { Navbar } from '@/components/features/landing/Navbar';
 import { LandingFooter } from '@/components/features/landing/Footer';
-export const metadata: Metadata = { title: 'Blog - StudyVerse AI' };
+export const metadata: Metadata = { title: 'Blog - ilm AI' };
 
 const POSTS = [
   { slug: 'fbise-exam-tips-2026', title: 'FBISE Exam Ki Tayari Kaise Karein - Complete Guide 2026', excerpt: 'Board exams ke liye proven strategies aur study techniques.', date: '2026-05-15' },
@@ -15,7 +15,7 @@ export default function BlogPage() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <main className="pt-32 pb-20 container mx-auto px-4 max-w-3xl">
-        <h1 className="text-4xl font-bold mb-10">StudyVerse Blog</h1>
+        <h1 className="text-4xl font-bold mb-10">ilm AI Blog</h1>
         <div className="space-y-6">
           {POSTS.map(post => (
             <Link key={post.slug} href={`/blog/${post.slug}`} className="block glass rounded-xl p-6 border border-border/50 hover:border-violet-500/30 transition-colors">

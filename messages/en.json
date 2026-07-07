@@ -1,0 +1,106 @@
+{
+  "common": {
+    "save": "Save Changes",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "loading": "Loading..."
+  },
+  "navbar": {
+    "features": "Features",
+    "boards": "Boards",
+    "pricing": "Pricing",
+    "blog": "Blog",
+    "login": "Login",
+    "getStartedFree": "Get Started Free",
+    "dashboard": "Dashboard",
+    "startFree": "Start Free"
+  },
+  "auth": {
+    "login": {
+      "title": "Welcome Back! 👋",
+      "subtitle": "Login to your account",
+      "orEmail": "Or with email",
+      "emailPlaceholder": "Email address",
+      "passwordPlaceholder": "Password",
+      "forgotPassword": "Forgot password?",
+      "submit": "Login",
+      "noAccount": "Don't have an account?",
+      "registerLink": "Register"
+    },
+    "register": {
+      "title": "Create Account 🚀",
+      "subtitle": "Join for free, get 10 AI messages every day!",
+      "student": "Student",
+      "parent": "Parent",
+      "orEmail": "Or with email",
+      "fullNamePlaceholder": "Full name",
+      "emailPlaceholder": "Email address",
+      "boardLabel": "Board",
+      "boardPlaceholder": "Select board",
+      "gradeLabel": "Grade / Class",
+      "gradePlaceholder": "Select class",
+      "passwordPlaceholder": "Password (8+ chars)",
+      "confirmPasswordPlaceholder": "Confirm password",
+      "submitStudent": "Create Free Account",
+      "submitParent": "Create Parent Account",
+      "haveAccount": "Already have an account?",
+      "loginLink": "Login"
+    }
+  },
+  "dashboard": {
+    "greetingMorning": "Good Morning",
+    "greetingAfternoon": "Good Afternoon",
+    "greetingEvening": "Good Evening",
+    "subtitle": "What do you want to learn today? Let's get started.",
+    "dayStreak": "Day Streak!",
+    "keepItUp": "Keep it up!"
+  },
+  "pricing": {
+    "title1": "Simple, ",
+    "titleHighlight": "Affordable",
+    "titleSuffix": " Pricing",
+    "subtitle": "Plans that fit a Pakistani student's budget",
+    "monthly": "Monthly",
+    "annual": "Annual",
+    "save20": "Save 20%",
+    "perMonth": "/month",
+    "plans": {
+      "free": {
+        "name": "Free",
+        "badge": null,
+        "cta": "Start Free",
+        "features": ["10 AI messages/day", "5 quizzes/day", "50 flashcards", "Basic progress", "Community access"]
+      },
+      "pro": {
+        "name": "Pro",
+        "badge": "Most Popular",
+        "cta": "Start Pro",
+        "features": ["100 AI messages/day", "Unlimited quizzes", "1,000 flashcards", "All past papers", "PDF downloads", "Priority support", "Progress analytics"]
+      },
+      "elite": {
+        "name": "Elite",
+        "badge": "Best Value",
+        "cta": "Go Elite",
+        "features": ["Unlimited AI messages", "Unlimited everything", "Offline mode", "Parent dashboard", "Exam simulations", "1-on-1 AI sessions", "Custom study plans"]
+      }
+    }
+  },
+  "settings": {
+    "tabs": {
+      "profile": "Profile",
+      "parentLink": "Parent Link",
+      "notifications": "Notifications",
+      "security": "Security",
+      "appearance": "Appearance",
+      "language": "Language"
+    },
+    "language": {
+      "title": "Language",
+      "description": "Choose your preferred language for the app interface.",
+      "saved": "Language updated!"
+    }
+  },
+  "languageSwitcher": {
+    "label": "Language"
+  }
+}

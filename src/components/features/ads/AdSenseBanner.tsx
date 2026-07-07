@@ -16,10 +16,6 @@ declare global {
 /**
  * Shows Google AdSense ads to FREE tier users only.
  * Pro/Elite users see nothing — no layout shift, no wasted space.
- * Configure your client ID and slot IDs in .env.local:
- *   NEXT_PUBLIC_ADSENSE_CLIENT_ID=ca-pub-XXXXXXXXXXXXXXXX
- *   NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR=XXXXXXXXXX
- *   NEXT_PUBLIC_ADSENSE_SLOT_INLINE=XXXXXXXXXX
  */
 export function AdSenseBanner({ slot, className = '' }: AdSenseBannerProps) {
   const { user } = useAuth();
@@ -31,18 +27,19 @@ export function AdSenseBanner({ slot, className = '' }: AdSenseBannerProps) {
     ? process.env.NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR
     : process.env.NEXT_PUBLIC_ADSENSE_SLOT_INLINE;
 
-  // Only show ads to free-tier (or not-yet-loaded) users
   const isPaid = user && user.subscriptionTier !== 'FREE';
-  if (isPaid || !clientId || !slotId) return null;
+  const shouldShow = !isPaid && !!clientId && !!slotId;
 
   useEffect(() => {
-    if (pushed.current) return;
+    if (!shouldShow || pushed.current) return;
     try {
       window.adsbygoogle = window.adsbygoogle || [];
       window.adsbygoogle.push({});
       pushed.current = true;
     } catch {}
-  }, []);
+  }, [shouldShow]);
+
+  if (!shouldShow) return null;
 
   return (
     <div ref={adRef} className={`overflow-hidden ${className}`}>

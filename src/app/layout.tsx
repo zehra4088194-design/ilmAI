@@ -2,25 +2,26 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, Geist_Mono } from 'next/font/google';
 import Script from 'next/script';
 import '@/styles/globals.css';
+import 'katex/dist/katex.min.css';
 import { Providers } from '@/providers';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
 const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono', display: 'swap' });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://studyverse.ai'),
-  title: { default: 'StudyVerse AI - Pakistan ka #1 AI Study Platform', template: '%s | StudyVerse AI' },
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://ilm.ai'),
+  title: { default: 'ilm AI - Pakistan ka #1 AI Study Platform', template: '%s | ilm AI' },
   description: 'Pakistan ka sabse advanced AI-powered study platform. FBISE, Punjab, Sindh, KPK boards ke liye MCQs, AI Tutor, Past Papers aur bahut kuch. Free mein start karo!',
-  keywords: ['studyverse', 'Pakistan study', 'FBISE', 'Punjab board', 'matric', 'inter', 'MCQ', 'AI tutor', 'past papers'],
-  authors: [{ name: 'StudyVerse AI Team' }],
-  creator: 'StudyVerse AI',
+  keywords: ['ilm-ai', 'Pakistan study', 'FBISE', 'Punjab board', 'matric', 'inter', 'MCQ', 'AI tutor', 'past papers'],
+  authors: [{ name: 'ilm AI Team' }],
+  creator: 'ilm AI',
   openGraph: {
-    type: 'website', locale: 'en_PK', url: 'https://studyverse.ai', siteName: 'StudyVerse AI',
-    title: 'StudyVerse AI - Pakistan ka #1 AI Study Platform',
+    type: 'website', locale: 'en_PK', url: 'https://ilm.ai', siteName: 'ilm AI',
+    title: 'ilm AI - Pakistan ka #1 AI Study Platform',
     description: 'AI-powered MCQ practice, tutoring, and past papers for Pakistani students.',
     images: [{ url: '/images/og/og-default.png', width: 1200, height: 630 }],
   },
-  twitter: { card: 'summary_large_image', site: '@studyverse_ai' },
+  twitter: { card: 'summary_large_image', site: '@ilm_ai' },
   robots: { index: true, follow: true },
   icons: { icon: '/favicon.ico', apple: '/icons/apple-touch-icon.png' },
   manifest: '/manifest.json',
@@ -46,7 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         )}
       </head>
       <body className={`${inter.variable} ${geistMono.variable} font-sans antialiased`}>
-        <Providers>{children}</Providers>
+        <Providers locale="en">{children}</Providers>
       </body>
     </html>
   );

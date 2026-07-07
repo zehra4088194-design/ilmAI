@@ -20,7 +20,7 @@ export function AdminSidebar() {
     <aside className="hidden lg:flex fixed left-0 top-0 h-full w-64 bg-sidebar flex-col border-r border-sidebar-border z-40">
       <div className="p-6 border-b border-sidebar-border">
         <p className="font-bold text-sidebar-foreground">Admin Panel</p>
-        <p className="text-xs text-sidebar-foreground/50">StudyVerse AI</p>
+        <p className="text-xs text-sidebar-foreground/50">ilm AI</p>
       </div>
       <nav className="flex-1 p-4 space-y-1">
         {ADMIN_NAV.map(item => {

@@ -1,4 +1,6 @@
 import { Metadata } from 'next';
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
 import { Navbar } from '@/components/features/landing/Navbar';
 import { HeroSection } from '@/components/features/landing/HeroSection';
 import { StatsSection } from '@/components/features/landing/StatsSection';
@@ -10,11 +12,20 @@ import { FaqSection } from '@/components/features/landing/FaqSection';
 import { LandingFooter } from '@/components/features/landing/Footer';
 
 export const metadata: Metadata = {
-  title: 'StudyVerse AI - Pakistan ka #1 AI Study Platform',
-  description: 'AI-powered MCQ practice, tutoring, and past papers for Pakistani students. Free mein start karo!',
+  title: 'ilm AI - Pakistan aur India ka #1 AI Study Platform',
+  description: 'AI-powered MCQ practice, tutoring, and past papers for Pakistani and Indian students. Free mein start karo!',
 };
 
-export default function HomePage() {
+export default async function HomePage() {
+  // Already logged in? Skip the marketing page entirely and go straight to
+  // the dashboard — a returning, authenticated visitor should never land
+  // back on the landing page.
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    redirect('/dashboard');
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />

@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X, Send, Brain, Minimize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,12 +12,20 @@ import { cn } from '@/lib/utils/cn';
 
 interface SideChatMessage { id: string; role: 'user' | 'assistant'; content: string }
 
+// Pages where the student is actively answering MCQs/questions — the floating
+// widget would sit on top of options/timers, so we hide it on these routes.
+// Uses startsWith so it also covers nested routes like /mcq/[subjectId].
+const HIDE_ON_ROUTES = ['/mcq', '/practice', '/full-test', '/guess-paper'];
+
 /**
- * Floating quick-help chat, available on every dashboard/marketing page.
+ * Floating quick-help chat, available on every dashboard/marketing page
+ * EXCEPT active question-answering pages (MCQ practice, full test, guess
+ * paper) — see HIDE_ON_ROUTES above.
  * Separate from the full AI Tutor — this is for quick questions without
  * leaving the current page. Free tier = Groq only, same shared daily quota.
  */
 export function SideChatWidget() {
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<SideChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -28,6 +37,9 @@ export function SideChatWidget() {
   const isFreeTier = !user || user.subscriptionTier === 'FREE';
 
   useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+
+  const shouldHide = HIDE_ON_ROUTES.some((route) => pathname?.startsWith(route));
+  if (shouldHide) return null;
 
   const handleSend = async () => {
     const text = input.trim();
@@ -88,7 +100,7 @@ export function SideChatWidget() {
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center"><Brain className="w-4 h-4 text-white" /></div>
               <div className="flex-1">
                 <p className="text-sm font-semibold">Quick Help</p>
-                <p className="text-[10px] text-muted-foreground">Side chat · koi bhi sawal pucho</p>
+                <p className="text-[10px] text-muted-foreground">Side chat · koi bhi sawal puchho</p>
               </div>
               <AIProviderSelector provider={provider} tier={tier} onChange={(p, t) => { setProvider(p); setTier(t); }} isFreeTier={isFreeTier} compact />
               <button onClick={() => setIsOpen(false)} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
@@ -98,7 +110,7 @@ export function SideChatWidget() {
             <div className="flex-1 overflow-y-auto p-3 space-y-3">
               {messages.length === 0 && (
                 <div className="text-center py-8 px-4">
-                  <p className="text-sm text-muted-foreground">Yahan se quick sawal pucho, AI Tutor page par jaane ki zaroorat nahi.</p>
+                  <p className="text-sm text-muted-foreground">Yahan se quick sawal puchho, AI Tutor page par jaane ki zaroorat nahi.</p>
                 </div>
               )}
               {messages.map((m) => (

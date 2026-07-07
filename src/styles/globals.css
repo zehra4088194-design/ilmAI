@@ -9,8 +9,9 @@
   --brand-secondary: 210 100% 56%;
   --brand-accent: 171 100% 41%;
 
-  /* Semantic Colors */
-  --background: 0 0% 100%;
+  /* Semantic Colors — Light mode: soft, warm off-white instead of stark white,
+     so cards/glass surfaces have something to contrast against. */
+  --background: 250 33% 98%;
   --foreground: 222 47% 11%;
   --card: 0 0% 100%;
   --card-foreground: 222 47% 11%;
@@ -18,16 +19,16 @@
   --popover-foreground: 222 47% 11%;
   --primary: 262 80% 58%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 210 40% 96%;
+  --secondary: 250 40% 95%;
   --secondary-foreground: 222 47% 11%;
-  --muted: 210 40% 96%;
-  --muted-foreground: 215 16% 47%;
-  --accent: 210 40% 96%;
-  --accent-foreground: 222 47% 11%;
+  --muted: 250 30% 95%;
+  --muted-foreground: 222 15% 42%;
+  --accent: 262 60% 95%;
+  --accent-foreground: 262 80% 30%;
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
-  --border: 214 32% 91%;
-  --input: 214 32% 91%;
+  --border: 250 20% 89%;
+  --input: 250 20% 89%;
   --ring: 262 80% 58%;
 
   /* Chart Colors */
@@ -51,24 +52,25 @@
 }
 
 .dark {
-  --background: 222 47% 6%;
+  /* Dark mode: near-black with a violet tint so the particle field pops. */
+  --background: 250 40% 5%;
   --foreground: 210 40% 98%;
-  --card: 222 47% 9%;
+  --card: 250 35% 8%;
   --card-foreground: 210 40% 98%;
-  --popover: 222 47% 9%;
+  --popover: 250 35% 8%;
   --popover-foreground: 210 40% 98%;
   --primary: 262 80% 68%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 222 47% 14%;
+  --secondary: 250 30% 13%;
   --secondary-foreground: 210 40% 98%;
-  --muted: 222 47% 14%;
+  --muted: 250 30% 13%;
   --muted-foreground: 215 20% 65%;
-  --accent: 222 47% 14%;
+  --accent: 250 30% 15%;
   --accent-foreground: 210 40% 98%;
   --destructive: 0 62% 50%;
   --destructive-foreground: 0 0% 100%;
-  --border: 222 47% 14%;
-  --input: 222 47% 14%;
+  --border: 250 25% 15%;
+  --input: 250 25% 15%;
   --ring: 262 80% 68%;
   --chart-1: 262 80% 68%;
   --chart-2: 210 100% 66%;
@@ -103,19 +105,32 @@
 }
 
 * { @apply border-border; }
-body { @apply bg-background text-foreground; font-feature-settings: "rlig" 1, "calt" 1; }
+body {
+  @apply bg-background text-foreground;
+  font-feature-settings: "rlig" 1, "calt" 1;
+  /* Soft radial glow behind content — subtle in light mode, richer in dark mode */
+  background-image: radial-gradient(circle at 15% 0%, hsl(var(--brand-primary) / 0.10), transparent 45%),
+                     radial-gradient(circle at 85% 20%, hsl(var(--brand-secondary) / 0.08), transparent 40%);
+  background-attachment: fixed;
+}
+.dark body {
+  background-image: radial-gradient(circle at 15% 0%, hsl(var(--brand-primary) / 0.18), transparent 45%),
+                     radial-gradient(circle at 85% 20%, hsl(var(--brand-secondary) / 0.14), transparent 40%);
+}
 
 /* Glass morphism utility */
 .glass {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(17, 24, 39, 0.06);
+  box-shadow: 0 4px 24px rgba(17, 24, 39, 0.04);
 }
 
 .dark .glass {
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(20, 14, 38, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
 }
 
 /* Gradient text */
@@ -148,3 +163,140 @@ body { @apply bg-background text-foreground; font-feature-settings: "rlig" 1, "c
 .animate-shimmer { animation: shimmer 2s linear infinite; background: linear-gradient(90deg, transparent, hsl(var(--muted-foreground) / 0.1), transparent); background-size: 200% 100%; }
 .animate-float { animation: float 3s ease-in-out infinite; }
 .animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+
+/* ============================================
+   AI ANSWER — DOCUMENT-STYLE RENDERING
+   Used by <AiAnswerRenderer> everywhere a longer AI-generated answer is
+   shown to a student (Doubt Board replies, AI Tutor full-page chat, quiz
+   explanations, full-test feedback, routine explanations). The floating
+   site-wide quick-chat widget deliberately does NOT use these classes.
+   ============================================ */
+.ai-doc {
+  background: linear-gradient(180deg, hsl(var(--brand-primary) / 0.05), transparent 40%);
+  border: 1px solid hsl(var(--brand-primary) / 0.18);
+  border-radius: var(--radius-lg);
+}
+.dark .ai-doc { background: linear-gradient(180deg, hsl(var(--brand-primary) / 0.10), transparent 40%); }
+
+.ai-doc-body { line-height: 1.75; }
+.ai-doc-body > *:first-child { margin-top: 0 !important; }
+.ai-doc-body > *:last-child { margin-bottom: 0 !important; }
+
+.ai-doc-body h1,
+.ai-doc-body h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 1.1rem 0 0.5rem;
+  color: hsl(var(--foreground));
+}
+.ai-doc-body h3 {
+  font-size: 0.925rem;
+  font-weight: 700;
+  margin: 1rem 0 0.4rem;
+  color: hsl(var(--foreground));
+}
+.ai-doc-body h4 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 0.85rem 0 0.35rem;
+  color: hsl(var(--brand-primary));
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.ai-doc-body p { margin: 0.6rem 0; }
+.ai-doc-body strong { color: hsl(var(--foreground)); font-weight: 700; }
+
+.ai-doc-body ul,
+.ai-doc-body ol {
+  margin: 0.6rem 0;
+  padding-left: 0;
+  list-style: none;
+}
+.ai-doc-body ul > li,
+.ai-doc-body ol > li {
+  position: relative;
+  padding-left: 1.75rem;
+  margin: 0.45rem 0;
+}
+.ai-doc-body ul > li::before {
+  content: '';
+  position: absolute;
+  left: 0.35rem;
+  top: 0.6rem;
+  width: 5px;
+  height: 5px;
+  border-radius: 9999px;
+  background: hsl(var(--brand-primary) / 0.7);
+}
+/* Numbered steps get a small circular badge instead of a plain number,
+   and a subtle left border so a multi-step solution is easy to scan. */
+.ai-doc-body ol {
+  counter-reset: ai-step;
+  border-left: 2px solid hsl(var(--brand-primary) / 0.18);
+  margin-left: 0.2rem;
+}
+.ai-doc-body ol > li {
+  counter-increment: ai-step;
+  padding-left: 2.1rem;
+}
+.ai-doc-body ol > li::before {
+  content: counter(ai-step);
+  position: absolute;
+  left: -0.85rem;
+  top: -0.05rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 9999px;
+  background: hsl(var(--brand-primary));
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ai-doc-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+  font-size: 0.825rem;
+}
+.ai-doc-body th,
+.ai-doc-body td {
+  border: 1px solid hsl(var(--border));
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+}
+.ai-doc-body th { background: hsl(var(--muted)); font-weight: 600; }
+
+.ai-doc-body code {
+  background: hsl(var(--muted));
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.25rem;
+  font-size: 0.8em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.ai-doc-body pre {
+  background: hsl(var(--muted));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  overflow-x: auto;
+  margin: 0.75rem 0;
+}
+.ai-doc-body pre code { background: transparent; padding: 0; font-size: 0.8rem; }
+
+.ai-doc-body blockquote {
+  border-left: 3px solid hsl(var(--brand-secondary) / 0.5);
+  padding-left: 0.85rem;
+  margin: 0.75rem 0;
+  color: hsl(var(--muted-foreground));
+  font-style: italic;
+}
+
+.ai-doc-body hr { border-color: hsl(var(--border)); margin: 1rem 0; }
+
+/* KaTeX sizing tweaks so formulas match the surrounding document text */
+.ai-doc-body .katex { font-size: 1.02em; }
+.ai-doc-body .katex-display { margin: 0.85rem 0; overflow-x: auto; overflow-y: hidden; }

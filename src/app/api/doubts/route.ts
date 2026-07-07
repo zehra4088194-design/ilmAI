@@ -21,11 +21,11 @@ export async function POST(req: NextRequest) {
 
     // Auto-generate an AI teacher reply (teacher is AI-operated, student can't tell)
     try {
-      const { gatewayChat } = await import('@/lib/ai/gateway');
+      const { gatewayChat, MARKDOWN_ANSWER_FORMAT_INSTRUCTION } = await import('@/lib/ai/gateway');
       const aiReply = await gatewayChat({
         provider: 'groq', tier: 'medium',
         messages: [
-          { role: 'system', content: 'You are an expert Pakistani board exam teacher (Class 9-12). Answer student doubts clearly, patiently, and encouragingly. Use simple English with some Roman Urdu. Format your answer with numbered steps or bullet points when explaining a process. Be thorough but concise.' },
+          { role: 'system', content: `You are an expert Pakistani board exam teacher (Class 9-12). Answer student doubts clearly, patiently, and encouragingly. Use simple English with some Roman Urdu. Be thorough but concise.\n\n${MARKDOWN_ANSWER_FORMAT_INSTRUCTION}` },
           { role: 'user', content: `Student question: ${title}\n\nDetails: ${body}` },
         ],
         maxTokens: 1024, temperature: 0.6,

@@ -1,8 +1,8 @@
 // ============================================
-// STUDYVERSE AI - GLOBAL TYPES
+// ILM AI - GLOBAL TYPES
 // ============================================
 
-export type Board = 'FBISE' | 'BISE_LHR' | 'BISE_KHI' | 'BISE_RWP' | 'BISE_FSD' | 'AKU' | 'OTHER';
+export type Board = 'FBISE' | 'BISE_LHR' | 'BISE_KHI' | 'BISE_RWP' | 'BISE_FSD' | 'AKU' | 'CBSE' | 'ICSE' | 'STATE_BOARD_IN' | 'OTHER';
 export type GradeLevel = 'GRADE_9' | 'GRADE_10' | 'GRADE_11' | 'GRADE_12' | 'O_LEVEL' | 'A_LEVEL';
 export type SubscriptionTier = 'FREE' | 'PRO' | 'ELITE';
 export type QuestionType = 'MCQ' | 'SHORT' | 'LONG' | 'FILL_BLANK' | 'TRUE_FALSE';
@@ -12,7 +12,7 @@ export type AiProvider = 'groq' | 'anthropic' | 'openai';
 export type ConversationRole = 'user' | 'assistant' | 'system';
 
 export type AiProviderId = 'groq' | 'claude' | 'gpt' | 'gemini';
-export type UserRole = 'student' | 'teacher' | 'admin';
+export type UserRole = 'student' | 'parent' | 'teacher' | 'admin';
 
 // User & Profile
 export interface UserProfile {
@@ -40,6 +40,15 @@ export interface UserProfile {
   aiPersonaProvider?: AiProviderId;
   createdAt: string;
   updatedAt: string;
+  // --- Added by migration 006_ai_features_onboarding.sql ---
+  // Gates the one-time AI-personalization modal (target marks, optional
+  // subjects, previous roll number). Kept separate from isProfileComplete,
+  // which continues to mean "board + grade set at signup".
+  aiOnboardingComplete: boolean;
+  targetMarksPercentage?: number;
+  totalMarksPercentage?: number;
+  previousRollNumber?: string;
+  optionalSubjectIds: string[];
 }
 
 // Subject & Content
@@ -57,6 +66,9 @@ export interface Subject {
   totalChapters: number;
   totalQuestions: number;
   createdAt: string;
+  // --- Added by migration 006_ai_features_onboarding.sql ---
+  isOptional: boolean;
+  stream?: string; // 'pre-medical' | 'pre-engineering' | 'computer-science' | 'arts' | 'commerce'
 }
 
 export interface Chapter {
@@ -421,3 +433,33 @@ export interface StudyRoutine {
   createdAt: string;
   updatedAt: string;
 }
+
+// ============================================
+// AI SUBJECTIVE PAPER CHECKER (Feature 2)
+// Added alongside migration 006_ai_features_onboarding.sql
+// ============================================
+export type PaperCheckInputType = 'text' | 'image';
+
+export interface PaperCheckResult {
+  id: string;
+  studentId: string;
+  subjectId?: string;
+  inputType: PaperCheckInputType;
+  questionText?: string;
+  answerText?: string;
+  imageUrl?: string;
+  marksObtained: number;
+  marksTotal: number;
+  missingElements: string[];
+  feedback: string;
+  provider: string;
+  createdAt: string;
+}
+
+export const OPTIONAL_SUBJECT_STREAMS = [
+  { value: 'pre-medical', label: 'Pre-Medical' },
+  { value: 'pre-engineering', label: 'Pre-Engineering' },
+  { value: 'computer-science', label: 'Computer Science' },
+  { value: 'arts', label: 'Arts / Humanities' },
+  { value: 'commerce', label: 'Commerce' },
+] as const;
