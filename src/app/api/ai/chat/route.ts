@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { gatewayChat, type AiProviderId, type ModelTier, MARKDOWN_ANSWER_FORMAT_INSTRUCTION } from '@/lib/ai/gateway';
+import { gatewayChat, GatewayError, type AiProviderId, type ModelTier, MARKDOWN_ANSWER_FORMAT_INSTRUCTION } from '@/lib/ai/gateway';
 import { checkAiMessageLimit, checkModelTierLimit } from '@/lib/rate-limit';
 import type { SubscriptionTier } from '@/types';
 
@@ -89,6 +89,9 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error('AI chat error:', error);
+    if (error instanceof GatewayError) {
+      return new Response(JSON.stringify({ error: error.message }), { status: error.status === 401 || error.status === 403 ? 502 : 500 });
+    }
     return new Response(JSON.stringify({ error: 'AI response generate nahi ho saka. Dobara try karo.' }), { status: 500 });
   }
 }

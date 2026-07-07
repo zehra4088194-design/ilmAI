@@ -16,6 +16,18 @@ export type ModelTier = 'mini' | 'medium' | 'pro';
 const GATEWAY_URL = process.env.AI_GATEWAY_URL || 'https://ilm-ai1.noorhusnain791.workers.dev';
 const GATEWAY_SECRET = process.env.AI_GATEWAY_SECRET || '';
 
+export class GatewayError extends Error {
+  status: number;
+  details?: unknown;
+
+  constructor(message: string, status: number, details?: unknown) {
+    super(message);
+    this.name = 'GatewayError';
+    this.status = status;
+    this.details = details;
+  }
+}
+
 export interface GatewayChatRequest {
   provider: AiProviderId;
   tier: ModelTier;
@@ -41,8 +53,19 @@ async function gatewayFetch(path: string, body: unknown) {
     // Gateway does its own multi-key retries; give it room to work
     signal: AbortSignal.timeout(45000),
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || `Gateway request failed (${res.status})`);
+  const contentType = res.headers.get('content-type') || '';
+  const data = contentType.includes('application/json') ? await res.json() : await res.text();
+  if (!res.ok) {
+    const rawMessage =
+      typeof data === 'string'
+        ? data
+        : (data as { error?: string })?.error || `Gateway request failed (${res.status})`;
+    const message =
+      res.status === 401 || res.status === 403
+        ? 'AI gateway authorization failed. Cloudflare Worker ka GATEWAY_SECRET ya to missing hai, ya app ke AI_GATEWAY_SECRET se mismatch kar raha hai.'
+        : rawMessage;
+    throw new GatewayError(message, res.status, data);
+  }
   return data;
 }
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { mintLiveVoiceToken } from '@/lib/ai/gateway';
+import { GatewayError, mintLiveVoiceToken } from '@/lib/ai/gateway';
 import { checkLiveVoiceLimit } from '@/lib/rate-limit';
 import type { SubscriptionTier } from '@/types';
 
@@ -39,6 +39,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ status: 'success', data: session });
   } catch (error) {
     console.error('Live voice session error:', error);
+    if (error instanceof GatewayError) {
+      return NextResponse.json({ status: 'error', error: error.message }, { status: error.status === 401 || error.status === 403 ? 502 : 500 });
+    }
     return NextResponse.json({ status: 'error', error: 'Voice call start nahi ho saka. Dobara try karo.' }, { status: 500 });
   }
 }
