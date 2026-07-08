@@ -6,7 +6,6 @@ import { Plus, StickyNote, Star } from 'lucide-react';
 import { ScanUpload } from '@/components/features/ocr/ScanUpload';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import { nanoid } from 'nanoid';
 import { toast } from 'sonner';
 import { formatRelativeTime } from '@/lib/utils/format';
 
@@ -17,10 +16,16 @@ export function NotesGrid({ notes, userId }: { notes: any[]; userId: string }) {
 
   const createNote = async (content = '', title = 'New Note') => {
     setCreating(true);
-    const id = nanoid();
-    const { error } = await supabase.from('notes').insert({ id, user_id: userId, title, content, is_starred: false, is_public: false });
-    if (error) { toast.error('Note create nahi hua'); setCreating(false); return; }
-    router.push(`/notes/${id}`);
+    // notes.id is `uuid default uuid_generate_v4()` in the schema, so we let
+    // Postgres generate it and read it back via .select() — don't assign our
+    // own id here (nanoid() strings are NOT valid uuids and fail insertion).
+    const { data, error } = await supabase
+      .from('notes')
+      .insert({ user_id: userId, title, content, is_starred: false, is_public: false })
+      .select('id')
+      .single();
+    if (error || !data) { toast.error('Note create nahi hua'); setCreating(false); return; }
+    router.push(`/notes/${data.id}`);
   };
 
   return (
