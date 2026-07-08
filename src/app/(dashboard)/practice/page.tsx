@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { SubjectSelector } from '@/components/features/quiz/SubjectSelector';
+
 export const metadata: Metadata = { title: 'Practice MCQs' };
 
 export default async function PracticePage() {
@@ -13,11 +14,15 @@ export default async function PracticePage() {
     .eq('is_active', true)
     .order('name');
 
-  const { data: profile } = user
-    ? await supabase.from('profiles').select('grade_level').eq('id', user.id).single()
-    : { data: null };
-
-  const grade = profile?.grade_level || 'GRADE_10';
+  let grade = 'GRADE_10';
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('grade_level')
+      .eq('id', user.id)
+      .single();
+    grade = profile?.grade_level || 'GRADE_10';
+  }
 
   // Fetch chapters for every active subject, then filter to this student's
   // grade client-side per subject (empty grade_levels = visible to all grades,
