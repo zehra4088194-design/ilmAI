@@ -49,33 +49,29 @@ export function RegisterForm() {
   }, [setValue]);
 
   const onSubmit = async (data: FormData) => {
-    if (accountType === 'student' && (!data.board || !data.gradeLevel)) {
-      toast.error('Apna board aur grade/class select karo');
-      return;
-    }
+  if (accountType === 'student' && (!data.board || !data.gradeLevel)) {
+    toast.error('Apna board aur grade/class select karo');
+    return;
+  }
 
-    const { data: signUpData, error } = await supabase.auth.signUp({
-      email: data.email, password: data.password,
-      options: { data: { full_name: data.fullName, role: accountType }, emailRedirectTo: `${window.location.origin}/api/auth/callback` },
-    });
-    if (error) { toast.error(error.message); return; }
+  const { error } = await supabase.auth.signUp({
+    email: data.email,
+    password: data.password,
+    options: {
+      data: {
+        full_name: data.fullName,
+        role: accountType,
+        board: accountType === 'student' ? data.board : undefined,
+        grade_level: accountType === 'student' ? data.gradeLevel : undefined,
+      },
+      emailRedirectTo: `${window.location.origin}/api/auth/callback`,
+    },
+  });
+  if (error) { toast.error(error.message); return; }
 
-    if (signUpData.user) {
-      const updates: Database['public']['Tables']['profiles']['Update'] = {};
-      if (accountType === 'parent') updates.role = 'parent';
-      if (accountType === 'student') {
-        if (data.board) updates.board = data.board;
-        if (data.gradeLevel) updates.grade_level = data.gradeLevel;
-        updates.is_profile_complete = true;
-      }
-      if (Object.keys(updates).length > 0) {
-        await supabase.from('profiles').update(updates).eq('id', signUpData.user.id);
-      }
-    }
-
-    toast.success('Account ban gaya! Email check karo.');
-    router.push('/verify-email');
-  };
+  toast.success('Account ban gaya! Email check karo.');
+  router.push('/verify-email');
+};
 
   return (
     <div>
