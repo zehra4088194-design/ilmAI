@@ -39,9 +39,9 @@ export interface Database {
           id: string; subject_id: string; name: string;
           slug: string; description: string | null; order_index: number;
           is_active: boolean; total_topics: number; total_questions: number;
-          boards: string[]; created_at: string;
+          boards: string[]; grade_levels: string[]; created_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['chapters']['Row'], 'boards' | 'created_at' | 'description' | 'id' | 'is_active' | 'order_index' | 'total_questions' | 'total_topics'> & { boards?: string[]; created_at?: string; description?: string | null; id?: string; is_active?: boolean; order_index?: number; total_questions?: number; total_topics?: number; };
+        Insert: Omit<Database['public']['Tables']['chapters']['Row'], 'boards' | 'created_at' | 'description' | 'grade_levels' | 'id' | 'is_active' | 'order_index' | 'total_questions' | 'total_topics'> & { boards?: string[]; created_at?: string; description?: string | null; grade_levels?: string[]; id?: string; is_active?: boolean; order_index?: number; total_questions?: number; total_topics?: number; };
         Update: Partial<Database['public']['Tables']['chapters']['Insert']>;
         Relationships: [
           {
