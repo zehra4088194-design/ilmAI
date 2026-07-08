@@ -1,127 +1,32 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+import { Landmark } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-
-declare global {
-  interface Window {
-    Paddle?: {
-      Environment?: {
-        set: (environment: 'sandbox') => void;
-      };
-      Initialize: (options: { token: string }) => void;
-      Checkout: {
-        open: (options: {
-          transactionId: string;
-          settings?: {
-            allowLogout?: boolean;
-            displayMode?: 'overlay';
-            locale?: string;
-            successUrl?: string;
-            theme?: 'light';
-          };
-        }) => void;
-      };
-    };
-  }
-}
-
-const PADDLE_SCRIPT_URL = 'https://cdn.paddle.com/paddle/v2/paddle.js';
-
-function loadPaddleScript() {
-  return new Promise<void>((resolve, reject) => {
-    if (window.Paddle) {
-      resolve();
-      return;
-    }
-
-    const existingScript = document.querySelector<HTMLScriptElement>(`script[src="${PADDLE_SCRIPT_URL}"]`);
-    if (existingScript) {
-      existingScript.addEventListener('load', () => resolve(), { once: true });
-      existingScript.addEventListener('error', () => reject(new Error('Paddle script load nahi hui')), {
-        once: true,
-      });
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = PADDLE_SCRIPT_URL;
-    script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error('Paddle script load nahi hui'));
-    document.body.appendChild(script);
-  });
-}
+import { MANUAL_PAYMENT_OPTIONS } from '@/lib/constants';
 
 export function PaddleCheckoutClient() {
-  const searchParams = useSearchParams();
-  const [message, setMessage] = useState('Secure checkout open ho raha hai...');
-
-  const transactionId = searchParams.get('transaction_id');
-  const fallbackOrigin = typeof window !== 'undefined' ? window.location.origin : '';
-  const successUrl = searchParams.get('success_url') || `${fallbackOrigin}/subscription?success=true`;
-  const cancelUrl = searchParams.get('cancel_url') || `${fallbackOrigin}/subscription?canceled=true`;
-
-  useEffect(() => {
-    const token = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
-
-    if (!transactionId) {
-      setMessage('Transaction id missing hai.');
-      return;
-    }
-
-    if (!token) {
-      setMessage('NEXT_PUBLIC_PADDLE_CLIENT_TOKEN set nahi hai.');
-      return;
-    }
-
-    let isMounted = true;
-
-    loadPaddleScript()
-      .then(() => {
-        if (!isMounted || !window.Paddle) return;
-
-        if (token.startsWith('test_')) {
-          window.Paddle.Environment?.set('sandbox');
-        }
-
-        window.Paddle.Initialize({ token });
-        window.Paddle.Checkout.open({
-          transactionId,
-          settings: {
-            allowLogout: false,
-            displayMode: 'overlay',
-            locale: 'en',
-            successUrl,
-            theme: 'light',
-          },
-        });
-      })
-      .catch((error) => {
-        console.error(error);
-        if (isMounted) {
-          setMessage('Checkout open nahi ho saka. Neeche se wapas ja sakte hain.');
-        }
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [successUrl, transactionId]);
-
   return (
     <div className="flex min-h-[70vh] items-center justify-center px-4">
       <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8 text-center shadow-xl">
         <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
-          <Loader2 className="h-6 w-6 animate-spin" />
+          <Landmark className="h-6 w-6" />
         </div>
-        <h1 className="mb-2 text-2xl font-bold">Paddle Checkout</h1>
-        <p className="mb-6 text-sm text-muted-foreground">{message}</p>
+        <h1 className="mb-2 text-2xl font-bold">Manual Payment</h1>
+        <p className="mb-6 text-sm text-muted-foreground">
+          Filhaal online checkout disabled hai. In numbers par payment send karke screenshot zehra4088194@gmail.com
+          par share karein. Within 1 hour your transaction will be verified.
+        </p>
+        <div className="mb-6 space-y-2 text-left">
+          {MANUAL_PAYMENT_OPTIONS.map((option) => (
+            <div key={option.label} className="rounded-2xl border border-border/70 bg-muted/20 px-4 py-3">
+              <p className="text-sm font-semibold">{option.label}</p>
+              <p className="text-sm text-muted-foreground">{option.number}</p>
+            </div>
+          ))}
+        </div>
         <Button asChild variant="outline" className="w-full">
-          <Link href={cancelUrl}>Back to Subscription</Link>
+          <Link href="/subscription">Back to Subscription</Link>
         </Button>
       </div>
     </div>

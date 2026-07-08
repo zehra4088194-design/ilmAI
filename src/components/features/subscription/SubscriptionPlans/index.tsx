@@ -1,26 +1,20 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Check, Crown, Globe2, Landmark, Rocket, Sparkles } from 'lucide-react';
+import { Check, Copy, Crown, Landmark, Rocket, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { SUBSCRIPTION_PLANS, CURRENCY_SYMBOLS, getCurrencyForBoard } from '@/lib/constants';
+import { CURRENCY_SYMBOLS, MANUAL_PAYMENT_OPTIONS, SUBSCRIPTION_PLANS } from '@/lib/constants';
 import { cn } from '@/lib/utils/cn';
 import { toast } from 'sonner';
-import { useAuth } from '@/hooks/auth/useAuth';
-import type { PaymentRegion } from '@/lib/payments';
 
 type BillingCycle = 'monthly' | 'annual';
 
 export function SubscriptionPlans({ currentTier }: { currentTier: string }) {
-  const [loading, setLoading] = useState<string | null>(null);
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
-  const { user } = useAuth();
   const searchParams = useSearchParams();
-
-  const currency = getCurrencyForBoard(user?.board);
-  const symbol = CURRENCY_SYMBOLS[currency];
+  const symbol = CURRENCY_SYMBOLS.PKR;
 
   useEffect(() => {
     if (searchParams.get('success') === 'true') {
@@ -30,28 +24,26 @@ export function SubscriptionPlans({ currentTier }: { currentTier: string }) {
     }
   }, [searchParams]);
 
-  const handleUpgrade = async (tier: string, region: PaymentRegion) => {
-    if (tier === currentTier) return;
-    const loadingKey = `${tier}:${region}:${billingCycle}`;
-    setLoading(loadingKey);
+  const copyNumber = async (value: string) => {
     try {
-      const res = await fetch('/api/payments/create-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tier, region, billingCycle }),
-      });
-      const json = await res.json();
-      if (json.url) window.location.href = json.url;
-      else toast.error(json.error || 'Checkout start nahi ho saka');
+      await navigator.clipboard.writeText(value);
+      toast.success(`Number copy ho gaya: ${value}`);
     } catch {
-      toast.error('Kuch ghalat ho gaya');
-    } finally {
-      setLoading(null);
+      toast.error('Number copy nahi ho saka');
     }
   };
 
   return (
     <div className="space-y-6">
+      <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100">
+        <p className="font-semibold text-amber-200">Manual payments only</p>
+        <p className="mt-1 text-amber-100/90">
+          Filhaal international/card checkout hide hai. Abhi sirf Easypaisa aur JazzCash par manual payment
+          accept ki ja rahi hai. Payment bhejne ke baad screenshot `zehra4088194@gmail.com` par bhej dein.
+          Within 1 hour your transaction will be verified.
+        </p>
+      </div>
+
       <div className="inline-flex items-center gap-3 rounded-full border border-border bg-background/70 p-1.5">
         <button
           onClick={() => setBillingCycle('monthly')}
@@ -80,10 +72,9 @@ export function SubscriptionPlans({ currentTier }: { currentTier: string }) {
         {Object.entries(SUBSCRIPTION_PLANS).map(([key, plan]) => {
           const isCurrent = currentTier === key;
           const isFree = key === 'FREE';
-          const pricing = plan.price[currency];
-          const displayPrice =
-            billingCycle === 'annual' && !isFree ? pricing.annual : pricing.monthly;
-          const priceSuffix = billingCycle === 'annual' && !isFree ? '/yr' : '/mo';
+          const pricing = plan.price.PKR;
+          const displayPrice = billingCycle === 'annual' && !isFree ? pricing.annual : pricing.monthly;
+          const priceSuffix = billingCycle === 'annual' && !isFree ? '/year' : '/mo';
           const monthlyEquivalent =
             billingCycle === 'annual' && !isFree ? Math.round(pricing.annual / 12) : null;
           const PlanIcon = key === 'FREE' ? Sparkles : key === 'PRO' ? Rocket : Crown;
@@ -128,13 +119,13 @@ export function SubscriptionPlans({ currentTier }: { currentTier: string }) {
                 <div className="mb-4">
                   <p className="text-3xl font-bold">
                     {symbol}
-                    {displayPrice}
+                    {displayPrice.toLocaleString()}
                     <span className="text-sm font-normal text-muted-foreground">{priceSuffix}</span>
                   </p>
                   {monthlyEquivalent !== null && (
                     <p className="mt-1 text-sm text-muted-foreground">
                       {symbol}
-                      {monthlyEquivalent}/mo effective
+                      {monthlyEquivalent.toLocaleString()}/mo effective
                     </p>
                   )}
                 </div>
@@ -152,25 +143,39 @@ export function SubscriptionPlans({ currentTier }: { currentTier: string }) {
                     {isCurrent ? 'Current Plan' : 'Free Plan'}
                   </Button>
                 ) : (
-                  <div className="space-y-2">
-                    <Button
-                      variant="gradient"
-                      className="w-full"
-                      loading={loading === `${key}:INTERNATIONAL:${billingCycle}`}
-                      onClick={() => handleUpgrade(key, 'INTERNATIONAL')}
-                    >
-                      <Globe2 className="h-4 w-4" />
-                      International Payment
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      loading={loading === `${key}:PAKISTAN:${billingCycle}`}
-                      onClick={() => handleUpgrade(key, 'PAKISTAN')}
-                    >
-                      <Landmark className="h-4 w-4" />
-                      Pakistan Payment
-                    </Button>
+                  <div className="space-y-3 rounded-2xl border border-border/70 bg-muted/20 p-4">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                      <Landmark className="h-4 w-4 text-violet-400" />
+                      Manual payment details
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {plan.name} {billingCycle === 'annual' ? 'Yearly' : 'Monthly'} ke liye{' '}
+                      <span className="font-semibold text-foreground">
+                        {symbol}
+                        {displayPrice.toLocaleString()}
+                      </span>{' '}
+                      send karein.
+                    </p>
+                    <div className="space-y-2">
+                      {MANUAL_PAYMENT_OPTIONS.map((option) => (
+                        <button
+                          key={option.label}
+                          type="button"
+                          onClick={() => copyNumber(option.number)}
+                          className="flex w-full items-center justify-between rounded-xl border border-border/70 bg-background/80 px-3 py-2 text-left transition-colors hover:border-violet-500/40"
+                        >
+                          <div>
+                            <p className="text-sm font-semibold">{option.label}</p>
+                            <p className="text-xs text-muted-foreground">{option.number}</p>
+                          </div>
+                          <Copy className="h-4 w-4 text-muted-foreground" />
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[11px] leading-5 text-muted-foreground">
+                      Payment screenshot aur apna account email `zehra4088194@gmail.com` par bhej dein. Within 1 hour
+                      your transaction will be verified.
+                    </p>
                   </div>
                 )}
               </CardContent>

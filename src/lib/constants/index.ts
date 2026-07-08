@@ -27,17 +27,17 @@ export const COUNTRY_BOARD_DEFAULTS: Record<string, string> = {
   IN: 'CBSE',
 };
 
-// ============================================
-// CURRENCY LOCALIZATION (Module 8)
-// ============================================
-// Pakistan is the app's primary/default market, so PKR ("Rs.") is the
-// fallback everywhere below — India ("₹"/INR) is the only opt-in case.
 export type Currency = 'PKR' | 'INR';
 
 export const CURRENCY_SYMBOLS: Record<Currency, string> = {
   PKR: 'Rs.',
-  INR: '₹',
+  INR: 'Rs.',
 };
+
+export const MANUAL_PAYMENT_OPTIONS = [
+  { label: 'Easypaisa', number: '03480049900' },
+  { label: 'JazzCash', number: '03006596490' },
+] as const;
 
 /**
  * Resolve a student's country from their `profiles.board` value, using the
@@ -56,7 +56,7 @@ export function getCurrencyForCountry(country?: string | null): Currency {
 
 /**
  * profile.board -> currency. Prefer this over IP geolocation whenever a
- * logged-in user's board is known — it's set once at signup and doesn't
+ * logged-in user's board is known - it's set once at signup and doesn't
  * change if the student is travelling or using a VPN.
  */
 export function getCurrencyForBoard(board?: string | null): Currency {
@@ -75,24 +75,35 @@ export const SUBSCRIPTION_PLANS = {
   },
   PRO: {
     name: 'Pro',
-    // INR amounts are deliberately NOT a straight FX conversion — picked to
-    // match what similar edtech subscriptions charge Indian students
-    // (round, competitive numbers), not PKR × exchange rate.
     price: {
-      PKR: { monthly: 499, annual: 4990 },
+      PKR: { monthly: 850, annual: 8160 },
       INR: { monthly: 149, annual: 1499 },
     },
     limits: { aiMessages: 100, quizzes: -1, flashcards: 1000, pastPapers: true, downloadPDF: true },
-    features: ['100 AI messages/day', 'Unlimited quizzes', '1000 flashcards', 'All past papers', 'PDF downloads', 'Priority support'],
+    features: [
+      '100 AI messages/day',
+      'Unlimited quizzes',
+      '1000 flashcards',
+      'All past papers',
+      'PDF downloads',
+      'Priority support',
+    ],
   },
   ELITE: {
     name: 'Elite',
     price: {
-      PKR: { monthly: 999, annual: 9990 },
+      PKR: { monthly: 1950, annual: 18720 },
       INR: { monthly: 299, annual: 2999 },
     },
     limits: { aiMessages: -1, quizzes: -1, flashcards: -1, pastPapers: true, downloadPDF: true },
-    features: ['Unlimited AI messages', 'Unlimited everything', 'Offline mode', '1-on-1 AI sessions', 'Exam simulations', 'Parent dashboard'],
+    features: [
+      'Unlimited AI messages',
+      'Unlimited everything',
+      'Offline mode',
+      '1-on-1 AI sessions',
+      'Exam simulations',
+      'Parent dashboard',
+    ],
   },
 } as const;
 

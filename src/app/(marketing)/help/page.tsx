@@ -31,9 +31,10 @@ export default function HelpPage() {
         {
           title: 'Subscriptions aur payments',
           bullets: [
-            'Pakistan users ke liye payment flow PayPro par based hai.',
-            'International users ke liye payment flow Paddle par based hai.',
-            'Successful payment ke baad subscription page par refresh karke access confirm karein.',
+            'Filhaal sirf manual Pakistan payments active hain.',
+            'Easypaisa number 03480049900 aur JazzCash number 03006596490 use karein.',
+            'Payment bhejne ke baad screenshot zehra4088194@gmail.com par share karein.',
+            'Within 1 hour your transaction will be verified.',
             'Agar payment ho jaye lekin plan upgrade na ho to support se receipt ya transaction reference ke sath rabta karein.',
           ],
         },

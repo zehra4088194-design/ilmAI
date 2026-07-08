@@ -1,5 +1,5 @@
 // ============================================
-// PAYMENTS — PUBLIC ENTRYPOINT
+// PAYMENTS - PUBLIC ENTRYPOINT
 // ============================================
 // The rest of the app should ONLY import from 'lib/payments' (this file),
 // never from './paddle' or './paypro' directly, and NEVER from 'stripe'.
@@ -13,7 +13,16 @@ import type { PaymentProvider, PaymentRegion } from './provider';
 import { paddleProvider } from './paddle';
 import { payproProvider } from './paypro';
 
-export type { PaymentProvider, PaymentRegion, CreateCheckoutParams, CheckoutSession, CancelSubscriptionParams, SubscriptionRecord, WebhookVerificationResult, SubscriptionTier } from './provider';
+export type {
+  PaymentProvider,
+  PaymentRegion,
+  CreateCheckoutParams,
+  CheckoutSession,
+  CancelSubscriptionParams,
+  SubscriptionRecord,
+  WebhookVerificationResult,
+  SubscriptionTier,
+} from './provider';
 
 const PROVIDERS: Record<PaymentRegion, PaymentProvider> = {
   INTERNATIONAL: paddleProvider,
@@ -48,8 +57,8 @@ export function getPaymentProviderById(id: string): PaymentProvider {
   return provider;
 }
 
-/** Pricing plan -> tier price map, gateway-agnostic. Extend as needed. */
+/** Pricing plan -> tier price map, gateway-agnostic. */
 export const PLAN_PRICES: Record<'PRO' | 'ELITE', { monthly: number; annual: number }> = {
-  PRO: { monthly: 499, annual: 399 },
-  ELITE: { monthly: 999, annual: 799 },
+  PRO: { monthly: 850, annual: 8160 },
+  ELITE: { monthly: 1950, annual: 18720 },
 };

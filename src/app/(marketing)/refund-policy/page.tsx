@@ -47,15 +47,15 @@ export default function RefundPolicyPage() {
           title: 'How to request a refund',
           bullets: [
             'Support team ko account email ke sath message bhejein.',
-            'Payment receipt, transaction id, provider name, aur issue ka short summary share karein.',
-            'Agar payment PayPro ya Paddle se hui hai to provider reference bhi include karein.',
+            'Payment receipt, transaction id, Easypaisa/JazzCash number, aur issue ka short summary share karein.',
+            'Manual transfer ka screenshot aur jis plan ke liye payment ki thi wo bhi mention karein.',
           ],
         },
         {
           title: 'Resolution timeline',
           paragraphs: [
-            'Refund-related requests ko as early as possible review kiya jata hai, lekin exact timing payment provider verification par depend karti hai.',
-            'Approved refund ka final settlement aapke payment provider ya card/bank processing timeline ke mutabiq complete hota hai.',
+            'Refund-related requests ko as early as possible review kiya jata hai, lekin exact timing payment verification par depend karti hai.',
+            'Approved refund ka final settlement internal review aur transfer trail ke mutabiq complete hota hai.',
           ],
         },
       ]}
