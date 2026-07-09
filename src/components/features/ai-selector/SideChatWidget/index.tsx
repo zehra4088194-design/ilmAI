@@ -2,9 +2,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Send, Brain } from 'lucide-react';
+import { Camera, MessageCircle, X, Send, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AIProviderSelector } from '@/components/features/ai-selector/AIProviderSelector';
+import { ScanUpload } from '@/components/features/ocr/ScanUpload';
 import { useAuth } from '@/hooks/auth/useAuth';
 import type { AiProviderId, ModelTier } from '@/lib/ai/gateway';
 import { nanoid } from 'nanoid';
@@ -46,6 +47,13 @@ export function SideChatWidget() {
 
   const shouldHide = HIDE_ON_ROUTES.some((route) => pathname?.startsWith(route));
   if (shouldHide) return null;
+
+  const handleScannedText = (text: string) => {
+    setInput((current) => {
+      const prefix = current.trim() ? `${current.trim()}\n\n` : '';
+      return `${prefix}Scanned text:\n${text}`;
+    });
+  };
 
   const handleSend = async () => {
     const text = input.trim();
@@ -114,7 +122,7 @@ export function SideChatWidget() {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-5 right-5 z-50 flex h-[32rem] w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-2xl border border-white/10 bg-background/95 shadow-2xl shadow-black/45 supports-[backdrop-filter]:bg-background/88 supports-[backdrop-filter]:backdrop-blur-sm sm:w-96"
+            className="fixed bottom-5 right-5 z-50 flex h-[32rem] w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-2xl border border-white/10 bg-background shadow-2xl shadow-black/45 sm:w-96"
           >
             <div className="flex shrink-0 items-center gap-2 border-b border-border/80 bg-background/70 p-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600">
@@ -167,7 +175,22 @@ export function SideChatWidget() {
               <div ref={scrollRef} />
             </div>
 
-            <div className="flex shrink-0 items-center gap-2 border-t border-border/80 bg-background/75 p-3">
+            <div className="flex shrink-0 items-center gap-2 border-t border-border/80 bg-background/90 p-3">
+              <ScanUpload
+                onTextExtracted={handleScannedText}
+                trigger={
+                  <Button
+                    type="button"
+                    size="icon-sm"
+                    variant="outline"
+                    disabled={isLoading}
+                    title="Scan photo"
+                    aria-label="Scan photo"
+                  >
+                    <Camera className="h-3.5 w-3.5" />
+                  </Button>
+                }
+              />
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}

@@ -120,17 +120,17 @@ body {
 
 /* Glass morphism utility */
 .glass {
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(17, 24, 39, 0.06);
-  box-shadow: 0 4px 24px rgba(17, 24, 39, 0.04);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  border: 1px solid rgba(17, 24, 39, 0.09);
+  box-shadow: 0 4px 20px rgba(17, 24, 39, 0.06);
 }
 
 .dark .glass {
-  background: rgba(20, 14, 38, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  background: rgba(20, 14, 38, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.32);
 }
 
 /* Gradient text */

@@ -136,7 +136,7 @@ export default async function StudyPage() {
             </div>
           </div>
 
-          <div className="rounded-[1.75rem] border border-white/10 bg-black/10 p-5 backdrop-blur-sm">
+          <div className="rounded-[1.75rem] border border-white/10 bg-black/25 p-5 backdrop-blur-[1px]">
             <div className="flex items-center gap-2 text-sm font-semibold text-violet-300">
               <Sparkles className="h-4 w-4" />
               Study flow

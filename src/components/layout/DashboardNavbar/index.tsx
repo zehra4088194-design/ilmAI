@@ -10,7 +10,7 @@ export function DashboardNavbar() {
   const { theme, setTheme } = useTheme();
   const { user } = useAuth();
   return (
-    <header className="fixed top-0 right-0 left-0 lg:left-64 h-16 border-b border-border bg-background/80 backdrop-blur-md z-30 flex items-center px-4 md:px-6 gap-4">
+    <header className="fixed top-0 right-0 left-0 lg:left-64 h-16 border-b border-border bg-background/95 backdrop-blur-[1px] z-30 flex items-center px-4 md:px-6 gap-4">
       {/* Search */}
       <div className="flex-1 max-w-md">
         <div className="relative">
