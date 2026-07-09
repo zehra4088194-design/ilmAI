@@ -18,7 +18,7 @@ const NAV_GROUPS = [
     items: [
       { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
       { icon: BookOpen, label: 'Study', href: '/study' },
-      { icon: Zap, label: 'Practice MCQs', href: '/practice' },
+      { icon: Zap, label: 'AI Testing', href: '/practice' },
       { icon: Brain, label: 'AI Tutor', href: '/ai-tutor', badge: 'AI' },
     ],
   },

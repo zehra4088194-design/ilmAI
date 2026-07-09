@@ -18,7 +18,6 @@ type Subject = {
   id: string;
   name: string;
   color: string;
-  total_chapters?: number;
 };
 
 type Chapter = {
@@ -297,9 +296,9 @@ export function AiPracticeHub({ subjects, chaptersBySubject }: AiPracticeHubProp
                     <BookOpen className="w-5 h-5" style={{ color: subject.color }} />
                   </div>
                   <h3 className="font-semibold mb-1">{subject.name}</h3>
-                  <p className="text-xs text-muted-foreground mb-4">{subject.total_chapters || 0} chapters</p>
+                  <p className="text-xs text-muted-foreground mb-4">{chaptersBySubject[subject.id]?.length || 0} class chapters</p>
                   <Button variant="gradient" size="sm" className="w-full" onClick={(e) => { e.stopPropagation(); openChapters(subject.id); }}>
-                    <Sparkles className="w-3.5 h-3.5" />AI Practice
+                    <Sparkles className="w-3.5 h-3.5" />AI Testing
                   </Button>
                 </CardContent>
               </Card>
@@ -314,13 +313,13 @@ export function AiPracticeHub({ subjects, chaptersBySubject }: AiPracticeHubProp
       <AnimatePresence>
         {openSubjectId && selectedSubject && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setOpenSubjectId(null)}>
+            className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setOpenSubjectId(null)}>
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-              className="glass rounded-2xl border border-border w-full max-w-2xl p-6 max-h-[86vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              className="w-full max-w-2xl max-h-[86vh] overflow-y-auto rounded-2xl border border-border bg-background p-6 shadow-2xl shadow-black/70" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-5">
                 <div>
-                  <h3 className="font-semibold">{selectedSubject.name} Practice Setup</h3>
-                  <p className="text-xs text-muted-foreground">Chapter name select karo. AI Pakistan curriculum ke hisaab se questions banayega.</p>
+                  <h3 className="font-semibold">{selectedSubject.name} AI Testing Setup</h3>
+                  <p className="text-xs text-muted-foreground">Sirf tumhari selected board/class ke chapters yahan dikh rahe hain.</p>
                 </div>
                 <button onClick={() => setOpenSubjectId(null)} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
               </div>
@@ -338,7 +337,7 @@ export function AiPracticeHub({ subjects, chaptersBySubject }: AiPracticeHubProp
                     ))}
                     {chapters.length === 0 && (
                       <p className="text-sm text-muted-foreground text-center py-8">
-                        Is subject mein abhi chapter names add nahi hain.
+                        Is selected class/board ke liye is subject mein abhi chapter names add nahi hain.
                       </p>
                     )}
                   </div>
@@ -380,7 +379,7 @@ export function AiPracticeHub({ subjects, chaptersBySubject }: AiPracticeHubProp
 
                   <Button variant="gradient" size="lg" className="w-full" disabled={!chapterId || loading} onClick={startPractice}>
                     {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-                    {loading ? 'AI bana raha hai...' : 'Practice Shuru Karo'}
+                    {loading ? 'AI test bana raha hai...' : 'Test Shuru Karo'}
                   </Button>
                 </div>
               </div>
