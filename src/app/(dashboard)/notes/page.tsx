@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
-import { NotesGrid } from '@/components/features/study/NoteEditor/NotesGrid';
+import { NotesGrid } from '@/components/features/notes/NotesGrid';
 export const metadata: Metadata = { title: 'Notes' };
 
 export default async function NotesPage() {

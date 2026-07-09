@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
-import { NoteEditor } from '@/components/features/notes/NoteEditorFull';
+import { NoteEditor } from '@/components/features/notes/NoteEditor';
 
 export default async function NoteDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

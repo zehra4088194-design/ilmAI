@@ -163,10 +163,10 @@ export interface Database {
         Row: {
           id: string; user_id: string; name: string;
           description: string | null; subject_id: string | null; chapter_id: string | null;
-          cover_color: string; is_public: boolean; total_cards: number;
+          cover_color: string; cover_icon: string; is_public: boolean; total_cards: number;
           created_at: string; updated_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['flashcard_decks']['Row'], 'chapter_id' | 'cover_color' | 'created_at' | 'description' | 'id' | 'is_public' | 'subject_id' | 'total_cards' | 'updated_at'> & { chapter_id?: string | null; cover_color?: string; created_at?: string; description?: string | null; id?: string; is_public?: boolean; subject_id?: string | null; total_cards?: number; updated_at?: string; };
+        Insert: Omit<Database['public']['Tables']['flashcard_decks']['Row'], 'chapter_id' | 'cover_color' | 'cover_icon' | 'created_at' | 'description' | 'id' | 'is_public' | 'subject_id' | 'total_cards' | 'updated_at'> & { chapter_id?: string | null; cover_color?: string; cover_icon?: string; created_at?: string; description?: string | null; id?: string; is_public?: boolean; subject_id?: string | null; total_cards?: number; updated_at?: string; };
         Update: Partial<Database['public']['Tables']['flashcard_decks']['Insert']>;
         Relationships: [
           {
@@ -198,9 +198,9 @@ export interface Database {
           front: string; back: string; hint: string | null;
           tags: string[] | null; difficulty: string; next_review_at: string;
           interval: number; ease_factor: number; repetitions: number;
-          is_starred: boolean; created_at: string;
+          is_starred: boolean; last_rating: string | null; created_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['flashcards']['Row'], 'created_at' | 'difficulty' | 'ease_factor' | 'hint' | 'id' | 'interval' | 'is_starred' | 'next_review_at' | 'repetitions' | 'tags'> & { created_at?: string; difficulty?: string; ease_factor?: number; hint?: string | null; id?: string; interval?: number; is_starred?: boolean; next_review_at?: string; repetitions?: number; tags?: string[] | null; };
+        Insert: Omit<Database['public']['Tables']['flashcards']['Row'], 'created_at' | 'difficulty' | 'ease_factor' | 'hint' | 'id' | 'interval' | 'is_starred' | 'last_rating' | 'next_review_at' | 'repetitions' | 'tags'> & { created_at?: string; difficulty?: string; ease_factor?: number; hint?: string | null; id?: string; interval?: number; is_starred?: boolean; last_rating?: string | null; next_review_at?: string; repetitions?: number; tags?: string[] | null; };
         Update: Partial<Database['public']['Tables']['flashcards']['Insert']>;
         Relationships: [
           {
@@ -248,10 +248,10 @@ export interface Database {
         Row: {
           id: string; user_id: string; title: string;
           content: string; subject_id: string | null; chapter_id: string | null;
-          tags: string[] | null; is_starred: boolean; is_public: boolean;
+          tags: string[] | null; folder: string | null; is_starred: boolean; is_public: boolean;
           created_at: string; updated_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['notes']['Row'], 'chapter_id' | 'content' | 'created_at' | 'id' | 'is_public' | 'is_starred' | 'subject_id' | 'tags' | 'title' | 'updated_at'> & { chapter_id?: string | null; content?: string; created_at?: string; id?: string; is_public?: boolean; is_starred?: boolean; subject_id?: string | null; tags?: string[] | null; title?: string; updated_at?: string; };
+        Insert: Omit<Database['public']['Tables']['notes']['Row'], 'chapter_id' | 'content' | 'created_at' | 'folder' | 'id' | 'is_public' | 'is_starred' | 'subject_id' | 'tags' | 'title' | 'updated_at'> & { chapter_id?: string | null; content?: string; created_at?: string; folder?: string | null; id?: string; is_public?: boolean; is_starred?: boolean; subject_id?: string | null; tags?: string[] | null; title?: string; updated_at?: string; };
         Update: Partial<Database['public']['Tables']['notes']['Insert']>;
         Relationships: [
           {
