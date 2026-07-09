@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { enforceOnboarding } from '@/lib/supabase/enforceOnboarding';
 import { updateSession } from '@/lib/supabase/middleware';
 
 const PUBLIC_ROUTES = ['/', '/about', '/pricing', '/blog', '/contact', '/login', '/register', '/forgot-password', '/reset-password', '/verify-email'];
@@ -8,7 +9,7 @@ const ADMIN_PREFIXES = ['/admin'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const { user, response } = await updateSession(request);
+  const { user, response, supabase } = await updateSession(request);
 
   // Admin routes
   if (ADMIN_PREFIXES.some(p => pathname.startsWith(p))) {
@@ -23,6 +24,10 @@ export async function middleware(request: NextRequest) {
   if (PROTECTED_PREFIXES.some(p => pathname.startsWith(p))) {
     if (!user) {
       return NextResponse.redirect(new URL('/login?redirect=' + encodeURIComponent(pathname), request.url));
+    }
+    const onboardingRedirect = await enforceOnboarding(request, supabase);
+    if (onboardingRedirect) {
+      return onboardingRedirect;
     }
     return response;
   }

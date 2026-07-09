@@ -7,6 +7,15 @@ import { Card, CardContent } from '@/components/ui/card';
 import { AIProviderSelector } from '@/components/features/ai-selector/AIProviderSelector';
 import { AiAnswerRenderer } from '@/components/features/ai/AiAnswerRenderer';
 import type { AiProviderId, ModelTier } from '@/lib/ai/gateway';
+import { EssayClassBanner } from '@/components/features/essay-writer/EssayClassBanner';
+import { GradeOverrideSelect } from '@/components/features/essay-writer/GradeOverrideSelect';
+import type { GradeLevel as ProfileGradeLevel } from '@/lib/supabase/getUserGradeLevel';
+import {
+  isGradeLevel,
+  normalizeEssayGradeLevel,
+  type EssayWriterResponseData,
+  type GradeLevel,
+} from '@/lib/utils/buildGradeContext';
 import type { SubscriptionTier } from '@/types';
 import { toast } from 'sonner';
 
@@ -20,30 +29,45 @@ const ESSAY_TYPES = [
 
 const WORD_COUNTS = [150, 300, 500, 800];
 
-export function EssayWriterForm({ userTier }: { userTier: SubscriptionTier }) {
+interface EssayWriterFormProps {
+  userTier: SubscriptionTier;
+  gradeLevel: ProfileGradeLevel | null;
+}
+
+export function EssayWriterForm({ userTier, gradeLevel: initialGradeLevel }: EssayWriterFormProps) {
+  const profileGradeLevel = normalizeEssayGradeLevel(initialGradeLevel);
   const [topic, setTopic] = useState('');
   const [essayType, setEssayType] = useState('general');
   const [wordCount, setWordCount] = useState(300);
   const [language, setLanguage] = useState<'english' | 'urdu'>('english');
   const [provider, setProvider] = useState<AiProviderId>('groq');
   const [aiTier, setAiTier] = useState<ModelTier>('mini');
+  const [gradeLevel, setGradeLevel] = useState<GradeLevel>(profileGradeLevel);
+  const [showOverride, setShowOverride] = useState(false);
   const [loading, setLoading] = useState(false);
   const [essay, setEssay] = useState<string | null>(null);
+  const [essayGradeLevel, setEssayGradeLevel] = useState<GradeLevel | null>(null);
   const isFreeTier = userTier === 'FREE';
 
   const generate = async () => {
     if (!topic.trim()) { toast.error('Essay topic likho pehle'); return; }
     setLoading(true);
     setEssay(null);
+    setEssayGradeLevel(null);
     try {
       const res = await fetch('/api/ai/essay-writer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic, wordCount, essayType, language, provider, aiTier }),
+        body: JSON.stringify({ topic, wordCount, essayType, language, provider, aiTier, gradeLevel }),
       });
-      const json = await res.json();
+      const json = await res.json() as
+        | { status: 'error'; error: string }
+        | { status: 'success'; data: EssayWriterResponseData };
       if (json.status === 'error') { toast.error(json.error); return; }
       setEssay(json.data.essay);
+      setEssayGradeLevel(isGradeLevel(json.data.gradeLevel) ? json.data.gradeLevel : gradeLevel);
+      setGradeLevel(profileGradeLevel);
+      setShowOverride(false);
     } catch {
       toast.error('Essay generate nahi hui, dobara koshish karo');
     } finally {
@@ -69,6 +93,15 @@ export function EssayWriterForm({ userTier }: { userTier: SubscriptionTier }) {
               placeholder="e.g. My Best Friend, Importance of Education, Pollution"
               className="w-full h-11 rounded-lg border border-input bg-background px-3 text-sm"
             />
+            <div className="mt-1">
+              <GradeOverrideSelect
+                value={gradeLevel}
+                profileGradeLevel={profileGradeLevel}
+                open={showOverride}
+                onOpenChange={setShowOverride}
+                onChange={setGradeLevel}
+              />
+            </div>
           </div>
 
           <div className="grid sm:grid-cols-3 gap-4">
@@ -118,6 +151,12 @@ export function EssayWriterForm({ userTier }: { userTier: SubscriptionTier }) {
               <p className="text-sm font-semibold flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-violet-400" />Tumhari Essay</p>
               <Button variant="outline" size="sm" onClick={copyEssay}><Copy className="w-3.5 h-3.5" />Copy Karo</Button>
             </div>
+            {essayGradeLevel && (
+              <EssayClassBanner
+                gradeLevel={essayGradeLevel}
+                onChangeClick={() => setShowOverride(true)}
+              />
+            )}
             <AiAnswerRenderer content={essay} />
           </motion.div>
         )}

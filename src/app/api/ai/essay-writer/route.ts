@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { gatewayChat } from '@/lib/ai/gateway';
 import { checkAiMessageLimit } from '@/lib/rate-limit';
+import { getUserGradeLevel } from '@/lib/supabase/getUserGradeLevel';
+import {
+  buildGradeContext,
+  isGradeLevel,
+  normalizeEssayGradeLevel,
+  type EssayWriterResponseData,
+  type GradeLevel,
+} from '@/lib/utils/buildGradeContext';
 import type { SubscriptionTier } from '@/types';
 import type { AiProviderId, ModelTier } from '@/lib/ai/gateway';
 
@@ -19,14 +27,21 @@ export async function POST(req: NextRequest) {
     const limitCheck = await checkAiMessageLimit(user.id, tier);
     if (!limitCheck.success) return NextResponse.json({ status: 'error', error: 'Daily AI limit khatam ho gayi' }, { status: 429 });
 
-    const { topic, wordCount, essayType, language, provider, aiTier } = await req.json();
+    const body = await req.json();
+    const { topic, wordCount, essayType, language, provider, aiTier } = body;
     if (!topic) return NextResponse.json({ status: 'error', error: 'Essay topic zaroori hai' }, { status: 400 });
+
+    const { gradeLevel: profileGradeLevel } = await getUserGradeLevel(supabase, user.id);
+    const gradeLevel: GradeLevel = isGradeLevel(body.gradeLevel)
+      ? body.gradeLevel
+      : normalizeEssayGradeLevel(profileGradeLevel);
 
     const useProvider: AiProviderId = provider || 'groq';
     const useTier: ModelTier = aiTier || 'mini';
     const targetWords = wordCount || 300;
     const type = essayType || 'general';
     const lang = language === 'urdu' ? 'Roman Urdu mixed with simple English' : 'clear English';
+    const gradeContext = buildGradeContext(gradeLevel);
 
     const result = await gatewayChat({
       provider: useProvider,
@@ -34,7 +49,7 @@ export async function POST(req: NextRequest) {
       messages: [
         {
           role: 'system',
-          content: `You are an expert essay-writing tutor for Pakistani board-exam students (grades 9-12). Write well-structured Markdown essays with a clear ## Introduction, body sections with ## or ### headings where natural, and a ## Conclusion. Bold key terms and use short paragraphs. Never return a flat wall of text.`,
+          content: `You are an expert essay-writing tutor for Pakistani board-exam students (grades 9-12). Write well-structured Markdown essays with a clear ## Introduction, body sections with ## or ### headings where natural, and a ## Conclusion. Bold key terms and use short paragraphs. Never return a flat wall of text. ${gradeContext}`,
         },
         {
           role: 'user',
@@ -45,7 +60,8 @@ export async function POST(req: NextRequest) {
       temperature: 0.7,
     });
 
-    return NextResponse.json({ status: 'success', data: { essay: result.text } });
+    const data: EssayWriterResponseData = { essay: result.text, gradeLevel };
+    return NextResponse.json({ status: 'success', data });
   } catch (error) {
     console.error('Essay writer error:', error);
     return NextResponse.json({ status: 'error', error: 'Essay generate nahi hui' }, { status: 500 });

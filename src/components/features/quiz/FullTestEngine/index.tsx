@@ -187,6 +187,7 @@ export function FullTestSetup({
                 </div>
                 <div>
                   <label className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-2 block">Grade Level</label>
+                  {/* TODO(module-1): read grade from getUserGradeLevel instead */}
                   <select value={grade} onChange={e => setGrade(e.target.value)} className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm">
                     {GRADE_LEVELS.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}
                   </select>

@@ -5,19 +5,24 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
 import { createClient } from '@/lib/supabase/client';
-import { GRADE_LEVELS, BOARDS } from '@/lib/constants';
+import { BOARDS } from '@/lib/constants';
 import { toast } from 'sonner';
 import { User, Bell, Shield, Palette, Users, Languages } from 'lucide-react';
 import { ParentMessageThread } from '@/components/ui/ParentMessageThread';
 import { RoutineTestsWidget } from '@/components/ui/RoutineTestsWidget';
 import { useTranslations, useLocale } from '@/providers/I18nProvider';
 import { LOCALES, LOCALE_LABELS, type Locale } from '@/lib/i18n/config';
+import { ClassSettingsCard } from '@/components/features/settings/ClassSettingsCard';
+import {
+  CLASS_SELECTION_GRADE_LEVELS,
+  type GradeLevel,
+  type ClassSelectionGradeLevel,
+} from '@/lib/supabase/getUserGradeLevel';
 
-export function SettingsTabs({ profile }: { profile: any }) {
+export function SettingsTabs({ profile, currentGradeLevel }: { profile: any; currentGradeLevel: GradeLevel | null }) {
   const [activeTab, setActiveTab] = useState('profile');
   const [fullName, setFullName] = useState(profile?.full_name || '');
   const [board, setBoard] = useState(profile?.board || '');
-  const [gradeLevel, setGradeLevel] = useState(profile?.grade_level || '');
   const [saving, setSaving] = useState(false);
   const [inviteCode, setInviteCode] = useState('');
   const [linking, setLinking] = useState(false);
@@ -26,6 +31,10 @@ export function SettingsTabs({ profile }: { profile: any }) {
   const supabase = createClient();
   const t = useTranslations();
   const { locale, setLocale } = useLocale();
+  const classSettingsGrade =
+    currentGradeLevel && CLASS_SELECTION_GRADE_LEVELS.includes(currentGradeLevel as ClassSelectionGradeLevel)
+      ? (currentGradeLevel as ClassSelectionGradeLevel)
+      : null;
 
   const TABS = [
     { id: 'profile', label: t('settings.tabs.profile'), icon: User },
@@ -54,7 +63,7 @@ export function SettingsTabs({ profile }: { profile: any }) {
 
   const handleSave = async () => {
     setSaving(true);
-    const { error } = await supabase.from('profiles').update({ full_name: fullName, board, grade_level: gradeLevel, updated_at: new Date().toISOString() }).eq('id', profile.id);
+    const { error } = await supabase.from('profiles').update({ full_name: fullName, board, updated_at: new Date().toISOString() }).eq('id', profile.id);
     if (error) toast.error(error.message); else toast.success('Profile update ho gaya!');
     setSaving(false);
   };
@@ -98,13 +107,8 @@ export function SettingsTabs({ profile }: { profile: any }) {
                   {BOARDS.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}
                 </select>
               </div>
-              <div><label className="text-sm font-medium mb-1.5 block">Grade / Class</label>
-                <select value={gradeLevel} onChange={e => setGradeLevel(e.target.value)} className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm">
-                  <option value="">Select grade</option>
-                  {GRADE_LEVELS.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}
-                </select>
-              </div>
               <Button variant="gradient" onClick={handleSave} loading={saving}>Save Changes</Button>
+              {classSettingsGrade && <ClassSettingsCard currentGradeLevel={classSettingsGrade} />}
             </div>
           )}
           {activeTab === 'parent-link' && (

@@ -52,4 +52,3 @@ database/         SQL migrations, RLS policies, functions, seeds
 cloudflare-worker/ AI Gateway Worker source
 scripts/          Setup and maintenance scripts
 ```
-# studyverse-ai

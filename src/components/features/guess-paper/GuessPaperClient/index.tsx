@@ -61,6 +61,7 @@ export function GuessPaperClient({
             </div>
             <div>
               <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2 block">Grade Level</label>
+              {/* TODO(module-1): read grade from getUserGradeLevel instead */}
               <select value={gradeLevel} onChange={e => setGradeLevel(e.target.value)} className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm">
                 {GRADE_LEVELS.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}
               </select>

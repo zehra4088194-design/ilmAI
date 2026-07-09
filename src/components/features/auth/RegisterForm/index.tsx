@@ -10,11 +10,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { createClient } from '@/lib/supabase/client';
 import { OAuthButtons } from '@/components/features/auth/OAuthButtons';
-import { BOARDS, GRADE_LEVELS, COUNTRY_BOARD_DEFAULTS } from '@/lib/constants';
+import { BOARDS, COUNTRY_BOARD_DEFAULTS } from '@/lib/constants';
 import { cn } from '@/lib/utils/cn';
 import { toast } from 'sonner';
 import { useTranslations } from '@/providers/I18nProvider';
-import type { Database } from '@/lib/supabase/database.types';
 
 const schema = z.object({
   fullName: z.string().min(2, 'Min 2 characters'),
@@ -22,7 +21,6 @@ const schema = z.object({
   password: z.string().min(8, 'Min 8 characters'),
   confirmPassword: z.string(),
   board: z.string().optional(),
-  gradeLevel: z.string().optional(),
 }).refine(d => d.password === d.confirmPassword, { message: 'Passwords match nahi karte', path: ['confirmPassword'] });
 type FormData = z.infer<typeof schema>;
 
@@ -49,8 +47,8 @@ export function RegisterForm() {
   }, [setValue]);
 
   const onSubmit = async (data: FormData) => {
-  if (accountType === 'student' && (!data.board || !data.gradeLevel)) {
-    toast.error('Apna board aur grade/class select karo');
+  if (accountType === 'student' && !data.board) {
+    toast.error('Apna board select karo');
     return;
   }
 
@@ -62,7 +60,6 @@ export function RegisterForm() {
         full_name: data.fullName,
         role: accountType,
         board: accountType === 'student' ? data.board : undefined,
-        grade_level: accountType === 'student' ? data.gradeLevel : undefined,
       },
       emailRedirectTo: `${window.location.origin}/api/auth/callback`,
     },
@@ -110,7 +107,7 @@ export function RegisterForm() {
         </div>
 
         {accountType === 'student' && (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-3">
             <div>
               <label className="text-sm font-medium mb-1.5 block">{t('auth.register.boardLabel')}</label>
               <select {...register('board')} className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" defaultValue="">
@@ -119,16 +116,9 @@ export function RegisterForm() {
                 <option value="OTHER">Other</option>
               </select>
             </div>
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">{t('auth.register.gradeLabel')}</label>
-              <select {...register('gradeLevel')} className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" defaultValue="">
-                <option value="" disabled>{t('auth.register.gradePlaceholder')}</option>
-                {GRADE_LEVELS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
-              </select>
-            </div>
-            <p className="col-span-2 text-xs text-muted-foreground -mt-1">
-              {detectedCountry === 'IN' ? 'India detect hui — CBSE default select ho gaya hai.' : detectedCountry === 'PK' ? 'Pakistan detect hua — FBISE default select ho gaya hai.' : ''}
-              {' '}Yeh sirf ek dafa poocha jaata hai — baad mein sirf Settings se change ho sakta hai.
+            <p className="text-xs text-muted-foreground -mt-1">
+              {detectedCountry === 'IN' ? 'India detect hui - CBSE default select ho gaya hai.' : detectedCountry === 'PK' ? 'Pakistan detect hua - FBISE default select ho gaya hai.' : ''}
+              {' '}Class onboarding ke next step mein poochi jayegi.
             </p>
           </div>
         )}

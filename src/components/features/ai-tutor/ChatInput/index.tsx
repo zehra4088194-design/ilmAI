@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, type KeyboardEvent } from 'react';
+import { useState, useRef, type KeyboardEvent, type RefObject } from 'react';
 import { Send, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScanUpload } from '@/components/features/ocr/ScanUpload';
@@ -8,18 +8,24 @@ import { toast } from 'sonner';
 interface ChatInputProps {
   onSend: (text: string) => void;
   disabled?: boolean;
+  value?: string;
+  onChange?: (value: string) => void;
+  textareaRef?: RefObject<HTMLTextAreaElement | null>;
 }
 
-export function ChatInput({ onSend, disabled }: ChatInputProps) {
-  const [text, setText] = useState('');
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+export function ChatInput({ onSend, disabled, value, onChange, textareaRef }: ChatInputProps) {
+  const [internalText, setInternalText] = useState('');
+  const localTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const activeTextareaRef = textareaRef ?? localTextareaRef;
+  const text = value ?? internalText;
+  const setText = onChange ?? setInternalText;
 
   const handleSend = () => {
     const trimmed = text.trim();
     if (!trimmed || disabled) return;
     onSend(trimmed);
     setText('');
-    if (textareaRef.current) textareaRef.current.style.height = 'auto';
+    if (activeTextareaRef.current) activeTextareaRef.current.style.height = 'auto';
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -36,8 +42,8 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
       toast.error('Koi text nahi mila is image mein');
       return;
     }
-    setText((prev) => (prev ? `${prev}\n\n${extractedText}` : `Is sawal ko explain karo:\n\n${extractedText}`));
-    textareaRef.current?.focus();
+    setText(text ? `${text}\n\n${extractedText}` : `Is sawal ko explain karo:\n\n${extractedText}`);
+    activeTextareaRef.current?.focus();
   };
 
   return (
@@ -52,7 +58,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
           }
         />
         <textarea
-          ref={textareaRef}
+          ref={activeTextareaRef}
           value={text}
           onChange={(e) => {
             setText(e.target.value);

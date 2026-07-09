@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/payments/stripe';
 import { createAdminClient } from '@/lib/supabase/server';
+import type { Database } from '@/lib/supabase/database.types';
 import type Stripe from 'stripe';
+
+type SubscriptionTier = Database['public']['Enums']['subscription_tier'];
+
+function resolveTier(value: unknown): SubscriptionTier | null {
+  return value === 'FREE' || value === 'PRO' || value === 'ELITE' ? value : null;
+}
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
@@ -21,7 +28,7 @@ export async function POST(req: NextRequest) {
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session;
       const userId = session.client_reference_id || session.metadata?.userId;
-      const tier = session.metadata?.tier;
+      const tier = resolveTier(session.metadata?.tier);
       if (userId && tier) {
         await supabase.from('profiles').update({
           subscription_tier: tier,

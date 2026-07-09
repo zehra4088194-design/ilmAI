@@ -25,7 +25,9 @@ export function ChatInterface() {
   const [subjects, setSubjects] = useState<{ id: string; name: string }[]>([]);
   const [subject, setSubject] = useState<{ id: string; name: string } | null>(null);
   const [subjectPicked, setSubjectPicked] = useState(false);
+  const [inputValue, setInputValue] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const { user } = useAuth();
   const isFreeTier = !user || user.subscriptionTier === 'FREE';
   const hasLiveVoiceAccess = user?.subscriptionTier === 'ELITE';
@@ -114,7 +116,13 @@ export function ChatInterface() {
               <TeacherIdentityCard subjectName={subject?.name} size="lg" className="flex-col text-center mb-4 [&>div:last-child]:mt-2" />
               <h2 className="text-xl font-bold mb-2">AI Tutor Se Puchho!</h2>
               <p className="text-muted-foreground text-sm mb-6 max-w-sm">Koi bhi sawal puchho - Physics, Chemistry, Math, ya kuch bhi. Photo bhi scan kar sakte ho! Ya phir Voice Call se seedha baat karo.</p>
-              <SuggestionChips onSelect={handleSend} />
+              <SuggestionChips
+                subjectName={subject?.name}
+                onSelect={(prompt) => {
+                  setInputValue(prompt);
+                  inputRef.current?.focus();
+                }}
+              />
             </div>
           ) : (
             <>
@@ -126,7 +134,15 @@ export function ChatInterface() {
         </div>
 
         {/* Input */}
-        {!showSubjectPicker && <ChatInput onSend={handleSend} disabled={isStreaming} />}
+        {!showSubjectPicker && (
+          <ChatInput
+            onSend={handleSend}
+            disabled={isStreaming}
+            value={inputValue}
+            onChange={setInputValue}
+            textareaRef={inputRef}
+          />
+        )}
       </div>
     </div>
   );

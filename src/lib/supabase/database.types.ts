@@ -6,19 +6,20 @@ export interface Database {
       profiles: {
         Row: {
           id: string; email: string; full_name: string;
-          avatar_url: string | null; board: string | null; grade_level: string | null;
+          avatar_url: string | null; board: Database['public']['Enums']['board_type'] | null; grade_level: Database['public']['Enums']['grade_level'] | null;
+          onboarding_completed: boolean;
           subjects: string[] | null; phone: string | null; bio: string | null;
-          location: string | null; subscription_tier: string; subscription_expires_at: string | null;
+          location: string | null; subscription_tier: Database['public']['Enums']['subscription_tier']; subscription_expires_at: string | null;
           xp: number; level: number; streak: number;
           last_active_date: string | null; total_study_time: number; is_email_verified: boolean;
-          is_profile_complete: boolean; onboarding_step: number; role: string;
+          is_profile_complete: boolean; onboarding_step: number; role: Database['public']['Enums']['user_role'];
           is_ai_operated: boolean; ai_persona_provider: string | null; ai_persona_tier: string | null;
           ai_onboarding_complete: boolean; target_marks_percentage: number | null;
           total_marks_percentage: number | null; previous_roll_number: string | null;
           optional_subject_ids: string[];
           created_at: string; updated_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['profiles']['Row'], 'ai_onboarding_complete' | 'ai_persona_provider' | 'ai_persona_tier' | 'avatar_url' | 'bio' | 'board' | 'created_at' | 'grade_level' | 'is_ai_operated' | 'is_email_verified' | 'is_profile_complete' | 'last_active_date' | 'level' | 'location' | 'onboarding_step' | 'optional_subject_ids' | 'phone' | 'previous_roll_number' | 'role' | 'streak' | 'subjects' | 'subscription_expires_at' | 'subscription_tier' | 'target_marks_percentage' | 'total_marks_percentage' | 'total_study_time' | 'updated_at' | 'xp'> & { ai_onboarding_complete?: boolean; ai_persona_provider?: string | null; ai_persona_tier?: string | null; avatar_url?: string | null; bio?: string | null; board?: string | null; created_at?: string; grade_level?: string | null; is_ai_operated?: boolean; is_email_verified?: boolean; is_profile_complete?: boolean; last_active_date?: string | null; level?: number; location?: string | null; onboarding_step?: number; optional_subject_ids?: string[]; phone?: string | null; previous_roll_number?: string | null; role?: string; streak?: number; subjects?: string[] | null; subscription_expires_at?: string | null; subscription_tier?: string; target_marks_percentage?: number | null; total_marks_percentage?: number | null; total_study_time?: number; updated_at?: string; xp?: number; };
+        Insert: Omit<Database['public']['Tables']['profiles']['Row'], 'ai_onboarding_complete' | 'ai_persona_provider' | 'ai_persona_tier' | 'avatar_url' | 'bio' | 'board' | 'created_at' | 'grade_level' | 'is_ai_operated' | 'is_email_verified' | 'is_profile_complete' | 'last_active_date' | 'level' | 'location' | 'onboarding_completed' | 'onboarding_step' | 'optional_subject_ids' | 'phone' | 'previous_roll_number' | 'role' | 'streak' | 'subjects' | 'subscription_expires_at' | 'subscription_tier' | 'target_marks_percentage' | 'total_marks_percentage' | 'total_study_time' | 'updated_at' | 'xp'> & { ai_onboarding_complete?: boolean; ai_persona_provider?: string | null; ai_persona_tier?: string | null; avatar_url?: string | null; bio?: string | null; board?: Database['public']['Enums']['board_type'] | null; created_at?: string; grade_level?: Database['public']['Enums']['grade_level'] | null; is_ai_operated?: boolean; is_email_verified?: boolean; is_profile_complete?: boolean; last_active_date?: string | null; level?: number; location?: string | null; onboarding_completed?: boolean; onboarding_step?: number; optional_subject_ids?: string[]; phone?: string | null; previous_roll_number?: string | null; role?: Database['public']['Enums']['user_role']; streak?: number; subjects?: string[] | null; subscription_expires_at?: string | null; subscription_tier?: Database['public']['Enums']['subscription_tier']; target_marks_percentage?: number | null; total_marks_percentage?: number | null; total_study_time?: number; updated_at?: string; xp?: number; };
         Update: Partial<Database['public']['Tables']['profiles']['Insert']>;
         Relationships: [];
       };
@@ -351,11 +352,11 @@ export interface Database {
       past_papers: {
         Row: {
           id: string; subject_id: string; board: string;
-          year: number; paper_type: string; file_url: string;
+          year: number; paper_type: Database['public']['Enums']['paper_type']; file_url: string;
           thumbnail_url: string | null; total_questions: number; duration: number;
           is_verified: boolean; download_count: number; created_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['past_papers']['Row'], 'created_at' | 'download_count' | 'duration' | 'id' | 'is_verified' | 'paper_type' | 'thumbnail_url' | 'total_questions'> & { created_at?: string; download_count?: number; duration?: number; id?: string; is_verified?: boolean; paper_type?: string; thumbnail_url?: string | null; total_questions?: number; };
+        Insert: Omit<Database['public']['Tables']['past_papers']['Row'], 'created_at' | 'download_count' | 'duration' | 'id' | 'is_verified' | 'paper_type' | 'thumbnail_url' | 'total_questions'> & { created_at?: string; download_count?: number; duration?: number; id?: string; is_verified?: boolean; paper_type?: Database['public']['Enums']['paper_type']; thumbnail_url?: string | null; total_questions?: number; };
         Update: Partial<Database['public']['Tables']['past_papers']['Insert']>;
         Relationships: [
           {
@@ -420,10 +421,10 @@ export interface Database {
         Row: {
           id: string; chapter_id: string; topic_id: string | null;
           title: string; youtube_url: string; thumbnail_url: string | null;
-          duration_seconds: number | null; kind: string; exercise_number: string | null;
+          duration_seconds: number | null; kind: 'lecture' | 'exercise_walkthrough'; exercise_number: string | null;
           order_index: number; created_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['lectures']['Row'], 'created_at' | 'duration_seconds' | 'exercise_number' | 'id' | 'kind' | 'order_index' | 'thumbnail_url' | 'topic_id'> & { created_at?: string; duration_seconds?: number | null; exercise_number?: string | null; id?: string; kind?: string; order_index?: number; thumbnail_url?: string | null; topic_id?: string | null; };
+        Insert: Omit<Database['public']['Tables']['lectures']['Row'], 'created_at' | 'duration_seconds' | 'exercise_number' | 'id' | 'kind' | 'order_index' | 'thumbnail_url' | 'topic_id'> & { created_at?: string; duration_seconds?: number | null; exercise_number?: string | null; id?: string; kind?: 'lecture' | 'exercise_walkthrough'; order_index?: number; thumbnail_url?: string | null; topic_id?: string | null; };
         Update: Partial<Database['public']['Tables']['lectures']['Insert']>;
         Relationships: [
           {
@@ -445,12 +446,12 @@ export interface Database {
       library_resources: {
         Row: {
           id: string; title: string; description: string | null;
-          category: string; subject_id: string | null; board: string | null;
-          grade_level: string | null; drive_url: string; drive_file_id: string | null;
-          thumbnail_url: string | null; file_type: string | null; added_by: string | null;
+          category: 'local' | 'international'; subject_id: string | null; board: Database['public']['Enums']['board_type'] | null;
+          grade_level: Database['public']['Enums']['grade_level'] | null; drive_url: string; drive_file_id: string | null;
+          thumbnail_url: string | null; file_type: 'pdf' | 'docx' | 'pptx' | 'other'; added_by: string | null;
           created_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['library_resources']['Row'], 'added_by' | 'board' | 'category' | 'created_at' | 'description' | 'drive_file_id' | 'file_type' | 'grade_level' | 'id' | 'subject_id' | 'thumbnail_url'> & { added_by?: string | null; board?: string | null; category?: string; created_at?: string; description?: string | null; drive_file_id?: string | null; file_type?: string | null; grade_level?: string | null; id?: string; subject_id?: string | null; thumbnail_url?: string | null; };
+        Insert: Omit<Database['public']['Tables']['library_resources']['Row'], 'added_by' | 'board' | 'category' | 'created_at' | 'description' | 'drive_file_id' | 'file_type' | 'grade_level' | 'id' | 'subject_id' | 'thumbnail_url'> & { added_by?: string | null; board?: Database['public']['Enums']['board_type'] | null; category?: 'local' | 'international'; created_at?: string; description?: string | null; drive_file_id?: string | null; file_type?: 'pdf' | 'docx' | 'pptx' | 'other'; grade_level?: Database['public']['Enums']['grade_level'] | null; id?: string; subject_id?: string | null; thumbnail_url?: string | null; };
         Update: Partial<Database['public']['Tables']['library_resources']['Insert']>;
         Relationships: [
           {
