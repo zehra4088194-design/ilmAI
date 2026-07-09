@@ -41,6 +41,9 @@ export default async function SubjectDetailPage({
 
   const { data: subject } = await supabase.from('subjects').select('*').eq('slug', slug).single();
   if (!subject) notFound();
+  const subjectBoardVisible = !activeBoard || !Array.isArray(subject.boards) || subject.boards.length === 0 || subject.boards.includes(activeBoard);
+  const subjectGradeVisible = !activeGrade || !Array.isArray(subject.grade_levels) || subject.grade_levels.length === 0 || subject.grade_levels.includes(activeGrade);
+  if (!subjectBoardVisible || !subjectGradeVisible) notFound();
 
   const { data: rawChapters } = await supabase
     .from('chapters')
@@ -50,8 +53,11 @@ export default async function SubjectDetailPage({
     .order('order_index');
 
   const chapters = (rawChapters || []).filter((chapter) => {
-    if (!activeBoard) return true;
-    return !Array.isArray(chapter.boards) || chapter.boards.length === 0 || chapter.boards.includes(activeBoard);
+    const boardVisible = !activeBoard || !Array.isArray(chapter.boards) || chapter.boards.length === 0 || chapter.boards.includes(activeBoard);
+    const subjectHasMultipleGrades = Array.isArray(subject.grade_levels) && subject.grade_levels.length > 1;
+    const chapterHasGrades = Array.isArray(chapter.grade_levels) && chapter.grade_levels.length > 0;
+    const gradeVisible = !activeGrade || (chapterHasGrades ? chapter.grade_levels.includes(activeGrade) : !subjectHasMultipleGrades);
+    return boardVisible && gradeVisible;
   });
 
   const boardMeta = getBoardMeta(activeBoard);
@@ -173,6 +179,7 @@ export default async function SubjectDetailPage({
         <div className="space-y-3">
           {chapters.map((chapter, index) => {
             const boardScoped = Array.isArray(chapter.boards) && chapter.boards.length > 0;
+            const gradeScoped = Array.isArray(chapter.grade_levels) && chapter.grade_levels.length > 0;
 
             return (
               <Link key={chapter.id} href={`/study/${subject.slug}/${chapter.slug}`} className="group block">
@@ -186,7 +193,7 @@ export default async function SubjectDetailPage({
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="truncate text-base font-semibold">{chapter.name}</h3>
                           <span className="rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-                            {boardScoped ? 'Board scoped' : 'All boards'}
+                            {boardScoped ? 'Board scoped' : 'All boards'} · {gradeScoped ? 'Class scoped' : 'All classes'}
                           </span>
                         </div>
                         <p className="mt-1 text-sm leading-6 text-muted-foreground">

@@ -35,11 +35,11 @@ export async function POST(req: NextRequest) {
       return new Response(JSON.stringify({ error: 'Message required hai' }), { status: 400 });
     }
 
-    // FREE tier is hard-locked to Groq, no matter what the client sends
+    // FREE tier is hard-locked to the default Assistant, no matter what the client sends
     const provider: AiProviderId = userTier === 'FREE' ? 'groq' : (requestedProvider || 'groq');
     const tier: ModelTier = requestedTier || 'mini';
 
-    // Quota check: Groq uses the daily AI-message pool; other providers use the
+    // Quota check: the default Assistant uses the daily AI-message pool; other providers use the
     // mini/medium/pro tiered pool (10/7/3 per day) since they cost real money per call.
     if (provider === 'groq') {
       const limitCheck = await checkAiMessageLimit(user.id, userTier);
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
       }
     } else {
       if (userTier === 'FREE') {
-        return new Response(JSON.stringify({ error: 'Ye AI model sirf Pro/Elite users ke liye hai. Free plan mein Groq available hai.' }), { status: 403 });
+        return new Response(JSON.stringify({ error: 'Ye AI model sirf Pro/Elite users ke liye hai. Free plan mein Assistant available hai.' }), { status: 403 });
       }
       const tierCheck = await checkModelTierLimit(user.id, provider, tier);
       if (!tierCheck.success) {

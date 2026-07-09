@@ -19,17 +19,18 @@ async function requireAdmin() {
 }
 
 // PATCH /api/admin/chapters/:id
-// body: any subset of { name, boards, orderIndex, isActive }
+// body: any subset of { name, boards, gradeLevels, orderIndex, isActive }
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const admin = await requireAdmin();
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const { id } = await params;
-  const body = (await req.json()) as { name?: string; boards?: string[]; orderIndex?: number; isActive?: boolean };
+  const body = (await req.json()) as { name?: string; boards?: string[]; gradeLevels?: string[]; orderIndex?: number; isActive?: boolean };
 
   const update: Database['public']['Tables']['chapters']['Update'] = {};
   if (body.name !== undefined) update.name = body.name.trim();
   if (body.boards !== undefined) update.boards = body.boards;
+  if (body.gradeLevels !== undefined) update.grade_levels = body.gradeLevels;
   if (body.orderIndex !== undefined) update.order_index = body.orderIndex;
   if (body.isActive !== undefined) update.is_active = body.isActive;
 

@@ -30,6 +30,7 @@ export default async function PracticePage() {
 
   const { data: subjects } = await subjectsQuery;
   const visibleSubjectIds = new Set((subjects || []).map((subject) => subject.id));
+  const subjectGradeCounts = new Map((subjects || []).map((subject) => [subject.id, (subject.grade_levels || []).length]));
 
   const { data: allChapters } = await supabase
     .from('chapters')
@@ -42,8 +43,9 @@ export default async function PracticePage() {
     if (!visibleSubjectIds.has(c.subject_id)) return;
     const boards = c.boards || [];
     const levels = c.grade_levels || [];
+    const subjectGradeCount = subjectGradeCounts.get(c.subject_id) || 0;
     const boardVisible = boards.length === 0 || boards.includes(board);
-    const gradeVisible = levels.length === 0 || levels.includes(grade);
+    const gradeVisible = levels.length > 0 ? levels.includes(grade) : subjectGradeCount <= 1;
     const visible = boardVisible && gradeVisible;
     if (!visible) return;
     if (!chaptersBySubject[c.subject_id]) chaptersBySubject[c.subject_id] = [];

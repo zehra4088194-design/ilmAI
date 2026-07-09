@@ -57,12 +57,24 @@ export async function POST(req: NextRequest) {
     }
 
     const [{ data: subject }, { data: chapter }] = await Promise.all([
-      supabase.from('subjects').select('id, name').eq('id', subjectId).single(),
-      supabase.from('chapters').select('id, name').eq('id', chapterId).single(),
+      supabase.from('subjects').select('id, name, boards, grade_levels').eq('id', subjectId).single(),
+      supabase.from('chapters').select('id, name, boards, grade_levels').eq('id', chapterId).single(),
     ]);
 
     if (!subject || !chapter) {
       return NextResponse.json({ status: 'error', error: 'Subject ya chapter nahi mila' }, { status: 404 });
+    }
+    const board = profile?.board;
+    const grade = profile?.grade_level;
+    const subjectVisible =
+      (!board || !subject.boards?.length || subject.boards.includes(board)) &&
+      (!grade || !subject.grade_levels?.length || subject.grade_levels.includes(grade));
+    const subjectHasMultipleGrades = (subject.grade_levels || []).length > 1;
+    const chapterVisible =
+      (!board || !chapter.boards?.length || chapter.boards.includes(board)) &&
+      (!grade || (chapter.grade_levels?.length ? chapter.grade_levels.includes(grade) : !subjectHasMultipleGrades));
+    if (!subjectVisible || !chapterVisible) {
+      return NextResponse.json({ status: 'error', error: 'Yeh chapter aapki class ke liye available nahi hai' }, { status: 403 });
     }
 
     const finalCount = cleanCount(count, questionType);

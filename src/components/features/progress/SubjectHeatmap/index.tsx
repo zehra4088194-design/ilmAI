@@ -4,7 +4,11 @@ import { Progress } from '@/components/ui/progress';
 
 export async function SubjectHeatmap({ userId }: { userId: string }) {
   const supabase = await createClient();
-  const { data: subjects } = await supabase.from('subjects').select('id, name, color').limit(5);
+  const { data: profile } = await supabase.from('profiles').select('board, grade_level').eq('id', userId).single();
+  let subjectsQuery = supabase.from('subjects').select('id, name, color').eq('is_active', true).limit(5);
+  if (profile?.board) subjectsQuery = subjectsQuery.contains('boards', [profile.board]);
+  if (profile?.grade_level) subjectsQuery = subjectsQuery.contains('grade_levels', [profile.grade_level]);
+  const { data: subjects } = await subjectsQuery;
 
   const { data: sessions } = await supabase
     .from('quiz_sessions')

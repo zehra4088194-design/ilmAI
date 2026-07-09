@@ -7,9 +7,9 @@
  * talks to this Worker over HTTPS with a shared secret.
  *
  * WHAT IT DOES
- * - Holds 5 keys per provider (Groq, Claude, GPT, Gemini, OCR.space)
+ * - Holds 5 keys per provider (Assistant, Claude, GPT, Gemini, OCR.space)
  * - Tries key 1 → if it fails (bad key / rate-limited / 5xx) → key 2 → ... → key 5
- * - If ALL 5 keys of a provider fail, it silently falls back to Groq
+ * - If ALL 5 keys of a provider fail, it silently falls back to Assistant
  *   (the student never sees an error — the app just keeps working)
  * - Routes OCR: printed text → OCR.space, handwritten/messy → Gemini Vision,
  *   each with its own 5-key rotation, and each falls back to the other if needed
@@ -86,7 +86,7 @@ Rules:
 - Agar sawal unclear ho to politely clarify karne ke liye puchho, guess mat karo.
 - Tum FBISE, provincial boards (Punjab, Sindh, KPK), O/A Levels, aur CBSE/ICSE curricula ke mutabiq kisi bhi subject — Math, Physics, Chemistry, Biology, English, Urdu, Computer Science — mein madad kar sakte ho.`;
 
-// Daily call ceilings PER USER for non-Groq providers, by model tier.
+// Daily call ceilings PER USER for non-default providers, by model tier.
 // (Actual per-user counting happens in the Next.js backend via Supabase + Upstash —
 // this object is just exposed back in responses so the backend can display/enforce it.)
 const TIER_DAILY_LIMITS = { mini: 10, medium: 7, pro: 3 };
@@ -315,7 +315,7 @@ async function handleChat(req, env) {
   let result;
 
   if (provider === 'groq') {
-    result = await withKeyRotation(getKeys(env, 'GROQ_API_KEY'), (k) => callGroq(k, model, messages, max_tokens, temperature), 'Groq');
+    result = await withKeyRotation(getKeys(env, 'GROQ_API_KEY'), (k) => callGroq(k, model, messages, max_tokens, temperature), 'Assistant');
   } else if (provider === 'claude') {
     result = await withKeyRotation(getKeys(env, 'CLAUDE_API_KEY'), (k) => callClaude(k, model, messages, max_tokens), 'Claude');
   } else if (provider === 'gpt') {
@@ -326,13 +326,13 @@ async function handleChat(req, env) {
     return json({ error: `Unknown provider: ${provider}` }, 400);
   }
 
-  // Silent cross-provider fallback: if a premium provider totally fails, drop to Groq mini
+  // Silent cross-provider fallback: if a premium provider totally fails, drop to the default Assistant model
   // so the student never sees an error.
   if (!result.ok && provider !== 'groq') {
     const fallback = await withKeyRotation(
       getKeys(env, 'GROQ_API_KEY'),
       (k) => callGroq(k, MODEL_MAP.groq.mini, messages, max_tokens, temperature),
-      'Groq (fallback)'
+      'Assistant (fallback)'
     );
     if (fallback.ok) {
       return json({ text: fallback.data, providerUsed: 'groq', modelUsed: MODEL_MAP.groq.mini, fallbackTriggered: true, originalProvider: provider });

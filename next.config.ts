@@ -1,5 +1,44 @@
 import type { NextConfig } from 'next';
 
+const hasAdsense = Boolean(process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID);
+
+function csp() {
+  const scriptSrc = ["'self'", "'unsafe-eval'", "'unsafe-inline'", 'https://vercel.live'];
+  const frameSrc = ["'self'"];
+  const imgSrc = ["'self'", 'data:', 'blob:', 'https:'];
+  const connectSrc = [
+    "'self'",
+    'https://*.supabase.co',
+    'wss://*.supabase.co',
+    'https://api.groq.com',
+    'https://api.anthropic.com',
+    'https://api.openai.com',
+    'https://generativelanguage.googleapis.com',
+    'https://*.googleapis.com',
+    'wss://generativelanguage.googleapis.com',
+  ];
+
+  if (hasAdsense) {
+    scriptSrc.push('https://pagead2.googlesyndication.com', 'https://www.googletagservices.com');
+    frameSrc.push('https://googleads.g.doubleclick.net', 'https://tpc.googlesyndication.com');
+    imgSrc.push('https://googleads.g.doubleclick.net', 'https://pagead2.googlesyndication.com');
+    connectSrc.push('https://pagead2.googlesyndication.com', 'https://googleads.g.doubleclick.net');
+  }
+
+  return [
+    "default-src 'self'",
+    `script-src ${scriptSrc.join(' ')}`,
+    "style-src 'self' 'unsafe-inline'",
+    `img-src ${imgSrc.join(' ')}`,
+    "font-src 'self'",
+    `connect-src ${connectSrc.join(' ')}`,
+    `frame-src ${frameSrc.join(' ')}`,
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+  ].join('; ');
+}
+
 const nextConfig: NextConfig = {
   experimental: {
     ppr: false,
@@ -22,19 +61,8 @@ const nextConfig: NextConfig = {
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
-          {
-            key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live",
-              "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: blob: https:",
-              "font-src 'self'",
-              "connect-src 'self' https://*.supabase.co https://api.groq.com https://api.anthropic.com wss://*.supabase.co",
-              "frame-ancestors 'none'",
-            ].join('; '),
-          },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(self), geolocation=()' },
+          { key: 'Content-Security-Policy', value: csp() },
         ],
       },
     ];

@@ -181,14 +181,13 @@ export function FullTestSetup({
                 </div>
                 <div>
                   <label className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-2 block">Board</label>
-                  <select value={board} onChange={e => setBoard(e.target.value)} className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm">
+                  <select value={board} onChange={e => setBoard(e.target.value)} disabled className="w-full h-10 rounded-lg border border-input bg-muted/40 px-3 text-sm text-muted-foreground">
                     {BOARDS.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-2 block">Grade Level</label>
-                  {/* TODO(module-1): read grade from getUserGradeLevel instead */}
-                  <select value={grade} onChange={e => setGrade(e.target.value)} className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm">
+                  <select value={grade} onChange={e => setGrade(e.target.value)} disabled className="w-full h-10 rounded-lg border border-input bg-muted/40 px-3 text-sm text-muted-foreground">
                     {GRADE_LEVELS.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}
                   </select>
                 </div>

@@ -39,8 +39,8 @@ export async function GET(req: NextRequest) {
 }
 
 // POST /api/admin/chapters
-// body: { subjectId: string, name: string, boards?: string[], orderIndex?: number }
-// `boards` empty/omitted = applies to every board the subject supports.
+// body: { subjectId: string, name: string, boards?: string[], gradeLevels?: string[], orderIndex?: number }
+// `boards`/`gradeLevels` empty/omitted = applies to every board/class the subject supports.
 // Pass specific boards (e.g. ['CBSE','ICSE','STATE_BOARD_IN']) to keep this
 // chapter scoped to just those boards — this is how Pakistan vs India
 // chapters stay separate under a shared subject like Physics.
@@ -48,8 +48,8 @@ export async function POST(req: NextRequest) {
   const admin = await requireAdmin();
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  const body = (await req.json()) as { subjectId?: string; name?: string; boards?: string[]; orderIndex?: number };
-  const { subjectId, name, boards = [], orderIndex } = body;
+  const body = (await req.json()) as { subjectId?: string; name?: string; boards?: string[]; gradeLevels?: string[]; orderIndex?: number };
+  const { subjectId, name, boards = [], gradeLevels = [], orderIndex } = body;
 
   if (!subjectId || !name?.trim()) {
     return NextResponse.json({ error: 'Subject aur chapter ka naam dono zaroori hain' }, { status: 400 });
@@ -83,6 +83,7 @@ export async function POST(req: NextRequest) {
       name: name.trim(),
       slug,
       boards,
+      grade_levels: gradeLevels,
       order_index: finalOrderIndex,
     })
     .select()

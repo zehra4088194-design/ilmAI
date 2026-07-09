@@ -15,7 +15,7 @@ export default async function CompleteProfilePage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, board, grade_level')
+    .select('role, board, grade_level, education_level, university_program, university_semester')
     .eq('id', user.id)
     .single();
 

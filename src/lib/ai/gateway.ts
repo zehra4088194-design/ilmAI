@@ -1,8 +1,8 @@
 // ============================================
 // AI GATEWAY CLIENT
 // Talks to the Cloudflare Worker (cloudflare-worker/worker.js) instead of
-// calling Groq/Claude/GPT/Gemini directly. The Worker holds all API keys
-// (5 per provider) and handles rotation + automatic Groq fallback.
+// calling provider APIs directly. The Worker holds all API keys
+// (5 per provider) and handles rotation + automatic Assistant fallback.
 //
 // IMPORTANT: this file must only ever run on the SERVER (API routes,
 // Server Components). Never import it in a 'use client' file — that would

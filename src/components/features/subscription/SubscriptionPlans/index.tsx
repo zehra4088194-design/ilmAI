@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Check, Copy, Crown, Landmark, Rocket, Sparkles } from 'lucide-react';
+import { Check, Copy, CreditCard, Crown, Landmark, Loader2, Rocket, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,9 +10,11 @@ import { cn } from '@/lib/utils/cn';
 import { toast } from 'sonner';
 
 type BillingCycle = 'monthly' | 'annual';
+type PaymentAvailability = { paddleConfigured: boolean; payproConfigured: boolean; automatedAvailable: boolean };
 
-export function SubscriptionPlans({ currentTier }: { currentTier: string }) {
+export function SubscriptionPlans({ currentTier, paymentAvailability }: { currentTier: string; paymentAvailability: PaymentAvailability }) {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
+  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const symbol = CURRENCY_SYMBOLS.PKR;
 
@@ -33,14 +35,38 @@ export function SubscriptionPlans({ currentTier }: { currentTier: string }) {
     }
   };
 
+  const startCheckout = async (tier: 'PRO' | 'ELITE', region: 'PAKISTAN' | 'INTERNATIONAL') => {
+    setCheckoutLoading(`${tier}-${region}`);
+    try {
+      const res = await fetch('/api/payments/create-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tier, billingCycle, region }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.url) {
+        toast.error(json.error || 'Checkout start nahi ho saka. Manual payment use karein.');
+        return;
+      }
+      window.location.href = json.url;
+    } catch {
+      toast.error('Checkout start nahi ho saka. Manual payment use karein.');
+    } finally {
+      setCheckoutLoading(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100">
-        <p className="font-semibold text-amber-200">Manual payments only</p>
-        <p className="mt-1 text-amber-100/90">
-          Filhaal international/card checkout hide hai. Abhi sirf Easypaisa aur JazzCash par manual payment
-          accept ki ja rahi hai. Payment bhejne ke baad screenshot `zehra4088194@gmail.com` par bhej dein.
-          Within 1 hour your transaction will be verified.
+      <div className="rounded-2xl border border-border bg-card/80 p-4 text-sm">
+        <p className="font-semibold">Payment method currently available</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Badge variant={paymentAvailability.payproConfigured ? 'success' : 'secondary'}>PayPro / Pakistan {paymentAvailability.payproConfigured ? 'active' : 'manual fallback'}</Badge>
+          <Badge variant={paymentAvailability.paddleConfigured ? 'success' : 'secondary'}>Paddle / Card {paymentAvailability.paddleConfigured ? 'active' : 'not configured'}</Badge>
+          <Badge variant="outline">Easypaisa / JazzCash manual always available</Badge>
+        </div>
+        <p className="mt-3 text-muted-foreground">
+          Automated checkout configured ho to button show hoga. Agar provider env missing ho, broken checkout hide rahega aur manual Easypaisa/JazzCash flow use hoga.
         </p>
       </div>
 
@@ -144,6 +170,18 @@ export function SubscriptionPlans({ currentTier }: { currentTier: string }) {
                   </Button>
                 ) : (
                   <div className="space-y-3 rounded-2xl border border-border/70 bg-muted/20 p-4">
+                    {paymentAvailability.payproConfigured && (
+                      <Button className="w-full" variant="gradient" onClick={() => startCheckout(key as 'PRO' | 'ELITE', 'PAKISTAN')} disabled={checkoutLoading !== null}>
+                        {checkoutLoading === `${key}-PAKISTAN` ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
+                        Pay online with PayPro
+                      </Button>
+                    )}
+                    {paymentAvailability.paddleConfigured && (
+                      <Button className="w-full" variant="outline" onClick={() => startCheckout(key as 'PRO' | 'ELITE', 'INTERNATIONAL')} disabled={checkoutLoading !== null}>
+                        {checkoutLoading === `${key}-INTERNATIONAL` ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
+                        Pay by card with Paddle
+                      </Button>
+                    )}
                     <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                       <Landmark className="h-4 w-4 text-violet-400" />
                       Manual payment details

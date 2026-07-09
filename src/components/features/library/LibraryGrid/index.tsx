@@ -1,7 +1,8 @@
 'use client';
 import { useState, useMemo } from 'react';
-import { Search, Globe2, MapPin } from 'lucide-react';
+import { Search, Globe2, MapPin, LibraryBig } from 'lucide-react';
 import { GoogleDriveResourceCard } from '@/components/features/library/GoogleDriveResourceCard';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { cn } from '@/lib/utils/cn';
 
 interface RawResource {
@@ -54,8 +55,16 @@ export function LibraryGrid({ resources }: { resources: RawResource[] }) {
           />
         ))}
         {filtered.length === 0 && (
-          <div className="col-span-full text-center py-12 text-muted-foreground">
-            {tab === 'local' ? 'Koi local books abhi add nahi hui. Admin panel se add karo.' : 'Koi international books abhi add nahi hui. Admin panel se add karo.'}
+          <div className="col-span-full">
+            <EmptyState
+              icon={LibraryBig}
+              title={query ? 'No matching books found' : tab === 'local' ? 'No Pakistani books for this class yet' : 'No international books for this class yet'}
+              description={query ? 'Search ko thora broad karo, ya AI Tutor se topic explain karwa lo.' : 'Resources add hotay hi yahan show honge. Tab tak AI Tutor aur notes tools se study continue kar sakte ho.'}
+              primaryHref="/ai-tutor"
+              primaryLabel="Ask AI Tutor"
+              secondaryHref="/notes"
+              secondaryLabel="Open Notes"
+            />
           </div>
         )}
       </div>

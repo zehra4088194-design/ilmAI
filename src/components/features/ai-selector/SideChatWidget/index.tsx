@@ -26,7 +26,7 @@ const HIDE_ON_ROUTES = ['/mcq', '/practice', '/full-test', '/guess-paper'];
  * EXCEPT active question-answering pages (MCQ practice, full test, guess
  * paper) - see HIDE_ON_ROUTES above.
  * Separate from the full AI Tutor - this is for quick questions without
- * leaving the current page. Free tier = Groq only, same shared daily quota.
+ * leaving the current page. Free tier = Assistant only, same shared daily quota.
  */
 export function SideChatWidget() {
   const pathname = usePathname();

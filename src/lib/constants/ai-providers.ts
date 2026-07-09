@@ -7,11 +7,11 @@ export interface AIProviderOption {
   id: AiProviderId;
   label: string;
   emoji: string;
-  freeAvailable: boolean; // only Groq is true — everything else needs Pro/Elite
+  freeAvailable: boolean; // only Assistant is true - everything else needs Pro/Elite
 }
 
 export const AI_PROVIDERS: AIProviderOption[] = [
-  { id: 'groq', label: 'Groq (Llama)', emoji: '⚡', freeAvailable: true },
+  { id: 'groq', label: 'Assistant', emoji: '⚡', freeAvailable: true },
   { id: 'claude', label: 'Claude', emoji: '🟣', freeAvailable: false },
   { id: 'gpt', label: 'ChatGPT', emoji: '🟢', freeAvailable: false },
   { id: 'gemini', label: 'Gemini', emoji: '🔵', freeAvailable: false },

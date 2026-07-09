@@ -57,6 +57,32 @@ export function getPaymentProviderById(id: string): PaymentProvider {
   return provider;
 }
 
+export function getPaymentAvailability() {
+  const paddleConfigured = Boolean(
+    process.env.PADDLE_API_KEY &&
+    process.env.PADDLE_PRICE_ID_PRO_MONTHLY &&
+    process.env.PADDLE_PRICE_ID_PRO_ANNUAL &&
+    process.env.PADDLE_PRICE_ID_ELITE_MONTHLY &&
+    process.env.PADDLE_PRICE_ID_ELITE_ANNUAL
+  );
+  const payproConfigured = Boolean(
+    process.env.PAYPRO_API_KEY &&
+    process.env.PAYPRO_WEBHOOK_SECRET &&
+    process.env.PAYPRO_CHECKOUT_URL
+  );
+
+  return {
+    paddleConfigured,
+    payproConfigured,
+    automatedAvailable: paddleConfigured || payproConfigured,
+  };
+}
+
+export function isPaymentRegionConfigured(region: PaymentRegion) {
+  const availability = getPaymentAvailability();
+  return region === 'INTERNATIONAL' ? availability.paddleConfigured : availability.payproConfigured;
+}
+
 /** Pricing plan -> tier price map, gateway-agnostic. */
 export const PLAN_PRICES: Record<'PRO' | 'ELITE', { monthly: number; annual: number }> = {
   PRO: { monthly: 850, annual: 8160 },

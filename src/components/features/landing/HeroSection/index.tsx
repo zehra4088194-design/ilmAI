@@ -29,21 +29,21 @@ export function HeroSection() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
               <Badge variant="outline" className="mb-6 px-4 py-2 text-sm border-violet-500/50 text-violet-300 bg-violet-500/10">
                 <Sparkles className="w-3.5 h-3.5 mr-2" />
-                Pakistan Ka #1 AI Study Platform
+                School, College & University AI Study Platform
               </Badge>
             </motion.div>
 
             <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
               className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6">
               <span className="gradient-text">AI-Powered</span> Study<br />
-              for Pakistani<br />
-              <span className="text-violet-400">Students</span>
+              for School, College<br />
+              <span className="text-violet-400">& University Students</span>
             </motion.h1>
 
             <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
               className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto lg:mx-0">
-              FBISE, Punjab, Sindh, KPK — saare boards ke liye AI Tutor, 50,000+ MCQs, 
-              Past Papers aur Flashcards. <strong className="text-foreground">Bilkul Free mein shuru karo!</strong>
+              Board exams se semester assignments tak: AI Tutor, MCQs, Past Papers, Essays,
+              Presentations, Viva Prep aur Study Plans. <strong className="text-foreground">Free mein start karo!</strong>
             </motion.p>
 
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
@@ -67,7 +67,7 @@ export function HeroSection() {
                   <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-400 to-indigo-600 border-2 border-background flex items-center justify-center text-xs font-bold text-white">{i}</div>
                 ))}
               </div>
-              <div className="text-sm"><span className="font-bold text-foreground">50,000+</span> <span className="text-muted-foreground">students are already studying</span></div>
+              <div className="text-sm"><span className="font-bold text-foreground">School to University</span> <span className="text-muted-foreground">study workflows in one place</span></div>
             </motion.div>
           </motion.div>
 

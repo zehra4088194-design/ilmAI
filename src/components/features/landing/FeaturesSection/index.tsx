@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Brain, Zap, Trophy, BookOpen, BarChart3, FileText } from 'lucide-react';
 
 const FEATURES = [
-  { icon: Brain, title: 'AI Tutor 24/7', desc: 'Kabhi bhi, kahin bhi sawal pucho. Groq AI se instant, detailed answers milenge Urdu ya English mein.', color: 'from-violet-500 to-purple-600', badge: 'Most Popular' },
+  { icon: Brain, title: 'AI Tutor 24/7', desc: 'Kabhi bhi, kahin bhi sawal pucho. Assistant se instant, detailed answers milenge Urdu ya English mein.', color: 'from-violet-500 to-purple-600', badge: 'Most Popular' },
   { icon: Zap, title: 'Smart MCQ Engine', desc: '50,000+ verified MCQs with adaptive difficulty. Jitna practice karo, utna hi improve karo.', color: 'from-blue-500 to-indigo-600', badge: '50K+ Questions' },
   { icon: FileText, title: 'Past Papers', desc: '20 saal ke past papers ek jagah. Board-wise, year-wise filter karke practice karo.', color: 'from-green-500 to-emerald-600', badge: '20 Years' },
   { icon: BookOpen, title: 'Smart Flashcards', desc: 'AI-powered spaced repetition. Sirf woh cards dobara dikhaaye jaate hain jo tum nahi jaante.', color: 'from-amber-500 to-orange-600', badge: 'Spaced Repetition' },

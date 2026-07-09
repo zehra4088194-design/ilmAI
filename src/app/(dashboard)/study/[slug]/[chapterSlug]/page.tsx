@@ -41,6 +41,9 @@ export default async function ChapterDetailPage({
 
   const { data: subject } = await supabase.from('subjects').select('*').eq('slug', slug).single();
   if (!subject) notFound();
+  const subjectBoardVisible = !activeBoard || !Array.isArray(subject.boards) || subject.boards.length === 0 || subject.boards.includes(activeBoard);
+  const subjectGradeVisible = !activeGrade || !Array.isArray(subject.grade_levels) || subject.grade_levels.length === 0 || subject.grade_levels.includes(activeGrade);
+  if (!subjectBoardVisible || !subjectGradeVisible) notFound();
 
   const { data: rawChapters } = await supabase
     .from('chapters')
@@ -50,8 +53,11 @@ export default async function ChapterDetailPage({
     .order('order_index');
 
   const chapters = (rawChapters || []).filter((item) => {
-    if (!activeBoard) return true;
-    return !Array.isArray(item.boards) || item.boards.length === 0 || item.boards.includes(activeBoard);
+    const boardVisible = !activeBoard || !Array.isArray(item.boards) || item.boards.length === 0 || item.boards.includes(activeBoard);
+    const subjectHasMultipleGrades = Array.isArray(subject.grade_levels) && subject.grade_levels.length > 1;
+    const chapterHasGrades = Array.isArray(item.grade_levels) && item.grade_levels.length > 0;
+    const gradeVisible = !activeGrade || (chapterHasGrades ? item.grade_levels.includes(activeGrade) : !subjectHasMultipleGrades);
+    return boardVisible && gradeVisible;
   });
 
   const chapterIndex = chapters.findIndex((item) => item.slug === chapterSlug);

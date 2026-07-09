@@ -13,11 +13,11 @@ import type { GuessPaperResult } from '@/app/api/ai/guess-paper/route';
 import { toast } from 'sonner';
 
 export function GuessPaperClient({
-  subjects, userTier, defaultBoard,
-}: { subjects: { id: string; name: string; color: string }[]; userTier: SubscriptionTier; defaultBoard?: string }) {
+  subjects, userTier, defaultBoard, defaultGrade,
+}: { subjects: { id: string; name: string; color: string }[]; userTier: SubscriptionTier; defaultBoard?: string; defaultGrade?: string }) {
   const [selectedSubject, setSelectedSubject] = useState('');
   const [board, setBoard] = useState(defaultBoard || 'FBISE');
-  const [gradeLevel, setGradeLevel] = useState('GRADE_10');
+  const [gradeLevel, setGradeLevel] = useState(defaultGrade || 'GRADE_10');
   const [provider, setProvider] = useState<AiProviderId>('groq');
   const [aiTier, setAiTier] = useState<ModelTier>('mini');
   const [loading, setLoading] = useState(false);
@@ -55,14 +55,13 @@ export function GuessPaperClient({
             </div>
             <div>
               <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2 block">Board</label>
-              <select value={board} onChange={e => setBoard(e.target.value)} className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm">
+              <select value={board} onChange={e => setBoard(e.target.value)} disabled className="w-full h-10 rounded-lg border border-input bg-muted/40 px-3 text-sm text-muted-foreground">
                 {BOARDS.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}
               </select>
             </div>
             <div>
               <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2 block">Grade Level</label>
-              {/* TODO(module-1): read grade from getUserGradeLevel instead */}
-              <select value={gradeLevel} onChange={e => setGradeLevel(e.target.value)} className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm">
+              <select value={gradeLevel} onChange={e => setGradeLevel(e.target.value)} disabled className="w-full h-10 rounded-lg border border-input bg-muted/40 px-3 text-sm text-muted-foreground">
                 {GRADE_LEVELS.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}
               </select>
             </div>

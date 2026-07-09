@@ -1,21 +1,16 @@
 'use client';
-import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { FileText, Download } from 'lucide-react';
 import { BOARDS } from '@/lib/constants';
-import { cn } from '@/lib/utils/cn';
 
-export function PastPapersGrid({ subjects }: { subjects: { id: string; name: string; slug: string; color: string }[] }) {
-  const [selectedBoard, setSelectedBoard] = useState<string>('all');
+export function PastPapersGrid({ subjects, board }: { subjects: { id: string; name: string; slug: string; color: string }[]; board?: string }) {
+  const boardLabel = BOARDS.find((item) => item.value === board)?.label || 'Your board';
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap gap-2">
-        <button onClick={() => setSelectedBoard('all')} className={cn('px-3 py-1.5 rounded-full text-sm border transition-colors', selectedBoard === 'all' ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:border-violet-500/50')}>All Boards</button>
-        {BOARDS.map(b => (
-          <button key={b.value} onClick={() => setSelectedBoard(b.value)} className={cn('px-3 py-1.5 rounded-full text-sm border transition-colors', selectedBoard === b.value ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:border-violet-500/50')}>{b.label}</button>
-        ))}
+        <span className="px-3 py-1.5 rounded-full text-sm border bg-primary text-primary-foreground border-primary">{boardLabel}</span>
       </div>
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
         {subjects.map(subject => (

@@ -41,10 +41,13 @@ export function ChatInterface() {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.from('subjects').select('id, name').order('name').then(({ data }) => {
+    let query = supabase.from('subjects').select('id, name').eq('is_active', true).order('name');
+    if (user?.board) query = query.contains('boards', [user.board]);
+    if (user?.gradeLevel) query = query.contains('grade_levels', [user.gradeLevel]);
+    query.then(({ data }) => {
       if (data) setSubjects(data);
     });
-  }, []);
+  }, [user?.board, user?.gradeLevel]);
 
   const handleSend = async (text: string) => {
     let convId = activeConversationId;

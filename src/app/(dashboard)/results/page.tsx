@@ -2,7 +2,9 @@ import { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { formatRelativeTime } from '@/lib/utils/format';
+import { BarChart3 } from 'lucide-react';
 export const metadata: Metadata = { title: 'Results' };
 
 export default async function ResultsPage() {
@@ -25,7 +27,17 @@ export default async function ResultsPage() {
             </CardContent>
           </Card>
         ))}
-        {(!sessions || sessions.length === 0) && <div className="text-center py-12 text-muted-foreground">Koi quiz results nahi hain abhi. Practice shuru karo!</div>}
+        {(!sessions || sessions.length === 0) && (
+          <EmptyState
+            icon={BarChart3}
+            title="No quiz results yet"
+            description="Practice ya AI Testing complete karte hi tumhari score history, accuracy aur progress yahan show hogi."
+            primaryHref="/practice"
+            primaryLabel="Start Practice"
+            secondaryHref="/dashboard"
+            secondaryLabel="Back to Dashboard"
+          />
+        )}
       </div>
     </div>
   );

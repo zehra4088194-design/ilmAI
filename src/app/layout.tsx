@@ -4,21 +4,24 @@ import Script from 'next/script';
 import '@/styles/globals.css';
 import 'katex/dist/katex.min.css';
 import { Providers } from '@/providers';
+import { getSiteUrl } from '@/lib/utils/siteUrl';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
 const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono', display: 'swap' });
+const siteUrl = getSiteUrl();
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://ilm.ai'),
-  title: { default: 'ilm AI - Pakistan ka #1 AI Study Platform', template: '%s | ilm AI' },
-  description: 'Pakistan ka sabse advanced AI-powered study platform. FBISE, Punjab, Sindh, KPK boards ke liye MCQs, AI Tutor, Past Papers aur bahut kuch. Free mein start karo!',
-  keywords: ['ilm-ai', 'Pakistan study', 'FBISE', 'Punjab board', 'matric', 'inter', 'MCQ', 'AI tutor', 'past papers'],
+  metadataBase: new URL(siteUrl),
+  title: { default: 'ilm AI - AI Study Platform for School, College & University', template: '%s | ilm AI' },
+  description: 'AI-powered study platform for school, college, and university students: AI Tutor, MCQs, past papers, essays, assignments, presentations, viva prep, and study plans.',
+  keywords: ['ilm-ai', 'Pakistan study', 'FBISE', 'Punjab board', 'matric', 'inter', 'university', 'assignment help', 'AI tutor', 'past papers'],
   authors: [{ name: 'ilm AI Team' }],
   creator: 'ilm AI',
+  alternates: { canonical: '/' },
   openGraph: {
-    type: 'website', locale: 'en_PK', url: 'https://ilm.ai', siteName: 'ilm AI',
-    title: 'ilm AI - Pakistan ka #1 AI Study Platform',
-    description: 'AI-powered MCQ practice, tutoring, and past papers for Pakistani students.',
+    type: 'website', locale: 'en_PK', url: siteUrl, siteName: 'ilm AI',
+    title: 'ilm AI - AI Study Platform for School, College & University',
+    description: 'AI-powered tutoring, MCQ practice, assignments, presentations, viva prep, and past papers.',
     images: [{ url: '/images/og/og-default.png', width: 1200, height: 630 }],
   },
   twitter: { card: 'summary_large_image', site: '@ilm_ai' },

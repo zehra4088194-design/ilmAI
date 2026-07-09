@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       // Ensure a profile row exists (for OAuth sign-ups that skip our register form)
       const { data: existingProfile } = await supabase
         .from('profiles')
-        .select('id, role, board, grade_level, onboarding_completed, is_profile_complete')
+        .select('id, role, board, grade_level, education_level, university_program, university_semester, onboarding_completed, is_profile_complete')
         .eq('id', data.user.id)
         .maybeSingle();
       const resolvedRole = metadataRole ?? existingProfile?.role ?? 'student';
@@ -41,6 +41,9 @@ export async function GET(request: NextRequest) {
         role: Database['public']['Enums']['user_role'];
         board: Database['public']['Enums']['board_type'] | null;
         grade_level: Database['public']['Enums']['grade_level'] | null;
+        education_level: 'school' | 'college' | 'university';
+        university_program: string | null;
+        university_semester: string | null;
         onboarding_completed: boolean;
       };
 
@@ -50,6 +53,7 @@ export async function GET(request: NextRequest) {
           full_name: data.user.user_metadata?.full_name || data.user.email!.split('@')[0],
           avatar_url: data.user.user_metadata?.avatar_url || null,
           board: metadataBoard,
+          education_level: 'school',
           role: resolvedRole,
           onboarding_completed: resolvedRole !== 'student',
           subscription_tier: 'FREE', xp: 0, level: 1, streak: 0, total_study_time: 0,
@@ -59,6 +63,9 @@ export async function GET(request: NextRequest) {
           role: resolvedRole,
           board: metadataBoard,
           grade_level: null,
+          education_level: 'school',
+          university_program: null,
+          university_semester: null,
           onboarding_completed: resolvedRole !== 'student',
         };
       } else {
@@ -84,6 +91,9 @@ export async function GET(request: NextRequest) {
           role: resolvedRole,
           board: updates.board ?? existingProfile.board,
           grade_level: existingProfile.grade_level,
+          education_level: existingProfile.education_level,
+          university_program: existingProfile.university_program,
+          university_semester: existingProfile.university_semester,
           onboarding_completed: updates.onboarding_completed ?? existingProfile.onboarding_completed,
         };
       }

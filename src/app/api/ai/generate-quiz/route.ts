@@ -45,15 +45,30 @@ export async function POST(req: NextRequest) {
 
     const finalCount = cleanCount(count);
     const [{ data: subject }, { data: chapters }] = await Promise.all([
-      supabase.from('subjects').select('id, name').eq('id', subjectId).single(),
-      supabase.from('chapters').select('id, name').in('id', chapterIds),
+      supabase.from('subjects').select('id, name, boards, grade_levels').eq('id', subjectId).single(),
+      supabase.from('chapters').select('id, name, boards, grade_levels').in('id', chapterIds),
     ]);
 
     if (!subject || !chapters?.length) {
       return NextResponse.json({ status: 'error', error: 'Subject ya chapter nahi mila' }, { status: 404 });
     }
+    const board = profile?.board;
+    const grade = profile?.grade_level;
+    const subjectVisible =
+      (!board || !subject.boards?.length || subject.boards.includes(board)) &&
+      (!grade || !subject.grade_levels?.length || subject.grade_levels.includes(grade));
+    const subjectHasMultipleGrades = (subject.grade_levels || []).length > 1;
+    const visibleChapters = chapters.filter((chapter) => {
+      const boardVisible = !board || !chapter.boards?.length || chapter.boards.includes(board);
+      const gradeVisible = !grade || (chapter.grade_levels?.length ? chapter.grade_levels.includes(grade) : !subjectHasMultipleGrades);
+      return boardVisible && gradeVisible;
+    });
+    if (!subjectVisible || visibleChapters.length === 0) {
+      return NextResponse.json({ status: 'error', error: 'Yeh subject/chapter aapki class ke liye available nahi hai' }, { status: 403 });
+    }
 
-    const chapterNames = chapters.map((chapter) => chapter.name).join(', ');
+    const visibleChapterIds = visibleChapters.map((chapter) => chapter.id);
+    const chapterNames = visibleChapters.map((chapter) => chapter.name).join(', ');
     const result = await gatewayChat({
       provider: 'groq',
       tier: tier === 'FREE' ? 'mini' : 'medium',
@@ -83,7 +98,7 @@ Return ONLY valid JSON array, no markdown:
     const questions = parseAiJson<AiMcq[]>(result.text, []).map((q) => ({
       id: nanoid(),
       topicId: undefined,
-      chapterId: chapterIds[0],
+      chapterId: visibleChapterIds[0],
       subjectId,
       type: 'MCQ',
       difficulty: q.difficulty || difficulty,
@@ -103,7 +118,7 @@ Return ONLY valid JSON array, no markdown:
     }
 
     const session = {
-      id: nanoid(), userId: user.id, subjectId, chapterIds, questions: questions.slice(0, finalCount),
+      id: nanoid(), userId: user.id, subjectId, chapterIds: visibleChapterIds, questions: questions.slice(0, finalCount),
       currentIndex: 0, answers: {}, startedAt: new Date().toISOString(), timeSpent: 0, status: 'IN_PROGRESS',
       totalMarks: questions.slice(0, finalCount).reduce((sum: number, q: { marks: number }) => sum + (q.marks || 1), 0),
       correctCount: 0, incorrectCount: 0, skippedCount: 0, mode: 'PRACTICE',

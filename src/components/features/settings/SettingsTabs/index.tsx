@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils/cn';
 import { createClient } from '@/lib/supabase/client';
 import { BOARDS } from '@/lib/constants';
 import { toast } from 'sonner';
-import { User, Bell, Shield, Palette, Users, Languages } from 'lucide-react';
+import { User, Bell, Shield, Palette, Users, Languages, GraduationCap } from 'lucide-react';
 import { ParentMessageThread } from '@/components/ui/ParentMessageThread';
 import { RoutineTestsWidget } from '@/components/ui/RoutineTestsWidget';
 import { useTranslations, useLocale } from '@/providers/I18nProvider';
@@ -18,11 +18,18 @@ import {
   type GradeLevel,
   type ClassSelectionGradeLevel,
 } from '@/lib/supabase/getUserGradeLevel';
+import { EDUCATION_LEVELS, OUTPUT_STYLES, type EducationLevel, type PreferredOutputStyle } from '@/lib/constants/university';
 
 export function SettingsTabs({ profile, currentGradeLevel }: { profile: any; currentGradeLevel: GradeLevel | null }) {
   const [activeTab, setActiveTab] = useState('profile');
   const [fullName, setFullName] = useState(profile?.full_name || '');
   const [board, setBoard] = useState(profile?.board || '');
+  const [educationLevel, setEducationLevel] = useState<EducationLevel>(profile?.education_level || 'school');
+  const [program, setProgram] = useState(profile?.university_program || '');
+  const [semester, setSemester] = useState(profile?.university_semester || '');
+  const [courses, setCourses] = useState((profile?.university_courses || []).join(', '));
+  const [examTargetDate, setExamTargetDate] = useState(profile?.university_exam_target_date || '');
+  const [preferredOutputStyle, setPreferredOutputStyle] = useState<PreferredOutputStyle>(profile?.preferred_output_style || 'simple');
   const [saving, setSaving] = useState(false);
   const [inviteCode, setInviteCode] = useState('');
   const [linking, setLinking] = useState(false);
@@ -38,6 +45,7 @@ export function SettingsTabs({ profile, currentGradeLevel }: { profile: any; cur
 
   const TABS = [
     { id: 'profile', label: t('settings.tabs.profile'), icon: User },
+    { id: 'university', label: 'University Mode', icon: GraduationCap },
     { id: 'parent-link', label: t('settings.tabs.parentLink'), icon: Users },
     { id: 'notifications', label: t('settings.tabs.notifications'), icon: Bell },
     { id: 'security', label: t('settings.tabs.security'), icon: Shield },
@@ -63,8 +71,30 @@ export function SettingsTabs({ profile, currentGradeLevel }: { profile: any; cur
 
   const handleSave = async () => {
     setSaving(true);
-    const { error } = await supabase.from('profiles').update({ full_name: fullName, board, updated_at: new Date().toISOString() }).eq('id', profile.id);
+    const { error } = await supabase.from('profiles').update({
+      full_name: fullName,
+      board,
+      education_level: educationLevel,
+      updated_at: new Date().toISOString(),
+    }).eq('id', profile.id);
     if (error) toast.error(error.message); else toast.success('Profile update ho gaya!');
+    setSaving(false);
+  };
+
+  const handleUniversitySave = async () => {
+    setSaving(true);
+    const { error } = await supabase.from('profiles').update({
+      education_level: educationLevel,
+      university_program: program.trim() || null,
+      university_semester: semester.trim() || null,
+      university_courses: courses.split(',').map((course: string) => course.trim()).filter(Boolean).slice(0, 12),
+      university_exam_target_date: examTargetDate || null,
+      preferred_output_style: preferredOutputStyle,
+      is_profile_complete: educationLevel === 'university' && program.trim() && semester.trim() ? true : profile?.is_profile_complete,
+      onboarding_completed: educationLevel === 'university' && program.trim() && semester.trim() ? true : profile?.onboarding_completed,
+      updated_at: new Date().toISOString(),
+    }).eq('id', profile.id);
+    if (error) toast.error(error.message); else toast.success('University settings save ho gayi!');
     setSaving(false);
   };
 
@@ -109,6 +139,41 @@ export function SettingsTabs({ profile, currentGradeLevel }: { profile: any; cur
               </div>
               <Button variant="gradient" onClick={handleSave} loading={saving}>Save Changes</Button>
               {classSettingsGrade && <ClassSettingsCard currentGradeLevel={classSettingsGrade} />}
+            </div>
+          )}
+          {activeTab === 'university' && (
+            <div className="space-y-5">
+              <div>
+                <h3 className="font-semibold mb-1 flex items-center gap-2"><GraduationCap className="w-4 h-4 text-violet-400" />Education Level</h3>
+                <p className="text-sm text-muted-foreground">University Mode select karne se dashboard assignment, essay, presentation, viva aur semester tools show karega.</p>
+              </div>
+              <div className="grid sm:grid-cols-3 gap-3">
+                {EDUCATION_LEVELS.map((level) => (
+                  <button
+                    key={level.value}
+                    onClick={() => setEducationLevel(level.value)}
+                    className={cn('rounded-xl border p-3 text-left transition-colors', educationLevel === level.value ? 'border-violet-500 bg-violet-500/10' : 'border-border hover:border-violet-500/30')}
+                  >
+                    <span className="block text-sm font-semibold">{level.label}</span>
+                    <span className="text-xs text-muted-foreground">{level.description}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div><label className="text-sm font-medium mb-1.5 block">Degree / Program</label><Input value={program} onChange={e => setProgram(e.target.value)} placeholder="BS Computer Science" /></div>
+                <div><label className="text-sm font-medium mb-1.5 block">Semester</label><Input value={semester} onChange={e => setSemester(e.target.value)} placeholder="Semester 5" /></div>
+                <div className="sm:col-span-2"><label className="text-sm font-medium mb-1.5 block">Subjects / Courses</label><Input value={courses} onChange={e => setCourses(e.target.value)} placeholder="AI, Software Engineering, Statistics" /></div>
+                <div><label className="text-sm font-medium mb-1.5 block">Exam target date</label><Input type="date" value={examTargetDate} onChange={e => setExamTargetDate(e.target.value)} /></div>
+                <div><label className="text-sm font-medium mb-1.5 block">Preferred output style</label>
+                  <select value={preferredOutputStyle} onChange={e => setPreferredOutputStyle(e.target.value as PreferredOutputStyle)} className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm">
+                    {OUTPUT_STYLES.map(style => <option key={style.value} value={style.value}>{style.label}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="rounded-xl border border-amber-500/25 bg-amber-500/10 p-3 text-xs text-amber-600 dark:text-amber-300">
+                Use AI output as a study draft. Review, personalize, and verify before submission.
+              </div>
+              <Button variant="gradient" onClick={handleUniversitySave} loading={saving}>Save University Mode</Button>
             </div>
           )}
           {activeTab === 'parent-link' && (

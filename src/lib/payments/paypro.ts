@@ -1,10 +1,9 @@
 // ============================================
 // PAYPRO PROVIDER (Pakistan Payments)
 // ============================================
-// TODO: Wire this up to the real PayPro Global / PayPro Pakistan API once
-// PAYPRO_API_KEY and PAYPRO_WEBHOOK_SECRET env vars are set. This file
-// currently returns safe placeholder responses so the app builds and runs
-// without a live PayPro account.
+// TODO: Wire this up to the real PayPro Global / PayPro Pakistan API when
+// the merchant contract is available. Until then, only a configured hosted
+// checkout URL is considered live so users never hit a fake success page.
 // ============================================
 import type {
   PaymentProvider,
@@ -17,42 +16,42 @@ import type {
 
 const PAYPRO_API_KEY = process.env.PAYPRO_API_KEY;
 const PAYPRO_WEBHOOK_SECRET = process.env.PAYPRO_WEBHOOK_SECRET;
+const PAYPRO_CHECKOUT_URL = process.env.PAYPRO_CHECKOUT_URL;
 
 export const payproProvider: PaymentProvider = {
   id: 'paypro',
 
   async createCheckout(params: CreateCheckoutParams): Promise<CheckoutSession> {
-    // TODO: Replace with real PayPro checkout/order creation call.
-    // PayPro is commonly used for JazzCash / Easypaisa / local card rails in Pakistan.
-    // Use params.currency ('PKR' | 'INR') as the order currency — PayPro's
-    // Pakistan rails are PKR-first, so an 'INR' order here would be unusual
-    // (an Indian student would normally go through the INTERNATIONAL/Paddle
-    // flow instead) but the field is passed through regardless in case a
-    // regional PayPro India integration is added later.
-    if (!PAYPRO_API_KEY) {
-      console.warn('[paypro] PAYPRO_API_KEY not set — returning placeholder checkout session');
+    if (!PAYPRO_API_KEY || !PAYPRO_CHECKOUT_URL) {
+      throw new Error('PayPro online checkout is not configured');
     }
 
+    const checkoutUrl = new URL(PAYPRO_CHECKOUT_URL);
+    checkoutUrl.searchParams.set('user_id', params.userId);
+    checkoutUrl.searchParams.set('email', params.userEmail);
+    checkoutUrl.searchParams.set('tier', params.tier);
+    checkoutUrl.searchParams.set('billing_cycle', params.billingCycle);
+    checkoutUrl.searchParams.set('currency', params.currency);
+    checkoutUrl.searchParams.set('success_url', params.successUrl);
+    checkoutUrl.searchParams.set('cancel_url', params.cancelUrl);
+
     return {
-      url: `${params.successUrl}?provider=paypro&status=not_configured`,
-      providerSessionId: `paypro_placeholder_${params.userId}_${Date.now()}`,
+      url: checkoutUrl.toString(),
+      providerSessionId: `paypro_hosted_${params.userId}_${Date.now()}`,
     };
   },
 
   async cancelSubscription(_params: CancelSubscriptionParams): Promise<{ success: boolean }> {
-    // TODO: Call PayPro's subscription cancellation endpoint.
     console.warn('[paypro] cancelSubscription not implemented yet');
     return { success: false };
   },
 
   async getSubscription(_providerSubscriptionId: string): Promise<SubscriptionRecord | null> {
-    // TODO: Fetch subscription/order details from PayPro.
     console.warn('[paypro] getSubscription not implemented yet');
     return null;
   },
 
   async verifyWebhook(rawBody: string, signatureHeader: string | null): Promise<WebhookVerificationResult> {
-    // TODO: Verify using PayPro's signature scheme once documented/configured.
     if (!PAYPRO_WEBHOOK_SECRET || !signatureHeader) {
       return { valid: false };
     }

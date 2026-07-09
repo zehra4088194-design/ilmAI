@@ -16,7 +16,7 @@
 --   full_name,                     -- e.g. "Sir Zafar" (realistic Pakistani teacher name)
 --   role,                          -- 'teacher'
 --   is_ai_operated,                -- true
---   ai_persona_provider,           -- 'groq'
+--   ai_persona_provider,           -- default assistant provider
 --   ai_persona_tier,               -- 'medium'
 --   subscription_tier,             -- 'ELITE' (no limits)
 --   is_profile_complete,           -- true

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { getPaymentProvider, type PaymentRegion } from '@/lib/payments';
+import { getPaymentProvider, isPaymentRegionConfigured, type PaymentRegion } from '@/lib/payments';
 import { getCurrencyForBoard } from '@/lib/constants';
+import { getSiteUrl } from '@/lib/utils/siteUrl';
 
 export async function POST(req: NextRequest) {
   try {
@@ -25,6 +26,12 @@ export async function POST(req: NextRequest) {
     if (region !== 'INTERNATIONAL' && region !== 'PAKISTAN') {
       return NextResponse.json({ status: 'error', error: 'Invalid payment region' }, { status: 400 });
     }
+    if (!isPaymentRegionConfigured(region)) {
+      return NextResponse.json(
+        { status: 'manual_required', error: 'Online checkout is not configured yet. Manual Easypaisa/JazzCash payment is currently available.' },
+        { status: 400 }
+      );
+    }
 
     // Currency is resolved server-side from the user's own profile — never
     // trusted from the client — same board->country logic the pricing page
@@ -33,7 +40,7 @@ export async function POST(req: NextRequest) {
     const currency = getCurrencyForBoard(profile?.board);
 
     const provider = getPaymentProvider(region);
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+    const appUrl = getSiteUrl();
 
     const session = await provider.createCheckout({
       userId: user.id,

@@ -1,7 +1,8 @@
 import type { MetadataRoute } from 'next';
+import { getSiteUrl } from '@/lib/utils/siteUrl';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ilm.ai';
+  const baseUrl = getSiteUrl();
   const routes = ['', '/about', '/pricing', '/blog', '/contact', '/login', '/register'];
   return routes.map((route) => ({
     url: `${baseUrl}${route}`,

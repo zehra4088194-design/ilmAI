@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Star, Sparkles } from 'lucide-react';
+import { Star, Sparkles, Layers3 } from 'lucide-react';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { toast } from 'sonner';
 
 export function FlashcardDeckGrid({ decks }: { decks: any[] }) {
@@ -48,7 +49,15 @@ export function FlashcardDeckGrid({ decks }: { decks: any[] }) {
             </CardContent>
           </Card>
         ))}
-        {decks.length === 0 && <div className="col-span-full text-center py-8 text-muted-foreground">Koi deck nahi hai abhi. Upar se AI se banao!</div>}
+        {decks.length === 0 && (
+          <div className="col-span-full">
+            <EmptyState
+              icon={Layers3}
+              title="No flashcard decks yet"
+              description="Topic likho aur AI tumhare liye revision flashcards bana dega. Start with formulas, definitions, dates, or chapter names."
+            />
+          </div>
+        )}
       </div>
     </div>
   );

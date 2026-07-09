@@ -13,6 +13,8 @@ export type ConversationRole = 'user' | 'assistant' | 'system';
 
 export type AiProviderId = 'groq' | 'claude' | 'gpt' | 'gemini';
 export type UserRole = 'student' | 'parent' | 'teacher' | 'admin';
+export type EducationLevel = 'school' | 'college' | 'university';
+export type PreferredOutputStyle = 'simple' | 'academic' | 'professional' | 'detailed';
 
 // User & Profile
 export interface UserProfile {
@@ -49,6 +51,12 @@ export interface UserProfile {
   totalMarksPercentage?: number;
   previousRollNumber?: string;
   optionalSubjectIds: string[];
+  educationLevel: EducationLevel;
+  universityProgram?: string;
+  universitySemester?: string;
+  universityCourses: string[];
+  universityExamTargetDate?: string;
+  preferredOutputStyle: PreferredOutputStyle;
 }
 
 // Subject & Content

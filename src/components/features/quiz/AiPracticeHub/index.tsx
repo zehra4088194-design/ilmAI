@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { ScanUpload } from '@/components/features/ocr/ScanUpload';
 import { AiAnswerRenderer } from '@/components/features/ai/AiAnswerRenderer';
 import { useAuthStore } from '@/store/auth.store';
@@ -305,7 +306,17 @@ export function AiPracticeHub({ subjects, chaptersBySubject }: AiPracticeHubProp
             </motion.div>
           ))}
           {subjects.length === 0 && (
-            <div className="col-span-full text-center py-12 text-muted-foreground">Koi subjects available nahi hain abhi. Jald hi add honge!</div>
+            <div className="col-span-full">
+              <EmptyState
+                icon={BookOpen}
+                title="No subjects found for your class"
+                description="Profile ki board/class ke mutabiq subjects yahan aate hain. Profile check karo, ya AI Tutor se topic-wise help le lo."
+                primaryHref="/settings"
+                primaryLabel="Check Profile"
+                secondaryHref="/ai-tutor"
+                secondaryLabel="Ask AI Tutor"
+              />
+            </div>
           )}
         </div>
       )}
@@ -336,9 +347,12 @@ export function AiPracticeHub({ subjects, chaptersBySubject }: AiPracticeHubProp
                       </button>
                     ))}
                     {chapters.length === 0 && (
-                      <p className="text-sm text-muted-foreground text-center py-8">
-                        Is selected class/board ke liye is subject mein abhi chapter names add nahi hain.
-                      </p>
+                      <EmptyState
+                        icon={ListChecks}
+                        title="No chapters for this subject yet"
+                        description="Sirf tumhari selected board/class ke chapters show hote hain. Chapter names add hote hi AI MCQs, short aur long tests yahan ban jayenge."
+                        className="py-8"
+                      />
                     )}
                   </div>
                 </div>

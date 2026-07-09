@@ -35,7 +35,7 @@ interface MagicNotesResult {
 //
 // Live Voice Call itself is Elite-only (see /api/ai/live/session), so every
 // caller here is already an Elite user — we still respect the daily Gemini
-// quota and fall back to Groq if it's exhausted, rather than blocking the
+// quota and fall back to Assistant if it's exhausted, rather than blocking the
 // feature outright (this is a bonus on top of the call, not the call itself,
 // so a quiet quality downgrade is better than an error).
 export async function POST(req: NextRequest) {
@@ -77,7 +77,7 @@ Return ONLY valid JSON, no markdown fences, no extra text:
     ];
 
     // Prefer Gemini (per the product spec) while the daily quota lasts;
-    // quietly drop to Groq once it's spent — same silent-fallback philosophy
+    // quietly drop to Assistant once it's spent - same silent-fallback philosophy
     // already used by the gateway/worker for provider outages.
     let result;
     const geminiQuota = await checkModelTierLimit(user.id, 'gemini', 'mini');

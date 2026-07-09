@@ -7,7 +7,7 @@
 
 alter table public.profiles add column if not exists role user_role not null default 'student';
 alter table public.profiles add column if not exists is_ai_operated boolean not null default false;
-alter table public.profiles add column if not exists ai_persona_provider text; -- 'groq' | 'claude' | 'gpt' | 'gemini', null if not AI-operated
+alter table public.profiles add column if not exists ai_persona_provider text; -- default assistant | claude | gpt | gemini, null if not AI-operated
 alter table public.profiles add column if not exists ai_persona_tier text default 'medium';
 create index if not exists idx_profiles_role on public.profiles(role);
 

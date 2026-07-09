@@ -67,7 +67,7 @@ export async function checkQuizLimit(userId: string, tier: SubscriptionTier) {
 // mini -> 10 calls/day (cheap small models)
 // medium -> 7 calls/day (mid-size models)
 // pro -> 3 calls/day (largest/most expensive models)
-// Groq is unmetered here — it uses the normal AI-message pool instead,
+// The default Assistant is unmetered here - it uses the normal AI-message pool instead,
 // since it's fast/cheap enough to treat as the "default" provider.
 // ============================================
 const MODEL_TIER_DAILY_LIMITS: Record<'mini' | 'medium' | 'pro', number> = {

@@ -17,7 +17,7 @@ interface AIProviderSelectorProps {
 /**
  * Dropdown used everywhere an AI call is made (AI Tutor, Quiz/Flashcard generation,
  * Side Chat, Explain, etc). Free tier always shows locked Claude/GPT/Gemini options
- * with an upgrade nudge — only Groq is selectable.
+ * with an upgrade nudge - only Assistant is selectable.
  */
 export function AIProviderSelector({ provider, tier, onChange, isFreeTier, compact = false }: AIProviderSelectorProps) {
   const [open, setOpen] = useState(false);

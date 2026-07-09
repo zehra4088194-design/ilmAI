@@ -6,6 +6,7 @@ import {
   CLASS_SELECTION_GRADE_LEVELS,
   type GradeLevel,
 } from '@/lib/supabase/getUserGradeLevel';
+import { EDUCATION_LEVELS, OUTPUT_STYLES, type EducationLevel, type PreferredOutputStyle } from '@/lib/constants/university';
 
 export interface ActionResult {
   success: boolean;
@@ -19,6 +20,14 @@ function isValidGradeLevel(value: unknown): value is (typeof CLASS_SELECTION_GRA
       value as (typeof CLASS_SELECTION_GRADE_LEVELS)[number]
     )
   );
+}
+
+function isValidEducationLevel(value: unknown): value is EducationLevel {
+  return typeof value === 'string' && EDUCATION_LEVELS.some((level) => level.value === value);
+}
+
+function isValidOutputStyle(value: unknown): value is PreferredOutputStyle {
+  return typeof value === 'string' && OUTPUT_STYLES.some((style) => style.value === value);
 }
 
 async function requireStudentProfile() {
@@ -51,10 +60,14 @@ async function requireStudentProfile() {
 }
 
 export async function completeOnboarding(
-  gradeLevel: GradeLevel
+  gradeLevel: GradeLevel,
+  educationLevel: EducationLevel = 'school'
 ): Promise<ActionResult> {
   if (!isValidGradeLevel(gradeLevel)) {
     return { success: false, error: 'Invalid grade level provided.' };
+  }
+  if (!isValidEducationLevel(educationLevel) || educationLevel === 'university') {
+    return { success: false, error: 'Invalid education level provided.' };
   }
 
   const { supabase, user, error } = await requireStudentProfile();
@@ -66,6 +79,7 @@ export async function completeOnboarding(
     .from('profiles')
     .update({
       grade_level: gradeLevel,
+      education_level: educationLevel,
       onboarding_completed: true,
       is_profile_complete: true,
     })
@@ -78,6 +92,50 @@ export async function completeOnboarding(
 
   revalidatePath('/', 'layout');
 
+  return { success: true };
+}
+
+export async function completeUniversityOnboarding(input: {
+  program: string;
+  semester: string;
+  courses: string[];
+  examTargetDate?: string | null;
+  preferredOutputStyle: PreferredOutputStyle;
+}): Promise<ActionResult> {
+  const program = input.program.trim();
+  const semester = input.semester.trim();
+  const courses = input.courses.map((course) => course.trim()).filter(Boolean).slice(0, 12);
+  const preferredOutputStyle = isValidOutputStyle(input.preferredOutputStyle) ? input.preferredOutputStyle : 'simple';
+
+  if (!program || !semester) {
+    return { success: false, error: 'Program aur semester zaroori hain.' };
+  }
+
+  const { supabase, user, error } = await requireStudentProfile();
+  if (!supabase || !user) {
+    return { success: false, error: error ?? 'Could not save university mode. Please try again.' };
+  }
+
+  const { error: updateError } = await supabase
+    .from('profiles')
+    .update({
+      education_level: 'university',
+      university_program: program,
+      university_semester: semester,
+      university_courses: courses,
+      university_exam_target_date: input.examTargetDate || null,
+      preferred_output_style: preferredOutputStyle,
+      onboarding_completed: true,
+      is_profile_complete: true,
+    })
+    .eq('id', user.id);
+
+  if (updateError) {
+    console.error('[completeUniversityOnboarding] Update failed:', updateError);
+    return { success: false, error: 'Could not save university mode. Please try again.' };
+  }
+
+  revalidatePath('/', 'layout');
   return { success: true };
 }
 

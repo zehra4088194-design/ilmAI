@@ -1,11 +1,12 @@
 'use client';
+
 import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2, ChevronUp, ChevronDown, Pencil, Check, X } from 'lucide-react';
-import { BOARDS } from '@/lib/constants';
+import { BOARDS, GRADE_LEVELS } from '@/lib/constants';
 import { toast } from 'sonner';
 
 interface Chapter {
@@ -13,51 +14,62 @@ interface Chapter {
   name: string;
   order_index: number;
   boards: string[];
+  grade_levels: string[];
   is_active: boolean;
 }
 
 interface ChapterManagerProps {
   subjectId: string;
   subjectBoards: string[];
+  subjectGradeLevels: string[];
   initialChapters: Chapter[];
 }
 
-// Only show board checkboxes for boards this subject actually supports —
-// grouped by country (PK/IN) so admins can quickly tag a chapter as
-// "Pakistan-only" or "India-only" without hunting through the full list.
 function boardsByCountry(subjectBoards: string[]) {
   const relevant = BOARDS.filter((b) => subjectBoards.includes(b.value));
   return {
-    PK: relevant.filter((b) => b.country === 'PK' || (!('country' in b))),
+    PK: relevant.filter((b) => b.country === 'PK' || !('country' in b)),
     IN: relevant.filter((b) => b.country === 'IN'),
   };
 }
 
-export function ChapterManager({ subjectId, subjectBoards, initialChapters }: ChapterManagerProps) {
+export function ChapterManager({ subjectId, subjectBoards, subjectGradeLevels, initialChapters }: ChapterManagerProps) {
   const [chapters, setChapters] = useState<Chapter[]>(initialChapters);
   const [newName, setNewName] = useState('');
   const [newBoards, setNewBoards] = useState<string[]>([]);
+  const [newGradeLevels, setNewGradeLevels] = useState<string[]>([]);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editBoards, setEditBoards] = useState<string[]>([]);
+  const [editGradeLevels, setEditGradeLevels] = useState<string[]>([]);
 
   const grouped = boardsByCountry(subjectBoards);
+  const availableGrades = GRADE_LEVELS.filter((g) => subjectGradeLevels.includes(g.value));
+
+  const toggleValue = (list: string[], value: string, setList: (v: string[]) => void) => {
+    setList(list.includes(value) ? list.filter((item) => item !== value) : [...list, value]);
+  };
 
   const handleAdd = async () => {
     if (!newName.trim()) return;
+    if (availableGrades.length > 1 && newGradeLevels.length === 0) {
+      toast.error('Is subject me multiple classes hain, chapter ke liye class select karo');
+      return;
+    }
     setIsAdding(true);
     try {
       const res = await fetch('/api/admin/chapters', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subjectId, name: newName.trim(), boards: newBoards }),
+        body: JSON.stringify({ subjectId, name: newName.trim(), boards: newBoards, gradeLevels: newGradeLevels }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
       setChapters((prev) => [...prev, json.chapter].sort((a, b) => a.order_index - b.order_index));
       setNewName('');
       setNewBoards([]);
+      setNewGradeLevels([]);
       toast.success('Chapter add ho gaya!');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Kuch ghalat ho gaya');
@@ -82,14 +94,19 @@ export function ChapterManager({ subjectId, subjectBoards, initialChapters }: Ch
     setEditingId(c.id);
     setEditName(c.name);
     setEditBoards(c.boards || []);
+    setEditGradeLevels(c.grade_levels || []);
   };
 
   const saveEdit = async (id: string) => {
+    if (availableGrades.length > 1 && editGradeLevels.length === 0) {
+      toast.error('Is subject me multiple classes hain, chapter ke liye class select karo');
+      return;
+    }
     try {
       const res = await fetch(`/api/admin/chapters/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: editName.trim(), boards: editBoards }),
+        body: JSON.stringify({ name: editName.trim(), boards: editBoards, gradeLevels: editGradeLevels }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
@@ -119,10 +136,6 @@ export function ChapterManager({ subjectId, subjectBoards, initialChapters }: Ch
     }
   };
 
-  const toggleBoard = (list: string[], value: string, setList: (v: string[]) => void) => {
-    setList(list.includes(value) ? list.filter((b) => b !== value) : [...list, value]);
-  };
-
   const BoardCheckboxes = ({ selected, onToggle }: { selected: string[]; onToggle: (v: string) => void }) => (
     <div className="flex flex-wrap gap-3 text-xs">
       {grouped.PK.length > 0 && (
@@ -150,9 +163,21 @@ export function ChapterManager({ subjectId, subjectBoards, initialChapters }: Ch
     </div>
   );
 
+  const GradeCheckboxes = ({ selected, onToggle }: { selected: string[]; onToggle: (v: string) => void }) => (
+    <div className="flex flex-wrap gap-2 text-xs">
+      {availableGrades.map((grade) => (
+        <label key={grade.value} className="flex items-center gap-1 cursor-pointer">
+          <input type="checkbox" checked={selected.includes(grade.value)} onChange={() => onToggle(grade.value)} />
+          {grade.label}
+        </label>
+      ))}
+    </div>
+  );
+
+  const gradeLabel = (value: string) => GRADE_LEVELS.find((g) => g.value === value)?.label || value;
+
   return (
     <div className="space-y-4">
-      {/* Add new chapter */}
       <Card>
         <CardContent className="p-5 space-y-3">
           <p className="text-sm font-semibold">Naya chapter add karo</p>
@@ -160,12 +185,14 @@ export function ChapterManager({ subjectId, subjectBoards, initialChapters }: Ch
             <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Chapter ka naam (e.g. Kinematics)" onKeyDown={(e) => { if (e.key === 'Enter') handleAdd(); }} />
             <Button onClick={handleAdd} disabled={isAdding || !newName.trim()}><Plus className="w-4 h-4 mr-1" /> Add</Button>
           </div>
-          <BoardCheckboxes selected={newBoards} onToggle={(v) => toggleBoard(newBoards, v, setNewBoards)} />
-          <p className="text-[11px] text-muted-foreground">Koi board select nahi kiya to yeh chapter subject ke SAARE boards par dikhega. Sirf Pakistan ya sirf India ke liye alag rakhne ke liye respective boards select karo.</p>
+          <BoardCheckboxes selected={newBoards} onToggle={(v) => toggleValue(newBoards, v, setNewBoards)} />
+          <GradeCheckboxes selected={newGradeLevels} onToggle={(v) => toggleValue(newGradeLevels, v, setNewGradeLevels)} />
+          <p className="text-[11px] text-muted-foreground">
+            Koi board/class select nahi ki to chapter subject ke saare boards/classes par dikhega.
+          </p>
         </CardContent>
       </Card>
 
-      {/* Chapter list */}
       <div className="space-y-2">
         {chapters.map((c, i) => (
           <Card key={c.id}>
@@ -173,7 +200,8 @@ export function ChapterManager({ subjectId, subjectBoards, initialChapters }: Ch
               {editingId === c.id ? (
                 <div className="space-y-3">
                   <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
-                  <BoardCheckboxes selected={editBoards} onToggle={(v) => toggleBoard(editBoards, v, setEditBoards)} />
+                  <BoardCheckboxes selected={editBoards} onToggle={(v) => toggleValue(editBoards, v, setEditBoards)} />
+                  <GradeCheckboxes selected={editGradeLevels} onToggle={(v) => toggleValue(editGradeLevels, v, setEditGradeLevels)} />
                   <div className="flex gap-2">
                     <Button size="sm" onClick={() => saveEdit(c.id)}><Check className="w-3.5 h-3.5 mr-1" /> Save</Button>
                     <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}><X className="w-3.5 h-3.5 mr-1" /> Cancel</Button>
@@ -192,6 +220,11 @@ export function ChapterManager({ subjectId, subjectBoards, initialChapters }: Ch
                         <Badge variant="secondary" className="text-[10px]">All boards</Badge>
                       ) : (
                         c.boards.map((b) => <Badge key={b} variant="secondary" className="text-[10px]">{b}</Badge>)
+                      )}
+                      {(c.grade_levels || []).length === 0 ? (
+                        <Badge variant="outline" className="text-[10px]">All classes</Badge>
+                      ) : (
+                        c.grade_levels.map((level) => <Badge key={level} variant="outline" className="text-[10px]">{gradeLabel(level)}</Badge>)
                       )}
                     </div>
                   </div>

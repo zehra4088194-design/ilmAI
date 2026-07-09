@@ -17,9 +17,9 @@ npm run dev
 
 ## Key Features
 
-- 🤖 Multi-provider AI (Groq/Claude/GPT/Gemini) with automatic 5-key rotation + silent failover
+- 🤖 Multi-provider AI (Assistant/Claude/GPT/Gemini) with automatic 5-key rotation + silent failover
 - 📷 OCR scanning (OCR.space for printed, Gemini Vision for handwritten)
-- 🎯 AI Guess Papers, Full Board-Pattern Tests, MCQ Practice with 10s timer
+- 🎯 AI Guess Papers, Full Board-Pattern Tests, AI Testing with MCQs, short and long questions
 - 📚 Library with Google Drive book links (Local + International)
 - 🎓 "Ask a Teacher" doubt board (AI-operated teacher accounts)
 - 📅 AI-generated personalized study routines
@@ -30,7 +30,7 @@ npm run dev
 ## Architecture
 
 ```
-Browser → Next.js (Vercel) → Cloudflare Worker (AI Gateway) → Groq/Claude/GPT/Gemini/OCR.space
+Browser → Next.js (Vercel) → Cloudflare Worker (AI Gateway) → Assistant/Claude/GPT/Gemini/OCR.space
                             → Supabase (Postgres + Auth)
                             → Upstash Redis (rate limiting)
                             → Paddle / PayPro (payments)

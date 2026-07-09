@@ -40,14 +40,10 @@ export default async function StudyPage() {
   if (activeBoard) subjectsQuery = subjectsQuery.contains('boards', [activeBoard]);
   if (activeGrade) subjectsQuery = subjectsQuery.contains('grade_levels', [activeGrade]);
 
-  let { data: subjects } = await subjectsQuery;
-
-  if ((!subjects || subjects.length === 0) && (activeBoard || activeGrade)) {
-    const fallback = await supabase.from('subjects').select('*').eq('is_active', true).order('name');
-    subjects = fallback.data ?? [];
-  }
+  const { data: subjects } = await subjectsQuery;
 
   const subjectIds = (subjects || []).map((subject) => subject.id);
+  const subjectGradeCounts = new Map((subjects || []).map((subject) => [subject.id, (subject.grade_levels || []).length]));
   const { data: chapters } = subjectIds.length
     ? await supabase
         .from('chapters')
@@ -64,6 +60,15 @@ export default async function StudyPage() {
       Array.isArray(chapter.boards) &&
       chapter.boards.length > 0 &&
       !chapter.boards.includes(activeBoard)
+    ) {
+      continue;
+    }
+    if (
+      activeGrade &&
+      (
+        (Array.isArray(chapter.grade_levels) && chapter.grade_levels.length > 0 && !chapter.grade_levels.includes(activeGrade)) ||
+        ((!Array.isArray(chapter.grade_levels) || chapter.grade_levels.length === 0) && (subjectGradeCounts.get(chapter.subject_id) || 0) > 1)
+      )
     ) {
       continue;
     }
