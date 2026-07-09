@@ -21,12 +21,16 @@ export interface OcrRequest {
   imageBuffer: Buffer;
   mimeType: string;
   userTier: SubscriptionTier;
+  mode?: 'printed' | 'handwritten';
 }
 
 export const OCR_FREE_DAILY_LIMIT = 5;
 
-export async function performOcr({ imageBuffer, mimeType, userTier }: OcrRequest): Promise<OcrResult> {
-  const mode = userTier === 'FREE' ? 'printed' : 'handwritten';
+export async function performOcr({ imageBuffer, mimeType, userTier, mode: requestedMode }: OcrRequest): Promise<OcrResult> {
+  const mode = requestedMode || (userTier === 'FREE' ? 'printed' : 'handwritten');
+  if (mode === 'handwritten' && userTier === 'FREE') {
+    throw new Error('Handwritten scan Pro aur Elite users ke liye hai.');
+  }
   const imageBase64 = imageBuffer.toString('base64');
 
   const res = await fetch(`${GATEWAY_URL}/ocr`, {

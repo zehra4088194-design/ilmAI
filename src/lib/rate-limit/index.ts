@@ -41,9 +41,9 @@ export async function checkDailyLimit(userId: string, feature: 'ai_message' | 'q
   return checkMemoryLimit(key, limit, DAY_MS);
 }
 
-/** OCR-specific helper: Free tier = 5/day hard cap, Pro/Elite = effectively unlimited (200/day soft cap to prevent abuse) */
+/** OCR-specific helper: Free = 5/day, Pro = 10/day, Elite = 30/day. */
 export async function checkOcrLimit(userId: string, tier: SubscriptionTier) {
-  const limit = tier === 'FREE' ? 5 : 200;
+  const limit = tier === 'ELITE' ? 30 : tier === 'PRO' ? 10 : 5;
   return checkDailyLimit(userId, 'ocr_scan', limit);
 }
 

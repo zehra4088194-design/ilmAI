@@ -1,7 +1,7 @@
 'use client';
 import { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Upload, Loader2, X, Check, AlertCircle, Sparkles } from 'lucide-react';
+import { Camera, Upload, Loader2, X, Check, AlertCircle, Sparkles, FileText, PenLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { toast } from 'sonner';
@@ -21,10 +21,12 @@ export function ScanUpload({ onTextExtracted, trigger }: ScanUploadProps) {
   const [extractedText, setExtractedText] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [remaining, setRemaining] = useState<number | null>(null);
+  const [scanMode, setScanMode] = useState<'printed' | 'handwritten'>('printed');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
 
   const isFree = user?.subscriptionTier === 'FREE';
+  const isPro = user?.subscriptionTier === 'PRO';
 
   const handleFileSelect = useCallback((file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -42,6 +44,7 @@ export function ScanUpload({ onTextExtracted, trigger }: ScanUploadProps) {
     try {
       const formData = new FormData();
       formData.append('file', fileInputRef.current.files[0]);
+      formData.append('mode', scanMode);
       const res = await fetch('/api/ocr', { method: 'POST', body: formData });
       const json = await res.json();
       if (json.status === 'error') {
@@ -94,9 +97,39 @@ export function ScanUpload({ onTextExtracted, trigger }: ScanUploadProps) {
 
               {isFree && (
                 <p className="text-xs text-muted-foreground mb-4 bg-amber-500/10 text-amber-500 rounded-lg px-3 py-2">
-                  Free plan: roz 5 scans milte hain. Pro plan mein unlimited + better accuracy!
+                  Free plan: roz 5 printed scans milte hain. Handwritten scan Pro/Elite mein hai.
                 </p>
               )}
+
+              {!isFree && (
+                <p className="text-xs text-muted-foreground mb-4 bg-violet-500/10 text-violet-300 rounded-lg px-3 py-2">
+                  {isPro ? 'Pro plan: roz 10 scans.' : 'Elite plan: roz 30 scans.'}
+                </p>
+              )}
+
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                <button
+                  type="button"
+                  onClick={() => setScanMode('printed')}
+                  className={cn(
+                    'flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition-colors',
+                    scanMode === 'printed' ? 'border-violet-500 bg-violet-500/10 text-violet-300' : 'border-border text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  <FileText className="w-3.5 h-3.5" /> Printed
+                </button>
+                <button
+                  type="button"
+                  onClick={() => !isFree && setScanMode('handwritten')}
+                  disabled={isFree}
+                  className={cn(
+                    'flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50',
+                    scanMode === 'handwritten' ? 'border-violet-500 bg-violet-500/10 text-violet-300' : 'border-border text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  <PenLine className="w-3.5 h-3.5" /> Handwritten
+                </button>
+              </div>
 
               {state === 'idle' && (
                 <div
@@ -125,7 +158,7 @@ export function ScanUpload({ onTextExtracted, trigger }: ScanUploadProps) {
                 <div className="py-12 text-center">
                   <Loader2 className="w-8 h-8 mx-auto mb-3 text-violet-400 animate-spin" />
                   <p className="text-sm font-medium">Text extract kar rahe hain...</p>
-                  <p className="text-xs text-muted-foreground mt-1">{isFree ? 'OCR.space se process ho raha hai' : 'Gemini Vision AI se process ho raha hai'}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{scanMode === 'printed' ? 'Printed OCR se process ho raha hai' : 'Gemini Vision AI se process ho raha hai'}</p>
                 </div>
               )}
 

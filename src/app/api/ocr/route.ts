@@ -32,8 +32,17 @@ export async function POST(req: NextRequest) {
 
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
+    const modeValue = formData.get('mode');
+    const mode = modeValue === 'handwritten' ? 'handwritten' : 'printed';
     if (!file) {
       return NextResponse.json({ status: 'error', error: 'File required hai' }, { status: 400 });
+    }
+
+    if (mode === 'handwritten' && tier === 'FREE') {
+      return NextResponse.json(
+        { status: 'error', error: 'Handwritten scan Pro aur Elite users ke liye hai.' },
+        { status: 403 }
+      );
     }
 
     const validation = validateOcrFile(file.type, file.size);
@@ -42,7 +51,7 @@ export async function POST(req: NextRequest) {
     }
 
     const imageBuffer = Buffer.from(await file.arrayBuffer());
-    const result = await performOcr({ imageBuffer, mimeType: file.type, userTier: tier });
+    const result = await performOcr({ imageBuffer, mimeType: file.type, userTier: tier, mode });
 
     return NextResponse.json({
       status: 'success',

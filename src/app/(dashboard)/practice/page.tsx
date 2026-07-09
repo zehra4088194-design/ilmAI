@@ -1,8 +1,8 @@
 import { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
-import { SubjectSelector } from '@/components/features/quiz/SubjectSelector';
+import { AiPracticeHub } from '@/components/features/quiz/AiPracticeHub';
 
-export const metadata: Metadata = { title: 'Practice MCQs' };
+export const metadata: Metadata = { title: 'AI Practice' };
 
 export default async function PracticePage() {
   const supabase = await createClient();
@@ -45,10 +45,10 @@ export default async function PracticePage() {
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Practice MCQs</h1>
-        <p className="text-muted-foreground">Apna subject aur chapter choose karo aur practice shuru karo</p>
+        <h1 className="text-2xl font-bold">AI Practice</h1>
+        <p className="text-muted-foreground">Chapter select karo. AI MCQs, short aur long questions khud generate karega.</p>
       </div>
-      <SubjectSelector subjects={subjects || []} chaptersBySubject={chaptersBySubject} />
+      <AiPracticeHub subjects={subjects || []} chaptersBySubject={chaptersBySubject} />
     </div>
   );
 }
