@@ -36,7 +36,7 @@
  *
  * OPTIONAL (Live Voice Call — has a safe built-in default, only set if you
  * want to override without waiting for a redeploy):
- * GEMINI_LIVE_MODEL -> defaults to 'gemini-live-2.5-flash-preview'.
+ * GEMINI_LIVE_MODEL -> defaults to 'gemini-3.1-flash-live-preview'.
  *                      ⚠️ Google renames/deprecates Live API preview models
  *                      often — if voice calls start failing with a "model
  *                      not found" close error, check the current model list
@@ -70,10 +70,10 @@ const MODEL_MAP = {
 };
 
 // Default Live Voice Call model — see GEMINI_LIVE_MODEL override note above.
-const DEFAULT_LIVE_MODEL = 'gemini-live-2.5-flash-preview';
+const DEFAULT_LIVE_MODEL = 'gemini-3.1-flash-live-preview';
 
 // The AI Teacher persona for Live Voice Call. Locked into the ephemeral
-// token server-side (via liveConnectConstraints) so it can never be
+// token server-side (via AuthToken.bidiGenerateContentSetup) so it can never be
 // overridden or inspected from the browser.
 const LIVE_TEACHER_SYSTEM_INSTRUCTION = `Tum ilm AI ke ek patient, encouraging aur clear school/college AI Teacher ho, jo Pakistani aur Indian students ko LIVE AWAAZ (voice) mein parhate ho.
 
@@ -277,18 +277,18 @@ async function callOcrSpace(key, base64Image, mimeType) {
 async function mintEphemeralToken(key, model, systemInstruction) {
   const now = Date.now();
   const body = {
-    config: {
+    authToken: {
       uses: 1,
       expireTime: new Date(now + 30 * 60 * 1000).toISOString(), // session can run 30 min
       newSessionExpireTime: new Date(now + 60 * 1000).toISOString(), // must START within 1 min
-      liveConnectConstraints: {
+      bidiGenerateContentSetup: {
         model: `models/${model}`,
-        config: {
+        generationConfig: {
           responseModalities: ['AUDIO'],
-          systemInstruction: { parts: [{ text: systemInstruction }] },
-          inputAudioTranscription: {},
-          outputAudioTranscription: {},
         },
+        systemInstruction: { parts: [{ text: systemInstruction }] },
+        inputAudioTranscription: {},
+        outputAudioTranscription: {},
       },
     },
   };
