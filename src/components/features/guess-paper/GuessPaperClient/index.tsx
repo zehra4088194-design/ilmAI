@@ -5,6 +5,7 @@ import { Sparkles, TrendingUp, FileQuestion, BookOpen, Target, ChevronDown, Chev
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { BrandLoader } from '@/components/ui/BrandLoader';
 import { AIProviderSelector } from '@/components/features/ai-selector/AIProviderSelector';
 import { BOARDS, GRADE_LEVELS } from '@/lib/constants';
 import type { AiProviderId, ModelTier } from '@/lib/ai/gateway';
@@ -78,8 +79,7 @@ export function GuessPaperClient({
       {/* Loading */}
       {loading && (
         <div className="text-center py-12">
-          <div className="w-12 h-12 mx-auto mb-3 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-muted-foreground">AI predict kar raha hai...</p>
+          <BrandLoader label="AI predict kar raha hai..." />
         </div>
       )}
 

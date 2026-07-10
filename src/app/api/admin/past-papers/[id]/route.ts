@@ -7,7 +7,11 @@ const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '')
   .map((email) => email.trim().toLowerCase())
   .filter(Boolean);
 
-type PastPaperUpdate = Database['public']['Tables']['past_papers']['Update'] & { download_count?: number };
+type PastPaperUpdate = Database['public']['Tables']['past_papers']['Update'] & {
+  download_count?: number;
+  grade_level?: string | null;
+  chapter_id?: string | null;
+};
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -27,7 +31,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const update: Database['public']['Tables']['past_papers']['Update'] = {};
 
   if (body.subject_id !== undefined) update.subject_id = body.subject_id;
+  if (body.chapter_id !== undefined) (update as any).chapter_id = body.chapter_id;
   if (body.board !== undefined) update.board = body.board;
+  if (body.grade_level !== undefined) (update as any).grade_level = body.grade_level;
   if (body.year !== undefined) update.year = Number(body.year);
   if (body.paper_type !== undefined) update.paper_type = body.paper_type;
   if (body.file_url !== undefined) update.file_url = body.file_url.trim();

@@ -6,7 +6,7 @@ import {
   LayoutDashboard, BookOpen, Brain, FileText, TrendingUp, Trophy, Settings,
   Zap, StickyNote, Bookmark, Star, CreditCard, ChevronRight, X, Menu,
   Library, CalendarClock, HelpCircle, Target, LogOut, Users, PenLine, Cake,
-  Presentation, Mic2, ClipboardCheck, Search, GraduationCap
+  Presentation, Mic2, ClipboardCheck, Search, GraduationCap, WandSparkles
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useAuth } from '@/hooks/auth/useAuth';
@@ -47,6 +47,7 @@ const NAV_GROUPS = [
     label: 'Tools',
     items: [
       { icon: Cake, label: 'Age Counter', href: '/age-counter' },
+      { icon: WandSparkles, label: 'AI Humanizer', href: '/humanizer', badge: 'AI' },
     ],
   },
   {
@@ -68,7 +69,7 @@ const NAV_GROUPS = [
 const UNIVERSITY_NAV_GROUP = {
   label: 'University',
   items: [
-    { icon: GraduationCap, label: 'University Hub', href: '/dashboard' },
+    { icon: GraduationCap, label: 'University Hub', href: '/university' },
     { icon: FileText, label: 'Essay Assistant', href: '/university/essay-assistant', badge: 'AI' },
     { icon: ClipboardCheck, label: 'Assignment Helper', href: '/university/assignment-helper', badge: 'AI' },
     { icon: Presentation, label: 'Presentation Builder', href: '/university/presentation-builder', badge: 'AI' },
@@ -85,9 +86,11 @@ export function DashboardSidebar() {
 
   const isActive = (href: string) =>
     pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
-  const navGroups = user?.educationLevel === 'university'
-    ? [UNIVERSITY_NAV_GROUP, ...NAV_GROUPS.filter((group) => group.label !== 'Tools')]
-    : NAV_GROUPS;
+  const navGroups = [
+    ...NAV_GROUPS.slice(0, 3),
+    UNIVERSITY_NAV_GROUP,
+    ...NAV_GROUPS.slice(3),
+  ];
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">

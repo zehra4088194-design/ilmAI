@@ -1,10 +1,11 @@
 'use client';
 import { useState } from 'react';
-import { FileText, ExternalLink, FileType2, Sparkles, Loader2 } from 'lucide-react';
+import { FileText, ExternalLink, FileType2, Sparkles, Loader2, Maximize2, X } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AiAnswerRenderer } from '@/components/features/ai/AiAnswerRenderer';
+import { getEmbeddableFilePreviewUrl } from '@/lib/utils/filePreview';
 import { toast } from 'sonner';
 
 export interface DriveResourceData {
@@ -27,11 +28,11 @@ export interface DriveResourceData {
  * before opening it, rendered as a styled document (not a plain text wall).
  */
 export function GoogleDriveResourceCard({ resource }: { resource: DriveResourceData }) {
-  // Google Drive's standard embeddable preview pattern, used only for the thumbnail/preview frame
-  const previewUrl = resource.driveFileId ? `https://drive.google.com/file/d/${resource.driveFileId}/preview` : null;
+  const previewUrl = getEmbeddableFilePreviewUrl(resource.driveUrl, resource.driveFileId);
 
   const [summary, setSummary] = useState<string | null>(null);
   const [loadingSummary, setLoadingSummary] = useState(false);
+  const [readerMode, setReaderMode] = useState<'panel' | 'fullscreen' | null>(null);
 
   const generateSummary = async () => {
     if (summary) { setSummary(null); return; } // toggle closed if already shown
@@ -61,7 +62,7 @@ export function GoogleDriveResourceCard({ resource }: { resource: DriveResourceD
     <Card className="overflow-hidden hover:border-violet-500/30 transition-colors">
       {previewUrl ? (
         <div className="aspect-[4/3] bg-muted/30 border-b border-border">
-          <iframe src={previewUrl} className="w-full h-full" allow="autoplay" title={resource.title} />
+          <iframe src={previewUrl} className="h-full w-full" allow="autoplay" title={resource.title} loading="lazy" />
         </div>
       ) : (
         <div className="aspect-[4/3] bg-muted/30 border-b border-border flex items-center justify-center">
@@ -80,13 +81,16 @@ export function GoogleDriveResourceCard({ resource }: { resource: DriveResourceD
         <h3 className="font-semibold text-sm mb-1 line-clamp-1">{resource.title}</h3>
         {resource.description && <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{resource.description}</p>}
 
-        <div className="flex items-center gap-2">
-          <Button asChild variant="outline" size="sm" className="flex-1">
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant="gradient" size="sm" className="min-w-0" disabled={!previewUrl} onClick={() => setReaderMode('panel')}>
+            <Maximize2 className="w-3.5 h-3.5" />Read
+          </Button>
+          <Button asChild variant="outline" size="sm" className="min-w-0">
             <a href={resource.driveUrl} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="w-3.5 h-3.5" />Open in Google Drive
+              <ExternalLink className="w-3.5 h-3.5" />Open
             </a>
           </Button>
-          <Button variant="outline" size="sm" className="flex-1" onClick={generateSummary} disabled={loadingSummary}>
+          <Button variant="outline" size="sm" className="col-span-2" onClick={generateSummary} disabled={loadingSummary}>
             {loadingSummary ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
             {summary ? 'Summary Chupao' : 'AI Summary'}
           </Button>
@@ -98,6 +102,37 @@ export function GoogleDriveResourceCard({ resource }: { resource: DriveResourceD
           </div>
         )}
       </CardContent>
+
+      {readerMode && previewUrl && (
+        <div className={readerMode === 'fullscreen' ? 'fixed inset-0 z-[90] flex flex-col bg-background' : 'fixed inset-0 z-[90] flex items-center justify-center bg-black/55 p-3 backdrop-blur-sm'}>
+          <div className={readerMode === 'fullscreen' ? 'flex min-h-0 flex-1 flex-col' : 'flex h-[86vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl border border-border bg-background shadow-2xl'}>
+            <div className="flex min-h-14 items-center justify-between gap-3 border-b border-border px-3 sm:px-5">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold sm:text-base">{resource.title}</p>
+                <p className="text-xs text-muted-foreground">{readerMode === 'fullscreen' ? 'Full-screen reader' : 'In-app reader'}</p>
+              </div>
+              <div className="flex shrink-0 gap-2">
+                {readerMode === 'panel' ? (
+                  <Button variant="gradient" size="sm" onClick={() => setReaderMode('fullscreen')}>
+                    <Maximize2 className="h-3.5 w-3.5" />Full screen
+                  </Button>
+                ) : (
+                  <Button variant="outline" size="sm" onClick={() => setReaderMode('panel')}>Small view</Button>
+                )}
+                <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex">
+                  <a href={resource.driveUrl} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-3.5 w-3.5" />Open
+                  </a>
+                </Button>
+                <Button variant="ghost" size="icon-sm" onClick={() => setReaderMode(null)} aria-label="Close reader">
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <iframe src={previewUrl} title={resource.title} className="min-h-0 flex-1 bg-white" allow="autoplay; fullscreen" allowFullScreen />
+          </div>
+        </div>
+      )}
     </Card>
   );
 }

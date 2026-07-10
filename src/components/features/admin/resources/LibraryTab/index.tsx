@@ -13,8 +13,11 @@ export type LibraryResource = {
   title: string;
   description: string | null;
   category: 'local' | 'international';
+  resource_type: 'text_book' | 'notes' | 'other';
   subject_id: string | null;
   subject_name?: string | null;
+  chapter_id?: string | null;
+  chapter_name?: string | null;
   board: string | null;
   grade_level: string | null;
   drive_url: string;
@@ -32,6 +35,14 @@ export function LibraryTab() {
   const [editingResource, setEditingResource] = useState<LibraryResource | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<LibraryResource | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [gradeFilter, setGradeFilter] = useState('ALL');
+  const [typeFilter, setTypeFilter] = useState<'ALL' | LibraryResource['resource_type']>('ALL');
+
+  const filteredResources = resources.filter((resource) => {
+    const gradeMatches = gradeFilter === 'ALL' || resource.grade_level === gradeFilter;
+    const typeMatches = typeFilter === 'ALL' || resource.resource_type === typeFilter;
+    return gradeMatches && typeMatches;
+  });
 
   const refetch = useCallback(async () => {
     setLoading(true);
@@ -71,7 +82,10 @@ export function LibraryTab() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{resources.length} resource{resources.length === 1 ? '' : 's'}</p>
+        <div>
+          <p className="text-sm text-muted-foreground">{filteredResources.length} of {resources.length} resource{resources.length === 1 ? '' : 's'}</p>
+          <p className="text-xs text-muted-foreground">Class aur type select karke manage karo.</p>
+        </div>
         <Button
           onClick={() => {
             setEditingResource(null);
@@ -87,12 +101,31 @@ export function LibraryTab() {
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
+      <div className="flex flex-wrap gap-2">
+        <select value={gradeFilter} onChange={(event) => setGradeFilter(event.target.value)} className="h-9 rounded-md border border-input bg-background px-3 text-sm">
+          <option value="ALL">All classes</option>
+          <option value="GRADE_9">Grade 9</option>
+          <option value="GRADE_10">Grade 10</option>
+          <option value="GRADE_11">Grade 11</option>
+          <option value="GRADE_12">Grade 12</option>
+          <option value="O_LEVEL">O Level</option>
+          <option value="A_LEVEL">A Level</option>
+        </select>
+        <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value as typeof typeFilter)} className="h-9 rounded-md border border-input bg-background px-3 text-sm">
+          <option value="ALL">All resource types</option>
+          <option value="text_book">Text Books</option>
+          <option value="notes">Notes</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
       <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Title</TableHead>
               <TableHead>Subject</TableHead>
+              <TableHead>Chapter</TableHead>
               <TableHead>Grade</TableHead>
               <TableHead>Board</TableHead>
               <TableHead>Type</TableHead>
@@ -104,26 +137,30 @@ export function LibraryTab() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8">
+                <TableCell colSpan={9} className="text-center py-8">
                   <Loader2 className="h-4 w-4 animate-spin inline-block mr-2" />
                   Loading...
                 </TableCell>
               </TableRow>
-            ) : resources.length === 0 ? (
+            ) : filteredResources.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                  Abhi tak koi resource add nahi hua.
+                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                  Is filter ke liye koi resource nahi mila.
                 </TableCell>
               </TableRow>
             ) : (
-              resources.map((resource) => (
+              filteredResources.map((resource) => (
                 <TableRow key={resource.id}>
                   <TableCell className="font-medium">{resource.title}</TableCell>
                   <TableCell>{resource.subject_name ?? 'All Subjects'}</TableCell>
+                  <TableCell>{resource.chapter_name ?? 'All Chapters'}</TableCell>
                   <TableCell>{resource.grade_level ?? 'All Grades'}</TableCell>
                   <TableCell>{resource.board ?? 'All Boards'}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">{resource.file_type}</Badge>
+                    <div className="flex flex-wrap gap-1">
+                      <Badge variant="outline">{resource.resource_type === 'text_book' ? 'Text Book' : resource.resource_type}</Badge>
+                      <Badge variant="secondary">{resource.file_type}</Badge>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Badge variant={resource.category === 'international' ? 'secondary' : 'outline'}>{resource.category}</Badge>

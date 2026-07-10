@@ -1,20 +1,20 @@
 // ============================================
-// AI PROVIDER + MODEL TIER CONFIG (shared by every AI dropdown in the app)
+// AI PROVIDER + MODEL TIER CONFIG
+// Shared by every AI dropdown in the app.
 // ============================================
 import type { AiProviderId, ModelTier } from '@/lib/ai/gateway';
 
 export interface AIProviderOption {
   id: AiProviderId;
   label: string;
-  emoji: string;
   freeAvailable: boolean; // only Assistant is true - everything else needs Pro/Elite
 }
 
 export const AI_PROVIDERS: AIProviderOption[] = [
-  { id: 'groq', label: 'Assistant', emoji: '⚡', freeAvailable: true },
-  { id: 'claude', label: 'Claude', emoji: '🟣', freeAvailable: false },
-  { id: 'gpt', label: 'ChatGPT', emoji: '🟢', freeAvailable: false },
-  { id: 'gemini', label: 'Gemini', emoji: '🔵', freeAvailable: false },
+  { id: 'groq', label: 'Assistant', freeAvailable: true },
+  { id: 'claude', label: 'Claude', freeAvailable: false },
+  { id: 'gpt', label: 'ChatGPT', freeAvailable: false },
+  { id: 'gemini', label: 'Gemini', freeAvailable: false },
 ];
 
 export interface ModelTierOption {

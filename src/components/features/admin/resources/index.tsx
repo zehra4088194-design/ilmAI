@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { BookOpen, FileText, PlayCircle } from 'lucide-react';
+import { BookOpen, FileText, NotebookTabs, PlayCircle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LecturesTab } from './LecturesTab';
 import { LibraryTab } from './LibraryTab';
@@ -17,7 +17,7 @@ export function ResourcesPage() {
       <div>
         <h1 className="text-2xl font-bold">Content Library</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Lectures, books/notes, aur past papers manage karein - sab yahan se.
+          Lectures, text books, notes, aur past papers manage karein - class-wise sab yahan se.
         </p>
       </div>
 
@@ -29,7 +29,8 @@ export function ResourcesPage() {
           </TabsTrigger>
           <TabsTrigger value="library" className="gap-2">
             <BookOpen className="h-4 w-4" />
-            Library
+            <NotebookTabs className="h-4 w-4" />
+            Text Books & Notes
           </TabsTrigger>
           <TabsTrigger value="past-papers" className="gap-2">
             <FileText className="h-4 w-4" />

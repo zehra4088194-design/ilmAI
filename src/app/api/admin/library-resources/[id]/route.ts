@@ -7,7 +7,10 @@ const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '')
   .map((email) => email.trim().toLowerCase())
   .filter(Boolean);
 
-type LibraryUpdate = Database['public']['Tables']['library_resources']['Update'];
+type LibraryUpdate = Database['public']['Tables']['library_resources']['Update'] & {
+  resource_type?: 'text_book' | 'notes' | 'other';
+  chapter_id?: string | null;
+};
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -29,7 +32,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (body.title !== undefined) update.title = body.title.trim();
   if (body.description !== undefined) update.description = body.description;
   if (body.category !== undefined) update.category = body.category;
+  if (body.resource_type !== undefined) (update as any).resource_type = body.resource_type;
   if (body.subject_id !== undefined) update.subject_id = body.subject_id;
+  if (body.chapter_id !== undefined) (update as any).chapter_id = body.chapter_id;
   if (body.board !== undefined) update.board = body.board;
   if (body.grade_level !== undefined) update.grade_level = body.grade_level;
   if (body.drive_url !== undefined) update.drive_url = body.drive_url.trim();
@@ -42,7 +47,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   const adminClient = await createAdminClient();
-  const { data, error } = await adminClient.from('library_resources').update(update).eq('id', id).select().single();
+  const { data, error } = await (adminClient.from('library_resources') as any).update(update).eq('id', id).select().single();
 
   if (error) {
     console.error('library resource update error:', error);

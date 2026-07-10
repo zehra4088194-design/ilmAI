@@ -1,41 +1,51 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { nanoid } from 'nanoid';
+import { createAdminClient, createClient } from '@/lib/supabase/server';
 
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ status: 'error', error: 'Login required' }, { status: 401 });
 
     const { inviteCode } = await req.json();
     if (!inviteCode) return NextResponse.json({ status: 'error', error: 'Code required hai' }, { status: 400 });
 
-    const code = inviteCode.toUpperCase();
-    const { data: invite } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('type', 'SYSTEM')
-      .like('title', `PARENT_INVITE:${code}%`)
-      .eq('is_read', false)
-      .single();
+    const code = String(inviteCode).trim().toUpperCase();
+    const admin = await createAdminClient();
+    const { data: invite } = await (admin.from('parent_student_links') as any)
+      .select('id, parent_id, student_id, status, invite_code, invite_expires_at')
+      .eq('invite_code', code)
+      .eq('status', 'pending')
+      .maybeSingle();
 
-    if (!invite) return NextResponse.json({ status: 'error', error: 'Invalid ya expired invite code' }, { status: 404 });
+    if (!invite) return NextResponse.json({ status: 'error', error: 'Invalid invite code' }, { status: 404 });
+    if (invite.parent_id === user.id) return NextResponse.json({ status: 'error', error: 'Apna khud ka code use nahi kar sakte' }, { status: 400 });
+    if (invite.invite_expires_at && new Date(invite.invite_expires_at).getTime() < Date.now()) {
+      return NextResponse.json({ status: 'error', error: 'Invite code expire ho gaya' }, { status: 410 });
+    }
 
-    const parentId = invite.message;
-    if (parentId === user.id) return NextResponse.json({ status: 'error', error: 'Apna khud ka code use nahi kar sakte' }, { status: 400 });
+    const { data: profile } = await admin.from('profiles').select('full_name').eq('id', user.id).single();
 
-    const { error } = await supabase.from('parent_student_links').upsert({
-      id: nanoid(),
-      parent_id: parentId,
-      student_id: user.id,
-      status: 'approved',
-      linked_at: new Date().toISOString(),
-    }, { onConflict: 'parent_id,student_id' });
+    const { error } = await (admin.from('parent_student_links') as any)
+      .update({
+        student_id: user.id,
+        status: 'approved',
+        linked_at: new Date().toISOString(),
+      })
+      .eq('id', invite.id);
 
     if (error) throw error;
 
-    await supabase.from('notifications').update({ is_read: true }).eq('id', invite.id);
+    await admin.from('notifications').insert({
+      user_id: invite.parent_id,
+      type: 'SOCIAL',
+      title: 'Student linked',
+      message: `${profile?.full_name || 'Student'} ne parent invite accept kar liya.`,
+      link: '/parent',
+      is_read: false,
+    });
 
     return NextResponse.json({ status: 'success', message: 'Parent account se successfully link ho gaya!' });
   } catch (error) {

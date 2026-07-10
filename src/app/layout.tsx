@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, Geist_Mono } from 'next/font/google';
-import Script from 'next/script';
 import '@/styles/globals.css';
 import 'katex/dist/katex.min.css';
 import { Providers } from '@/providers';
@@ -36,19 +35,9 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const adsenseClientId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        {adsenseClientId && (
-          <Script
-            async
-            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClientId}`}
-            crossOrigin="anonymous"
-            strategy="lazyOnload"
-          />
-        )}
-      </head>
+      <head />
       <body className={`${inter.variable} ${geistMono.variable} font-sans antialiased`}>
         <Providers locale="en">{children}</Providers>
       </body>

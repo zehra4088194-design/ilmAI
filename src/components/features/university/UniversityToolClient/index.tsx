@@ -5,6 +5,7 @@ import { Download, FileText, Loader2, Presentation, Sparkles } from 'lucide-reac
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { BrandLoader } from '@/components/ui/BrandLoader';
 import { toast } from 'sonner';
 
 type Tool = 'essay' | 'assignment' | 'presentation' | 'viva' | 'research' | 'planner';
@@ -157,9 +158,8 @@ export function UniversityToolClient({ tool, title, description, defaultSubject 
 
           {loading && (
             <Card>
-              <CardContent className="flex min-h-[360px] flex-col items-center justify-center gap-3 p-8">
-                <Loader2 className="h-8 w-8 animate-spin text-violet-400" />
-                <p className="text-sm text-muted-foreground">Assistant university draft bana raha hai...</p>
+              <CardContent className="min-h-[360px] p-8">
+                <BrandLoader label="Assistant university draft bana raha hai..." className="min-h-[300px]" />
               </CardContent>
             </Card>
           )}

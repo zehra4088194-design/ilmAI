@@ -24,9 +24,6 @@ const RATINGS = [
   { key: 'easy', label: 'Asaan', sub: '7 din', color: 'bg-sky-500 hover:bg-sky-400', ease: 0.15 },
 ] as const;
 
-// Simplified SM-2 style scheduler. Keeps the existing interval/ease_factor/
-// repetitions columns meaningful without pulling in a full spaced-repetition
-// library â€” good enough for a self-rated flashcard deck.
 function nextSchedule(card: Flashcard, rating: (typeof RATINGS)[number]) {
   let { interval, ease_factor: ease, repetitions: reps } = card;
 
@@ -72,6 +69,14 @@ export function FlashcardStudyMode({ deckId, deckName, cards }: { deckId: string
     setIndex(i => i + 1);
   };
 
+  const handleCardTap = () => {
+    if (!flipped) {
+      setFlipped(true);
+      return;
+    }
+    rate(RATINGS[2]);
+  };
+
   if (cards.length === 0) {
     return (
       <div className="text-center py-20 text-muted-foreground">
@@ -87,9 +92,9 @@ export function FlashcardStudyMode({ deckId, deckName, cards }: { deckId: string
         <div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center mb-5">
           <Check className="w-10 h-10 text-white" />
         </div>
-        <h2 className="text-xl font-bold mb-1">Deck complete! ðŸŽ‰</h2>
+        <h2 className="text-xl font-bold mb-1">Deck complete!</h2>
         <p className="text-muted-foreground mb-6">{cards.length} cards review kiye &quot;{deckName}&quot; mein.</p>
-        <div className="flex gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row">
           <Button variant="outline" onClick={() => router.back()}>Decks pe wapas jao</Button>
           <Button
             variant="gradient"
@@ -107,7 +112,6 @@ export function FlashcardStudyMode({ deckId, deckName, cards }: { deckId: string
 
   return (
     <div className="max-w-xl mx-auto space-y-6" data-deck-id={deckId}>
-      {/* Header + progress */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Button variant="ghost" size="sm" onClick={() => router.back()}><ArrowLeft className="w-4 h-4" />Exit</Button>
@@ -121,32 +125,29 @@ export function FlashcardStudyMode({ deckId, deckName, cards }: { deckId: string
         </div>
       </div>
 
-      {/* Flip card */}
-      <div className="relative h-80 [perspective:1200px]" onClick={() => setFlipped(f => !f)}>
+      <div className="relative h-[22rem] sm:h-80 [perspective:1200px]" onClick={handleCardTap}>
         <div
           className={cn(
             'absolute inset-0 rounded-2xl cursor-pointer transition-transform duration-500 [transform-style:preserve-3d]',
             flipped && '[transform:rotateY(180deg)]'
           )}
         >
-          {/* Front */}
           <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 flex flex-col items-center justify-center p-8 text-center [backface-visibility:hidden]">
             <span className="text-[10px] uppercase tracking-wide text-white/60 mb-3">Question</span>
             <p className="text-lg font-semibold text-white">{activeCard.front}</p>
-            {activeCard.hint && <p className="text-xs text-white/60 mt-4">ðŸ’¡ {activeCard.hint}</p>}
+            {activeCard.hint && <p className="text-xs text-white/60 mt-4">Hint: {activeCard.hint}</p>}
             <span className="absolute bottom-4 text-[10px] text-white/50">Tap to flip</span>
           </div>
-          {/* Back */}
           <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-fuchsia-600 to-pink-600 flex flex-col items-center justify-center p-8 text-center [backface-visibility:hidden] [transform:rotateY(180deg)]">
             <span className="text-[10px] uppercase tracking-wide text-white/60 mb-3">Answer</span>
             <p className="text-lg font-semibold text-white">{activeCard.back}</p>
+            <span className="absolute bottom-4 text-[10px] text-white/50">Tap again for next card</span>
           </div>
         </div>
       </div>
 
-      {/* Difficulty rating â€” only shown once flipped */}
       {flipped ? (
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {RATINGS.map(r => (
             <button
               key={r.key}

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { PenLine, Sparkles, Copy, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { BrandLoader } from '@/components/ui/BrandLoader';
 import { AIProviderSelector } from '@/components/features/ai-selector/AIProviderSelector';
 import { AiAnswerRenderer } from '@/components/features/ai/AiAnswerRenderer';
 import type { AiProviderId, ModelTier } from '@/lib/ai/gateway';
@@ -139,9 +140,7 @@ export function EssayWriterForm({ userTier, gradeLevel: initialGradeLevel }: Ess
       <AnimatePresence>
         {loading && (
           <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-16">
-            <div className="w-12 h-12 mx-auto mb-4 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
-            <p className="font-semibold">AI essay likh raha hai...</p>
-            <p className="text-sm text-muted-foreground mt-1">Thora intezaar karo, achi essay aa rahi hai</p>
+            <BrandLoader label="AI essay likh raha hai..." />
           </motion.div>
         )}
 

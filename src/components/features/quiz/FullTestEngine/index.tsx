@@ -5,6 +5,7 @@ import { Sparkles, CheckCircle2, Camera, ChevronDown, ChevronUp, Clock, FileChec
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { BrandLoader } from '@/components/ui/BrandLoader';
 import { AIProviderSelector } from '@/components/features/ai-selector/AIProviderSelector';
 import { compressImageForOcr } from '@/lib/utils/image-compress';
 import { BOARDS, GRADE_LEVELS } from '@/lib/constants';
@@ -249,17 +250,13 @@ export function FullTestSetup({
 
       {state === 'loading' && (
         <motion.div key="loading" className="text-center py-20">
-          <div className="w-14 h-14 mx-auto mb-4 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
-          <p className="font-semibold">AI poora paper bana raha hai...</p>
-          <p className="text-sm text-muted-foreground mt-2">MCQs + Short + Long questions — thora intezaar karo</p>
+          <BrandLoader label="AI poora paper bana raha hai..." />
         </motion.div>
       )}
 
       {state === 'grading' && (
         <motion.div key="grading" className="text-center py-20">
-          <div className="w-14 h-14 mx-auto mb-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
-          <p className="font-semibold">AI check kar raha hai...</p>
-          <p className="text-sm text-muted-foreground mt-2">Saare jawabaat evaluate ho rahe hain</p>
+          <BrandLoader label="AI jawabaat check kar raha hai..." />
         </motion.div>
       )}
 

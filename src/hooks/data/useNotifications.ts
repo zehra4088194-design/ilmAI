@@ -15,8 +15,7 @@ export function useNotifications() {
       } = await supabase.auth.getUser();
       if (!user) return [];
 
-      // PARENT_INVITE:* rows are an internal reuse of this table (see
-      // /api/parent/generate-invite) — never show them in the bell.
+      // Hide legacy internal invite rows from the notification bell.
       const { data, error } = await supabase
         .from('notifications')
         .select('*')

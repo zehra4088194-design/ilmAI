@@ -6,6 +6,9 @@ import { Toaster } from 'sonner';
 import { useState, type ReactNode } from 'react';
 import { I18nProvider } from '@/providers/I18nProvider';
 import type { Locale } from '@/lib/i18n/config';
+import { GlobalSpeechControls } from '@/components/features/speech/GlobalSpeechControls';
+import { CookieConsent } from '@/components/features/cookies/CookieConsent';
+import { AdSenseScript } from '@/components/features/ads/AdSenseScript';
 
 export function Providers({ children, locale }: { children: ReactNode; locale: Locale }) {
   const [queryClient] = useState(() => new QueryClient({
@@ -20,6 +23,9 @@ export function Providers({ children, locale }: { children: ReactNode; locale: L
       <I18nProvider initialLocale={locale}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange={false}>
           {children}
+          <AdSenseScript />
+          <GlobalSpeechControls />
+          <CookieConsent />
           <Toaster
             position="top-right"
             richColors

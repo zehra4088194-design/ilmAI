@@ -26,6 +26,7 @@ const emptyForm = {
   title: '',
   description: '',
   category: 'local' as LibraryResource['category'],
+  resource_type: 'text_book' as LibraryResource['resource_type'],
   subject_id: ALL_VALUE,
   chapter_id: ALL_VALUE,
   board: ALL_VALUE,
@@ -58,8 +59,9 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
         title: resource.title,
         description: resource.description ?? '',
         category: resource.category,
+        resource_type: resource.resource_type ?? 'text_book',
         subject_id: resource.subject_id ?? ALL_VALUE,
-        chapter_id: ALL_VALUE,
+        chapter_id: resource.chapter_id ?? ALL_VALUE,
         board: resource.board ?? ALL_VALUE,
         grade_level: resource.grade_level ?? ALL_VALUE,
         drive_url: resource.drive_url,
@@ -98,7 +100,9 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
         title: form.title.trim(),
         description: form.description.trim() || null,
         category: form.category,
+        resource_type: form.resource_type,
         subject_id: form.subject_id === ALL_VALUE ? null : form.subject_id,
+        chapter_id: form.chapter_id === ALL_VALUE ? null : form.chapter_id,
         board: form.board === ALL_VALUE ? null : form.board,
         grade_level: form.grade_level === ALL_VALUE ? null : form.grade_level,
         drive_url: form.drive_url.trim(),
@@ -177,6 +181,20 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
           </div>
 
           <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label>Resource Type</Label>
+              <Select value={form.resource_type} onValueChange={(value) => setForm((current) => ({ ...current, resource_type: value as LibraryResource['resource_type'] }))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="text_book">Text Book</SelectItem>
+                  <SelectItem value="notes">Notes</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="flex flex-col gap-1.5">
               <Label>Category</Label>
               <Select value={form.category} onValueChange={(value) => setForm((current) => ({ ...current, category: value as LibraryResource['category'] }))}>

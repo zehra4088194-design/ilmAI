@@ -8,24 +8,23 @@ export default async function LibraryPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const { data: profile } = await supabase.from('profiles').select('board, grade_level').eq('id', user!.id).single();
-  const { data: resources } = await supabase
-    .from('library_resources')
-    .select('*, subjects(name, color)')
+  const { data: resources } = await (supabase.from('library_resources') as any)
+    .select('*, subjects(name, color), chapters(name)')
     .order('created_at', { ascending: false });
 
-  const visibleResources = (resources || []).filter((resource) => {
+  const visibleResources = (resources || []).filter((resource: any) => {
     const boardVisible = !resource.board || resource.board === profile?.board;
-    const gradeVisible = !resource.grade_level || resource.grade_level === profile?.grade_level;
+    const gradeVisible = profile?.grade_level ? resource.grade_level === profile.grade_level : false;
     return boardVisible && gradeVisible;
   });
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Library</h1>
-        <p className="text-muted-foreground">Books aur notes - sirf aapki class aur board ke mutabiq</p>
+        <h1 className="text-2xl font-bold">Text Books & Notes</h1>
+        <p className="text-muted-foreground">Sirf aapki selected class ke text books aur notes</p>
       </div>
-      <LibraryGrid resources={visibleResources} />
+      <LibraryGrid resources={visibleResources as any} />
     </div>
   );
 }

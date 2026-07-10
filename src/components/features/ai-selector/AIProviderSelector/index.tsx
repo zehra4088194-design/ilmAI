@@ -5,6 +5,7 @@ import { AI_PROVIDERS, MODEL_TIERS } from '@/lib/constants/ai-providers';
 import type { AiProviderId, ModelTier } from '@/lib/ai/gateway';
 import { cn } from '@/lib/utils/cn';
 import Link from 'next/link';
+import { ProviderLogo } from '@/components/features/ai-selector/ProviderLogo';
 
 interface AIProviderSelectorProps {
   provider: AiProviderId;
@@ -38,7 +39,7 @@ const activeTier = MODEL_TIERS.find((t) => t.id === tier) || MODEL_TIERS[0]!;
         onClick={() => setOpen(!open)}
         className={cn('flex items-center gap-1.5 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 transition-colors text-xs font-medium', compact ? 'px-2 py-1' : 'px-3 py-1.5')}
       >
-        <span>{activeProvider.emoji}</span>
+        <ProviderLogo provider={activeProvider.id} className="h-4 w-4" />
         <span>{activeProvider.label}</span>
         {provider !== 'groq' && <span className="text-muted-foreground">· {activeTier.label}</span>}
         <ChevronDown className="w-3 h-3 text-muted-foreground" />
@@ -56,7 +57,10 @@ const activeTier = MODEL_TIERS.find((t) => t.id === tier) || MODEL_TIERS[0]!;
                 onClick={() => { if (!locked) { onChange(p.id, p.id === 'groq' ? 'mini' : tier); if (p.id === 'groq') setOpen(false); } }}
                 className={cn('w-full flex items-center justify-between gap-2 px-2 py-2 rounded-lg text-sm transition-colors', locked ? 'opacity-50 cursor-not-allowed' : 'hover:bg-accent', provider === p.id && 'bg-accent')}
               >
-                <span className="flex items-center gap-2"><span>{p.emoji}</span>{p.label}</span>
+                <span className="flex items-center gap-2">
+                  <ProviderLogo provider={p.id} />
+                  {p.label}
+                </span>
                 {locked && <Lock className="w-3 h-3 text-muted-foreground" />}
               </button>
             );

@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
-import { BOARDS } from '@/lib/constants';
+import { BOARDS, GRADE_LEVELS } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -27,6 +27,7 @@ const emptyForm = {
   subject_id: '',
   chapter_id: ALL_VALUE,
   board: '',
+  grade_level: '',
   year: currentYear,
   paper_type: 'ANNUAL' as PastPaper['paper_type'],
   file_url: '',
@@ -57,8 +58,9 @@ export function PastPaperFormDialog({ open, onOpenChange, paper, onSaved }: Prop
     if (paper) {
       setForm({
         subject_id: paper.subject_id,
-        chapter_id: ALL_VALUE,
+        chapter_id: paper.chapter_id ?? ALL_VALUE,
         board: paper.board,
+        grade_level: paper.grade_level ?? '',
         year: paper.year,
         paper_type: paper.paper_type,
         file_url: paper.file_url,
@@ -95,6 +97,10 @@ export function PastPaperFormDialog({ open, onOpenChange, paper, onSaved }: Prop
       setError('Board select karna zaroori hai');
       return;
     }
+    if (!form.grade_level) {
+      setError('Class select karna zaroori hai');
+      return;
+    }
     if (!/^https?:\/\//.test(form.file_url.trim())) {
       setError('File URL valid nahi lag raha');
       return;
@@ -105,7 +111,9 @@ export function PastPaperFormDialog({ open, onOpenChange, paper, onSaved }: Prop
     try {
       const payload = {
         subject_id: form.subject_id,
+        chapter_id: form.chapter_id === ALL_VALUE ? null : form.chapter_id,
         board: form.board,
+        grade_level: form.grade_level,
         year: Number(form.year),
         paper_type: form.paper_type,
         file_url: form.file_url.trim(),
@@ -209,6 +217,22 @@ export function PastPaperFormDialog({ open, onOpenChange, paper, onSaved }: Prop
           </div>
 
           <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label>Grade Level</Label>
+              <Select value={form.grade_level} onValueChange={(value) => setForm((current) => ({ ...current, grade_level: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Class chunein" />
+                </SelectTrigger>
+                <SelectContent>
+                  {GRADE_LEVELS.map((grade) => (
+                    <SelectItem key={grade.value} value={grade.value}>
+                      {grade.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="paper-year">Year</Label>
               <Input id="paper-year" type="number" value={form.year} onChange={(event) => setForm((current) => ({ ...current, year: Number(event.target.value) }))} min={1990} max={currentYear + 1} required />

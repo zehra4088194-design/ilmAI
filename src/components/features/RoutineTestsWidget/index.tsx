@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { CalendarClock, Plus, CheckCircle2, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,8 +17,8 @@ interface RoutineTest {
 }
 
 /**
- * Shows a student's scheduled routine tests. Pass `studentId` + `readOnly`
- * when embedding this on the Parent Dashboard (parent can see but not add).
+ * Shows a student's scheduled routine tests. Pass `studentId` when embedding
+ * this on the Parent Dashboard; linked parents can also schedule tests.
  * Without props, it manages the logged-in student's own tests.
  */
 export function RoutineTestsWidget({ studentId, readOnly = false }: { studentId?: string; readOnly?: boolean }) {
@@ -30,7 +30,7 @@ export function RoutineTestsWidget({ studentId, readOnly = false }: { studentId?
   const [scheduledAt, setScheduledAt] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const qs = studentId ? `?studentId=${studentId}` : '';
@@ -42,9 +42,9 @@ export function RoutineTestsWidget({ studentId, readOnly = false }: { studentId?
     } finally {
       setLoading(false);
     }
-  };
+  }, [studentId]);
 
-  useEffect(() => { load(); }, [studentId]);
+  useEffect(() => { load(); }, [load]);
 
   const addTest = async () => {
     if (!subject || !title || !scheduledAt) { toast.error('Sab fields bharo'); return; }
@@ -53,7 +53,7 @@ export function RoutineTestsWidget({ studentId, readOnly = false }: { studentId?
       const res = await fetch('/api/routine-tests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subject, title, scheduledAt }),
+        body: JSON.stringify({ subject, title, scheduledAt, studentId }),
       });
       if (!res.ok) throw new Error();
       toast.success('Routine test add ho gaya');

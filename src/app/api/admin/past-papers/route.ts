@@ -7,8 +7,12 @@ const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '')
   .map((email) => email.trim().toLowerCase())
   .filter(Boolean);
 
-type PastPaperInsert = Database['public']['Tables']['past_papers']['Insert'];
+type PastPaperInsert = Database['public']['Tables']['past_papers']['Insert'] & {
+  grade_level?: string | null;
+  chapter_id?: string | null;
+};
 type SubjectJoin = { name: string | null } | null;
+type ChapterJoin = { name: string | null } | null;
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -26,7 +30,7 @@ export async function GET() {
   const adminClient = await createAdminClient();
   const { data, error } = await adminClient
     .from('past_papers')
-    .select('*, subjects(name)')
+    .select('*, subjects(name), chapters(name)')
     .order('year', { ascending: false })
     .order('created_at', { ascending: false });
 
@@ -34,7 +38,8 @@ export async function GET() {
 
   const papers = (data ?? []).map((paper) => {
     const subjects = paper.subjects as SubjectJoin;
-    return { ...paper, subject_name: subjects?.name ?? null };
+    const chapters = (paper as any).chapters as ChapterJoin;
+    return { ...paper, subject_name: subjects?.name ?? null, chapter_name: chapters?.name ?? null };
   });
 
   return NextResponse.json({ papers });
@@ -55,7 +60,9 @@ export async function POST(req: NextRequest) {
     .from('past_papers')
     .insert({
       subject_id: body.subject_id,
+      chapter_id: body.chapter_id ?? null,
       board: body.board,
+      grade_level: body.grade_level ?? null,
       year,
       paper_type: body.paper_type ?? 'ANNUAL',
       file_url: body.file_url.trim(),
@@ -63,7 +70,7 @@ export async function POST(req: NextRequest) {
       duration: body.duration ?? 180,
       is_verified: body.is_verified ?? false,
       thumbnail_url: body.thumbnail_url ?? null,
-    })
+    } as any)
     .select()
     .single();
 

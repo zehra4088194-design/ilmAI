@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, ChevronUp, ChevronDown, Pencil, Check, X } from 'lucide-react';
+import { Plus, Trash2, ChevronUp, ChevronDown, Pencil, Check, X, ListTree, Loader2 } from 'lucide-react';
 import { BOARDS, GRADE_LEVELS } from '@/lib/constants';
 import { toast } from 'sonner';
 
@@ -16,6 +16,13 @@ interface Chapter {
   boards: string[];
   grade_levels: string[];
   is_active: boolean;
+}
+
+interface Topic {
+  id: string;
+  name: string;
+  order_index?: number;
+  is_active?: boolean;
 }
 
 interface ChapterManagerProps {
@@ -43,6 +50,12 @@ export function ChapterManager({ subjectId, subjectBoards, subjectGradeLevels, i
   const [editName, setEditName] = useState('');
   const [editBoards, setEditBoards] = useState<string[]>([]);
   const [editGradeLevels, setEditGradeLevels] = useState<string[]>([]);
+  const [expandedChapterId, setExpandedChapterId] = useState<string | null>(null);
+  const [topicsByChapter, setTopicsByChapter] = useState<Record<string, Topic[]>>({});
+  const [loadingTopics, setLoadingTopics] = useState<string | null>(null);
+  const [newTopicName, setNewTopicName] = useState('');
+  const [editingTopicId, setEditingTopicId] = useState<string | null>(null);
+  const [editTopicName, setEditTopicName] = useState('');
 
   const grouped = boardsByCountry(subjectBoards);
   const availableGrades = GRADE_LEVELS.filter((g) => subjectGradeLevels.includes(g.value));
@@ -176,6 +189,74 @@ export function ChapterManager({ subjectId, subjectBoards, subjectGradeLevels, i
 
   const gradeLabel = (value: string) => GRADE_LEVELS.find((g) => g.value === value)?.label || value;
 
+  const loadTopics = async (chapterId: string) => {
+    setExpandedChapterId(chapterId);
+    if (topicsByChapter[chapterId]) return;
+    setLoadingTopics(chapterId);
+    try {
+      const res = await fetch(`/api/admin/topics?chapterId=${chapterId}`);
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error);
+      setTopicsByChapter((prev) => ({ ...prev, [chapterId]: json.topics || [] }));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Topics load nahi hue');
+    } finally {
+      setLoadingTopics(null);
+    }
+  };
+
+  const addTopic = async (chapterId: string) => {
+    if (!newTopicName.trim()) return;
+    try {
+      const res = await fetch('/api/admin/topics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chapterId, name: newTopicName.trim() }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error);
+      setTopicsByChapter((prev) => ({ ...prev, [chapterId]: [...(prev[chapterId] || []), json.topic] }));
+      setNewTopicName('');
+      toast.success('Topic add ho gaya');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Topic add nahi hua');
+    }
+  };
+
+  const saveTopic = async (chapterId: string, topicId: string) => {
+    if (!editTopicName.trim()) return;
+    try {
+      const res = await fetch(`/api/admin/topics/${topicId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: editTopicName.trim() }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error);
+      setTopicsByChapter((prev) => ({
+        ...prev,
+        [chapterId]: (prev[chapterId] || []).map((topic) => (topic.id === topicId ? json.topic : topic)),
+      }));
+      setEditingTopicId(null);
+      toast.success('Topic update ho gaya');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Topic update nahi hua');
+    }
+  };
+
+  const deleteTopic = async (chapterId: string, topicId: string) => {
+    if (!confirm('Yeh topic delete karna hai?')) return;
+    try {
+      const res = await fetch(`/api/admin/topics/${topicId}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error);
+      setTopicsByChapter((prev) => ({ ...prev, [chapterId]: (prev[chapterId] || []).filter((topic) => topic.id !== topicId) }));
+      toast.success('Topic delete ho gaya');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Topic delete nahi hua');
+    }
+  };
+
   return (
     <div className="space-y-4">
       <Card>
@@ -229,7 +310,42 @@ export function ChapterManager({ subjectId, subjectBoards, subjectGradeLevels, i
                     </div>
                   </div>
                   <Button size="icon-sm" variant="ghost" onClick={() => startEdit(c)}><Pencil className="w-3.5 h-3.5" /></Button>
+                  <Button size="icon-sm" variant="ghost" onClick={() => expandedChapterId === c.id ? setExpandedChapterId(null) : loadTopics(c.id)}><ListTree className="w-3.5 h-3.5" /></Button>
                   <Button size="icon-sm" variant="ghost" onClick={() => handleDelete(c.id)}><Trash2 className="w-3.5 h-3.5 text-destructive" /></Button>
+                </div>
+              )}
+              {expandedChapterId === c.id && editingId !== c.id && (
+                <div className="mt-4 rounded-lg border bg-muted/20 p-3 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold">Topics</p>
+                    {loadingTopics === c.id && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                  </div>
+                  <div className="flex gap-2">
+                    <Input value={newTopicName} onChange={(e) => setNewTopicName(e.target.value)} placeholder="Topic name" onKeyDown={(e) => { if (e.key === 'Enter') addTopic(c.id); }} />
+                    <Button size="sm" onClick={() => addTopic(c.id)} disabled={!newTopicName.trim()}><Plus className="w-3.5 h-3.5" /> Add</Button>
+                  </div>
+                  <div className="space-y-2">
+                    {(topicsByChapter[c.id] || []).map((topic) => (
+                      <div key={topic.id} className="flex items-center gap-2 rounded-md border bg-background/80 p-2">
+                        {editingTopicId === topic.id ? (
+                          <>
+                            <Input value={editTopicName} onChange={(e) => setEditTopicName(e.target.value)} className="h-8" />
+                            <Button size="icon-sm" onClick={() => saveTopic(c.id, topic.id)}><Check className="w-3.5 h-3.5" /></Button>
+                            <Button size="icon-sm" variant="ghost" onClick={() => setEditingTopicId(null)}><X className="w-3.5 h-3.5" /></Button>
+                          </>
+                        ) : (
+                          <>
+                            <span className="flex-1 text-sm">{topic.name}</span>
+                            <Button size="icon-sm" variant="ghost" onClick={() => { setEditingTopicId(topic.id); setEditTopicName(topic.name); }}><Pencil className="w-3.5 h-3.5" /></Button>
+                            <Button size="icon-sm" variant="ghost" onClick={() => deleteTopic(c.id, topic.id)}><Trash2 className="w-3.5 h-3.5 text-destructive" /></Button>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                    {loadingTopics !== c.id && (topicsByChapter[c.id] || []).length === 0 && (
+                      <p className="py-3 text-center text-sm text-muted-foreground">Abhi topics nahi hain. Upar se add karo.</p>
+                    )}
+                  </div>
                 </div>
               )}
             </CardContent>

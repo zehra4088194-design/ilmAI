@@ -10,12 +10,6 @@ export default async function ParentDashboardPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
-
   // Get all linked students with their current stats
   const { data: links } = await supabase
     .from('parent_student_links')
@@ -49,8 +43,8 @@ export default async function ParentDashboardPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Parent Dashboard 👨‍👩‍👧</h1>
-        <p className="text-muted-foreground">Apne bachchon ki progress monitor karo</p>
+        <h1 className="text-2xl font-bold">Parent Dashboard</h1>
+        <p className="text-muted-foreground">Linked students ki progress, chat aur routine schedule yahin manage hota hai.</p>
       </div>
       <ParentDashboardClient links={links || []} snapshots={snapshots} parentId={user.id} />
     </div>

@@ -1,6 +1,7 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/hooks/auth/useAuth';
+import { readCookieConsent, type CookieConsentPreferences } from '@/lib/utils/cookieConsent';
 
 interface AdSenseBannerProps {
   slot: 'sidebar' | 'inline';
@@ -21,6 +22,7 @@ export function AdSenseBanner({ slot, className = '' }: AdSenseBannerProps) {
   const { user } = useAuth();
   const adRef = useRef<HTMLDivElement>(null);
   const pushed = useRef(false);
+  const [preferences, setPreferences] = useState<CookieConsentPreferences | null>(null);
 
   const clientId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
   const slotId = slot === 'sidebar'
@@ -28,7 +30,17 @@ export function AdSenseBanner({ slot, className = '' }: AdSenseBannerProps) {
     : process.env.NEXT_PUBLIC_ADSENSE_SLOT_INLINE;
 
   const isPaid = user && user.subscriptionTier !== 'FREE';
-  const shouldShow = !isPaid && !!clientId && !!slotId;
+  const shouldShow = !isPaid && !!clientId && !!slotId && !!preferences?.marketing;
+
+  useEffect(() => {
+    setPreferences(readCookieConsent());
+    const handleConsentChange = (event: Event) => {
+      setPreferences((event as CustomEvent<CookieConsentPreferences>).detail || readCookieConsent());
+      pushed.current = false;
+    };
+    window.addEventListener('ilm-ai-cookie-consent-change', handleConsentChange);
+    return () => window.removeEventListener('ilm-ai-cookie-consent-change', handleConsentChange);
+  }, []);
 
   useEffect(() => {
     if (!shouldShow || pushed.current) return;

@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useMemo } from 'react';
 import { BookOpen, Heart } from 'lucide-react';
+import { openCookieSettings } from '@/lib/utils/cookieConsent';
 
 const LINKS = {
   Product: [{ label: 'Features', href: '#features' }, { label: 'Pricing', href: '/pricing' }, { label: 'Blog', href: '/blog' }],
@@ -49,12 +50,17 @@ export function LandingFooter() {
         </div>
         <div className="border-t border-border pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground text-center md:text-left">
-            © <span suppressHydrationWarning>{currentYear}</span> ilm AI. Pakistan 🇵🇰
+            © <span suppressHydrationWarning>{currentYear}</span> ilm AI. Pakistan
           </p>
-          <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-            Made with <Heart className="w-3.5 h-3.5 fill-red-500 text-red-500" /> by{' '}
-            <span className="font-semibold text-foreground">Hafiz M. Husnain Noor</span>
-          </p>
+          <div className="flex flex-col items-center gap-2 sm:flex-row sm:gap-4">
+            <button type="button" onClick={openCookieSettings} className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
+              Cookie Settings
+            </button>
+            <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+              Made with <Heart className="w-3.5 h-3.5 fill-red-500 text-red-500" /> by{' '}
+              <span className="font-semibold text-foreground">Hafiz M. Husnain Noor</span>
+            </p>
+          </div>
         </div>
       </div>
     </footer>
