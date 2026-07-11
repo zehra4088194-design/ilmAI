@@ -1,14 +1,25 @@
 'use client';
-import { Bell, Search, Moon, Sun } from 'lucide-react';
-import { useTheme } from 'next-themes';
+import { useEffect, useState } from 'react';
+import { Bell, Search, Menu, X } from 'lucide-react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { Badge } from '@/components/ui/badge';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
+import { ThemeToggle } from '@/components/common/ThemeToggle';
 
 export function DashboardNavbar() {
-  const { theme, setTheme } = useTheme();
   const { user } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const sync = (event: Event) => setMobileMenuOpen(Boolean((event as CustomEvent<{ open: boolean }>).detail?.open));
+    window.addEventListener('ilm-ai-dashboard-menu-state', sync);
+    return () => window.removeEventListener('ilm-ai-dashboard-menu-state', sync);
+  }, []);
+
+  const toggleMobileMenu = () => window.dispatchEvent(new Event('ilm-ai-toggle-dashboard-menu'));
+
   return (
     <header className="fixed top-0 right-0 left-0 lg:left-64 h-16 border-b border-border bg-background/95 backdrop-blur-[1px] z-30 flex items-center px-4 md:px-6 gap-4">
       {/* Search */}
@@ -25,21 +36,23 @@ export function DashboardNavbar() {
             ⚡ {user.xp.toLocaleString()} XP
           </Badge>
         )}
+        {user?.subscriptionTier === 'FREE' && (
+          <Button asChild variant="gradient" size="sm" className="hidden sm:inline-flex">
+            <Link href="/subscription">Upgrade Pro</Link>
+          </Button>
+        )}
         {/* Language */}
         <LanguageSwitcher />
         {/* Theme */}
-        <Button variant="ghost" size="icon" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
-          {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-        </Button>
+        <ThemeToggle />
         {/* Notifications */}
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="w-4 h-4" />
           <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
         </Button>
-        {/* Avatar */}
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-sm font-bold cursor-pointer">
-          {user?.fullName?.[0] || 'S'}
-        </div>
+        <Button variant="gradient" size="icon" className="lg:hidden" onClick={toggleMobileMenu} aria-label="Open dashboard menu">
+          {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+        </Button>
       </div>
     </header>
   );

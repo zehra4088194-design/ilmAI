@@ -26,6 +26,12 @@ export async function POST(req: NextRequest) {
     if (region !== 'INTERNATIONAL' && region !== 'PAKISTAN') {
       return NextResponse.json({ status: 'error', error: 'Invalid payment region' }, { status: 400 });
     }
+    if (region === 'INTERNATIONAL') {
+      return NextResponse.json(
+        { status: 'manual_required', error: 'Card/Paddle checkout abhi disabled hai. PayPro ya manual Easypaisa/JazzCash use karein.' },
+        { status: 400 }
+      );
+    }
     if (!isPaymentRegionConfigured(region)) {
       return NextResponse.json(
         { status: 'manual_required', error: 'Online checkout is not configured yet. Manual Easypaisa/JazzCash payment is currently available.' },

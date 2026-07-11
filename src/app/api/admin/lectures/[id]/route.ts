@@ -1,25 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient, createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
+import { requireAdminUser } from '@/lib/admin/auth';
 import type { Database } from '@/lib/supabase/database.types';
-
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '')
-  .split(',')
-  .map((email) => email.trim().toLowerCase())
-  .filter(Boolean);
 
 type LectureUpdate = Database['public']['Tables']['lectures']['Update'];
 
-async function requireAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user || !ADMIN_EMAILS.includes((user.email || '').toLowerCase())) return null;
-  return user;
-}
-
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const admin = await requireAdmin();
+  const admin = await requireAdminUser();
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const { id } = await params;
@@ -39,12 +26,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: 'Koi field update ke liye nahi diya' }, { status: 400 });
   }
 
-  const adminClient = await createAdminClient();
+  let adminClient;
+  try {
+    adminClient = await createAdminClient();
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Supabase admin client missing' }, { status: 500 });
+  }
+
   const { data, error } = await adminClient.from('lectures').update(update).eq('id', id).select().single();
 
   if (error) {
     console.error('lecture update error:', error);
-    return NextResponse.json({ error: 'Lecture update nahi hua' }, { status: 500 });
+    return NextResponse.json({ error: `Lecture update nahi hua: ${error.message}` }, { status: 500 });
   }
   if (!data) return NextResponse.json({ error: 'Lecture nahi mila' }, { status: 404 });
 
@@ -52,16 +45,22 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const admin = await requireAdmin();
+  const admin = await requireAdminUser();
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const { id } = await params;
-  const adminClient = await createAdminClient();
+  let adminClient;
+  try {
+    adminClient = await createAdminClient();
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Supabase admin client missing' }, { status: 500 });
+  }
+
   const { error } = await adminClient.from('lectures').delete().eq('id', id);
 
   if (error) {
     console.error('lecture delete error:', error);
-    return NextResponse.json({ error: 'Lecture delete nahi hua' }, { status: 500 });
+    return NextResponse.json({ error: `Lecture delete nahi hua: ${error.message}` }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });

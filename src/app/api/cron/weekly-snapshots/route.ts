@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { gatewayChat } from '@/lib/ai/gateway';
 
 export const runtime = 'nodejs';
 
@@ -63,7 +64,49 @@ export async function GET(req: NextRequest) {
     });
 
     await supabase.from('student_weekly_snapshots').upsert(snapshots, { onConflict: 'student_id,week_start' });
-    return NextResponse.json({ status: 'success', processed: snapshots.length });
+
+    const { data: links } = await supabase
+      .from('parent_student_links')
+      .select('parent_id, student_id')
+      .in('student_id', userIds)
+      .eq('status', 'approved');
+    const snapshotByStudent = new Map(snapshots.map((snapshot) => [snapshot.student_id, snapshot]));
+    const reports = [];
+    for (const link of links || []) {
+      if (!link.student_id) continue;
+      const summary = snapshotByStudent.get(link.student_id);
+      if (!summary) continue;
+      let aiNarrative = `This week: ${summary.study_minutes} study minutes, ${summary.quizzes_completed} quizzes, ${summary.xp_earned} XP.`;
+      try {
+        const result = await gatewayChat({
+          provider: 'groq',
+          tier: 'mini',
+          messages: [
+            { role: 'system', content: 'Write a concise, supportive weekly parent report. No alarmist language. Return plain text.' },
+            { role: 'user', content: JSON.stringify(summary) },
+          ],
+          maxTokens: 220,
+          temperature: 0.3,
+        });
+        aiNarrative = result.text;
+      } catch {}
+      reports.push({
+        parent_id: link.parent_id,
+        student_id: link.student_id,
+        week_start_date: weekStartStr,
+        summary,
+        ai_narrative: aiNarrative,
+        suggested_actions: [
+          summary.quizzes_completed === 0 ? 'Encourage one low-pressure practice quiz.' : 'Review quiz feedback together once.',
+          summary.study_minutes < 120 ? 'Help reserve two short study blocks next week.' : 'Keep the current study rhythm steady.',
+        ],
+      });
+    }
+    if (reports.length) {
+      await supabase.from('parent_weekly_reports' as any).upsert(reports, { onConflict: 'parent_id,student_id,week_start_date' });
+    }
+
+    return NextResponse.json({ status: 'success', processed: snapshots.length, parentReports: reports.length });
   } catch (error) {
     console.error('Cron snapshot error:', error);
     return NextResponse.json({ status: 'error', error: 'Snapshot failed' }, { status: 500 });

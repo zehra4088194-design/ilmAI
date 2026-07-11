@@ -121,6 +121,7 @@ export interface Question {
   board?: Board;
   tags?: string[];
   isVerified: boolean;
+  isDemoEligible?: boolean;
   timesAttempted: number;
   correctRate: number;
   createdAt: string;

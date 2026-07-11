@@ -23,7 +23,7 @@ import { toast } from 'sonner';
 //    POSTs it to /api/voice/session-end, which turns it into Short Notes +
 //    Flashcards in the student's existing collections (Magic Note Generator).
 //
-// ACCESS: Elite tier only (see /api/ai/live/session for the server-side
+// ACCESS: plan-config controlled (see /api/ai/live/session for the server-side
 // enforcement — this component's own gate is a UX nicety, not the real check).
 //
 // KNOWN LIMITATION (documented, not hidden): this uses a ScriptProcessorNode
@@ -85,7 +85,7 @@ export interface VoiceSessionTranscript {
 
 interface LiveVoiceCallProps {
   subject?: string;
-  /** True only for Elite-tier users. Everyone else sees a locked button. */
+  /** True only when this user's plan has Live Voice enabled. */
   hasAccess: boolean;
   /** Fired once, right after the call ends, if the transcript is substantial. */
   onSessionEnd?: (transcript: VoiceSessionTranscript) => void;
@@ -202,7 +202,7 @@ export function LiveVoiceCall({ subject, hasAccess, onSessionEnd }: LiveVoiceCal
 
   const startCall = async () => {
     if (!hasAccess) {
-      toast.error('Live Voice Call sirf Elite members ke liye hai. Upgrade karo!');
+      toast.error('Live Voice Call is plan mein locked hai. Upgrade karo!');
       return;
     }
 
@@ -312,7 +312,7 @@ export function LiveVoiceCall({ subject, hasAccess, onSessionEnd }: LiveVoiceCal
 
   if (!hasAccess) {
     return (
-      <Button variant="outline" size="sm" disabled className="opacity-60" title="Live Voice Call sirf Elite members ke liye hai">
+      <Button variant="outline" size="sm" disabled className="opacity-60" title="Live Voice Call is plan mein locked hai">
         <Lock className="w-3.5 h-3.5" /> Voice Call
       </Button>
     );

@@ -11,6 +11,14 @@ export function useAuth() {
   const router = useRouter();
   const supabase = createClient();
 
+  const convertDemoAttempt = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    if (localStorage.getItem('ilm-ai-demo-completed') !== '1') return;
+    fetch('/api/demo/convert', { method: 'POST' })
+      .then(() => localStorage.removeItem('ilm-ai-demo-completed'))
+      .catch(() => {});
+  }, []);
+
   const fetchProfile = useCallback(async (userId: string): Promise<UserProfile | null> => {
     const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
     if (error || !data) return null;
@@ -31,12 +39,12 @@ export function useAuth() {
       totalMarksPercentage: data.total_marks_percentage ?? undefined,
       previousRollNumber: data.previous_roll_number ?? undefined,
       optionalSubjectIds: data.optional_subject_ids ?? [],
-      educationLevel: data.education_level ?? 'school',
+      educationLevel: (data.education_level as UserProfile['educationLevel']) ?? 'school',
       universityProgram: data.university_program ?? undefined,
       universitySemester: data.university_semester ?? undefined,
       universityCourses: data.university_courses ?? [],
       universityExamTargetDate: data.university_exam_target_date ?? undefined,
-      preferredOutputStyle: data.preferred_output_style ?? 'simple',
+      preferredOutputStyle: (data.preferred_output_style as UserProfile['preferredOutputStyle']) ?? 'simple',
       createdAt: data.created_at, updatedAt: data.updated_at,
     };
   }, [supabase]);
@@ -46,6 +54,7 @@ export function useAuth() {
       if (authUser) {
         const profile = await fetchProfile(authUser.id);
         setUser(profile || { id: authUser.id, email: authUser.email!, fullName: authUser.email!.split('@')[0]!, subscriptionTier: 'FREE', xp: 0, level: 1, streak: 0, totalStudyTime: 0, isEmailVerified: authUser.email_confirmed_at != null, isProfileComplete: false, onboardingStep: 0, role: 'student', isAiOperated: false, aiOnboardingComplete: false, optionalSubjectIds: [], educationLevel: 'school', universityCourses: [], preferredOutputStyle: 'simple', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+        convertDemoAttempt();
       } else {
         setUser(null);
       }
@@ -55,12 +64,13 @@ export function useAuth() {
       if (event === 'SIGNED_IN' && session) {
         const profile = await fetchProfile(session.user.id);
         if (profile) setUser(profile);
+        convertDemoAttempt();
       } else if (event === 'SIGNED_OUT') {
         logout();
       }
     });
     return () => subscription.unsubscribe();
-  }, [supabase, fetchProfile, setUser, logout]);
+  }, [supabase, fetchProfile, setUser, logout, convertDemoAttempt]);
 
   const signOut = async () => {
     await supabase.auth.signOut();

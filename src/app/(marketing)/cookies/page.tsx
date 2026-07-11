@@ -25,6 +25,7 @@ export default function CookiesPage() {
             'Login sessions maintain karne mein help karti hain.',
             'Language aur interface preferences remember karne mein use hoti hain.',
             'Security-related checks aur session continuity improve karti hain.',
+            'Daily study email permission optional hai. Agar allow ho to profile mein consent save hota hai aur AI-generated study reminders Resend ke through bheje ja sakte hain.',
           ],
         },
         {

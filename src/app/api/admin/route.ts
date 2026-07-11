@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
+import type { Database } from '@/lib/supabase/database.types';
 import slugify from 'slugify';
+
+type BoardType = Database['public']['Enums']['board_type'];
+type GradeLevel = Database['public']['Enums']['grade_level'];
 
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '')
   .split(',')
@@ -82,8 +86,8 @@ export async function POST(req: NextRequest) {
       subject_id: subjectId,
       name: name.trim(),
       slug,
-      boards,
-      grade_levels: gradeLevels,
+      boards: boards as BoardType[],
+      grade_levels: gradeLevels as GradeLevel[],
       order_index: finalOrderIndex,
     })
     .select()

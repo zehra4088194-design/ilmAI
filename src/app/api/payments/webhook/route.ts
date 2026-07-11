@@ -23,6 +23,7 @@ export async function POST(req: NextRequest) {
   }
 
   const supabase = await createAdminClient();
+  const db = supabase as any;
 
   switch (event.type) {
     case 'checkout.session.completed': {
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
           subscription_tier: tier,
           subscription_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         }).eq('id', userId);
-        await supabase.from('subscriptions').upsert({
+        await db.from('subscriptions').upsert({
           user_id: userId, stripe_customer_id: session.customer as string,
           stripe_subscription_id: session.subscription as string, tier, status: 'active',
           current_period_start: new Date().toISOString(),

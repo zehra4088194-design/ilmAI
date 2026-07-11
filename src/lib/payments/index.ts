@@ -10,7 +10,6 @@
 //   const session = await provider.createCheckout({ ... });
 // ============================================
 import type { PaymentProvider, PaymentRegion } from './provider';
-import { paddleProvider } from './paddle';
 import { payproProvider } from './paypro';
 
 export type {
@@ -25,20 +24,19 @@ export type {
 } from './provider';
 
 const PROVIDERS: Record<PaymentRegion, PaymentProvider> = {
-  INTERNATIONAL: paddleProvider,
+  INTERNATIONAL: payproProvider,
   PAKISTAN: payproProvider,
 };
 
 /** Look up a provider by its string id, e.g. 'paddle' | 'paypro' (used in webhook routes). */
 const PROVIDERS_BY_ID: Record<string, PaymentProvider> = {
-  paddle: paddleProvider,
   paypro: payproProvider,
 };
 
 /**
  * Get the payment provider for a given region.
- * - INTERNATIONAL -> Paddle
  * - PAKISTAN -> PayPro
+ * - INTERNATIONAL/Card checkout is intentionally disabled in the visible flow.
  */
 export function getPaymentProvider(region: PaymentRegion): PaymentProvider {
   const provider = PROVIDERS[region];
@@ -58,13 +56,7 @@ export function getPaymentProviderById(id: string): PaymentProvider {
 }
 
 export function getPaymentAvailability() {
-  const paddleConfigured = Boolean(
-    process.env.PADDLE_API_KEY &&
-    process.env.PADDLE_PRICE_ID_PRO_MONTHLY &&
-    process.env.PADDLE_PRICE_ID_PRO_ANNUAL &&
-    process.env.PADDLE_PRICE_ID_ELITE_MONTHLY &&
-    process.env.PADDLE_PRICE_ID_ELITE_ANNUAL
-  );
+  const paddleConfigured = false;
   const payproConfigured = Boolean(
     process.env.PAYPRO_API_KEY &&
     process.env.PAYPRO_WEBHOOK_SECRET &&
@@ -80,11 +72,11 @@ export function getPaymentAvailability() {
 
 export function isPaymentRegionConfigured(region: PaymentRegion) {
   const availability = getPaymentAvailability();
-  return region === 'INTERNATIONAL' ? availability.paddleConfigured : availability.payproConfigured;
+  return region === 'INTERNATIONAL' ? false : availability.payproConfigured;
 }
 
 /** Pricing plan -> tier price map, gateway-agnostic. */
 export const PLAN_PRICES: Record<'PRO' | 'ELITE', { monthly: number; annual: number }> = {
-  PRO: { monthly: 850, annual: 8160 },
-  ELITE: { monthly: 1950, annual: 18720 },
+  PRO: { monthly: 500, annual: 4800 },
+  ELITE: { monthly: 800, annual: 7680 },
 };

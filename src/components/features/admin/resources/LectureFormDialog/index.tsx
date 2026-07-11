@@ -142,7 +142,7 @@ export function LectureFormDialog({ open, onOpenChange, lecture, onSaved }: Prop
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Save nahi ho saka');
+      if (!res.ok) throw new Error(data.error || data.details || 'Save nahi ho saka');
 
       await onSaved();
       onOpenChange(false);

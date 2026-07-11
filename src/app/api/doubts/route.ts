@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { nanoid } from 'nanoid';
+import { checkAiMessageLimit } from '@/lib/rate-limit';
+import type { SubscriptionTier } from '@/types';
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,6 +23,10 @@ export async function POST(req: NextRequest) {
 
     // Auto-generate an AI teacher reply (teacher is AI-operated, student can't tell)
     try {
+      const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
+      const tier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
+      const limit = await checkAiMessageLimit(user.id, tier, 'doubt_teacher');
+      if (!limit.success) throw new Error('Doubt AI daily limit complete');
       const { gatewayChat, MARKDOWN_ANSWER_FORMAT_INSTRUCTION } = await import('@/lib/ai/gateway');
       const aiReply = await gatewayChat({
         provider: 'groq', tier: 'medium',

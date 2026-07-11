@@ -68,7 +68,7 @@ export function SideChatWidget() {
       const res = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, history: messages.slice(-6), provider, tier }),
+        body: JSON.stringify({ message: text, history: messages.slice(-6), provider, tier, source: 'side_chat' }),
       });
       if (!res.ok) {
         const err = await res.json();

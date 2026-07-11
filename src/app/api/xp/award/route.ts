@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { awardXp } from '@/lib/gamification/xp';
 
 export async function POST(req: NextRequest) {
   try {
@@ -18,31 +19,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: 'success', data: { awarded: 0 } });
     }
 
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('xp')
-      .eq('id', user.id)
-      .single();
-
-    if (profileError || !profile) {
-      return NextResponse.json({ status: 'error', error: 'Profile nahi mila' }, { status: 404 });
-    }
-
-    const nextXp = (profile.xp || 0) + xpToAdd;
-    const nextLevel = Math.floor(nextXp / 1000) + 1;
-    const { error } = await supabase
-      .from('profiles')
-      .update({ xp: nextXp, level: nextLevel })
-      .eq('id', user.id);
-
-    if (error) {
-      console.error('XP award failed:', error);
-      return NextResponse.json({ status: 'error', error: 'XP save nahi ho saka' }, { status: 500 });
-    }
+    const result = await awardXp(user.id, xpToAdd, 'manual_xp_award');
 
     return NextResponse.json({
       status: 'success',
-      data: { awarded: xpToAdd, xp: nextXp, level: nextLevel },
+      data: result,
     });
   } catch (error) {
     console.error('XP award error:', error);

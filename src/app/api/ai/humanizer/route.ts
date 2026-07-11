@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
       .eq('id', user.id)
       .single();
     const userTier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
-    const limit = await checkAiMessageLimit(user.id, userTier);
+    const limit = await checkAiMessageLimit(user.id, userTier, 'humanizer');
 
     if (!limit.success) {
       return NextResponse.json(

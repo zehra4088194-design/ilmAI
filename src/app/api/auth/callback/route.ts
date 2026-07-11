@@ -5,6 +5,7 @@ import { BOARDS } from '@/lib/constants';
 import { needsProfileCompletion } from '@/lib/utils/checkProfileComplete';
 
 type BoardType = Database['public']['Enums']['board_type'];
+type EducationLevel = 'school' | 'college' | 'university';
 
 function resolveBoard(value: unknown): BoardType | null {
   return typeof value === 'string' && BOARDS.some((board) => board.value === value) ? (value as BoardType) : null;
@@ -91,7 +92,7 @@ export async function GET(request: NextRequest) {
           role: resolvedRole,
           board: updates.board ?? existingProfile.board,
           grade_level: existingProfile.grade_level,
-          education_level: existingProfile.education_level,
+          education_level: (existingProfile.education_level as EducationLevel | null) ?? 'school',
           university_program: existingProfile.university_program,
           university_semester: existingProfile.university_semester,
           onboarding_completed: updates.onboarding_completed ?? existingProfile.onboarding_completed,

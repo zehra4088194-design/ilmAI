@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient, createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
+import { requireAdminUser } from '@/lib/admin/auth';
 import type { Database } from '@/lib/supabase/database.types';
-
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '')
-  .split(',')
-  .map((email) => email.trim().toLowerCase())
-  .filter(Boolean);
 
 type LibraryInsert = Database['public']['Tables']['library_resources']['Insert'] & {
   resource_type?: 'text_book' | 'notes' | 'other';
@@ -14,26 +10,23 @@ type LibraryInsert = Database['public']['Tables']['library_resources']['Insert']
 type SubjectJoin = { name: string | null } | null;
 type ChapterJoin = { name: string | null } | null;
 
-async function requireAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user || !ADMIN_EMAILS.includes((user.email || '').toLowerCase())) return null;
-  return user;
-}
-
 export async function GET() {
-  const admin = await requireAdmin();
+  const admin = await requireAdminUser();
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  const adminClient = await createAdminClient();
+  let adminClient;
+  try {
+    adminClient = await createAdminClient();
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Supabase admin client missing' }, { status: 500 });
+  }
+
   const { data, error } = await adminClient
     .from('library_resources')
     .select('*, subjects(name), chapters(name)')
     .order('created_at', { ascending: false });
 
-  if (error) return NextResponse.json({ error: 'Library resources load nahi hue' }, { status: 500 });
+  if (error) return NextResponse.json({ error: `Library resources load nahi hue: ${error.message}` }, { status: 500 });
 
   const resources = (data ?? []).map((resource) => {
     const subjects = resource.subjects as SubjectJoin;
@@ -45,7 +38,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const admin = await requireAdmin();
+  const admin = await requireAdminUser();
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const body = (await req.json()) as LibraryInsert;
@@ -53,7 +46,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Title aur Drive URL zaroori hain' }, { status: 400 });
   }
 
-  const adminClient = await createAdminClient();
+  let adminClient;
+  try {
+    adminClient = await createAdminClient();
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Supabase admin client missing' }, { status: 500 });
+  }
+
   const { data, error } = await adminClient
     .from('library_resources')
     .insert({
@@ -74,7 +73,7 @@ export async function POST(req: NextRequest) {
 
   if (error) {
     console.error('library resource create error:', error);
-    return NextResponse.json({ error: 'Resource add nahi hua' }, { status: 500 });
+    return NextResponse.json({ error: `Resource add nahi hua: ${error.message}` }, { status: 500 });
   }
 
   return NextResponse.json({ resource: data }, { status: 201 });

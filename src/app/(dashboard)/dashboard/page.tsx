@@ -10,6 +10,8 @@ import { UniversityDashboard } from '@/components/features/dashboard/UniversityD
 import { StudyCommandCenter } from '@/components/features/dashboard/StudyCommandCenter';
 import { RevisionPlannerCard } from '@/components/features/dashboard/RevisionPlannerCard';
 import { WeaknessRadar } from '@/components/features/dashboard/WeaknessRadar';
+import { BossQuizCard } from '@/components/features/dashboard/BossQuizCard';
+import { OpportunityDeadlinesCard } from '@/components/features/dashboard/OpportunityDeadlinesCard';
 
 export const metadata: Metadata = { title: 'Dashboard' };
 
@@ -27,7 +29,12 @@ export default async function DashboardPage() {
   let subjectsQuery = supabase.from('subjects').select('id, name').eq('is_active', true).order('name').limit(8);
   if (profile?.board) subjectsQuery = subjectsQuery.contains('boards', [profile.board]);
   if (profile?.grade_level) subjectsQuery = subjectsQuery.contains('grade_levels', [profile.grade_level]);
-  const [{ data: subjects }, { data: quizSessions }] = await Promise.all([
+  const weekStart = new Date();
+  weekStart.setDate(weekStart.getDate() - (weekStart.getDay() || 7) + 1);
+  const today = new Date();
+  const nextWeek = new Date(today);
+  nextWeek.setDate(today.getDate() + 7);
+  const [{ data: subjects }, { data: quizSessions }, { data: bossQuiz }, { data: opportunityDeadlines }] = await Promise.all([
     subjectsQuery,
     supabase
       .from('quiz_sessions')
@@ -36,6 +43,20 @@ export default async function DashboardPage() {
       .eq('status', 'COMPLETED')
       .not('score', 'is', null)
       .limit(50),
+    supabase
+      .from('boss_quizzes' as any)
+      .select('id, xp_reward, coin_reward')
+      .eq('week_start_date', weekStart.toISOString().slice(0, 10))
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from('opportunity_bookmarks' as any)
+      .select('reminder_date, opportunities(title, deadline)')
+      .eq('student_id', user!.id)
+      .gte('reminder_date', today.toISOString().slice(0, 10))
+      .lte('reminder_date', nextWeek.toISOString().slice(0, 10))
+      .order('reminder_date', { ascending: true })
+      .limit(3),
   ]);
 
   const subjectNames = new Map((subjects || []).map((subject) => [subject.id, subject.name]));
@@ -73,6 +94,8 @@ export default async function DashboardPage() {
           <RecentActivity userId={user!.id} />
         </div>
         <div className="space-y-6">
+          <BossQuizCard bossQuiz={(bossQuiz as any) || null} />
+          <OpportunityDeadlinesCard deadlines={(opportunityDeadlines as any) || []} />
           <RevisionPlannerCard board={profile?.board} gradeLevel={profile?.grade_level} focusSubject={focusSubject} />
           <QuickActions />
         </div>

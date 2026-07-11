@@ -13,7 +13,7 @@ import { AiAnswerRenderer } from '@/components/features/ai/AiAnswerRenderer';
 // Correct answers move on fast; wrong answers pause longer so the student
 // actually reads the correct option before it disappears.
 const AUTO_ADVANCE_CORRECT_MS = 900;
-const AUTO_ADVANCE_WRONG_MS = 2000;
+const AUTO_ADVANCE_WRONG_MS = 1000;
 
 export function QuizCard({ question, isLast }: { question: QuizQuestion; isLast: boolean }) {
   const { answerQuestion, nextQuestion, submitQuiz } = useQuizStore();

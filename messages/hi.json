@@ -29,7 +29,7 @@
     },
     "register": {
       "title": "अकाउंट बनाएं 🚀",
-      "subtitle": "मुफ़्त में जुड़ें, रोज़ाना 10 AI मैसेज पाएं!",
+      "subtitle": "Free join karo, notes read karo aur limited AI previews try karo!",
       "student": "छात्र",
       "parent": "अभिभावक",
       "orEmail": "या ईमेल से",
@@ -55,6 +55,256 @@
     "dayStreak": "दिन की स्ट्रीक!",
     "keepItUp": "ऐसे ही जारी रखें!"
   },
+  "insights": {
+    "title": "AI Insights",
+    "weakConcepts": "कमज़ोर अवधारणाएं",
+    "mistakePatterns": "गलती पैटर्न",
+    "confidenceTrend": "आत्मविश्वास ट्रेंड",
+    "predictedScoreRange": "अनुमानित स्कोर रेंज",
+    "roadmap": "AI रोडमैप",
+    "lockedRoadmap": "AI रोडमैप Pro और Elite में उपलब्ध है"
+  },
+  "planner": {
+    "title": "Smart Study Planner",
+    "setup": "Planner Setup",
+    "today": "आज",
+    "week": "साप्ताहिक दृश्य",
+    "examDate": "परीक्षा तिथि",
+    "dailyHours": "रोज़ उपलब्ध घंटे",
+    "preferredStudyTime": "पसंदीदा अध्ययन समय",
+    "quietHours": "शांत घंटे",
+    "generate": "बनाएं",
+    "complete": "पूरा करें"
+  },
+  "gamification": {
+    "coins": "Coins",
+    "achievements": "Achievements",
+    "leaderboard": "Leaderboard",
+    "avatar": "Avatar",
+    "bossQuiz": "Boss Quiz"
+  },
+  "portfolio": {
+    "title": "Student Portfolio",
+    "edit": "Edit Portfolio",
+    "publicProfile": "Public Profile",
+    "generateResume": "Generate Resume"
+  },
+  "career": {
+    "title": "AI Career Counselor",
+    "setup": "Career Setup",
+    "recommendations": "Career Recommendations",
+    "roadmap": "Roadmap"
+  },
+  "predictions": {
+    "title": "Learning Forecast",
+    "support": "Study rhythm support",
+    "boardMarks": "Board marks estimate"
+  },
+  "parentIntelligence": {
+    "weeklyReport": "Weekly Report",
+    "suggestedActions": "Suggested Actions",
+    "summary": "Summary"
+  },
+  "opportunities": {
+    "title": "Opportunities",
+    "saved": "Saved Opportunities",
+    "bookmark": "Bookmark",
+    "deadline": "Deadline"
+  },
+  "teacher": {
+    "title": "Teacher Dashboard",
+    "classes": "Classes",
+    "assignments": "Assignments",
+    "attendance": "Attendance",
+    "joinClass": "Join Class"
+  },
+  "college": {
+    "dashboard": {
+      "lecturesTab": "लेक्चर",
+      "resourcesTab": "सामग्री",
+      "noLecturesDesc": "आपके कॉलेज एडमिन ने अभी तक कोई लेक्चर नहीं जोड़ा है।",
+      "noResourcesDesc": "आपके कॉलेज एडमिन ने अभी तक कोई सामग्री नहीं जोड़ी है।"
+    },
+    "departments": "Departments",
+    "notices": "Notices",
+    "discussions": "Discussions",
+    "placements": "Placements",
+    "timetable": "Timetable",
+    "common": {
+      "status": {
+        "pending": "लंबित",
+        "approved": "स्वीकृत",
+        "declined": "अस्वीकृत",
+        "active": "सक्रिय",
+        "inactive": "निष्क्रिय"
+      },
+      "actions": {
+        "add": "जोड़ें",
+        "edit": "संपादित करें",
+        "delete": "हटाएं",
+        "cancel": "रद्द करें",
+        "save": "बदलाव सेव करें",
+        "approve": "स्वीकृत करें",
+        "decline": "अस्वीकार करें",
+        "download": "डाउनलोड करें"
+      },
+      "empty": {
+        "noColleges": "अभी तक कोई कॉलेज नहीं",
+        "noCollegesDesc": "कॉलेज जोड़े जाने पर यहां दिखाई देंगे।",
+        "noCollegesSearch": "आपकी खोज से कोई कॉलेज मेल नहीं खाता।",
+        "noLectures": "अभी तक कोई लेक्चर नहीं जोड़ा गया",
+        "noResources": "अभी तक कोई सामग्री नहीं जोड़ी गई",
+        "noPendingRequests": "कोई लंबित अनुरोध नहीं",
+        "noStudents": "अभी तक कोई छात्र नहीं"
+      }
+    },
+    "browse": {
+      "title": "कॉलेज",
+      "subtitle": "ilm AI पर कॉलेज देखें और लेक्चर व सामग्री के लिए अपने कॉलेज में शामिल होने का अनुरोध भेजें।",
+      "searchPlaceholder": "कॉलेज का नाम या शहर खोजें…",
+      "requestToJoin": "शामिल होने का अनुरोध करें",
+      "pendingApproval": "स्वीकृति लंबित",
+      "cancelRequest": "अनुरोध रद्द करें",
+      "viewMyCollege": "मेरा कॉलेज देखें",
+      "alreadyActiveRequest": "आपका पहले से ही किसी कॉलेज के साथ सक्रिय अनुरोध मौजूद है"
+    },
+    "profile": {
+      "lockedPreview": "{lectures} लेक्चर, {resources} सामग्री — देखने के लिए शामिल हों"
+    },
+    "sidebar": {
+      "sectionLabel": "कॉलेज",
+      "myCollege": "मेरा कॉलेज"
+    },
+    "admin": {
+      "nav": {
+        "dashboard": "डैशबोर्ड",
+        "lectures": "लेक्चर",
+        "resources": "सामग्री",
+        "requests": "अनुरोध",
+        "students": "छात्र",
+        "settings": "सेटिंग्स"
+      },
+      "dashboard": {
+        "welcome": "वापसी पर स्वागत है",
+        "pendingRequests": "लंबित अनुरोध",
+        "lectures": "लेक्चर",
+        "resources": "सामग्री",
+        "students": "छात्र"
+      },
+      "lectures": {
+        "title": "लेक्चर",
+        "addLecture": "लेक्चर जोड़ें",
+        "editLecture": "लेक्चर संपादित करें",
+        "form": {
+          "title": "शीर्षक",
+          "videoUrl": "वीडियो लिंक",
+          "videoUrlHint": "यूट्यूब (youtube.com / youtu.be) या गूगल ड्राइव (drive.google.com) का लिंक डालें।",
+          "course": "कोर्स",
+          "semester": "सेमेस्टर",
+          "description": "विवरण"
+        },
+        "emptyDesc": "अपना पहला लेक्चर लिंक (यूट्यूब या गूगल ड्राइव) जोड़ें ताकि छात्र देखना शुरू कर सकें।",
+        "deleteConfirm": "क्या आप \"{title}\" हटाना चाहते हैं? यह वापस नहीं किया जा सकता।"
+      },
+      "resources": {
+        "title": "सामग्री",
+        "addResource": "सामग्री जोड़ें",
+        "editResource": "सामग्री संपादित करें",
+        "type": {
+          "notes": "नोट्स",
+          "past_paper": "पुराना पेपर",
+          "slides": "स्लाइड्स",
+          "other": "अन्य"
+        },
+        "form": {
+          "title": "शीर्षक",
+          "type": "प्रकार",
+          "course": "कोर्स",
+          "semester": "सेमेस्टर",
+          "file": "फ़ाइल",
+          "fileHint": "PDF, इमेज, या दस्तावेज़, अधिकतम 25MB तक।"
+        },
+        "emptyDesc": "अपने कॉलेज के छात्रों के लिए नोट्स, पुराने पेपर, या स्लाइड्स अपलोड करें।",
+        "deleteConfirm": "क्या आप \"{title}\" हटाना चाहते हैं? यह वापस नहीं किया जा सकता।"
+      },
+      "requests": {
+        "title": "शामिल होने के अनुरोध",
+        "emptyDesc": "छात्रों के नए अनुरोध यहां दिखाई देंगे।"
+      },
+      "students": {
+        "title": "छात्र",
+        "emptyDesc": "अनुरोध स्वीकृत करने के बाद छात्र यहां दिखाई देंगे।",
+        "columnStudent": "छात्र",
+        "columnEmail": "ईमेल"
+      },
+      "settings": {
+        "title": "सेटिंग्स",
+        "collegeName": "कॉलेज का नाम",
+        "description": "विवरण",
+        "logo": "लोगो",
+        "cover": "कवर इमेज",
+        "restrictedNote": "कॉलेज का यूआरएल स्लग और सक्रिय/निष्क्रिय स्थिति सुपर एडमिन द्वारा प्रबंधित की जाती है।"
+      }
+    },
+    "superAdmin": {
+      "list": {
+        "title": "कॉलेज",
+        "addCollege": "कॉलेज जोड़ें",
+        "columnCollege": "कॉलेज",
+        "columnCity": "शहर",
+        "columnAdmin": "एडमिन",
+        "columnStatus": "स्थिति",
+        "columnActions": "कार्य",
+        "activate": "सक्रिय करें",
+        "deactivate": "निष्क्रिय करें",
+        "unassigned": "असाइन नहीं किया गया",
+        "emptyDesc": "छात्रों को जोड़ना शुरू करने के लिए अपना पहला कॉलेज जोड़ें।"
+      },
+      "form": {
+        "name": "नाम",
+        "slug": "यूआरएल स्लग",
+        "slugHint": "यह /colleges/{slug} के रूप में दिखेगा। केवल छोटे अक्षर, अंक और हाइफ़न।",
+        "slugChangeWarning": "इसे बदलने से कॉलेज का सार्वजनिक यूआरएल भी बदल जाएगा।",
+        "city": "शहर",
+        "description": "विवरण",
+        "logo": "लोगो",
+        "cover": "कवर इमेज",
+        "createCollege": "कॉलेज बनाएं"
+      },
+      "assignAdmin": {
+        "title": "कॉलेज एडमिन",
+        "currentAdmin": "मौजूदा एडमिन",
+        "noAdminAssigned": "अभी तक कोई एडमिन असाइन नहीं किया गया",
+        "assignByEmail": "ईमेल से असाइन करें",
+        "reassignToEmail": "इस ईमेल को दोबारा असाइन करें",
+        "assign": "असाइन करें",
+        "reassign": "दोबारा असाइन करें",
+        "removeAdmin": "एडमिन हटाएं",
+        "removeConfirm": "क्या आप इस कॉलेज का एडमिन हटाना चाहते हैं?",
+        "hint": "इस ईमेल से पहले से ही ilm AI खाता होना चाहिए। नया एडमिन असाइन करने से मौजूदा एडमिन हट जाएगा।"
+      }
+    },
+    "toasts": {
+      "requestSent": "अनुरोध भेज दिया गया! कॉलेज एडमिन जल्द ही समीक्षा करेगा।",
+      "requestCancelled": "अनुरोध रद्द कर दिया गया।",
+      "requestApproved": "अनुरोध स्वीकृत कर दिया गया।",
+      "requestDeclined": "अनुरोध अस्वीकार कर दिया गया।",
+      "lectureAdded": "लेक्चर जोड़ दिया गया।",
+      "lectureUpdated": "लेक्चर अपडेट कर दिया गया।",
+      "lectureDeleted": "लेक्चर हटा दिया गया।",
+      "resourceAdded": "सामग्री जोड़ दी गई।",
+      "resourceUpdated": "सामग्री अपडेट कर दी गई।",
+      "resourceDeleted": "सामग्री हटा दी गई।",
+      "settingsSaved": "सेटिंग्स सेव कर दी गईं।",
+      "collegeCreated": "कॉलेज बना दिया गया।",
+      "collegeSaved": "बदलाव सेव कर दिए गए।",
+      "collegeActivated": "कॉलेज सक्रिय कर दिया गया।",
+      "collegeDeactivated": "कॉलेज निष्क्रिय कर दिया गया।",
+      "adminAssigned": "कॉलेज एडमिन असाइन कर दिया गया।",
+      "adminRemoved": "एडमिन हटा दिया गया।",
+      "genericError": "कुछ गड़बड़ हो गई। कृपया दोबारा कोशिश करें।"
+    }
+  },
   "pricing": {
     "title1": "सरल, ",
     "titleHighlight": "किफ़ायती",
@@ -69,19 +319,41 @@
         "name": "फ्री",
         "badge": null,
         "cta": "मुफ़्त शुरू करें",
-        "features": ["10 AI मैसेज/दिन", "5 क्विज़/दिन", "50 फ्लैशकार्ड", "बेसिक प्रगति", "कम्युनिटी एक्सेस"]
+        "features": [
+          "5 side-chat messages/day",
+          "3/day AI tool previews",
+          "Read notes in-app",
+          "No PDF downloads",
+          "Community access"
+        ]
       },
       "pro": {
         "name": "प्रो",
         "badge": "सबसे लोकप्रिय",
         "cta": "प्रो शुरू करें",
-        "features": ["100 AI मैसेज/दिन", "असीमित क्विज़", "1,000 फ्लैशकार्ड", "सभी पुराने पेपर", "PDF डाउनलोड", "प्राथमिकता सहायता", "प्रगति विश्लेषण"]
+        "features": [
+          "20/day every AI tool",
+          "20/day AI testing",
+          "1,000 flashcards",
+          "All past papers",
+          "PDF downloads unlocked",
+          "Priority support",
+          "Progress analytics"
+        ]
       },
       "elite": {
         "name": "एलीट",
         "badge": "सर्वश्रेष्ठ मूल्य",
         "cta": "एलीट लें",
-        "features": ["असीमित AI मैसेज", "सब कुछ असीमित", "ऑफलाइन मोड", "पेरेंट डैशबोर्ड", "परीक्षा अभ्यास", "1-on-1 AI सेशन", "कस्टम स्टडी प्लान"]
+        "features": [
+          "50/day every AI tool",
+          "50/day AI testing",
+          "Offline mode",
+          "Parent dashboard",
+          "Exam simulations",
+          "1-on-1 AI sessions",
+          "Custom study plans"
+        ]
       }
     }
   },
@@ -102,5 +374,38 @@
   },
   "languageSwitcher": {
     "label": "भाषा"
+  },
+  "vision": {
+    "title": "Scan & Solve",
+    "subtitle": "Scan textbook pages, handwriting, formulas, and diagrams."
+  },
+  "voicePractice": {
+    "title": "AI Speaking Practice",
+    "subtitle": "Record, transcribe, and get pronunciation feedback."
+  },
+  "research": {
+    "title": "Research Assistant",
+    "guidance": "Guidance only, not a plagiarism detector."
+  },
+  "projectBuilder": {
+    "title": "AI Project Builder",
+    "subtitle": "Generate project drafts from one idea."
+  },
+  "offline": {
+    "title": "Downloads",
+    "subtitle": "Study saved resources offline."
+  },
+  "analytics": {
+    "title": "Analytics",
+    "subtitle": "Role-specific learning insights."
+  },
+  "demo": {
+    "title": "Free Demo Test try karein",
+    "subtitle": "5 real MCQs, signup ki zaroorat nahi.",
+    "cta": "Try a Free Demo Test - No Signup Needed",
+    "signupCta": "Free signup karein",
+    "limitTitle": "Aaj ke free demos use ho gaye",
+    "limitMessage": "Aaj ke free demos use ho gaye - unlimited practice ke liye free signup karein.",
+    "conversionTitle": "Pasand aaya? Free signup karein aur unlimited practice, AI Tutor, aur progress tracking unlock karein."
   }
 }

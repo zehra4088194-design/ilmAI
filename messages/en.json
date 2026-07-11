@@ -29,7 +29,7 @@
     },
     "register": {
       "title": "Create Account 🚀",
-      "subtitle": "Join for free, get 10 AI messages every day!",
+      "subtitle": "Join free, read notes, and try limited AI previews every day!",
       "student": "Student",
       "parent": "Parent",
       "orEmail": "Or with email",
@@ -55,6 +55,256 @@
     "dayStreak": "Day Streak!",
     "keepItUp": "Keep it up!"
   },
+  "insights": {
+    "title": "AI Insights",
+    "weakConcepts": "Weak Concepts",
+    "mistakePatterns": "Mistake Patterns",
+    "confidenceTrend": "Confidence Trend",
+    "predictedScoreRange": "Predicted Score Range",
+    "roadmap": "AI Roadmap",
+    "lockedRoadmap": "AI roadmap is unlocked on Pro and Elite"
+  },
+  "planner": {
+    "title": "Smart Study Planner",
+    "setup": "Planner Setup",
+    "today": "Today",
+    "week": "Week View",
+    "examDate": "Exam date",
+    "dailyHours": "Daily available hours",
+    "preferredStudyTime": "Preferred study time",
+    "quietHours": "Quiet hours",
+    "generate": "Generate",
+    "complete": "Complete"
+  },
+  "gamification": {
+    "coins": "Coins",
+    "achievements": "Achievements",
+    "leaderboard": "Leaderboard",
+    "avatar": "Avatar",
+    "bossQuiz": "Boss Quiz"
+  },
+  "portfolio": {
+    "title": "Student Portfolio",
+    "edit": "Edit Portfolio",
+    "publicProfile": "Public Profile",
+    "generateResume": "Generate Resume"
+  },
+  "career": {
+    "title": "AI Career Counselor",
+    "setup": "Career Setup",
+    "recommendations": "Career Recommendations",
+    "roadmap": "Roadmap"
+  },
+  "predictions": {
+    "title": "Learning Forecast",
+    "support": "Study rhythm support",
+    "boardMarks": "Board marks estimate"
+  },
+  "parentIntelligence": {
+    "weeklyReport": "Weekly Report",
+    "suggestedActions": "Suggested Actions",
+    "summary": "Summary"
+  },
+  "opportunities": {
+    "title": "Opportunities",
+    "saved": "Saved Opportunities",
+    "bookmark": "Bookmark",
+    "deadline": "Deadline"
+  },
+  "teacher": {
+    "title": "Teacher Dashboard",
+    "classes": "Classes",
+    "assignments": "Assignments",
+    "attendance": "Attendance",
+    "joinClass": "Join Class"
+  },
+  "college": {
+    "dashboard": {
+      "lecturesTab": "Lectures",
+      "resourcesTab": "Resources",
+      "noLecturesDesc": "Your college admin hasn't added any lectures yet.",
+      "noResourcesDesc": "Your college admin hasn't added any resources yet."
+    },
+    "departments": "Departments",
+    "notices": "Notices",
+    "discussions": "Discussions",
+    "placements": "Placements",
+    "timetable": "Timetable",
+    "common": {
+      "status": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "declined": "Declined",
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "actions": {
+        "add": "Add",
+        "edit": "Edit",
+        "delete": "Delete",
+        "cancel": "Cancel",
+        "save": "Save changes",
+        "approve": "Approve",
+        "decline": "Decline",
+        "download": "Download"
+      },
+      "empty": {
+        "noColleges": "No colleges yet",
+        "noCollegesDesc": "Colleges will show up here once they're added.",
+        "noCollegesSearch": "No colleges match your search.",
+        "noLectures": "No lectures added yet",
+        "noResources": "No resources yet",
+        "noPendingRequests": "No pending requests",
+        "noStudents": "No students yet"
+      }
+    },
+    "browse": {
+      "title": "Colleges",
+      "subtitle": "Browse colleges on ilm AI and request to join yours for lectures and resources.",
+      "searchPlaceholder": "Search by college name or city…",
+      "requestToJoin": "Request to Join",
+      "pendingApproval": "Pending approval",
+      "cancelRequest": "Cancel request",
+      "viewMyCollege": "View My College",
+      "alreadyActiveRequest": "You already have an active request with a college"
+    },
+    "profile": {
+      "lockedPreview": "{lectures} lectures, {resources} resources — join to unlock"
+    },
+    "sidebar": {
+      "sectionLabel": "College",
+      "myCollege": "My College"
+    },
+    "admin": {
+      "nav": {
+        "dashboard": "Dashboard",
+        "lectures": "Lectures",
+        "resources": "Resources",
+        "requests": "Requests",
+        "students": "Students",
+        "settings": "Settings"
+      },
+      "dashboard": {
+        "welcome": "Welcome back",
+        "pendingRequests": "Pending requests",
+        "lectures": "Lectures",
+        "resources": "Resources",
+        "students": "Students"
+      },
+      "lectures": {
+        "title": "Lectures",
+        "addLecture": "Add lecture",
+        "editLecture": "Edit lecture",
+        "form": {
+          "title": "Title",
+          "videoUrl": "Video link",
+          "videoUrlHint": "Paste a YouTube (youtube.com / youtu.be) or Google Drive (drive.google.com) link.",
+          "course": "Course",
+          "semester": "Semester",
+          "description": "Description"
+        },
+        "emptyDesc": "Add your first lecture link (YouTube or Google Drive) so students can start watching.",
+        "deleteConfirm": "Delete \"{title}\"? This can't be undone."
+      },
+      "resources": {
+        "title": "Resources",
+        "addResource": "Add resource",
+        "editResource": "Edit resource",
+        "type": {
+          "notes": "Notes",
+          "past_paper": "Past paper",
+          "slides": "Slides",
+          "other": "Other"
+        },
+        "form": {
+          "title": "Title",
+          "type": "Type",
+          "course": "Course",
+          "semester": "Semester",
+          "file": "File",
+          "fileHint": "PDF, images, or documents up to 25MB."
+        },
+        "emptyDesc": "Upload notes, past papers, or slides for your college's students.",
+        "deleteConfirm": "Delete \"{title}\"? This can't be undone."
+      },
+      "requests": {
+        "title": "Join requests",
+        "emptyDesc": "New join requests from students will show up here."
+      },
+      "students": {
+        "title": "Students",
+        "emptyDesc": "Approved students will appear here once you approve their join requests.",
+        "columnStudent": "Student",
+        "columnEmail": "Email"
+      },
+      "settings": {
+        "title": "Settings",
+        "collegeName": "College name",
+        "description": "Description",
+        "logo": "Logo",
+        "cover": "Cover image",
+        "restrictedNote": "The college's URL slug and active/inactive status are managed by a super admin."
+      }
+    },
+    "superAdmin": {
+      "list": {
+        "title": "Colleges",
+        "addCollege": "Add College",
+        "columnCollege": "College",
+        "columnCity": "City",
+        "columnAdmin": "Admin",
+        "columnStatus": "Status",
+        "columnActions": "Actions",
+        "activate": "Activate",
+        "deactivate": "Deactivate",
+        "unassigned": "Unassigned",
+        "emptyDesc": "Add your first college to start onboarding students."
+      },
+      "form": {
+        "name": "Name",
+        "slug": "URL slug",
+        "slugHint": "Shown as /colleges/{slug}. Lowercase letters, numbers and hyphens only.",
+        "slugChangeWarning": "Changing this changes the college's public URL.",
+        "city": "City",
+        "description": "Description",
+        "logo": "Logo",
+        "cover": "Cover image",
+        "createCollege": "Create college"
+      },
+      "assignAdmin": {
+        "title": "College admin",
+        "currentAdmin": "Current admin",
+        "noAdminAssigned": "No admin assigned yet",
+        "assignByEmail": "Assign by email",
+        "reassignToEmail": "Reassign to email",
+        "assign": "Assign",
+        "reassign": "Reassign",
+        "removeAdmin": "Remove admin",
+        "removeConfirm": "Remove this college's admin?",
+        "hint": "The person must already have an ilm AI account with this email. Assigning a new admin replaces the current one."
+      }
+    },
+    "toasts": {
+      "requestSent": "Request sent! The college admin will review it soon.",
+      "requestCancelled": "Request cancelled.",
+      "requestApproved": "Request approved.",
+      "requestDeclined": "Request declined.",
+      "lectureAdded": "Lecture added.",
+      "lectureUpdated": "Lecture updated.",
+      "lectureDeleted": "Lecture deleted.",
+      "resourceAdded": "Resource added.",
+      "resourceUpdated": "Resource updated.",
+      "resourceDeleted": "Resource deleted.",
+      "settingsSaved": "Settings saved.",
+      "collegeCreated": "College created.",
+      "collegeSaved": "Changes saved.",
+      "collegeActivated": "College activated.",
+      "collegeDeactivated": "College deactivated.",
+      "adminAssigned": "College admin assigned.",
+      "adminRemoved": "Admin removed.",
+      "genericError": "Something went wrong. Please try again."
+    }
+  },
   "pricing": {
     "title1": "Simple, ",
     "titleHighlight": "Affordable",
@@ -69,19 +319,41 @@
         "name": "Free",
         "badge": null,
         "cta": "Start Free",
-        "features": ["10 AI messages/day", "5 quizzes/day", "50 flashcards", "Basic progress", "Community access"]
+        "features": [
+          "5 side-chat messages/day",
+          "3/day AI tool previews",
+          "Read notes in-app",
+          "No PDF downloads",
+          "Community access"
+        ]
       },
       "pro": {
         "name": "Pro",
         "badge": "Most Popular",
         "cta": "Start Pro",
-        "features": ["100 AI messages/day", "Unlimited quizzes", "1,000 flashcards", "All past papers", "PDF downloads", "Priority support", "Progress analytics"]
+        "features": [
+          "20/day every AI tool",
+          "20/day AI testing",
+          "1,000 flashcards",
+          "All past papers",
+          "PDF downloads unlocked",
+          "Priority support",
+          "Progress analytics"
+        ]
       },
       "elite": {
         "name": "Elite",
         "badge": "Best Value",
         "cta": "Go Elite",
-        "features": ["Unlimited AI messages", "Unlimited everything", "Offline mode", "Parent dashboard", "Exam simulations", "1-on-1 AI sessions", "Custom study plans"]
+        "features": [
+          "50/day every AI tool",
+          "50/day AI testing",
+          "Offline mode",
+          "Parent dashboard",
+          "Exam simulations",
+          "1-on-1 AI sessions",
+          "Custom study plans"
+        ]
       }
     }
   },
@@ -102,5 +374,38 @@
   },
   "languageSwitcher": {
     "label": "Language"
+  },
+  "vision": {
+    "title": "Scan & Solve",
+    "subtitle": "Scan textbook pages, handwriting, formulas, and diagrams."
+  },
+  "voicePractice": {
+    "title": "AI Speaking Practice",
+    "subtitle": "Record, transcribe, and get pronunciation feedback."
+  },
+  "research": {
+    "title": "Research Assistant",
+    "guidance": "Guidance only, not a plagiarism detector."
+  },
+  "projectBuilder": {
+    "title": "AI Project Builder",
+    "subtitle": "Generate project drafts from one idea."
+  },
+  "offline": {
+    "title": "Downloads",
+    "subtitle": "Study saved resources offline."
+  },
+  "analytics": {
+    "title": "Analytics",
+    "subtitle": "Role-specific learning insights."
+  },
+  "demo": {
+    "title": "Try a Free Demo Test",
+    "subtitle": "5 real MCQs, no signup needed.",
+    "cta": "Try a Free Demo Test - No Signup Needed",
+    "signupCta": "Sign up free",
+    "limitTitle": "Free demos used for today",
+    "limitMessage": "You've used your free demos for today - sign up free for unlimited practice.",
+    "conversionTitle": "Loved it? Sign up free to unlock unlimited practice, AI Tutor, and track your progress."
   }
 }

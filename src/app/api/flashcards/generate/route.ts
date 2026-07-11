@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { generateFlashcardsViaGateway } from '@/lib/ai/gateway';
+import { checkAiMessageLimit, getConfiguredLimitExceededMessage } from '@/lib/rate-limit';
+import type { SubscriptionTier } from '@/types';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -10,6 +12,10 @@ export async function POST(req: NextRequest) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ status: 'error', error: 'Login required' }, { status: 401 });
+    const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
+    const tier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
+    const limit = await checkAiMessageLimit(user.id, tier, 'flashcards');
+    if (!limit.success) return NextResponse.json({ status: 'error', error: await getConfiguredLimitExceededMessage(tier, 'Flashcards AI') }, { status: 429 });
 
     const { topic, subjectId, count = 10 } = await req.json();
     if (!topic) return NextResponse.json({ status: 'error', error: 'Topic required hai' }, { status: 400 });

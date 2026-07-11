@@ -19,6 +19,7 @@ import {
   type ClassSelectionGradeLevel,
 } from '@/lib/supabase/getUserGradeLevel';
 import { EDUCATION_LEVELS, OUTPUT_STYLES, type EducationLevel, type PreferredOutputStyle } from '@/lib/constants/university';
+import { ThemePicker } from '@/components/common/ThemePicker';
 
 export function SettingsTabs({ profile, currentGradeLevel }: { profile: any; currentGradeLevel: GradeLevel | null }) {
   const [activeTab, setActiveTab] = useState('profile');
@@ -205,7 +206,15 @@ export function SettingsTabs({ profile, currentGradeLevel }: { profile: any; cur
           )}
           {activeTab === 'notifications' && <p className="text-sm text-muted-foreground">Notification preferences jald aayengi.</p>}
           {activeTab === 'security' && <p className="text-sm text-muted-foreground">Password change aur 2FA settings jald aayengi.</p>}
-          {activeTab === 'appearance' && <p className="text-sm text-muted-foreground">Theme settings navbar mein available hain (sun/moon/system icon).</p>}
+          {activeTab === 'appearance' && (
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-semibold mb-1 flex items-center gap-2"><Palette className="w-4 h-4 text-violet-400" />Theme</h3>
+                <p className="text-sm text-muted-foreground">Apni study vibe choose karo. Ye choice isi browser mein save rahegi.</p>
+              </div>
+              <ThemePicker />
+            </div>
+          )}
           {activeTab === 'language' && (
             <div className="space-y-4">
               <div>

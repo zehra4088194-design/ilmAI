@@ -8,11 +8,13 @@ import { SuggestionChips } from '@/components/features/ai-tutor/SuggestionChips'
 import { ConversationSidebar } from '@/components/features/ai-tutor/ConversationSidebar';
 import { SubjectPicker } from '@/components/features/ai-tutor/SubjectPicker';
 import { LiveVoiceCall } from '@/components/features/ai-tutor/LiveVoiceCall';
+import { MotivationCarousel } from '@/components/features/ai-tutor/MotivationCarousel';
 import { TeacherIdentityCard } from '@/components/features/teacher/TeacherIdentityCard';
 import { AIProviderSelector } from '@/components/features/ai-selector/AIProviderSelector';
 import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/auth/useAuth';
+import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 import type { AiProviderId, ModelTier } from '@/lib/ai/gateway';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
@@ -29,8 +31,10 @@ export function ChatInterface() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const { user } = useAuth();
+  const settings = usePlatformSettings();
+  const userTier = user?.subscriptionTier || 'FREE';
   const isFreeTier = !user || user.subscriptionTier === 'FREE';
-  const hasLiveVoiceAccess = user?.subscriptionTier === 'ELITE';
+  const hasLiveVoiceAccess = !!user && settings.subscriptionPlans[userTier].access.liveVoice;
 
   const activeConversation = conversations.find(c => c.id === activeConversationId);
   const messages = activeConversation?.messages || [];
@@ -61,7 +65,7 @@ export function ChatInterface() {
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, conversationId: convId, history: messages.slice(-10), provider, tier, subject: subject?.name }),
+        body: JSON.stringify({ message: text, conversationId: convId, history: messages.slice(-10), provider, tier, subject: subject?.name, source: 'ai_tutor' }),
       });
 
       if (!response.ok) {
@@ -104,7 +108,7 @@ export function ChatInterface() {
           <Button variant="ghost" size="icon-sm" className="lg:hidden" onClick={() => setSidebarOpen(true)}><Menu className="w-4 h-4" /></Button>
           <TeacherIdentityCard subjectName={subject?.name} size="md" className="flex-1" />
           <LiveVoiceCall subject={subject?.name} hasAccess={hasLiveVoiceAccess} />
-          <AIProviderSelector provider={provider} tier={tier} onChange={(p, t) => { setProvider(p); setTier(t); }} isFreeTier={isFreeTier} compact />
+          <AIProviderSelector provider={provider} tier={tier} onChange={(p, t) => { setProvider(p); setTier(t); }} isFreeTier={isFreeTier} userTier={user?.subscriptionTier || 'FREE'} compact />
         </div>
 
         {/* Messages */}
@@ -138,13 +142,16 @@ export function ChatInterface() {
 
         {/* Input */}
         {!showSubjectPicker && (
-          <ChatInput
-            onSend={handleSend}
-            disabled={isStreaming}
-            value={inputValue}
-            onChange={setInputValue}
-            textareaRef={inputRef}
-          />
+          <div className="border-t border-border bg-background/80">
+            <MotivationCarousel subjectName={subject?.name} />
+            <ChatInput
+              onSend={handleSend}
+              disabled={isStreaming}
+              value={inputValue}
+              onChange={setInputValue}
+              textareaRef={inputRef}
+            />
+          </div>
         )}
       </div>
     </div>

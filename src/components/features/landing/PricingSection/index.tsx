@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
 import { cn } from '@/lib/utils/cn';
 import { useTranslations, useMessages } from '@/providers/I18nProvider';
-import { CURRENCY_SYMBOLS, MANUAL_PAYMENT_OPTIONS, SUBSCRIPTION_PLANS } from '@/lib/constants';
+import { CURRENCY_SYMBOLS } from '@/lib/constants';
+import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 
 const PLAN_IDS = ['free', 'pro', 'elite'] as const;
 const PLAN_KEYS = { free: 'FREE', pro: 'PRO', elite: 'ELITE' } as const;
@@ -26,6 +27,7 @@ export function PricingSection() {
   const messages = useMessages();
   const plans = messages.pricing.plans;
   const symbol = CURRENCY_SYMBOLS.PKR;
+  const settings = usePlatformSettings();
 
   return (
     <section id="pricing" className="py-24">
@@ -69,7 +71,8 @@ export function PricingSection() {
             const plan = plans[id];
             const meta = PLAN_META[id];
             const Icon = meta.icon;
-            const planPrice = SUBSCRIPTION_PLANS[PLAN_KEYS[id]].price.PKR;
+            const dynamicPlan = settings.subscriptionPlans[PLAN_KEYS[id]];
+            const planPrice = dynamicPlan.price.PKR;
             const monthly = planPrice.monthly;
             const annual = planPrice.annual;
             const annualPerMonth = monthly > 0 ? Math.round(annual / 12) : 0;
@@ -125,7 +128,7 @@ export function PricingSection() {
                   )}
                 </div>
                 <ul className="mb-8 space-y-3">
-                  {plan.features.map((f: string, fi: number) => (
+                  {(dynamicPlan.features.length ? dynamicPlan.features : plan.features).map((f: string, fi: number) => (
                     <li key={fi} className="flex items-center gap-2 text-sm">
                       <Check className="h-4 w-4 shrink-0 text-green-500" />
                       {f}
@@ -143,10 +146,8 @@ export function PricingSection() {
           })}
         </div>
 
-        <div className="mx-auto mt-8 max-w-4xl rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-center text-sm text-amber-100">
-          Filhaal sirf manual Pakistan payments available hain: {' '}
-          {MANUAL_PAYMENT_OPTIONS.map((option) => `${option.label} ${option.number}`).join(' | ')}. Send the screenshot to
-          {' '}zehra4088194@gmail.com and within 1 hour your transaction will be verified.
+        <div className="mx-auto mt-8 max-w-4xl rounded-2xl border border-violet-500/30 bg-violet-500/10 p-4 text-center text-sm text-muted-foreground">
+          Plan choose karne ke baad payment instructions next page par cleanly show hongi.
         </div>
       </div>
     </section>

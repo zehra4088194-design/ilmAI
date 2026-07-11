@@ -1,7 +1,7 @@
 'use client';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { ArrowRight, Sparkles, Star, Users, BookOpen, Brain } from 'lucide-react';
+import { ArrowRight, Sparkles, Star, BookOpen, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
@@ -56,6 +56,9 @@ export function HeroSection() {
                 </Link>
               </Button>
               <Button asChild size="xl" variant="glass">
+                <Link href="/demo">Try a Free Demo Test - No Signup Needed</Link>
+              </Button>
+              <Button asChild size="xl" variant="outline" className="border-violet-500/35 bg-background/20">
                 <Link href="/pricing">Pricing Dekho</Link>
               </Button>
             </motion.div>

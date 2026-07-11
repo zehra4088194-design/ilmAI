@@ -1,37 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient, createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
+import { requireAdminUser } from '@/lib/admin/auth';
 import type { Database } from '@/lib/supabase/database.types';
-
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '')
-  .split(',')
-  .map((email) => email.trim().toLowerCase())
-  .filter(Boolean);
 
 type LectureInsert = Database['public']['Tables']['lectures']['Insert'];
 type ChapterJoin = { name: string | null; subject_id: string | null } | null;
 type TopicJoin = { name: string | null } | null;
 
-async function requireAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user || !ADMIN_EMAILS.includes((user.email || '').toLowerCase())) return null;
-  return user;
-}
-
 export async function GET() {
-  const admin = await requireAdmin();
+  const admin = await requireAdminUser();
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  const adminClient = await createAdminClient();
+  let adminClient;
+  try {
+    adminClient = await createAdminClient();
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Supabase admin client missing' }, { status: 500 });
+  }
+
   const { data, error } = await adminClient
     .from('lectures')
     .select('*, chapters(name, subject_id), topics(name)')
     .order('order_index', { ascending: true })
     .order('created_at', { ascending: false });
 
-  if (error) return NextResponse.json({ error: 'Lectures load nahi hue' }, { status: 500 });
+  if (error) return NextResponse.json({ error: `Lectures load nahi hue: ${error.message}` }, { status: 500 });
 
   const lectures = (data ?? []).map((lecture) => {
     const chapters = lecture.chapters as ChapterJoin;
@@ -48,7 +41,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const admin = await requireAdmin();
+  const admin = await requireAdminUser();
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const body = (await req.json()) as LectureInsert;
@@ -59,7 +52,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Exercise walkthrough ke liye exercise number zaroori hai' }, { status: 400 });
   }
 
-  const adminClient = await createAdminClient();
+  let adminClient;
+  try {
+    adminClient = await createAdminClient();
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Supabase admin client missing' }, { status: 500 });
+  }
+
   const { data, error } = await adminClient
     .from('lectures')
     .insert({
@@ -77,7 +76,7 @@ export async function POST(req: NextRequest) {
 
   if (error) {
     console.error('lecture create error:', error);
-    return NextResponse.json({ error: 'Lecture add nahi hua' }, { status: 500 });
+    return NextResponse.json({ error: `Lecture add nahi hua: ${error.message}` }, { status: 500 });
   }
 
   return NextResponse.json({ lecture: data }, { status: 201 });

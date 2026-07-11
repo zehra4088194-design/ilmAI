@@ -1,12 +1,13 @@
 // ============================================
 // RATE LIMITING (Upstash Redis)
-// Used for: AI messages/day, quizzes/day, OCR scans/day, live voice calls/day
+// Used for: AI messages/day, AI tools/day, quizzes/day, OCR scans/day, live voice calls/day
 // — all tier-based limits
 // ============================================
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
-import { SUBSCRIPTION_PLANS } from '@/lib/constants';
 import type { SubscriptionTier } from '@/types';
+import { getPlatformSettings } from '@/lib/platform-settings/server';
+import { getPlanFromSettings } from '@/lib/platform-settings/shared';
 
 const redis = process.env.UPSTASH_REDIS_REST_URL
   ? new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN! })
@@ -29,8 +30,69 @@ async function checkMemoryLimit(key: string, limit: number, windowMs: number): P
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+export type DailyLimitFeature =
+  | 'ai_message'
+  | 'ai_side_chat'
+  | 'ai_tool'
+  | 'quiz'
+  | 'ocr_scan'
+  | 'live_voice_call'
+  | `ai_tool:${string}`;
+
+export const AI_DAILY_LIMITS = {
+  FREE_SIDE_CHAT: 5,
+  FREE_TOOL: 3,
+  PRO_TOOL: 20,
+  ELITE_TOOL: 50,
+} as const;
+
+export function getAiDailyLimit(tier: SubscriptionTier, feature: 'side_chat' | 'tool' = 'tool') {
+  if (tier === 'ELITE') return AI_DAILY_LIMITS.ELITE_TOOL;
+  if (tier === 'PRO') return AI_DAILY_LIMITS.PRO_TOOL;
+  return feature === 'side_chat' ? AI_DAILY_LIMITS.FREE_SIDE_CHAT : AI_DAILY_LIMITS.FREE_TOOL;
+}
+
+async function getConfiguredPlan(tier: SubscriptionTier) {
+  const settings = await getPlatformSettings();
+  return getPlanFromSettings(settings, tier);
+}
+
+async function getConfiguredAiDailyLimit(tier: SubscriptionTier, feature: 'side_chat' | 'tool' = 'tool') {
+  const plan = await getConfiguredPlan(tier);
+  return feature === 'side_chat' ? plan.limits.aiSideChatDaily : plan.limits.aiToolDaily;
+}
+
+export function getLimitExceededMessage(tier: SubscriptionTier, featureLabel = 'AI tool') {
+  if (tier === 'FREE') {
+    return `${featureLabel} ki free daily limit complete ho gayi. Pro mein 20/day aur Elite mein 50/day unlock hotay hain.`;
+  }
+  if (tier === 'PRO') {
+    return `${featureLabel} ki Pro daily limit complete ho gayi. Elite mein 50/day miltay hain.`;
+  }
+  return `${featureLabel} ki Elite daily limit complete ho gayi. Kal phir try karo.`;
+}
+
+export async function getConfiguredLimitExceededMessage(tier: SubscriptionTier, featureLabel = 'AI tool') {
+  const settings = await getPlatformSettings();
+  const free = getPlanFromSettings(settings, 'FREE');
+  const pro = getPlanFromSettings(settings, 'PRO');
+  const elite = getPlanFromSettings(settings, 'ELITE');
+  const isSideChat = featureLabel.toLowerCase().includes('side chat');
+  const freeLimit = isSideChat ? free.limits.aiSideChatDaily : free.limits.aiToolDaily;
+  const proLimit = isSideChat ? pro.limits.aiSideChatDaily : pro.limits.aiToolDaily;
+  const eliteLimit = isSideChat ? elite.limits.aiSideChatDaily : elite.limits.aiToolDaily;
+
+  if (tier === 'FREE') {
+    return `${featureLabel} ki free daily limit complete ho gayi. Pro mein ${proLimit}/day aur Elite mein ${eliteLimit}/day unlock hotay hain.`;
+  }
+  if (tier === 'PRO') {
+    return `${featureLabel} ki Pro daily limit complete ho gayi. Elite mein ${eliteLimit}/day miltay hain.`;
+  }
+  return `${featureLabel} ki Elite daily limit complete ho gayi. Kal phir try karo. Free preview ${freeLimit}/day hai.`;
+}
+
 /** Generic daily limiter, used for AI messages, quizzes, OCR scans, and live voice calls. */
-export async function checkDailyLimit(userId: string, feature: 'ai_message' | 'quiz' | 'ocr_scan' | 'live_voice_call', limit: number): Promise<{ success: boolean; remaining: number; reset: number }> {
+export async function checkDailyLimit(userId: string, feature: DailyLimitFeature, limit: number): Promise<{ success: boolean; remaining: number; reset: number }> {
   const key = `ratelimit:${feature}:${userId}:${new Date().toISOString().slice(0, 10)}`;
 
   if (redis) {
@@ -41,23 +103,31 @@ export async function checkDailyLimit(userId: string, feature: 'ai_message' | 'q
   return checkMemoryLimit(key, limit, DAY_MS);
 }
 
-/** OCR-specific helper: Free = 5/day, Pro = 10/day, Elite = 30/day. */
+/** OCR-specific helper under the same AI policy: Free = 3/day, Pro = 20/day, Elite = 50/day. */
 export async function checkOcrLimit(userId: string, tier: SubscriptionTier) {
-  const limit = tier === 'ELITE' ? 30 : tier === 'PRO' ? 10 : 5;
+  const plan = await getConfiguredPlan(tier);
+  const limit = plan.limits.ocrDaily;
   return checkDailyLimit(userId, 'ocr_scan', limit);
 }
 
-/** AI chat messages, tied to subscription plan limits */
-export async function checkAiMessageLimit(userId: string, tier: SubscriptionTier) {
-  const limit = SUBSCRIPTION_PLANS[tier].limits.aiMessages;
-  if (limit === -1) return { success: true, remaining: -1, reset: 0 }; // unlimited
-  return checkDailyLimit(userId, 'ai_message', limit);
+/** AI side chat messages: Free = 5/day, Pro = 20/day, Elite = 50/day. */
+export async function checkAiSideChatLimit(userId: string, tier: SubscriptionTier) {
+  return checkDailyLimit(userId, 'ai_side_chat', await getConfiguredAiDailyLimit(tier, 'side_chat'));
+}
+
+/** AI tool usage: Free preview = 3/day, Pro = 20/day, Elite = 50/day. */
+export async function checkAiToolLimit(userId: string, tier: SubscriptionTier, featureKey = 'general') {
+  return checkDailyLimit(userId, `ai_tool:${featureKey}`, await getConfiguredAiDailyLimit(tier, 'tool'));
+}
+
+/** Backwards-compatible helper used by existing AI routes. */
+export async function checkAiMessageLimit(userId: string, tier: SubscriptionTier, featureKey = 'general') {
+  return checkAiToolLimit(userId, tier, featureKey);
 }
 
 export async function checkQuizLimit(userId: string, tier: SubscriptionTier) {
-  const limit = SUBSCRIPTION_PLANS[tier].limits.quizzes;
-  if (limit === -1) return { success: true, remaining: -1, reset: 0 };
-  return checkDailyLimit(userId, 'quiz', limit);
+  const plan = await getConfiguredPlan(tier);
+  return checkDailyLimit(userId, 'quiz', plan.limits.quizDaily);
 }
 
 // ============================================
@@ -71,13 +141,14 @@ export async function checkQuizLimit(userId: string, tier: SubscriptionTier) {
 // since it's fast/cheap enough to treat as the "default" provider.
 // ============================================
 const MODEL_TIER_DAILY_LIMITS: Record<'mini' | 'medium' | 'pro', number> = {
-  mini: 10,
-  medium: 7,
-  pro: 3,
+  mini: AI_DAILY_LIMITS.PRO_TOOL,
+  medium: AI_DAILY_LIMITS.PRO_TOOL,
+  pro: AI_DAILY_LIMITS.PRO_TOOL,
 };
 
-export async function checkModelTierLimit(userId: string, provider: string, tier: 'mini' | 'medium' | 'pro') {
-  const limit = MODEL_TIER_DAILY_LIMITS[tier] ?? 5;
+export async function checkModelTierLimit(userId: string, provider: string, tier: 'mini' | 'medium' | 'pro', userTier: SubscriptionTier = 'PRO') {
+  const plan = await getConfiguredPlan(userTier);
+  const limit = plan.limits.aiToolDaily || MODEL_TIER_DAILY_LIMITS[tier] || AI_DAILY_LIMITS.PRO_TOOL;
   // Key includes provider so Claude-mini and GPT-mini have separate pools per provider+tier
   const key = `ratelimit:model_tier:${provider}:${tier}:${userId}:${new Date().toISOString().slice(0, 10)}`;
   if (redis) {
@@ -94,9 +165,10 @@ export async function checkModelTierLimit(userId: string, provider: string, tier
 // in the API route by the Elite-only tier gate), but it's handled safely
 // here too in case that check ever changes.
 // ============================================
-const LIVE_VOICE_DAILY_LIMIT_ELITE = 15;
+const LIVE_VOICE_DAILY_LIMIT_ELITE = AI_DAILY_LIMITS.ELITE_TOOL;
 
 export async function checkLiveVoiceLimit(userId: string, tier: SubscriptionTier) {
-  if (tier !== 'ELITE') return { success: false, remaining: 0, reset: 0 };
-  return checkDailyLimit(userId, 'live_voice_call', LIVE_VOICE_DAILY_LIMIT_ELITE);
+  const plan = await getConfiguredPlan(tier);
+  if (!plan.access.liveVoice) return { success: false, remaining: 0, reset: 0 };
+  return checkDailyLimit(userId, 'live_voice_call', plan.limits.liveVoiceDaily || LIVE_VOICE_DAILY_LIMIT_ELITE);
 }

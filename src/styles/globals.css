@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:is(.dark *, .theme-blue *, .theme-midnight *));
 
 :root {
   /* Brand Colors */
@@ -11,7 +11,7 @@
 
   /* Semantic Colors — Light mode: soft, warm off-white instead of stark white,
      so cards/glass surfaces have something to contrast against. */
-  --background: 250 33% 98%;
+  --background: 42 38% 94%;
   --foreground: 222 47% 11%;
   --card: 0 0% 100%;
   --card-foreground: 222 47% 11%;
@@ -49,6 +49,11 @@
   --sidebar-ring: 262 80% 58%;
 
   --radius: 0.625rem;
+  --app-background-image:
+    radial-gradient(circle, rgba(41, 37, 36, 0.20) 0.7px, transparent 0.8px),
+    radial-gradient(circle at 15% 0%, hsl(var(--brand-primary) / 0.08), transparent 45%),
+    radial-gradient(circle at 85% 20%, hsl(var(--brand-secondary) / 0.06), transparent 40%);
+  --app-background-size: 4px 4px, auto, auto;
 }
 
 .dark {
@@ -77,6 +82,124 @@
   --chart-3: 171 100% 51%;
   --chart-4: 38 92% 60%;
   --chart-5: 0 84% 70%;
+  --app-background-image: radial-gradient(circle at 15% 0%, hsl(var(--brand-primary) / 0.18), transparent 45%),
+                          radial-gradient(circle at 85% 20%, hsl(var(--brand-secondary) / 0.14), transparent 40%);
+  --app-background-size: auto;
+}
+
+.theme-pink {
+  --brand-primary: 334 72% 45%;
+  --brand-secondary: 351 72% 68%;
+  --brand-accent: 199 90% 50%;
+  --background: 350 45% 90%;
+  --foreground: 343 38% 15%;
+  --card: 350 55% 96%;
+  --card-foreground: 343 38% 15%;
+  --popover: 350 55% 97%;
+  --popover-foreground: 343 38% 15%;
+  --primary: 334 72% 45%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 350 45% 88%;
+  --secondary-foreground: 343 38% 18%;
+  --muted: 350 36% 88%;
+  --muted-foreground: 343 17% 42%;
+  --accent: 341 55% 88%;
+  --accent-foreground: 334 72% 25%;
+  --border: 350 28% 76%;
+  --input: 350 28% 76%;
+  --ring: 334 72% 45%;
+  --sidebar: 343 45% 16%;
+  --sidebar-foreground: 350 55% 96%;
+  --sidebar-accent: 343 42% 24%;
+  --sidebar-accent-foreground: 350 55% 96%;
+  --sidebar-border: 343 35% 24%;
+  --app-background-image: linear-gradient(rgba(255,255,255,0.18), rgba(255,255,255,0.18)), url('/background-pink.png');
+  --app-background-size: cover;
+}
+
+.theme-blue {
+  --brand-primary: 213 92% 62%;
+  --brand-secondary: 199 95% 67%;
+  --brand-accent: 160 84% 46%;
+  --background: 212 43% 15%;
+  --foreground: 210 40% 96%;
+  --card: 212 40% 18%;
+  --card-foreground: 210 40% 96%;
+  --popover: 212 40% 18%;
+  --popover-foreground: 210 40% 96%;
+  --primary: 213 92% 66%;
+  --primary-foreground: 212 50% 10%;
+  --secondary: 212 36% 22%;
+  --secondary-foreground: 210 40% 96%;
+  --muted: 212 32% 23%;
+  --muted-foreground: 210 20% 74%;
+  --accent: 212 36% 25%;
+  --accent-foreground: 210 40% 96%;
+  --border: 212 28% 29%;
+  --input: 212 28% 29%;
+  --ring: 213 92% 66%;
+  --sidebar: 212 48% 12%;
+  --sidebar-foreground: 210 40% 96%;
+  --sidebar-accent: 212 42% 20%;
+  --sidebar-accent-foreground: 210 40% 96%;
+  --sidebar-border: 212 36% 22%;
+  --app-background-image: linear-gradient(rgba(9,25,45,0.12), rgba(9,25,45,0.12)), url('/background-blue.png');
+  --app-background-size: cover;
+}
+
+.theme-paper {
+  --brand-primary: 221 83% 53%;
+  --brand-secondary: 160 84% 39%;
+  --brand-accent: 38 92% 50%;
+  --background: 42 34% 91%;
+  --foreground: 222 31% 14%;
+  --card: 45 44% 97%;
+  --card-foreground: 222 31% 14%;
+  --popover: 45 44% 97%;
+  --popover-foreground: 222 31% 14%;
+  --primary: 221 83% 53%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 42 28% 86%;
+  --secondary-foreground: 222 31% 14%;
+  --muted: 42 24% 86%;
+  --muted-foreground: 222 14% 42%;
+  --accent: 221 64% 91%;
+  --accent-foreground: 221 83% 28%;
+  --border: 42 20% 76%;
+  --input: 42 20% 76%;
+  --ring: 221 83% 53%;
+  --app-background-image: url('/background-light.png');
+  --app-background-size: cover;
+}
+
+.theme-midnight {
+  --brand-primary: 38 92% 58%;
+  --brand-secondary: 262 80% 68%;
+  --brand-accent: 190 95% 55%;
+  --background: 0 0% 10%;
+  --foreground: 45 30% 96%;
+  --card: 0 0% 13%;
+  --card-foreground: 45 30% 96%;
+  --popover: 0 0% 13%;
+  --popover-foreground: 45 30% 96%;
+  --primary: 38 92% 58%;
+  --primary-foreground: 0 0% 9%;
+  --secondary: 0 0% 18%;
+  --secondary-foreground: 45 30% 96%;
+  --muted: 0 0% 19%;
+  --muted-foreground: 45 12% 72%;
+  --accent: 0 0% 20%;
+  --accent-foreground: 45 30% 96%;
+  --border: 0 0% 25%;
+  --input: 0 0% 25%;
+  --ring: 38 92% 58%;
+  --sidebar: 0 0% 8%;
+  --sidebar-foreground: 45 30% 96%;
+  --sidebar-accent: 0 0% 16%;
+  --sidebar-accent-foreground: 45 30% 96%;
+  --sidebar-border: 0 0% 18%;
+  --app-background-image: linear-gradient(rgba(0,0,0,0.08), rgba(0,0,0,0.08)), url('/background-dark.png');
+  --app-background-size: cover;
 }
 
 @theme inline {
@@ -109,13 +232,11 @@ body {
   @apply bg-background text-foreground;
   font-feature-settings: "rlig" 1, "calt" 1;
   /* Soft radial glow behind content — subtle in light mode, richer in dark mode */
-  background-image: radial-gradient(circle at 15% 0%, hsl(var(--brand-primary) / 0.10), transparent 45%),
-                     radial-gradient(circle at 85% 20%, hsl(var(--brand-secondary) / 0.08), transparent 40%);
+  background-color: hsl(var(--background));
+  background-image: var(--app-background-image);
+  background-size: var(--app-background-size);
+  background-position: center;
   background-attachment: fixed;
-}
-.dark body {
-  background-image: radial-gradient(circle at 15% 0%, hsl(var(--brand-primary) / 0.18), transparent 45%),
-                     radial-gradient(circle at 85% 20%, hsl(var(--brand-secondary) / 0.14), transparent 40%);
 }
 
 /* Glass morphism utility */

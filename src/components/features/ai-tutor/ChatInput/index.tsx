@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef, type KeyboardEvent, type RefObject } from 'react';
+import Link from 'next/link';
 import { Send, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScanUpload } from '@/components/features/ocr/ScanUpload';
@@ -57,6 +58,9 @@ export function ChatInput({ onSend, disabled, value, onChange, textareaRef }: Ch
             </Button>
           }
         />
+        <Button asChild variant="ghost" size="icon" className="shrink-0" title="Full Scan & Solve">
+          <Link href="/scan"><Camera className="w-4 h-4" /></Link>
+        </Button>
         <textarea
           ref={activeTextareaRef}
           value={text}

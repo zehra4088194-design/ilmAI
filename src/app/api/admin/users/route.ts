@@ -1,29 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createAdminClient } from '@/lib/supabase/server';
-
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '')
-  .split(',')
-  .map((e) => e.trim().toLowerCase())
-  .filter(Boolean);
-
-async function requireAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user || !ADMIN_EMAILS.includes((user.email || '').toLowerCase())) {
-    return null;
-  }
-  return user;
-}
+import { createAdminClient } from '@/lib/supabase/server';
+import { requireAdminUser } from '@/lib/admin/auth';
 
 // GET /api/admin/users?q=search-email-or-name
 export async function GET(req: NextRequest) {
-  const admin = await requireAdmin();
+  const admin = await requireAdminUser();
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const q = req.nextUrl.searchParams.get('q')?.trim() || '';
-  const adminClient = await createAdminClient();
+  let adminClient;
+  try {
+    adminClient = await createAdminClient();
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Supabase admin client missing' }, { status: 500 });
+  }
 
   let query = adminClient
     .from('profiles')
@@ -37,7 +27,7 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await query;
   if (error) {
-    return NextResponse.json({ error: 'Users load nahi hue' }, { status: 500 });
+    return NextResponse.json({ error: `Users load nahi hue: ${error.message}` }, { status: 500 });
   }
   return NextResponse.json({ users: data });
 }

@@ -53,12 +53,25 @@ export const useQuizStore = create<QuizState>()(
       if (state.session) { state.session.currentIndex = index; state.showExplanation = false; }
     }),
     toggleExplanation: () => set((state) => { state.showExplanation = !state.showExplanation; }),
-    submitQuiz: () => set((state) => {
-      if (!state.session) return;
-      state.session.status = 'COMPLETED';
-      state.session.completedAt = new Date().toISOString();
-      state.session.score = Math.round((state.session.correctCount / state.session.questions.length) * 100);
-    }),
+    submitQuiz: () => {
+      let completedSession: QuizSession | null = null;
+      set((state) => {
+        if (!state.session || state.session.status === 'COMPLETED') return;
+        state.session.status = 'COMPLETED';
+        state.session.completedAt = new Date().toISOString();
+        state.session.score = Math.round((state.session.correctCount / state.session.questions.length) * 100);
+        completedSession = state.session as QuizSession;
+      });
+
+      if (completedSession) {
+        sessionStorage.setItem('current-quiz', JSON.stringify(completedSession));
+        void fetch('/api/quiz/complete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(completedSession),
+        });
+      }
+    },
     resetQuiz: () => set((state) => { state.session = null; state.showExplanation = false; }),
   }))
 );

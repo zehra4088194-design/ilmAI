@@ -13,6 +13,7 @@ import { AIProviderSelector } from '@/components/features/ai-selector/AIProvider
 import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/auth/useAuth';
+import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 import type { AiProviderId, ModelTier } from '@/lib/ai/gateway';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
@@ -27,11 +28,13 @@ export function ChatInterface() {
   const [subjectPicked, setSubjectPicked] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
+  const settings = usePlatformSettings();
+  const userTier = user?.subscriptionTier || 'FREE';
   const isFreeTier = !user || user.subscriptionTier === 'FREE';
   // Live Voice Call is Elite-only (a stricter gate than the FREE/paid split
   // used everywhere else in this file for provider selection etc.) — see
   // /api/ai/live/session for the server-side enforcement of this.
-  const canUseLiveVoice = !!user && user.subscriptionTier === 'ELITE';
+  const canUseLiveVoice = !!user && settings.subscriptionPlans[userTier].access.liveVoice;
 
   const activeConversation = conversations.find(c => c.id === activeConversationId);
   const messages = activeConversation?.messages || [];

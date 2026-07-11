@@ -14,6 +14,7 @@ import {
 import { BOARDS, GRADE_LEVELS } from '@/lib/constants';
 import { EDUCATION_LEVELS, OUTPUT_STYLES, type EducationLevel, type PreferredOutputStyle } from '@/lib/constants/university';
 import { completeProfile, completeUniversityProfile } from '@/app/onboarding/complete-profile/actions';
+import { ThemePicker } from '@/components/common/ThemePicker';
 
 export function CompleteProfileStep() {
   const router = useRouter();
@@ -54,7 +55,7 @@ export function CompleteProfileStep() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-6 px-6">
+    <div className="mx-auto flex min-h-screen w-full max-w-3xl flex-col justify-center gap-6 px-6 py-10">
       <div className="space-y-2 text-center">
         <h1 className="text-xl font-semibold tracking-tight">
           Bas ek chhota sa step baaki hai
@@ -147,6 +148,14 @@ export function CompleteProfileStep() {
         )}
 
         {error && <p className="text-sm text-destructive">{error}</p>}
+
+        <div className="space-y-3 rounded-2xl border border-border bg-card/80 p-4">
+          <div>
+            <h2 className="text-sm font-semibold">Apni theme choose karo</h2>
+            <p className="mt-1 text-xs text-muted-foreground">Ye baad mein Settings se change ho sakti hai.</p>
+          </div>
+          <ThemePicker compact />
+        </div>
 
         <Button onClick={handleSubmit} disabled={!canSubmit} className="w-full">
           {isPending ? 'Save ho raha hai...' : 'Aage badho'}

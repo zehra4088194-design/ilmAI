@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
       .single();
     const tier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
 
-    const limitCheck = await checkAiMessageLimit(user.id, tier);
+    const limitCheck = await checkAiMessageLimit(user.id, tier, 'practice_questions');
     if (!limitCheck.success) {
       return NextResponse.json({ status: 'error', error: 'Daily AI limit khatam ho gayi' }, { status: 429 });
     }

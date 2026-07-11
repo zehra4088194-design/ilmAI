@@ -1,8 +1,7 @@
 'use client';
-
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { AlertCircle, BookOpen, Clock, Copy, Flame, LockKeyhole, Plus, QrCode, TrendingUp, Users, Zap } from 'lucide-react';
+import { AlertCircle, BookOpen, Clock, Copy, Crown, Flame, LockKeyhole, Plus, QrCode, TrendingUp, Users, Zap } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,9 +9,11 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils/cn';
 import { formatDuration, formatXP } from '@/lib/utils/format';
 import { toast } from 'sonner';
+import { useAuth } from '@/hooks/auth/useAuth';
 import { RoutineTestsWidget } from '@/components/ui/RoutineTestsWidget';
 import { ParentMessageThread } from '@/components/ui/ParentMessageThread';
 import { ParentAttachments } from '@/components/ui/ParentAttachments';
+import Link from 'next/link';
 
 interface ParentDashboardClientProps {
   links: any[];
@@ -21,6 +22,7 @@ interface ParentDashboardClientProps {
 }
 
 export function ParentDashboardClient({ links, snapshots, parentId }: ParentDashboardClientProps) {
+  const { user } = useAuth();
   const approvedLinks = links.filter((link) => link.status === 'approved' && link.student);
   const pendingLinks = links.filter((link) => link.status === 'pending');
   const [showLinkForm, setShowLinkForm] = useState(approvedLinks.length === 0);
@@ -52,6 +54,9 @@ export function ParentDashboardClient({ links, snapshots, parentId }: ParentDash
 
   const getStudentSnapshots = (studentId: string) =>
     snapshots.filter((snapshot) => snapshot.student_id === studentId).slice(0, 4);
+  const parentTier = user?.subscriptionTier || 'FREE';
+  const isFreeParent = parentTier === 'FREE';
+  const isEliteParent = parentTier === 'ELITE';
 
   if (approvedLinks.length === 0) {
     return (
@@ -94,16 +99,29 @@ export function ParentDashboardClient({ links, snapshots, parentId }: ParentDash
 
   return (
     <div className="space-y-6">
+      <ParentUpgradeBanner isFree={isFreeParent} />
+      <ParentEliteBanner tier={parentTier} />
+
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <StatCard icon={Users} label="Linked Students" value={approvedLinks.length} tone="text-violet-400" />
-        <StatCard
-          icon={TrendingUp}
-          label="Avg XP"
-          value={Math.round(approvedLinks.reduce((sum, link) => sum + ((link.student as any)?.xp || 0), 0) / approvedLinks.length)}
-          tone="text-green-400"
-        />
-        <StatCard icon={Flame} label="Best Streak" value={Math.max(...approvedLinks.map((link) => (link.student as any)?.streak || 0), 0)} tone="text-orange-400" />
-        <StatCard icon={Clock} label="Total Study Time" value={`${approvedLinks.reduce((sum, link) => sum + Math.round(((link.student as any)?.total_study_time || 0) / 60), 0)}h`} tone="text-blue-400" />
+        {isFreeParent ? (
+          <>
+            <LockedStat label="Avg XP" />
+            <LockedStat label="Best Streak" />
+            <LockedStat label="Total Study Time" />
+          </>
+        ) : (
+          <>
+            <StatCard
+              icon={TrendingUp}
+              label="Avg XP"
+              value={Math.round(approvedLinks.reduce((sum, link) => sum + ((link.student as any)?.xp || 0), 0) / approvedLinks.length)}
+              tone="text-green-400"
+            />
+            <StatCard icon={Flame} label="Best Streak" value={Math.max(...approvedLinks.map((link) => (link.student as any)?.streak || 0), 0)} tone="text-orange-400" />
+            <StatCard icon={Clock} label="Total Study Time" value={`${approvedLinks.reduce((sum, link) => sum + Math.round(((link.student as any)?.total_study_time || 0) / 60), 0)}h`} tone="text-blue-400" />
+          </>
+        )}
       </div>
 
       <Card>
@@ -158,11 +176,20 @@ export function ParentDashboardClient({ links, snapshots, parentId }: ParentDash
                   <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                     <MiniStat label="XP" value={formatXP(student.xp)} tone="text-violet-400" />
                     <MiniStat label="Level" value={`Level ${student.level}`} tone="text-blue-400" />
-                    <MiniStat label="Study" value={formatDuration(student.total_study_time)} tone="text-green-400" />
-                    <MiniStat label="Trend" value={`${xpTrend >= 0 ? '+' : ''}${xpTrend} XP`} tone={xpTrend >= 0 ? 'text-green-400' : 'text-red-400'} />
+                    {isFreeParent ? (
+                      <>
+                        <LockedMiniStat label="Study" />
+                        <LockedMiniStat label="Trend" />
+                      </>
+                    ) : (
+                      <>
+                        <MiniStat label="Study" value={formatDuration(student.total_study_time)} tone="text-green-400" />
+                        <MiniStat label="Trend" value={`${xpTrend >= 0 ? '+' : ''}${xpTrend} XP`} tone={xpTrend >= 0 ? 'text-green-400' : 'text-red-400'} />
+                      </>
+                    )}
                   </div>
 
-                  {studentSnaps.length > 0 && (
+                  {studentSnaps.length > 0 && !isFreeParent && (
                     <div>
                       <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Last 4 Weeks</p>
                       <div className="grid grid-cols-4 gap-2">
@@ -180,7 +207,7 @@ export function ParentDashboardClient({ links, snapshots, parentId }: ParentDash
                     </div>
                   )}
 
-                  {lastWeek && (
+                  {lastWeek && !isFreeParent && (
                     <div className="grid grid-cols-3 gap-2 text-xs">
                       <InfoPill icon={BookOpen} label="Quizzes" value={lastWeek.quizzes_completed} />
                       <InfoPill icon={TrendingUp} label="Avg Score" value={`${lastWeek.average_score?.toFixed(0) || 0}%`} />
@@ -195,12 +222,30 @@ export function ParentDashboardClient({ links, snapshots, parentId }: ParentDash
                     </div>
                   )}
 
-                  <RoutineTestsWidget studentId={student.id} />
+                  {isFreeParent ? (
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <LockedFeature title="Weekly progress history" description="4-week XP, quizzes, average score and study-time trends Pro mein unlock honge." />
+                      <LockedFeature title="Routine test scheduling" description="Parent student ko tests aur reminders schedule kar sakega." />
+                      <LockedFeature title="Live parent-student chat" description="Realtime chat aur notifications Pro members ke liye hain." />
+                      <LockedFeature title="Attachments & reports" description="Notes, progress reports aur files share karne ke liye upgrade karo." />
+                    </div>
+                  ) : (
+                    <>
+                      <RoutineTestsWidget studentId={student.id} />
 
-                  <div className="flex flex-wrap gap-2">
-                    <ParentMessageThread linkId={link.id} currentUserId={parentId} />
-                    <ParentAttachments linkId={link.id} currentUserId={parentId} />
-                  </div>
+                      <div className="flex flex-wrap gap-2">
+                        <ParentMessageThread linkId={link.id} currentUserId={parentId} />
+                        <ParentAttachments linkId={link.id} currentUserId={parentId} />
+                      </div>
+
+                      {!isEliteParent && (
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <LockedFeature tier="Elite" title="AI risk alerts" description="Elite mein low activity, weak subject aur streak-break risk alerts parent ko milenge." />
+                          <LockedFeature tier="Elite" title="Multi-student comparison" description="Elite parent dashboard siblings/children ki side-by-side comparison insights dikhayega." />
+                        </div>
+                      )}
+                    </>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
@@ -243,11 +288,98 @@ function StatCard({ icon: Icon, label, value, tone }: { icon: any; label: string
   );
 }
 
+function ParentUpgradeBanner({ isFree }: { isFree: boolean }) {
+  if (!isFree) return null;
+  return (
+    <Card className="border-violet-500/30 bg-gradient-to-r from-violet-500/12 via-background to-indigo-500/10">
+      <CardContent className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+        <div className="flex gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-600 text-white">
+            <Crown className="h-5 w-5" />
+          </div>
+          <div>
+            <h2 className="font-bold">FREE parent plan: 2/10 features unlocked</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Free mein student link + basic XP/level overview milta hai. Pro se live chat, weekly reports, schedules, study time, trends, attachments aur alerts unlock honge.
+            </p>
+          </div>
+        </div>
+        <Button asChild variant="gradient" className="shrink-0">
+          <Link href="/subscription">Pro to unlock features</Link>
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ParentEliteBanner({ tier }: { tier: string }) {
+  if (tier !== 'PRO') return null;
+  return (
+    <Card className="border-amber-500/30 bg-gradient-to-r from-amber-500/12 via-background to-orange-500/10">
+      <CardContent className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+        <div className="flex gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white">
+            <Crown className="h-5 w-5" />
+          </div>
+          <div>
+            <h2 className="font-bold">Elite parent insights locked</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Pro mein reports/chat/schedules milte hain. Elite se AI risk alerts, multi-student comparison, priority insights aur Live Voice Call unlock hota hai.
+            </p>
+          </div>
+        </div>
+        <Button asChild variant="outline" className="shrink-0 border-amber-500/40 text-amber-500 hover:bg-amber-500/10">
+          <Link href="/subscription">Upgrade to Elite</Link>
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+function LockedStat({ label }: { label: string }) {
+  return (
+    <Card className="border-dashed">
+      <CardContent className="p-4">
+        <LockKeyhole className="mb-2 h-5 w-5 text-violet-400" />
+        <p className="text-lg font-bold blur-[2px] select-none">999</p>
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <Link href="/subscription" className="mt-2 inline-flex text-[11px] font-semibold text-violet-400 hover:underline">Unlock Pro</Link>
+      </CardContent>
+    </Card>
+  );
+}
+
 function MiniStat({ label, value, tone }: { label: string; value: string | number; tone: string }) {
   return (
     <div className="rounded-xl bg-muted/30 p-3 text-center">
       <p className={cn('text-xl font-bold', tone)}>{value}</p>
       <p className="text-[10px] text-muted-foreground">{label}</p>
+    </div>
+  );
+}
+
+function LockedMiniStat({ label }: { label: string }) {
+  return (
+    <div className="rounded-xl border border-dashed bg-muted/20 p-3 text-center">
+      <LockKeyhole className="mx-auto mb-1 h-4 w-4 text-violet-400" />
+      <p className="text-xs font-semibold text-violet-400">Pro</p>
+      <p className="text-[10px] text-muted-foreground">{label}</p>
+    </div>
+  );
+}
+
+function LockedFeature({ title, description, tier = 'Pro' }: { title: string; description: string; tier?: 'Pro' | 'Elite' }) {
+  const elite = tier === 'Elite';
+  return (
+    <div className="rounded-xl border border-dashed bg-muted/20 p-4">
+      <div className="mb-2 flex items-center gap-2">
+        <LockKeyhole className={cn('h-4 w-4', elite ? 'text-amber-400' : 'text-violet-400')} />
+        <h3 className="text-sm font-semibold">{title}</h3>
+      </div>
+      <p className="text-xs leading-5 text-muted-foreground">{description}</p>
+      <Button asChild variant="outline" size="sm" className={cn('mt-3 w-full', elite && 'border-amber-500/40 text-amber-500 hover:bg-amber-500/10')}>
+        <Link href="/subscription">{tier} to unlock features</Link>
+      </Button>
     </div>
   );
 }

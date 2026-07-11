@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, Brain, FileText, NotebookPen, Sparkles, Target }
 import { createClient } from '@/lib/supabase/server';
 import { BOARDS, GRADE_LEVELS } from '@/lib/constants';
 import { Card, CardContent } from '@/components/ui/card';
+import type { Board, GradeLevel } from '@/types';
 
 function getBoardMeta(board?: string | null) {
   return BOARDS.find((item) => item.value === board);
@@ -25,8 +26,8 @@ export default async function ChapterDetailPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  let activeBoard: string | null = null;
-  let activeGrade: string | null = null;
+  let activeBoard: Board | null = null;
+  let activeGrade: GradeLevel | null = null;
 
   if (user) {
     const { data: profile } = await supabase
@@ -35,8 +36,8 @@ export default async function ChapterDetailPage({
       .eq('id', user.id)
       .single();
 
-    activeBoard = profile?.board ?? null;
-    activeGrade = profile?.grade_level ?? null;
+    activeBoard = (profile?.board as Board | null) ?? null;
+    activeGrade = (profile?.grade_level as GradeLevel | null) ?? null;
   }
 
   const { data: subject } = await supabase.from('subjects').select('*').eq('slug', slug).single();

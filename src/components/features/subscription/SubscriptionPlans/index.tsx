@@ -1,22 +1,36 @@
 'use client';
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Check, Copy, CreditCard, Crown, Landmark, Loader2, Rocket, Sparkles } from 'lucide-react';
+import { Check, Crown, Rocket, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CURRENCY_SYMBOLS, MANUAL_PAYMENT_OPTIONS, SUBSCRIPTION_PLANS } from '@/lib/constants';
+import { CURRENCY_SYMBOLS } from '@/lib/constants';
 import { cn } from '@/lib/utils/cn';
 import { toast } from 'sonner';
+import { DEFAULT_PLATFORM_SETTINGS, type PlatformSettings } from '@/lib/platform-settings/shared';
 
 type BillingCycle = 'monthly' | 'annual';
 type PaymentAvailability = { paddleConfigured: boolean; payproConfigured: boolean; automatedAvailable: boolean };
+type TierKey = 'FREE' | 'PRO' | 'ELITE';
+const PLAN_KEYS: TierKey[] = ['FREE', 'PRO', 'ELITE'];
 
-export function SubscriptionPlans({ currentTier, paymentAvailability }: { currentTier: string; paymentAvailability: PaymentAvailability }) {
+export function SubscriptionPlans({
+  currentTier,
+  paymentAvailability: _paymentAvailability,
+  settings = DEFAULT_PLATFORM_SETTINGS,
+}: {
+  currentTier: string;
+  paymentAvailability: PaymentAvailability;
+  settings?: PlatformSettings;
+}) {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
-  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const symbol = CURRENCY_SYMBOLS.PKR;
+  const free = settings.subscriptionPlans.FREE;
+  const pro = settings.subscriptionPlans.PRO;
+  const elite = settings.subscriptionPlans.ELITE;
 
   useEffect(() => {
     if (searchParams.get('success') === 'true') {
@@ -26,47 +40,12 @@ export function SubscriptionPlans({ currentTier, paymentAvailability }: { curren
     }
   }, [searchParams]);
 
-  const copyNumber = async (value: string) => {
-    try {
-      await navigator.clipboard.writeText(value);
-      toast.success(`Number copy ho gaya: ${value}`);
-    } catch {
-      toast.error('Number copy nahi ho saka');
-    }
-  };
-
-  const startCheckout = async (tier: 'PRO' | 'ELITE', region: 'PAKISTAN' | 'INTERNATIONAL') => {
-    setCheckoutLoading(`${tier}-${region}`);
-    try {
-      const res = await fetch('/api/payments/create-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tier, billingCycle, region }),
-      });
-      const json = await res.json();
-      if (!res.ok || !json.url) {
-        toast.error(json.error || 'Checkout start nahi ho saka. Manual payment use karein.');
-        return;
-      }
-      window.location.href = json.url;
-    } catch {
-      toast.error('Checkout start nahi ho saka. Manual payment use karein.');
-    } finally {
-      setCheckoutLoading(null);
-    }
-  };
-
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-border bg-card/80 p-4 text-sm">
-        <p className="font-semibold">Payment method currently available</p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <Badge variant={paymentAvailability.payproConfigured ? 'success' : 'secondary'}>PayPro / Pakistan {paymentAvailability.payproConfigured ? 'active' : 'manual fallback'}</Badge>
-          <Badge variant={paymentAvailability.paddleConfigured ? 'success' : 'secondary'}>Paddle / Card {paymentAvailability.paddleConfigured ? 'active' : 'not configured'}</Badge>
-          <Badge variant="outline">Easypaisa / JazzCash manual always available</Badge>
-        </div>
-        <p className="mt-3 text-muted-foreground">
-          Automated checkout configured ho to button show hoga. Agar provider env missing ho, broken checkout hide rahega aur manual Easypaisa/JazzCash flow use hoga.
+      <div className="rounded-2xl border border-violet-500/25 bg-violet-500/10 p-4 text-sm">
+        <p className="font-semibold">Upgrade se AI limits unlock hoti hain</p>
+        <p className="mt-2 text-muted-foreground">
+          Free: side chat {free.limits.aiSideChatDaily}/day, AI tools/testing {free.limits.aiToolDaily}/day. Pro: har AI tool {pro.limits.aiToolDaily}/day. Elite: har AI tool {elite.limits.aiToolDaily}/day + Live Voice.
         </p>
       </div>
 
@@ -95,7 +74,8 @@ export function SubscriptionPlans({ currentTier, paymentAvailability }: { curren
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
-        {Object.entries(SUBSCRIPTION_PLANS).map(([key, plan]) => {
+        {PLAN_KEYS.filter((key) => settings.subscriptionPlans[key].enabled).map((key) => {
+          const plan = settings.subscriptionPlans[key];
           const isCurrent = currentTier === key;
           const isFree = key === 'FREE';
           const pricing = plan.price.PKR;
@@ -169,52 +149,11 @@ export function SubscriptionPlans({ currentTier, paymentAvailability }: { curren
                     {isCurrent ? 'Current Plan' : 'Free Plan'}
                   </Button>
                 ) : (
-                  <div className="space-y-3 rounded-2xl border border-border/70 bg-muted/20 p-4">
-                    {paymentAvailability.payproConfigured && (
-                      <Button className="w-full" variant="gradient" onClick={() => startCheckout(key as 'PRO' | 'ELITE', 'PAKISTAN')} disabled={checkoutLoading !== null}>
-                        {checkoutLoading === `${key}-PAKISTAN` ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
-                        Pay online with PayPro
-                      </Button>
-                    )}
-                    {paymentAvailability.paddleConfigured && (
-                      <Button className="w-full" variant="outline" onClick={() => startCheckout(key as 'PRO' | 'ELITE', 'INTERNATIONAL')} disabled={checkoutLoading !== null}>
-                        {checkoutLoading === `${key}-INTERNATIONAL` ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
-                        Pay by card with Paddle
-                      </Button>
-                    )}
-                    <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                      <Landmark className="h-4 w-4 text-violet-400" />
-                      Manual payment details
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {plan.name} {billingCycle === 'annual' ? 'Yearly' : 'Monthly'} ke liye{' '}
-                      <span className="font-semibold text-foreground">
-                        {symbol}
-                        {displayPrice.toLocaleString()}
-                      </span>{' '}
-                      send karein.
-                    </p>
-                    <div className="space-y-2">
-                      {MANUAL_PAYMENT_OPTIONS.map((option) => (
-                        <button
-                          key={option.label}
-                          type="button"
-                          onClick={() => copyNumber(option.number)}
-                          className="flex w-full items-center justify-between rounded-xl border border-border/70 bg-background/80 px-3 py-2 text-left transition-colors hover:border-violet-500/40"
-                        >
-                          <div>
-                            <p className="text-sm font-semibold">{option.label}</p>
-                            <p className="text-xs text-muted-foreground">{option.number}</p>
-                          </div>
-                          <Copy className="h-4 w-4 text-muted-foreground" />
-                        </button>
-                      ))}
-                    </div>
-                    <p className="text-[11px] leading-5 text-muted-foreground">
-                      Payment screenshot aur apna account email `zehra4088194@gmail.com` par bhej dein. Within 1 hour
-                      your transaction will be verified.
-                    </p>
-                  </div>
+                  <Button asChild className="w-full" variant="gradient">
+                    <Link href={`/subscription/${key.toLowerCase()}?billing=${billingCycle}`}>
+                      {key === 'PRO' ? 'Go to Pro' : 'Go Elite'}
+                    </Link>
+                  </Button>
                 )}
               </CardContent>
             </Card>

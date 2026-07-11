@@ -29,7 +29,7 @@
     },
     "register": {
       "title": "اکاؤنٹ بنائیں 🚀",
-      "subtitle": "مفت میں شامل ہوں، روزانہ 10 AI میسج پائیں!",
+      "subtitle": "Free join karo, notes read karo aur limited AI previews try karo!",
       "student": "طالب علم",
       "parent": "والدین",
       "orEmail": "یا ای میل کے ذریعے",
@@ -55,6 +55,256 @@
     "dayStreak": "دن کا اسٹریک!",
     "keepItUp": "جاری رکھیں!"
   },
+  "insights": {
+    "title": "AI Insights",
+    "weakConcepts": "کمزور تصورات",
+    "mistakePatterns": "غلطیوں کے پیٹرن",
+    "confidenceTrend": "اعتماد کا رجحان",
+    "predictedScoreRange": "متوقع اسکور رینج",
+    "roadmap": "AI روڈ میپ",
+    "lockedRoadmap": "AI روڈ میپ Pro اور Elite میں دستیاب ہے"
+  },
+  "planner": {
+    "title": "Smart Study Planner",
+    "setup": "Planner Setup",
+    "today": "آج",
+    "week": "ہفتہ وار منظر",
+    "examDate": "امتحان کی تاریخ",
+    "dailyHours": "روزانہ دستیاب گھنٹے",
+    "preferredStudyTime": "پسندیدہ پڑھائی کا وقت",
+    "quietHours": "خاموش اوقات",
+    "generate": "بنائیں",
+    "complete": "مکمل کریں"
+  },
+  "gamification": {
+    "coins": "Coins",
+    "achievements": "Achievements",
+    "leaderboard": "Leaderboard",
+    "avatar": "Avatar",
+    "bossQuiz": "Boss Quiz"
+  },
+  "portfolio": {
+    "title": "Student Portfolio",
+    "edit": "Edit Portfolio",
+    "publicProfile": "Public Profile",
+    "generateResume": "Generate Resume"
+  },
+  "career": {
+    "title": "AI Career Counselor",
+    "setup": "Career Setup",
+    "recommendations": "Career Recommendations",
+    "roadmap": "Roadmap"
+  },
+  "predictions": {
+    "title": "Learning Forecast",
+    "support": "Study rhythm support",
+    "boardMarks": "Board marks estimate"
+  },
+  "parentIntelligence": {
+    "weeklyReport": "Weekly Report",
+    "suggestedActions": "Suggested Actions",
+    "summary": "Summary"
+  },
+  "opportunities": {
+    "title": "Opportunities",
+    "saved": "Saved Opportunities",
+    "bookmark": "Bookmark",
+    "deadline": "Deadline"
+  },
+  "teacher": {
+    "title": "Teacher Dashboard",
+    "classes": "Classes",
+    "assignments": "Assignments",
+    "attendance": "Attendance",
+    "joinClass": "Join Class"
+  },
+  "college": {
+    "dashboard": {
+      "lecturesTab": "لیکچرز",
+      "resourcesTab": "مواد",
+      "noLecturesDesc": "آپ کے کالج ایڈمن نے ابھی تک کوئی لیکچر شامل نہیں کیا۔",
+      "noResourcesDesc": "آپ کے کالج ایڈمن نے ابھی تک کوئی مواد شامل نہیں کیا۔"
+    },
+    "departments": "Departments",
+    "notices": "Notices",
+    "discussions": "Discussions",
+    "placements": "Placements",
+    "timetable": "Timetable",
+    "common": {
+      "status": {
+        "pending": "زیر التوا",
+        "approved": "منظور شدہ",
+        "declined": "مسترد شدہ",
+        "active": "فعال",
+        "inactive": "غیر فعال"
+      },
+      "actions": {
+        "add": "شامل کریں",
+        "edit": "ترمیم کریں",
+        "delete": "حذف کریں",
+        "cancel": "منسوخ کریں",
+        "save": "تبدیلیاں محفوظ کریں",
+        "approve": "منظور کریں",
+        "decline": "مسترد کریں",
+        "download": "ڈاؤن لوڈ کریں"
+      },
+      "empty": {
+        "noColleges": "ابھی تک کوئی کالج نہیں",
+        "noCollegesDesc": "کالجز شامل ہوتے ہی یہاں نظر آئیں گے۔",
+        "noCollegesSearch": "آپ کی تلاش سے کوئی کالج میل نہیں کھاتا۔",
+        "noLectures": "ابھی تک کوئی لیکچر شامل نہیں کیا گیا",
+        "noResources": "ابھی تک کوئی مواد شامل نہیں کیا گیا",
+        "noPendingRequests": "کوئی زیر التوا درخواست نہیں",
+        "noStudents": "ابھی تک کوئی طالب علم نہیں"
+      }
+    },
+    "browse": {
+      "title": "کالجز",
+      "subtitle": "ilm AI پر کالجز دیکھیں اور لیکچرز و مواد کے لیے اپنے کالج میں شمولیت کی درخواست دیں۔",
+      "searchPlaceholder": "کالج کا نام یا شہر تلاش کریں…",
+      "requestToJoin": "شمولیت کی درخواست دیں",
+      "pendingApproval": "منظوری کا انتظار",
+      "cancelRequest": "درخواست منسوخ کریں",
+      "viewMyCollege": "میرا کالج دیکھیں",
+      "alreadyActiveRequest": "آپ کی پہلے سے ایک کالج کے ساتھ فعال درخواست موجود ہے"
+    },
+    "profile": {
+      "lockedPreview": "{lectures} لیکچرز، {resources} مواد — کھولنے کے لیے شامل ہوں"
+    },
+    "sidebar": {
+      "sectionLabel": "کالج",
+      "myCollege": "میرا کالج"
+    },
+    "admin": {
+      "nav": {
+        "dashboard": "ڈیش بورڈ",
+        "lectures": "لیکچرز",
+        "resources": "مواد",
+        "requests": "درخواستیں",
+        "students": "طلبہ",
+        "settings": "ترتیبات"
+      },
+      "dashboard": {
+        "welcome": "خوش آمدید",
+        "pendingRequests": "زیر التوا درخواستیں",
+        "lectures": "لیکچرز",
+        "resources": "مواد",
+        "students": "طلبہ"
+      },
+      "lectures": {
+        "title": "لیکچرز",
+        "addLecture": "لیکچر شامل کریں",
+        "editLecture": "لیکچر میں ترمیم کریں",
+        "form": {
+          "title": "عنوان",
+          "videoUrl": "ویڈیو لنک",
+          "videoUrlHint": "یوٹیوب (youtube.com / youtu.be) یا گوگل ڈرائیو (drive.google.com) کا لنک شامل کریں۔",
+          "course": "کورس",
+          "semester": "سمسٹر",
+          "description": "تفصیل"
+        },
+        "emptyDesc": "اپنا پہلا لیکچر لنک (یوٹیوب یا گوگل ڈرائیو) شامل کریں تاکہ طلبہ دیکھنا شروع کر سکیں۔",
+        "deleteConfirm": "کیا آپ \"{title}\" حذف کرنا چاہتے ہیں؟ یہ عمل واپس نہیں ہو سکتا۔"
+      },
+      "resources": {
+        "title": "مواد",
+        "addResource": "مواد شامل کریں",
+        "editResource": "مواد میں ترمیم کریں",
+        "type": {
+          "notes": "نوٹس",
+          "past_paper": "پرانا پیپر",
+          "slides": "سلائیڈز",
+          "other": "دیگر"
+        },
+        "form": {
+          "title": "عنوان",
+          "type": "قسم",
+          "course": "کورس",
+          "semester": "سمسٹر",
+          "file": "فائل",
+          "fileHint": "PDF، تصاویر، یا دستاویزات، زیادہ سے زیادہ 25MB۔"
+        },
+        "emptyDesc": "اپنے کالج کے طلبہ کے لیے نوٹس، پرانے پیپرز، یا سلائیڈز اپ لوڈ کریں۔",
+        "deleteConfirm": "کیا آپ \"{title}\" حذف کرنا چاہتے ہیں؟ یہ عمل واپس نہیں ہو سکتا۔"
+      },
+      "requests": {
+        "title": "شمولیت کی درخواستیں",
+        "emptyDesc": "طلبہ کی نئی درخواستیں یہاں ظاہر ہوں گی۔"
+      },
+      "students": {
+        "title": "طلبہ",
+        "emptyDesc": "درخواستیں منظور کرنے کے بعد طلبہ یہاں ظاہر ہوں گے۔",
+        "columnStudent": "طالب علم",
+        "columnEmail": "ای میل"
+      },
+      "settings": {
+        "title": "ترتیبات",
+        "collegeName": "کالج کا نام",
+        "description": "تفصیل",
+        "logo": "لوگو",
+        "cover": "کور تصویر",
+        "restrictedNote": "کالج کا یو آر ایل سلگ اور فعال/غیر فعال حیثیت سپر ایڈمن کے زیرِ انتظام ہے۔"
+      }
+    },
+    "superAdmin": {
+      "list": {
+        "title": "کالجز",
+        "addCollege": "کالج شامل کریں",
+        "columnCollege": "کالج",
+        "columnCity": "شہر",
+        "columnAdmin": "ایڈمن",
+        "columnStatus": "حیثیت",
+        "columnActions": "اعمال",
+        "activate": "فعال کریں",
+        "deactivate": "غیر فعال کریں",
+        "unassigned": "غیر تفویض شدہ",
+        "emptyDesc": "طلبہ کو شامل کرنا شروع کرنے کے لیے اپنا پہلا کالج شامل کریں۔"
+      },
+      "form": {
+        "name": "نام",
+        "slug": "یو آر ایل سلگ",
+        "slugHint": "یہ /colleges/{slug} کے طور پر ظاہر ہوگا۔ صرف چھوٹے حروف، ہندسے اور ہائیفن۔",
+        "slugChangeWarning": "اسے تبدیل کرنے سے کالج کا عوامی یو آر ایل بھی بدل جائے گا۔",
+        "city": "شہر",
+        "description": "تفصیل",
+        "logo": "لوگو",
+        "cover": "کور تصویر",
+        "createCollege": "کالج بنائیں"
+      },
+      "assignAdmin": {
+        "title": "کالج ایڈمن",
+        "currentAdmin": "موجودہ ایڈمن",
+        "noAdminAssigned": "ابھی تک کوئی ایڈمن تفویض نہیں ہوا",
+        "assignByEmail": "ای میل کے ذریعے تفویض کریں",
+        "reassignToEmail": "اس ای میل کو دوبارہ تفویض کریں",
+        "assign": "تفویض کریں",
+        "reassign": "دوبارہ تفویض کریں",
+        "removeAdmin": "ایڈمن ہٹائیں",
+        "removeConfirm": "کیا آپ اس کالج کا ایڈمن ہٹانا چاہتے ہیں؟",
+        "hint": "اس ای میل سے پہلے ہی ilm AI اکاؤنٹ موجود ہونا چاہیے۔ نیا ایڈمن تفویض کرنے سے موجودہ ایڈمن ہٹ جائے گا۔"
+      }
+    },
+    "toasts": {
+      "requestSent": "درخواست بھیج دی گئی! کالج ایڈمن جلد جائزہ لے گا۔",
+      "requestCancelled": "درخواست منسوخ کر دی گئی۔",
+      "requestApproved": "درخواست منظور کر لی گئی۔",
+      "requestDeclined": "درخواست مسترد کر دی گئی۔",
+      "lectureAdded": "لیکچر شامل کر دیا گیا۔",
+      "lectureUpdated": "لیکچر اپ ڈیٹ کر دیا گیا۔",
+      "lectureDeleted": "لیکچر حذف کر دیا گیا۔",
+      "resourceAdded": "مواد شامل کر دیا گیا۔",
+      "resourceUpdated": "مواد اپ ڈیٹ کر دیا گیا۔",
+      "resourceDeleted": "مواد حذف کر دیا گیا۔",
+      "settingsSaved": "ترتیبات محفوظ کر لی گئیں۔",
+      "collegeCreated": "کالج بنا دیا گیا۔",
+      "collegeSaved": "تبدیلیاں محفوظ کر لی گئیں۔",
+      "collegeActivated": "کالج فعال کر دیا گیا۔",
+      "collegeDeactivated": "کالج غیر فعال کر دیا گیا۔",
+      "adminAssigned": "کالج ایڈمن تفویض کر دیا گیا۔",
+      "adminRemoved": "ایڈمن ہٹا دیا گیا۔",
+      "genericError": "کچھ غلط ہو گیا۔ براہ کرم دوبارہ کوشش کریں۔"
+    }
+  },
   "pricing": {
     "title1": "سادہ، ",
     "titleHighlight": "سستی",
@@ -69,19 +319,41 @@
         "name": "فری",
         "badge": null,
         "cta": "مفت شروع کریں",
-        "features": ["روزانہ 10 AI میسجز", "روزانہ 5 کوئز", "50 فلیش کارڈز", "بنیادی پیش رفت", "کمیونٹی رسائی"]
+        "features": [
+          "5 side-chat messages/day",
+          "3/day AI tool previews",
+          "Read notes in-app",
+          "No PDF downloads",
+          "Community access"
+        ]
       },
       "pro": {
         "name": "پرو",
         "badge": "سب سے مقبول",
         "cta": "پرو شروع کریں",
-        "features": ["روزانہ 100 AI میسجز", "لامحدود کوئز", "1,000 فلیش کارڈز", "تمام پرانے پیپرز", "PDF ڈاؤن لوڈز", "ترجیحی سپورٹ", "پیش رفت کا تجزیہ"]
+        "features": [
+          "20/day every AI tool",
+          "20/day AI testing",
+          "1,000 flashcards",
+          "All past papers",
+          "PDF downloads unlocked",
+          "Priority support",
+          "Progress analytics"
+        ]
       },
       "elite": {
         "name": "ایلیٹ",
         "badge": "بہترین قیمت",
         "cta": "ایلیٹ حاصل کریں",
-        "features": ["لامحدود AI میسجز", "ہر چیز لامحدود", "آف لائن موڈ", "والدین کا ڈیش بورڈ", "امتحان کی مشق", "ون آن ون AI سیشنز", "کسٹم اسٹڈی پلانز"]
+        "features": [
+          "50/day every AI tool",
+          "50/day AI testing",
+          "Offline mode",
+          "Parent dashboard",
+          "Exam simulations",
+          "1-on-1 AI sessions",
+          "Custom study plans"
+        ]
       }
     }
   },
@@ -102,5 +374,38 @@
   },
   "languageSwitcher": {
     "label": "زبان"
+  },
+  "vision": {
+    "title": "Scan & Solve",
+    "subtitle": "Scan textbook pages, handwriting, formulas, and diagrams."
+  },
+  "voicePractice": {
+    "title": "AI Speaking Practice",
+    "subtitle": "Record, transcribe, and get pronunciation feedback."
+  },
+  "research": {
+    "title": "Research Assistant",
+    "guidance": "Guidance only, not a plagiarism detector."
+  },
+  "projectBuilder": {
+    "title": "AI Project Builder",
+    "subtitle": "Generate project drafts from one idea."
+  },
+  "offline": {
+    "title": "Downloads",
+    "subtitle": "Study saved resources offline."
+  },
+  "analytics": {
+    "title": "Analytics",
+    "subtitle": "Role-specific learning insights."
+  },
+  "demo": {
+    "title": "Free Demo Test try karo",
+    "subtitle": "5 real MCQs, signup ki zaroorat nahi.",
+    "cta": "Try a Free Demo Test - No Signup Needed",
+    "signupCta": "Free signup karo",
+    "limitTitle": "Aaj ke free demos use ho gaye",
+    "limitMessage": "Aaj ke free demos use ho gaye - unlimited practice ke liye free signup karo.",
+    "conversionTitle": "Pasand aaya? Free signup karo aur unlimited practice, AI Tutor, aur progress tracking unlock karo."
   }
 }

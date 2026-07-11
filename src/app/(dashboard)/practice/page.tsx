@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { AiPracticeHub } from '@/components/features/quiz/AiPracticeHub';
+import type { Board, GradeLevel } from '@/types';
 
 export const metadata: Metadata = { title: 'AI Testing' };
 
@@ -8,16 +9,16 @@ export default async function PracticePage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  let grade = 'GRADE_10';
-  let board = 'FBISE';
+  let grade: GradeLevel = 'GRADE_10';
+  let board: Board = 'FBISE';
   if (user) {
     const { data: profile } = await supabase
       .from('profiles')
       .select('board, grade_level')
       .eq('id', user.id)
       .single();
-    grade = profile?.grade_level || 'GRADE_10';
-    board = profile?.board || 'FBISE';
+    grade = (profile?.grade_level as GradeLevel | null) || 'GRADE_10';
+    board = (profile?.board as Board | null) || 'FBISE';
   }
 
   const subjectsQuery = supabase

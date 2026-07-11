@@ -9,6 +9,9 @@ import type { Locale } from '@/lib/i18n/config';
 import { GlobalSpeechControls } from '@/components/features/speech/GlobalSpeechControls';
 import { CookieConsent } from '@/components/features/cookies/CookieConsent';
 import { AdSenseScript } from '@/components/features/ads/AdSenseScript';
+import { PostHogClient } from '@/components/features/analytics/PostHogClient';
+import { APP_THEME_IDS } from '@/lib/constants/themes';
+import { ServiceWorkerRegister } from '@/components/features/offline/ServiceWorkerRegister';
 
 export function Providers({ children, locale }: { children: ReactNode; locale: Locale }) {
   const [queryClient] = useState(() => new QueryClient({
@@ -21,9 +24,11 @@ export function Providers({ children, locale }: { children: ReactNode; locale: L
   return (
     <QueryClientProvider client={queryClient}>
       <I18nProvider initialLocale={locale}>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange={false}>
+        <ThemeProvider attribute="class" defaultTheme="dark" themes={APP_THEME_IDS} enableSystem={false} disableTransitionOnChange={false}>
           {children}
           <AdSenseScript />
+          <PostHogClient />
+          <ServiceWorkerRegister />
           <GlobalSpeechControls />
           <CookieConsent />
           <Toaster

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { gatewayChat } from '@/lib/ai/gateway';
-import { checkAiMessageLimit } from '@/lib/rate-limit';
+import { checkAiMessageLimit, getConfiguredLimitExceededMessage } from '@/lib/rate-limit';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import type { SubscriptionTier } from '@/types';
 
@@ -138,9 +138,9 @@ export async function POST(req: NextRequest) {
       .single();
 
     const tier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
-    const limitCheck = await checkAiMessageLimit(user.id, tier);
+    const limitCheck = await checkAiMessageLimit(user.id, tier, `university_${tool}`);
     if (!limitCheck.success) {
-      return NextResponse.json({ status: 'error', error: 'Daily AI limit khatam ho gayi' }, { status: 429 });
+      return NextResponse.json({ status: 'error', error: await getConfiguredLimitExceededMessage(tier, TOOL_LABELS[tool]) }, { status: 429 });
     }
 
     const result = await gatewayChat({

@@ -24,9 +24,18 @@ export async function createClient() {
 
 export async function createAdminClient() {
   const cookieStore = await cookies();
+  const serviceRoleKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_SERVICE_KEY ||
+    process.env.SUPABASE_SERVICE_ROLE;
+
+  if (!serviceRoleKey) {
+    throw new Error('Supabase service role key missing. Set SUPABASE_SERVICE_ROLE_KEY in Vercel.');
+  }
+
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    serviceRoleKey,
     {
       cookies: {
         getAll() { return cookieStore.getAll(); },

@@ -1,12 +1,13 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, BookOpen, BarChart3, FileQuestion, Settings, Shield, Library } from 'lucide-react';
+import { LayoutDashboard, Users, BookOpen, BarChart3, FileQuestion, Settings, Shield, Library, GraduationCap } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
 const ADMIN_NAV = [
   { icon: LayoutDashboard, label: 'Overview', href: '/admin' },
   { icon: Users, label: 'Users', href: '/admin/users' },
+  { icon: GraduationCap, label: 'Colleges', href: '/admin/colleges' },
   { icon: BookOpen, label: 'Content', href: '/admin/content' },
   { icon: Library, label: 'Resources', href: '/admin/resources' },
   { icon: FileQuestion, label: 'Questions', href: '/admin/questions' },

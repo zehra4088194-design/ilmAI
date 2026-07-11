@@ -1,4 +1,4 @@
-import { BookOpen, ClipboardCheck, FileText, GraduationCap, Mic2, NotebookTabs, Presentation, Route, Search, Sparkles } from 'lucide-react';
+import { BookOpen, BriefcaseBusiness, ClipboardCheck, FileSearch, FileText, FolderKanban, GraduationCap, Mic2, Network, NotebookTabs, Presentation, Quote, Route, Search, Sparkles } from 'lucide-react';
 
 export const EDUCATION_LEVELS = [
   { value: 'school', label: 'School', description: 'Class 9-10, board-focused prep' },
@@ -22,12 +22,17 @@ export const UNIVERSITY_TOOLS = [
   { href: '/university/viva-practice', label: 'Viva Practice', description: 'Basic to difficult viva questions with model answers.', icon: Mic2 },
   { href: '/university/assignment-helper', label: 'Assignment Helper', description: 'Structured assignment help without fake citations.', icon: ClipboardCheck },
   { href: '/university/research-helper', label: 'Research Helper', description: 'Project titles, abstract, methodology and references placeholders.', icon: Search },
+  { href: '/university/project-builder', label: 'AI Project Builder', description: 'Proposal, report, flowchart, poster copy and pitch script from one idea.', icon: FolderKanban },
   { href: '/university/semester-planner', label: 'Semester Planner', description: 'Subject-wise study plan for exams and submissions.', icon: Route },
+  { href: '/university/citation-generator', label: 'Citation Generator', description: 'APA, MLA, Harvard, IEEE and Chicago reference drafts.', icon: Quote },
+  { href: '/university/pdf-summarizer', label: 'PDF Mind Mapper', description: 'Summarize research papers and turn concepts into a mind map.', icon: Network },
+  { href: '/university/resume-builder', label: 'Resume Builder', description: 'ATS-friendly resume and cover letter drafts for final-year students.', icon: BriefcaseBusiness },
 ] as const;
 
 export const UNIVERSITY_FEATURES = [
   { label: 'Short notes', icon: NotebookTabs },
   { label: 'Long-form answers', icon: BookOpen },
   { label: 'Conceptual questions', icon: Sparkles },
+  { label: 'Citation drafts', icon: FileSearch },
   { label: 'University Mode', icon: GraduationCap },
 ] as const;

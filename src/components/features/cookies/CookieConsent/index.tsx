@@ -15,7 +15,14 @@ export function CookieConsent() {
 
   useEffect(() => {
     const saved = readCookieConsent();
-    if (saved) setPrefs(saved);
+    if (saved) {
+      setPrefs(saved);
+      void fetch('/api/preferences/email-consent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studyEmails: saved.studyEmails }),
+      }).catch(() => {});
+    }
     setOpen(!saved);
     setMounted(true);
 
@@ -56,7 +63,7 @@ export function CookieConsent() {
                 )}
               </div>
               <p className="mt-1 text-sm leading-5 text-muted-foreground">
-                Necessary cookies login aur preferences ke liye required hain. Analytics/ads cookies sirf aapki permission se use honge.
+                Necessary cookies login aur preferences ke liye required hain. Analytics, ads aur daily study emails sirf aapki permission se use honge.
               </p>
 
               {customizing && (
@@ -74,6 +81,12 @@ export function CookieConsent() {
                     checked={prefs.marketing}
                     onChange={(checked) => setPrefs((current) => ({ ...current, marketing: checked }))}
                   />
+                  <PreferenceRow
+                    label="Daily study emails"
+                    description="AI se personalized daily study tips, reminders aur motivation email karne ke liye."
+                    checked={prefs.studyEmails}
+                    onChange={(checked) => setPrefs((current) => ({ ...current, studyEmails: checked }))}
+                  />
                 </div>
               )}
 
@@ -89,7 +102,7 @@ export function CookieConsent() {
                       <Settings2 className="h-4 w-4" /> Options
                     </Button>
                     <Button variant="outline" size="sm" onClick={() => persist(DEFAULT_COOKIE_CONSENT)}>Reject optional</Button>
-                    <Button size="sm" variant="gradient" onClick={() => persist({ necessary: true, analytics: true, marketing: true })}>Accept all</Button>
+                    <Button size="sm" variant="gradient" onClick={() => persist({ necessary: true, analytics: true, marketing: true, studyEmails: true })}>Accept all</Button>
                   </>
                 )}
               </div>

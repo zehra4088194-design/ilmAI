@@ -29,5 +29,5 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "module-1-class-selection", "module-3-admin-resources", "module-4-identity-and-suggestions"]
+  "exclude": ["node_modules", "module-1-class-selection", "module-3-admin-resources", "module-4-identity-and-suggestions", "college-portal-new"]
 }

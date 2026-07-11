@@ -25,7 +25,7 @@ export interface ModelTierOption {
 }
 
 export const MODEL_TIERS: ModelTierOption[] = [
-  { id: 'mini', label: 'Mini (Fast)', dailyLimit: 10, description: '10 calls/day' },
-  { id: 'medium', label: 'Medium (Balanced)', dailyLimit: 7, description: '7 calls/day' },
-  { id: 'pro', label: 'Pro (Most Capable)', dailyLimit: 3, description: '3 calls/day' },
+  { id: 'mini', label: 'Mini (Fast)', dailyLimit: 20, description: 'Pro 20/day, Elite 50/day' },
+  { id: 'medium', label: 'Medium (Balanced)', dailyLimit: 20, description: 'Pro 20/day, Elite 50/day' },
+  { id: 'pro', label: 'Pro (Most Capable)', dailyLimit: 50, description: 'Elite 50/day' },
 ];

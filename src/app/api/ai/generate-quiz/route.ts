@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { gatewayChat } from '@/lib/ai/gateway';
-import { checkQuizLimit } from '@/lib/rate-limit';
+import { checkQuizLimit, getConfiguredLimitExceededMessage } from '@/lib/rate-limit';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import type { SubscriptionTier } from '@/types';
 import { nanoid } from 'nanoid';
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
 
     const limitCheck = await checkQuizLimit(user.id, tier);
     if (!limitCheck.success) {
-      return NextResponse.json({ status: 'error', error: 'Aaj ke quizzes khatam ho gaye. Pro plan lo unlimited quizzes ke liye!' }, { status: 429 });
+      return NextResponse.json({ status: 'error', error: await getConfiguredLimitExceededMessage(tier, 'AI Testing') }, { status: 429 });
     }
 
     const { subjectId, chapterIds, count = 10, difficulty = 'MEDIUM' } = await req.json();

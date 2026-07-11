@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 import { GatewayError, mintLiveVoiceToken } from '@/lib/ai/gateway';
 import { checkLiveVoiceLimit } from '@/lib/rate-limit';
 import type { SubscriptionTier } from '@/types';
+import { getPlatformSettings } from '@/lib/platform-settings/server';
+import { getPlanFromSettings } from '@/lib/platform-settings/shared';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -21,9 +23,12 @@ export async function POST(req: NextRequest) {
     const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
     const tier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
 
-    if (tier !== 'ELITE') {
+    const settings = await getPlatformSettings();
+    const plan = getPlanFromSettings(settings, tier);
+
+    if (!plan.access.liveVoice) {
       return NextResponse.json(
-        { status: 'error', error: 'Live Voice Call sirf Elite members ke liye hai. Upgrade karo AI Teacher se live baat karne ke liye!' },
+        { status: 'error', error: 'Live Voice Call is plan mein unlock nahi hai. Upgrade karo AI Teacher se live baat karne ke liye!' },
         { status: 403 }
       );
     }

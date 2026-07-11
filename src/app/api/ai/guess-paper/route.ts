@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
     const tier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
 
-    const limitCheck = await checkAiMessageLimit(user.id, tier);
+    const limitCheck = await checkAiMessageLimit(user.id, tier, 'guess_paper');
     if (!limitCheck.success) {
       return NextResponse.json({ status: 'error', error: 'Daily AI limit khatam ho gayi. Kal phir try karo ya Pro plan lo.' }, { status: 429 });
     }

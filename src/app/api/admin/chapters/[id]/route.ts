@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import type { Database } from '@/lib/supabase/database.types';
 
+type BoardType = Database['public']['Enums']['board_type'];
+type GradeLevel = Database['public']['Enums']['grade_level'];
+
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '')
   .split(',')
   .map((e) => e.trim().toLowerCase())
@@ -29,8 +32,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const update: Database['public']['Tables']['chapters']['Update'] = {};
   if (body.name !== undefined) update.name = body.name.trim();
-  if (body.boards !== undefined) update.boards = body.boards;
-  if (body.gradeLevels !== undefined) update.grade_levels = body.gradeLevels;
+  if (body.boards !== undefined) update.boards = body.boards as BoardType[];
+  if (body.gradeLevels !== undefined) update.grade_levels = body.gradeLevels as GradeLevel[];
   if (body.orderIndex !== undefined) update.order_index = body.orderIndex;
   if (body.isActive !== undefined) update.is_active = body.isActive;
 

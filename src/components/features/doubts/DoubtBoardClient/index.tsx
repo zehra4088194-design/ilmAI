@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, MessageCircle, CheckCircle2, Clock3, HelpCircle, Send, ChevronDown, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -86,7 +87,8 @@ export function DoubtBoardClient({ doubts, subjects, userId }: { doubts: Doubt[]
               <textarea value={body} onChange={e => setBody(e.target.value)} placeholder="Puri detail mein sawaal likho..." rows={4} className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm resize-none" />
             </div>
             <div className="flex gap-2 flex-wrap">
-              <ScanUpload onTextExtracted={(text) => setBody(b => b ? `${b}\n\n${text}` : text)} trigger={<Button variant="outline" size="sm">📷 Photo se Scan</Button>} />
+              <ScanUpload onTextExtracted={(text) => setBody(b => b ? `${b}\n\n${text}` : text)} trigger={<Button variant="outline" size="sm">Photo se Scan</Button>} />
+              <Button asChild variant="outline" size="sm"><Link href="/scan">Scan & Solve</Link></Button>
               <Button variant="gradient" onClick={handleSubmit} loading={submitting} className="ml-auto"><Send className="w-3.5 h-3.5" />Post Karo</Button>
               <Button variant="ghost" onClick={() => setShowForm(false)}>Cancel</Button>
             </div>

@@ -1,11 +1,13 @@
 'use client';
 import { useState } from 'react';
-import { FileText, ExternalLink, FileType2, Sparkles, Loader2, Maximize2, X } from 'lucide-react';
+import { FileText, ExternalLink, FileType2, Sparkles, Loader2, Maximize2, X, DownloadCloud } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AiAnswerRenderer } from '@/components/features/ai/AiAnswerRenderer';
 import { getEmbeddableFilePreviewUrl } from '@/lib/utils/filePreview';
+import { useAuth } from '@/hooks/auth/useAuth';
+import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 import { toast } from 'sonner';
 
 export interface DriveResourceData {
@@ -29,9 +31,14 @@ export interface DriveResourceData {
  */
 export function GoogleDriveResourceCard({ resource }: { resource: DriveResourceData }) {
   const previewUrl = getEmbeddableFilePreviewUrl(resource.driveUrl, resource.driveFileId);
+  const { user } = useAuth();
+  const settings = usePlatformSettings();
+  const userTier = user?.subscriptionTier || 'FREE';
+  const canDownload = settings.subscriptionPlans[userTier].access.downloadPDF;
 
   const [summary, setSummary] = useState<string | null>(null);
   const [loadingSummary, setLoadingSummary] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [readerMode, setReaderMode] = useState<'panel' | 'fullscreen' | null>(null);
 
   const generateSummary = async () => {
@@ -55,6 +62,44 @@ export function GoogleDriveResourceCard({ resource }: { resource: DriveResourceD
       toast.error('Summary generate nahi hui, dobara koshish karo');
     } finally {
       setLoadingSummary(false);
+    }
+  };
+
+  const downloadForOffline = async () => {
+    if (!canDownload) {
+      toast.info('Downloads is plan mein locked hain. Yahin full-screen read kar sakte ho.');
+      return;
+    }
+    const url = previewUrl || resource.driveUrl;
+    if (!url) return;
+    setDownloading(true);
+    try {
+      if ('caches' in window) {
+        const cache = await caches.open('ilm-ai-offline-v1');
+        try {
+          await cache.add(url);
+        } catch {
+          await fetch(url, { mode: 'no-cors' }).then((res) => cache.put(url, res)).catch(() => {});
+        }
+      }
+      const raw = localStorage.getItem('ilm-ai-offline-items');
+      const items = raw ? JSON.parse(raw) as Array<{ id: string }> : [];
+      if (!items.some((item) => item.id === resource.id)) {
+        localStorage.setItem('ilm-ai-offline-items', JSON.stringify([
+          ...items,
+          { id: resource.id, title: resource.title, url, savedAt: new Date().toISOString() },
+        ]));
+      }
+      await fetch('/api/offline/download-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resource_type: resource.fileType === 'video' ? 'video' : 'textbook', resource_id: resource.id, device_hint: navigator.userAgent }),
+      }).catch(() => {});
+      toast.success('Offline download saved');
+    } catch {
+      toast.error('Offline save nahi ho saka.');
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -93,6 +138,10 @@ export function GoogleDriveResourceCard({ resource }: { resource: DriveResourceD
           <Button variant="outline" size="sm" className="col-span-2" onClick={generateSummary} disabled={loadingSummary}>
             {loadingSummary ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
             {summary ? 'Summary Chupao' : 'AI Summary'}
+          </Button>
+          <Button variant="outline" size="sm" className="col-span-2" onClick={downloadForOffline} disabled={downloading}>
+            {downloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <DownloadCloud className="w-3.5 h-3.5" />}
+            Download for offline {!canDownload && <Badge className="ml-1 text-[10px]">Pro</Badge>}
           </Button>
         </div>
 

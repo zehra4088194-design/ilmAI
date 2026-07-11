@@ -12,6 +12,7 @@ interface AIProviderSelectorProps {
   tier: ModelTier;
   onChange: (provider: AiProviderId, tier: ModelTier) => void;
   isFreeTier: boolean;
+  userTier?: 'FREE' | 'PRO' | 'ELITE';
   compact?: boolean;
 }
 
@@ -20,7 +21,7 @@ interface AIProviderSelectorProps {
  * Side Chat, Explain, etc). Free tier always shows locked Claude/GPT/Gemini options
  * with an upgrade nudge - only Assistant is selectable.
  */
-export function AIProviderSelector({ provider, tier, onChange, isFreeTier, compact = false }: AIProviderSelectorProps) {
+export function AIProviderSelector({ provider, tier, onChange, isFreeTier, userTier = isFreeTier ? 'FREE' : 'PRO', compact = false }: AIProviderSelectorProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -70,16 +71,28 @@ const activeTier = MODEL_TIERS.find((t) => t.id === tier) || MODEL_TIERS[0]!;
             <>
               <div className="h-px bg-border my-2" />
               <p className="text-[10px] uppercase tracking-wide text-muted-foreground px-2 py-1">Model Size</p>
-              {MODEL_TIERS.map((t) => (
+              {MODEL_TIERS.map((t) => {
+                const eliteLocked = t.id === 'pro' && userTier !== 'ELITE';
+                return (
                 <button
                   key={t.id}
-                  onClick={() => { onChange(provider, t.id); setOpen(false); }}
-                  className={cn('w-full flex items-center justify-between px-2 py-2 rounded-lg text-sm hover:bg-accent transition-colors', tier === t.id && 'bg-accent')}
+                  disabled={eliteLocked}
+                  onClick={() => { if (!eliteLocked) { onChange(provider, t.id); setOpen(false); } }}
+                  className={cn('w-full flex items-center justify-between px-2 py-2 rounded-lg text-sm transition-colors', eliteLocked ? 'cursor-not-allowed opacity-50' : 'hover:bg-accent', tier === t.id && 'bg-accent')}
                 >
                   <span>{t.label}</span>
-                  <span className="text-xs text-muted-foreground">{t.description}</span>
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                    {eliteLocked && <Lock className="h-3 w-3" />}
+                    {eliteLocked ? 'Elite only' : t.description}
+                  </span>
                 </button>
-              ))}
+                );
+              })}
+              {userTier === 'PRO' && (
+                <Link href="/subscription" className="mt-1 flex items-center gap-1.5 px-2 py-2 rounded-lg text-xs bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-colors">
+                  <Sparkles className="w-3 h-3" />Elite lo Pro model tier unlock karne ke liye
+                </Link>
+              )}
             </>
           )}
 

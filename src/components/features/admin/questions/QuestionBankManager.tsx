@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 
 type Subject = { id: string; name: string; grade_levels?: string[]; boards?: string[] };
 type Chapter = { id: string; name: string; grade_levels?: string[]; boards?: string[] };
@@ -21,6 +22,7 @@ type Question = {
   chapter_name?: string | null;
   topic_name?: string | null;
   is_verified: boolean;
+  is_demo_eligible?: boolean;
   difficulty: string;
 };
 
@@ -41,6 +43,7 @@ export function QuestionBankManager() {
   const [optionsText, setOptionsText] = useState('A) \nB) \nC) \nD) ');
   const [correctAnswer, setCorrectAnswer] = useState('');
   const [explanation, setExplanation] = useState('');
+  const [isDemoEligible, setIsDemoEligible] = useState(false);
 
   const filteredSubjects = useMemo(() => {
     return subjects.filter((subject) => {
@@ -144,6 +147,7 @@ export function QuestionBankManager() {
           correct_answer: type === 'MCQ' ? correctAnswer.trim().toUpperCase() : correctAnswer.trim(),
           explanation: explanation.trim() || null,
           board,
+          is_demo_eligible: isDemoEligible,
         }),
       });
       const json = await res.json();
@@ -153,12 +157,28 @@ export function QuestionBankManager() {
       setCorrectAnswer('');
       setExplanation('');
       setOptionsText('A) \nB) \nC) \nD) ');
+      setIsDemoEligible(false);
       await refetch();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Question add nahi hua');
     } finally {
       setSaving(false);
     }
+  }
+
+  async function toggleDemoEligible(id: string, value: boolean) {
+    setQuestions((current) => current.map((question) => question.id === id ? { ...question, is_demo_eligible: value } : question));
+    const res = await fetch(`/api/admin/questions/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ is_demo_eligible: value }),
+    });
+    if (!res.ok) {
+      setQuestions((current) => current.map((question) => question.id === id ? { ...question, is_demo_eligible: !value } : question));
+      toast.error('Demo toggle save nahi hua');
+      return;
+    }
+    toast.success(value ? 'Question demo mein show ho sakta hai' : 'Question demo se remove ho gaya');
   }
 
   async function deleteQuestion(id: string) {
@@ -190,6 +210,10 @@ export function QuestionBankManager() {
           <Textarea value={text} onChange={(event) => setText(event.target.value)} placeholder="Question text" rows={3} />
           {type === 'MCQ' && <Textarea value={optionsText} onChange={(event) => setOptionsText(event.target.value)} placeholder="A) Option one..." rows={4} />}
           <Textarea value={explanation} onChange={(event) => setExplanation(event.target.value)} placeholder="Explanation / marking guide (optional)" rows={2} />
+          <label className="flex items-center gap-2 rounded-lg border bg-muted/20 p-3 text-sm">
+            <Checkbox checked={isDemoEligible} onCheckedChange={(checked) => setIsDemoEligible(checked === true)} />
+            Use this MCQ in public demo test
+          </label>
           <Button onClick={addQuestion} disabled={saving}>
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
             Add Question
@@ -209,11 +233,16 @@ export function QuestionBankManager() {
                 <div className="mb-2 flex flex-wrap items-center gap-2">
                   <Badge variant="outline">{question.type}</Badge>
                   <Badge variant={question.is_verified ? 'success' : 'warning'}>{question.is_verified ? 'Verified' : 'Pending'}</Badge>
+                  {question.is_demo_eligible && <Badge className="bg-violet-600">Demo</Badge>}
                   <Badge variant="secondary">{question.subject_name || 'Subject'} / {question.chapter_name || 'Chapter'}</Badge>
                   {question.topic_name && <Badge variant="outline">{question.topic_name}</Badge>}
                 </div>
                 <div className="flex gap-3">
                   <p className="flex-1 text-sm">{question.text}</p>
+                  <label className="flex items-center gap-2 rounded-lg border px-2 py-1 text-xs">
+                    <Checkbox checked={question.is_demo_eligible === true} onCheckedChange={(checked) => toggleDemoEligible(question.id, checked === true)} />
+                    Demo
+                  </label>
                   <Button size="icon-sm" variant="ghost" onClick={() => deleteQuestion(question.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
                 </div>
               </CardContent>

@@ -53,11 +53,15 @@ export function UserManagementTable() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, tier, lifetime }),
       });
-      if (!res.ok) throw new Error();
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Update fail ho gaya');
+      if (json.user) {
+        setUsers((current) => current.map((user) => (user.id === userId ? { ...user, ...json.user } : user)));
+      }
       toast.success(tier === 'FREE' ? 'User Free plan par revert ho gaya' : `User ko ${tier}${lifetime ? ' (lifetime)' : ''} mil gaya`);
-      load(query);
-    } catch {
-      toast.error('Update fail ho gaya');
+      await load(query);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Update fail ho gaya');
     } finally {
       setActingOn(null);
     }

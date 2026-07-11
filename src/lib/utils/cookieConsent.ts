@@ -2,6 +2,7 @@ export type CookieConsentPreferences = {
   necessary: true;
   analytics: boolean;
   marketing: boolean;
+  studyEmails: boolean;
 };
 
 export const COOKIE_CONSENT_KEY = 'ilm_ai_cookie_consent';
@@ -10,6 +11,7 @@ export const DEFAULT_COOKIE_CONSENT: CookieConsentPreferences = {
   necessary: true,
   analytics: false,
   marketing: false,
+  studyEmails: false,
 };
 
 export function readCookieConsent(): CookieConsentPreferences | null {
@@ -28,6 +30,11 @@ export function saveCookieConsent(preferences: CookieConsentPreferences) {
   const next = { ...preferences, necessary: true };
   window.localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(next));
   document.cookie = `${COOKIE_CONSENT_KEY}=${encodeURIComponent(JSON.stringify(next))}; path=/; max-age=31536000; SameSite=Lax`;
+  void fetch('/api/preferences/email-consent', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ studyEmails: next.studyEmails }),
+  }).catch(() => {});
   window.dispatchEvent(new CustomEvent('ilm-ai-cookie-consent-change', { detail: next }));
 }
 
