@@ -4,12 +4,14 @@ import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 
-export function OAuthButtons({ action = 'Login' }: { action?: string }) {
+export function OAuthButtons({ action = 'Login', role }: { action?: string; role?: 'student' | 'parent' }) {
   const [loading, setLoading] = useState(false);
   const supabase = createClient();
   const handleGoogle = async () => {
     setLoading(true);
-    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${window.location.origin}/api/auth/callback` } });
+    const callbackUrl = new URL('/api/auth/callback', window.location.origin);
+    if (role) callbackUrl.searchParams.set('role', role);
+    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: callbackUrl.toString() } });
     if (error) { toast.error(error.message); setLoading(false); }
   };
   return (

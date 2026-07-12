@@ -73,7 +73,7 @@ export function CompleteProfileStep() {
               key={level.value}
               type="button"
               onClick={() => setEducationLevel(level.value)}
-              className={`rounded-xl border px-4 py-3 text-left transition-colors ${educationLevel === level.value ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/40'}`}
+              className={`rounded-xl border px-4 py-3 text-left transition-colors ${educationLevel === level.value ? 'border-primary bg-primary/20 shadow-sm shadow-primary/15' : 'border-border bg-card/80 hover:border-primary/40 hover:bg-primary/10'}`}
             >
               <span className="block text-sm font-semibold">{level.label}</span>
               <span className="text-xs text-muted-foreground">{level.description}</span>

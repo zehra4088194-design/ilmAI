@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdminUser } from '@/lib/admin/auth';
+import { deriveThumbnailFromUrl } from '@/lib/utils/extractYouTubeId';
 import type { Database } from '@/lib/supabase/database.types';
 
 type LectureUpdate = Database['public']['Tables']['lectures']['Update'];
@@ -16,7 +17,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (body.chapter_id !== undefined) update.chapter_id = body.chapter_id;
   if (body.topic_id !== undefined) update.topic_id = body.topic_id;
   if (body.title !== undefined) update.title = body.title.trim();
-  if (body.youtube_url !== undefined) update.youtube_url = body.youtube_url.trim();
+  if (body.youtube_url !== undefined) {
+    update.youtube_url = body.youtube_url.trim();
+    if (body.thumbnail_url === undefined) update.thumbnail_url = deriveThumbnailFromUrl(body.youtube_url) ?? null;
+  }
   if (body.thumbnail_url !== undefined) update.thumbnail_url = body.thumbnail_url;
   if (body.kind !== undefined) update.kind = body.kind;
   if (body.exercise_number !== undefined) update.exercise_number = body.exercise_number?.trim() || null;

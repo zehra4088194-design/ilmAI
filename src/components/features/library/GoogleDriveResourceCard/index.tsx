@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { FileText, ExternalLink, FileType2, Sparkles, Loader2, Maximize2, X, DownloadCloud } from 'lucide-react';
+import { FileText, FileType2, Sparkles, Loader2, Maximize2, X, DownloadCloud } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -130,10 +130,8 @@ export function GoogleDriveResourceCard({ resource }: { resource: DriveResourceD
           <Button variant="gradient" size="sm" className="min-w-0" disabled={!previewUrl} onClick={() => setReaderMode('panel')}>
             <Maximize2 className="w-3.5 h-3.5" />Read
           </Button>
-          <Button asChild variant="outline" size="sm" className="min-w-0">
-            <a href={resource.driveUrl} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="w-3.5 h-3.5" />Open
-            </a>
+          <Button variant="outline" size="sm" className="min-w-0" disabled={!previewUrl} onClick={() => setReaderMode('fullscreen')}>
+            <Maximize2 className="w-3.5 h-3.5" />Full
           </Button>
           <Button variant="outline" size="sm" className="col-span-2" onClick={generateSummary} disabled={loadingSummary}>
             {loadingSummary ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
@@ -168,11 +166,6 @@ export function GoogleDriveResourceCard({ resource }: { resource: DriveResourceD
                 ) : (
                   <Button variant="outline" size="sm" onClick={() => setReaderMode('panel')}>Small view</Button>
                 )}
-                <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex">
-                  <a href={resource.driveUrl} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="h-3.5 w-3.5" />Open
-                  </a>
-                </Button>
                 <Button variant="ghost" size="icon-sm" onClick={() => setReaderMode(null)} aria-label="Close reader">
                   <X className="h-4 w-4" />
                 </Button>

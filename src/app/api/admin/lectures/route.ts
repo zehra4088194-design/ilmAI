@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdminUser } from '@/lib/admin/auth';
+import { deriveThumbnailFromUrl } from '@/lib/utils/extractYouTubeId';
 import type { Database } from '@/lib/supabase/database.types';
 
 type LectureInsert = Database['public']['Tables']['lectures']['Insert'];
@@ -66,7 +67,7 @@ export async function POST(req: NextRequest) {
       topic_id: body.topic_id ?? null,
       title: body.title.trim(),
       youtube_url: body.youtube_url.trim(),
-      thumbnail_url: body.thumbnail_url ?? null,
+      thumbnail_url: body.thumbnail_url ?? deriveThumbnailFromUrl(body.youtube_url) ?? null,
       kind: body.kind ?? 'lecture',
       exercise_number: body.kind === 'exercise_walkthrough' ? body.exercise_number?.trim() ?? null : null,
       order_index: body.order_index ?? 0,

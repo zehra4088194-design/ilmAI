@@ -4,42 +4,32 @@ import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, BookOpen, Brain, FileText, TrendingUp, Trophy, Settings,
-  Zap, StickyNote, Bookmark, Star, CreditCard, ChevronRight,
-  Library, CalendarClock, HelpCircle, Target, LogOut, Users, PenLine, Cake,
-  Presentation, Mic2, ClipboardCheck, Search, GraduationCap, WandSparkles,
-  Quote, Network, BriefcaseBusiness, MessageCircle, Camera, FolderKanban, Download
+  Zap, StickyNote, Bookmark, Star, CreditCard, ChevronRight, X, Menu,
+  Library, CalendarClock, HelpCircle, Target, LogOut, Users, PenLine, Cake
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useAuth } from '@/hooks/auth/useAuth';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { CollegeSidebarNavItem } from '@/components/college/CollegeSidebarNavItem';
 
 const NAV_GROUPS = [
-  {
+  { 
     label: 'Study',
     items: [
       { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
       { icon: BookOpen, label: 'Study', href: '/study' },
       { icon: Zap, label: 'AI Testing', href: '/practice' },
       { icon: Brain, label: 'AI Tutor', href: '/ai-tutor', badge: 'AI' },
-      { icon: Camera, label: 'Scan & Solve', href: '/scan', badge: 'AI' },
-      { icon: Target, label: 'AI Insights', href: '/insights', badge: 'AI' },
-      { icon: CalendarClock, label: 'Smart Planner', href: '/planner/today', badge: 'AI' },
-      { icon: BriefcaseBusiness, label: 'Career', href: '/career', badge: 'AI' },
-      { icon: MessageCircle, label: 'Study Buddies', href: '/student-chat', badge: 'Pro' },
     ],
   },
   {
     label: 'Resources',
     items: [
       { icon: FileText, label: 'Past Papers', href: '/past-papers' },
-      { icon: Search, label: 'Opportunities', href: '/opportunities' },
       { icon: Library, label: 'Library', href: '/library' },
       { icon: Star, label: 'Flashcards', href: '/flashcards' },
       { icon: StickyNote, label: 'Notes', href: '/notes' },
       { icon: Bookmark, label: 'Bookmarks', href: '/bookmarks' },
-      { icon: Download, label: 'Downloads', href: '/downloads' },
     ],
   },
   {
@@ -56,15 +46,12 @@ const NAV_GROUPS = [
     label: 'Tools',
     items: [
       { icon: Cake, label: 'Age Counter', href: '/age-counter' },
-      { icon: WandSparkles, label: 'AI Humanizer', href: '/humanizer', badge: 'AI' },
     ],
   },
   {
     label: 'Progress',
     items: [
       { icon: TrendingUp, label: 'Progress', href: '/progress' },
-      { icon: Trophy, label: 'Achievements', href: '/achievements' },
-      { icon: Users, label: 'Portfolio', href: '/portfolio' },
       { icon: Trophy, label: 'Leaderboard', href: '/leaderboard' },
     ],
   },
@@ -77,51 +64,13 @@ const NAV_GROUPS = [
   },
 ];
 
-const UNIVERSITY_NAV_GROUP = {
-  label: 'University',
-  items: [
-    { icon: GraduationCap, label: 'University Hub', href: '/university' },
-    { icon: FileText, label: 'Essay Assistant', href: '/university/essay-assistant', badge: 'AI' },
-    { icon: ClipboardCheck, label: 'Assignment Helper', href: '/university/assignment-helper', badge: 'AI' },
-    { icon: Presentation, label: 'Presentation Builder', href: '/university/presentation-builder', badge: 'AI' },
-    { icon: Mic2, label: 'Viva Practice', href: '/university/viva-practice', badge: 'AI' },
-    { icon: Search, label: 'Research Helper', href: '/university/research-helper', badge: 'AI' },
-    { icon: FolderKanban, label: 'AI Project Builder', href: '/university/project-builder', badge: 'Pro' },
-    { icon: CalendarClock, label: 'Semester Planner', href: '/university/semester-planner', badge: 'AI' },
-    { icon: Quote, label: 'Citation Generator', href: '/university/citation-generator', badge: 'AI' },
-    { icon: Network, label: 'PDF Mind Mapper', href: '/university/pdf-summarizer', badge: 'AI' },
-    { icon: BriefcaseBusiness, label: 'Resume Builder', href: '/university/resume-builder', badge: 'AI' },
-    { icon: Mic2, label: 'Speaking Practice', href: '/tutor/speaking-practice', badge: 'Pro' },
-  ],
-};
-
 export function DashboardSidebar() {
   const pathname = usePathname();
   const { user, signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  useEffect(() => {
-    const toggle = () => setMobileOpen((open) => !open);
-    const close = () => setMobileOpen(false);
-    window.addEventListener('ilm-ai-toggle-dashboard-menu', toggle);
-    window.addEventListener('ilm-ai-close-dashboard-menu', close);
-    return () => {
-      window.removeEventListener('ilm-ai-toggle-dashboard-menu', toggle);
-      window.removeEventListener('ilm-ai-close-dashboard-menu', close);
-    };
-  }, []);
-
-  useEffect(() => {
-    window.dispatchEvent(new CustomEvent('ilm-ai-dashboard-menu-state', { detail: { open: mobileOpen } }));
-  }, [mobileOpen]);
-
   const isActive = (href: string) =>
     pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
-  const navGroups = [
-    ...NAV_GROUPS.slice(0, 3),
-    UNIVERSITY_NAV_GROUP,
-    ...NAV_GROUPS.slice(3),
-  ];
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
@@ -147,12 +96,7 @@ export function DashboardSidebar() {
             </Link>
           </div>
         )}
-        <CollegeSidebarNavItem
-          userId={user?.id}
-          isActive={isActive}
-          onNavigate={() => setMobileOpen(false)}
-        />
-        {navGroups.map((group) => (
+        {NAV_GROUPS.map((group) => (
           <div key={group.label}>
             <p className="text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/30 px-2 mb-1.5">{group.label}</p>
             <div className="space-y-0.5">
@@ -194,6 +138,7 @@ export function DashboardSidebar() {
         </div>
       )}
     </div>
+    <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "af601028278a46aeb40dbb0ed0ef20df"}'></script><!-- End Cloudflare Web Analytics -->
   );
 
   return (
@@ -202,6 +147,15 @@ export function DashboardSidebar() {
       <aside className="hidden lg:flex fixed left-0 top-0 h-full w-64 bg-sidebar flex-col border-r border-sidebar-border z-40 overflow-hidden">
         <SidebarContent />
       </aside>
+
+      {/* Mobile toggle */}
+      <button
+        className="lg:hidden fixed bottom-20 right-4 z-50 w-12 h-12 rounded-full bg-violet-600 flex items-center justify-center shadow-lg shadow-violet-500/30"
+        onClick={() => setMobileOpen(!mobileOpen)}
+        aria-label="Toggle menu"
+      >
+        {mobileOpen ? <X className="w-5 h-5 text-white" /> : <Menu className="w-5 h-5 text-white" />}
+      </button>
 
       {/* Mobile drawer */}
       <AnimatePresence>

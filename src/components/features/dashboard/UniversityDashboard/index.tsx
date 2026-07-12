@@ -31,7 +31,7 @@ export function UniversityDashboard({ profile }: Props) {
               Essays, assignments, presentations, viva prep, project reports and semester planning are ready for your university workflow.
             </p>
           </div>
-          <div className="grid gap-2 rounded-xl border bg-background/70 p-4 text-sm sm:min-w-80">
+          <div className="grid gap-2 rounded-xl border bg-card/80 p-4 text-sm shadow-sm backdrop-blur sm:min-w-80">
             <p><span className="text-muted-foreground">Program:</span> <strong>{profile?.university_program || 'Set in Settings'}</strong></p>
             <p><span className="text-muted-foreground">Semester:</span> <strong>{profile?.university_semester || 'Set in Settings'}</strong></p>
             <p className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-violet-400" /> {profile?.university_exam_target_date || 'No exam target set'}</p>

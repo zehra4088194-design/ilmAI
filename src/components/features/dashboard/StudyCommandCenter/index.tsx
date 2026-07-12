@@ -50,7 +50,7 @@ export function StudyCommandCenter({
 
 function Metric({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-border/70 bg-background/70 p-3">
+    <div className="rounded-xl border border-border/70 bg-card/80 p-3 shadow-sm backdrop-blur">
       <Icon className="mb-2 h-4 w-4 text-violet-400" />
       <p className="text-sm font-bold">{value}</p>
       <p className="text-[11px] text-muted-foreground">{label}</p>

@@ -39,7 +39,19 @@ export function isValidYouTubeUrl(url: string): boolean {
 }
 
 export function getYouTubeThumbnail(videoId: string): string {
-  return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+  return `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+}
+
+export function getYouTubeThumbnailCandidates(videoIdOrUrl: string): string[] {
+  const id = extractYouTubeId(videoIdOrUrl);
+  if (!id) return [];
+
+  return [
+    `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+    `https://i.ytimg.com/vi/${id}/mqdefault.jpg`,
+    `https://i.ytimg.com/vi/${id}/default.jpg`,
+    `https://img.youtube.com/vi/${id}/hqdefault.jpg`,
+  ];
 }
 
 export function deriveThumbnailFromUrl(url: string): string | null {

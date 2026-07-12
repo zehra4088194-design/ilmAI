@@ -12,6 +12,7 @@ interface RawResource {
   category: string;
   drive_url: string;
   drive_file_id: string | null;
+  thumbnail_url?: string | null;
   file_type: string | null;
   resource_type?: 'text_book' | 'notes' | 'other';
   subjects?: { name: string; color: string } | null;
@@ -53,7 +54,7 @@ export function LibraryGrid({ resources }: { resources: RawResource[] }) {
             key={r.id}
             resource={{
               id: r.id, title: r.title, description: r.description, driveUrl: r.drive_url,
-              driveFileId: r.drive_file_id, fileType: r.file_type, subjectName: r.subjects?.name,
+              driveFileId: r.drive_file_id, thumbnailUrl: r.thumbnail_url, fileType: r.file_type, subjectName: r.subjects?.name,
               subjectColor: r.subjects?.color,
             }}
           />

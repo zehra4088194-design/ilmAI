@@ -4,7 +4,13 @@ const hasAdsense = Boolean(process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID);
 
 function csp() {
   const scriptSrc = ["'self'", "'unsafe-eval'", "'unsafe-inline'", 'https://vercel.live'];
-  const frameSrc = ["'self'"];
+  const frameSrc = [
+    "'self'",
+    'https://drive.google.com',
+    'https://docs.google.com',
+    'https://www.youtube.com',
+    'https://www.youtube-nocookie.com',
+  ];
   const imgSrc = ["'self'", 'data:', 'blob:', 'https:'];
   const connectSrc = [
     "'self'",
@@ -16,6 +22,10 @@ function csp() {
     'https://generativelanguage.googleapis.com',
     'https://*.googleapis.com',
     'wss://generativelanguage.googleapis.com',
+    'https://eu.i.posthog.com',
+    'https://us.i.posthog.com',
+    'https://app.posthog.com',
+    'https://*.posthog.com',
   ];
 
   if (hasAdsense) {

@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, Brain, FileText, NotebookPen, Sparkles, Target }
 import { createClient } from '@/lib/supabase/server';
 import { BOARDS, GRADE_LEVELS } from '@/lib/constants';
 import { Card, CardContent } from '@/components/ui/card';
+import { LectureGrid, type StudyLecture } from '@/components/features/study/LectureGrid';
 import type { Board, GradeLevel } from '@/types';
 
 function getBoardMeta(board?: string | null) {
@@ -69,6 +70,12 @@ export default async function ChapterDetailPage({
   const nextChapter = chapterIndex < chapters.length - 1 ? chapters[chapterIndex + 1] : null;
   const boardMeta = getBoardMeta(activeBoard);
   const gradeMeta = getGradeMeta(activeGrade);
+  const { data: lectures } = await supabase
+    .from('lectures')
+    .select('id, title, youtube_url, thumbnail_url, kind, exercise_number, duration_seconds')
+    .eq('chapter_id', chapter.id)
+    .order('order_index', { ascending: true })
+    .order('created_at', { ascending: true });
 
   const quickActions = [
     {
@@ -189,6 +196,18 @@ export default async function ChapterDetailPage({
           </div>
         </div>
       </section>
+
+      {(lectures?.length ?? 0) > 0 && (
+        <section className="space-y-4">
+          <div>
+            <h2 className="text-2xl font-bold">Lectures</h2>
+            <p className="text-sm text-muted-foreground">
+              Is chapter ki videos yahin site ke andar watch karo.
+            </p>
+          </div>
+          <LectureGrid lectures={(lectures || []) as StudyLecture[]} />
+        </section>
+      )}
 
       <section className="space-y-4">
         <div>

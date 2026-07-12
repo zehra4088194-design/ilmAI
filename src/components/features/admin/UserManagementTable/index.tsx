@@ -17,6 +17,15 @@ interface AdminUser {
   created_at: string;
 }
 
+type SubscriptionTier = AdminUser['subscription_tier'];
+type ManualSubscriptionDuration = 'monthly' | 'yearly' | 'lifetime';
+
+const DURATION_LABELS: Record<ManualSubscriptionDuration, string> = {
+  monthly: '1 Month',
+  yearly: '1 Year',
+  lifetime: 'Lifetime',
+};
+
 export function UserManagementTable() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [query, setQuery] = useState('');
@@ -45,20 +54,21 @@ export function UserManagementTable() {
     return () => clearTimeout(t);
   }, [query, load]);
 
-  const grant = async (userId: string, tier: 'FREE' | 'PRO' | 'ELITE', lifetime = false) => {
-    setActingOn(userId);
+  const grant = async (userId: string, tier: SubscriptionTier, duration: ManualSubscriptionDuration = 'monthly') => {
+    const actionId = `${userId}:${tier}:${duration}`;
+    setActingOn(actionId);
     try {
       const res = await fetch('/api/admin/grant-pro', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, tier, lifetime }),
+        body: JSON.stringify({ userId, tier, duration }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Update fail ho gaya');
       if (json.user) {
         setUsers((current) => current.map((user) => (user.id === userId ? { ...user, ...json.user } : user)));
       }
-      toast.success(tier === 'FREE' ? 'User Free plan par revert ho gaya' : `User ko ${tier}${lifetime ? ' (lifetime)' : ''} mil gaya`);
+      toast.success(tier === 'FREE' ? 'User Free plan par revert ho gaya' : `User ko ${tier} ${DURATION_LABELS[duration]} mil gaya`);
       await load(query);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Update fail ho gaya');
@@ -66,6 +76,8 @@ export function UserManagementTable() {
       setActingOn(null);
     }
   };
+
+  const isActing = (userId: string, tier: SubscriptionTier, duration: ManualSubscriptionDuration = 'monthly') => actingOn === `${userId}:${tier}:${duration}`;
 
   return (
     <div className="space-y-4">
@@ -125,29 +137,40 @@ export function UserManagementTable() {
                           : 'Lifetime'}
                     </td>
                     <td className="p-4">
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          loading={actingOn === u.id}
-                          onClick={() => grant(u.id, 'PRO', true)}
-                        >
-                          <Crown className="w-3.5 h-3.5" /> Pro (Lifetime)
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="gradient"
-                          loading={actingOn === u.id}
-                          onClick={() => grant(u.id, 'ELITE', true)}
-                        >
-                          <Crown className="w-3.5 h-3.5" /> Elite (Lifetime)
-                        </Button>
+                      <div className="flex min-w-[360px] flex-col gap-2">
+                        <div className="flex flex-wrap gap-2">
+                          {(['monthly', 'yearly', 'lifetime'] as ManualSubscriptionDuration[]).map((duration) => (
+                            <Button
+                              key={`pro-${duration}`}
+                              size="sm"
+                              variant="outline"
+                              loading={isActing(u.id, 'PRO', duration)}
+                              onClick={() => grant(u.id, 'PRO', duration)}
+                            >
+                              <Crown className="w-3.5 h-3.5" /> Pro {DURATION_LABELS[duration]}
+                            </Button>
+                          ))}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {(['monthly', 'yearly', 'lifetime'] as ManualSubscriptionDuration[]).map((duration) => (
+                            <Button
+                              key={`elite-${duration}`}
+                              size="sm"
+                              variant={duration === 'lifetime' ? 'gradient' : 'outline'}
+                              loading={isActing(u.id, 'ELITE', duration)}
+                              onClick={() => grant(u.id, 'ELITE', duration)}
+                            >
+                              <Crown className="w-3.5 h-3.5" /> Elite {DURATION_LABELS[duration]}
+                            </Button>
+                          ))}
+                        </div>
                         {u.subscription_tier !== 'FREE' && (
                           <Button
                             size="sm"
                             variant="ghost"
-                            loading={actingOn === u.id}
-                            onClick={() => grant(u.id, 'FREE')}
+                            className="w-fit"
+                            loading={isActing(u.id, 'FREE', 'lifetime')}
+                            onClick={() => grant(u.id, 'FREE', 'lifetime')}
                           >
                             <RotateCcw className="w-3.5 h-3.5" /> Revert to Free
                           </Button>

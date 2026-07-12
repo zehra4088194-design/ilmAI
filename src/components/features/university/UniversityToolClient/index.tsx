@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { BrandLoader } from '@/components/ui/BrandLoader';
+import { printElementById } from '@/lib/utils/printElement';
 import { toast } from 'sonner';
 
 type Tool = 'essay' | 'assignment' | 'presentation' | 'viva' | 'research' | 'planner';
@@ -165,15 +166,17 @@ export function UniversityToolClient({ tool, title, description, defaultSubject 
           )}
 
           {result && !loading && (
-            <div id="university-export" className="space-y-4">
+            <div className="space-y-4">
               <ResultActions tool={tool} onShorter={() => generate('Make the previous draft shorter and more concise.')} onAcademic={() => generate('Make the previous draft more academic and formal.')} onBullets={() => generate('Convert the previous draft into bullet revision notes.')} />
-              {tool === 'viva' ? (
-                <VivaPracticeResult result={result} />
-              ) : isPresentation && slides.length > 0 ? (
-                <SlidePreview result={result} slides={slides} />
-              ) : (
-                <GenericResult result={result} />
-              )}
+              <div id="university-export">
+                {tool === 'viva' ? (
+                  <VivaPracticeResult result={result} />
+                ) : isPresentation && slides.length > 0 ? (
+                  <SlidePreview result={result} slides={slides} />
+                ) : (
+                  <GenericResult result={result} />
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -266,7 +269,10 @@ function ResultActions({ tool, onShorter, onAcademic, onBullets }: { tool: Tool;
           <Button variant="outline" size="sm" onClick={() => toast.info('Presentation outline is included below when available.')}>Create presentation</Button>
         </>
       )}
-      <Button variant="outline" size="sm" onClick={() => window.print()}><Download className="h-3.5 w-3.5" /> Export PDF / Print</Button>
+      <Button variant="outline" size="sm" onClick={() => {
+        const ok = printElementById('university-export', 'ilm AI University Draft');
+        if (!ok) toast.error('Export content nahi mila.');
+      }}><Download className="h-3.5 w-3.5" /> Export PDF / Print</Button>
       <Button variant="outline" size="sm" onClick={() => toast.info('PPTX export coming soon. PDF/print outline works now.')}><Presentation className="h-3.5 w-3.5" /> PPTX Coming Soon</Button>
     </div>
   );

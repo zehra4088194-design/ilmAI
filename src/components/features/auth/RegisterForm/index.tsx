@@ -80,18 +80,18 @@ export function RegisterForm() {
       {/* Account type toggle */}
       <div className="grid grid-cols-2 gap-2 mb-6">
         <button type="button" onClick={() => setAccountType('student')}
-          className={cn('flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all', accountType === 'student' ? 'border-violet-500 bg-violet-500/10' : 'border-border hover:border-violet-500/30')}>
+          className={cn('flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all', accountType === 'student' ? 'border-violet-500 bg-violet-500/20 shadow-sm shadow-violet-500/15' : 'border-border bg-card/80 hover:border-violet-500/40 hover:bg-violet-500/10')}>
           <GraduationCap className={cn('w-5 h-5', accountType === 'student' ? 'text-violet-400' : 'text-muted-foreground')} />
           <span className="text-xs font-medium">{t('auth.register.student')}</span>
         </button>
         <button type="button" onClick={() => setAccountType('parent')}
-          className={cn('flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all', accountType === 'parent' ? 'border-violet-500 bg-violet-500/10' : 'border-border hover:border-violet-500/30')}>
+          className={cn('flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all', accountType === 'parent' ? 'border-violet-500 bg-violet-500/20 shadow-sm shadow-violet-500/15' : 'border-border bg-card/80 hover:border-violet-500/40 hover:bg-violet-500/10')}>
           <Users className={cn('w-5 h-5', accountType === 'parent' ? 'text-violet-400' : 'text-muted-foreground')} />
           <span className="text-xs font-medium">{t('auth.register.parent')}</span>
         </button>
       </div>
 
-      <OAuthButtons action="Register" />
+      <OAuthButtons action="Register" role={accountType} />
       <div className="relative my-6">
         <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border" /></div>
         <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">{t('auth.register.orEmail')}</span></div>

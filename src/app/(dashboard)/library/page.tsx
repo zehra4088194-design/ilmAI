@@ -14,7 +14,7 @@ export default async function LibraryPage() {
 
   const visibleResources = (resources || []).filter((resource: any) => {
     const boardVisible = !resource.board || resource.board === profile?.board;
-    const gradeVisible = profile?.grade_level ? resource.grade_level === profile.grade_level : false;
+    const gradeVisible = profile?.grade_level ? !resource.grade_level || resource.grade_level === profile.grade_level : false;
     return boardVisible && gradeVisible;
   });
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdminUser } from '@/lib/admin/auth';
+import { extractGoogleDriveFileId, getGoogleDriveThumbnailUrl } from '@/lib/utils/filePreview';
 import type { Database } from '@/lib/supabase/database.types';
 
 type LibraryInsert = Database['public']['Tables']['library_resources']['Insert'] & {
@@ -45,6 +46,8 @@ export async function POST(req: NextRequest) {
   if (!body.title?.trim() || !body.drive_url?.trim()) {
     return NextResponse.json({ error: 'Title aur Drive URL zaroori hain' }, { status: 400 });
   }
+  const driveUrl = body.drive_url.trim();
+  const driveFileId = body.drive_file_id ?? extractGoogleDriveFileId(driveUrl);
 
   let adminClient;
   try {
@@ -64,7 +67,9 @@ export async function POST(req: NextRequest) {
       chapter_id: body.chapter_id ?? null,
       board: body.board ?? null,
       grade_level: body.grade_level ?? null,
-      drive_url: body.drive_url.trim(),
+      drive_url: driveUrl,
+      drive_file_id: driveFileId,
+      thumbnail_url: body.thumbnail_url ?? getGoogleDriveThumbnailUrl(driveUrl, driveFileId) ?? null,
       file_type: body.file_type ?? 'pdf',
       added_by: admin.id,
     } as any)

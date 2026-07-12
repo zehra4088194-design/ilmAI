@@ -1,4 +1,5 @@
 'use client';
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import type { Notification } from '@/types';
@@ -50,6 +51,28 @@ export function useNotifications() {
   });
 
   const unreadCount = (query.data || []).filter((n) => !n.isRead).length;
+
+  useEffect(() => {
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let active = true;
+
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!active || !user) return;
+      channel = supabase
+        .channel(`notifications:${user.id}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
+          () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+        )
+        .subscribe();
+    });
+
+    return () => {
+      active = false;
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [queryClient, supabase]);
 
   return {
     ...query,

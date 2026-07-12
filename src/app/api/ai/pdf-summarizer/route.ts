@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { checkAiMessageLimit, getConfiguredLimitExceededMessage } from '@/lib/rate-limit';
+import { gatewayChat } from '@/lib/ai/gateway';
+import { parseAiJson } from '@/lib/utils/json-extract';
 import type { SubscriptionTier } from '@/types';
 
 export const runtime = 'nodejs';
@@ -11,17 +13,37 @@ function clean(value: unknown) {
 
 async function summarizeAndMap(pdfText: string) {
   const prompt = `Analyze this text. 1) Provide a 3-paragraph summary covering Methodology, Key Findings, and Conclusion. 2) Generate a Mermaid.js flowchart code representing the core concepts and their relationships. Return the response in JSON format with 'summary' and 'mermaid_code' keys.`;
-  await new Promise((resolve) => setTimeout(resolve, 900));
-  const seed = pdfText.slice(0, 180).replace(/\s+/g, ' ') || 'uploaded document';
+  const result = await gatewayChat({
+    provider: 'groq',
+    tier: 'medium',
+    messages: [
+      {
+        role: 'system',
+        content: 'You are a university research paper assistant. Return only valid JSON. Do not invent citations or facts not present in the text.',
+      },
+      {
+        role: 'user',
+        content: `${prompt}
 
+Required JSON shape:
+{"summary":{"methodology":"...","key_findings":"...","conclusion":"..."},"mermaid_code":"flowchart TD\\n  A[...] --> B[...]"}
+
+Document text:
+${pdfText}`,
+      },
+    ],
+    maxTokens: 2600,
+    temperature: 0.25,
+  });
+
+  const parsed = parseAiJson<any>(result.text, {});
   return {
-    prompt,
     summary: {
-      methodology: `The document appears to discuss ${seed}. The likely methodology involves reviewing the core problem, collecting relevant evidence, comparing arguments, and organizing the findings into a structured academic explanation.`,
-      key_findings: 'Key findings should be treated as a study draft: identify the main variables, repeated concepts, important claims, and any evidence that supports the central argument. Verify exact facts from the original PDF before submission.',
-      conclusion: 'The paper/document can be summarized into a clear relationship between the research problem, method, findings, and implications. Use the mind map to revise the flow before writing your own final answer.',
+      methodology: String(parsed?.summary?.methodology || 'Methodology extract nahi ho saki. PDF text clear hai to dobara try karo.'),
+      key_findings: String(parsed?.summary?.key_findings || parsed?.summary?.keyFindings || 'Key findings extract nahi ho sake.'),
+      conclusion: String(parsed?.summary?.conclusion || 'Conclusion extract nahi ho saka.'),
     },
-    mermaid_code: 'flowchart TD\n  A[Research Problem] --> B[Methodology]\n  B --> C[Evidence / Data]\n  C --> D[Key Findings]\n  D --> E[Conclusion]\n  D --> F[Limitations]\n  E --> G[Future Work]',
+    mermaid_code: String(parsed?.mermaid_code || parsed?.mermaidCode || 'flowchart TD\n  A[Research Problem] --> B[Methodology]\n  B --> C[Key Findings]\n  C --> D[Conclusion]'),
   };
 }
 

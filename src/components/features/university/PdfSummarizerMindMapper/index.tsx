@@ -12,10 +12,20 @@ type Summary = { methodology: string; key_findings: string; conclusion: string }
 
 async function extractPdfText(file: File) {
   const buffer = await file.arrayBuffer();
-  const raw = new TextDecoder('latin1').decode(buffer);
-  const textRuns = Array.from(raw.matchAll(/\(([^()]{4,})\)\s*Tj/g)).map((match) => match[1]);
-  const fallback = raw.replace(/[^\x20-\x7E]+/g, ' ').replace(/\s+/g, ' ');
-  return (textRuns.length > 8 ? textRuns.join(' ') : fallback).slice(0, 18000);
+  const pdfjs = await import('pdfjs-dist');
+  pdfjs.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.mjs', import.meta.url).toString();
+
+  const pdf = await pdfjs.getDocument({ data: new Uint8Array(buffer), disableFontFace: true }).promise;
+  const pages: string[] = [];
+  const maxPages = Math.min(pdf.numPages, 40);
+
+  for (let pageNumber = 1; pageNumber <= maxPages; pageNumber += 1) {
+    const page = await pdf.getPage(pageNumber);
+    const content = await page.getTextContent();
+    pages.push(content.items.map((item) => ('str' in item ? item.str : '')).join(' '));
+  }
+
+  return pages.join('\n\n').replace(/\s+/g, ' ').trim().slice(0, 25000);
 }
 
 export function PdfSummarizerMindMapper() {

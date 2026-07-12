@@ -50,7 +50,7 @@ export function RevisionPlannerCard({
 
 function MiniAction({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
   return (
-    <div className="rounded-lg border bg-background/70 p-2">
+    <div className="rounded-lg border bg-card/80 p-2 shadow-sm backdrop-blur">
       <Icon className="mx-auto mb-1 h-4 w-4 text-violet-400" />
       {label}
     </div>

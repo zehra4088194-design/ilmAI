@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils/cn';
+import { printElementById } from '@/lib/utils/printElement';
 import { toast } from 'sonner';
 
 type ViewMode = 'resume' | 'cover_letter';
@@ -62,8 +63,9 @@ export function CareerDocsBuilder() {
 
   const downloadPdf = () => {
     if (!activeOutput) return;
-    window.print();
-    toast.success('Print dialog open ho gaya. PDF save kar sakte ho.');
+    const ok = printElementById('career-doc-preview', view === 'resume' ? 'ilm AI Resume' : 'ilm AI Cover Letter');
+    if (ok) toast.success('Sirf preview document ka print dialog open ho gaya.');
+    else toast.error('Preview content nahi mila.');
   };
 
   return (

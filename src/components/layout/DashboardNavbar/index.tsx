@@ -1,27 +1,42 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Bell, Search, Menu, X } from 'lucide-react';
+import { Search, Menu, X } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { Badge } from '@/components/ui/badge';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
+import { NotificationBell } from '@/components/ui/NotificationBell';
 
-export function DashboardNavbar() {
+type DashboardNavbarProps = {
+  mobileMenuOpen?: boolean;
+  onToggleMobileMenu?: () => void;
+};
+
+export function DashboardNavbar({ mobileMenuOpen: controlledMobileMenuOpen, onToggleMobileMenu }: DashboardNavbarProps = {}) {
   const { user } = useAuth();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [uncontrolledMobileMenuOpen, setUncontrolledMobileMenuOpen] = useState(false);
+  const mobileMenuOpen = controlledMobileMenuOpen ?? uncontrolledMobileMenuOpen;
+  const setMobileMenuOpen = setUncontrolledMobileMenuOpen;
 
   useEffect(() => {
+    if (controlledMobileMenuOpen !== undefined) return;
     const sync = (event: Event) => setMobileMenuOpen(Boolean((event as CustomEvent<{ open: boolean }>).detail?.open));
     window.addEventListener('ilm-ai-dashboard-menu-state', sync);
     return () => window.removeEventListener('ilm-ai-dashboard-menu-state', sync);
-  }, []);
+  }, [controlledMobileMenuOpen]);
 
-  const toggleMobileMenu = () => window.dispatchEvent(new Event('ilm-ai-toggle-dashboard-menu'));
+  const toggleMobileMenu = () => {
+    if (onToggleMobileMenu) {
+      onToggleMobileMenu();
+      return;
+    }
+    window.dispatchEvent(new Event('ilm-ai-toggle-dashboard-menu'));
+  };
 
   return (
-    <header className="fixed top-0 right-0 left-0 lg:left-64 h-16 border-b border-border bg-background/95 backdrop-blur-[1px] z-30 flex items-center px-4 md:px-6 gap-4">
+    <header className="fixed top-0 right-0 left-0 lg:left-64 h-16 border-b border-border bg-background/95 backdrop-blur-[1px] z-50 lg:z-30 flex items-center px-4 md:px-6 gap-4">
       {/* Search */}
       <div className="flex-1 max-w-md">
         <div className="relative">
@@ -46,11 +61,8 @@ export function DashboardNavbar() {
         {/* Theme */}
         <ThemeToggle />
         {/* Notifications */}
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="w-4 h-4" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
-        </Button>
-        <Button variant="gradient" size="icon" className="lg:hidden" onClick={toggleMobileMenu} aria-label="Open dashboard menu">
+        <NotificationBell />
+        <Button variant="gradient" size="icon" className="lg:hidden relative z-[70]" onClick={toggleMobileMenu} aria-label={mobileMenuOpen ? 'Close dashboard menu' : 'Open dashboard menu'} aria-expanded={mobileMenuOpen}>
           {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
         </Button>
       </div>

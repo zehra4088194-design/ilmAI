@@ -36,3 +36,8 @@ export function getEmbeddableFilePreviewUrl(url?: string | null, explicitDriveFi
 
   return null;
 }
+
+export function getGoogleDriveThumbnailUrl(url?: string | null, explicitDriveFileId?: string | null) {
+  const driveFileId = explicitDriveFileId || extractGoogleDriveFileId(url);
+  return driveFileId ? `https://drive.google.com/thumbnail?id=${driveFileId}&sz=w1000` : null;
+}

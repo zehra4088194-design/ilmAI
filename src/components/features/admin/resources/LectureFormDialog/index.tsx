@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { YouTubeThumbnailImage } from '@/components/ui/YouTubeThumbnailImage';
 import { deriveThumbnailFromUrl, isValidYouTubeUrl } from '@/lib/utils/extractYouTubeId';
 import type { Lecture } from '../LecturesTab';
 
@@ -41,7 +42,6 @@ export function LectureFormDialog({ open, onOpenChange, lecture, onSaved }: Prop
   const [error, setError] = useState<string | null>(null);
   const [urlError, setUrlError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [thumbnailBroken, setThumbnailBroken] = useState(false);
 
   const isEdit = !!lecture;
 
@@ -98,7 +98,6 @@ export function LectureFormDialog({ open, onOpenChange, lecture, onSaved }: Prop
   }, [form.chapter_id]);
 
   useEffect(() => {
-    setThumbnailBroken(false);
     const handle = setTimeout(() => {
       setPreviewUrl(deriveThumbnailFromUrl(form.youtube_url));
     }, 300);
@@ -222,8 +221,14 @@ export function LectureFormDialog({ open, onOpenChange, lecture, onSaved }: Prop
             <Input id="youtube-url" value={form.youtube_url} onChange={(event) => handleUrlChange(event.target.value)} placeholder="https://www.youtube.com/watch?v=..." required />
             {urlError && <p className="text-xs text-destructive">{urlError}</p>}
             <div className="mt-1 flex h-32 w-full items-center justify-center overflow-hidden rounded-md border bg-muted">
-              {previewUrl && !thumbnailBroken ? (
-                <img src={previewUrl} alt="Video thumbnail preview" className="h-full w-full object-cover" onError={() => setThumbnailBroken(true)} />
+              {previewUrl ? (
+                <YouTubeThumbnailImage
+                  youtubeUrl={form.youtube_url}
+                  thumbnailUrl={previewUrl}
+                  alt="Video thumbnail preview"
+                  className="h-full w-full object-cover"
+                  fallbackClassName="h-full w-full"
+                />
               ) : (
                 <div className="flex flex-col items-center gap-1 text-muted-foreground">
                   <ImageOff className="h-5 w-5" />

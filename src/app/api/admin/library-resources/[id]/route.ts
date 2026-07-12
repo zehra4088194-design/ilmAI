@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdminUser } from '@/lib/admin/auth';
+import { extractGoogleDriveFileId, getGoogleDriveThumbnailUrl } from '@/lib/utils/filePreview';
 import type { Database } from '@/lib/supabase/database.types';
 
 type LibraryUpdate = Database['public']['Tables']['library_resources']['Update'] & {
@@ -24,7 +25,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (body.chapter_id !== undefined) (update as any).chapter_id = body.chapter_id;
   if (body.board !== undefined) update.board = body.board;
   if (body.grade_level !== undefined) update.grade_level = body.grade_level;
-  if (body.drive_url !== undefined) update.drive_url = body.drive_url.trim();
+  if (body.drive_url !== undefined) {
+    const driveUrl = body.drive_url.trim();
+    const driveFileId = body.drive_file_id ?? extractGoogleDriveFileId(driveUrl);
+    update.drive_url = driveUrl;
+    update.drive_file_id = driveFileId;
+    if (body.thumbnail_url === undefined) update.thumbnail_url = getGoogleDriveThumbnailUrl(driveUrl, driveFileId);
+  }
   if (body.drive_file_id !== undefined) update.drive_file_id = body.drive_file_id;
   if (body.thumbnail_url !== undefined) update.thumbnail_url = body.thumbnail_url;
   if (body.file_type !== undefined) update.file_type = body.file_type;

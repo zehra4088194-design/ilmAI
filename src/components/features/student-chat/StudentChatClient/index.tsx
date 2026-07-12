@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type React from 'react';
 import Link from 'next/link';
-import { Check, Crown, LockKeyhole, MessageCircle, Send, UserPlus, X } from 'lucide-react';
+import { AlertTriangle, Check, Crown, LockKeyhole, MessageCircle, Send, UserPlus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -28,6 +28,9 @@ type ChatRequest = {
   recipient_id: string;
   status: 'pending' | 'approved' | 'declined';
   created_at: string;
+  moderation_warning_count?: number;
+  moderation_blocked_until?: string | null;
+  moderation_last_reason?: string | null;
   requester: StudentProfile | null;
   recipient: StudentProfile | null;
 };
@@ -50,6 +53,7 @@ export function StudentChatClient() {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [moderationAlert, setModerationAlert] = useState<string | null>(null);
 
   const userTier = user?.subscriptionTier || 'FREE';
   const canUseStudentChat = settings.subscriptionPlans[userTier].access.studentChat;
@@ -62,6 +66,9 @@ export function StudentChatClient() {
     if (!selected || !user) return null;
     return selected.requester_id === user.id ? selected.recipient : selected.requester;
   }, [selected, user]);
+  const selectedBlockedUntil = selected?.moderation_blocked_until && new Date(selected.moderation_blocked_until).getTime() > Date.now()
+    ? selected.moderation_blocked_until
+    : null;
 
   const loadRequests = async () => {
     setLoading(true);
@@ -98,8 +105,10 @@ export function StudentChatClient() {
   useEffect(() => {
     if (!selected?.id) {
       setMessages([]);
+      setModerationAlert(null);
       return;
     }
+    setModerationAlert(null);
     loadMessages(selected.id);
     const timer = window.setInterval(() => loadMessages(selected.id), 10000);
     return () => window.clearInterval(timer);
@@ -155,6 +164,10 @@ export function StudentChatClient() {
       if (!res.ok) throw new Error(json.error || 'Message send nahi hua');
       setMessages((items) => [...items, json.message]);
       setMessage('');
+      if (json.moderation?.alert) {
+        setModerationAlert(json.moderation.alert);
+        if (json.moderation.action === 'blocked') await loadRequests();
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Message send nahi hua');
     } finally {
@@ -260,6 +273,18 @@ export function StudentChatClient() {
               </div>
             ) : (
               <>
+                {(moderationAlert || selectedBlockedUntil) && (
+                  <div className="border-b border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-200">
+                    <div className="flex gap-2">
+                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                      <p>
+                        {selectedBlockedUntil
+                          ? `Ye chat study se hatne ki wajah se ${new Date(selectedBlockedUntil).toLocaleString()} tak blocked hai.`
+                          : moderationAlert}
+                      </p>
+                    </div>
+                  </div>
+                )}
                 <div className="flex-1 space-y-3 overflow-y-auto p-4">
                   {messages.length === 0 && <p className="text-center text-sm text-muted-foreground">No messages yet.</p>}
                   {messages.map((item) => {
@@ -282,6 +307,13 @@ export function StudentChatClient() {
                       <Button asChild variant="gradient" size="sm" className="mt-3">
                         <Link href="/subscription">Pro to unlock chat</Link>
                       </Button>
+                    </div>
+                  </div>
+                ) : selectedBlockedUntil ? (
+                  <div className="border-t border-border p-4">
+                    <div className="rounded-xl border border-amber-500/25 bg-amber-500/10 p-4 text-center text-sm text-amber-700 dark:text-amber-200">
+                      <AlertTriangle className="mx-auto mb-2 h-5 w-5" />
+                      Chat temporarily blocked hai. Study related baat ke liye block expire hone ka wait karo.
                     </div>
                   </div>
                 ) : (

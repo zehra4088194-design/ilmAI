@@ -88,7 +88,7 @@ export function ClassSelectStep() {
               }}
               className={[
                 'rounded-xl border px-4 py-3 text-left transition-colors',
-                educationLevel === level.value ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/40',
+                educationLevel === level.value ? 'border-primary bg-primary/20 shadow-sm shadow-primary/15' : 'border-border bg-card/80 hover:border-primary/40 hover:bg-primary/10',
               ].join(' ')}
             >
               <span className="block text-sm font-semibold">{level.label}</span>
@@ -139,7 +139,7 @@ export function ClassSelectStep() {
                     'cursor-pointer select-none border-2 py-8 text-center transition-all',
                     'hover:border-primary hover:shadow-md',
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-                    isSelected ? 'border-primary bg-primary/5 shadow-md' : 'border-border',
+                    isSelected ? 'border-primary bg-primary/20 shadow-md' : 'border-border bg-card/80',
                     isDisabled ? 'pointer-events-none opacity-50' : '',
                   ].join(' ')}
                 >

@@ -1,11 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { ImageOff, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { YouTubeThumbnailImage } from '@/components/ui/YouTubeThumbnailImage';
 import { LectureFormDialog } from '../LectureFormDialog';
 
 export type Lecture = {
@@ -119,13 +120,13 @@ export function LecturesTab() {
               lectures.map((lecture) => (
                 <TableRow key={lecture.id}>
                   <TableCell>
-                    {lecture.thumbnail_url ? (
-                      <img src={lecture.thumbnail_url} alt={lecture.title} className="h-10 w-16 rounded object-cover" />
-                    ) : (
-                      <div className="flex h-10 w-16 items-center justify-center rounded bg-muted">
-                        <ImageOff className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                    )}
+                    <YouTubeThumbnailImage
+                      youtubeUrl={lecture.youtube_url}
+                      thumbnailUrl={lecture.thumbnail_url}
+                      alt={lecture.title}
+                      className="h-10 w-16 rounded object-cover"
+                      fallbackClassName="h-10 w-16"
+                    />
                   </TableCell>
                   <TableCell className="font-medium">{lecture.title}</TableCell>
                   <TableCell>{lecture.chapter_name ?? '-'}</TableCell>

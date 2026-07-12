@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { extractGoogleDriveFileId } from '@/lib/utils/filePreview';
 import type { LibraryResource } from '../LibraryTab';
 
 type Option = { id: string; name: string };
@@ -88,8 +89,9 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
 
-    if (!/^https?:\/\/.+drive\.google\.com/.test(form.drive_url.trim())) {
-      setError('Drive URL valid nahi lag raha (drive.google.com link chahiye)');
+    const driveUrl = form.drive_url.trim();
+    if (!/^https?:\/\//i.test(driveUrl) || !extractGoogleDriveFileId(driveUrl)) {
+      setError('Google Drive/Docs file link valid nahi lag raha. File ka share link paste karein.');
       return;
     }
 
@@ -105,7 +107,7 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
         chapter_id: form.chapter_id === ALL_VALUE ? null : form.chapter_id,
         board: form.board === ALL_VALUE ? null : form.board,
         grade_level: form.grade_level === ALL_VALUE ? null : form.grade_level,
-        drive_url: form.drive_url.trim(),
+        drive_url: driveUrl,
         file_type: form.file_type,
       };
 
@@ -262,8 +264,8 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="drive-url">Google Drive Link</Label>
-            <Input id="drive-url" value={form.drive_url} onChange={(event) => setForm((current) => ({ ...current, drive_url: event.target.value }))} placeholder="https://drive.google.com/file/d/..." required />
+            <Label htmlFor="drive-url">Google Drive / Docs File Link</Label>
+            <Input id="drive-url" value={form.drive_url} onChange={(event) => setForm((current) => ({ ...current, drive_url: event.target.value }))} placeholder="https://drive.google.com/file/d/.../view" required />
             <p className="text-xs text-muted-foreground">Pehle Drive file ki sharing setting &quot;Anyone with the link can view&quot; par set karein.</p>
           </div>
 

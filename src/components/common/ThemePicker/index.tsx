@@ -27,8 +27,8 @@ export function ThemePicker({ compact = false }: { compact?: boolean }) {
             type="button"
             onClick={() => setTheme(option.id)}
             className={cn(
-              'group overflow-hidden rounded-xl border text-left transition-all hover:-translate-y-0.5 hover:border-primary/50',
-              selected ? 'border-primary shadow-lg shadow-primary/15' : 'border-border'
+              'group overflow-hidden rounded-xl border bg-card/80 text-left transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:bg-primary/10',
+              selected ? 'border-primary bg-primary/15 shadow-lg shadow-primary/20' : 'border-border'
             )}
           >
             <div

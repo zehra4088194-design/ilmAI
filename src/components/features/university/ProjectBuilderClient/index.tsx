@@ -5,6 +5,7 @@ import { Download, Loader2, Presentation, WandSparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { printElementById } from '@/lib/utils/printElement';
 import { toast } from 'sonner';
 
 type ProjectContent = Record<string, string>;
@@ -88,10 +89,13 @@ export function ProjectBuilderClient({ isLocked = false }: { isLocked?: boolean 
       {entries.length > 0 && (
         <>
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => window.print()}><Download className="h-4 w-4" />Export PDF / Print</Button>
+            <Button variant="outline" onClick={() => {
+              const ok = printElementById('project-builder-export', 'ilm AI Project Builder');
+              if (!ok) toast.error('Export content nahi mila.');
+            }}><Download className="h-4 w-4" />Export PDF / Print</Button>
             <Button variant="outline" onClick={() => toast.info('PPTX export coming soon.')}><Presentation className="h-4 w-4" />PPTX Coming Soon</Button>
           </div>
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div id="project-builder-export" className="grid gap-4 lg:grid-cols-2">
             {entries.map(([key, value]) => (
               <EditableSection key={key} title={LABELS[key] || key} value={value} onChange={(next) => setContent((prev) => ({ ...(prev || {}), [key]: next }))} />
             ))}

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient, createClient } from '@/lib/supabase/server';
 import type { Database } from '@/lib/supabase/database.types';
 import { BOARDS } from '@/lib/constants';
 import { needsProfileCompletion } from '@/lib/utils/checkProfileComplete';
+import { nanoid } from 'nanoid';
 
 type BoardType = Database['public']['Enums']['board_type'];
 type EducationLevel = 'school' | 'college' | 'university';
@@ -11,10 +12,42 @@ function resolveBoard(value: unknown): BoardType | null {
   return typeof value === 'string' && BOARDS.some((board) => board.value === value) ? (value as BoardType) : null;
 }
 
+function resolveRole(value: unknown): Database['public']['Enums']['user_role'] | null {
+  return value === 'parent' || value === 'teacher' || value === 'admin' || value === 'student'
+    ? value
+    : null;
+}
+
+async function ensureParentInvite(parentId: string) {
+  try {
+    const admin = await createAdminClient();
+    const { data: existing } = await (admin.from('parent_student_links') as any)
+      .select('id')
+      .eq('parent_id', parentId)
+      .eq('status', 'pending')
+      .is('student_id', null)
+      .gt('invite_expires_at', new Date().toISOString())
+      .maybeSingle();
+    if (existing) return;
+
+    await (admin.from('parent_student_links') as any).insert({
+      id: crypto.randomUUID(),
+      parent_id: parentId,
+      student_id: null,
+      status: 'pending',
+      invite_code: `SV-${nanoid(6).toUpperCase()}`,
+      invite_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    });
+  } catch (error) {
+    console.error('[auth/callback] Parent invite auto-create failed:', error);
+  }
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
   const redirectTo = searchParams.get('redirect') || '/dashboard';
+  const redirectRole = resolveRole(searchParams.get('role'));
 
   if (code) {
     const supabase = await createClient();
@@ -25,10 +58,7 @@ export async function GET(request: NextRequest) {
       const isGoogleAuth =
         data.user.app_metadata?.provider === 'google' ||
         (Array.isArray(providers) && providers.includes('google'));
-      const metadataRole =
-        userMetadata?.role === 'parent' || userMetadata?.role === 'teacher' || userMetadata?.role === 'admin' || userMetadata?.role === 'student'
-          ? userMetadata.role
-          : null;
+      const metadataRole = resolveRole(userMetadata?.role) ?? redirectRole;
       const metadataBoard = resolveBoard(userMetadata?.board);
 
       // Ensure a profile row exists (for OAuth sign-ups that skip our register form)
@@ -99,11 +129,17 @@ export async function GET(request: NextRequest) {
         };
       }
 
+      if (resolvedRole === 'parent') {
+        await ensureParentInvite(data.user.id);
+      }
+
       const destination =
         isGoogleAuth && needsProfileCompletion(profileForRedirect)
           ? '/onboarding/complete-profile'
           : resolvedRole === 'student' && !profileForRedirect.onboarding_completed
           ? '/onboarding/class'
+          : resolvedRole === 'parent'
+          ? '/parent'
           : redirectTo;
 
       return NextResponse.redirect(`${origin}${destination}`);
