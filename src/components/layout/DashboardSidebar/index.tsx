@@ -138,7 +138,7 @@ export function DashboardSidebar() {
         </div>
       )}
     </div>
-    <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "af601028278a46aeb40dbb0ed0ef20df"}'></script><!-- End Cloudflare Web Analytics -->
+    
   );
 
   return (
