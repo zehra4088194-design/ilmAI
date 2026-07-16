@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { useEffect, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import { Video, Pencil, Trash2, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { deleteLecture } from "@/lib/college/actions/lectures";
-import { LectureFormDialog } from "@/components/college/lectures/LectureFormDialog";
-import type { CollegeLecture } from "@/lib/college/types";
+import { useEffect, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { Video, Pencil, Trash2, Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { deleteLecture } from '@/lib/college/actions/lectures';
+import { LectureFormDialog } from '@/components/college/lectures/LectureFormDialog';
+import type { CollegeLecture } from '@/lib/college/types';
 
 export function LectureList({ collegeId, initialLectures }: { collegeId: string; initialLectures: CollegeLecture[] }) {
   const [lectures, setLectures] = useState(initialLectures);
@@ -17,9 +17,6 @@ export function LectureList({ collegeId, initialLectures }: { collegeId: string;
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
-  // The server action already calls revalidatePath — router.refresh() makes
-  // this page's Server Component re-fetch, and this syncs that fresh data
-  // into local state (a plain useState initializer only runs once on mount).
   useEffect(() => {
     setLectures(initialLectures);
   }, [initialLectures]);
@@ -40,10 +37,10 @@ export function LectureList({ collegeId, initialLectures }: { collegeId: string;
       const result = await deleteLecture(lecture.id);
       if (result.success) {
         setLectures((prev) => prev.filter((l) => l.id !== lecture.id));
-        toast.success("Lecture deleted.");
+        toast.success('Lecture deleted.');
         router.refresh();
       } else {
-        toast.error(result.error ?? "Could not delete the lecture.");
+        toast.error(result.error ?? 'Could not delete the lecture.');
       }
     });
   }
@@ -68,15 +65,17 @@ export function LectureList({ collegeId, initialLectures }: { collegeId: string;
           {lectures.map((lecture) => (
             <div
               key={lecture.id}
-              className="glass flex items-start justify-between gap-4 rounded-2xl border border-border/60 bg-card/60 p-4 backdrop-blur-xl"
+              className="glass border-border/60 bg-card/60 flex items-start justify-between gap-4 rounded-2xl border p-4 backdrop-blur-xl"
             >
               <div className="min-w-0 flex-1">
                 <p className="font-medium">{lecture.title}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  {[lecture.course_name, lecture.semester].filter(Boolean).join(" · ") || "No course/semester set"}
+                <p className="text-muted-foreground mt-0.5 text-xs">
+                  {[lecture.stream, lecture.degree_name, lecture.semester, lecture.course_name, lecture.chapter_title]
+                    .filter(Boolean)
+                    .join(' · ') || 'No structure set'}
                 </p>
                 {lecture.description && (
-                  <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{lecture.description}</p>
+                  <p className="text-muted-foreground mt-1 line-clamp-2 text-sm">{lecture.description}</p>
                 )}
               </div>
               <div className="flex shrink-0 items-center gap-1.5">
@@ -90,7 +89,7 @@ export function LectureList({ collegeId, initialLectures }: { collegeId: string;
                   onClick={() => handleDelete(lecture)}
                   aria-label="Delete lecture"
                 >
-                  <Trash2 className="h-4 w-4 text-destructive" />
+                  <Trash2 className="text-destructive h-4 w-4" />
                 </Button>
               </div>
             </div>

@@ -2,7 +2,7 @@
   "name": "ilm AI",
   "short_name": "ilm AI",
   "description": "Pakistan aur India ka #1 AI-Powered Study Platform",
-  "start_url": "/",
+  "start_url": "/dashboard",
   "display": "standalone",
   "background_color": "#0a0118",
   "theme_color": "#7c3aed",

@@ -2,7 +2,16 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -22,6 +31,9 @@ export type LibraryResource = {
   grade_level: string | null;
   drive_url: string;
   drive_file_id: string | null;
+  light_file_url: string | null;
+  dark_file_url: string | null;
+  context_text_url: string | null;
   thumbnail_url: string | null;
   file_type: 'pdf' | 'docx' | 'pptx' | 'other';
   created_at: string;
@@ -83,8 +95,10 @@ export function LibraryTab() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-muted-foreground">{filteredResources.length} of {resources.length} resource{resources.length === 1 ? '' : 's'}</p>
-          <p className="text-xs text-muted-foreground">Class aur type select karke manage karo.</p>
+          <p className="text-muted-foreground text-sm">
+            {filteredResources.length} of {resources.length} resource{resources.length === 1 ? '' : 's'}
+          </p>
+          <p className="text-muted-foreground text-xs">Class aur type select karke manage karo.</p>
         </div>
         <Button
           onClick={() => {
@@ -99,10 +113,14 @@ export function LibraryTab() {
         </Button>
       </div>
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && <p className="text-destructive text-sm">{error}</p>}
 
       <div className="flex flex-wrap gap-2">
-        <select value={gradeFilter} onChange={(event) => setGradeFilter(event.target.value)} className="h-9 rounded-md border border-input bg-background px-3 text-sm">
+        <select
+          value={gradeFilter}
+          onChange={(event) => setGradeFilter(event.target.value)}
+          className="border-input bg-background h-9 rounded-md border px-3 text-sm"
+        >
           <option value="ALL">All classes</option>
           <option value="GRADE_9">Grade 9</option>
           <option value="GRADE_10">Grade 10</option>
@@ -111,7 +129,11 @@ export function LibraryTab() {
           <option value="O_LEVEL">O Level</option>
           <option value="A_LEVEL">A Level</option>
         </select>
-        <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value as typeof typeFilter)} className="h-9 rounded-md border border-input bg-background px-3 text-sm">
+        <select
+          value={typeFilter}
+          onChange={(event) => setTypeFilter(event.target.value as typeof typeFilter)}
+          className="border-input bg-background h-9 rounded-md border px-3 text-sm"
+        >
           <option value="ALL">All resource types</option>
           <option value="text_book">Text Books</option>
           <option value="notes">Notes</option>
@@ -137,14 +159,14 @@ export function LibraryTab() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-8">
-                  <Loader2 className="h-4 w-4 animate-spin inline-block mr-2" />
+                <TableCell colSpan={9} className="py-8 text-center">
+                  <Loader2 className="mr-2 inline-block h-4 w-4 animate-spin" />
                   Loading...
                 </TableCell>
               </TableRow>
             ) : filteredResources.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={9} className="text-muted-foreground py-8 text-center">
                   Is filter ke liye koi resource nahi mila.
                 </TableCell>
               </TableRow>
@@ -158,12 +180,19 @@ export function LibraryTab() {
                   <TableCell>{resource.board ?? 'All Boards'}</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
-                      <Badge variant="outline">{resource.resource_type === 'text_book' ? 'Text Book' : resource.resource_type}</Badge>
+                      <Badge variant="outline">
+                        {resource.resource_type === 'text_book' ? 'Text Book' : resource.resource_type}
+                      </Badge>
                       <Badge variant="secondary">{resource.file_type}</Badge>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={resource.category === 'international' ? 'secondary' : 'outline'}>{resource.category}</Badge>
+                    <Badge variant={resource.category === 'international' ? 'secondary' : 'outline'}>
+                      {resource.category}
+                    </Badge>
+                    {(resource.light_file_url || resource.drive_url) && <Badge variant="outline">Light</Badge>}
+                    {resource.dark_file_url && <Badge variant="secondary">Dark</Badge>}
+                    {resource.context_text_url && <Badge variant="success">AI TXT</Badge>}
                   </TableCell>
                   <TableCell>{new Date(resource.created_at).toLocaleDateString()}</TableCell>
                   <TableCell className="text-right">
@@ -179,8 +208,13 @@ export function LibraryTab() {
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(resource)} aria-label="Delete resource">
-                        <Trash2 className="h-4 w-4 text-destructive" />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setDeleteTarget(resource)}
+                        aria-label="Delete resource"
+                      >
+                        <Trash2 className="text-destructive h-4 w-4" />
                       </Button>
                     </div>
                   </TableCell>

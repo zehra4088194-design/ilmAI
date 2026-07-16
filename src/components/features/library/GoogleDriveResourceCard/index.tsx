@@ -1,180 +1,115 @@
 'use client';
+
 import { useState } from 'react';
-import { FileText, FileType2, Sparkles, Loader2, Maximize2, X, DownloadCloud } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { BookOpen, DownloadCloud, FileText, FileType2, Loader2, Maximize2, ShieldCheck } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
-import { AiAnswerRenderer } from '@/components/features/ai/AiAnswerRenderer';
-import { getEmbeddableFilePreviewUrl } from '@/lib/utils/filePreview';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
-import { toast } from 'sonner';
+import { isDarkThemeId } from '@/lib/constants/themes';
+import { saveOfflineResource } from '@/lib/offline/resources';
+import { ProtectedResourceReader, fetchProtectedResourceBlob } from '@/components/features/resources/ProtectedResourceReader';
+import { ResourceAiTools } from '@/components/features/resources/ResourceAiTools';
 
 export interface DriveResourceData {
   id: string;
   title: string;
   description?: string | null;
-  driveUrl: string;
-  driveFileId?: string | null;
-  thumbnailUrl?: string | null;
   fileType?: string | null;
   subjectName?: string | null;
   subjectColor?: string | null;
+  chapterName?: string | null;
 }
 
-/**
- * Shows a book/notes file that actually lives in Google Drive — we never host
- * the file ourselves. Shows an inline preview (via Drive's embeddable preview
- * URL when we have a file id) plus a clearly-labeled "Open in Google Drive" button.
- * Also offers an on-demand AI summary so a student can see what the book covers
- * before opening it, rendered as a styled document (not a plain text wall).
- */
 export function GoogleDriveResourceCard({ resource }: { resource: DriveResourceData }) {
-  const previewUrl = getEmbeddableFilePreviewUrl(resource.driveUrl, resource.driveFileId);
+  const { theme } = useTheme();
+  const mode = isDarkThemeId(theme) ? 'dark' : 'light';
   const { user } = useAuth();
   const settings = usePlatformSettings();
-  const userTier = user?.subscriptionTier || 'FREE';
-  const canDownload = settings.subscriptionPlans[userTier].access.downloadPDF;
-
-  const [summary, setSummary] = useState<string | null>(null);
-  const [loadingSummary, setLoadingSummary] = useState(false);
+  const tier = user?.subscriptionTier || 'FREE';
+  const canDownload = settings.subscriptionPlans[tier].access.downloadPDF;
+  const [readerOpen, setReaderOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
-  const [readerMode, setReaderMode] = useState<'panel' | 'fullscreen' | null>(null);
 
-  const generateSummary = async () => {
-    if (summary) { setSummary(null); return; } // toggle closed if already shown
-    setLoadingSummary(true);
-    try {
-      const res = await fetch('/api/ai/book-summary', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: resource.title,
-          description: resource.description,
-          subjectName: resource.subjectName,
-          fileType: resource.fileType,
-        }),
-      });
-      const json = await res.json();
-      if (json.status === 'error') { toast.error(json.error); return; }
-      setSummary(json.data.summary);
-    } catch {
-      toast.error('Summary generate nahi hui, dobara koshish karo');
-    } finally {
-      setLoadingSummary(false);
-    }
-  };
-
-  const downloadForOffline = async () => {
-    if (!canDownload) {
-      toast.info('Downloads is plan mein locked hain. Yahin full-screen read kar sakte ho.');
-      return;
-    }
-    const url = previewUrl || resource.driveUrl;
-    if (!url) return;
+  const saveForOffline = async () => {
     setDownloading(true);
     try {
-      if ('caches' in window) {
-        const cache = await caches.open('ilm-ai-offline-v1');
-        try {
-          await cache.add(url);
-        } catch {
-          await fetch(url, { mode: 'no-cors' }).then((res) => cache.put(url, res)).catch(() => {});
-        }
-      }
-      const raw = localStorage.getItem('ilm-ai-offline-items');
-      const items = raw ? JSON.parse(raw) as Array<{ id: string }> : [];
-      if (!items.some((item) => item.id === resource.id)) {
-        localStorage.setItem('ilm-ai-offline-items', JSON.stringify([
-          ...items,
-          { id: resource.id, title: resource.title, url, savedAt: new Date().toISOString() },
-        ]));
-      }
+      const blob = await fetchProtectedResourceBlob({ kind: 'library', id: resource.id, mode, purpose: 'offline' });
+      await saveOfflineResource({
+        resourceId: resource.id,
+        kind: 'library',
+        mode,
+        title: resource.title,
+        mimeType: blob.type || 'application/pdf',
+        blob,
+        savedAt: new Date().toISOString(),
+      });
       await fetch('/api/offline/download-log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resource_type: resource.fileType === 'video' ? 'video' : 'textbook', resource_id: resource.id, device_hint: navigator.userAgent }),
-      }).catch(() => {});
-      toast.success('Offline download saved');
-    } catch {
-      toast.error('Offline save nahi ho saka.');
+        body: JSON.stringify({ resource_type: 'textbook', resource_id: resource.id, device_hint: navigator.userAgent }),
+      }).catch(() => undefined);
+      toast.success('App Downloads mein offline save ho gaya.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Offline save nahi ho saka.');
     } finally {
       setDownloading(false);
     }
   };
 
   return (
-    <Card className="overflow-hidden hover:border-violet-500/30 transition-colors">
-      {previewUrl ? (
-        <div className="aspect-[4/3] bg-muted/30 border-b border-border">
-          <iframe src={previewUrl} className="h-full w-full" allow="autoplay" title={resource.title} loading="lazy" />
+    <Card className="group overflow-hidden border-border/70 bg-card/85 transition-all hover:-translate-y-0.5 hover:border-primary/35 hover:shadow-xl">
+      <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden border-b border-border bg-[radial-gradient(circle_at_25%_20%,hsl(var(--primary)/0.26),transparent_45%),linear-gradient(145deg,hsl(var(--muted)),hsl(var(--background)))]">
+        <div className="absolute inset-5 rounded-[2rem] border border-white/10 bg-background/35 shadow-2xl backdrop-blur" />
+        <div className="relative flex flex-col items-center gap-3 px-6 text-center">
+          <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/25">
+            {resource.fileType === 'pdf' ? <FileText className="h-8 w-8" /> : <BookOpen className="h-8 w-8" />}
+          </span>
+          <p className="line-clamp-2 text-sm font-bold">{resource.title}</p>
+          <Badge variant="outline" className="bg-background/70"><ShieldCheck className="mr-1 h-3 w-3 text-emerald-500" />Protected reader</Badge>
         </div>
-      ) : (
-        <div className="aspect-[4/3] bg-muted/30 border-b border-border flex items-center justify-center">
-          <FileText className="w-10 h-10 text-muted-foreground/40" />
-        </div>
-      )}
-      <CardContent className="p-4">
-        <div className="flex items-center gap-2 mb-2">
+      </div>
+      <CardContent className="space-y-3 p-4">
+        <div className="flex flex-wrap items-center gap-2">
           {resource.subjectName && (
-            <Badge variant="outline" style={{ borderColor: `${resource.subjectColor}50`, color: resource.subjectColor || undefined }}>{resource.subjectName}</Badge>
+            <Badge variant="outline" style={{ borderColor: `${resource.subjectColor || '#7c3aed'}60` }}>
+              {resource.subjectName}
+            </Badge>
           )}
-          {resource.fileType && (
-            <Badge variant="outline" className="flex items-center gap-1"><FileType2 className="w-3 h-3" />{resource.fileType.toUpperCase()}</Badge>
-          )}
+          {resource.chapterName && <Badge variant="secondary">{resource.chapterName}</Badge>}
+          {resource.fileType && <Badge variant="outline"><FileType2 className="mr-1 h-3 w-3" />{resource.fileType.toUpperCase()}</Badge>}
         </div>
-        <h3 className="font-semibold text-sm mb-1 line-clamp-1">{resource.title}</h3>
-        {resource.description && <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{resource.description}</p>}
-
-        <div className="grid grid-cols-2 gap-2">
-          <Button variant="gradient" size="sm" className="min-w-0" disabled={!previewUrl} onClick={() => setReaderMode('panel')}>
-            <Maximize2 className="w-3.5 h-3.5" />Read
-          </Button>
-          <Button variant="outline" size="sm" className="min-w-0" disabled={!previewUrl} onClick={() => setReaderMode('fullscreen')}>
-            <Maximize2 className="w-3.5 h-3.5" />Full
-          </Button>
-          <Button variant="outline" size="sm" className="col-span-2" onClick={generateSummary} disabled={loadingSummary}>
-            {loadingSummary ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-            {summary ? 'Summary Chupao' : 'AI Summary'}
-          </Button>
-          <Button variant="outline" size="sm" className="col-span-2" onClick={downloadForOffline} disabled={downloading}>
-            {downloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <DownloadCloud className="w-3.5 h-3.5" />}
-            Download for offline {!canDownload && <Badge className="ml-1 text-[10px]">Pro</Badge>}
-          </Button>
+        <div>
+          <h3 className="line-clamp-1 text-sm font-semibold">{resource.title}</h3>
+          {resource.description && <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{resource.description}</p>}
         </div>
-
-        {summary && (
-          <div className="mt-3">
-            <AiAnswerRenderer content={summary} label="AI Summary" />
-          </div>
+        <Button variant="gradient" size="sm" className="w-full" onClick={() => setReaderOpen(true)}>
+          <Maximize2 className="h-3.5 w-3.5" />Read in app
+        </Button>
+        <ResourceAiTools kind="library" resourceId={resource.id} />
+        {canDownload ? (
+          <Button variant="outline" size="sm" className="w-full" onClick={saveForOffline} disabled={downloading}>
+            {downloading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <DownloadCloud className="h-3.5 w-3.5" />}
+            Save in app for offline
+          </Button>
+        ) : (
+          <Button asChild variant="outline" size="sm" className="w-full">
+            <Link href="/subscription"><DownloadCloud className="h-3.5 w-3.5" />Offline save <Badge className="ml-1 text-[10px]">Pro</Badge></Link>
+          </Button>
         )}
       </CardContent>
-
-      {readerMode && previewUrl && (
-        <div className={readerMode === 'fullscreen' ? 'fixed inset-0 z-[90] flex flex-col bg-background' : 'fixed inset-0 z-[90] flex items-center justify-center bg-black/55 p-3 backdrop-blur-sm'}>
-          <div className={readerMode === 'fullscreen' ? 'flex min-h-0 flex-1 flex-col' : 'flex h-[86vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl border border-border bg-background shadow-2xl'}>
-            <div className="flex min-h-14 items-center justify-between gap-3 border-b border-border px-3 sm:px-5">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold sm:text-base">{resource.title}</p>
-                <p className="text-xs text-muted-foreground">{readerMode === 'fullscreen' ? 'Full-screen reader' : 'In-app reader'}</p>
-              </div>
-              <div className="flex shrink-0 gap-2">
-                {readerMode === 'panel' ? (
-                  <Button variant="gradient" size="sm" onClick={() => setReaderMode('fullscreen')}>
-                    <Maximize2 className="h-3.5 w-3.5" />Full screen
-                  </Button>
-                ) : (
-                  <Button variant="outline" size="sm" onClick={() => setReaderMode('panel')}>Small view</Button>
-                )}
-                <Button variant="ghost" size="icon-sm" onClick={() => setReaderMode(null)} aria-label="Close reader">
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-            <iframe src={previewUrl} title={resource.title} className="min-h-0 flex-1 bg-white" allow="autoplay; fullscreen" allowFullScreen />
-          </div>
-        </div>
-      )}
+      <ProtectedResourceReader
+        open={readerOpen}
+        onClose={() => setReaderOpen(false)}
+        kind="library"
+        resourceId={resource.id}
+        mode={mode}
+        title={resource.title}
+      />
     </Card>
   );
 }

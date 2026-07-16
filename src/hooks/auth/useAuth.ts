@@ -32,6 +32,8 @@ export function useAuth() {
       totalStudyTime: data.total_study_time, isEmailVerified: data.is_email_verified,
       isProfileComplete: data.is_profile_complete, onboardingStep: data.onboarding_step,
       role: (data.role as UserProfile['role']) ?? 'student',
+      gender: (data.gender as UserProfile['gender']) ?? undefined,
+      genderChangedAt: data.gender_changed_at ?? undefined,
       isAiOperated: data.is_ai_operated ?? false,
       aiPersonaProvider: (data.ai_persona_provider as UserProfile['aiPersonaProvider']) ?? undefined,
       aiOnboardingComplete: data.ai_onboarding_complete ?? false,

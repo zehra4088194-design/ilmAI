@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Phone, PhoneOff, Lock, Mic } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import type { SubscriptionTier } from '@/types';
 
 // ============================================
 // LIVE VOICE CALL — talk to the AI Teacher out loud
@@ -87,11 +88,12 @@ interface LiveVoiceCallProps {
   subject?: string;
   /** True only when this user's plan has Live Voice enabled. */
   hasAccess: boolean;
+  userTier?: SubscriptionTier;
   /** Fired once, right after the call ends, if the transcript is substantial. */
   onSessionEnd?: (transcript: VoiceSessionTranscript) => void;
 }
 
-export function LiveVoiceCall({ subject, hasAccess, onSessionEnd }: LiveVoiceCallProps) {
+export function LiveVoiceCall({ subject, hasAccess, userTier = 'FREE', onSessionEnd }: LiveVoiceCallProps) {
   const [callState, setCallState] = useState<CallState>('idle');
   const [aiSpeaking, setAiSpeaking] = useState(false);
 
@@ -142,6 +144,8 @@ export function LiveVoiceCall({ subject, hasAccess, onSessionEnd }: LiveVoiceCal
   }, []);
 
   useEffect(() => () => cleanup(), [cleanup]);
+
+  const comingSoonTitle = userTier === 'FREE' ? 'Voice Call coming soon' : 'Voice Call coming soon for your plan';
 
   const playIncomingAudio = (base64Pcm: string) => {
     if (!playbackContextRef.current) return;
@@ -309,6 +313,14 @@ export function LiveVoiceCall({ subject, hasAccess, onSessionEnd }: LiveVoiceCal
     }
     resetTranscript();
   };
+
+  if (comingSoonTitle) {
+    return (
+      <Button variant="outline" size="sm" disabled className="border-amber-400/40 bg-amber-400/10 text-amber-500" title={comingSoonTitle}>
+        <Mic className="w-3.5 h-3.5" /> Voice Call Coming Soon
+      </Button>
+    );
+  }
 
   if (!hasAccess) {
     return (

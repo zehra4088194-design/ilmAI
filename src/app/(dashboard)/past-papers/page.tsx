@@ -9,7 +9,7 @@ export default async function PastPapersPage() {
   const { data: profile } = await supabase.from('profiles').select('board, grade_level').eq('id', user!.id).single();
   const papersQuery = supabase
     .from('past_papers')
-    .select('*, subjects(id, name, slug, color), chapters(name)')
+    .select('id, subject_id, chapter_id, board, grade_level, year, paper_type, total_questions, duration, is_verified, download_count, created_at, subjects(id, name, slug, color), chapters(name)')
     .eq('board', profile?.board || 'FBISE')
     .order('year', { ascending: false }) as any;
   const { data: papers } = await papersQuery.eq('grade_level', profile?.grade_level || 'GRADE_9');

@@ -13,9 +13,15 @@ function resolveBoard(value: unknown): BoardType | null {
 }
 
 function resolveRole(value: unknown): Database['public']['Enums']['user_role'] | null {
-  return value === 'parent' || value === 'teacher' || value === 'admin' || value === 'student'
-    ? value
-    : null;
+  return value === 'parent' || value === 'teacher' || value === 'admin' || value === 'student' ? value : null;
+}
+
+function resolveEducationLevel(value: unknown): EducationLevel | null {
+  return value === 'school' || value === 'college' || value === 'university' ? value : null;
+}
+
+function resolveGender(value: unknown): 'girl' | 'boy' | null {
+  return value === 'girl' || value === 'boy' ? value : null;
 }
 
 async function ensureParentInvite(parentId: string) {
@@ -46,7 +52,10 @@ async function ensureParentInvite(parentId: string) {
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
-  const redirectTo = searchParams.get('redirect') || '/dashboard';
+  const requestedRedirect = searchParams.get('redirect') || '/dashboard';
+  const redirectTo =
+    requestedRedirect.startsWith('/') && !requestedRedirect.startsWith('//') ? requestedRedirect : '/dashboard';
+  const isParentLinkRedirect = redirectTo.startsWith('/parent-link');
   const redirectRole = resolveRole(searchParams.get('role'));
 
   if (code) {
@@ -56,20 +65,27 @@ export async function GET(request: NextRequest) {
       const userMetadata = data.user.user_metadata;
       const providers = data.user.app_metadata?.providers;
       const isGoogleAuth =
-        data.user.app_metadata?.provider === 'google' ||
-        (Array.isArray(providers) && providers.includes('google'));
+        data.user.app_metadata?.provider === 'google' || (Array.isArray(providers) && providers.includes('google'));
       const metadataRole = resolveRole(userMetadata?.role) ?? redirectRole;
       const metadataBoard = resolveBoard(userMetadata?.board);
+      const metadataEducationLevel = resolveEducationLevel(userMetadata?.education_level);
+      const metadataGender = resolveGender(userMetadata?.gender);
+      const metadataUsername =
+        typeof userMetadata?.username === 'string' ? userMetadata.username.trim().toLowerCase() : null;
 
       // Ensure a profile row exists (for OAuth sign-ups that skip our register form)
       const { data: existingProfile } = await supabase
         .from('profiles')
-        .select('id, role, board, grade_level, education_level, university_program, university_semester, onboarding_completed, is_profile_complete')
+        .select(
+          'id, role, username, gender, board, grade_level, education_level, university_program, university_semester, onboarding_completed, is_profile_complete'
+        )
         .eq('id', data.user.id)
         .maybeSingle();
       const resolvedRole = metadataRole ?? existingProfile?.role ?? 'student';
       let profileForRedirect: {
         role: Database['public']['Enums']['user_role'];
+        username: string | null;
+        gender: 'girl' | 'boy' | null;
         board: Database['public']['Enums']['board_type'] | null;
         grade_level: Database['public']['Enums']['grade_level'] | null;
         education_level: 'school' | 'college' | 'university';
@@ -80,21 +96,33 @@ export async function GET(request: NextRequest) {
 
       if (!existingProfile) {
         await supabase.from('profiles').insert({
-          id: data.user.id, email: data.user.email!,
+          id: data.user.id,
+          email: data.user.email!,
           full_name: data.user.user_metadata?.full_name || data.user.email!.split('@')[0],
+          username: metadataUsername,
+          gender: metadataGender,
+          gender_changed_at: metadataGender ? new Date().toISOString() : null,
           avatar_url: data.user.user_metadata?.avatar_url || null,
           board: metadataBoard,
-          education_level: 'school',
+          education_level: metadataEducationLevel || 'school',
           role: resolvedRole,
           onboarding_completed: resolvedRole !== 'student',
-          subscription_tier: 'FREE', xp: 0, level: 1, streak: 0, total_study_time: 0,
-          is_email_verified: !!data.user.email_confirmed_at, is_profile_complete: false, onboarding_step: 0,
+          subscription_tier: 'FREE',
+          xp: 0,
+          level: 1,
+          streak: 0,
+          total_study_time: 0,
+          is_email_verified: !!data.user.email_confirmed_at,
+          is_profile_complete: false,
+          onboarding_step: 0,
         });
         profileForRedirect = {
           role: resolvedRole,
+          username: metadataUsername,
+          gender: metadataGender,
           board: metadataBoard,
           grade_level: null,
-          education_level: 'school',
+          education_level: metadataEducationLevel || 'school',
           university_program: null,
           university_semester: null,
           onboarding_completed: resolvedRole !== 'student',
@@ -110,6 +138,19 @@ export async function GET(request: NextRequest) {
           updates.board = metadataBoard;
         }
 
+        if (metadataEducationLevel && existingProfile.education_level !== metadataEducationLevel) {
+          updates.education_level = metadataEducationLevel;
+        }
+
+        if (metadataUsername) {
+          updates.username = metadataUsername;
+        }
+
+        if (metadataGender && !existingProfile.gender) {
+          updates.gender = metadataGender;
+          updates.gender_changed_at = new Date().toISOString();
+        }
+
         if (resolvedRole !== 'student' && existingProfile.onboarding_completed === false) {
           updates.onboarding_completed = true;
         }
@@ -120,9 +161,14 @@ export async function GET(request: NextRequest) {
 
         profileForRedirect = {
           role: resolvedRole,
+          username: updates.username ?? existingProfile.username,
+          gender: (updates.gender as 'girl' | 'boy' | undefined) ?? (existingProfile.gender as 'girl' | 'boy' | null),
           board: updates.board ?? existingProfile.board,
           grade_level: existingProfile.grade_level,
-          education_level: (existingProfile.education_level as EducationLevel | null) ?? 'school',
+          education_level:
+            (updates.education_level as EducationLevel | undefined) ??
+            (existingProfile.education_level as EducationLevel | null) ??
+            'school',
           university_program: existingProfile.university_program,
           university_semester: existingProfile.university_semester,
           onboarding_completed: updates.onboarding_completed ?? existingProfile.onboarding_completed,
@@ -133,14 +179,17 @@ export async function GET(request: NextRequest) {
         await ensureParentInvite(data.user.id);
       }
 
-      const destination =
-        isGoogleAuth && needsProfileCompletion(profileForRedirect)
-          ? '/onboarding/complete-profile'
-          : resolvedRole === 'student' && !profileForRedirect.onboarding_completed
-          ? '/onboarding/class'
-          : resolvedRole === 'parent'
-          ? '/parent'
-          : redirectTo;
+      const destination = isParentLinkRedirect
+        ? redirectTo
+        : !profileForRedirect.username && !needsProfileCompletion(profileForRedirect)
+          ? `/onboarding/username?next=${encodeURIComponent(resolvedRole === 'parent' ? '/parent' : redirectTo)}`
+          : (isGoogleAuth || metadataEducationLevel === 'university') && needsProfileCompletion(profileForRedirect)
+            ? '/onboarding/complete-profile'
+            : resolvedRole === 'student' && !profileForRedirect.onboarding_completed
+              ? '/onboarding/class'
+              : resolvedRole === 'parent'
+                ? '/parent'
+                : redirectTo;
 
       return NextResponse.redirect(`${origin}${destination}`);
     }

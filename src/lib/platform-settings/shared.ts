@@ -2,6 +2,11 @@ import type { SubscriptionTier } from '@/types';
 
 export type BillingCurrency = 'PKR' | 'INR';
 
+export type ProviderBudgetKey =
+  'groqFast' | 'groqLarge' | 'gemini' | 'ocrSpace' | 'openRouter' | 'grok' | 'claude' | 'gpt';
+
+export type ProviderDailyBudgets = Record<ProviderBudgetKey, number>;
+
 export type PlatformSubscriptionPlan = {
   tier: SubscriptionTier;
   name: string;
@@ -11,9 +16,12 @@ export type PlatformSubscriptionPlan = {
     aiSideChatDaily: number;
     aiToolDaily: number;
     quizDaily: number;
-    ocrDaily: number;
+    ocrPrintedWeekly: number;
+    ocrHandwrittenWeekly: number;
+    universityHubWeekly: number;
     liveVoiceDaily: number;
     flashcardsTotal: number;
+    gameMinutesDaily: number;
   };
   access: {
     pastPapers: boolean;
@@ -22,17 +30,32 @@ export type PlatformSubscriptionPlan = {
     liveVoice: boolean;
     prioritySupport: boolean;
     adsFree: boolean;
+    games: boolean;
+    restPlaylists: boolean;
   };
   features: string[];
 };
 
 export type PlatformSettings = {
   subscriptionPlans: Record<SubscriptionTier, PlatformSubscriptionPlan>;
+  providerDailyBudgets: ProviderDailyBudgets;
 };
 
 export const SUBSCRIPTION_SETTINGS_KEY = 'subscription_plans';
 
 export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
+  providerDailyBudgets: {
+    // Conservative platform-wide caps for a free-hosted beta. Admin can tune
+    // these without a deploy as provider dashboards expose the real quotas.
+    groqFast: 400,
+    groqLarge: 40,
+    gemini: 200,
+    ocrSpace: 450,
+    openRouter: 45,
+    grok: 100,
+    claude: 0,
+    gpt: 0,
+  },
   subscriptionPlans: {
     FREE: {
       tier: 'FREE',
@@ -43,12 +66,15 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
         INR: { monthly: 0, annual: 0 },
       },
       limits: {
-        aiSideChatDaily: 5,
+        aiSideChatDaily: 10,
         aiToolDaily: 3,
         quizDaily: 3,
-        ocrDaily: 3,
+        ocrPrintedWeekly: 10,
+        ocrHandwrittenWeekly: 5,
+        universityHubWeekly: 3,
         liveVoiceDaily: 0,
         flashcardsTotal: 50,
+        gameMinutesDaily: 0,
       },
       access: {
         pastPapers: true,
@@ -57,13 +83,18 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
         liveVoice: false,
         prioritySupport: false,
         adsFree: false,
+        games: false,
+        restPlaylists: false,
       },
       features: [
-        '5 side-chat messages/day',
-        '3/day preview for AI tools and testing',
+        '10 side-chat messages/day',
+        '3 shared AI tool uses/day',
+        '10 printed and 5 handwritten scans/week',
+        '3 University Hub uses/week',
         'Read notes/books in-app',
         'No PDF downloads',
         'Student chat requests only',
+        'Games and relaxing playlists are Pro features',
       ],
     },
     PRO: {
@@ -78,9 +109,12 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
         aiSideChatDaily: 20,
         aiToolDaily: 20,
         quizDaily: 20,
-        ocrDaily: 20,
+        ocrPrintedWeekly: -1,
+        ocrHandwrittenWeekly: 50,
+        universityHubWeekly: -1,
         liveVoiceDaily: 0,
         flashcardsTotal: 1000,
+        gameMinutesDaily: 45,
       },
       access: {
         pastPapers: true,
@@ -89,14 +123,18 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
         liveVoice: false,
         prioritySupport: true,
         adsFree: true,
+        games: true,
+        restPlaylists: true,
       },
       features: [
-        '20/day for every AI tool',
-        '20/day AI testing, essays, OCR and tutor',
+        '20 shared AI tool uses/day',
+        'Unlimited OCR.space printed scans and 50 handwritten scans/week',
         '1000 flashcards',
         'All past papers',
         'PDF downloads unlocked',
         'Student chat unlocked',
+        '45 minutes/day live games',
+        'Relaxing sound playlists',
         'Parent weekly reports and chat',
         'Priority support',
       ],
@@ -113,28 +151,34 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
         aiSideChatDaily: 50,
         aiToolDaily: 50,
         quizDaily: 50,
-        ocrDaily: 50,
-        liveVoiceDaily: 50,
+        ocrPrintedWeekly: 200,
+        ocrHandwrittenWeekly: 100,
+        universityHubWeekly: -1,
+        liveVoiceDaily: 0,
         flashcardsTotal: -1,
+        gameMinutesDaily: 45,
       },
       access: {
         pastPapers: true,
         downloadPDF: true,
         studentChat: true,
-        liveVoice: true,
+        liveVoice: false,
         prioritySupport: true,
         adsFree: true,
+        games: true,
+        restPlaylists: true,
       },
       features: [
-        '50/day for every AI tool',
-        '50/day AI testing, essays, OCR and tutor',
+        '50 shared AI tool uses/day',
         'Offline mode',
-        'Elite-only Live Voice Call',
+        'Live Voice Call coming soon',
         'Pro AI model tier',
-        '50 scans/day',
+        '200 printed and 100 handwritten scans/week',
         'Elite parent insights',
         'Exam simulations',
         'Parent dashboard',
+        '45 minutes/day live games',
+        'Relaxing sound playlists',
       ],
     },
   },
@@ -158,53 +202,105 @@ function stringArrayOrFallback(value: unknown, fallback: string[]) {
 
 export function normalizePlatformSettings(input: unknown): PlatformSettings {
   const source = (input && typeof input === 'object' ? input : {}) as Partial<PlatformSettings>;
-  const sourcePlans = (source.subscriptionPlans && typeof source.subscriptionPlans === 'object' ? source.subscriptionPlans : {}) as Partial<
-    Record<SubscriptionTier, Partial<PlatformSubscriptionPlan>>
-  >;
+  const sourceProviderBudgets: Partial<ProviderDailyBudgets> =
+    source.providerDailyBudgets && typeof source.providerDailyBudgets === 'object' ? source.providerDailyBudgets : {};
+  const sourcePlans = (
+    source.subscriptionPlans && typeof source.subscriptionPlans === 'object' ? source.subscriptionPlans : {}
+  ) as Partial<Record<SubscriptionTier, Partial<PlatformSubscriptionPlan>>>;
 
-  const subscriptionPlans = TIERS.reduce((acc, tier) => {
-    const fallback = DEFAULT_PLATFORM_SETTINGS.subscriptionPlans[tier];
-    const incoming = sourcePlans[tier] || {};
-    const incomingPrice = (incoming.price || {}) as Partial<PlatformSubscriptionPlan['price']>;
-    const incomingLimits = (incoming.limits || {}) as Partial<PlatformSubscriptionPlan['limits']>;
-    const incomingAccess = (incoming.access || {}) as Partial<PlatformSubscriptionPlan['access']>;
+  const subscriptionPlans = TIERS.reduce(
+    (acc, tier) => {
+      const fallback = DEFAULT_PLATFORM_SETTINGS.subscriptionPlans[tier];
+      const incoming = sourcePlans[tier] || {};
+      const incomingPrice = (incoming.price || {}) as Partial<PlatformSubscriptionPlan['price']>;
+      const incomingLimits = (incoming.limits || {}) as Partial<PlatformSubscriptionPlan['limits']>;
+      const incomingAccess = (incoming.access || {}) as Partial<PlatformSubscriptionPlan['access']>;
 
-    acc[tier] = {
-      tier,
-      name: typeof incoming.name === 'string' && incoming.name.trim() ? incoming.name.trim() : fallback.name,
-      enabled: booleanOrFallback(incoming.enabled, fallback.enabled),
-      price: {
-        PKR: {
-          monthly: numberOrFallback(incomingPrice.PKR?.monthly, fallback.price.PKR.monthly),
-          annual: numberOrFallback(incomingPrice.PKR?.annual, fallback.price.PKR.annual),
+      acc[tier] = {
+        tier,
+        name: typeof incoming.name === 'string' && incoming.name.trim() ? incoming.name.trim() : fallback.name,
+        enabled: booleanOrFallback(incoming.enabled, fallback.enabled),
+        price: {
+          PKR: {
+            monthly: numberOrFallback(incomingPrice.PKR?.monthly, fallback.price.PKR.monthly),
+            annual: numberOrFallback(incomingPrice.PKR?.annual, fallback.price.PKR.annual),
+          },
+          INR: {
+            monthly: numberOrFallback(incomingPrice.INR?.monthly, fallback.price.INR.monthly),
+            annual: numberOrFallback(incomingPrice.INR?.annual, fallback.price.INR.annual),
+          },
         },
-        INR: {
-          monthly: numberOrFallback(incomingPrice.INR?.monthly, fallback.price.INR.monthly),
-          annual: numberOrFallback(incomingPrice.INR?.annual, fallback.price.INR.annual),
+        limits: {
+          aiSideChatDaily:
+            tier === 'FREE'
+              ? Math.max(10, numberOrFallback(incomingLimits.aiSideChatDaily, fallback.limits.aiSideChatDaily))
+              : numberOrFallback(incomingLimits.aiSideChatDaily, fallback.limits.aiSideChatDaily),
+          aiToolDaily: numberOrFallback(incomingLimits.aiToolDaily, fallback.limits.aiToolDaily),
+          quizDaily: numberOrFallback(incomingLimits.quizDaily, fallback.limits.quizDaily),
+          ocrPrintedWeekly: numberOrFallback(incomingLimits.ocrPrintedWeekly, fallback.limits.ocrPrintedWeekly),
+          ocrHandwrittenWeekly: numberOrFallback(
+            incomingLimits.ocrHandwrittenWeekly,
+            fallback.limits.ocrHandwrittenWeekly
+          ),
+          universityHubWeekly: numberOrFallback(
+            incomingLimits.universityHubWeekly,
+            fallback.limits.universityHubWeekly
+          ),
+          liveVoiceDaily: numberOrFallback(incomingLimits.liveVoiceDaily, fallback.limits.liveVoiceDaily),
+          flashcardsTotal: numberOrFallback(incomingLimits.flashcardsTotal, fallback.limits.flashcardsTotal),
+          gameMinutesDaily: numberOrFallback(incomingLimits.gameMinutesDaily, fallback.limits.gameMinutesDaily),
         },
-      },
-      limits: {
-        aiSideChatDaily: numberOrFallback(incomingLimits.aiSideChatDaily, fallback.limits.aiSideChatDaily),
-        aiToolDaily: numberOrFallback(incomingLimits.aiToolDaily, fallback.limits.aiToolDaily),
-        quizDaily: numberOrFallback(incomingLimits.quizDaily, fallback.limits.quizDaily),
-        ocrDaily: numberOrFallback(incomingLimits.ocrDaily, fallback.limits.ocrDaily),
-        liveVoiceDaily: numberOrFallback(incomingLimits.liveVoiceDaily, fallback.limits.liveVoiceDaily),
-        flashcardsTotal: numberOrFallback(incomingLimits.flashcardsTotal, fallback.limits.flashcardsTotal),
-      },
-      access: {
-        pastPapers: booleanOrFallback(incomingAccess.pastPapers, fallback.access.pastPapers),
-        downloadPDF: booleanOrFallback(incomingAccess.downloadPDF, fallback.access.downloadPDF),
-        studentChat: booleanOrFallback(incomingAccess.studentChat, fallback.access.studentChat),
-        liveVoice: booleanOrFallback(incomingAccess.liveVoice, fallback.access.liveVoice),
-        prioritySupport: booleanOrFallback(incomingAccess.prioritySupport, fallback.access.prioritySupport),
-        adsFree: booleanOrFallback(incomingAccess.adsFree, fallback.access.adsFree),
-      },
-      features: stringArrayOrFallback(incoming.features, fallback.features),
-    };
-    return acc;
-  }, {} as Record<SubscriptionTier, PlatformSubscriptionPlan>);
+        access: {
+          pastPapers: booleanOrFallback(incomingAccess.pastPapers, fallback.access.pastPapers),
+          downloadPDF: booleanOrFallback(incomingAccess.downloadPDF, fallback.access.downloadPDF),
+          studentChat: booleanOrFallback(incomingAccess.studentChat, fallback.access.studentChat),
+          liveVoice: false,
+          prioritySupport: booleanOrFallback(incomingAccess.prioritySupport, fallback.access.prioritySupport),
+          adsFree: booleanOrFallback(incomingAccess.adsFree, fallback.access.adsFree),
+          games: booleanOrFallback(incomingAccess.games, fallback.access.games),
+          restPlaylists: booleanOrFallback(incomingAccess.restPlaylists, fallback.access.restPlaylists),
+        },
+        features: stringArrayOrFallback(incoming.features, fallback.features),
+      };
+      return acc;
+    },
+    {} as Record<SubscriptionTier, PlatformSubscriptionPlan>
+  );
 
-  return { subscriptionPlans };
+  return {
+    subscriptionPlans,
+    providerDailyBudgets: {
+      groqFast: Math.max(
+        0,
+        numberOrFallback(sourceProviderBudgets.groqFast, DEFAULT_PLATFORM_SETTINGS.providerDailyBudgets.groqFast)
+      ),
+      groqLarge: Math.max(
+        0,
+        numberOrFallback(sourceProviderBudgets.groqLarge, DEFAULT_PLATFORM_SETTINGS.providerDailyBudgets.groqLarge)
+      ),
+      gemini: Math.max(
+        0,
+        numberOrFallback(sourceProviderBudgets.gemini, DEFAULT_PLATFORM_SETTINGS.providerDailyBudgets.gemini)
+      ),
+      ocrSpace: Math.max(
+        0,
+        numberOrFallback(sourceProviderBudgets.ocrSpace, DEFAULT_PLATFORM_SETTINGS.providerDailyBudgets.ocrSpace)
+      ),
+      openRouter: Math.max(
+        0,
+        numberOrFallback(sourceProviderBudgets.openRouter, DEFAULT_PLATFORM_SETTINGS.providerDailyBudgets.openRouter)
+      ),
+      grok: Math.max(
+        0,
+        numberOrFallback(sourceProviderBudgets.grok, DEFAULT_PLATFORM_SETTINGS.providerDailyBudgets.grok)
+      ),
+      claude: Math.max(
+        0,
+        numberOrFallback(sourceProviderBudgets.claude, DEFAULT_PLATFORM_SETTINGS.providerDailyBudgets.claude)
+      ),
+      gpt: Math.max(0, numberOrFallback(sourceProviderBudgets.gpt, DEFAULT_PLATFORM_SETTINGS.providerDailyBudgets.gpt)),
+    },
+  };
 }
 
 export function getPlanFromSettings(settings: PlatformSettings, tier: SubscriptionTier) {

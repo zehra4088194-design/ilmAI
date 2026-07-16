@@ -1,13 +1,13 @@
 // ============================================
 // RATE LIMITING (Upstash Redis)
-// Used for: AI messages/day, AI tools/day, quizzes/day, OCR scans/day, live voice calls/day
-// — all tier-based limits
+// Used for: daily AI/quiz/voice limits plus weekly OCR and University Hub limits
+// All limits are tier-based and configurable from Admin Settings.
 // ============================================
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
 import type { SubscriptionTier } from '@/types';
 import { getPlatformSettings } from '@/lib/platform-settings/server';
-import { getPlanFromSettings } from '@/lib/platform-settings/shared';
+import { getPlanFromSettings, type ProviderBudgetKey } from '@/lib/platform-settings/shared';
 
 const redis = process.env.UPSTASH_REDIS_REST_URL
   ? new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN! })
@@ -16,7 +16,11 @@ const redis = process.env.UPSTASH_REDIS_REST_URL
 // In-memory fallback for local dev when Upstash isn't configured
 const memoryStore = new Map<string, { count: number; resetAt: number }>();
 
-async function checkMemoryLimit(key: string, limit: number, windowMs: number): Promise<{ success: boolean; remaining: number; reset: number }> {
+async function checkMemoryLimit(
+  key: string,
+  limit: number,
+  windowMs: number
+): Promise<{ success: boolean; remaining: number; reset: number }> {
   const now = Date.now();
   const entry = memoryStore.get(key);
   if (!entry || entry.resetAt < now) {
@@ -29,6 +33,14 @@ async function checkMemoryLimit(key: string, limit: number, windowMs: number): P
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const WEEK_MS = 7 * DAY_MS;
+
+function weekWindow() {
+  const now = new Date();
+  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  start.setUTCDate(start.getUTCDate() - ((start.getUTCDay() + 6) % 7));
+  return { key: start.toISOString().slice(0, 10), reset: start.getTime() + WEEK_MS };
+}
 
 export type DailyLimitFeature =
   | 'ai_message'
@@ -36,11 +48,14 @@ export type DailyLimitFeature =
   | 'ai_tool'
   | 'quiz'
   | 'ocr_scan'
+  | `ocr_scan:${'printed' | 'handwritten'}`
+  | 'university_hub'
   | 'live_voice_call'
+  | `provider:${ProviderBudgetKey}`
   | `ai_tool:${string}`;
 
 export const AI_DAILY_LIMITS = {
-  FREE_SIDE_CHAT: 5,
+  FREE_SIDE_CHAT: 10,
   FREE_TOOL: 3,
   PRO_TOOL: 20,
   ELITE_TOOL: 50,
@@ -91,8 +106,14 @@ export async function getConfiguredLimitExceededMessage(tier: SubscriptionTier, 
   return `${featureLabel} ki Elite daily limit complete ho gayi. Kal phir try karo. Free preview ${freeLimit}/day hai.`;
 }
 
-/** Generic daily limiter, used for AI messages, quizzes, OCR scans, and live voice calls. */
-export async function checkDailyLimit(userId: string, feature: DailyLimitFeature, limit: number): Promise<{ success: boolean; remaining: number; reset: number }> {
+/** Generic daily limiter used for AI messages, quizzes, and live voice calls. */
+export async function checkDailyLimit(
+  userId: string,
+  feature: DailyLimitFeature,
+  limit: number
+): Promise<{ success: boolean; remaining: number; reset: number }> {
+  if (limit < 0) return { success: true, remaining: -1, reset: Date.now() + DAY_MS };
+  if (limit === 0) return { success: false, remaining: 0, reset: Date.now() + DAY_MS };
   const key = `ratelimit:${feature}:${userId}:${new Date().toISOString().slice(0, 10)}`;
 
   if (redis) {
@@ -103,21 +124,83 @@ export async function checkDailyLimit(userId: string, feature: DailyLimitFeature
   return checkMemoryLimit(key, limit, DAY_MS);
 }
 
-/** OCR-specific helper under the same AI policy: Free = 3/day, Pro = 20/day, Elite = 50/day. */
-export async function checkOcrLimit(userId: string, tier: SubscriptionTier) {
-  const plan = await getConfiguredPlan(tier);
-  const limit = plan.limits.ocrDaily;
-  return checkDailyLimit(userId, 'ocr_scan', limit);
+export async function checkWeeklyLimit(
+  userId: string,
+  feature: DailyLimitFeature,
+  limit: number
+): Promise<{ success: boolean; remaining: number; reset: number }> {
+  const window = weekWindow();
+  if (limit < 0) return { success: true, remaining: -1, reset: window.reset };
+  if (limit === 0) return { success: false, remaining: 0, reset: window.reset };
+  const key = `ratelimit:${feature}:${userId}:week:${window.key}`;
+  if (redis) {
+    const count = await redis.incr(`ilm-ai:${key}`);
+    if (count === 1) {
+      await redis.expireat(`ilm-ai:${key}`, Math.ceil(window.reset / 1000));
+    }
+    return {
+      success: count <= limit,
+      remaining: Math.max(0, limit - count),
+      reset: window.reset,
+    };
+  }
+  return checkMemoryLimit(key, limit, Math.max(1, window.reset - Date.now()));
 }
 
-/** AI side chat messages: Free = 5/day, Pro = 20/day, Elite = 50/day. */
+/** Mode-specific weekly OCR quotas controlled from Admin > Settings. */
+export async function checkOcrLimit(
+  userId: string,
+  tier: SubscriptionTier,
+  mode: 'printed' | 'handwritten' = 'printed'
+) {
+  const plan = await getConfiguredPlan(tier);
+  const limit = mode === 'handwritten' ? plan.limits.ocrHandwrittenWeekly : plan.limits.ocrPrintedWeekly;
+  return checkWeeklyLimit(userId, `ocr_scan:${mode}`, limit);
+}
+
+export async function checkUniversityHubLimit(userId: string, tier: SubscriptionTier) {
+  const plan = await getConfiguredPlan(tier);
+  return checkWeeklyLimit(userId, 'university_hub', plan.limits.universityHubWeekly);
+}
+
+export async function checkUniversityFeatureLimit(userId: string, tier: SubscriptionTier, featureKey: string) {
+  const plan = await getConfiguredPlan(tier);
+  if (plan.limits.universityHubWeekly >= 0) {
+    const weekly = await checkWeeklyLimit(userId, 'university_hub', plan.limits.universityHubWeekly);
+    return { ...weekly, scope: 'weekly' as const };
+  }
+
+  const daily = await checkAiMessageLimit(userId, tier, featureKey);
+  return { ...daily, scope: 'daily' as const };
+}
+
+export async function getUniversityLimitExceededMessage(
+  tier: SubscriptionTier,
+  scope: 'weekly' | 'daily',
+  featureLabel: string
+) {
+  if (scope === 'daily') return getConfiguredLimitExceededMessage(tier, featureLabel);
+  const plan = await getConfiguredPlan(tier);
+  return `${featureLabel} ki University Hub weekly limit (${plan.limits.universityHubWeekly}) complete ho gayi. Agle Monday reset hogi.`;
+}
+
+/** AI side chat messages: Free = 10/day, Pro = 20/day, Elite = 50/day. */
 export async function checkAiSideChatLimit(userId: string, tier: SubscriptionTier) {
   return checkDailyLimit(userId, 'ai_side_chat', await getConfiguredAiDailyLimit(tier, 'side_chat'));
 }
 
 /** AI tool usage: Free preview = 3/day, Pro = 20/day, Elite = 50/day. */
 export async function checkAiToolLimit(userId: string, tier: SubscriptionTier, featureKey = 'general') {
-  return checkDailyLimit(userId, `ai_tool:${featureKey}`, await getConfiguredAiDailyLimit(tier, 'tool'));
+  // All AI tools share one pool. Keeping featureKey in the signature avoids
+  // touching every route while preventing each feature from getting a fresh quota.
+  void featureKey;
+  return checkDailyLimit(userId, 'ai_tool', await getConfiguredAiDailyLimit(tier, 'tool'));
+}
+
+/** Platform-wide provider admission control, managed from Admin Settings. */
+export async function checkProviderDailyLimit(provider: ProviderBudgetKey) {
+  const settings = await getPlatformSettings();
+  return checkDailyLimit('platform', `provider:${provider}`, settings.providerDailyBudgets[provider]);
 }
 
 /** Backwards-compatible helper used by existing AI routes. */
@@ -146,7 +229,12 @@ const MODEL_TIER_DAILY_LIMITS: Record<'mini' | 'medium' | 'pro', number> = {
   pro: AI_DAILY_LIMITS.PRO_TOOL,
 };
 
-export async function checkModelTierLimit(userId: string, provider: string, tier: 'mini' | 'medium' | 'pro', userTier: SubscriptionTier = 'PRO') {
+export async function checkModelTierLimit(
+  userId: string,
+  provider: string,
+  tier: 'mini' | 'medium' | 'pro',
+  userTier: SubscriptionTier = 'PRO'
+) {
   const plan = await getConfiguredPlan(userTier);
   const limit = plan.limits.aiToolDaily || MODEL_TIER_DAILY_LIMITS[tier] || AI_DAILY_LIMITS.PRO_TOOL;
   // Key includes provider so Claude-mini and GPT-mini have separate pools per provider+tier
@@ -160,10 +248,8 @@ export async function checkModelTierLimit(userId: string, provider: string, tier
 }
 
 // ============================================
-// LIVE VOICE CALL (Elite only — real Gemini audio session cost per call)
-// Elite: 15 calls/day. FREE and PRO never reach this check (blocked earlier
-// in the API route by the Elite-only tier gate), but it's handled safely
-// here too in case that check ever changes.
+// LIVE VOICE CALL
+// Temporarily disabled while the production Gemini Live flow is being hardened.
 // ============================================
 const LIVE_VOICE_DAILY_LIMIT_ELITE = AI_DAILY_LIMITS.ELITE_TOOL;
 

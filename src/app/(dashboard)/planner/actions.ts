@@ -6,6 +6,7 @@ import { generateStudyPlanSessions } from '@/lib/planner/generate';
 import { awardCoins } from '@/lib/gamification/coins';
 import { COINS_PER_STUDY_SESSION, XP_PER_PLANNER_COMPLETION_MAX, XP_PER_PLANNER_COMPLETION_MIN } from '@/lib/gamification/constants';
 import { awardXp } from '@/lib/gamification/xp';
+import { createNotificationIfEnabled } from '@/lib/notifications/preferences';
 
 type SetupPayload = {
   examDate: string | null;
@@ -60,6 +61,14 @@ export async function createStudyPlan(payload: SetupPayload) {
 
   revalidatePath('/planner/today');
   revalidatePath('/planner/week');
+  await createNotificationIfEnabled(supabase, 'studyReminders', {
+    user_id: user.id,
+    type: 'REMINDER',
+    title: 'Smart study plan created',
+    message: 'Aaj ka checklist ready hai. Planner open kar ke pehla session start karo.',
+    link: '/planner/today',
+    is_read: false,
+  });
   return { status: 'success', planId: plan.id };
 }
 
@@ -119,5 +128,13 @@ export async function completePlannerSession(sessionId: string) {
 
   revalidatePath('/planner/today');
   revalidatePath('/planner/week');
+  await createNotificationIfEnabled(supabase, 'achievements', {
+    user_id: user.id,
+    type: 'ACHIEVEMENT',
+    title: 'Study session complete',
+    message: `Great! ${xpEarned} XP add ho gaya. Next session continue karo.`,
+    link: '/planner/today',
+    is_read: false,
+  });
   return { status: 'success', xpEarned };
 }

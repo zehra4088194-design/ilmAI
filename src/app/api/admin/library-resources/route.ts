@@ -7,6 +7,9 @@ import type { Database } from '@/lib/supabase/database.types';
 type LibraryInsert = Database['public']['Tables']['library_resources']['Insert'] & {
   resource_type?: 'text_book' | 'notes' | 'other';
   chapter_id?: string | null;
+  light_file_url?: string | null;
+  dark_file_url?: string | null;
+  context_text_url?: string | null;
 };
 type SubjectJoin = { name: string | null } | null;
 type ChapterJoin = { name: string | null } | null;
@@ -19,7 +22,10 @@ export async function GET() {
   try {
     adminClient = await createAdminClient();
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Supabase admin client missing' }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Supabase admin client missing' },
+      { status: 500 }
+    );
   }
 
   const { data, error } = await adminClient
@@ -43,17 +49,23 @@ export async function POST(req: NextRequest) {
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const body = (await req.json()) as LibraryInsert;
-  if (!body.title?.trim() || !body.drive_url?.trim()) {
-    return NextResponse.json({ error: 'Title aur Drive URL zaroori hain' }, { status: 400 });
+  const lightFileUrl = (body.light_file_url ?? body.drive_url ?? '').trim();
+  const darkFileUrl = body.dark_file_url?.trim() || null;
+  const contextTextUrl = body.context_text_url?.trim() || null;
+  if (!body.title?.trim() || !lightFileUrl || !contextTextUrl) {
+    return NextResponse.json({ error: 'Title, PDF URL aur companion TXT URL zaroori hain' }, { status: 400 });
   }
-  const driveUrl = body.drive_url.trim();
+  const driveUrl = lightFileUrl;
   const driveFileId = body.drive_file_id ?? extractGoogleDriveFileId(driveUrl);
 
   let adminClient;
   try {
     adminClient = await createAdminClient();
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Supabase admin client missing' }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Supabase admin client missing' },
+      { status: 500 }
+    );
   }
 
   const { data, error } = await adminClient
@@ -69,6 +81,9 @@ export async function POST(req: NextRequest) {
       grade_level: body.grade_level ?? null,
       drive_url: driveUrl,
       drive_file_id: driveFileId,
+      light_file_url: lightFileUrl,
+      dark_file_url: darkFileUrl,
+      context_text_url: contextTextUrl,
       thumbnail_url: body.thumbnail_url ?? getGoogleDriveThumbnailUrl(driveUrl, driveFileId) ?? null,
       file_type: body.file_type ?? 'pdf',
       added_by: admin.id,

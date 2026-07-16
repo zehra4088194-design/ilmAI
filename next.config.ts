@@ -50,6 +50,7 @@ function csp() {
 }
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ['tesseract.js', 'tesseract.js-core'],
   experimental: {
     ppr: false,
     reactCompiler: false,

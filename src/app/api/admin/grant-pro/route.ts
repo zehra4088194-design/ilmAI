@@ -19,7 +19,7 @@ function getManualExpiry(tier: SubscriptionTier, duration: ManualSubscriptionDur
 }
 
 // POST /api/admin/grant-pro
-// body: { userId: string, tier: 'FREE' | 'PRO' | 'ELITE', duration?: 'monthly' | 'yearly' | 'lifetime' }
+// body: { userId: string, tier: 'FREE' | 'PRO' | 'ELITE', duration?: 'monthly' | 'yearly' | 'lifetime', sponsoredInstitutionName?: string, sponsoredInstitutionType?: 'school' | 'college' }
 // Lets an admin manually move any user onto Pro/Elite (or back to Free), bypassing
 // Paddle/PayPro entirely. Used by the admin Users panel.
 export async function POST(req: NextRequest) {
@@ -28,27 +28,48 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const { userId, tier, lifetime, duration: rawDuration } = (await req.json()) as {
+  const {
+    userId,
+    tier,
+    lifetime,
+    duration: rawDuration,
+    sponsoredInstitutionName,
+    sponsoredInstitutionType,
+  } = (await req.json()) as {
     userId: string;
     tier: SubscriptionTier;
     lifetime?: boolean;
     duration?: ManualSubscriptionDuration;
+    sponsoredInstitutionName?: string;
+    sponsoredInstitutionType?: 'school' | 'college';
   };
 
   if (!userId || !['FREE', 'PRO', 'ELITE'].includes(tier)) {
     return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
   }
 
-  const duration: ManualSubscriptionDuration = tier === 'FREE' ? 'lifetime' : lifetime ? 'lifetime' : rawDuration || 'monthly';
+  const duration: ManualSubscriptionDuration =
+    tier === 'FREE' ? 'lifetime' : lifetime ? 'lifetime' : rawDuration || 'monthly';
   if (!['monthly', 'yearly', 'lifetime'].includes(duration)) {
     return NextResponse.json({ error: 'Invalid subscription duration' }, { status: 400 });
+  }
+
+  const institutionName = typeof sponsoredInstitutionName === 'string' ? sponsoredInstitutionName.trim() : '';
+  if (tier !== 'FREE' && (!institutionName || !['school', 'college'].includes(sponsoredInstitutionType || ''))) {
+    return NextResponse.json(
+      { error: 'Paid plan ke liye school/college aur institution name select karein.' },
+      { status: 400 }
+    );
   }
 
   let adminClient;
   try {
     adminClient = await createAdminClient();
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Supabase admin client missing' }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Supabase admin client missing' },
+      { status: 500 }
+    );
   }
 
   const expiresAt = getManualExpiry(tier, duration);
@@ -58,9 +79,13 @@ export async function POST(req: NextRequest) {
     .update({
       subscription_tier: tier,
       subscription_expires_at: expiresAt,
+      sponsored_institution_name: tier === 'FREE' ? null : institutionName,
+      sponsored_institution_type: tier === 'FREE' ? null : sponsoredInstitutionType,
     })
     .eq('id', userId)
-    .select('id, full_name, email, subscription_tier, subscription_expires_at, xp, created_at')
+    .select(
+      'id, full_name, email, username, sponsored_institution_name, sponsored_institution_type, subscription_tier, subscription_expires_at, xp, created_at'
+    )
     .maybeSingle();
 
   if (error) {
@@ -112,19 +137,25 @@ export async function POST(req: NextRequest) {
 
     if (existingError) {
       console.error('manual subscription lookup error:', existingError);
-      return NextResponse.json({ error: `Profile update ho gaya, subscription lookup fail: ${existingError.message}` }, { status: 500 });
+      return NextResponse.json(
+        { error: `Profile update ho gaya, subscription lookup fail: ${existingError.message}` },
+        { status: 500 }
+      );
     }
 
     const { error: subscriptionError } = existingSubscription
       ? await adminClient.from('subscriptions').update(subscriptionPayload).eq('id', existingSubscription.id)
       : await adminClient.from('subscriptions').insert({
-        ...subscriptionPayload,
-        user_id: userId,
-      });
+          ...subscriptionPayload,
+          user_id: userId,
+        });
 
     if (subscriptionError) {
       console.error('manual subscription sync error:', subscriptionError);
-      return NextResponse.json({ error: `Profile update ho gaya, subscription sync fail: ${subscriptionError.message}` }, { status: 500 });
+      return NextResponse.json(
+        { error: `Profile update ho gaya, subscription sync fail: ${subscriptionError.message}` },
+        { status: 500 }
+      );
     }
   }
 

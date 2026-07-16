@@ -2,27 +2,22 @@ export function printElementById(elementId: string, title = 'ilm AI Export') {
   const element = document.getElementById(elementId);
   if (!element) return false;
 
-  const frame = document.createElement('iframe');
-  frame.setAttribute('aria-hidden', 'true');
-  frame.style.position = 'fixed';
-  frame.style.right = '0';
-  frame.style.bottom = '0';
-  frame.style.width = '0';
-  frame.style.height = '0';
-  frame.style.border = '0';
-  document.body.appendChild(frame);
-
-  const doc = frame.contentWindow?.document;
-  if (!doc) {
-    frame.remove();
+  const printWindow = window.open('', '_blank', 'width=920,height=900');
+  if (!printWindow) {
     return false;
   }
 
   const printable = element.cloneNode(true) as HTMLElement;
-  const sourceTextareas = Array.from(element.querySelectorAll('textarea'));
-  const clonedTextareas = Array.from(printable.querySelectorAll('textarea'));
-  clonedTextareas.forEach((textarea, index) => {
-    textarea.textContent = sourceTextareas[index]?.value || textarea.textContent || '';
+  normalizePrintableClone(element, printable);
+
+  const doc = printWindow.document;
+  const safeTitle = escapeHtml(title);
+  const generatedAt = new Date().toLocaleString('en-PK', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 
   doc.open();
@@ -30,31 +25,131 @@ export function printElementById(elementId: string, title = 'ilm AI Export') {
     <!doctype html>
     <html>
       <head>
-        <title>${title}</title>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>${safeTitle}</title>
         <style>
           * { box-sizing: border-box; }
-          body { margin: 0; padding: 28px; color: #111827; background: #ffffff; font-family: Arial, sans-serif; }
-          h1, h2, h3 { color: #111827; page-break-after: avoid; }
-          p, li { line-height: 1.6; }
-          section, article, .card, textarea { page-break-inside: avoid; }
-          .rounded-xl, .rounded-lg, .rounded-2xl { border-radius: 10px; }
-          .border { border: 1px solid #d1d5db; }
-          .bg-background, .bg-card, .bg-muted\\/20, .bg-muted\\/25, .bg-muted\\/30 { background: #ffffff; }
-          .text-muted-foreground { color: #4b5563; }
-          button, [data-no-print="true"] { display: none !important; }
-          textarea { width: 100%; min-height: 220px; border: 1px solid #d1d5db; padding: 12px; white-space: pre-wrap; font: inherit; color: #111827; }
+          html, body { margin: 0; background: #ffffff; color: #111827; }
+          body { font-family: Arial, Helvetica, sans-serif; font-size: 13px; line-height: 1.55; }
+          .print-shell { max-width: 880px; margin: 0 auto; padding: 26px; }
+          .print-header { margin-bottom: 18px; padding-bottom: 10px; border-bottom: 2px solid #bae6fd; }
+          .print-title { margin: 0; color: #0369a1; font-size: 22px; line-height: 1.2; }
+          .print-meta { margin-top: 4px; color: #64748b; font-size: 11px; }
+          #print-root, #print-root [data-print-root="true"] {
+            position: static !important;
+            inset: auto !important;
+            left: auto !important;
+            top: auto !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            height: auto !important;
+            min-height: 0 !important;
+            overflow: visible !important;
+            opacity: 1 !important;
+            transform: none !important;
+          }
+          #print-root [class*="grid"] { display: block !important; }
+          #print-root [class*="space-y"] > * + * { margin-top: 12px !important; }
+          #print-root h1, #print-root h2, #print-root h3, #print-root h4 {
+            color: #0f172a;
+            page-break-after: avoid;
+            break-after: avoid;
+            line-height: 1.25;
+          }
+          #print-root h1 { font-size: 24px; margin: 0 0 10px; }
+          #print-root h2 { font-size: 18px; margin: 18px 0 8px; color: #0369a1; }
+          #print-root h3 { font-size: 15px; margin: 14px 0 6px; color: #075985; }
+          #print-root p { margin: 5px 0; }
+          #print-root ul, #print-root ol { margin: 6px 0; padding-left: 20px; }
+          #print-root li { margin: 3px 0; }
+          #print-root section, #print-root article, #print-root .print-block,
+          #print-root [class*="rounded"], #print-root [class*="border"] {
+            page-break-inside: avoid;
+            break-inside: avoid;
+          }
+          #print-root [class*="rounded"], #print-root [class*="border"] {
+            border-color: #e5e7eb !important;
+            box-shadow: none !important;
+          }
+          #print-root [class*="rounded"] {
+            border-radius: 8px !important;
+          }
+          #print-root [class*="bg-"], #print-root [style*="background"] {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          #print-root [class*="text-muted"], #print-root [class*="text-foreground"] { color: #4b5563 !important; }
+          #print-root .print-pre {
+            display: block;
+            width: 100%;
+            margin: 0;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: #ffffff;
+            color: #111827;
+            white-space: pre-wrap;
+            font: inherit;
+            line-height: 1.55;
+          }
+          #print-root img, #print-root svg { max-width: 100%; height: auto; }
+          #print-root [class*="aspect-video"] { aspect-ratio: 16 / 9; }
+          button, input, select, [data-no-print="true"], [aria-hidden="true"] { display: none !important; }
+          [data-page-break="true"] { page-break-after: always; break-after: page; }
+          [data-page-break="true"]:last-child { page-break-after: auto; break-after: auto; }
+          @page { margin: 14mm; }
+          @media print {
+            .print-shell { max-width: none; padding: 0; }
+            .print-header { margin-bottom: 12px; }
+          }
         </style>
       </head>
-      <body>${printable.outerHTML}</body>
+      <body>
+        <main class="print-shell">
+          <header class="print-header">
+            <h1 class="print-title">${safeTitle}</h1>
+            <div class="print-meta">Generated by ilm AI | ${escapeHtml(generatedAt)}</div>
+          </header>
+          <div id="print-root">${printable.outerHTML}</div>
+        </main>
+        <script>setTimeout(() => window.print(), 450);</script>
+      </body>
     </html>
   `);
   doc.close();
 
-  setTimeout(() => {
-    frame.contentWindow?.focus();
-    frame.contentWindow?.print();
-    setTimeout(() => frame.remove(), 1000);
-  }, 150);
-
   return true;
+}
+
+function normalizePrintableClone(source: HTMLElement, printable: HTMLElement) {
+  printable.setAttribute('data-print-root', 'true');
+  printable.removeAttribute('aria-hidden');
+  printable.style.position = 'static';
+  printable.style.left = 'auto';
+  printable.style.top = 'auto';
+  printable.style.width = '100%';
+  printable.style.height = 'auto';
+  printable.style.overflow = 'visible';
+
+  printable.querySelectorAll('[data-no-print="true"], button, input, select, script, style').forEach((node) => node.remove());
+  printable.querySelectorAll('[aria-hidden="true"]').forEach((node) => node.removeAttribute('aria-hidden'));
+
+  const sourceTextareas = Array.from(source.querySelectorAll('textarea'));
+  const clonedTextareas = Array.from(printable.querySelectorAll('textarea'));
+  clonedTextareas.forEach((textarea, index) => {
+    const replacement = document.createElement('pre');
+    replacement.className = 'print-pre';
+    replacement.textContent = sourceTextareas[index]?.value || textarea.textContent || '';
+    textarea.replaceWith(replacement);
+  });
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }

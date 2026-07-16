@@ -21,12 +21,12 @@ export function RevisionPlannerCard({
   ];
 
   return (
-    <Card>
+    <Card className="dashboard-surface text-foreground">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg"><CalendarClock className="h-5 w-5 text-violet-400" />AI Revision Planner</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="rounded-xl border bg-muted/20 p-3 text-sm text-muted-foreground">
+        <div className="rounded-xl border border-border/70 bg-muted/35 p-3 text-sm text-muted-foreground">
           {board || 'Board not set'} · {gradeLevel || 'Class not set'}
         </div>
         <div className="space-y-2">
@@ -50,7 +50,7 @@ export function RevisionPlannerCard({
 
 function MiniAction({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
   return (
-    <div className="rounded-lg border bg-card/80 p-2 shadow-sm backdrop-blur">
+    <div className="rounded-lg border border-border/70 bg-muted/35 p-2 shadow-sm">
       <Icon className="mx-auto mb-1 h-4 w-4 text-violet-400" />
       {label}
     </div>

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { gatewayChat } from '@/lib/ai/gateway';
-import { checkAiMessageLimit, getConfiguredLimitExceededMessage } from '@/lib/rate-limit';
+import { checkUniversityFeatureLimit, getUniversityLimitExceededMessage } from '@/lib/rate-limit';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import type { SubscriptionTier } from '@/types';
 
 export const runtime = 'nodejs';
-export const maxDuration = 60;
+export const maxDuration = 90;
 
 const TOOL_LABELS: Record<string, string> = {
   essay: 'AI Essay & Assignment Assistant',
@@ -29,7 +29,10 @@ function cleanNumber(value: unknown, fallback: number, min: number, max: number)
 
 function buildPrompt(tool: string, input: Record<string, unknown>, profile: Record<string, unknown>) {
   const topic = cleanString(input.topic, 'Selected topic');
-  const subject = cleanString(input.subject, cleanString((profile.university_courses as string[] | undefined)?.[0], 'General'));
+  const subject = cleanString(
+    input.subject,
+    cleanString((profile.university_courses as string[] | undefined)?.[0], 'General')
+  );
   const style = cleanString(input.outputStyle, cleanString(profile.preferred_output_style, 'simple'));
   const program = cleanString(profile.university_program, 'University program');
   const semester = cleanString(profile.university_semester, 'Current semester');
@@ -124,44 +127,66 @@ Return ONLY valid JSON:
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ status: 'error', error: 'Login required' }, { status: 401 });
 
     const body = await req.json();
     const tool = cleanString(body.tool, 'essay');
-    if (!TOOL_LABELS[tool]) return NextResponse.json({ status: 'error', error: 'Invalid university tool' }, { status: 400 });
+    if (!TOOL_LABELS[tool])
+      return NextResponse.json({ status: 'error', error: 'Invalid university tool' }, { status: 400 });
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('subscription_tier, education_level, university_program, university_semester, university_courses, university_exam_target_date, preferred_output_style')
+      .select(
+        'subscription_tier, education_level, university_program, university_semester, university_courses, university_exam_target_date, preferred_output_style'
+      )
       .eq('id', user.id)
       .single();
 
     const tier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
-    const limitCheck = await checkAiMessageLimit(user.id, tier, `university_${tool}`);
+    const limitCheck = await checkUniversityFeatureLimit(user.id, tier, `university_${tool}`);
     if (!limitCheck.success) {
-      return NextResponse.json({ status: 'error', error: await getConfiguredLimitExceededMessage(tier, TOOL_LABELS[tool]) }, { status: 429 });
+      return NextResponse.json(
+        {
+          status: 'error',
+          error: await getUniversityLimitExceededMessage(tier, limitCheck.scope, TOOL_LABELS[tool]),
+        },
+        { status: 429 }
+      );
     }
 
     const result = await gatewayChat({
-      provider: 'groq',
-      tier: tier === 'FREE' ? 'mini' : 'medium',
+      provider: 'gemini',
+      tier: 'pro',
       messages: [
-        { role: 'system', content: 'You are a university academic study assistant. Return only valid JSON exactly matching the requested schema.' },
+        {
+          role: 'system',
+          content:
+            'You are a university academic study assistant. Return only valid JSON exactly matching the requested schema.',
+        },
         { role: 'user', content: buildPrompt(tool, body, (profile || {}) as Record<string, unknown>) },
       ],
-      maxTokens: tool === 'presentation' || tool === 'research' ? 4096 : 3072,
+      maxTokens:
+        tool === 'presentation' || tool === 'research' || tool === 'assignment' || tool === 'essay' ? 7000 : 5000,
       temperature: 0.35,
     });
 
     const data = parseAiJson<Record<string, unknown>>(result.text, {});
     if (!Object.keys(data).length) {
-      return NextResponse.json({ status: 'error', error: 'Assistant response parse nahi ho saka. Dobara try karo.' }, { status: 500 });
+      return NextResponse.json(
+        { status: 'error', error: 'Assistant response parse nahi ho saka. Dobara try karo.' },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({ status: 'success', data: { tool, label: TOOL_LABELS[tool], result: data } });
   } catch (error) {
     console.error('University AI route error:', error);
-    return NextResponse.json({ status: 'error', error: 'University assistant response generate nahi ho saka' }, { status: 500 });
+    return NextResponse.json(
+      { status: 'error', error: 'University assistant response generate nahi ho saka' },
+      { status: 500 }
+    );
   }
 }

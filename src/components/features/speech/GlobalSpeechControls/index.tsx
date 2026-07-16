@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Mic, Square, Volume2 } from 'lucide-react';
+import { Mic, Square, Volume2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils/cn';
 
@@ -89,7 +89,12 @@ export function GlobalSpeechControls() {
   const [activeElement, setActiveElement] = useState<EditableElement | null>(null);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
   const [listening, setListening] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+
+  useEffect(() => {
+    setDismissed(window.sessionStorage.getItem('ilm-ai-speech-controls-dismissed') === '1');
+  }, []);
 
   useEffect(() => {
     const updatePosition = () => {
@@ -100,8 +105,8 @@ export function GlobalSpeechControls() {
       }
       const rect = element.getBoundingClientRect();
       setPosition({
-        top: Math.max(8, rect.top + 8),
-        left: Math.min(window.innerWidth - 92, Math.max(8, rect.right - 88)),
+        top: Math.max(8, rect.top - 44),
+        left: Math.min(window.innerWidth - 132, Math.max(8, rect.right - 132)),
       });
     };
 
@@ -204,7 +209,7 @@ export function GlobalSpeechControls() {
     }
   };
 
-  if (!activeElement || !position) return null;
+  if (dismissed || !activeElement || !position) return null;
 
   return (
     <div
@@ -232,6 +237,21 @@ export function GlobalSpeechControls() {
         aria-label="Text to voice"
       >
         <Volume2 className="h-3.5 w-3.5" />
+      </button>
+      <span className="mx-0.5 h-5 w-px bg-border" />
+      <button
+        type="button"
+        onClick={() => {
+          recognitionRef.current?.abort();
+          window.speechSynthesis?.cancel();
+          window.sessionStorage.setItem('ilm-ai-speech-controls-dismissed', '1');
+          setDismissed(true);
+        }}
+        className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+        title="Is tab ke liye hide karo"
+        aria-label="Hide voice controls for this tab"
+      >
+        <X className="h-3.5 w-3.5" />
       </button>
     </div>
   );

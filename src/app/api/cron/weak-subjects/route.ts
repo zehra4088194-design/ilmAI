@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { createNotificationIfEnabled } from '@/lib/notifications/preferences';
 
 export const runtime = 'nodejs';
 
@@ -64,7 +65,7 @@ export async function GET(req: NextRequest) {
         .limit(1);
       if (recent && recent.length > 0) continue;
 
-      await supabase.from('notifications').insert({
+      await createNotificationIfEnabled(supabase, 'weakSubjectAlerts', {
         user_id: g.userId,
         type: 'REMINDER',
         title: 'Focus Area Mili!',

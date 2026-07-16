@@ -11,6 +11,10 @@ import { EDUCATION_LEVELS, OUTPUT_STYLES, type EducationLevel, type PreferredOut
 export interface ActionResult {
   success: boolean;
   error?: string;
+  data?: {
+    gradeLevel?: GradeLevel;
+    educationLevel?: EducationLevel;
+  };
 }
 
 function isValidGradeLevel(value: unknown): value is (typeof CLASS_SELECTION_GRADE_LEVELS)[number] {
@@ -151,9 +155,17 @@ export async function setGradeLevel(
     return { success: false, error: error ?? 'Could not update your class. Please try again.' };
   }
 
+  const educationLevel = gradeLevel === 'GRADE_11' || gradeLevel === 'GRADE_12' ? 'college' : 'school';
+
   const { error: updateError } = await supabase
     .from('profiles')
-    .update({ grade_level: gradeLevel })
+    .update({
+      grade_level: gradeLevel,
+      education_level: educationLevel,
+      onboarding_completed: true,
+      is_profile_complete: true,
+      updated_at: new Date().toISOString(),
+    })
     .eq('id', user.id);
 
   if (updateError) {
@@ -162,6 +174,9 @@ export async function setGradeLevel(
   }
 
   revalidatePath('/', 'layout');
+  revalidatePath('/settings');
+  revalidatePath('/dashboard');
+  revalidatePath('/study');
 
-  return { success: true };
+  return { success: true, data: { gradeLevel, educationLevel } };
 }

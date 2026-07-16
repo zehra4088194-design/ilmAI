@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Download, Loader2, Presentation, WandSparkles } from 'lucide-react';
+import { Download, Loader2, WandSparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -48,6 +48,11 @@ export function ProjectBuilderClient({ isLocked = false }: { isLocked?: boolean 
         return;
       }
       setContent(json.data.content);
+      if (json.data.saved === false) {
+        toast.warning('Project generate ho gaya, lekin history me save nahi hua. Content yahan available hai.');
+      } else {
+        toast.success('Project pack generate ho gaya!');
+      }
     } catch {
       toast.error('Project pack generate nahi ho saka.');
     } finally {
@@ -93,9 +98,8 @@ export function ProjectBuilderClient({ isLocked = false }: { isLocked?: boolean 
               const ok = printElementById('project-builder-export', 'ilm AI Project Builder');
               if (!ok) toast.error('Export content nahi mila.');
             }}><Download className="h-4 w-4" />Export PDF / Print</Button>
-            <Button variant="outline" onClick={() => toast.info('PPTX export coming soon.')}><Presentation className="h-4 w-4" />PPTX Coming Soon</Button>
           </div>
-          <div id="project-builder-export" className="grid gap-4 lg:grid-cols-2">
+          <div id="project-builder-export" data-print-root="true" className="grid gap-4 lg:grid-cols-2">
             {entries.map(([key, value]) => (
               <EditableSection key={key} title={LABELS[key] || key} value={value} onChange={(next) => setContent((prev) => ({ ...(prev || {}), [key]: next }))} />
             ))}

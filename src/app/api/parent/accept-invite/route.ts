@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
+import { createNotificationIfEnabled } from '@/lib/notifications/preferences';
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,12 +22,35 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     if (!invite) return NextResponse.json({ status: 'error', error: 'Invalid invite code' }, { status: 404 });
-    if (invite.parent_id === user.id) return NextResponse.json({ status: 'error', error: 'Apna khud ka code use nahi kar sakte' }, { status: 400 });
+    if (invite.parent_id === user.id)
+      return NextResponse.json({ status: 'error', error: 'Apna khud ka code use nahi kar sakte' }, { status: 400 });
     if (invite.invite_expires_at && new Date(invite.invite_expires_at).getTime() < Date.now()) {
       return NextResponse.json({ status: 'error', error: 'Invite code expire ho gaya' }, { status: 410 });
     }
 
-    const { data: profile } = await admin.from('profiles').select('full_name').eq('id', user.id).single();
+    const { data: profile } = await admin.from('profiles').select('full_name, role').eq('id', user.id).single();
+    if (profile?.role && profile.role !== 'student') {
+      return NextResponse.json(
+        { status: 'error', error: 'Parent link sirf student account se accept ho sakta hai.' },
+        { status: 400 }
+      );
+    }
+
+    const { data: existingLink } = await (admin.from('parent_student_links') as any)
+      .select('id')
+      .eq('parent_id', invite.parent_id)
+      .eq('student_id', user.id)
+      .eq('status', 'approved')
+      .maybeSingle();
+
+    if (existingLink) {
+      await (admin.from('parent_student_links') as any).delete().eq('id', invite.id);
+      return NextResponse.json({
+        status: 'success',
+        message: 'Aap already is parent account se linked ho.',
+        data: { linkId: existingLink.id },
+      });
+    }
 
     const { error } = await (admin.from('parent_student_links') as any)
       .update({
@@ -38,16 +62,20 @@ export async function POST(req: NextRequest) {
 
     if (error) throw error;
 
-    await admin.from('notifications').insert({
+    await createNotificationIfEnabled(admin, 'parentMessages', {
       user_id: invite.parent_id,
       type: 'SOCIAL',
       title: 'Student linked',
       message: `${profile?.full_name || 'Student'} ne parent invite accept kar liya.`,
-      link: '/parent',
+      link: `/parent?linkId=${encodeURIComponent(invite.id)}`,
       is_read: false,
     });
 
-    return NextResponse.json({ status: 'success', message: 'Parent account se successfully link ho gaya!' });
+    return NextResponse.json({
+      status: 'success',
+      message: 'Parent account se successfully link ho gaya!',
+      data: { linkId: invite.id },
+    });
   } catch (error) {
     console.error('Accept invite error:', error);
     return NextResponse.json({ status: 'error', error: 'Invite accept nahi ho saka' }, { status: 500 });

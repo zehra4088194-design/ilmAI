@@ -1,31 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
+import { requireAdminUser } from '@/lib/admin/auth';
 import type { Database } from '@/lib/supabase/database.types';
 import slugify from 'slugify';
 
 type BoardType = Database['public']['Enums']['board_type'];
 type GradeLevel = Database['public']['Enums']['grade_level'];
 
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '')
-  .split(',')
-  .map((e) => e.trim().toLowerCase())
-  .filter(Boolean);
-
-async function requireAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user || !ADMIN_EMAILS.includes((user.email || '').toLowerCase())) {
-    return null;
-  }
-  return user;
-}
-
 // GET /api/admin/chapters?subjectId=...
 // Lists all chapters for a subject, ordered the way students will see them.
 export async function GET(req: NextRequest) {
-  const admin = await requireAdmin();
+  const admin = await requireAdminUser();
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const subjectId = req.nextUrl.searchParams.get('subjectId');
@@ -49,7 +34,7 @@ export async function GET(req: NextRequest) {
 // chapter scoped to just those boards — this is how Pakistan vs India
 // chapters stay separate under a shared subject like Physics.
 export async function POST(req: NextRequest) {
-  const admin = await requireAdmin();
+  const admin = await requireAdminUser();
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const body = (await req.json()) as { subjectId?: string; name?: string; boards?: string[]; gradeLevels?: string[]; orderIndex?: number };

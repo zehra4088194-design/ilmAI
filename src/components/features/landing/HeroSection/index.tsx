@@ -13,7 +13,7 @@ const FLOAT_CARDS = [
 
 export function HeroSection() {
   return (
-    <section className="relative min-h-screen flex items-center pt-20 overflow-hidden">
+    <section className="relative flex min-h-screen items-center overflow-hidden overflow-x-clip px-0 pt-20">
       {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-violet-950 via-background to-indigo-950" />
       <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(124,58,237,0.15) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(99,102,241,0.15) 0%, transparent 50%)' }} />
@@ -22,49 +22,49 @@ export function HeroSection() {
       <div className="absolute inset-0 opacity-20"
         style={{ backgroundImage: 'linear-gradient(rgba(124,58,237,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(124,58,237,0.3) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
 
-      <div className="container mx-auto px-4 relative z-10">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
+      <div className="container relative z-10 mx-auto max-w-full px-4">
+        <div className="grid min-w-0 items-center gap-10 lg:grid-cols-2 lg:gap-16">
           {/* Left Content */}
-          <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8 }} className="text-center lg:text-left">
+          <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8 }} className="min-w-0 text-center lg:text-left">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-              <Badge variant="outline" className="mb-6 px-4 py-2 text-sm border-violet-500/50 text-violet-300 bg-violet-500/10">
-                <Sparkles className="w-3.5 h-3.5 mr-2" />
-                School, College & University AI Study Platform
+              <Badge variant="outline" className="mb-5 max-w-full whitespace-normal px-3 py-2 text-center text-xs leading-relaxed sm:mb-6 sm:px-4 sm:text-sm border-violet-500/50 text-violet-300 bg-violet-500/10">
+                <Sparkles className="mr-2 h-3.5 w-3.5 flex-shrink-0" />
+                <span className="min-w-0">School, College & University AI Study Platform</span>
               </Badge>
             </motion.div>
 
             <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-              className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6">
-              <span className="gradient-text">AI-Powered</span> Study<br />
-              for School, College<br />
+              className="mb-5 text-3xl font-bold leading-tight sm:text-4xl md:text-5xl lg:mb-6 lg:text-6xl">
+              <span className="gradient-text">AI-Powered</span> Study<br className="hidden sm:block" />
+              <span className="sm:hidden"> </span>for School, College<br />
               <span className="text-violet-400">& University Students</span>
             </motion.h1>
 
             <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-              className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto lg:mx-0">
+              className="mx-auto mb-7 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg lg:mx-0 lg:mb-8">
               Board exams se semester assignments tak: AI Tutor, MCQs, Past Papers, Essays,
               Presentations, Viva Prep aur Study Plans. <strong className="text-foreground">Free mein start karo!</strong>
             </motion.p>
 
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
-              className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Button asChild size="xl" variant="gradient" className="shadow-2xl shadow-violet-500/30">
+              className="mx-auto flex w-full max-w-sm flex-col gap-3 sm:max-w-none sm:flex-row sm:flex-wrap sm:justify-center sm:gap-4 lg:mx-0 lg:justify-start">
+              <Button asChild size="xl" variant="gradient" className="h-auto min-h-14 w-full whitespace-normal px-5 text-base leading-snug shadow-2xl shadow-violet-500/30 sm:w-auto sm:px-8 sm:text-lg">
                 <Link href="/register">
-                  <Sparkles className="w-5 h-5" />
-                  Free mein Start Karo
-                  <ArrowRight className="w-5 h-5" />
+                  <Sparkles className="h-5 w-5 flex-shrink-0" />
+                  <span>Free mein Start Karo</span>
+                  <ArrowRight className="h-5 w-5 flex-shrink-0" />
                 </Link>
               </Button>
-              <Button asChild size="xl" variant="glass">
-                <Link href="/demo">Try a Free Demo Test - No Signup Needed</Link>
+              <Button asChild size="xl" variant="glass" className="h-auto min-h-14 w-full whitespace-normal px-5 text-base leading-snug sm:w-auto sm:px-8 sm:text-lg">
+                <Link href="/demo">Try Free Demo</Link>
               </Button>
-              <Button asChild size="xl" variant="outline" className="border-violet-500/35 bg-background/20">
+              <Button asChild size="xl" variant="outline" className="h-auto min-h-14 w-full whitespace-normal border-violet-500/35 bg-background/20 px-5 text-base leading-snug sm:w-auto sm:px-8 sm:text-lg">
                 <Link href="/pricing">Pricing Dekho</Link>
               </Button>
             </motion.div>
 
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }}
-              className="flex items-center gap-6 mt-10 justify-center lg:justify-start">
+              className="mt-8 flex min-w-0 items-center justify-center gap-4 sm:gap-6 lg:mt-10 lg:justify-start">
               <div className="flex -space-x-2">
                 {[1,2,3,4].map(i => (
                   <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-400 to-indigo-600 border-2 border-background flex items-center justify-center text-xs font-bold text-white">{i}</div>

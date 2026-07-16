@@ -118,7 +118,7 @@ export function CareerDocsBuilder() {
             </div>
           </CardHeader>
           <CardContent>
-            <div id="career-doc-preview" className="min-h-[620px] rounded-xl border bg-background p-6">
+            <div id="career-doc-preview" data-print-root="true" className="min-h-[620px] rounded-xl border bg-background p-6">
               {activeOutput ? (
                 <div className="prose prose-sm max-w-none dark:prose-invert">
                   <ReactMarkdown>{activeOutput}</ReactMarkdown>

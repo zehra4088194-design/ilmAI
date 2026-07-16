@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { createNotificationIfEnabled } from '@/lib/notifications/preferences';
 
 interface MarkInput {
   subjectId: string;
@@ -76,7 +77,7 @@ export async function POST(req: NextRequest) {
             .limit(1);
           if (recent && recent.length > 0) continue;
 
-          await admin.from('notifications').insert({
+          await createNotificationIfEnabled(admin, 'weakSubjectAlerts', {
             user_id: user.id,
             type: 'REMINDER',
             title: 'Focus Area Mili!',

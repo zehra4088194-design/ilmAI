@@ -27,17 +27,22 @@ function asTheme(value: unknown): PresentationTheme {
 }
 
 function asSlideType(value: unknown): PresentationSlideType {
-  return PRESENTATION_SLIDE_TYPES.includes(value as PresentationSlideType) ? (value as PresentationSlideType) : 'bullets';
+  return PRESENTATION_SLIDE_TYPES.includes(value as PresentationSlideType)
+    ? (value as PresentationSlideType)
+    : 'bullets';
 }
 
 function stringArray(value: unknown, fallback: string[] = []) {
   if (!Array.isArray(value)) return fallback;
-  return value.map((item) => cleanString(item, '', 140)).filter(Boolean).slice(0, 8);
+  return value
+    .map((item) => cleanString(item, '', 140))
+    .filter(Boolean)
+    .slice(0, 8);
 }
 
-function buildSystemPrompt() {
+function buildSystemPrompt(compact = false) {
   return `You are an expert university-level presentation content writer.
-Your job is CONTENT only; the app controls design.
+Your job is CONTENT for a premium PowerPoint-style university presentation. The app controls visual design, but your content must feel ready for real slides.
 
 Strict rules:
 1. Return only clean JSON. No markdown fences, no explanation.
@@ -56,11 +61,12 @@ Strict rules:
   ]
 }
 3. Mix slide types. Do not repeat bullets only.
-4. Bullet text should be short, clear, and presentation-friendly.
-5. Pick a theme based on topic: science/tech -> dark-tech or modern-blue, literature/history -> warm-academic, environment -> nature-green.
-6. Match the requested language. Use Roman Urdu/Urdu-English only when requested.
-7. Add useful speaker notes for university students.
-8. Do not add fake citations. If references are needed, mention reference placeholders only.`;
+4. ${compact ? 'Bulk mode: use 3-4 strong bullets per bullet slide, each 8-14 words.' : 'Per-slide mode: use 4-6 strong bullets per bullet slide, each 8-16 words.'}
+5. ${compact ? 'Bulk mode: use 2-4 bullets per column and speaker notes of 45-80 words.' : 'Per-slide mode: use 3-5 bullets per column and speaker notes of 80-130 words.'}
+7. Include practical examples, key terms, mini case studies, viva-ready ideas, and one memorable takeaway across the deck.
+8. Pick a theme based on topic: science/tech -> dark-tech or modern-blue, literature/history -> warm-academic, environment -> nature-green.
+9. Match the requested language. Use Roman Urdu/Urdu-English only when requested.
+10. Do not add fake citations. If references are needed, mention reference placeholders only.`;
 }
 
 function buildUserPrompt(input: PresentationGenerateInput) {
@@ -73,7 +79,8 @@ Tone: ${cleanString(input.tone, 'Professional')}
 Language: ${cleanString(input.language, 'English')}
 Output style: ${cleanString(input.outputStyle, 'professional')}
 
-Create a polished, colorful, university-grade presentation deck.`;
+Create a polished, colorful, university-grade presentation deck that feels like a complete PowerPoint presentation, not short notes.
+Bulk output must stay compact enough to return reliably in one response while still teaching one clear idea per slide.`;
 }
 
 function normalizeSlide(raw: Record<string, unknown>, index: number, total: number): PresentationSlide {
@@ -91,8 +98,8 @@ function normalizeSlide(raw: Record<string, unknown>, index: number, total: numb
   }
 
   if (type === 'two-column') {
-    const left = raw.left && typeof raw.left === 'object' ? raw.left as Record<string, unknown> : {};
-    const right = raw.right && typeof raw.right === 'object' ? raw.right as Record<string, unknown> : {};
+    const left = raw.left && typeof raw.left === 'object' ? (raw.left as Record<string, unknown>) : {};
+    const right = raw.right && typeof raw.right === 'object' ? (raw.right as Record<string, unknown>) : {};
     return {
       type,
       title,
@@ -119,13 +126,15 @@ function normalizeSlide(raw: Record<string, unknown>, index: number, total: numb
 
   if (type === 'stats') {
     const stats = Array.isArray(raw.stats)
-      ? raw.stats.map((item) => {
-        const stat = item && typeof item === 'object' ? item as Record<string, unknown> : {};
-        return {
-          value: cleanString(stat.value, 'Key', 40),
-          label: cleanString(stat.label, 'Insight', 90),
-        };
-      }).slice(0, 4)
+      ? raw.stats
+          .map((item) => {
+            const stat = item && typeof item === 'object' ? (item as Record<string, unknown>) : {};
+            return {
+              value: cleanString(stat.value, 'Key', 40),
+              label: cleanString(stat.label, 'Insight', 90),
+            };
+          })
+          .slice(0, 4)
       : [];
     return {
       type,
@@ -157,10 +166,16 @@ function normalizeSlide(raw: Record<string, unknown>, index: number, total: numb
 }
 
 export function normalizePresentationDeck(raw: unknown, fallbackTopic: string): PresentationDeck {
-  const deck = raw && typeof raw === 'object' ? raw as Record<string, unknown> : {};
+  const deck = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
   const rawSlides = Array.isArray(deck.slides) ? deck.slides : [];
   const slides = rawSlides
-    .map((slide, index) => normalizeSlide(slide && typeof slide === 'object' ? slide as Record<string, unknown> : {}, index, rawSlides.length))
+    .map((slide, index) =>
+      normalizeSlide(
+        slide && typeof slide === 'object' ? (slide as Record<string, unknown>) : {},
+        index,
+        rawSlides.length
+      )
+    )
     .filter(Boolean);
 
   return {
@@ -172,13 +187,13 @@ export function normalizePresentationDeck(raw: unknown, fallbackTopic: string): 
 
 async function askForDeck(input: PresentationGenerateInput, tier: ModelTier) {
   const result = await gatewayChat({
-    provider: 'groq',
+    provider: 'gemini',
     tier,
     messages: [
-      { role: 'system', content: buildSystemPrompt() },
+      { role: 'system', content: buildSystemPrompt(true) },
       { role: 'user', content: buildUserPrompt(input) },
     ],
-    maxTokens: 6500,
+    maxTokens: 7600,
     temperature: 0.45,
   });
   return normalizePresentationDeck(parseAiJson(result.text, {}), input.topic);
@@ -193,7 +208,7 @@ type OutlineSlide = {
 async function askForOutline(input: PresentationGenerateInput, tier: ModelTier) {
   const slideCount = cleanNumber(input.slideCount, 10, 4, 24);
   const result = await gatewayChat({
-    provider: 'groq',
+    provider: 'gemini',
     tier,
     messages: [
       { role: 'system', content: 'Return only valid JSON. You create presentation outlines for university decks.' },
@@ -208,10 +223,10 @@ Language: ${cleanString(input.language, 'English')}
 
 Return JSON:
 {"topic":"...","theme":"modern-blue | warm-academic | dark-tech | nature-green | vibrant-purple | minimal-mono","slides":[{"type":"title","title":"...","focus":"..."},{"type":"bullets","title":"...","focus":"..."}]}
-Use exactly ${slideCount} slides. First type title, last type closing, include mixed slide types.`,
+Use exactly ${slideCount} slides. First type title, last type closing, include mixed slide types and a logical PowerPoint-style story arc.`,
       },
     ],
-    maxTokens: 2200,
+    maxTokens: 2400,
     temperature: 0.35,
   });
   const parsed = parseAiJson<Record<string, unknown>>(result.text, {});
@@ -219,14 +234,16 @@ Use exactly ${slideCount} slides. First type title, last type closing, include m
   return {
     topic: cleanString(parsed.topic, input.topic, 140),
     theme: asTheme(parsed.theme),
-    slides: rawSlides.map((slide, index) => {
-      const item = slide && typeof slide === 'object' ? slide as Record<string, unknown> : {};
-      return {
-        type: index === 0 ? 'title' : index === rawSlides.length - 1 ? 'closing' : asSlideType(item.type),
-        title: cleanString(item.title, `Slide ${index + 1}`, 120),
-        focus: cleanString(item.focus, cleanString(item.title, `Slide ${index + 1}`, 160), 180),
-      };
-    }).slice(0, slideCount),
+    slides: rawSlides
+      .map((slide, index) => {
+        const item = slide && typeof slide === 'object' ? (slide as Record<string, unknown>) : {};
+        return {
+          type: index === 0 ? 'title' : index === rawSlides.length - 1 ? 'closing' : asSlideType(item.type),
+          title: cleanString(item.title, `Slide ${index + 1}`, 120),
+          focus: cleanString(item.focus, cleanString(item.title, `Slide ${index + 1}`, 160), 180),
+        };
+      })
+      .slice(0, slideCount),
   };
 }
 
@@ -241,7 +258,7 @@ async function askForSingleSlide(params: {
   tier: ModelTier;
 }) {
   const result = await gatewayChat({
-    provider: 'groq',
+    provider: 'gemini',
     tier: params.tier,
     messages: [
       { role: 'system', content: buildSystemPrompt() },
@@ -258,10 +275,11 @@ Subject/course: ${cleanString(params.input.subject, 'General')}
 Language: ${cleanString(params.input.language, 'English')}
 Tone: ${cleanString(params.input.tone, 'Professional')}
 
-Return exactly one slide JSON object matching the schema for this slide type.`,
+Return exactly one slide JSON object matching the schema for this slide type.
+Make this slide substantial: presentation-ready bullets, useful speaker notes, and no filler.`,
       },
     ],
-    maxTokens: 1600,
+    maxTokens: 2400,
     temperature: 0.42,
   });
   return parseAiJson<Record<string, unknown>>(result.text, {});
@@ -277,28 +295,103 @@ async function mapInBatches<T, R>(items: T[], batchSize: number, mapper: (item: 
   return results;
 }
 
-async function askForDeckPerSlide(input: PresentationGenerateInput, tier: ModelTier) {
-  const outline = await askForOutline(input, tier);
-  if (!outline.slides.length) return askForDeck(input, tier);
-
-  const rawSlides = await mapInBatches(outline.slides, 3, (slide, index) =>
-    askForSingleSlide({
-      input,
-      outlineTopic: outline.topic,
-      theme: outline.theme,
-      slide,
-      index,
-      total: outline.slides.length,
-      previousSummary: outline.slides.slice(0, index).map((item) => item.title || item.focus).join(' -> '),
-      tier,
-    }),
-  );
-
-  return normalizePresentationDeck({ topic: outline.topic, theme: outline.theme, slides: rawSlides }, input.topic);
+function fallbackOutline(input: PresentationGenerateInput): {
+  topic: string;
+  theme: PresentationTheme;
+  slides: OutlineSlide[];
+} {
+  const slideCount = cleanNumber(input.slideCount, 8, 4, 24);
+  const topic = cleanString(input.topic, 'University presentation', 140);
+  const titles = [
+    topic,
+    'Why this topic matters',
+    'Core concepts',
+    'How it works',
+    'Practical example',
+    'Common challenges',
+    'Key takeaways',
+    'Discussion and questions',
+  ];
+  const slides: OutlineSlide[] = Array.from({ length: slideCount }, (_, index) => ({
+    type:
+      index === 0
+        ? 'title'
+        : index === slideCount - 1
+          ? 'closing'
+          : asSlideType(index % 3 === 0 ? 'two-column' : 'bullets'),
+    title: titles[index] || `Key point ${index}`,
+    focus:
+      index === 0
+        ? `Introduce ${topic} and set the learning goal.`
+        : `Explain ${titles[index] || `key point ${index}`} with a useful example.`,
+  }));
+  return { topic, theme: DEFAULT_THEME, slides };
 }
 
-export async function generatePresentationDeck(input: PresentationGenerateInput, tier: ModelTier): Promise<PresentationDeck> {
-  const mode = input.mode === 'per-slide' || cleanNumber(input.slideCount, 8, 4, 24) > 14 ? 'per-slide' : 'bulk';
+async function askForDeckPerSlide(input: PresentationGenerateInput, tier: ModelTier) {
+  const fallback = fallbackOutline(input);
+  let outline: typeof fallback;
+  try {
+    outline = await askForOutline(input, tier);
+  } catch {
+    // Still make one request per slide when the planning call is unavailable.
+    outline = fallback;
+  }
+  const slideCount = cleanNumber(input.slideCount, 8, 4, 24);
+  const outlineSlides = outline.slides.length ? outline.slides.slice(0, slideCount) : fallback.slides;
+  while (outlineSlides.length < slideCount) {
+    const index = outlineSlides.length;
+    outlineSlides.push(
+      fallback.slides[index] || {
+        type: index === slideCount - 1 ? 'closing' : 'bullets',
+        title: `Key point ${index + 1}`,
+        focus: `Explain an important part of ${fallback.topic}.`,
+      }
+    );
+  }
+
+  // Keep each slide as its own Gemini request, but limit concurrency so the
+  // gateway does not rate-limit a larger deck.
+  const rawSlides = await mapInBatches(outlineSlides, 2, async (slide, index) => {
+    try {
+      return await askForSingleSlide({
+        input,
+        outlineTopic: outline.topic || fallback.topic,
+        theme: outline.theme || fallback.theme,
+        slide,
+        index,
+        total: outlineSlides.length,
+        previousSummary: outlineSlides
+          .slice(0, index)
+          .map((item) => item.title || item.focus)
+          .join(' -> '),
+        tier,
+      });
+    } catch {
+      return {
+        type: slide.type,
+        title: slide.title || `Slide ${index + 1}`,
+        subtitle: slide.focus,
+        bullets: [slide.focus],
+        speakerNotes: `Explain ${slide.focus} using one clear classroom example and connect it to the presentation topic.`,
+      };
+    }
+  });
+
+  return normalizePresentationDeck(
+    { topic: outline.topic || fallback.topic, theme: outline.theme || fallback.theme, slides: rawSlides },
+    input.topic
+  );
+}
+
+export async function generatePresentationDeck(
+  input: PresentationGenerateInput,
+  tier: ModelTier
+): Promise<PresentationDeck> {
+  const slideCount = cleanNumber(input.slideCount, 8, 4, 24);
+  // Detailed per-slide generation is the safe default. Bulk remains available
+  // only when explicitly selected for a quick, compact draft.
+  const mode = input.mode === 'bulk' && slideCount <= 12 ? 'bulk' : 'per-slide';
   const deck = mode === 'per-slide' ? await askForDeckPerSlide(input, tier) : await askForDeck(input, tier);
   if (!deck.slides.length) throw new Error('Presentation slides generate nahi ho sake.');
   return deck;

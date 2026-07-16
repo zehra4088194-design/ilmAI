@@ -15,7 +15,7 @@ export default async function CompleteProfilePage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, board, grade_level, education_level, university_program, university_semester')
+    .select('role, gender, board, grade_level, education_level, university_program, university_semester')
     .eq('id', user.id)
     .single();
 
@@ -23,5 +23,5 @@ export default async function CompleteProfilePage() {
     redirect('/dashboard');
   }
 
-  return <CompleteProfileStep />;
+  return <CompleteProfileStep initialGender={profile?.gender === 'girl' || profile?.gender === 'boy' ? profile.gender : null} />;
 }

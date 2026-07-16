@@ -1,13 +1,21 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Download, ExternalLink, Eye, FileText, Maximize2, Search, X } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import Link from 'next/link';
+import { DownloadCloud, Eye, FileText, Loader2, Search, ShieldCheck } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { BOARDS, GRADE_LEVELS } from '@/lib/constants';
-import { getEmbeddableFilePreviewUrl } from '@/lib/utils/filePreview';
+import { isDarkThemeId } from '@/lib/constants/themes';
+import { useAuth } from '@/hooks/auth/useAuth';
+import { usePlatformSettings } from '@/hooks/usePlatformSettings';
+import { saveOfflineResource } from '@/lib/offline/resources';
+import { ProtectedResourceReader, fetchProtectedResourceBlob } from '@/components/features/resources/ProtectedResourceReader';
+import { ResourceAiTools } from '@/components/features/resources/ResourceAiTools';
 
 type Paper = {
   id: string;
@@ -15,7 +23,6 @@ type Paper = {
   grade_level?: string | null;
   year: number;
   paper_type: string;
-  file_url: string;
   total_questions: number;
   duration: number;
   is_verified: boolean;
@@ -24,153 +31,129 @@ type Paper = {
 };
 
 export function PastPapersGrid({ papers, board, gradeLevel }: { papers: Paper[]; board?: string; gradeLevel?: string }) {
+  const { user } = useAuth();
+  const { theme } = useTheme();
+  const mode = isDarkThemeId(theme) ? 'dark' : 'light';
+  const settings = usePlatformSettings();
+  const tier = user?.subscriptionTier || 'FREE';
+  const canDownload = settings.subscriptionPlans[tier].access.downloadPDF;
   const [query, setQuery] = useState('');
-  const [previewPaper, setPreviewPaper] = useState<Paper | null>(null);
-  const [fullScreenReader, setFullScreenReader] = useState(false);
-  const boardLabel = BOARDS.find((item) => item.value === board)?.label || 'Your board';
-  const gradeLabel = GRADE_LEVELS.find((item) => item.value === gradeLevel)?.label || 'Your class';
-  const previewUrl = previewPaper ? getEmbeddableFilePreviewUrl(previewPaper.file_url) : null;
+  const [selected, setSelected] = useState<Paper | null>(null);
+  const [readerOpen, setReaderOpen] = useState(false);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
-    const q = query.toLowerCase().trim();
-    if (!q) return papers;
-    return papers.filter((paper) => {
-      return (
-        paper.subjects?.name?.toLowerCase().includes(q) ||
-        paper.chapters?.name?.toLowerCase().includes(q) ||
-        String(paper.year).includes(q) ||
-        paper.paper_type.toLowerCase().includes(q)
-      );
-    });
+    const value = query.toLowerCase().trim();
+    return papers.filter((paper) =>
+      !value || [paper.subjects?.name, paper.chapters?.name, String(paper.year), paper.paper_type]
+        .some((item) => item?.toLowerCase().includes(value))
+    );
   }, [papers, query]);
 
   const grouped = useMemo(() => {
-    const map = new Map<string, Paper[]>();
-    for (const paper of filtered) {
-      const subject = paper.subjects?.name || 'General';
-      map.set(subject, [...(map.get(subject) || []), paper]);
-    }
-    return Array.from(map.entries());
+    const groups = new Map<string, Paper[]>();
+    filtered.forEach((paper) => {
+      const name = paper.subjects?.name || 'General';
+      groups.set(name, [...(groups.get(name) || []), paper]);
+    });
+    return Array.from(groups.entries());
   }, [filtered]);
+
+  const saveForOffline = async (paper: Paper) => {
+    setDownloadingId(paper.id);
+    try {
+      const blob = await fetchProtectedResourceBlob({ kind: 'past-paper', id: paper.id, mode, purpose: 'offline' });
+      await saveOfflineResource({
+        resourceId: paper.id,
+        kind: 'past-paper',
+        mode,
+        title: `${paper.subjects?.name || 'Past Paper'} - ${paper.year} ${paper.paper_type}`,
+        mimeType: blob.type || 'application/pdf',
+        blob,
+        savedAt: new Date().toISOString(),
+      });
+      toast.success('Past paper app Downloads mein save ho gaya.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Offline save nahi ho saka.');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap gap-2">
-          <span className="px-3 py-1.5 rounded-full text-sm border bg-primary text-primary-foreground border-primary">{boardLabel}</span>
-          <span className="px-3 py-1.5 rounded-full text-sm border border-border bg-muted/30">{gradeLabel}</span>
+          <Badge>{BOARDS.find((item) => item.value === board)?.label || 'Your board'}</Badge>
+          <Badge variant="outline">{GRADE_LEVELS.find((item) => item.value === gradeLevel)?.label || 'Your class'}</Badge>
         </div>
         <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search papers..." className="w-full bg-muted/30 border border-border rounded-lg pl-9 pr-3 py-2 text-sm" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search papers..." className="w-full rounded-lg border border-border bg-muted/30 py-2 pl-9 pr-3 text-sm" />
         </div>
       </div>
 
-      {grouped.length > 0 ? (
-        <div className="space-y-4">
-          {previewPaper && (
-            <Card className="overflow-hidden border-violet-500/30">
-              <CardContent className="p-0">
-                <div className="flex flex-col gap-3 border-b border-border p-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0">
-                    <p className="truncate font-semibold">{previewPaper.subjects?.name || 'Past Paper'} - {previewPaper.year} {previewPaper.paper_type}</p>
-                    <p className="text-xs text-muted-foreground">{previewPaper.chapters?.name || 'Full syllabus'}</p>
-                  </div>
-                  <div className="flex gap-2">
-                    {previewUrl && (
-                      <Button variant="gradient" size="sm" onClick={() => setFullScreenReader(true)}>
-                        <Maximize2 className="h-3.5 w-3.5" />Full screen
-                      </Button>
-                    )}
-                    <Button asChild variant="outline" size="sm">
-                      <a href={previewPaper.file_url} target="_blank" rel="noreferrer">
-                        <ExternalLink className="h-3.5 w-3.5" /> Open
-                      </a>
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => setPreviewPaper(null)}>Close</Button>
-                  </div>
-                </div>
-                {previewUrl ? (
-                  <iframe src={previewUrl} title={`${previewPaper.year} ${previewPaper.paper_type}`} className="h-[70vh] min-h-[360px] w-full bg-white sm:min-h-[520px]" loading="lazy" />
-                ) : (
-                  <div className="flex min-h-72 flex-col items-center justify-center gap-3 p-6 text-center">
-                    <FileText className="h-10 w-10 text-muted-foreground/50" />
-                    <p className="text-sm text-muted-foreground">Is file ka inline preview available nahi. Open button se file new tab mein khol lo.</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {grouped.map(([subjectName, subjectPapers]) => (
-              <Card key={subjectName} className="hover:border-violet-500/30 transition-colors">
-                <CardContent className="p-5">
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-3" style={{ backgroundColor: `${subjectPapers[0]?.subjects?.color || '#7c3aed'}20` }}>
-                    <FileText className="w-5 h-5" style={{ color: subjectPapers[0]?.subjects?.color || '#7c3aed' }} />
-                  </div>
-                  <h3 className="font-semibold mb-3">{subjectName}</h3>
-                  <div className="space-y-2">
-                    {subjectPapers.map((paper) => (
-                      <div key={paper.id} className="flex items-center justify-between gap-2 p-2 rounded-lg bg-muted/30 text-sm">
-                        <div className="min-w-0">
-                          <p className="font-medium">{paper.year} {paper.paper_type}</p>
-                          <p className="truncate text-xs text-muted-foreground">{paper.chapters?.name || 'Full syllabus'} - {paper.duration} min</p>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-1">
-                          {paper.is_verified && <Badge variant="success" className="hidden sm:inline-flex text-[10px]">Verified</Badge>}
-                          <Button variant="ghost" size="icon-sm" onClick={() => setPreviewPaper(paper)} aria-label="Preview paper">
-                            <Eye className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button variant="ghost" size="icon-sm" onClick={() => { setPreviewPaper(paper); setFullScreenReader(true); }} aria-label="Read paper full screen">
-                            <Maximize2 className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button asChild variant="ghost" size="icon-sm">
-                            <a href={paper.file_url} target="_blank" rel="noreferrer" aria-label="Open paper">
-                              <Download className="w-3.5 h-3.5" />
-                            </a>
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <EmptyState
-          icon={FileText}
-          title={query ? 'No matching papers found' : 'No past papers for your class yet'}
-          description="Admin se class-tagged past papers add hote hi yahan show honge. Doosri class ke papers yahan nahi dikhaye jayenge."
-          primaryHref="/ai-tutor"
-          primaryLabel="Ask AI Tutor"
-          secondaryHref="/practice"
-          secondaryLabel="AI Testing"
-        />
+      {selected && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardContent className="space-y-4 p-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="font-semibold">{selected.subjects?.name || 'Past Paper'} - {selected.year} {selected.paper_type}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{selected.chapters?.name || 'Full syllabus'} | {selected.duration} min</p>
+              </div>
+              <Badge variant="outline"><ShieldCheck className="mr-1 h-3.5 w-3.5 text-emerald-500" />Source URL hidden</Badge>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <Button variant="gradient" size="sm" onClick={() => setReaderOpen(true)}><Eye className="h-3.5 w-3.5" />Read in app</Button>
+              {canDownload ? (
+                <Button variant="outline" size="sm" onClick={() => saveForOffline(selected)} disabled={downloadingId === selected.id}>
+                  {downloadingId === selected.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <DownloadCloud className="h-3.5 w-3.5" />}Save offline
+                </Button>
+              ) : (
+                <Button asChild variant="outline" size="sm"><Link href="/subscription"><DownloadCloud className="h-3.5 w-3.5" />Offline save <Badge className="ml-1 text-[10px]">Pro</Badge></Link></Button>
+              )}
+            </div>
+            <ResourceAiTools kind="past-paper" resourceId={selected.id} />
+          </CardContent>
+        </Card>
       )}
 
-      {previewPaper && previewUrl && fullScreenReader && (
-        <div className="fixed inset-0 z-[90] flex flex-col bg-background">
-          <div className="flex min-h-14 items-center justify-between gap-3 border-b border-border px-3 sm:px-5">
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold sm:text-base">{previewPaper.subjects?.name || 'Past Paper'} - {previewPaper.year} {previewPaper.paper_type}</p>
-              <p className="text-xs text-muted-foreground">{previewPaper.chapters?.name || 'Full syllabus'}</p>
-            </div>
-            <div className="flex shrink-0 gap-2">
-              <Button asChild variant="outline" size="sm">
-                <a href={previewPaper.file_url} target="_blank" rel="noreferrer">
-                  <ExternalLink className="h-3.5 w-3.5" />Open
-                </a>
-              </Button>
-              <Button variant="ghost" size="icon-sm" onClick={() => setFullScreenReader(false)} aria-label="Close reader">
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-          <iframe src={previewUrl} title={`${previewPaper.year} ${previewPaper.paper_type}`} className="min-h-0 flex-1 bg-white" allow="autoplay; fullscreen" allowFullScreen />
+      {grouped.length ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {grouped.map(([subject, subjectPapers]) => (
+            <Card key={subject} className="transition-colors hover:border-primary/30">
+              <CardContent className="p-5">
+                <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary"><FileText className="h-5 w-5" /></div>
+                <h3 className="mb-3 font-semibold">{subject}</h3>
+                <div className="space-y-2">
+                  {subjectPapers.map((paper) => (
+                    <button key={paper.id} type="button" onClick={() => setSelected(paper)} className="flex w-full items-center justify-between gap-2 rounded-xl border border-border bg-muted/25 p-3 text-left transition-colors hover:border-primary/35 hover:bg-primary/5">
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold">{paper.year} {paper.paper_type}</span>
+                        <span className="block truncate text-xs text-muted-foreground">{paper.chapters?.name || 'Full syllabus'}</span>
+                      </span>
+                      <Eye className="h-4 w-4 shrink-0 text-primary" />
+                    </button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
+      ) : (
+        <EmptyState icon={FileText} title={query ? 'No matching papers found' : 'No past papers for your class yet'} description="Admin se class-tagged past papers add hote hi yahan show honge." primaryHref="/ai-tutor" primaryLabel="Ask AI Tutor" secondaryHref="/practice" secondaryLabel="AI Testing" />
+      )}
+
+      {selected && (
+        <ProtectedResourceReader
+          key={`${selected.id}:${selected.year}:${selected.paper_type}`}
+          open={readerOpen}
+          onClose={() => setReaderOpen(false)}
+          kind="past-paper"
+          resourceId={selected.id}
+          mode={mode}
+          title={`${selected.subjects?.name || 'Past Paper'} - ${selected.year} ${selected.paper_type}`}
+        />
       )}
     </div>
   );

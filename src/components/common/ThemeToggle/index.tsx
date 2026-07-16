@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import {
   DropdownMenu,
@@ -10,7 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
-import { APP_THEMES, getAppTheme } from '@/lib/constants/themes';
+import { buildThemeId, getAppTheme, isDarkThemeId, parseAppTheme } from '@/lib/constants/themes';
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
@@ -20,39 +21,49 @@ export function ThemeToggle() {
   useEffect(() => setMounted(true), []);
 
   if (!mounted) {
-    return <div className="w-9 h-9 rounded-lg" />;
+    return <div className="h-9 w-9 rounded-lg" />;
   }
 
   const current = getAppTheme(theme);
   const CurrentIcon = current.icon;
+  const currentTheme = parseAppTheme(theme);
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label="Change theme">
-          <CurrentIcon className="w-4 h-4" />
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Toggle light or dark mode"
+          className="border-border bg-card/90 border"
+        >
+          <CurrentIcon className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel>Theme</DropdownMenuLabel>
-        {APP_THEMES.map((opt) => {
-          const Icon = opt.icon;
-          return (
-            <DropdownMenuItem
-              key={opt.id}
-              onClick={() => setTheme(opt.id)}
-              className={cn('gap-2', theme === opt.id && 'bg-accent')}
-            >
-              <Icon className="w-4 h-4" />
-              <span className="flex-1">{opt.name}</span>
-              <span className="flex gap-0.5">
-                {opt.swatches.map((swatch) => (
-                  <span key={swatch} className="h-2.5 w-2.5 rounded-full border border-border" style={{ backgroundColor: swatch }} />
-                ))}
-              </span>
-            </DropdownMenuItem>
-          );
-        })}
+        <DropdownMenuLabel>{current.name}</DropdownMenuLabel>
+        <DropdownMenuItem
+          onClick={() => setTheme(buildThemeId(currentTheme.family, 'light'))}
+          className={cn(
+            'bg-popover gap-2 border border-transparent',
+            !isDarkThemeId(theme) && 'border-primary bg-primary/25 text-foreground'
+          )}
+        >
+          <Sun className="h-4 w-4" />
+          <span className="flex-1">Light Mode</span>
+          <span className="text-muted-foreground text-xs">Same theme</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => setTheme(buildThemeId(currentTheme.family, 'dark'))}
+          className={cn(
+            'bg-popover gap-2 border border-transparent',
+            isDarkThemeId(theme) && 'border-primary bg-primary/25 text-foreground'
+          )}
+        >
+          <Moon className="h-4 w-4" />
+          <span className="flex-1">Dark Mode</span>
+          <span className="text-muted-foreground text-xs">Same theme</span>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

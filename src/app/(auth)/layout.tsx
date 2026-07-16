@@ -8,7 +8,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="w-full max-w-md space-y-8">
           <Link href="/" className="flex items-center gap-2 mb-8">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center"><BookOpen className="w-5 h-5 text-white" /></div>
-            <span className="font-bold text-xl">Study<span className="gradient-text">Verse</span></span>
+            <span className="font-bold text-xl">ilm <span className="gradient-text">AI</span></span>
           </Link>
           {children}
         </div>

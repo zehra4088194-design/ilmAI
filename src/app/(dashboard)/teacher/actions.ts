@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { gatewayChat } from '@/lib/ai/gateway';
+import { createNotificationsIfEnabled } from '@/lib/notifications/preferences';
 
 function code() {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
@@ -60,7 +61,7 @@ export async function createClassAssignment(formData: FormData) {
 
   const { data: enrollments } = await db.from('class_enrollments').select('student_id').eq('class_id', classId);
   if (assignment && enrollments?.length) {
-    await service.from('notifications').insert(enrollments.map((row: { student_id: string }) => ({
+    await createNotificationsIfEnabled(service, 'studyReminders', enrollments.map((row: { student_id: string }) => ({
       user_id: row.student_id,
       type: 'SYSTEM',
       title: 'New class assignment',

@@ -10,21 +10,30 @@ import { GlobalSpeechControls } from '@/components/features/speech/GlobalSpeechC
 import { CookieConsent } from '@/components/features/cookies/CookieConsent';
 import { AdSenseScript } from '@/components/features/ads/AdSenseScript';
 import { PostHogClient } from '@/components/features/analytics/PostHogClient';
-import { APP_THEME_IDS } from '@/lib/constants/themes';
+import { APP_THEME_IDS, DEFAULT_THEME_ID } from '@/lib/constants/themes';
 import { ServiceWorkerRegister } from '@/components/features/offline/ServiceWorkerRegister';
 
 export function Providers({ children, locale }: { children: ReactNode; locale: Locale }) {
-  const [queryClient] = useState(() => new QueryClient({
-    defaultOptions: {
-      queries: { staleTime: 60 * 1000, retry: 1, refetchOnWindowFocus: false },
-      mutations: { retry: 0 },
-    },
-  }));
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: { staleTime: 60 * 1000, retry: 1, refetchOnWindowFocus: false },
+          mutations: { retry: 0 },
+        },
+      })
+  );
 
   return (
     <QueryClientProvider client={queryClient}>
       <I18nProvider initialLocale={locale}>
-        <ThemeProvider attribute="class" defaultTheme="dark" themes={APP_THEME_IDS} enableSystem={false} disableTransitionOnChange={false}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme={DEFAULT_THEME_ID}
+          themes={APP_THEME_IDS}
+          enableSystem={false}
+          disableTransitionOnChange={false}
+        >
           {children}
           <AdSenseScript />
           <PostHogClient />
@@ -36,7 +45,9 @@ export function Providers({ children, locale }: { children: ReactNode; locale: L
             richColors
             expand
             duration={4000}
-            toastOptions={{ classNames: { toast: 'glass', title: 'font-semibold', description: 'text-muted-foreground' } }}
+            toastOptions={{
+              classNames: { toast: 'glass', title: 'font-semibold', description: 'text-muted-foreground' },
+            }}
           />
         </ThemeProvider>
       </I18nProvider>

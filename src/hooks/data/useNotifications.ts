@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import type { Notification } from '@/types';
+import { toast } from 'sonner';
 
 export function useNotifications() {
   const supabase = createClient();
@@ -39,7 +40,7 @@ export function useNotifications() {
       }));
     },
     staleTime: 30 * 1000,
-    refetchInterval: 60 * 1000,
+    refetchInterval: 15 * 1000,
   });
 
   const markAsReadMutation = useMutation({
@@ -63,7 +64,39 @@ export function useNotifications() {
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
-          () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+          (payload) => {
+            queryClient.invalidateQueries({ queryKey: ['notifications'] });
+            if (payload.eventType !== 'INSERT') return;
+
+            const notification = payload.new as {
+              title?: string | null;
+              message?: string | null;
+              link?: string | null;
+            };
+            const title = notification.title || 'New notification';
+            toast.info(title, {
+              description: notification.message || undefined,
+              action: notification.link
+                ? {
+                    label: 'Open',
+                    onClick: () => {
+                      window.location.href = notification.link || '/dashboard';
+                    },
+                  }
+                : undefined,
+            });
+
+            if ('Notification' in window && window.Notification.permission === 'granted') {
+              const browserNotification = new window.Notification(title, {
+                body: notification.message || undefined,
+              });
+              browserNotification.onclick = () => {
+                window.focus();
+                window.location.href = notification.link || '/dashboard';
+                browserNotification.close();
+              };
+            }
+          }
         )
         .subscribe();
     });

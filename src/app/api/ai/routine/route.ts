@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { gatewayChat } from '@/lib/ai/gateway';
 import { checkAiMessageLimit } from '@/lib/rate-limit';
 import { parseAiJson } from '@/lib/utils/json-extract';
+import { createNotificationIfEnabled } from '@/lib/notifications/preferences';
 import type { SubscriptionTier } from '@/types';
 
 export const runtime = 'nodejs';
@@ -53,6 +54,14 @@ Return ONLY valid JSON, no extra text:
 
     // Save routine to database
     await supabase.from('study_routines').upsert({ user_id: user.id, preferences, schedule: parsed, generated_by_provider: result.providerUsed });
+    await createNotificationIfEnabled(supabase, 'studyReminders', {
+      user_id: user.id,
+      type: 'REMINDER',
+      title: 'Study routine ready',
+      message: `Tumhari ${parsed.weeklySchedule?.length || 0} day routine ready hai. Aaj ka plan start karo.`,
+      link: '/routine',
+      is_read: false,
+    });
 
     return NextResponse.json({ status: 'success', data: parsed });
   } catch (error) {

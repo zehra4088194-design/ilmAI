@@ -10,9 +10,9 @@
  * etc. once regenerated).
  */
 
-export type CollegeJoinStatus = "pending" | "approved" | "declined";
+export type CollegeJoinStatus = 'pending' | 'approved' | 'declined';
 
-export type CollegeResourceType = "notes" | "past_paper" | "slides" | "other";
+export type CollegeResourceType = 'notes' | 'past_paper' | 'slides' | 'other';
 
 export interface College {
   id: string;
@@ -30,7 +30,7 @@ export interface College {
 /** Safe subset of `College` shown to anonymous/public visitors. */
 export type PublicCollege = Pick<
   College,
-  "id" | "name" | "slug" | "city" | "logo_url" | "cover_url" | "description" | "is_active"
+  'id' | 'name' | 'slug' | 'city' | 'logo_url' | 'cover_url' | 'description' | 'is_active'
 >;
 
 export interface CollegeWithCounts extends PublicCollege {
@@ -75,8 +75,11 @@ export interface CollegeLecture {
   uploaded_by: string;
   title: string;
   description: string | null;
+  stream: string | null;
+  degree_name: string | null;
   course_name: string | null;
   semester: string | null;
+  chapter_title: string | null;
   video_url: string;
   created_at: string;
 }
@@ -87,17 +90,28 @@ export interface CollegeResource {
   uploaded_by: string;
   title: string;
   resource_type: CollegeResourceType;
+  stream: string | null;
+  degree_name: string | null;
   course_name: string | null;
   semester: string | null;
+  chapter_title: string | null;
   file_url: string;
+  light_file_url: string | null;
+  dark_file_url: string | null;
+  context_text_url: string | null;
   created_at: string;
 }
 
+export type CollegeResourceMetadata = Omit<
+  CollegeResource,
+  'uploaded_by' | 'file_url' | 'light_file_url' | 'dark_file_url' | 'context_text_url'
+>;
+
 /** The current student's relationship to the College Portal (sidebar / browse grid). */
 export type StudentCollegeState =
-  | { state: "none" }
-  | { state: "pending"; collegeId: string; collegeName: string; requestId: string }
-  | { state: "approved"; collegeId: string; collegeName: string; collegeSlug: string };
+  | { state: 'none' }
+  | { state: 'pending'; collegeId: string; collegeName: string; requestId: string }
+  | { state: 'approved'; collegeId: string; collegeName: string; collegeSlug: string };
 
 export interface ActionResult<T = undefined> {
   success: boolean;

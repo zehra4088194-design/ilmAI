@@ -1,4 +1,21 @@
-import { BookOpen, BriefcaseBusiness, ClipboardCheck, FileSearch, FileText, FolderKanban, GraduationCap, Mic2, Network, NotebookTabs, Presentation, Quote, Route, Search, Sparkles } from 'lucide-react';
+import {
+  BookOpen,
+  BriefcaseBusiness,
+  ClipboardCheck,
+  FileSearch,
+  FileText,
+  FolderKanban,
+  GraduationCap,
+  Mic2,
+  Network,
+  NotebookTabs,
+  Pill,
+  Presentation,
+  Quote,
+  Route,
+  Search,
+  Sparkles,
+} from 'lucide-react';
 
 export const EDUCATION_LEVELS = [
   { value: 'school', label: 'School', description: 'Class 9-10, board-focused prep' },
@@ -16,17 +33,96 @@ export const OUTPUT_STYLES = [
 export type EducationLevel = (typeof EDUCATION_LEVELS)[number]['value'];
 export type PreferredOutputStyle = (typeof OUTPUT_STYLES)[number]['value'];
 
+export const UNIVERSITY_STREAMS = [
+  {
+    value: 'engineering',
+    label: 'Engineering',
+    description: 'CS, software, electrical, civil and related engineering programs.',
+    degrees: [
+      'BS Computer Science',
+      'BS Software Engineering',
+      'BE Electrical Engineering',
+      'BE Civil Engineering',
+      'BSc Mechanical Engineering',
+    ],
+  },
+  {
+    value: 'medical',
+    label: 'Medical',
+    description: 'MBBS, BDS, Pharm-D, DPT, Nursing and allied health programs.',
+    degrees: ['MBBS', 'BDS', 'Pharm-D', 'DPT', 'BS Nursing'],
+  },
+] as const;
+
+export type UniversityStream = (typeof UNIVERSITY_STREAMS)[number]['value'];
+
 export const UNIVERSITY_TOOLS = [
-  { href: '/university/essay-assistant', label: 'Essay Assistant', description: 'Essays and assignment drafts with headings, examples and conclusion.', icon: FileText },
-  { href: '/university/presentation-builder', label: 'Presentation Builder', description: 'Slide-by-slide content, speaker notes and viva questions.', icon: Presentation },
-  { href: '/university/viva-practice', label: 'Viva Practice', description: 'Basic to difficult viva questions with model answers.', icon: Mic2 },
-  { href: '/university/assignment-helper', label: 'Assignment Helper', description: 'Structured assignment help without fake citations.', icon: ClipboardCheck },
-  { href: '/university/research-helper', label: 'Research Helper', description: 'Project titles, abstract, methodology and references placeholders.', icon: Search },
-  { href: '/university/project-builder', label: 'AI Project Builder', description: 'Proposal, report, flowchart, poster copy and pitch script from one idea.', icon: FolderKanban },
-  { href: '/university/semester-planner', label: 'Semester Planner', description: 'Subject-wise study plan for exams and submissions.', icon: Route },
-  { href: '/university/citation-generator', label: 'Citation Generator', description: 'APA, MLA, Harvard, IEEE and Chicago reference drafts.', icon: Quote },
-  { href: '/university/pdf-summarizer', label: 'PDF Mind Mapper', description: 'Summarize research papers and turn concepts into a mind map.', icon: Network },
-  { href: '/university/resume-builder', label: 'Resume Builder', description: 'ATS-friendly resume and cover letter drafts for final-year students.', icon: BriefcaseBusiness },
+  {
+    href: '/university/essay-assistant',
+    label: 'Essay Assistant',
+    description: 'Essays and assignment drafts with headings, examples and conclusion.',
+    icon: FileText,
+  },
+  {
+    href: '/university/presentation-builder',
+    label: 'Presentation Builder',
+    description: 'Slide-by-slide content, speaker notes and viva questions.',
+    icon: Presentation,
+  },
+  {
+    href: '/university/viva-practice',
+    label: 'Viva Practice',
+    description: 'Basic to difficult viva questions with model answers.',
+    icon: Mic2,
+  },
+  {
+    href: '/university/assignment-helper',
+    label: 'Assignment Helper',
+    description: 'Structured assignment help without fake citations.',
+    icon: ClipboardCheck,
+  },
+  {
+    href: '/university/research-helper',
+    label: 'Research Helper',
+    description: 'Project titles, abstract, methodology and references placeholders.',
+    icon: Search,
+  },
+  {
+    href: '/university/project-builder',
+    label: 'AI Project Builder',
+    description: 'Proposal, report, flowchart, poster copy and pitch script from one idea.',
+    icon: FolderKanban,
+  },
+  {
+    href: '/university/semester-planner',
+    label: 'Semester Planner',
+    description: 'Subject-wise study plan for exams and submissions.',
+    icon: Route,
+  },
+  {
+    href: '/university/citation-generator',
+    label: 'Citation Generator',
+    description: 'APA, MLA, Harvard, IEEE and Chicago reference drafts.',
+    icon: Quote,
+  },
+  {
+    href: '/university/pdf-summarizer',
+    label: 'PDF Mind Mapper',
+    description: 'Summarize research papers and turn concepts into a mind map.',
+    icon: Network,
+  },
+  {
+    href: '/university/pharmapulse',
+    label: 'PharmaPulse',
+    description: 'Drug monographs, Pakistan brands, dosing, interactions, safety and MCQs for medical students.',
+    icon: Pill,
+  },
+  {
+    href: '/university/resume-builder',
+    label: 'Resume Builder',
+    description: 'ATS-friendly resume and cover letter drafts for final-year students.',
+    icon: BriefcaseBusiness,
+  },
 ] as const;
 
 export const UNIVERSITY_FEATURES = [

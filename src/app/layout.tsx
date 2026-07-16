@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import Script from 'next/script';
 import { Inter, Geist_Mono } from 'next/font/google';
 import '@/styles/globals.css';
 import 'katex/dist/katex.min.css';
@@ -40,6 +41,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head />
       <body className={`${inter.variable} ${geistMono.variable} font-sans antialiased`}>
         <Providers locale="en">{children}</Providers>
+        <Script
+          src="https://static.cloudflareinsights.com/beacon.min.js"
+          strategy="afterInteractive"
+          data-cf-beacon='{"token": "af601028278a46aeb40dbb0ed0ef20df"}'
+        />
       </body>
     </html>
   );

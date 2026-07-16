@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient, createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
+import { requireAdminUser } from '@/lib/admin/auth';
 import type { Database } from '@/lib/supabase/database.types';
-
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '')
-  .split(',')
-  .map((email) => email.trim().toLowerCase())
-  .filter(Boolean);
 
 type PastPaperUpdate = Database['public']['Tables']['past_papers']['Update'] & {
   download_count?: number;
@@ -13,17 +9,8 @@ type PastPaperUpdate = Database['public']['Tables']['past_papers']['Update'] & {
   chapter_id?: string | null;
 };
 
-async function requireAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user || !ADMIN_EMAILS.includes((user.email || '').toLowerCase())) return null;
-  return user;
-}
-
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const admin = await requireAdmin();
+  const admin = await requireAdminUser();
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const { id } = await params;
@@ -37,6 +24,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (body.year !== undefined) update.year = Number(body.year);
   if (body.paper_type !== undefined) update.paper_type = body.paper_type;
   if (body.file_url !== undefined) update.file_url = body.file_url.trim();
+  if (body.context_text_url !== undefined) update.context_text_url = body.context_text_url?.trim() || null;
   if (body.thumbnail_url !== undefined) update.thumbnail_url = body.thumbnail_url;
   if (body.total_questions !== undefined) update.total_questions = body.total_questions;
   if (body.duration !== undefined) update.duration = body.duration;
@@ -51,7 +39,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   if (error) {
     console.error('past paper update error:', error);
-    return NextResponse.json({ error: 'Past paper update nahi hua' }, { status: 500 });
+    return NextResponse.json({ error: `Past paper update nahi hua: ${error.message}` }, { status: 500 });
   }
   if (!data) return NextResponse.json({ error: 'Past paper nahi mila' }, { status: 404 });
 
@@ -59,7 +47,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const admin = await requireAdmin();
+  const admin = await requireAdminUser();
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const { id } = await params;
@@ -68,7 +56,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
   if (error) {
     console.error('past paper delete error:', error);
-    return NextResponse.json({ error: 'Past paper delete nahi hua' }, { status: 500 });
+    return NextResponse.json({ error: `Past paper delete nahi hua: ${error.message}` }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });

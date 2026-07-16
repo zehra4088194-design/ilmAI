@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 
 export function BossQuizCard({ bossQuiz }: { bossQuiz: { id: string; xp_reward: number; coin_reward: number } | null }) {
   return (
-    <div className="glass rounded-xl p-5">
+    <div className="dashboard-surface rounded-xl border border-border/70 p-5 text-foreground shadow-sm">
       <div className="mb-3 flex items-center gap-2">
         <Crown className="h-5 w-5 text-amber-400" />
         <h2 className="font-bold">This Week&apos;s Boss Quiz</h2>

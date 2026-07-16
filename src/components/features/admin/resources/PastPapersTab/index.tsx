@@ -19,6 +19,7 @@ export type PastPaper = {
   year: number;
   paper_type: 'ANNUAL' | 'SUPPLEMENTARY' | 'MODEL';
   file_url: string;
+  context_text_url: string | null;
   thumbnail_url: string | null;
   total_questions: number;
   duration: number;
@@ -147,6 +148,7 @@ export function PastPapersTab() {
                   <TableCell>{paper.year}</TableCell>
                   <TableCell>
                     <Badge variant="outline">{paper.paper_type}</Badge>
+                    {paper.context_text_url && <Badge variant="success">AI TXT</Badge>}
                   </TableCell>
                   <TableCell>
                     {paper.is_verified ? (

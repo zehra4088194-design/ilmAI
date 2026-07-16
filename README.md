@@ -38,6 +38,10 @@ Browser → Next.js (Vercel) → Cloudflare Worker (AI Gateway) → Assistant/Cl
 
 All AI/OCR provider API keys live **only** in the Cloudflare Worker (`cloudflare-worker/worker.js`), never in the Next.js app itself.
 
+For protected file tests, configure `GROK_API_KEYS_JSON` in the Worker. The gateway accepts JSON arrays of up to 20 keys through `GROQ_API_KEYS_JSON`, `GROK_API_KEYS_JSON`, `CLAUDE_API_KEYS_JSON`, `GPT_API_KEYS_JSON`, `GEMINI_API_KEYS_JSON`, `OCR_API_KEYS_JSON`, and `OPENROUTER_API_KEYS_JSON`; old numbered secrets remain compatible. PDF/printed OCR uses OCR.space first, while handwritten OCR uses Gemini Vision first; both routes rotate keys and use budgeted cross-provider fallback.
+
+Free-hosted beta safety is enforced in two layers: per-user plans and platform-wide provider budgets under Admin Settings. Upstash Redis is required in production so those counters are shared across Vercel instances. Temporary Vision originals and speaking audio are retained for 7 days, while parent attachments are retained for 30 days by `/api/cron/storage-cleanup`.
+
 ## Payments
 
 Payments go through a provider abstraction in `src/lib/payments/` (`provider.ts` defines the interface; `paddle.ts` and `paypro.ts` implement it). The app never imports a payment gateway SDK directly — only `getPaymentProvider()` from `src/lib/payments/index.ts`. See that folder's comments for how to wire up real Paddle/PayPro credentials.

@@ -64,7 +64,8 @@ export function LoginForm() {
         </Button>
       </form>
       <p className="text-center text-sm text-muted-foreground mt-6">
-        {t('auth.login.noAccount')} <Link href="/register" className="text-primary font-medium hover:underline">{t('auth.login.registerLink')}</Link>
+        {t('auth.login.noAccount')}{' '}
+        <Link href={`/register?redirect=${encodeURIComponent(redirect)}`} className="text-primary font-medium hover:underline">{t('auth.login.registerLink')}</Link>
       </p>
     </div>
   );

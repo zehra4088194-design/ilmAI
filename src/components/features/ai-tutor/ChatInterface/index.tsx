@@ -107,7 +107,7 @@ export function ChatInterface() {
         <div className="flex items-center gap-3 p-4 border-b border-border">
           <Button variant="ghost" size="icon-sm" className="lg:hidden" onClick={() => setSidebarOpen(true)}><Menu className="w-4 h-4" /></Button>
           <TeacherIdentityCard subjectName={subject?.name} size="md" className="flex-1" />
-          <LiveVoiceCall subject={subject?.name} hasAccess={hasLiveVoiceAccess} />
+          <LiveVoiceCall subject={subject?.name} hasAccess={hasLiveVoiceAccess} userTier={userTier} />
           <AIProviderSelector provider={provider} tier={tier} onChange={(p, t) => { setProvider(p); setTier(t); }} isFreeTier={isFreeTier} userTier={user?.subscriptionTier || 'FREE'} compact />
         </div>
 

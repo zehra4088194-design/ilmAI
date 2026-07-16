@@ -31,6 +31,7 @@ const emptyForm = {
   year: currentYear,
   paper_type: 'ANNUAL' as PastPaper['paper_type'],
   file_url: '',
+  context_text_url: '',
   total_questions: 0,
   duration: 180,
   is_verified: false,
@@ -64,6 +65,7 @@ export function PastPaperFormDialog({ open, onOpenChange, paper, onSaved }: Prop
         year: paper.year,
         paper_type: paper.paper_type,
         file_url: paper.file_url,
+        context_text_url: paper.context_text_url || '',
         total_questions: paper.total_questions,
         duration: paper.duration,
         is_verified: paper.is_verified,
@@ -105,6 +107,10 @@ export function PastPaperFormDialog({ open, onOpenChange, paper, onSaved }: Prop
       setError('File URL valid nahi lag raha');
       return;
     }
+    if (!/^https:\/\//i.test(form.context_text_url.trim())) {
+      setError('AI summary/test ke liye companion .txt file ka HTTPS ya Google Drive link zaroori hai.');
+      return;
+    }
 
     setSaving(true);
     setError(null);
@@ -117,6 +123,7 @@ export function PastPaperFormDialog({ open, onOpenChange, paper, onSaved }: Prop
         year: Number(form.year),
         paper_type: form.paper_type,
         file_url: form.file_url.trim(),
+        context_text_url: form.context_text_url.trim(),
         total_questions: Number(form.total_questions) || 0,
         duration: Number(form.duration) || 180,
         is_verified: form.is_verified,
@@ -246,6 +253,18 @@ export function PastPaperFormDialog({ open, onOpenChange, paper, onSaved }: Prop
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="file-url">File URL</Label>
             <Input id="file-url" value={form.file_url} onChange={(event) => setForm((current) => ({ ...current, file_url: event.target.value }))} placeholder="https://.../paper.pdf" required />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="paper-context-text-url">Companion context .txt link</Label>
+            <Input
+              id="paper-context-text-url"
+              value={form.context_text_url}
+              onChange={(event) => setForm((current) => ({ ...current, context_text_url: event.target.value }))}
+              placeholder="https://drive.google.com/file/d/.../view"
+              required
+            />
+            <p className="text-muted-foreground text-xs">Paper ka complete text; summary aur test server isi file se banayega.</p>
           </div>
 
           <div className="flex flex-col gap-1.5">

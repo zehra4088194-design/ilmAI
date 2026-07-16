@@ -1,10 +1,13 @@
 'use client';
 import { useRef, useState, useCallback } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Star, ArrowLeft, Save, Sparkles, Camera, Bold, Heading2, List, Folder } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { ScanUpload } from '@/components/features/ocr/ScanUpload';
 import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/hooks/auth/useAuth';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils/cn';
 
@@ -19,6 +22,8 @@ export function NoteEditor({ note }: { note: any }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const router = useRouter();
   const supabase = createClient();
+  const { user } = useAuth();
+  const canUseAiSummary = (user?.subscriptionTier || 'FREE') !== 'FREE';
 
   const save = useCallback(async () => {
     setSaving(true);
@@ -63,6 +68,10 @@ export function NoteEditor({ note }: { note: any }) {
   };
 
   const aiSummarize = async () => {
+    if (!canUseAiSummary) {
+      toast.info('AI Summary Pro mein unlock hoti hai.');
+      return;
+    }
     if (!content.trim()) { toast.error('Pehle kuch likho'); return; }
     setAiSummarizing(true);
     try {
@@ -83,9 +92,15 @@ export function NoteEditor({ note }: { note: any }) {
         <div className="flex items-center gap-2 flex-wrap">
           <ScanUpload onTextExtracted={(text) => setContent(c => c ? `${c}\n\n${text}` : text)}
             trigger={<Button variant="outline" size="sm"><Camera className="w-4 h-4" />Scan</Button>} />
-          <Button variant="outline" size="sm" onClick={aiSummarize} loading={aiSummarizing}>
-            <Sparkles className="w-4 h-4" />AI Summary
-          </Button>
+          {canUseAiSummary ? (
+            <Button variant="outline" size="sm" onClick={aiSummarize} loading={aiSummarizing}>
+              <Sparkles className="w-4 h-4" />AI Summary
+            </Button>
+          ) : (
+            <Button asChild variant="outline" size="sm">
+              <Link href="/subscription"><Sparkles className="w-4 h-4" />AI Summary <Badge className="ml-1 text-[10px]">Pro</Badge></Link>
+            </Button>
+          )}
           <Button variant="ghost" size="sm" onClick={() => setStarred(!starred)} title={starred ? 'Unpin note' : 'Pin note'}>
             <Star className={cn('w-4 h-4', starred && 'fill-amber-400 text-amber-400')} />
           </Button>

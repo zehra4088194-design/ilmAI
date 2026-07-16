@@ -1,72 +1,120 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { checkAiMessageLimit, getConfiguredLimitExceededMessage } from '@/lib/rate-limit';
+import { checkUniversityFeatureLimit, getUniversityLimitExceededMessage } from '@/lib/rate-limit';
+import { gatewayChat } from '@/lib/ai/gateway';
+import { parseAiJson } from '@/lib/utils/json-extract';
 import type { SubscriptionTier } from '@/types';
 
 export const runtime = 'nodejs';
 
 const STYLES = ['APA 7th Edition', 'MLA 9th Edition', 'Harvard', 'IEEE', 'Chicago'] as const;
+type CitationStyle = (typeof STYLES)[number];
+
+type CitationDraft = {
+  style: CitationStyle;
+  in_text: string;
+  full_reference: string;
+  verification_note: string;
+};
 
 function clean(value: unknown) {
   return typeof value === 'string' ? value.trim().slice(0, 500) : '';
 }
 
-async function generateCitation(input: string, style: string) {
-  const prompt = `Act as an expert academic librarian. Take the following input: ${input} and generate a perfect ${style} format citation. Provide the output in JSON format with keys: 'in_text' and 'full_reference'.`;
-  await new Promise((resolve) => setTimeout(resolve, 800));
+async function generateCitations(input: string, styles: CitationStyle[]) {
+  const prompt = `Act as an expert academic librarian.
+Input source details, URL, DOI, or title: ${input}
+Citation styles: ${styles.join(', ')}
 
-  if (!input || input.length < 3) throw new Error('Invalid input');
-  if (/unknown|cannot find|n\/a/i.test(input)) throw new Error('AI cannot find the reference');
+Return ONLY valid JSON:
+{"citations":[{"style":"exact requested style","in_text":"...","full_reference":"...","verification_note":"..."}]}
 
-  const year = new Date().getFullYear();
-  const title = input.replace(/^https?:\/\//, '').replace(/^doi:\s*/i, '').slice(0, 90);
-  const author = title.includes(' ') ? title.split(/\s+/)[0] || 'Author' : 'Author';
+Rules:
+- Return exactly one citation object for every requested style.
+- If exact metadata is missing, create the best draft from the provided input and clearly say what must be verified in verification_note.
+- Do not pretend you accessed live databases.
+- Keep the reference style-specific and submission-ready after user verification.`;
 
-  const references: Record<string, { in_text: string; full_reference: string }> = {
-    'APA 7th Edition': {
-      in_text: `(${author}, ${year})`,
-      full_reference: `${author}. (${year}). ${title}. Publisher / Journal placeholder. Verify source details before submission.`,
-    },
-    'MLA 9th Edition': {
-      in_text: `(${author})`,
-      full_reference: `${author}. "${title}." Publisher / Journal placeholder, ${year}. Verify source details before submission.`,
-    },
-    Harvard: {
-      in_text: `(${author}, ${year})`,
-      full_reference: `${author} ${year}, ${title}, Publisher / Journal placeholder, viewed ${new Date().toLocaleDateString()}.`,
-    },
-    IEEE: {
-      in_text: '[1]',
-      full_reference: `[1] ${author}, "${title}," Publisher / Journal placeholder, ${year}. Verify source details before submission.`,
-    },
-    Chicago: {
-      in_text: `(${author} ${year})`,
-      full_reference: `${author}. ${year}. "${title}." Publisher / Journal placeholder. Verify source details before submission.`,
-    },
-  };
+  const result = await gatewayChat({
+    provider: 'gemini',
+    tier: 'pro',
+    messages: [
+      { role: 'system', content: 'You are a careful citation generator. Return only valid JSON.' },
+      { role: 'user', content: prompt },
+    ],
+    maxTokens: 1400,
+    temperature: 0.2,
+  });
 
-  return { prompt, ...references[style] };
+  const parsed = parseAiJson<{
+    citations?: Array<{
+      style?: string;
+      in_text?: string;
+      full_reference?: string;
+      verification_note?: string;
+    }>;
+  }>(result.text, {});
+
+  return styles.map((style): CitationDraft => {
+    const citation = parsed.citations?.find((item) => item.style === style);
+    return {
+      style,
+      in_text: citation?.in_text || 'Citation draft unavailable',
+      full_reference: citation?.full_reference || `${input}. Verify source details before submission.`,
+      verification_note:
+        citation?.verification_note || 'Verify author, date, title, publisher/journal, DOI/URL before submission.',
+    };
+  });
 }
 
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ status: 'error', error: 'Login required' }, { status: 401 });
     const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
     const tier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
-    const limit = await checkAiMessageLimit(user.id, tier, 'citation');
-    if (!limit.success) return NextResponse.json({ status: 'error', error: await getConfiguredLimitExceededMessage(tier, 'Citation Generator') }, { status: 429 });
-
     const body = await req.json();
     const input = clean(body.input);
     const style = clean(body.style);
-    if (!input) return NextResponse.json({ status: 'error', error: 'Article URL, DOI, book title, ya author name enter karo.' }, { status: 400 });
-    if (!STYLES.includes(style as (typeof STYLES)[number])) return NextResponse.json({ status: 'error', error: 'Valid citation style select karo.' }, { status: 400 });
+    const requestedStyles: CitationStyle[] = Array.isArray(body.styles)
+      ? body.styles
+          .map((item: unknown) => clean(item))
+          .filter((item: string): item is CitationStyle => STYLES.includes(item as CitationStyle))
+      : [];
+    const styles = Array.from(new Set<CitationStyle>(requestedStyles));
+    if (!input)
+      return NextResponse.json(
+        { status: 'error', error: 'Article URL, DOI, book title, ya author name enter karo.' },
+        { status: 400 }
+      );
+    if (styles.length === 0 && !STYLES.includes(style as CitationStyle))
+      return NextResponse.json({ status: 'error', error: 'Valid citation style select karo.' }, { status: 400 });
 
-    const citation = await generateCitation(input, style);
-    return NextResponse.json({ status: 'success', data: citation });
+    const citationStyles = styles.length > 0 ? styles : [style as CitationStyle];
+
+    const limit = await checkUniversityFeatureLimit(user.id, tier, 'citation');
+    if (!limit.success) {
+      return NextResponse.json(
+        {
+          status: 'error',
+          error: await getUniversityLimitExceededMessage(tier, limit.scope, 'Citation Generator'),
+        },
+        { status: 429 }
+      );
+    }
+
+    const citations = await generateCitations(input, citationStyles);
+    return NextResponse.json({
+      status: 'success',
+      data: styles.length > 0 ? { citations } : citations[0],
+    });
   } catch (error) {
-    return NextResponse.json({ status: 'error', error: error instanceof Error ? error.message : 'Citation generate nahi ho saki.' }, { status: 500 });
+    return NextResponse.json(
+      { status: 'error', error: error instanceof Error ? error.message : 'Citation generate nahi ho saki.' },
+      { status: 500 }
+    );
   }
 }

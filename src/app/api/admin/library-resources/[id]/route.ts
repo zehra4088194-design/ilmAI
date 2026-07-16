@@ -7,6 +7,9 @@ import type { Database } from '@/lib/supabase/database.types';
 type LibraryUpdate = Database['public']['Tables']['library_resources']['Update'] & {
   resource_type?: 'text_book' | 'notes' | 'other';
   chapter_id?: string | null;
+  light_file_url?: string | null;
+  dark_file_url?: string | null;
+  context_text_url?: string | null;
 };
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -25,11 +28,25 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (body.chapter_id !== undefined) (update as any).chapter_id = body.chapter_id;
   if (body.board !== undefined) update.board = body.board;
   if (body.grade_level !== undefined) update.grade_level = body.grade_level;
+  if (body.light_file_url !== undefined) {
+    const lightFileUrl = body.light_file_url?.trim() || null;
+    (update as any).light_file_url = lightFileUrl;
+    if (lightFileUrl) {
+      const driveFileId = body.drive_file_id ?? extractGoogleDriveFileId(lightFileUrl);
+      update.drive_url = lightFileUrl;
+      update.drive_file_id = driveFileId;
+      if (body.thumbnail_url === undefined)
+        update.thumbnail_url = getGoogleDriveThumbnailUrl(lightFileUrl, driveFileId);
+    }
+  }
+  if (body.dark_file_url !== undefined) (update as any).dark_file_url = body.dark_file_url?.trim() || null;
+  if (body.context_text_url !== undefined) update.context_text_url = body.context_text_url?.trim() || null;
   if (body.drive_url !== undefined) {
     const driveUrl = body.drive_url.trim();
     const driveFileId = body.drive_file_id ?? extractGoogleDriveFileId(driveUrl);
     update.drive_url = driveUrl;
     update.drive_file_id = driveFileId;
+    if (body.light_file_url === undefined) (update as any).light_file_url = driveUrl;
     if (body.thumbnail_url === undefined) update.thumbnail_url = getGoogleDriveThumbnailUrl(driveUrl, driveFileId);
   }
   if (body.drive_file_id !== undefined) update.drive_file_id = body.drive_file_id;
@@ -44,10 +61,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   try {
     adminClient = await createAdminClient();
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Supabase admin client missing' }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Supabase admin client missing' },
+      { status: 500 }
+    );
   }
 
-  const { data, error } = await (adminClient.from('library_resources') as any).update(update).eq('id', id).select().single();
+  const { data, error } = await (adminClient.from('library_resources') as any)
+    .update(update)
+    .eq('id', id)
+    .select()
+    .single();
 
   if (error) {
     console.error('library resource update error:', error);
@@ -67,7 +91,10 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   try {
     adminClient = await createAdminClient();
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Supabase admin client missing' }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Supabase admin client missing' },
+      { status: 500 }
+    );
   }
 
   const { error } = await adminClient.from('library_resources').delete().eq('id', id);

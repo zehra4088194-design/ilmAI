@@ -33,8 +33,8 @@ interface AiAnswerRendererProps {
 /**
  * Renders an AI-generated answer as a structured "document" — real headings,
  * numbered steps, tables, code blocks and LaTeX — instead of a flat wall of text.
- * Use this everywhere a longer AI explanation is shown to a student EXCEPT the
- * floating site-wide quick-chat widget, which intentionally stays plain-text chat.
+ * Use this everywhere a longer AI explanation is shown to a student. Pass
+ * card={false} when a chat bubble already provides the visual container.
  */
 export function AiAnswerRenderer({ content, className, card = true, label, feedback }: AiAnswerRendererProps) {
   const [voted, setVoted] = useState<'up' | 'down' | null>(null);
@@ -57,8 +57,27 @@ export function AiAnswerRenderer({ content, className, card = true, label, feedb
   };
 
   const body = (
-    <div className={cn('ai-doc-body prose prose-sm dark:prose-invert max-w-none', className)}>
-      <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+    <div className={cn('ai-doc-body prose prose-sm dark:prose-invert max-w-none overflow-x-auto', className)}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[rehypeKatex]}
+        components={{
+          a: ({ href, children, ...props }) => (
+            <a
+              href={href}
+              {...props}
+              className="not-prose my-1 inline-flex items-center rounded-lg border border-primary/35 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary no-underline transition-colors hover:bg-primary/20"
+            >
+              {children}
+            </a>
+          ),
+          table: ({ children }) => (
+            <div className="not-prose my-3 overflow-x-auto rounded-xl border border-border/70">
+              <table className="w-full text-left text-sm">{children}</table>
+            </div>
+          ),
+        }}
+      >
         {content}
       </ReactMarkdown>
     </div>

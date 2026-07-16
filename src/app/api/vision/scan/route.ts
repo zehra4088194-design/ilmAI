@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { gatewayChat, MARKDOWN_ANSWER_FORMAT_INSTRUCTION } from '@/lib/ai/gateway';
 import { performOcr, validateOcrFile } from '@/lib/ocr';
 import { createClient } from '@/lib/supabase/server';
-import { checkAiMessageLimit, getConfiguredLimitExceededMessage } from '@/lib/rate-limit';
+import { checkOcrLimit } from '@/lib/rate-limit';
 import type { SubscriptionTier } from '@/types';
 
 export const runtime = 'nodejs';
@@ -23,25 +23,41 @@ export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
     const db = supabase as any;
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ status: 'error', error: 'Login required hai' }, { status: 401 });
 
     const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
     const tier = ((profile as any)?.subscription_tier || 'FREE') as SubscriptionTier;
-    const dailyLimit = await checkAiMessageLimit(user.id, tier, 'vision_scan');
-    if (!dailyLimit.success) {
-      return NextResponse.json({ status: 'error', error: await getConfiguredLimitExceededMessage(tier, 'Scan & Solve') }, { status: 429 });
-    }
-
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
-    const scanType = isScanType(formData.get('scan_type')) ? formData.get('scan_type') as (typeof SCAN_TYPES)[number] : 'textbook_page';
-    const language = isLanguage(formData.get('language')) ? formData.get('language') as (typeof LANGUAGES)[number] : 'en';
-    const chapterId = typeof formData.get('chapter_id') === 'string' && formData.get('chapter_id') ? String(formData.get('chapter_id')) : null;
+    const scanType = isScanType(formData.get('scan_type'))
+      ? (formData.get('scan_type') as (typeof SCAN_TYPES)[number])
+      : 'textbook_page';
+    const language = isLanguage(formData.get('language'))
+      ? (formData.get('language') as (typeof LANGUAGES)[number])
+      : 'en';
+    const chapterId =
+      typeof formData.get('chapter_id') === 'string' && formData.get('chapter_id')
+        ? String(formData.get('chapter_id'))
+        : null;
 
     if (!file) return NextResponse.json({ status: 'error', error: 'Image required hai' }, { status: 400 });
     const validation = validateOcrFile(file.type, file.size);
     if (!validation.valid) return NextResponse.json({ status: 'error', error: validation.error }, { status: 400 });
+
+    const mode = scanType === 'handwritten' || scanType === 'math' ? 'handwritten' : 'printed';
+    const scanLimit = await checkOcrLimit(user.id, tier, mode);
+    if (!scanLimit.success) {
+      return NextResponse.json(
+        {
+          status: 'error',
+          error: `${mode === 'handwritten' ? 'Handwritten' : 'Printed'} scans ki weekly limit complete ho gayi. ${new Date(scanLimit.reset).toLocaleDateString('en-PK')} ko reset hogi.`,
+        },
+        { status: 429 }
+      );
+    }
 
     const scanId = crypto.randomUUID();
     const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
@@ -63,7 +79,6 @@ export async function POST(req: NextRequest) {
       chapter_id: chapterId,
     });
 
-    const mode = scanType === 'handwritten' || scanType === 'math' ? 'handwritten' : 'printed';
     const ocr = await performOcr({ imageBuffer, mimeType: file.type, userTier: tier, mode });
 
     const result = await gatewayChat({
@@ -94,6 +109,9 @@ export async function POST(req: NextRequest) {
         image_path: storagePath,
         ocr_text: ocr.text,
         ai_explanation: result.text,
+        ocr_provider: ocr.provider,
+        remaining_scans: scanLimit.remaining,
+        scans_reset_at: scanLimit.reset,
       },
     });
   } catch (error) {

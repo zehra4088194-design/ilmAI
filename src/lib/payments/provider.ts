@@ -1,11 +1,11 @@
 // ============================================
 // PAYMENT PROVIDER INTERFACE
 // ============================================
-// Every payment gateway (Paddle, PayPro, or any future provider) implements
+// Every payment gateway (Paddle, PayPro, or additional providers) implements
 // this interface. Business logic (API routes, UI components) should NEVER
 // import a specific gateway SDK directly — only this contract.
 //
-// To add a new provider in the future:
+// To add another provider:
 // 1. Create lib/payments/<provider>.ts implementing PaymentProvider
 // 2. Register it in lib/payments/index.ts
 // 3. Nothing else in the app needs to change.

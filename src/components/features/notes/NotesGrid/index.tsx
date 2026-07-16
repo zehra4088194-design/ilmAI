@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,8 +40,9 @@ interface Note {
 }
 
 export function NotesGrid({ notes, userId }: { notes: Note[]; userId: string }) {
+  const searchParams = useSearchParams();
   const [creating, setCreating] = useState(false);
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(() => searchParams.get('search') || '');
   const [activeFolder, setActiveFolder] = useState<string | null>(null);
   const [addingFolder, setAddingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
@@ -48,16 +50,16 @@ export function NotesGrid({ notes, userId }: { notes: Note[]; userId: string }) 
   const supabase = createClient();
 
   const folders = useMemo(() => {
-    const set = new Set(notes.map(n => n.folder).filter(Boolean) as string[]);
+    const set = new Set(notes.map((n) => n.folder).filter(Boolean) as string[]);
     return Array.from(set).sort();
   }, [notes]);
 
   const filtered = useMemo(() => {
     let list = notes;
-    if (activeFolder) list = list.filter(n => n.folder === activeFolder);
+    if (activeFolder) list = list.filter((n) => n.folder === activeFolder);
     if (query.trim()) {
       const q = query.trim().toLowerCase();
-      list = list.filter(n => n.title.toLowerCase().includes(q) || (n.content || '').toLowerCase().includes(q));
+      list = list.filter((n) => n.title.toLowerCase().includes(q) || (n.content || '').toLowerCase().includes(q));
     }
     // Pinned (starred) notes always float to the top.
     return [...list].sort((a, b) => Number(b.is_starred) - Number(a.is_starred));
@@ -73,7 +75,11 @@ export function NotesGrid({ notes, userId }: { notes: Note[]; userId: string }) 
       .insert({ user_id: userId, title, content, is_starred: false, is_public: false, folder: activeFolder })
       .select('id')
       .single();
-    if (error || !data) { toast.error('Note create nahi hua'); setCreating(false); return; }
+    if (error || !data) {
+      toast.error('Note create nahi hua');
+      setCreating(false);
+      return;
+    }
     router.push(`/notes/${data.id}`);
   };
 
@@ -94,26 +100,30 @@ export function NotesGrid({ notes, userId }: { notes: Note[]; userId: string }) 
   return (
     <div className="space-y-5">
       {/* Top bar: search + actions */}
-      <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative w-full sm:max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
           <Input
             value={query}
-            onChange={e => setQuery(e.target.value)}
+            onChange={(e) => setQuery(e.target.value)}
             placeholder="Notes mein search karo..."
             className="pl-9"
           />
         </div>
-        <div className="flex gap-2 shrink-0">
+        <div className="flex shrink-0 gap-2">
           <Button
             variant="gradient"
             onClick={() => createNote()}
             loading={creating}
             className="bg-gradient-to-r from-violet-600 to-fuchsia-500 hover:from-violet-500 hover:to-fuchsia-400"
           >
-            <Plus className="w-4 h-4" />New Note
+            <Plus className="h-4 w-4" />
+            New Note
           </Button>
-          <ScanUpload onTextExtracted={(text) => createNote(text, 'Scanned Note')} trigger={<Button variant="outline">ðŸ“· Scan</Button>} />
+          <ScanUpload
+            onTextExtracted={(text) => createNote(text, 'Scanned Note')}
+            trigger={<Button variant="outline">ðŸ“· Scan</Button>}
+          />
         </div>
       </div>
 
@@ -122,28 +132,32 @@ export function NotesGrid({ notes, userId }: { notes: Note[]; userId: string }) 
         <button
           onClick={() => setActiveFolder(null)}
           className={cn(
-            'px-3 py-1.5 rounded-full text-xs font-medium border transition-colors flex items-center gap-1.5',
-            activeFolder === null ? 'bg-violet-500 text-white border-violet-500' : 'border-border text-muted-foreground hover:bg-muted'
+            'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+            activeFolder === null
+              ? 'border-violet-500 bg-violet-500 text-white'
+              : 'border-border text-muted-foreground hover:bg-muted'
           )}
         >
-          <StickyNote className="w-3.5 h-3.5" /> Sab Notes
+          <StickyNote className="h-3.5 w-3.5" /> Sab Notes
           <span className="opacity-70">{notes.length}</span>
         </button>
 
-        {folders.map(f => {
+        {folders.map((f) => {
           const style = folderStyle(f);
-          const count = notes.filter(n => n.folder === f).length;
+          const count = notes.filter((n) => n.folder === f).length;
           const isActive = activeFolder === f;
           return (
             <button
               key={f}
               onClick={() => setActiveFolder(isActive ? null : f)}
               className={cn(
-                'px-3 py-1.5 rounded-full text-xs font-medium border transition-colors flex items-center gap-1.5',
-                isActive ? cn(style.bg, style.text, 'border-transparent ring-2', style.ring) : 'border-border text-muted-foreground hover:bg-muted'
+                'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+                isActive
+                  ? cn(style.bg, style.text, 'border-transparent ring-2', style.ring)
+                  : 'border-border text-muted-foreground hover:bg-muted'
               )}
             >
-              <span className={cn('w-1.5 h-1.5 rounded-full', style.dot)} />
+              <span className={cn('h-1.5 w-1.5 rounded-full', style.dot)} />
               {f}
               <span className="opacity-70">{count}</span>
             </button>
@@ -155,74 +169,109 @@ export function NotesGrid({ notes, userId }: { notes: Note[]; userId: string }) 
             <Input
               autoFocus
               value={newFolderName}
-              onChange={e => setNewFolderName(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') confirmNewFolder(); if (e.key === 'Escape') { setAddingFolder(false); setNewFolderName(''); } }}
+              onChange={(e) => setNewFolderName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') confirmNewFolder();
+                if (e.key === 'Escape') {
+                  setAddingFolder(false);
+                  setNewFolderName('');
+                }
+              }}
               placeholder="Folder ka naam..."
               className="h-8 w-36 text-xs"
             />
-            <Button variant="ghost" size="sm" className="h-8 px-2" onClick={confirmNewFolder}>âœ“</Button>
-            <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => { setAddingFolder(false); setNewFolderName(''); }}><X className="w-3.5 h-3.5" /></Button>
+            <Button variant="ghost" size="sm" className="h-8 px-2" onClick={confirmNewFolder}>
+              âœ“
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 px-2"
+              onClick={() => {
+                setAddingFolder(false);
+                setNewFolderName('');
+              }}
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
           </div>
         ) : (
           <button
             onClick={() => setAddingFolder(true)}
-            className="px-3 py-1.5 rounded-full text-xs font-medium border border-dashed border-border text-muted-foreground hover:bg-muted transition-colors flex items-center gap-1.5"
+            className="border-border text-muted-foreground hover:bg-muted flex items-center gap-1.5 rounded-full border border-dashed px-3 py-1.5 text-xs font-medium transition-colors"
           >
-            <FolderPlus className="w-3.5 h-3.5" /> Nayi Folder
+            <FolderPlus className="h-3.5 w-3.5" /> Nayi Folder
           </button>
         )}
       </div>
 
       {/* Notes grid */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filtered.map(note => {
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {filtered.map((note) => {
           const style = note.folder ? folderStyle(note.folder) : null;
           return (
             <Card
               key={note.id}
               className={cn(
-                'group relative overflow-hidden border-l-4 hover:shadow-lg hover:shadow-violet-500/5 hover:-translate-y-0.5 transition-all cursor-pointer',
+                'group relative cursor-pointer overflow-hidden border-l-4 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-violet-500/5',
                 note.is_starred ? 'border-l-amber-400' : 'border-l-violet-500/40'
               )}
               onClick={() => router.push(`/notes/${note.id}`)}
             >
               <CardContent className="p-5">
-                <div className="flex items-start justify-between mb-2">
+                <div className="mb-2 flex items-start justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 flex items-center justify-center">
-                      <StickyNote className="w-4 h-4 text-violet-300" />
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20">
+                      <StickyNote className="h-4 w-4 text-violet-300" />
                     </div>
                     {note.folder && style && (
-                      <span className={cn('text-[10px] font-medium px-2 py-0.5 rounded-full flex items-center gap-1', style.bg, style.text)}>
-                        <Folder className="w-2.5 h-2.5" />{note.folder}
+                      <span
+                        className={cn(
+                          'flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium',
+                          style.bg,
+                          style.text
+                        )}
+                      >
+                        <Folder className="h-2.5 w-2.5" />
+                        {note.folder}
                       </span>
                     )}
                   </div>
-                  <button onClick={(e) => togglePin(e, note)} className="opacity-60 hover:opacity-100 transition-opacity">
-                    <Star className={cn('w-4 h-4', note.is_starred ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground')} />
+                  <button
+                    onClick={(e) => togglePin(e, note)}
+                    className="opacity-60 transition-opacity hover:opacity-100"
+                  >
+                    <Star
+                      className={cn(
+                        'h-4 w-4',
+                        note.is_starred ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground'
+                      )}
+                    />
                   </button>
                 </div>
-                <h3 className="font-semibold mb-1 truncate">{note.title}</h3>
-                <p className="text-xs text-muted-foreground line-clamp-2 mb-3 whitespace-pre-wrap">{note.content || 'Empty note'}</p>
-                <p className="text-xs text-muted-foreground">{formatRelativeTime(note.updated_at)}</p>
+                <h3 className="mb-1 truncate font-semibold">{note.title}</h3>
+                <p className="text-muted-foreground mb-3 line-clamp-2 text-xs whitespace-pre-wrap">
+                  {note.content || 'Empty note'}
+                </p>
+                <p className="text-muted-foreground text-xs">{formatRelativeTime(note.updated_at)}</p>
               </CardContent>
             </Card>
           );
         })}
 
         {filtered.length === 0 && notes.length > 0 && (
-          <div className="col-span-full text-center py-16 text-muted-foreground">
-            <Search className="w-8 h-8 mx-auto mb-3 opacity-40" />
+          <div className="text-muted-foreground col-span-full py-16 text-center">
+            <Search className="mx-auto mb-3 h-8 w-8 opacity-40" />
             Is search/folder ke liye koi note nahi mila.
           </div>
         )}
 
         {notes.length === 0 && (
-          <div className="col-span-full flex flex-col items-center text-center py-16 text-muted-foreground">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 flex items-center justify-center mb-4">
-              <StickyNote className="w-8 h-8 text-violet-300" />
+          <div className="text-muted-foreground col-span-full flex flex-col items-center py-16 text-center">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20">
+              <StickyNote className="h-8 w-8 text-violet-300" />
             </div>
-            <p className="font-medium text-foreground mb-1">Koi notes nahi hain abhi</p>
+            <p className="text-foreground mb-1 font-medium">Koi notes nahi hain abhi</p>
             <p className="text-sm">Pehla note banao, ya kisi textbook page ko scan karo</p>
           </div>
         )}

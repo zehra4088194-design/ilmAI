@@ -48,9 +48,16 @@ export function getYouTubeThumbnailCandidates(videoIdOrUrl: string): string[] {
 
   return [
     `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
-    `https://i.ytimg.com/vi/${id}/mqdefault.jpg`,
-    `https://i.ytimg.com/vi/${id}/default.jpg`,
     `https://img.youtube.com/vi/${id}/hqdefault.jpg`,
+    `https://i.ytimg.com/vi/${id}/0.jpg`,
+    `https://img.youtube.com/vi/${id}/0.jpg`,
+    `https://i.ytimg.com/vi/${id}/mqdefault.jpg`,
+    `https://i.ytimg.com/vi/${id}/sddefault.jpg`,
+    `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`,
+    `https://i.ytimg.com/vi_webp/${id}/hqdefault.webp`,
+    `https://i.ytimg.com/vi_webp/${id}/sddefault.webp`,
+    `https://i.ytimg.com/vi_webp/${id}/maxresdefault.webp`,
+    `https://i.ytimg.com/vi/${id}/default.jpg`,
   ];
 }
 

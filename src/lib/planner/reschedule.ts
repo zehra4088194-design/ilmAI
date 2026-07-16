@@ -60,8 +60,5 @@ export async function rescheduleMissedSessions(planId: string) {
     )
   );
 
-  // TODO(notifications): call notifyUser(studentId, { type: 'planner_reminder', sessionId }) here
-  // when the notifications delivery system (push/email) is wired up.
-
   return { status: 'success', moved: missed.length };
 }

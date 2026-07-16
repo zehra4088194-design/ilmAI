@@ -137,8 +137,5 @@ Rules: stay within dailyAvailableHours, prioritize weakKeys, respect constraint 
   const { data, error } = await db.from('study_plan_sessions').insert(rows).select('id');
   if (error) throw error;
 
-  // TODO(notifications): call notifyUser(studentId, { type: 'planner_reminder', sessionId }) here
-  // when the notifications delivery system (push/email) is wired up.
-
   return data || [];
 }

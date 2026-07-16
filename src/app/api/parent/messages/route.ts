@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
+import { createNotificationIfEnabled } from '@/lib/notifications/preferences';
 
 async function getUser() {
   const supabase = await createClient();
@@ -30,6 +31,13 @@ export async function GET(req: NextRequest) {
   if (!link) return NextResponse.json({ error: 'Ye link aapka nahi hai' }, { status: 403 });
 
   const admin = await createAdminClient();
+  await admin
+    .from('parent_messages')
+    .update({ read_at: new Date().toISOString() })
+    .eq('link_id', linkId)
+    .neq('sender_id', user.id)
+    .is('read_at', null);
+
   const { data, error } = await admin
     .from('parent_messages')
     .select('*')
@@ -63,14 +71,39 @@ export async function POST(req: NextRequest) {
   if (error) return NextResponse.json({ error: 'Message send nahi hua' }, { status: 500 });
 
   const recipientId = user.id === link.parent_id ? link.student_id : link.parent_id;
-  await admin.from('notifications').insert({
+  await createNotificationIfEnabled(admin, 'parentMessages', {
     user_id: recipientId,
     type: 'SOCIAL',
     title: 'New parent message',
     message: content.trim().slice(0, 120),
-    link: user.id === link.parent_id ? '/settings' : '/parent',
+    link:
+      user.id === link.parent_id
+        ? `/settings?tab=parent-link&linkId=${encodeURIComponent(linkId)}&view=chat`
+        : `/parent?linkId=${encodeURIComponent(linkId)}&view=chat`,
     is_read: false,
   });
 
   return NextResponse.json({ message: data });
+}
+
+export async function PATCH(req: NextRequest) {
+  const user = await getUser();
+  if (!user) return NextResponse.json({ error: 'Login required' }, { status: 401 });
+
+  const { linkId } = await req.json();
+  if (!linkId) return NextResponse.json({ error: 'linkId required hai' }, { status: 400 });
+
+  const link = await getApprovedLink(linkId, user.id);
+  if (!link) return NextResponse.json({ error: 'Ye link aapka nahi hai' }, { status: 403 });
+
+  const admin = await createAdminClient();
+  const { error } = await admin
+    .from('parent_messages')
+    .update({ read_at: new Date().toISOString() })
+    .eq('link_id', linkId)
+    .neq('sender_id', user.id)
+    .is('read_at', null);
+
+  if (error) return NextResponse.json({ error: 'Seen update nahi hua' }, { status: 500 });
+  return NextResponse.json({ status: 'success' });
 }

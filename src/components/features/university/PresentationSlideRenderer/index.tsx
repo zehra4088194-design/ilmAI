@@ -177,7 +177,81 @@ function SlideCanvas({ slide, theme }: { slide: PresentationSlide; theme: Theme 
   return <BulletsSlide slide={slide} theme={theme} />;
 }
 
-export function PresentationSlideRenderer({ deck, exportId = 'presentation-export' }: { deck: PresentationDeck; exportId?: string }) {
+function PrintableSlide({ slide, theme, index, total }: { slide: PresentationSlide; theme: Theme; index: number; total: number }) {
+  const title = slide.title || slide.quote || `Slide ${index + 1}`;
+  const bullets = slide.bullets || slide.left?.bullets || [];
+
+  return (
+    <section
+      data-page-break="true"
+      style={{
+        width: '1080px',
+        minHeight: '608px',
+        margin: '0 auto 28px',
+        padding: '54px 64px',
+        borderRadius: '24px',
+        background: theme.bg,
+        color: theme.text,
+        position: 'relative',
+        overflow: 'hidden',
+        fontFamily: theme.body,
+        boxShadow: '0 18px 45px rgba(15,23,42,.18)',
+      }}
+    >
+      <div style={{ position: 'absolute', right: '-80px', top: '-90px', width: 260, height: 260, borderRadius: 999, background: theme.accent, opacity: 0.18 }} />
+      <div style={{ position: 'absolute', left: '-70px', bottom: '-90px', width: 220, height: 220, borderRadius: 999, background: theme.accent2, opacity: 0.14 }} />
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        <div style={{ width: 82, height: 6, borderRadius: 999, background: theme.accent, marginBottom: 30 }} />
+        <p style={{ margin: '0 0 12px', color: theme.subtext, fontSize: 15, fontWeight: 700, letterSpacing: 1.4, textTransform: 'uppercase' }}>
+          Slide {index + 1} / {total}
+        </p>
+        <h1 style={{ margin: 0, maxWidth: 900, color: theme.text, fontFamily: theme.display, fontSize: slide.type === 'title' ? 56 : 42, lineHeight: 1.08 }}>
+          {title}
+        </h1>
+        {slide.subtitle && <p style={{ maxWidth: 760, marginTop: 22, color: theme.subtext, fontSize: 24, lineHeight: 1.45 }}>{slide.subtitle}</p>}
+
+        {slide.type === 'two-column' && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginTop: 34 }}>
+            {[slide.left, slide.right].map((col, colIndex) => (
+              <div key={colIndex} style={{ background: theme.cardBg, border: '1px solid rgba(255,255,255,.14)', borderRadius: 20, padding: 24 }}>
+                <h2 style={{ margin: '0 0 16px', color: theme.accent, fontSize: 24 }}>{col?.heading}</h2>
+                <ul style={{ margin: 0, paddingLeft: 22, color: theme.text, fontSize: 20, lineHeight: 1.55 }}>
+                  {(col?.bullets || []).slice(0, 5).map((bullet, bulletIndex) => <li key={bulletIndex}>{bullet}</li>)}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {slide.type === 'stats' && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 18, marginTop: 38 }}>
+            {(slide.stats || []).slice(0, 4).map((stat, statIndex) => (
+              <div key={statIndex} style={{ background: theme.cardBg, borderRadius: 18, padding: 22, textAlign: 'center' }}>
+                <div style={{ color: theme.accent, fontSize: 38, fontWeight: 800 }}>{stat.value}</div>
+                <div style={{ marginTop: 8, color: theme.subtext, fontSize: 16 }}>{stat.label}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {slide.type === 'quote' && (
+          <blockquote style={{ margin: '36px 0 0', maxWidth: 820, color: theme.text, fontFamily: theme.display, fontSize: 34, lineHeight: 1.25 }}>
+            &ldquo;{slide.quote}&rdquo;
+            {slide.author && <footer style={{ marginTop: 18, color: theme.subtext, fontFamily: theme.body, fontSize: 18 }}>- {slide.author}</footer>}
+          </blockquote>
+        )}
+
+        {slide.type !== 'title' && slide.type !== 'two-column' && slide.type !== 'stats' && slide.type !== 'quote' && bullets.length > 0 && (
+          <ul style={{ margin: '34px 0 0', paddingLeft: 28, maxWidth: 860, color: theme.text, fontSize: 24, lineHeight: 1.55 }}>
+            {bullets.slice(0, 6).map((bullet, bulletIndex) => <li key={bulletIndex}>{bullet}</li>)}
+          </ul>
+        )}
+      </div>
+    </section>
+  );
+}
+
+export function PresentationSlideRenderer({ deck, exportId = 'presentation-export', exportAllId = 'presentation-export-all' }: { deck: PresentationDeck; exportId?: string; exportAllId?: string }) {
   const [current, setCurrent] = useState(0);
   const total = deck.slides.length;
   const theme = useMemo(() => themeFor(deck), [deck]);
@@ -234,6 +308,17 @@ export function PresentationSlideRenderer({ deck, exportId = 'presentation-expor
           {slide.speakerNotes}
         </div>
       )}
+
+      <div
+        id={exportAllId}
+        data-print-root="true"
+        aria-hidden="true"
+        style={{ position: 'fixed', left: '-12000px', top: 0, width: '1120px', height: 0, overflow: 'hidden' }}
+      >
+        {deck.slides.map((deckSlide, index) => (
+          <PrintableSlide key={index} slide={deckSlide} theme={theme} index={index} total={total} />
+        ))}
+      </div>
     </div>
   );
 }

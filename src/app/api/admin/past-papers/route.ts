@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient, createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
+import { requireAdminUser } from '@/lib/admin/auth';
 import type { Database } from '@/lib/supabase/database.types';
-
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '')
-  .split(',')
-  .map((email) => email.trim().toLowerCase())
-  .filter(Boolean);
 
 type PastPaperInsert = Database['public']['Tables']['past_papers']['Insert'] & {
   grade_level?: string | null;
@@ -14,17 +10,8 @@ type PastPaperInsert = Database['public']['Tables']['past_papers']['Insert'] & {
 type SubjectJoin = { name: string | null } | null;
 type ChapterJoin = { name: string | null } | null;
 
-async function requireAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user || !ADMIN_EMAILS.includes((user.email || '').toLowerCase())) return null;
-  return user;
-}
-
 export async function GET() {
-  const admin = await requireAdmin();
+  const admin = await requireAdminUser();
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const adminClient = await createAdminClient();
@@ -46,13 +33,13 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const admin = await requireAdmin();
+  const admin = await requireAdminUser();
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const body = (await req.json()) as PastPaperInsert;
   const year = Number(body.year);
-  if (!body.subject_id || !body.board || !body.file_url?.trim() || !Number.isInteger(year) || year < 1900 || year > 2100) {
-    return NextResponse.json({ error: 'Subject, board, valid year aur file URL zaroori hain' }, { status: 400 });
+  if (!body.subject_id || !body.board || !body.file_url?.trim() || !body.context_text_url?.trim() || !Number.isInteger(year) || year < 1900 || year > 2100) {
+    return NextResponse.json({ error: 'Subject, board, valid year, PDF URL aur companion TXT URL zaroori hain' }, { status: 400 });
   }
 
   const adminClient = await createAdminClient();
@@ -66,6 +53,7 @@ export async function POST(req: NextRequest) {
       year,
       paper_type: body.paper_type ?? 'ANNUAL',
       file_url: body.file_url.trim(),
+      context_text_url: body.context_text_url.trim(),
       total_questions: body.total_questions ?? 0,
       duration: body.duration ?? 180,
       is_verified: body.is_verified ?? false,
@@ -76,7 +64,7 @@ export async function POST(req: NextRequest) {
 
   if (error) {
     console.error('past paper create error:', error);
-    return NextResponse.json({ error: 'Past paper add nahi hua' }, { status: 500 });
+    return NextResponse.json({ error: `Past paper add nahi hua: ${error.message}` }, { status: 500 });
   }
 
   return NextResponse.json({ paper: data }, { status: 201 });

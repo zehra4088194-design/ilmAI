@@ -8,6 +8,7 @@ import { getPlatformSettings } from '@/lib/platform-settings/server';
 import { getPlanFromSettings } from '@/lib/platform-settings/shared';
 
 export const metadata: Metadata = { title: 'Admin - AI Usage' };
+export const dynamic = 'force-dynamic';
 
 type RedisStats = {
   connected: boolean;
@@ -15,6 +16,7 @@ type RedisStats = {
   keys: string[];
   totalUsage: number;
   byFeature: Record<string, number>;
+  sampleKeys: { key: string; amount: number; ttl: number | null }[];
 };
 
 function featureFromKey(key: string) {
@@ -37,16 +39,30 @@ function numericValue(value: unknown) {
 
 async function getRedisStats(): Promise<RedisStats> {
   if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
-    return { connected: false, error: null, keys: [], totalUsage: 0, byFeature: {} };
+    return { connected: false, error: null, keys: [], totalUsage: 0, byFeature: {}, sampleKeys: [] };
   }
 
   try {
     const redis = new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN });
     const today = new Date().toISOString().slice(0, 10);
-    const patterns = [`*ilm-ai*${today}*`, `*ratelimit*${today}*`];
+    const patterns = [
+      `*ilm-ai*${today}*`,
+      `*ratelimit*${today}*`,
+      `*${today}*`,
+      '*ilm-ai*',
+      '*ratelimit*',
+      '*ai_tool*',
+      '*model_tier*',
+    ];
     const found = await Promise.all(patterns.map((pattern) => redis.keys(pattern).catch(() => [] as string[])));
-    const keys = Array.from(new Set(found.flat())).slice(0, 500);
+    const allKeys = Array.from(new Set(found.flat()));
+    const ttlPairs = await Promise.all(allKeys.slice(0, 800).map(async (key) => ({ key, ttl: await redis.ttl(key).catch(() => null) })));
+    const keys = ttlPairs
+      .filter((item) => item.ttl === null || item.ttl > 0)
+      .map((item) => item.key)
+      .slice(0, 500);
     const values = await Promise.all(keys.map((key) => redis.get(key).catch(() => 0)));
+    const ttlMap = new Map(ttlPairs.map((item) => [item.key, item.ttl]));
     const byFeature: Record<string, number> = {};
     let totalUsage = 0;
 
@@ -57,9 +73,16 @@ async function getRedisStats(): Promise<RedisStats> {
       totalUsage += amount;
     });
 
-    return { connected: true, error: null, keys, totalUsage, byFeature };
+    return {
+      connected: true,
+      error: null,
+      keys,
+      totalUsage,
+      byFeature,
+      sampleKeys: keys.slice(0, 12).map((key, index) => ({ key, amount: numericValue(values[index]) || 1, ttl: ttlMap.get(key) ?? null })),
+    };
   } catch (error) {
-    return { connected: false, error: error instanceof Error ? error.message : 'Redis read failed', keys: [], totalUsage: 0, byFeature: {} };
+    return { connected: false, error: error instanceof Error ? error.message : 'Redis read failed', keys: [], totalUsage: 0, byFeature: {}, sampleKeys: [] };
   }
 }
 
@@ -93,7 +116,7 @@ export default async function AdminAiUsagePage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">AI Usage Monitoring</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Live Redis counters, subscription limits, and AI feedback data.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Live Upstash Redis counters, subscription limits, and AI feedback data.</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -145,7 +168,7 @@ export default async function AdminAiUsagePage() {
               </div>
             ) : (
               <div className="rounded-lg border border-border/60 p-4 text-sm text-muted-foreground">
-                Aaj abhi koi Redis usage counter nahi mila. Pehla AI/tool request hote hi yahan live count aa jayega.
+                Active Redis usage window abhi nahi mili. Pehla AI/tool request hote hi yahan live feature count aa jayega.
               </div>
             )}
           </CardContent>
@@ -161,6 +184,29 @@ export default async function AdminAiUsagePage() {
           <Badge variant="outline" className="justify-center py-2">Voice</Badge>
           <Badge variant="outline" className="justify-center py-2">Premium models</Badge>
           <Badge variant="outline" className="justify-center py-2">Quiz/testing</Badge>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Live Redis Keys</CardTitle></CardHeader>
+        <CardContent>
+          {redisStats.sampleKeys.length ? (
+            <div className="space-y-2">
+              {redisStats.sampleKeys.map((item) => (
+                <div key={item.key} className="grid gap-2 rounded-lg border border-border/60 p-3 text-sm md:grid-cols-[1fr,90px,110px]">
+                  <code className="truncate text-xs text-muted-foreground">{item.key}</code>
+                  <Badge variant="outline" className="justify-center">{item.amount.toLocaleString()}</Badge>
+                  <Badge variant="secondary" className="justify-center">TTL {item.ttl === null || item.ttl < 0 ? '-' : `${Math.round(item.ttl / 3600)}h`}</Badge>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-lg border border-border/60 p-4 text-sm text-muted-foreground">
+              {redisStats.connected
+                ? 'Upstash connected hai, lekin active daily usage keys abhi nahi mile. First AI/tool request ke baad yahan key list aa jayegi.'
+                : redisStats.error || 'Upstash env missing ya unavailable hai.'}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

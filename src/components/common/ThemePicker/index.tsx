@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Check } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { APP_THEMES } from '@/lib/constants/themes';
+import { APP_THEME_FAMILIES, buildThemeId, parseAppTheme } from '@/lib/constants/themes';
 import { cn } from '@/lib/utils/cn';
 
 export function ThemePicker({ compact = false }: { compact?: boolean }) {
@@ -16,23 +16,30 @@ export function ThemePicker({ compact = false }: { compact?: boolean }) {
     return <div className={cn('grid gap-3', compact ? 'grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-3')} />;
   }
 
+  const activeTheme = parseAppTheme(theme);
+
   return (
     <div className={cn('grid gap-3', compact ? 'grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-3')}>
-      {APP_THEMES.map((option) => {
-        const selected = theme === option.id;
+      {APP_THEME_FAMILIES.map((option) => {
+        const selected = activeTheme.family === option.id;
         const Icon = option.icon;
         return (
           <button
             key={option.id}
             type="button"
-            onClick={() => setTheme(option.id)}
+            aria-pressed={selected}
+            data-selectable="true"
+            onClick={() => {
+              window.localStorage.setItem('ilm-ai-theme-explicit', '1');
+              setTheme(buildThemeId(option.id, activeTheme.mode));
+            }}
             className={cn(
-              'group overflow-hidden rounded-xl border bg-card/80 text-left transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:bg-primary/10',
-              selected ? 'border-primary bg-primary/15 shadow-lg shadow-primary/20' : 'border-border'
+              'group overflow-hidden rounded-xl border text-left transition-all hover:-translate-y-0.5',
+              selected ? 'border-primary shadow-primary/20 shadow-lg' : 'border-border'
             )}
           >
             <div
-              className="relative h-20 bg-muted"
+              className="bg-muted relative h-20"
               style={{
                 backgroundImage: option.image
                   ? `linear-gradient(135deg, rgba(0,0,0,0.04), rgba(0,0,0,0.16)), url(${option.image})`
@@ -41,22 +48,28 @@ export function ThemePicker({ compact = false }: { compact?: boolean }) {
                 backgroundPosition: 'center',
               }}
             >
-              <div className="absolute left-3 top-3 flex gap-1.5">
+              <div className="absolute top-3 left-3 flex gap-1.5">
                 {option.swatches.map((swatch) => (
-                  <span key={swatch} className="h-3 w-3 rounded-full border border-white/70 shadow" style={{ backgroundColor: swatch }} />
+                  <span
+                    key={swatch}
+                    className="h-3 w-3 rounded-full border border-white/70 shadow"
+                    style={{ backgroundColor: swatch }}
+                  />
                 ))}
               </div>
               {selected && (
-                <span className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground shadow">
+                <span className="bg-primary text-primary-foreground absolute top-3 right-3 flex h-7 w-7 items-center justify-center rounded-full shadow">
                   <Check className="h-4 w-4" />
                 </span>
               )}
             </div>
             <div className="flex items-start gap-2 p-3">
-              <Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              <Icon className="text-primary mt-0.5 h-4 w-4 shrink-0" />
               <span>
                 <span className="block text-sm font-semibold">{option.name}</span>
-                {!compact && <span className="mt-0.5 block text-xs leading-5 text-muted-foreground">{option.description}</span>}
+                {!compact && (
+                  <span className="text-muted-foreground mt-0.5 block text-xs leading-5">{option.description}</span>
+                )}
               </span>
             </div>
           </button>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
+import { createNotificationIfEnabled } from '@/lib/notifications/preferences';
 
 async function getUser() {
   const supabase = await createClient();
@@ -65,7 +66,7 @@ export async function POST(req: NextRequest) {
   if (error) return NextResponse.json({ error: 'Routine test create nahi hua' }, { status: 500 });
 
   if (targetStudentId !== user.id) {
-    await admin.from('notifications').insert({
+    await createNotificationIfEnabled(admin, 'routineTestAlerts', {
       user_id: targetStudentId,
       type: 'REMINDER',
       title: 'Parent scheduled a test',

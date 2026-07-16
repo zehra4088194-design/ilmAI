@@ -4,6 +4,7 @@ import { Paperclip, FileText, Upload, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
 import { toast } from 'sonner';
+import { createClient } from '@/lib/supabase/client';
 
 interface Attachment {
   id: string;
@@ -18,7 +19,7 @@ interface Attachment {
   signed_url: string | null;
 }
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 4 * 1024 * 1024;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf'];
 
 function formatFileSize(kb: number) {
@@ -33,18 +34,29 @@ function formatFileSize(kb: number) {
  * `parent-attachments` Supabase Storage bucket and are only ever accessed
  * via short-lived signed URLs — nothing here is publicly listable.
  */
-export function ParentAttachments({ linkId, currentUserId }: { linkId: string; currentUserId: string }) {
+export function ParentAttachments({
+  linkId,
+  currentUserId,
+  autoOpen = false,
+}: {
+  linkId: string;
+  currentUserId: string;
+  autoOpen?: boolean;
+}) {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(autoOpen);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const supabase = createClient();
 
   const load = () => {
     setLoading(true);
     fetch(`/api/parent/attachments?linkId=${linkId}`)
       .then((r) => r.json())
-      .then((json) => { if (json.status === 'success') setAttachments(json.data || []); })
+      .then((json) => {
+        if (json.status === 'success') setAttachments(json.data || []);
+      })
       .finally(() => setLoading(false));
   };
 
@@ -53,13 +65,39 @@ export function ParentAttachments({ linkId, currentUserId }: { linkId: string; c
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, linkId]);
 
+  useEffect(() => {
+    if (autoOpen) setOpen(true);
+  }, [autoOpen]);
+
+  useEffect(() => {
+    if (!open) return;
+    const channel = supabase
+      .channel(`parent_attachments:${linkId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'parent_attachments', filter: `link_id=eq.${linkId}` },
+        () => load()
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linkId, open, supabase]);
+
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
 
-    if (file.size > MAX_FILE_SIZE) { toast.error('File 10MB se bari nahi honi chahiye'); return; }
-    if (!ALLOWED_TYPES.includes(file.type)) { toast.error('Sirf images ya PDF allowed hain'); return; }
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error('File 4MB se bari nahi honi chahiye');
+      return;
+    }
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      toast.error('Sirf images ya PDF allowed hain');
+      return;
+    }
 
     setUploading(true);
     try {
@@ -69,7 +107,10 @@ export function ParentAttachments({ linkId, currentUserId }: { linkId: string; c
 
       const res = await fetch('/api/parent/attachments', { method: 'POST', body: formData });
       const json = await res.json();
-      if (json.status === 'error') { toast.error(json.error); return; }
+      if (json.status === 'error') {
+        toast.error(json.error);
+        return;
+      }
 
       setAttachments((prev) => [json.data, ...prev]);
       toast.success('File share ho gayi!');
@@ -83,26 +124,26 @@ export function ParentAttachments({ linkId, currentUserId }: { linkId: string; c
   if (!open) {
     return (
       <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
-        <Paperclip className="w-3.5 h-3.5" /> Files
+        <Paperclip className="h-3.5 w-3.5" /> Files
       </Button>
     );
   }
 
   return (
-    <div className="border border-border rounded-xl overflow-hidden">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/30">
-        <span className="text-xs font-semibold flex items-center gap-1.5">
-          <Paperclip className="w-3.5 h-3.5" /> Shared Files
+    <div className="border-border overflow-hidden rounded-xl border">
+      <div className="border-border bg-muted/30 flex items-center justify-between border-b px-3 py-2">
+        <span className="flex items-center gap-1.5 text-xs font-semibold">
+          <Paperclip className="h-3.5 w-3.5" /> Shared Files
         </span>
-        <button onClick={() => setOpen(false)} className="text-xs text-muted-foreground hover:text-foreground">
+        <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground text-xs">
           Close
         </button>
       </div>
 
-      <div className="max-h-64 overflow-y-auto p-3 space-y-2 bg-background/50">
-        {loading && <p className="text-xs text-muted-foreground text-center mt-2">Loading...</p>}
+      <div className="bg-background/50 max-h-64 space-y-2 overflow-y-auto p-3">
+        {loading && <p className="text-muted-foreground mt-2 text-center text-xs">Loading...</p>}
         {!loading && attachments.length === 0 && (
-          <p className="text-xs text-muted-foreground text-center mt-4">Koi file share nahi hui abhi</p>
+          <p className="text-muted-foreground mt-4 text-center text-xs">Koi file share nahi hui abhi</p>
         )}
         {attachments.map((a) => (
           <a
@@ -111,7 +152,7 @@ export function ParentAttachments({ linkId, currentUserId }: { linkId: string; c
             target="_blank"
             rel="noopener noreferrer"
             className={cn(
-              'flex items-center gap-2.5 rounded-lg p-2 text-sm hover:bg-muted/50 transition-colors',
+              'hover:bg-muted/50 flex items-center gap-2.5 rounded-lg p-2 text-sm transition-colors',
               a.sender_id === currentUserId && 'bg-violet-500/5'
             )}
           >
@@ -120,25 +161,25 @@ export function ParentAttachments({ linkId, currentUserId }: { linkId: string; c
               <img
                 src={a.signed_url}
                 alt={a.file_name}
-                className="w-10 h-10 rounded-lg object-cover shrink-0 border border-border"
+                className="border-border h-10 w-10 shrink-0 rounded-lg border object-cover"
               />
             ) : (
-              <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center shrink-0">
-                <FileText className="w-5 h-5 text-red-400" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-500/10">
+                <FileText className="h-5 w-5 text-red-400" />
               </div>
             )}
             <div className="min-w-0 flex-1">
-              <p className="truncate font-medium text-xs">{a.file_name}</p>
-              <p className="text-[10px] text-muted-foreground">
+              <p className="truncate text-xs font-medium">{a.file_name}</p>
+              <p className="text-muted-foreground text-[10px]">
                 {formatFileSize(a.file_size_kb)} &middot; {new Date(a.created_at).toLocaleDateString()}
               </p>
             </div>
-            <Download className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+            <Download className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
           </a>
         ))}
       </div>
 
-      <div className="p-2 border-t border-border">
+      <div className="border-border border-t p-2">
         <input
           ref={fileInputRef}
           type="file"
@@ -153,8 +194,11 @@ export function ParentAttachments({ linkId, currentUserId }: { linkId: string; c
           onClick={() => fileInputRef.current?.click()}
           loading={uploading}
         >
-          <Upload className="w-3.5 h-3.5" /> Upload File
+          <Upload className="h-3.5 w-3.5" /> Upload File
         </Button>
+        <p className="text-muted-foreground mt-1.5 text-center text-[10px]">
+          Shared files 30 din tak available rehti hain.
+        </p>
       </div>
     </div>
   );

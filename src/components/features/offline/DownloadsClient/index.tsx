@@ -1,79 +1,137 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { HardDriveDownload, Trash2, WifiOff } from 'lucide-react';
+import { Eye, FileText, HardDriveDownload, Trash2, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import {
+  clearOfflineResources,
+  deleteOfflineResource,
+  listOfflineResources,
+  type OfflineResource,
+} from '@/lib/offline/resources';
+import { ProtectedResourceReader } from '@/components/features/resources/ProtectedResourceReader';
 
-type OfflineItem = { id: string; title: string; url?: string; savedAt: string };
+export function DownloadsClient({ embedded = false }: { embedded?: boolean }) {
+  const [items, setItems] = useState<OfflineResource[]>([]);
+  const [active, setActive] = useState<OfflineResource | null>(null);
+  const [storageEstimate, setStorageEstimate] = useState('Calculating...');
 
-export function DownloadsClient() {
-  const [items, setItems] = useState<OfflineItem[]>([]);
-  const [storageEstimate, setStorageEstimate] = useState<string>('Calculating...');
-
-  useEffect(() => {
-    const raw = localStorage.getItem('ilm-ai-offline-items');
-    setItems(raw ? JSON.parse(raw) : []);
+  const refresh = async () => {
+    try {
+      const stored = await listOfflineResources();
+      setItems(stored.sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime()));
+    } catch {
+      setItems([]);
+    }
     navigator.storage?.estimate?.().then((estimate) => {
       const used = Math.round((estimate.usage || 0) / 1024 / 1024);
       const quota = Math.round((estimate.quota || 0) / 1024 / 1024);
       setStorageEstimate(`${used}MB used${quota ? ` of ${quota}MB` : ''}`);
     });
+  };
+
+  useEffect(() => {
+    void navigator.storage?.persist?.();
+    void refresh();
   }, []);
 
   const clear = async () => {
-    localStorage.removeItem('ilm-ai-offline-items');
-    if ('caches' in window) {
-      const keys = await caches.keys();
-      await Promise.all(keys.filter((key) => key.includes('ilm-ai')).map((key) => caches.delete(key)));
-    }
+    await clearOfflineResources();
     setItems([]);
-    toast.success('Offline cache clear ho gaya.');
+    setActive(null);
+    toast.success('App-only offline files clear ho gayi hain.');
+  };
+
+  const remove = async (item: OfflineResource) => {
+    await deleteOfflineResource(item.key);
+    if (active?.key === item.key) setActive(null);
+    await refresh();
+    toast.success('Offline file remove ho gayi.');
   };
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
-      <div>
-        <Badge variant="secondary" className="mb-3">Offline Learning</Badge>
-        <h1 className="text-2xl font-bold">Downloads</h1>
-        <p className="text-muted-foreground">Explicitly downloaded notes, PDFs aur resources yahan offline access ke liye list honge.</p>
-      </div>
+    <div className={embedded ? 'space-y-4' : 'mx-auto max-w-5xl space-y-6'}>
+      {!embedded && (
+        <div>
+          <Badge variant="secondary" className="mb-3">
+            Offline Learning
+          </Badge>
+          <h1 className="text-2xl font-bold">Downloads</h1>
+          <p className="text-muted-foreground">
+            Pro/Elite files app ke private storage mein save hoti hain, normal device downloads mein nahi.
+          </p>
+        </div>
+      )}
       <Card>
         <CardContent className="flex flex-wrap items-center justify-between gap-3 p-5">
           <div className="flex items-center gap-3">
-            <HardDriveDownload className="h-5 w-5 text-violet-400" />
+            <HardDriveDownload className="text-primary h-5 w-5" />
             <div>
-              <p className="font-semibold">{items.length} downloaded items</p>
-              <p className="text-sm text-muted-foreground">{storageEstimate}</p>
+              <p className="font-semibold">
+                {items.length} saved item{items.length === 1 ? '' : 's'}
+              </p>
+              <p className="text-muted-foreground text-sm">{storageEstimate}</p>
             </div>
           </div>
-          <Button variant="outline" onClick={clear}><Trash2 className="h-4 w-4" />Clear cache</Button>
+          <Button variant="outline" onClick={clear} disabled={!items.length}>
+            <Trash2 className="h-4 w-4" />
+            Clear all
+          </Button>
         </CardContent>
       </Card>
       {items.length === 0 ? (
         <Card>
-          <CardContent className="flex min-h-56 flex-col items-center justify-center p-8 text-center">
-            <WifiOff className="mb-3 h-10 w-10 text-muted-foreground/50" />
-            <p className="font-semibold">No downloads yet</p>
-            <p className="mt-1 text-sm text-muted-foreground">Library resources par Download for offline button use karo.</p>
+          <CardContent className="flex min-h-48 flex-col items-center justify-center p-8 text-center">
+            <WifiOff className="text-muted-foreground/50 mb-3 h-10 w-10" />
+            <p className="font-semibold">No app downloads yet</p>
+            <p className="text-muted-foreground mt-1 text-sm">
+              Library ya Past Papers par “Save in app for offline” use karo.
+            </p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-3">
           {items.map((item) => (
-            <Card key={item.id}>
-              <CardContent className="flex items-center justify-between gap-3 p-4">
-                <div>
-                  <p className="font-semibold">{item.title}</p>
-                  <p className="text-xs text-muted-foreground">{new Date(item.savedAt).toLocaleString()}</p>
+            <Card key={item.key}>
+              <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="bg-primary/10 text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-xl">
+                    <FileText className="h-5 w-5" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold">{item.title}</p>
+                    <p className="text-muted-foreground text-xs">
+                      {item.mode} version | {new Date(item.savedAt).toLocaleString()}
+                    </p>
+                  </div>
                 </div>
-                {item.url && <Button asChild variant="outline" size="sm"><a href={item.url}>Open</a></Button>}
+                <div className="flex gap-2">
+                  <Button variant="gradient" size="sm" onClick={() => setActive(item)}>
+                    <Eye className="h-3.5 w-3.5" />
+                    Open
+                  </Button>
+                  <Button variant="ghost" size="icon-sm" onClick={() => remove(item)} aria-label="Remove offline file">
+                    <Trash2 className="text-destructive h-4 w-4" />
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
         </div>
+      )}
+      {active && (
+        <ProtectedResourceReader
+          open
+          onClose={() => setActive(null)}
+          kind={active.kind}
+          resourceId={active.resourceId}
+          mode={active.mode}
+          title={active.title}
+          offlineBlob={active.blob}
+        />
       )}
     </div>
   );

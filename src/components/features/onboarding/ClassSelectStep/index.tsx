@@ -82,13 +82,15 @@ export function ClassSelectStep() {
             <button
               key={level.value}
               type="button"
+              aria-pressed={educationLevel === level.value}
+              data-selectable="true"
               onClick={() => {
                 setEducationLevel(level.value);
                 setError(null);
               }}
               className={[
                 'rounded-xl border px-4 py-3 text-left transition-colors',
-                educationLevel === level.value ? 'border-primary bg-primary/20 shadow-sm shadow-primary/15' : 'border-border bg-card/80 hover:border-primary/40 hover:bg-primary/10',
+                educationLevel === level.value ? 'border-primary shadow-sm shadow-primary/15' : 'border-border',
               ].join(' ')}
             >
               <span className="block text-sm font-semibold">{level.label}</span>

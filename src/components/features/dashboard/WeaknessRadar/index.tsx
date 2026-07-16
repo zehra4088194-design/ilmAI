@@ -13,13 +13,13 @@ export function WeaknessRadar({ scores }: { scores: SubjectScore[] }) {
   const avg = scores.length ? Math.round(scores.reduce((sum, item) => sum + item.average, 0) / scores.length) : 0;
 
   return (
-    <Card>
+    <Card className="dashboard-surface text-foreground">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg"><Activity className="h-5 w-5 text-violet-400" />Weakness Radar</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {scores.length === 0 ? (
-          <div className="rounded-xl border border-dashed p-5 text-center">
+          <div className="rounded-xl border border-dashed border-border/70 bg-muted/30 p-5 text-center">
             <p className="font-medium">No performance data yet</p>
             <p className="mt-1 text-sm text-muted-foreground">Complete one AI Testing session and insights will appear here.</p>
             <Link href="/practice" className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-violet-400">Start practice <ArrowRight className="h-3.5 w-3.5" /></Link>
@@ -45,7 +45,7 @@ export function WeaknessRadar({ scores }: { scores: SubjectScore[] }) {
 
 function Insight({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border bg-muted/20 p-3">
+    <div className="flex items-center gap-3 rounded-xl border border-border/70 bg-muted/35 p-3">
       <Icon className="h-4 w-4 text-violet-400" />
       <div>
         <p className="text-xs text-muted-foreground">{label}</p>

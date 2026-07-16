@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { Download, FileText, Loader2, Presentation, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -168,7 +169,7 @@ export function UniversityToolClient({ tool, title, description, defaultSubject 
           {result && !loading && (
             <div className="space-y-4">
               <ResultActions tool={tool} onShorter={() => generate('Make the previous draft shorter and more concise.')} onAcademic={() => generate('Make the previous draft more academic and formal.')} onBullets={() => generate('Convert the previous draft into bullet revision notes.')} />
-              <div id="university-export">
+              <div id="university-export" data-print-root="true">
                 {tool === 'viva' ? (
                   <VivaPracticeResult result={result} />
                 ) : isPresentation && slides.length > 0 ? (
@@ -273,7 +274,11 @@ function ResultActions({ tool, onShorter, onAcademic, onBullets }: { tool: Tool;
         const ok = printElementById('university-export', 'ilm AI University Draft');
         if (!ok) toast.error('Export content nahi mila.');
       }}><Download className="h-3.5 w-3.5" /> Export PDF / Print</Button>
-      <Button variant="outline" size="sm" onClick={() => toast.info('PPTX export coming soon. PDF/print outline works now.')}><Presentation className="h-3.5 w-3.5" /> PPTX Coming Soon</Button>
+      {tool !== 'presentation' && (
+        <Button asChild variant="outline" size="sm">
+          <Link href="/university/presentation-builder"><Presentation className="h-3.5 w-3.5" /> Create full presentation</Link>
+        </Button>
+      )}
     </div>
   );
 }

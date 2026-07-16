@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { setGradeLevel } from '@/app/onboarding/class/actions';
 import {
   CLASS_SELECTION_GRADE_LEVELS,
@@ -20,14 +21,20 @@ import {
 
 interface ClassSettingsCardProps {
   currentGradeLevel: ClassSelectionGradeLevel;
+  onClassChange?: (gradeLevel: ClassSelectionGradeLevel, educationLevel: string) => void;
 }
 
-export function ClassSettingsCard({ currentGradeLevel }: ClassSettingsCardProps) {
+export function ClassSettingsCard({ currentGradeLevel, onClassChange }: ClassSettingsCardProps) {
+  const router = useRouter();
   const [displayedGrade, setDisplayedGrade] = useState(currentGradeLevel);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [pendingGrade, setPendingGrade] = useState<ClassSelectionGradeLevel | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    setDisplayedGrade(currentGradeLevel);
+  }, [currentGradeLevel]);
 
   function openDialogFor(gradeLevel: ClassSelectionGradeLevel) {
     setPendingGrade(gradeLevel);
@@ -48,8 +55,10 @@ export function ClassSettingsCard({ currentGradeLevel }: ClassSettingsCardProps)
       }
 
       setDisplayedGrade(pendingGrade);
+      onClassChange?.(pendingGrade, result.data?.educationLevel ?? (pendingGrade === 'GRADE_11' || pendingGrade === 'GRADE_12' ? 'college' : 'school'));
       setDialogOpen(false);
       setPendingGrade(null);
+      router.refresh();
     });
   }
 

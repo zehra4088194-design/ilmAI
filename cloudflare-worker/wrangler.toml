@@ -5,5 +5,5 @@ main = "worker.js"
 compatibility_date = "2024-09-23"
 
 # Secrets are NOT set here (never commit real keys).
-# Set them with: wrangler secret put GROQ_API_KEY_1   (repeat for every key)
+# Prefer one JSON pool secret: wrangler secret put GROQ_API_KEYS_JSON
 # or via Dashboard -> Workers & Pages -> ilm-ai1 -> Settings -> Variables and Secrets

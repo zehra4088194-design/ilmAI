@@ -23,6 +23,18 @@ type Props = {
 const ALL_VALUE = '__all__';
 const FILE_TYPES: LibraryResource['file_type'][] = ['pdf', 'docx', 'pptx', 'other'];
 
+function isAcceptableResourceUrl(url: string) {
+  if (!/^https?:\/\//i.test(url)) return false;
+  if (extractGoogleDriveFileId(url)) return true;
+  try {
+    const parsed = new URL(url);
+    const path = parsed.pathname.toLowerCase();
+    return ['.pdf', '.docx', '.pptx'].some((extension) => path.endsWith(extension));
+  } catch {
+    return false;
+  }
+}
+
 const emptyForm = {
   title: '',
   description: '',
@@ -32,7 +44,9 @@ const emptyForm = {
   chapter_id: ALL_VALUE,
   board: ALL_VALUE,
   grade_level: ALL_VALUE,
-  drive_url: '',
+  light_file_url: '',
+  dark_file_url: '',
+  context_text_url: '',
   file_type: 'pdf' as LibraryResource['file_type'],
 };
 
@@ -65,7 +79,9 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
         chapter_id: resource.chapter_id ?? ALL_VALUE,
         board: resource.board ?? ALL_VALUE,
         grade_level: resource.grade_level ?? ALL_VALUE,
-        drive_url: resource.drive_url,
+        light_file_url: resource.light_file_url || resource.drive_url,
+        dark_file_url: resource.dark_file_url || '',
+        context_text_url: resource.context_text_url || '',
         file_type: resource.file_type,
       });
     } else {
@@ -89,9 +105,19 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
 
-    const driveUrl = form.drive_url.trim();
-    if (!/^https?:\/\//i.test(driveUrl) || !extractGoogleDriveFileId(driveUrl)) {
-      setError('Google Drive/Docs file link valid nahi lag raha. File ka share link paste karein.');
+    const lightFileUrl = form.light_file_url.trim();
+    const darkFileUrl = form.dark_file_url.trim();
+    const contextTextUrl = form.context_text_url.trim();
+    if (!isAcceptableResourceUrl(lightFileUrl)) {
+      setError('Light/default Google Drive/Docs share link ya direct PDF URL paste karein.');
+      return;
+    }
+    if (darkFileUrl && !isAcceptableResourceUrl(darkFileUrl)) {
+      setError('Dark mode ke liye valid Google Drive/Docs ya direct PDF URL paste karein.');
+      return;
+    }
+    if (!/^https:\/\//i.test(contextTextUrl)) {
+      setError('AI summary/test ke liye companion .txt file ka HTTPS ya Google Drive link zaroori hai.');
       return;
     }
 
@@ -107,15 +133,21 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
         chapter_id: form.chapter_id === ALL_VALUE ? null : form.chapter_id,
         board: form.board === ALL_VALUE ? null : form.board,
         grade_level: form.grade_level === ALL_VALUE ? null : form.grade_level,
-        drive_url: driveUrl,
+        drive_url: lightFileUrl,
+        light_file_url: lightFileUrl,
+        dark_file_url: darkFileUrl || null,
+        context_text_url: contextTextUrl,
         file_type: form.file_type,
       };
 
-      const res = await fetch(isEdit ? `/api/admin/library-resources/${resource!.id}` : '/api/admin/library-resources', {
-        method: isEdit ? 'PATCH' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      const res = await fetch(
+        isEdit ? `/api/admin/library-resources/${resource!.id}` : '/api/admin/library-resources',
+        {
+          method: isEdit ? 'PATCH' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        }
+      );
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || data.details || 'Save nahi ho saka');
 
@@ -138,18 +170,35 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="resource-title">Title</Label>
-            <Input id="resource-title" value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} placeholder="Physics Notes - Chapter 5" required />
+            <Input
+              id="resource-title"
+              value={form.title}
+              onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
+              placeholder="Physics Notes - Chapter 5"
+              required
+            />
           </div>
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="resource-description">Description</Label>
-            <Textarea id="resource-description" value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} placeholder="Short note about what's inside" rows={2} />
+            <Textarea
+              id="resource-description"
+              value={form.description}
+              onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
+              placeholder="Short note about what's inside"
+              rows={2}
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <Label>Subject</Label>
-              <Select value={form.subject_id} onValueChange={(value) => setForm((current) => ({ ...current, subject_id: value, chapter_id: ALL_VALUE }))}>
+              <Select
+                value={form.subject_id}
+                onValueChange={(value) =>
+                  setForm((current) => ({ ...current, subject_id: value, chapter_id: ALL_VALUE }))
+                }
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -166,7 +215,11 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
 
             <div className="flex flex-col gap-1.5">
               <Label>Chapter</Label>
-              <Select value={form.chapter_id} onValueChange={(value) => setForm((current) => ({ ...current, chapter_id: value }))} disabled={form.subject_id === ALL_VALUE}>
+              <Select
+                value={form.chapter_id}
+                onValueChange={(value) => setForm((current) => ({ ...current, chapter_id: value }))}
+                disabled={form.subject_id === ALL_VALUE}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -185,7 +238,12 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <Label>Resource Type</Label>
-              <Select value={form.resource_type} onValueChange={(value) => setForm((current) => ({ ...current, resource_type: value as LibraryResource['resource_type'] }))}>
+              <Select
+                value={form.resource_type}
+                onValueChange={(value) =>
+                  setForm((current) => ({ ...current, resource_type: value as LibraryResource['resource_type'] }))
+                }
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -199,7 +257,12 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
 
             <div className="flex flex-col gap-1.5">
               <Label>Category</Label>
-              <Select value={form.category} onValueChange={(value) => setForm((current) => ({ ...current, category: value as LibraryResource['category'] }))}>
+              <Select
+                value={form.category}
+                onValueChange={(value) =>
+                  setForm((current) => ({ ...current, category: value as LibraryResource['category'] }))
+                }
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -212,7 +275,12 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
 
             <div className="flex flex-col gap-1.5">
               <Label>File Type</Label>
-              <Select value={form.file_type} onValueChange={(value) => setForm((current) => ({ ...current, file_type: value as LibraryResource['file_type'] }))}>
+              <Select
+                value={form.file_type}
+                onValueChange={(value) =>
+                  setForm((current) => ({ ...current, file_type: value as LibraryResource['file_type'] }))
+                }
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -230,7 +298,10 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <Label>Board</Label>
-              <Select value={form.board} onValueChange={(value) => setForm((current) => ({ ...current, board: value }))}>
+              <Select
+                value={form.board}
+                onValueChange={(value) => setForm((current) => ({ ...current, board: value }))}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -247,7 +318,10 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
 
             <div className="flex flex-col gap-1.5">
               <Label>Grade Level</Label>
-              <Select value={form.grade_level} onValueChange={(value) => setForm((current) => ({ ...current, grade_level: value }))}>
+              <Select
+                value={form.grade_level}
+                onValueChange={(value) => setForm((current) => ({ ...current, grade_level: value }))}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -264,12 +338,45 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="drive-url">Google Drive / Docs File Link</Label>
-            <Input id="drive-url" value={form.drive_url} onChange={(event) => setForm((current) => ({ ...current, drive_url: event.target.value }))} placeholder="https://drive.google.com/file/d/.../view" required />
-            <p className="text-xs text-muted-foreground">Pehle Drive file ki sharing setting &quot;Anyone with the link can view&quot; par set karein.</p>
+            <Label htmlFor="light-drive-url">Light mode PDF / Drive link</Label>
+            <Input
+              id="light-drive-url"
+              value={form.light_file_url}
+              onChange={(event) => setForm((current) => ({ ...current, light_file_url: event.target.value }))}
+              placeholder="https://drive.google.com/file/d/.../view"
+              required
+            />
+            <p className="text-muted-foreground text-xs">
+              Light PDF default bhi rahegi. Drive sharing &quot;Anyone with the link can view&quot; rakhein.
+            </p>
           </div>
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="dark-drive-url">Dark mode PDF / Drive link (optional)</Label>
+            <Input
+              id="dark-drive-url"
+              value={form.dark_file_url}
+              onChange={(event) => setForm((current) => ({ ...current, dark_file_url: event.target.value }))}
+              placeholder="https://drive.google.com/file/d/.../view"
+            />
+            <p className="text-muted-foreground text-xs">Student dark mode on kare to ye PDF open hogi.</p>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="context-text-url">Companion context .txt link</Label>
+            <Input
+              id="context-text-url"
+              value={form.context_text_url}
+              onChange={(event) => setForm((current) => ({ ...current, context_text_url: event.target.value }))}
+              placeholder="https://drive.google.com/file/d/.../view"
+              required
+            />
+            <p className="text-muted-foreground text-xs">
+              Complete readable text rakhein. Gemini summary aur file-test isi private server context se banenge.
+            </p>
+          </div>
+
+          {error && <p className="text-destructive text-sm">{error}</p>}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

@@ -11,8 +11,9 @@ export type SessionStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'ABAND
 export type AiProvider = 'groq' | 'anthropic' | 'openai';
 export type ConversationRole = 'user' | 'assistant' | 'system';
 
-export type AiProviderId = 'groq' | 'claude' | 'gpt' | 'gemini';
+export type AiProviderId = 'groq' | 'grok' | 'claude' | 'gpt' | 'gemini' | 'advanced';
 export type UserRole = 'student' | 'parent' | 'teacher' | 'admin';
+export type Gender = 'girl' | 'boy';
 export type EducationLevel = 'school' | 'college' | 'university';
 export type PreferredOutputStyle = 'simple' | 'academic' | 'professional' | 'detailed';
 
@@ -38,6 +39,8 @@ export interface UserProfile {
   isProfileComplete: boolean;
   onboardingStep: number;
   role: UserRole;
+  gender?: Gender;
+  genderChangedAt?: string;
   isAiOperated: boolean;
   aiPersonaProvider?: AiProviderId;
   createdAt: string;

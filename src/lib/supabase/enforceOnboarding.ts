@@ -37,7 +37,7 @@ export async function enforceOnboarding(
 
   const { data: profile, error } = await supabase
     .from('profiles')
-    .select('role, board, grade_level, education_level, university_program, university_semester, onboarding_completed')
+    .select('role, gender, board, grade_level, education_level, university_program, university_semester, onboarding_completed')
     .eq('id', user.id)
     .single();
 

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, CheckCircle2, Camera, ChevronDown, ChevronUp, Clock, FileCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -40,6 +40,7 @@ export function FullTestSetup({
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [gradeResults, setGradeResults] = useState<any[]>([]);
   const [scanningWhole, setScanningWhole] = useState(false);
+  const [resourceSourceTitle, setResourceSourceTitle] = useState<string | null>(null);
   const [scanProgress, setScanProgress] = useState<{ current: number; total: number } | null>(null);
   const wholeTestFileRef = useRef<HTMLInputElement>(null);
   const isFreeTier = userTier === 'FREE';
@@ -47,6 +48,27 @@ export function FullTestSetup({
   const bp = BOARD_PATTERNS[grade] || BOARD_PATTERNS['GRADE_10']!;
   const counts = pattern === 'board' ? { mcq: bp.mcq, short: bp.short, long: bp.long } : custom;
   const selectedSubject = subjects.find(s => s.id === subject);
+
+  useEffect(() => {
+    const raw = window.sessionStorage.getItem('ilm-ai-resource-test');
+    if (!raw) return;
+    try {
+      const stored = JSON.parse(raw) as { paper?: any; resourceTitle?: string };
+      if (!stored.paper) return;
+      const nextPaper = {
+        ...stored.paper,
+        shortQs: (stored.paper.shortQs || []).map((question: any) => ({ ...question, id: nanoid() })),
+        longQs: (stored.paper.longQs || []).map((question: any) => ({ ...question, id: nanoid() })),
+      };
+      setPaper(nextPaper);
+      setResourceSourceTitle(stored.resourceTitle || nextPaper.title || 'Resource file');
+      setAnswers({});
+      setState('paper');
+      window.sessionStorage.removeItem('ilm-ai-resource-test');
+    } catch {
+      window.sessionStorage.removeItem('ilm-ai-resource-test');
+    }
+  }, []);
 
   const generate = async () => {
     if (!subject) { toast.error('Subject select karo'); return; }
@@ -157,7 +179,7 @@ export function FullTestSetup({
       const res = await fetch('/api/ai/grade-test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ questions: writeQuestions, answers: writeAnswers, subjectName: selectedSubject?.name, className: grade.replace('GRADE_', 'Class '), provider, aiTier }),
+        body: JSON.stringify({ questions: writeQuestions, answers: writeAnswers, subjectName: selectedSubject?.name || resourceSourceTitle || 'Resource file', className: grade.replace('GRADE_', 'Class '), provider, aiTier }),
       });
       const json = await res.json();
       const writeEvals = json.data || writeQuestions.map(() => ({ score: 0, grade: '?', feedback: 'Grading pending' }));
@@ -265,6 +287,7 @@ export function FullTestSetup({
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
               <h2 className="text-xl font-bold">{paper.title}</h2>
+              {resourceSourceTitle && <Badge variant="secondary" className="mt-2">Generated only from: {resourceSourceTitle}</Badge>}
               <p className="text-sm text-muted-foreground flex items-center gap-3 mt-1">
                 {paper.totalMarks && <span>📊 {paper.totalMarks} marks</span>}
                 {paper.timeAllowed && <span><Clock className="inline w-3.5 h-3.5" /> {paper.timeAllowed} min</span>}

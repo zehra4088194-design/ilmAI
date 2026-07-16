@@ -1,14 +1,16 @@
 // ============================================
 // UNIFIED OCR SERVICE — routes through the Cloudflare Worker gateway
-// - 'printed'     -> OCR.space (5 keys, rotated) — used for FREE tier
-// - 'handwritten' -> Gemini Vision (5 keys, rotated) — used for PRO/ELITE tier
-// Each mode automatically falls back to the other if all 5 of its keys fail,
-// so OCR practically never hard-fails.
+// - 'printed'     -> OCR.space (up to 20 keys, rotated)
+// - 'handwritten' -> Gemini Vision (up to 20 keys, rotated)
+// Each mode automatically falls back to the other if its configured keys fail.
 // ============================================
 import type { SubscriptionTier } from '@/types';
+import sharp from 'sharp';
+import { checkProviderDailyLimit } from '@/lib/rate-limit';
 
 const GATEWAY_URL = process.env.AI_GATEWAY_URL || 'https://ilm-ai1.noorhusnain791.workers.dev';
 const GATEWAY_SECRET = process.env.AI_GATEWAY_SECRET || '';
+const OCR_SPACE_SAFE_BYTES = 900_000;
 
 export interface OcrResult {
   text: string;
@@ -22,34 +24,108 @@ export interface OcrRequest {
   mimeType: string;
   userTier: SubscriptionTier;
   mode?: 'printed' | 'handwritten';
+  timeoutMs?: number;
 }
 
-export const OCR_FREE_DAILY_LIMIT = 5;
+async function optimizeImageForOcr(imageBuffer: Buffer, mimeType: string) {
+  const isLikelyOptimized =
+    imageBuffer.length <= OCR_SPACE_SAFE_BYTES &&
+    ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(mimeType.toLowerCase());
 
-export async function performOcr({ imageBuffer, mimeType, userTier, mode: requestedMode }: OcrRequest): Promise<OcrResult> {
-  const mode = requestedMode || (userTier === 'FREE' ? 'printed' : 'handwritten');
-  if (mode === 'handwritten' && userTier === 'FREE') {
-    throw new Error('Handwritten scan Pro aur Elite users ke liye hai.');
+  if (isLikelyOptimized) {
+    return { imageBuffer, mimeType };
   }
-  const imageBase64 = imageBuffer.toString('base64');
 
-  const res = await fetch(`${GATEWAY_URL}/ocr`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GATEWAY_SECRET}` },
-    body: JSON.stringify({ mode, imageBase64, mimeType }),
-    signal: AbortSignal.timeout(30000),
-  });
+  try {
+    const base = sharp(imageBuffer, { animated: false })
+      .rotate()
+      .resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true })
+      .grayscale()
+      .normalise();
 
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'OCR gateway request failed');
+    for (const quality of [82, 72, 62, 52, 42, 34]) {
+      const nextBuffer = await base.jpeg({ quality, mozjpeg: true }).toBuffer();
+      if (nextBuffer.length <= OCR_SPACE_SAFE_BYTES || quality === 34) {
+        return { imageBuffer: nextBuffer, mimeType: 'image/jpeg' };
+      }
+    }
+  } catch (error) {
+    console.warn('OCR image optimization failed, using original image:', error);
+  }
 
-  return { text: (data.text || '').trim(), provider: data.providerUsed, fallbackTriggered: data.fallbackTriggered };
+  return { imageBuffer, mimeType };
+}
+
+async function readGatewayJson(res: Response) {
+  const contentType = res.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) return res.json();
+  return { error: await res.text() };
+}
+
+export async function performOcr({
+  imageBuffer,
+  mimeType,
+  userTier,
+  mode: requestedMode,
+  timeoutMs = 30000,
+}: OcrRequest): Promise<OcrResult> {
+  const mode = requestedMode || (userTier === 'FREE' ? 'printed' : 'handwritten');
+  const optimized = await optimizeImageForOcr(imageBuffer, mimeType);
+  const imageBase64 = optimized.imageBuffer.toString('base64');
+  const modes: Array<'printed' | 'handwritten'> =
+    mode === 'handwritten' ? ['handwritten', 'printed'] : ['printed', 'handwritten'];
+  let lastError: unknown;
+
+  for (let index = 0; index < modes.length; index++) {
+    const attemptMode = modes[index];
+    const budgetKey = attemptMode === 'handwritten' ? 'gemini' : 'ocrSpace';
+    const budget = await checkProviderDailyLimit(budgetKey);
+    if (!budget.success) {
+      lastError = new Error(`${budgetKey} ka platform free daily budget complete ho gaya.`);
+      continue;
+    }
+
+    try {
+      const res = await fetch(`${GATEWAY_URL}/ocr`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GATEWAY_SECRET}` },
+        body: JSON.stringify({
+          mode: attemptMode,
+          imageBase64,
+          mimeType: optimized.mimeType,
+          strict_provider: true,
+        }),
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+
+      const data = await readGatewayJson(res);
+      if (!res.ok) {
+        lastError = new Error(data.error || `OCR gateway request failed (${res.status})`);
+        continue;
+      }
+
+      const text = String(data.text || '').trim();
+      if (!text) {
+        lastError = new Error('OCR gateway returned empty text.');
+        continue;
+      }
+      return {
+        text,
+        provider: data.providerUsed === 'gemini-vision' ? 'gemini-vision' : 'ocr-space',
+        fallbackTriggered: index > 0,
+      };
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  console.error('OCR failed on all budgeted providers:', lastError);
+  throw lastError instanceof Error ? lastError : new Error('OCR failed on all providers');
 }
 
 export function validateOcrFile(mimeType: string, sizeBytes: number): { valid: boolean; error?: string } {
-  const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-  const MAX_SIZE = 8 * 1024 * 1024; // 8MB (base64 inflates ~33%, keep under provider limits)
-  if (!ALLOWED_TYPES.includes(mimeType)) return { valid: false, error: 'Sirf JPG, PNG, WEBP, GIF images allowed hain' };
-  if (sizeBytes > MAX_SIZE) return { valid: false, error: 'File 8MB se choti honi chahiye' };
+  const MAX_SIZE = 4 * 1024 * 1024; // Leaves room under Vercel Hobby's multipart body cap.
+  if (!mimeType.startsWith('image/')) return { valid: false, error: 'Sirf image upload karo' };
+  if (sizeBytes > MAX_SIZE) return { valid: false, error: 'File 4MB se choti honi chahiye' };
   return { valid: true };
 }

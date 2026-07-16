@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**
  * ASSUMPTION: this module expects three public Storage buckets to already
@@ -10,12 +10,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  * If the project already has a shared uploads bucket / convention, just
  * change the three constants below — every caller keeps working unmodified.
  */
-export const COLLEGE_LOGO_BUCKET = "college-logos";
-export const COLLEGE_COVER_BUCKET = "college-covers";
-export const COLLEGE_RESOURCE_BUCKET = "college-resources";
+export const COLLEGE_LOGO_BUCKET = 'college-logos';
+export const COLLEGE_COVER_BUCKET = 'college-covers';
+export const COLLEGE_RESOURCE_BUCKET = 'college-resources';
 
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB
-const MAX_RESOURCE_BYTES = 25 * 1024 * 1024; // 25MB
+const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
+const MAX_RESOURCE_BYTES = 4 * 1024 * 1024;
 
 function assertFileSize(file: File, maxBytes: number, label: string) {
   if (file.size > maxBytes) {
@@ -24,7 +24,7 @@ function assertFileSize(file: File, maxBytes: number, label: string) {
 }
 
 function safeFileName(name: string): string {
-  return name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-100);
+  return name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-100);
 }
 
 export async function uploadCollegeImage(
@@ -33,11 +33,11 @@ export async function uploadCollegeImage(
   collegeId: string,
   file: File
 ): Promise<string> {
-  assertFileSize(file, MAX_IMAGE_BYTES, "Image");
+  assertFileSize(file, MAX_IMAGE_BYTES, 'Image');
   const path = `${collegeId}/${Date.now()}-${safeFileName(file.name)}`;
   const { error } = await supabase.storage.from(bucket).upload(path, file, {
     upsert: true,
-    cacheControl: "3600",
+    cacheControl: '3600',
   });
   if (error) throw new Error(error.message);
   const { data } = supabase.storage.from(bucket).getPublicUrl(path);
@@ -49,11 +49,11 @@ export async function uploadCollegeResourceFile(
   collegeId: string,
   file: File
 ): Promise<string> {
-  assertFileSize(file, MAX_RESOURCE_BYTES, "File");
+  assertFileSize(file, MAX_RESOURCE_BYTES, 'File');
   const path = `${collegeId}/${Date.now()}-${safeFileName(file.name)}`;
   const { error } = await supabase.storage.from(COLLEGE_RESOURCE_BUCKET).upload(path, file, {
     upsert: false,
-    cacheControl: "3600",
+    cacheControl: '3600',
   });
   if (error) throw new Error(error.message);
   const { data } = supabase.storage.from(COLLEGE_RESOURCE_BUCKET).getPublicUrl(path);
@@ -61,11 +61,7 @@ export async function uploadCollegeResourceFile(
 }
 
 /** Best-effort cleanup — failures are swallowed so a storage hiccup never blocks a DB delete. */
-export async function tryDeleteCollegeStorageObject(
-  supabase: SupabaseClient,
-  bucket: string,
-  publicUrl: string
-) {
+export async function tryDeleteCollegeStorageObject(supabase: SupabaseClient, bucket: string, publicUrl: string) {
   try {
     const marker = `/object/public/${bucket}/`;
     const idx = publicUrl.indexOf(marker);

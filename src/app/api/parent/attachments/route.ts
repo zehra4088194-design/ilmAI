@@ -1,25 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient, createClient } from '@/lib/supabase/server';
+import { createNotificationIfEnabled } from '@/lib/notifications/preferences';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
 
 const BUCKET = 'parent-attachments';
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 4 * 1024 * 1024;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf'];
 const SIGNED_URL_TTL = 60 * 60; // 1 hour
+
+async function getApprovedLink(linkId: string, userId: string) {
+  const admin = await createAdminClient();
+  const { data } = await admin
+    .from('parent_student_links')
+    .select('id, parent_id, student_id, status')
+    .eq('id', linkId)
+    .maybeSingle();
+  if (!data || data.status !== 'approved' || (data.parent_id !== userId && data.student_id !== userId)) return null;
+  return { admin, link: data };
+}
+
+async function ensureBucket(admin: Awaited<ReturnType<typeof createAdminClient>>) {
+  const { error } = await admin.storage.getBucket(BUCKET);
+  if (!error) return;
+  const { error: createError } = await admin.storage.createBucket(BUCKET, {
+    public: false,
+    fileSizeLimit: MAX_FILE_SIZE,
+    allowedMimeTypes: ALLOWED_TYPES,
+  });
+  if (createError && !/already exists/i.test(createError.message || '')) throw createError;
+}
 
 // GET /api/parent/attachments?linkId=xxx -> list attachments for a link, each with a fresh signed URL
 export async function GET(req: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ status: 'error', error: 'Login required' }, { status: 401 });
 
     const linkId = req.nextUrl.searchParams.get('linkId');
     if (!linkId) return NextResponse.json({ status: 'error', error: 'linkId required hai' }, { status: 400 });
 
-    const { data, error } = await supabase
+    const access = await getApprovedLink(linkId, user.id);
+    if (!access) return NextResponse.json({ status: 'error', error: 'Ye link aapka nahi hai' }, { status: 403 });
+
+    const { admin } = access;
+    const { data, error } = await admin
       .from('parent_attachments')
       .select('*')
       .eq('link_id', linkId)
@@ -32,7 +61,7 @@ export async function GET(req: NextRequest) {
 
     const withUrls = await Promise.all(
       (data || []).map(async (att) => {
-        const { data: signed } = await supabase.storage.from(BUCKET).createSignedUrl(att.file_url, SIGNED_URL_TTL);
+        const { data: signed } = await admin.storage.from(BUCKET).createSignedUrl(att.file_url, SIGNED_URL_TTL);
         return { ...att, signed_url: signed?.signedUrl || null };
       })
     );
@@ -48,7 +77,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ status: 'error', error: 'Login required' }, { status: 401 });
 
     const formData = await req.formData();
@@ -60,29 +91,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: 'error', error: 'linkId aur file required hain' }, { status: 400 });
     }
     if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json({ status: 'error', error: 'File 10MB se bari nahi honi chahiye' }, { status: 400 });
+      return NextResponse.json({ status: 'error', error: 'File 4MB se bari nahi honi chahiye' }, { status: 400 });
     }
     if (!ALLOWED_TYPES.includes(file.type)) {
       return NextResponse.json({ status: 'error', error: 'Sirf images ya PDF allowed hain' }, { status: 400 });
     }
 
-    // Defense in depth on top of RLS + storage policies: confirm the sender
-    // is actually a party of this approved link before we touch storage.
-    const { data: link } = await supabase
-      .from('parent_student_links')
-      .select('id, parent_id, student_id, status')
-      .eq('id', linkId)
-      .maybeSingle();
-
-    if (!link || link.status !== 'approved' || (link.parent_id !== user.id && link.student_id !== user.id)) {
+    // Validate the authenticated sender before using the service-role client.
+    const access = await getApprovedLink(linkId, user.id);
+    if (!access) {
       return NextResponse.json({ status: 'error', error: 'Ye link aapka nahi hai' }, { status: 403 });
     }
+    const { admin, link } = access;
+    await ensureBucket(admin);
 
     const ext = file.name.includes('.') ? file.name.split('.').pop() : 'bin';
     const path = `${linkId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await admin.storage
       .from(BUCKET)
       .upload(path, buffer, { contentType: file.type, upsert: false });
 
@@ -91,7 +118,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: 'error', error: 'File upload nahi hui' }, { status: 500 });
     }
 
-    const { data: record, error: insertError } = await supabase
+    const { data: record, error: insertError } = await admin
       .from('parent_attachments')
       .insert({
         link_id: linkId,
@@ -108,11 +135,27 @@ export async function POST(req: NextRequest) {
     if (insertError) {
       console.error('Attachment insert error:', insertError);
       // Best-effort cleanup so we don't leave an orphaned file in storage
-      await supabase.storage.from(BUCKET).remove([path]);
+      await admin.storage.from(BUCKET).remove([path]);
       return NextResponse.json({ status: 'error', error: 'Attachment save nahi hui' }, { status: 500 });
     }
 
-    const { data: signed } = await supabase.storage.from(BUCKET).createSignedUrl(path, SIGNED_URL_TTL);
+    const recipientId = user.id === link.parent_id ? link.student_id : link.parent_id;
+    if (!recipientId) {
+      return NextResponse.json({ status: 'error', error: 'Linked student nahi mila' }, { status: 409 });
+    }
+    await createNotificationIfEnabled(admin, 'parentMessages', {
+      user_id: recipientId,
+      type: 'SOCIAL',
+      title: 'New parent file',
+      message: `${file.name} share ki gayi hai.`,
+      link:
+        user.id === link.parent_id
+          ? `/settings?tab=parent-link&linkId=${encodeURIComponent(linkId)}&view=files`
+          : `/parent?linkId=${encodeURIComponent(linkId)}&view=files`,
+      is_read: false,
+    });
+
+    const { data: signed } = await admin.storage.from(BUCKET).createSignedUrl(path, SIGNED_URL_TTL);
 
     return NextResponse.json({ status: 'success', data: { ...record, signed_url: signed?.signedUrl || null } });
   } catch (error) {

@@ -9,7 +9,7 @@ export default async function LibraryPage() {
   const { data: { user } } = await supabase.auth.getUser();
   const { data: profile } = await supabase.from('profiles').select('board, grade_level').eq('id', user!.id).single();
   const { data: resources } = await (supabase.from('library_resources') as any)
-    .select('*, subjects(name, color), chapters(name)')
+    .select('id, title, description, category, resource_type, subject_id, chapter_id, board, grade_level, file_type, created_at, subjects(name, color), chapters(name)')
     .order('created_at', { ascending: false });
 
   const visibleResources = (resources || []).filter((resource: any) => {

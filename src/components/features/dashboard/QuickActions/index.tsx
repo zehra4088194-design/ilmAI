@@ -11,11 +11,11 @@ const ACTIONS = [
 
 export function QuickActions() {
   return (
-    <Card>
+    <Card className="dashboard-surface text-foreground">
       <CardHeader><CardTitle className="text-lg">Quick Actions</CardTitle></CardHeader>
       <CardContent className="grid grid-cols-2 gap-3">
         {ACTIONS.map((action, i) => (
-          <Link key={i} href={action.href} className="flex flex-col items-center gap-2 p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors text-center">
+          <Link key={i} href={action.href} className="flex flex-col items-center gap-2 rounded-xl border border-border/70 bg-muted/35 p-4 text-center transition-colors hover:bg-muted/55">
             <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${action.color} flex items-center justify-center`}>
               <action.icon className="w-5 h-5 text-white" />
             </div>

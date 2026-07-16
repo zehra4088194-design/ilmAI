@@ -1,30 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
+import { requireAdminUser } from '@/lib/admin/auth';
 import type { Database } from '@/lib/supabase/database.types';
 
 type BoardType = Database['public']['Enums']['board_type'];
 type GradeLevel = Database['public']['Enums']['grade_level'];
 
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '')
-  .split(',')
-  .map((e) => e.trim().toLowerCase())
-  .filter(Boolean);
-
-async function requireAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user || !ADMIN_EMAILS.includes((user.email || '').toLowerCase())) {
-    return null;
-  }
-  return user;
-}
-
 // PATCH /api/admin/chapters/:id
 // body: any subset of { name, boards, gradeLevels, orderIndex, isActive }
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const admin = await requireAdmin();
+  const admin = await requireAdminUser();
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const { id } = await params;
@@ -56,7 +41,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 // Cascades to topics/questions under this chapter (see schema FKs) — the
 // admin UI confirms with the user before calling this.
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const admin = await requireAdmin();
+  const admin = await requireAdminUser();
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const { id } = await params;

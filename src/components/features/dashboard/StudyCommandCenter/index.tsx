@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Brain, CalendarCheck, Flame, Star, Target, Zap } from 'lucide-react';
+import { Brain, CalendarCheck, Flame, Gamepad2, Music2, Star, Target, Zap } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,7 @@ export function StudyCommandCenter({
   const nextAction = weakSubject ? 'Practice weak concepts with AI Testing' : 'Start your first subject practice';
 
   return (
-    <Card className="overflow-hidden border-violet-500/20 bg-gradient-to-br from-violet-500/10 via-card to-cyan-500/5">
+    <Card className="dashboard-surface overflow-hidden border-violet-500/25 text-foreground">
       <CardContent className="p-5">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div>
@@ -30,6 +30,7 @@ export function StudyCommandCenter({
             </div>
             <h2 className="text-xl font-bold">Today&apos;s focus: {focus}</h2>
             <p className="mt-1 text-sm text-muted-foreground">{nextAction}</p>
+            <p className="mt-2 text-xs text-muted-foreground">After a study block, use a short Rest/Games break to relax your mind, then come back focused.</p>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <Metric icon={Flame} label="Streak" value={`${streak} days`} />
@@ -42,6 +43,8 @@ export function StudyCommandCenter({
           <Button asChild size="sm" variant="outline"><Link href="/practice"><Zap className="h-4 w-4" /> AI Testing</Link></Button>
           <Button asChild size="sm" variant="outline"><Link href="/flashcards">Flashcards</Link></Button>
           <Button asChild size="sm" variant="outline"><Link href="/guess-paper">Guess Paper</Link></Button>
+          <Button asChild size="sm" variant="outline"><Link href="/rest"><Music2 className="h-4 w-4" /> Rest</Link></Button>
+          <Button asChild size="sm" variant="outline"><Link href="/games"><Gamepad2 className="h-4 w-4" /> Games</Link></Button>
         </div>
       </CardContent>
     </Card>
@@ -50,7 +53,7 @@ export function StudyCommandCenter({
 
 function Metric({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-border/70 bg-card/80 p-3 shadow-sm backdrop-blur">
+    <div className="dashboard-surface rounded-xl border border-border/70 p-3 shadow-sm">
       <Icon className="mb-2 h-4 w-4 text-violet-400" />
       <p className="text-sm font-bold">{value}</p>
       <p className="text-[11px] text-muted-foreground">{label}</p>

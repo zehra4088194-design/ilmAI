@@ -7,7 +7,39 @@ import type { SubscriptionTier } from '@/types';
 export const runtime = 'nodejs';
 export const maxDuration = 30;
 
-function buildSystemPrompt(subject?: string) {
+function buildSystemPrompt(subject?: string, source?: string) {
+  const navigationCatalog = `
+App navigation (use only these exact internal links when the student asks where a feature is):
+- Dashboard: /dashboard
+- Subjects and chapters: /study
+- Lectures: /lectures
+- Library books and notes: /library
+- Past papers: /past-papers
+- AI Tutor: /ai-tutor
+- AI Testing: /practice
+- Full Test: /full-test
+- Guess Paper: /guess-paper
+- Scan and Solve: /scan
+- Study Buddies: /student-chat
+- Parent Link: /settings?tab=parent-link
+- Downloads: /downloads
+- Subscription and plans: /subscription
+- Settings: /settings
+- Smart Planner: /planner/today
+- Flashcards: /flashcards
+- My Notes: /notes
+- Progress: /progress
+- University Hub: /university
+When a destination is relevant, end with a short Markdown link such as [Open AI Tutor](/ai-tutor). Never invent an app route.`;
+  const sideChatRules = source === 'side_chat'
+    ? `
+Side chat mode:
+- Do not start with a generic welcome or self-introduction
+- Answer the student's exact question directly
+- Keep it compact unless the student asks for detail
+- If the message is just "hi/hello", greet warmly in one short line and ask what subject they need help with
+${navigationCatalog}`
+    : '';
   return `You are ilm AI, an expert tutor for Pakistani students (Grades 9-12, O/A Levels, FBISE & provincial boards).${subject ? `\nThe student has chosen to focus this session on: ${subject}. Keep your answers scoped to that subject unless they explicitly ask about something else.` : ''}
 Rules:
 - Explain concepts clearly, step by step
@@ -15,6 +47,7 @@ Rules:
 - For MCQs: explain why each option is right/wrong
 - For math/physics: show full working
 - Be encouraging and patient
+${sideChatRules}
 
 ${MARKDOWN_ANSWER_FORMAT_INSTRUCTION}`;
 }
@@ -63,12 +96,12 @@ export async function POST(req: NextRequest) {
     }
 
     const messages = [
-      { role: 'system' as const, content: buildSystemPrompt(typeof subject === 'string' ? subject : undefined) },
+      { role: 'system' as const, content: buildSystemPrompt(typeof subject === 'string' ? subject : undefined, source) },
       ...history.filter((m: { role: string; content: string }) => m.content).map((m: { role: string; content: string }) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
       { role: 'user' as const, content: message },
     ];
 
-    const result = await gatewayChat({ provider, tier, messages, maxTokens: 2048, temperature: 0.7 });
+    const result = await gatewayChat({ provider, tier, messages, maxTokens: source === 'side_chat' ? 1100 : 2048, temperature: 0.7 });
 
     // Simulate a stream so the existing chat UI (which reads response.body as a stream)
     // keeps its "typing" experience, even though the gateway itself is non-streaming
