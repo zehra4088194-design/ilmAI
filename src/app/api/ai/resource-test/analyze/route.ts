@@ -4,16 +4,12 @@ import { gatewayChat } from '@/lib/ai/gateway';
 import { checkAiMessageLimit } from '@/lib/rate-limit';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import { fetchResourceContext, getProtectedResource, type ProtectedResourceKind } from '@/lib/resources/server';
+import { analyzeResourceSource, type ResourceAnalysis } from '@/lib/resources/source-fallback';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-type Analysis = {
-  documentType: string;
-  topics: string[];
-  detectedSections: string[];
-  available: { mcq: number; short: number; long: number };
-};
+type Analysis = ResourceAnalysis;
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,41 +30,45 @@ export async function POST(req: NextRequest) {
         { status: 403 }
       );
     }
+    const context = await fetchResourceContext(resource);
     const limit = await checkAiMessageLimit(user.id, resource.tier, 'resource_test_analyze');
     if (!limit.success) {
       return NextResponse.json({ status: 'error', error: 'Aaj ki AI limit khatam ho gayi.' }, { status: 429 });
     }
-    const context = await fetchResourceContext(resource);
-    const result = await gatewayChat({
-      provider: 'grok',
-      tier: 'mini',
-      strictProvider: true,
-      maxTokens: 900,
-      temperature: 0.1,
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are a document analyst. Inspect only the supplied source and return valid JSON with no markdown.',
-        },
-        {
-          role: 'user',
-          content: `Analyze this educational file before another model creates a test. Identify the content type, main topics, whether MCQs/short/long questions can sensibly be generated, and safe recommended maximum counts based on how much source material exists.\n\nReturn exactly:\n{"documentType":"notes|book|past_paper|mixed","topics":["..."],"detectedSections":["concepts","formulas","worked examples","existing mcqs","short questions","long questions"],"available":{"mcq":0-30,"short":0-15,"long":0-8}}\n\nRESOURCE: ${resource.title}\n\nSOURCE TEXT:\n${context}`,
-        },
-      ],
-    });
-    const parsed = parseAiJson<Analysis>(result.text, {
-      documentType: 'study material',
-      topics: [],
-      detectedSections: [],
-      available: { mcq: 10, short: 5, long: 2 },
-    });
+    let parsed: Analysis;
+    let provider = 'source-fallback';
+    let fallbackUsed = false;
+    try {
+      const result = await gatewayChat({
+        provider: 'grok',
+        tier: 'mini',
+        maxTokens: 900,
+        temperature: 0.1,
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You are a document analyst. Inspect only the supplied source and return valid JSON with no markdown.',
+          },
+          {
+            role: 'user',
+            content: `Analyze this educational file before another model creates a test. Identify the content type, main topics, whether MCQs/short/long questions can sensibly be generated, and safe recommended maximum counts based on how much source material exists.\n\nReturn exactly:\n{"documentType":"notes|book|past_paper|mixed","topics":["..."],"detectedSections":["concepts","formulas","worked examples","existing mcqs","short questions","long questions"],"available":{"mcq":0-30,"short":0-15,"long":0-8}}\n\nRESOURCE: ${resource.title}\n\nSOURCE TEXT:\n${context}`,
+          },
+        ],
+      });
+      parsed = parseAiJson<Analysis>(result.text, analyzeResourceSource(context));
+      provider = result.providerUsed;
+    } catch (gatewayError) {
+      fallbackUsed = true;
+      console.warn('Grok analysis unavailable; using source fallback:', gatewayError);
+      parsed = analyzeResourceSource(context);
+    }
     parsed.available = {
       mcq: Math.max(0, Math.min(30, Number(parsed.available?.mcq) || 0)),
       short: Math.max(0, Math.min(15, Number(parsed.available?.short) || 0)),
       long: Math.max(0, Math.min(8, Number(parsed.available?.long) || 0)),
     };
-    return NextResponse.json({ status: 'success', data: parsed, provider: result.providerUsed });
+    return NextResponse.json({ status: 'success', data: parsed, provider, fallbackUsed });
   } catch (error) {
     console.error('Grok resource analysis failed:', error);
     return NextResponse.json(

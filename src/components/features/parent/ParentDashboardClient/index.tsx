@@ -364,7 +364,14 @@ function InviteBox({
       </p>
       {inviteUrl && (
         <div className="rounded-xl border bg-white p-4 text-center">
-          <QRCode value={inviteUrl} size={192} className="mx-auto h-auto max-w-full" />
+          <QRCode
+            value={inviteCode}
+            size={224}
+            level="M"
+            bgColor="#ffffff"
+            fgColor="#000000"
+            className="mx-auto h-auto max-w-full"
+          />
         </div>
       )}
       <div className="flex gap-2">

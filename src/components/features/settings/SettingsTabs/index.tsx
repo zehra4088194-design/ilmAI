@@ -684,7 +684,7 @@ export function SettingsTabs({
                   Theme
                 </h3>
                 <p className="text-muted-foreground text-sm">
-                  Apni study vibe choose karo. Ye choice isi browser mein save rahegi.
+                  Apni study vibe choose karo. Server aglay page load par sirf isi theme ka light/dark pair bhejega.
                 </p>
               </div>
               <ThemePicker />

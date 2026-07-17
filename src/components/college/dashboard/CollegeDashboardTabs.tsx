@@ -14,10 +14,11 @@ import { isDarkThemeId } from '@/lib/constants/themes';
 import type { CollegeLecture, CollegeResource, CollegeResourceMetadata } from '@/lib/college/types';
 import {
   ProtectedResourceReader,
-  fetchProtectedResourceBlob,
+  fetchProtectedResourceResponse,
 } from '@/components/features/resources/ProtectedResourceReader';
 import { ResourceAiTools } from '@/components/features/resources/ResourceAiTools';
-import { saveOfflineResource } from '@/lib/offline/resources';
+import { ResourcePreviewFrame } from '@/components/features/resources/ResourcePreviewFrame';
+import { saveOfflineResourceResponse } from '@/lib/offline/resources';
 import { toast } from 'sonner';
 
 const TYPE_LABELS: Record<CollegeResource['resource_type'], string> = {
@@ -101,21 +102,22 @@ export function CollegeDashboardTabs({
   const saveForOffline = async (resource: CollegeResourceMetadata) => {
     setDownloadingId(resource.id);
     try {
-      const blob = await fetchProtectedResourceBlob({
+      const response = await fetchProtectedResourceResponse({
         kind: 'college-resource',
         id: resource.id,
         mode,
         purpose: 'offline',
       });
-      await saveOfflineResource({
-        resourceId: resource.id,
-        kind: 'college-resource',
-        mode,
-        title: resource.title,
-        mimeType: blob.type || 'application/pdf',
-        blob,
-        savedAt: new Date().toISOString(),
-      });
+      await saveOfflineResourceResponse(
+        {
+          resourceId: resource.id,
+          kind: 'college-resource',
+          mode,
+          title: resource.title,
+          savedAt: new Date().toISOString(),
+        },
+        response
+      );
       toast.success('College file app Downloads mein save ho gayi.');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Offline save nahi ho saka.');
@@ -227,12 +229,18 @@ export function CollegeDashboardTabs({
                         key={resource.id}
                         className="glass border-border/60 bg-card/60 space-y-4 rounded-2xl border p-4 backdrop-blur-xl transition-shadow hover:shadow-md"
                       >
+                        <ResourcePreviewFrame
+                          kind="college-resource"
+                          resourceId={resource.id}
+                          mode={mode}
+                          title={resource.title}
+                          className="border-border aspect-[4/3] w-full rounded-xl border"
+                        />
                         <div className="flex items-start justify-between gap-4">
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
                               <p className="font-medium">{resource.title}</p>
                               <Badge variant="secondary">{TYPE_LABELS[resource.resource_type]}</Badge>
-                              <Badge variant="outline">Protected</Badge>
                             </div>
                             <p className="text-muted-foreground mt-0.5 text-xs">
                               {[resource.stream, resource.degree_name, resource.semester].filter(Boolean).join(' · ')}

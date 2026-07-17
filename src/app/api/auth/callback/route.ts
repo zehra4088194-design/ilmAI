@@ -1,15 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import type { Database } from '@/lib/supabase/database.types';
-import { BOARDS } from '@/lib/constants';
+import { BOARDS, GRADE_LEVELS } from '@/lib/constants';
 import { needsProfileCompletion } from '@/lib/utils/checkProfileComplete';
 import { nanoid } from 'nanoid';
 
 type BoardType = Database['public']['Enums']['board_type'];
+type GradeLevel = Database['public']['Enums']['grade_level'];
 type EducationLevel = 'school' | 'college' | 'university';
 
 function resolveBoard(value: unknown): BoardType | null {
   return typeof value === 'string' && BOARDS.some((board) => board.value === value) ? (value as BoardType) : null;
+}
+
+function resolveGradeLevel(value: unknown): GradeLevel | null {
+  return typeof value === 'string' && GRADE_LEVELS.some((grade) => grade.value === value)
+    ? (value as GradeLevel)
+    : null;
 }
 
 function resolveRole(value: unknown): Database['public']['Enums']['user_role'] | null {
@@ -22,6 +29,12 @@ function resolveEducationLevel(value: unknown): EducationLevel | null {
 
 function resolveGender(value: unknown): 'girl' | 'boy' | null {
   return value === 'girl' || value === 'boy' ? value : null;
+}
+
+function isMissingAcademicInstitutionColumn(error: { code?: string; message?: string } | null) {
+  return (
+    error?.code === '42703' || error?.code === 'PGRST204' || Boolean(error?.message?.includes('academic_institution_'))
+  );
 }
 
 async function ensureParentInvite(parentId: string) {
@@ -68,8 +81,15 @@ export async function GET(request: NextRequest) {
         data.user.app_metadata?.provider === 'google' || (Array.isArray(providers) && providers.includes('google'));
       const metadataRole = resolveRole(userMetadata?.role) ?? redirectRole;
       const metadataBoard = resolveBoard(userMetadata?.board);
+      const metadataGradeLevel = resolveGradeLevel(userMetadata?.grade_level);
       const metadataEducationLevel = resolveEducationLevel(userMetadata?.education_level);
       const metadataGender = resolveGender(userMetadata?.gender);
+      const metadataAcademicInstitutionName =
+        typeof userMetadata?.academic_institution_name === 'string'
+          ? userMetadata.academic_institution_name.trim() || null
+          : null;
+      const metadataAcademicInstitutionType =
+        resolveEducationLevel(userMetadata?.academic_institution_type) ?? metadataEducationLevel;
       const metadataUsername =
         typeof userMetadata?.username === 'string' ? userMetadata.username.trim().toLowerCase() : null;
 
@@ -82,6 +102,9 @@ export async function GET(request: NextRequest) {
         .eq('id', data.user.id)
         .maybeSingle();
       const resolvedRole = metadataRole ?? existingProfile?.role ?? 'student';
+      const metadataOnboardingCompleted =
+        resolvedRole !== 'student' ||
+        (metadataEducationLevel !== 'university' && Boolean(metadataGender && metadataBoard && metadataGradeLevel));
       let profileForRedirect: {
         role: Database['public']['Enums']['user_role'];
         username: string | null;
@@ -95,7 +118,7 @@ export async function GET(request: NextRequest) {
       };
 
       if (!existingProfile) {
-        await supabase.from('profiles').insert({
+        const insertPayload: Database['public']['Tables']['profiles']['Insert'] = {
           id: data.user.id,
           email: data.user.email!,
           full_name: data.user.user_metadata?.full_name || data.user.email!.split('@')[0],
@@ -104,28 +127,42 @@ export async function GET(request: NextRequest) {
           gender_changed_at: metadataGender ? new Date().toISOString() : null,
           avatar_url: data.user.user_metadata?.avatar_url || null,
           board: metadataBoard,
+          grade_level: metadataGradeLevel,
           education_level: metadataEducationLevel || 'school',
+          academic_institution_name: metadataAcademicInstitutionName,
+          academic_institution_type: metadataAcademicInstitutionType,
           role: resolvedRole,
-          onboarding_completed: resolvedRole !== 'student',
+          onboarding_completed: metadataOnboardingCompleted,
           subscription_tier: 'FREE',
           xp: 0,
           level: 1,
           streak: 0,
           total_study_time: 0,
           is_email_verified: !!data.user.email_confirmed_at,
-          is_profile_complete: false,
+          is_profile_complete: metadataOnboardingCompleted,
           onboarding_step: 0,
-        });
+        };
+        let { error: insertError } = await supabase.from('profiles').insert(insertPayload);
+        if (isMissingAcademicInstitutionColumn(insertError)) {
+          delete insertPayload.academic_institution_name;
+          delete insertPayload.academic_institution_type;
+          const fallback = await supabase.from('profiles').insert(insertPayload);
+          insertError = fallback.error;
+        }
+        if (insertError) {
+          console.error('[auth/callback] Profile creation failed:', insertError);
+          return NextResponse.redirect(`${origin}/login?error=profile_setup_failed`);
+        }
         profileForRedirect = {
           role: resolvedRole,
           username: metadataUsername,
           gender: metadataGender,
           board: metadataBoard,
-          grade_level: null,
+          grade_level: metadataGradeLevel,
           education_level: metadataEducationLevel || 'school',
           university_program: null,
           university_semester: null,
-          onboarding_completed: resolvedRole !== 'student',
+          onboarding_completed: metadataOnboardingCompleted,
         };
       } else {
         const updates: Database['public']['Tables']['profiles']['Update'] = {};
@@ -142,6 +179,10 @@ export async function GET(request: NextRequest) {
           updates.education_level = metadataEducationLevel;
         }
 
+        if (metadataGradeLevel && !existingProfile.grade_level) {
+          updates.grade_level = metadataGradeLevel;
+        }
+
         if (metadataUsername) {
           updates.username = metadataUsername;
         }
@@ -151,12 +192,26 @@ export async function GET(request: NextRequest) {
           updates.gender_changed_at = new Date().toISOString();
         }
 
-        if (resolvedRole !== 'student' && existingProfile.onboarding_completed === false) {
+        if (metadataOnboardingCompleted && existingProfile.onboarding_completed === false) {
           updates.onboarding_completed = true;
+          updates.is_profile_complete = true;
         }
 
         if (Object.keys(updates).length > 0) {
           await supabase.from('profiles').update(updates).eq('id', data.user.id);
+        }
+
+        if (metadataAcademicInstitutionName) {
+          const { error: institutionError } = await supabase
+            .from('profiles')
+            .update({
+              academic_institution_name: metadataAcademicInstitutionName,
+              academic_institution_type: metadataAcademicInstitutionType,
+            })
+            .eq('id', data.user.id);
+          if (institutionError && !isMissingAcademicInstitutionColumn(institutionError)) {
+            console.error('[auth/callback] Academic institution update failed:', institutionError);
+          }
         }
 
         profileForRedirect = {
@@ -164,7 +219,7 @@ export async function GET(request: NextRequest) {
           username: updates.username ?? existingProfile.username,
           gender: (updates.gender as 'girl' | 'boy' | undefined) ?? (existingProfile.gender as 'girl' | 'boy' | null),
           board: updates.board ?? existingProfile.board,
-          grade_level: existingProfile.grade_level,
+          grade_level: updates.grade_level ?? existingProfile.grade_level,
           education_level:
             (updates.education_level as EducationLevel | undefined) ??
             (existingProfile.education_level as EducationLevel | null) ??

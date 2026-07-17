@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Eye, FileText, HardDriveDownload, Trash2, WifiOff } from 'lucide-react';
+import { Eye, FileText, HardDriveDownload, Loader2, Trash2, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import {
   clearOfflineResources,
   deleteOfflineResource,
+  getOfflineResourceBlob,
   listOfflineResources,
   type OfflineResource,
 } from '@/lib/offline/resources';
@@ -16,7 +17,8 @@ import { ProtectedResourceReader } from '@/components/features/resources/Protect
 
 export function DownloadsClient({ embedded = false }: { embedded?: boolean }) {
   const [items, setItems] = useState<OfflineResource[]>([]);
-  const [active, setActive] = useState<OfflineResource | null>(null);
+  const [active, setActive] = useState<{ item: OfflineResource; blob: Blob } | null>(null);
+  const [openingKey, setOpeningKey] = useState<string | null>(null);
   const [storageEstimate, setStorageEstimate] = useState('Calculating...');
 
   const refresh = async () => {
@@ -47,9 +49,21 @@ export function DownloadsClient({ embedded = false }: { embedded?: boolean }) {
 
   const remove = async (item: OfflineResource) => {
     await deleteOfflineResource(item.key);
-    if (active?.key === item.key) setActive(null);
+    if (active?.item.key === item.key) setActive(null);
     await refresh();
     toast.success('Offline file remove ho gayi.');
+  };
+
+  const openOffline = async (item: OfflineResource) => {
+    setOpeningKey(item.key);
+    try {
+      const blob = await getOfflineResourceBlob(item);
+      setActive({ item, blob });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Offline file open nahi ho saki.');
+    } finally {
+      setOpeningKey(null);
+    }
   };
 
   return (
@@ -109,8 +123,17 @@ export function DownloadsClient({ embedded = false }: { embedded?: boolean }) {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="gradient" size="sm" onClick={() => setActive(item)}>
-                    <Eye className="h-3.5 w-3.5" />
+                  <Button
+                    variant="gradient"
+                    size="sm"
+                    onClick={() => openOffline(item)}
+                    disabled={openingKey === item.key}
+                  >
+                    {openingKey === item.key ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Eye className="h-3.5 w-3.5" />
+                    )}
                     Open
                   </Button>
                   <Button variant="ghost" size="icon-sm" onClick={() => remove(item)} aria-label="Remove offline file">
@@ -126,10 +149,10 @@ export function DownloadsClient({ embedded = false }: { embedded?: boolean }) {
         <ProtectedResourceReader
           open
           onClose={() => setActive(null)}
-          kind={active.kind}
-          resourceId={active.resourceId}
-          mode={active.mode}
-          title={active.title}
+          kind={active.item.kind}
+          resourceId={active.item.resourceId}
+          mode={active.item.mode}
+          title={active.item.title}
           offlineBlob={active.blob}
         />
       )}

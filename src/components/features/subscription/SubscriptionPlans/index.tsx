@@ -56,6 +56,42 @@ export function SubscriptionPlans({
     }
   }, [searchParams]);
 
+  useEffect(() => {
+    const rawDraft = window.sessionStorage.getItem('ilm-ai-institution-inquiry-draft');
+    if (!rawDraft) return;
+
+    try {
+      const draft = JSON.parse(rawDraft) as {
+        institutionName?: string;
+        institutionType?: InstitutionType;
+        studentCount?: number;
+        planTier?: InstitutionPlan;
+        billingCycle?: BillingCycle;
+        contactName?: string;
+        contactEmail?: string;
+        message?: string;
+      };
+      if (draft.institutionName) setInstitutionName(draft.institutionName);
+      if (draft.institutionType === 'school' || draft.institutionType === 'college') {
+        setInstitutionType(draft.institutionType);
+      }
+      if (draft.studentCount && draft.studentCount > 0) setStudentCount(String(draft.studentCount));
+      if (draft.planTier === 'PRO' || draft.planTier === 'ELITE') setInstitutionPlan(draft.planTier);
+      if (draft.billingCycle === 'monthly' || draft.billingCycle === 'annual') {
+        setBillingCycle(draft.billingCycle);
+      }
+      if (draft.contactName) setContactName(draft.contactName);
+      if (draft.contactEmail) setContactEmail(draft.contactEmail);
+      if (draft.message) setInstitutionMessage(draft.message);
+      window.setTimeout(
+        () => document.getElementById('institution-plans')?.scrollIntoView({ behavior: 'smooth' }),
+        100
+      );
+    } catch {
+      window.sessionStorage.removeItem('ilm-ai-institution-inquiry-draft');
+    }
+  }, []);
+
   const submitInstitutionInquiry = async () => {
     if (!institutionName.trim() || institutionCount < 1) {
       toast.error('School/college ka naam aur students ki tadaad enter karein');
@@ -80,6 +116,7 @@ export function SubscriptionPlans({
       const json = await response.json();
       if (!response.ok) throw new Error(json.error || 'Inquiry send nahi hui');
       toast.success('School/college inquiry admin ko send ho gayi');
+      window.sessionStorage.removeItem('ilm-ai-institution-inquiry-draft');
       setInstitutionMessage('');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Inquiry send nahi hui');
@@ -206,7 +243,10 @@ export function SubscriptionPlans({
         })}
       </div>
 
-      <Card className="border-primary/25 from-primary/10 via-card to-accent/10 overflow-hidden bg-gradient-to-br">
+      <Card
+        id="institution-plans"
+        className="border-primary/25 from-primary/10 via-card to-accent/10 scroll-mt-24 overflow-hidden bg-gradient-to-br"
+      >
         <CardContent className="p-6">
           <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div>

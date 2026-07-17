@@ -1,0 +1,124 @@
+/* light is loaded on demand; this file contains only its light/dark pair. */
+html.light-light {
+  /* Brand Colors */
+  --brand-primary: 262 80% 58%;
+  --brand-secondary: 210 100% 56%;
+  --brand-accent: 171 100% 41%;
+
+  /* Semantic colors: soft, warm off-white instead of stark white,
+     so cards/glass surfaces have something to contrast against. */
+  --background: 42 38% 94%;
+  --foreground: 222 47% 11%;
+  --card: 42 46% 97%;
+  --card-foreground: 222 47% 11%;
+  --popover: 42 46% 97%;
+  --popover-foreground: 222 47% 11%;
+  --primary: 262 80% 58%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 250 40% 95%;
+  --secondary-foreground: 222 47% 11%;
+  --muted: 250 30% 95%;
+  --muted-foreground: 222 15% 42%;
+  --accent: 262 60% 95%;
+  --accent-foreground: 262 80% 30%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 250 20% 89%;
+  --input: 250 20% 89%;
+  --ring: 262 80% 58%;
+
+  /* Chart Colors */
+  --chart-1: 262 80% 58%;
+  --chart-2: 210 100% 56%;
+  --chart-3: 171 100% 41%;
+  --chart-4: 38 92% 50%;
+  --chart-5: 0 84% 60%;
+
+  /* Sidebar */
+  --sidebar: 222 47% 11%;
+  --sidebar-foreground: 210 40% 96%;
+  --sidebar-primary: 262 80% 68%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 222 47% 20%;
+  --sidebar-accent-foreground: 210 40% 96%;
+  --sidebar-border: 222 47% 18%;
+  --sidebar-ring: 262 80% 58%;
+
+  --radius: 0.625rem;
+  --app-background-image:
+    radial-gradient(circle, rgba(41, 37, 36, 0.2) 0.7px, transparent 0.8px),
+    radial-gradient(circle at 15% 0%, hsl(var(--brand-primary) / 0.08), transparent 45%),
+    radial-gradient(circle at 85% 20%, hsl(var(--brand-secondary) / 0.06), transparent 40%);
+  --app-background-size: 4px 4px, auto, auto;
+}
+
+html.light-dark {
+  /* Dark mode: near-black with a violet tint so the particle field pops. */
+  --background: 250 40% 5%;
+  --foreground: 210 40% 98%;
+  --card: 250 35% 8%;
+  --card-foreground: 210 40% 98%;
+  --popover: 250 35% 8%;
+  --popover-foreground: 210 40% 98%;
+  --primary: 262 80% 68%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 250 30% 13%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 250 30% 13%;
+  --muted-foreground: 215 20% 65%;
+  --accent: 250 30% 15%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 62% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 250 25% 15%;
+  --input: 250 25% 15%;
+  --ring: 262 80% 68%;
+  --chart-1: 262 80% 68%;
+  --chart-2: 210 100% 66%;
+  --chart-3: 171 100% 51%;
+  --chart-4: 38 92% 60%;
+  --chart-5: 0 84% 70%;
+  --app-background-image:
+    radial-gradient(circle at 15% 0%, hsl(var(--brand-primary) / 0.18), transparent 45%),
+    radial-gradient(circle at 85% 20%, hsl(var(--brand-secondary) / 0.14), transparent 40%);
+  --app-background-size: auto;
+  --sidebar: var(--card);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--secondary);
+  --sidebar-accent-foreground: var(--secondary-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+}
+
+html.light-light,
+html.light-dark {
+  --radius: 0.75rem;
+  --theme-glass-blur: 3px;
+  --theme-card-shadow: 0 10px 30px rgba(78, 58, 35, 0.1);
+  --theme-heading-tracking: -0.012em;
+  --theme-body-font: var(--font-inter), sans-serif;
+  --theme-heading-font: var(--font-inter), sans-serif;
+  --theme-heading-transform: none;
+  --theme-heading-weight: 750;
+  --theme-surface-radius: 0.9rem;
+  --theme-surface-angle: 145deg;
+  --theme-border-width: 1px;
+  --theme-border-style: solid;
+  --destructive: 0 62% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --chart-1: var(--primary);
+  --chart-2: var(--brand-secondary);
+  --chart-3: var(--brand-accent);
+  --chart-4: 38 92% 60%;
+  --chart-5: 0 84% 70%;
+  --sidebar: var(--card);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--secondary);
+  --sidebar-accent-foreground: var(--secondary-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+}

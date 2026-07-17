@@ -139,6 +139,9 @@ export async function gatewayChat({
 
       lastError = new GatewayError('AI gateway returned an empty response.', 502, data);
     } catch (error) {
+      if (error instanceof GatewayError && (error.status === 401 || error.status === 403)) {
+        throw error;
+      }
       lastError = error;
     }
   }

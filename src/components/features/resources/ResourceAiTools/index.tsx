@@ -23,8 +23,10 @@ export function ResourceAiTools({ kind, resourceId }: { kind: ProtectedResourceK
   const router = useRouter();
   const isPaid = user?.subscriptionTier === 'PRO' || user?.subscriptionTier === 'ELITE';
   const [summary, setSummary] = useState<string | null>(null);
+  const [summaryLabel, setSummaryLabel] = useState('AI Summary');
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
+  const [analysisLabel, setAnalysisLabel] = useState('Grok file analysis');
   const [analyzing, setAnalyzing] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [counts, setCounts] = useState({ mcq: 0, short: 0, long: 0 });
@@ -44,6 +46,10 @@ export function ResourceAiTools({ kind, resourceId }: { kind: ProtectedResourceK
       const json = await response.json();
       if (!response.ok || json.status === 'error') throw new Error(json.error || 'Summary generate nahi hui.');
       setSummary(json.data.summary);
+      setSummaryLabel(
+        json.data.fallbackUsed ? 'Source Summary' : `${String(json.data.provider || 'AI').toUpperCase()} Summary`
+      );
+      if (json.data.fallbackUsed) toast.info('AI gateway unavailable tha; uploaded TXT se source summary banayi gayi.');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Summary generate nahi hui.');
     } finally {
@@ -66,6 +72,8 @@ export function ResourceAiTools({ kind, resourceId }: { kind: ProtectedResourceK
       const json = await response.json();
       if (!response.ok || json.status === 'error') throw new Error(json.error || 'File analyze nahi hui.');
       setAnalysis(json.data);
+      setAnalysisLabel(json.fallbackUsed ? 'Source file analysis' : `${String(json.provider || 'Grok')} file analysis`);
+      if (json.fallbackUsed) toast.info('AI gateway unavailable tha; uploaded TXT locally analyze hui.');
       setCounts({
         mcq: Math.min(10, json.data.available.mcq),
         short: Math.min(5, json.data.available.short),
@@ -93,6 +101,7 @@ export function ResourceAiTools({ kind, resourceId }: { kind: ProtectedResourceK
       const json = await response.json();
       if (!response.ok || json.status === 'error') throw new Error(json.error || 'Test generate nahi hua.');
       window.sessionStorage.setItem('ilm-ai-resource-test', JSON.stringify(json.data));
+      if (json.data.fallbackUsed) toast.info('AI gateway unavailable tha; source-grounded fallback test banaya gaya.');
       router.push('/full-test?source=resource');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Test generate nahi hua.');
@@ -132,13 +141,13 @@ export function ResourceAiTools({ kind, resourceId }: { kind: ProtectedResourceK
           {analysis ? 'Close test builder' : 'Test from this file'}
         </Button>
       </div>
-      {summary && <AiAnswerRenderer content={summary} label="Gemini AI Summary" />}
+      {summary && <AiAnswerRenderer content={summary} label={summaryLabel} />}
       {analysis && (
         <div className="border-primary/25 bg-primary/5 rounded-xl border p-3">
           <div className="mb-3 flex items-start gap-2">
             <BrainCircuit className="text-primary mt-0.5 h-4 w-4" />
             <div>
-              <p className="text-sm font-semibold">Grok file analysis</p>
+              <p className="text-sm font-semibold">{analysisLabel}</p>
               <p className="text-muted-foreground text-xs">
                 {analysis.documentType} | {analysis.topics.slice(0, 4).join(', ') || 'General content'}
               </p>

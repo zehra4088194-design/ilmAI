@@ -2121,6 +2121,8 @@ export type Database = {
       };
       profiles: {
         Row: {
+          academic_institution_name: string | null;
+          academic_institution_type: string | null;
           ai_onboarding_complete: boolean;
           ai_persona_provider: string | null;
           ai_persona_tier: string | null;
@@ -2175,6 +2177,8 @@ export type Database = {
           xp: number;
         };
         Insert: {
+          academic_institution_name?: string | null;
+          academic_institution_type?: string | null;
           ai_onboarding_complete?: boolean;
           ai_persona_provider?: string | null;
           ai_persona_tier?: string | null;
@@ -2229,6 +2233,8 @@ export type Database = {
           xp?: number;
         };
         Update: {
+          academic_institution_name?: string | null;
+          academic_institution_type?: string | null;
           ai_onboarding_complete?: boolean;
           ai_persona_provider?: string | null;
           ai_persona_tier?: string | null;

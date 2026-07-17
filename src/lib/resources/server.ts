@@ -26,6 +26,8 @@ export type ProtectedResource = {
 };
 
 const MAX_PROTECTED_RESOURCE_BYTES = 125 * 1024 * 1024;
+const MAX_RESOURCE_CONTEXT_BYTES = 5 * 1024 * 1024;
+const MAX_AI_CONTEXT_CHARACTERS = 120_000;
 const GOOGLE_DRIVE_DOWNLOAD_HOSTS = new Set(['drive.google.com', 'drive.usercontent.google.com']);
 
 function isVisibleForProfile(resource: { board?: string | null; grade_level?: string | null }, profile: ProfileScope) {
@@ -203,15 +205,42 @@ export async function fetchProtectedFile(resource: ProtectedResource) {
 }
 
 export async function fetchResourceContext(resource: ProtectedResource) {
-  if (!resource.contextTextUrl) throw new Error('Is resource ki companion .txt context file add nahi hui.');
-  const response = await fetch(safeRemoteUrl(resource.contextTextUrl), {
+  if (!resource.contextTextUrl) {
+    throw new Error('Is PDF ki companion .txt file add nahi hui. Admin se AI Context (.txt) URL add karo.');
+  }
+  const requestInit: RequestInit = {
     redirect: 'follow',
     cache: 'no-store',
     headers: { 'user-agent': 'ilm-ai-context-reader/1.0', accept: 'text/plain' },
     signal: AbortSignal.timeout(30_000),
-  });
+  };
+  let response = await fetch(safeRemoteUrl(resource.contextTextUrl), requestInit);
   if (!response.ok) throw new Error(`Context file fetch nahi hui (${response.status}).`);
-  const text = (await response.text()).replace(/\0/g, '').trim();
+
+  const initialContentType = response.headers.get('content-type')?.toLowerCase() || '';
+  if (initialContentType.includes('text/html') && isGoogleDriveDownloadUrl(response.url)) {
+    const confirmationUrl = getGoogleDriveConfirmationUrl(response, await response.text());
+    if (!confirmationUrl) throw new Error('Google Drive ne context file ki download confirmation rok di.');
+    response = await fetch(confirmationUrl, requestInit);
+    if (!response.ok) throw new Error(`Context file fetch nahi hui (${response.status}).`);
+  }
+
+  const contentType = response.headers.get('content-type')?.toLowerCase() || '';
+  if (contentType.includes('text/html')) {
+    throw new Error('Context URL se .txt file ki jagah HTML page mila. Drive sharing ko Anyone with link karo.');
+  }
+  const contentLength = Number(response.headers.get('content-length') || 0);
+  if (contentLength > MAX_RESOURCE_CONTEXT_BYTES) {
+    throw new Error('Context .txt file 5MB se bari hai. Isay compact text file mein divide karo.');
+  }
+
+  const text = (await response.text())
+    .replace(/^\uFEFF/, '')
+    .replace(/\0/g, '')
+    .trim();
+  if (/^\s*(?:<!doctype\s+html|<html\b)/i.test(text)) {
+    throw new Error('Context URL se .txt file ki jagah Google Drive HTML page mila.');
+  }
   if (text.length < 50) throw new Error('Context .txt file mein readable text bohat kam hai.');
-  return text.slice(0, 120_000);
+  return text.slice(0, MAX_AI_CONTEXT_CHARACTERS);
 }

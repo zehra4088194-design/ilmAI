@@ -10,10 +10,19 @@ import { GlobalSpeechControls } from '@/components/features/speech/GlobalSpeechC
 import { CookieConsent } from '@/components/features/cookies/CookieConsent';
 import { AdSenseScript } from '@/components/features/ads/AdSenseScript';
 import { PostHogClient } from '@/components/features/analytics/PostHogClient';
-import { APP_THEME_IDS, DEFAULT_THEME_ID } from '@/lib/constants/themes';
+import { APP_THEME_IDS, DEFAULT_THEME_ID, type AppThemeId } from '@/lib/constants/themes';
 import { ServiceWorkerRegister } from '@/components/features/offline/ServiceWorkerRegister';
+import { ThemeRuntime } from '@/components/common/ThemeRuntime';
 
-export function Providers({ children, locale }: { children: ReactNode; locale: Locale }) {
+export function Providers({
+  children,
+  locale,
+  initialTheme = DEFAULT_THEME_ID,
+}: {
+  children: ReactNode;
+  locale: Locale;
+  initialTheme?: AppThemeId;
+}) {
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -29,11 +38,12 @@ export function Providers({ children, locale }: { children: ReactNode; locale: L
       <I18nProvider initialLocale={locale}>
         <ThemeProvider
           attribute="class"
-          defaultTheme={DEFAULT_THEME_ID}
+          defaultTheme={initialTheme}
           themes={APP_THEME_IDS}
           enableSystem={false}
           disableTransitionOnChange={false}
         >
+          <ThemeRuntime />
           {children}
           <AdSenseScript />
           <PostHogClient />

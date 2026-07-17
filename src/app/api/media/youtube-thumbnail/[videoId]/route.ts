@@ -12,7 +12,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     try {
       const response = await fetch(url, {
         headers: { 'user-agent': 'ilm-ai-thumbnail-fetcher/1.0' },
-        next: { revalidate: 60 * 60 * 24 },
+        cache: 'no-store',
       });
       if (!response.ok) continue;
       const contentType = response.headers.get('content-type') || '';
@@ -23,7 +23,9 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       return new NextResponse(body, {
         headers: {
           'Content-Type': contentType,
+          'Content-Disposition': 'inline',
           'Cache-Control': 'public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800',
+          'X-Content-Type-Options': 'nosniff',
         },
       });
     } catch {

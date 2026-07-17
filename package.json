@@ -21,6 +21,7 @@
     "db:reset": "supabase db reset",
     "db:seed": "node scripts/seed-database.js",
     "db:seed-library": "node scripts/seed-class9-drive-library.js",
+    "db:sync-library-chapters": "node scripts/sync-class9-drive-chapters.js",
     "check-env": "node scripts/check-env.js",
     "prepare": "husky"
   },

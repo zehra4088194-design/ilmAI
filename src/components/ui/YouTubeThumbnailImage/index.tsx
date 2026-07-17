@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ImageOff } from 'lucide-react';
 import { extractYouTubeId, getYouTubeThumbnailCandidates } from '@/lib/utils/extractYouTubeId';
 import { cn } from '@/lib/utils/cn';
@@ -17,20 +17,31 @@ export function YouTubeThumbnailImage({ youtubeUrl, thumbnailUrl, alt, className
   const candidates = useMemo(() => {
     const videoId = extractYouTubeId(youtubeUrl);
     const urls = [
-      ...(thumbnailUrl ? [thumbnailUrl] : []),
       ...(videoId ? [`/api/media/youtube-thumbnail/${videoId}`] : []),
+      ...(thumbnailUrl ? [thumbnailUrl] : []),
       ...getYouTubeThumbnailCandidates(youtubeUrl),
     ];
     return Array.from(new Set(urls.filter(Boolean)));
   }, [thumbnailUrl, youtubeUrl]);
   const [index, setIndex] = useState(0);
   const [loaded, setLoaded] = useState(false);
+  const imageRef = useRef<HTMLImageElement>(null);
   const src = candidates[index];
 
   useEffect(() => {
     setIndex(0);
     setLoaded(false);
   }, [candidates]);
+
+  useEffect(() => {
+    setLoaded(false);
+
+    // Cached images can finish before React attaches onLoad during hydration.
+    const image = imageRef.current;
+    if (image?.complete && image.currentSrc && image.naturalWidth > 2 && image.naturalHeight > 2) {
+      setLoaded(true);
+    }
+  }, [src]);
 
   if (!src) {
     return (
@@ -64,10 +75,13 @@ export function YouTubeThumbnailImage({ youtubeUrl, thumbnailUrl, alt, className
         </div>
       )}
       <img
+        ref={imageRef}
         key={src}
         src={src}
         alt={alt}
-        className={cn(className, 'relative transition-opacity duration-200', loaded ? 'opacity-100' : 'opacity-0')}
+        className={cn(className, 'relative z-[1]')}
+        loading="lazy"
+        decoding="async"
         onError={() => {
           setLoaded(false);
           setIndex((current) => current + 1);

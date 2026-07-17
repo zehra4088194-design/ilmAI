@@ -6,20 +6,26 @@ export const metadata: Metadata = { title: 'Library' };
 
 export default async function LibraryPage() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const { data: profile } = await supabase.from('profiles').select('board, grade_level').eq('id', user!.id).single();
   const { data: resources } = await (supabase.from('library_resources') as any)
-    .select('id, title, description, category, resource_type, subject_id, chapter_id, board, grade_level, file_type, created_at, subjects(name, color), chapters(name)')
+    .select(
+      'id, title, description, category, resource_type, subject_id, chapter_id, board, grade_level, file_type, created_at, subjects(name, color), chapters(name, order_index)'
+    )
     .order('created_at', { ascending: false });
 
   const visibleResources = (resources || []).filter((resource: any) => {
     const boardVisible = !resource.board || resource.board === profile?.board;
-    const gradeVisible = profile?.grade_level ? !resource.grade_level || resource.grade_level === profile.grade_level : false;
+    const gradeVisible = profile?.grade_level
+      ? !resource.grade_level || resource.grade_level === profile.grade_level
+      : false;
     return boardVisible && gradeVisible;
   });
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="mx-auto max-w-6xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Text Books & Notes</h1>
         <p className="text-muted-foreground">Sirf aapki selected class ke text books aur notes</p>

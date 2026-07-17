@@ -2,9 +2,56 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { enforceOnboarding } from '@/lib/supabase/enforceOnboarding';
 import { updateSession } from '@/lib/supabase/middleware';
 
-const PUBLIC_ROUTES = ['/', '/about', '/pricing', '/blog', '/contact', '/login', '/register', '/forgot-password', '/reset-password', '/verify-email'];
-const AUTH_ROUTES = ['/login', '/register', '/forgot-password', '/reset-password'];
-const PROTECTED_PREFIXES = ['/dashboard', '/study', '/practice', '/ai-tutor', '/student-chat', '/past-papers', '/progress', '/leaderboard', '/settings', '/mcq', '/flashcards', '/notes', '/results', '/subscription', '/bookmarks', '/library', '/doubts', '/routine', '/guess-paper', '/full-test', '/parent', '/essay-writer', '/age-counter', '/humanizer', '/university', '/insights', '/planner', '/achievements', '/avatar', '/portfolio', '/career', '/opportunities', '/teacher', '/join-class', '/college/dashboard'];
+const PUBLIC_ROUTES = [
+  '/',
+  '/about',
+  '/pricing',
+  '/blog',
+  '/contact',
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/reset-password',
+  '/verify-email',
+];
+const AUTH_ROUTES = ['/login', '/register', '/forgot-password'];
+const PROTECTED_PREFIXES = [
+  '/dashboard',
+  '/study',
+  '/practice',
+  '/ai-tutor',
+  '/student-chat',
+  '/past-papers',
+  '/progress',
+  '/leaderboard',
+  '/settings',
+  '/mcq',
+  '/flashcards',
+  '/notes',
+  '/results',
+  '/subscription',
+  '/bookmarks',
+  '/library',
+  '/doubts',
+  '/routine',
+  '/guess-paper',
+  '/full-test',
+  '/parent',
+  '/essay-writer',
+  '/age-counter',
+  '/humanizer',
+  '/university',
+  '/insights',
+  '/planner',
+  '/achievements',
+  '/avatar',
+  '/portfolio',
+  '/career',
+  '/opportunities',
+  '/teacher',
+  '/join-class',
+  '/college/dashboard',
+];
 const ADMIN_PREFIXES = ['/admin'];
 const COLLEGE_ADMIN_PREFIXES = ['/college-admin'];
 
@@ -13,7 +60,7 @@ export async function middleware(request: NextRequest) {
   const { user, response, supabase } = await updateSession(request);
 
   // Admin routes
-  if (ADMIN_PREFIXES.some(p => pathname.startsWith(p))) {
+  if (ADMIN_PREFIXES.some((p) => pathname.startsWith(p))) {
     if (!user) {
       return NextResponse.redirect(new URL('/login?redirect=' + encodeURIComponent(pathname), request.url));
     }
@@ -32,7 +79,7 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  if (COLLEGE_ADMIN_PREFIXES.some(p => pathname.startsWith(p))) {
+  if (COLLEGE_ADMIN_PREFIXES.some((p) => pathname.startsWith(p))) {
     if (!user) {
       return NextResponse.redirect(new URL('/login?redirect=' + encodeURIComponent(pathname), request.url));
     }
@@ -40,7 +87,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Protected dashboard routes
-  if (PROTECTED_PREFIXES.some(p => pathname.startsWith(p))) {
+  if (PROTECTED_PREFIXES.some((p) => pathname.startsWith(p))) {
     if (!user) {
       return NextResponse.redirect(new URL('/login?redirect=' + encodeURIComponent(pathname), request.url));
     }

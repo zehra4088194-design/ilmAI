@@ -14,7 +14,7 @@ interface RawResource {
   file_type: string | null;
   resource_type?: 'text_book' | 'notes' | 'other';
   subjects?: { name: string; color: string } | null;
-  chapters?: { name: string } | null;
+  chapters?: { name: string; order_index: number } | null;
 }
 
 export function LibraryGrid({ resources }: { resources: RawResource[] }) {
@@ -25,10 +25,36 @@ export function LibraryGrid({ resources }: { resources: RawResource[] }) {
   const [query, setQuery] = useState(() => searchParams.get('search') || '');
 
   const filtered = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
     return resources
       .filter((r) => (r.resource_type || 'text_book') === tab)
-      .filter((r) => !query || r.title.toLowerCase().includes(query.toLowerCase()));
+      .filter(
+        (r) =>
+          !normalizedQuery ||
+          [r.title, r.description, r.subjects?.name, r.chapters?.name].some((value) =>
+            value?.toLowerCase().includes(normalizedQuery)
+          )
+      )
+      .sort((a, b) => {
+        const subjectOrder = (a.subjects?.name || '').localeCompare(b.subjects?.name || '');
+        if (subjectOrder) return subjectOrder;
+        const chapterOrder = (a.chapters?.order_index ?? 999) - (b.chapters?.order_index ?? 999);
+        return chapterOrder || a.title.localeCompare(b.title);
+      });
   }, [resources, tab, query]);
+
+  const groups = useMemo(() => {
+    const grouped = new Map<string, { subject: string; chapter: string; resources: RawResource[] }>();
+    for (const resource of filtered) {
+      const subject = resource.subjects?.name || 'General';
+      const chapter = resource.chapters?.name || (tab === 'text_book' ? 'Complete Textbook' : 'General Notes');
+      const key = `${subject}|||${chapter}`;
+      const group = grouped.get(key) || { subject, chapter, resources: [] };
+      group.resources.push(resource);
+      grouped.set(key, group);
+    }
+    return [...grouped.values()];
+  }, [filtered, tab]);
 
   return (
     <div className="space-y-6">
@@ -68,23 +94,40 @@ export function LibraryGrid({ resources }: { resources: RawResource[] }) {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((r) => (
-          <GoogleDriveResourceCard
-            key={r.id}
-            resource={{
-              id: r.id,
-              title: r.title,
-              description: r.description,
-              fileType: r.file_type,
-              subjectName: r.subjects?.name,
-              subjectColor: r.subjects?.color,
-              chapterName: r.chapters?.name,
-            }}
-          />
+      <div className="space-y-8">
+        {groups.map((group) => (
+          <section key={`${group.subject}:${group.chapter}`} className="space-y-3">
+            <div className="border-border/70 bg-card/70 rounded-2xl border px-4 py-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="text-primary text-xs font-bold tracking-[0.16em] uppercase">{group.subject}</p>
+                  <h2 className="mt-0.5 text-base font-semibold sm:text-lg">{group.chapter}</h2>
+                </div>
+                <span className="bg-primary/10 text-primary rounded-full px-2.5 py-1 text-xs font-semibold">
+                  {group.resources.length} file{group.resources.length === 1 ? '' : 's'}
+                </span>
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {group.resources.map((r) => (
+                <GoogleDriveResourceCard
+                  key={r.id}
+                  resource={{
+                    id: r.id,
+                    title: r.title,
+                    description: r.description,
+                    fileType: r.file_type,
+                    subjectName: r.subjects?.name,
+                    subjectColor: r.subjects?.color,
+                    chapterName: r.chapters?.name,
+                  }}
+                />
+              ))}
+            </div>
+          </section>
         ))}
         {filtered.length === 0 && (
-          <div className="col-span-full">
+          <div>
             <EmptyState
               icon={LibraryBig}
               title={

@@ -40,34 +40,52 @@ export function ParentQrScanner({ onLinked }: { onLinked?: (linkId?: string) => 
     setStarting(true);
     setError(null);
 
-    import('@zxing/browser')
-      .then(async ({ BrowserQRCodeReader }) => {
+    Promise.all([import('@zxing/browser'), import('@zxing/library')])
+      .then(async ([{ BrowserQRCodeReader }, { BarcodeFormat, DecodeHintType }]) => {
         if (!active || !videoRef.current) return;
-        const reader = new BrowserQRCodeReader(undefined, { delayBetweenScanAttempts: 200 });
-        const controls = await reader.decodeFromVideoDevice(undefined, videoRef.current, (result) => {
-          if (!result || handledRef.current) return;
-          handledRef.current = true;
-          controlsRef.current?.stop();
-          const inviteCode = extractInviteCode(result.getText());
-          setLinking(true);
-          fetch('/api/parent/accept-invite', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ inviteCode }),
-          })
-            .then(async (response) => ({ response, json: await response.json() }))
-            .then(({ response, json }) => {
-              if (!response.ok || json.status === 'error') throw new Error(json.error || 'Parent link nahi ho saka.');
-              toast.success(json.message || 'Parent account se link ho gaya.');
-              setOpen(false);
-              onLinkedRef.current?.(json.data?.linkId);
-            })
-            .catch((scanError) => {
-              setError(scanError instanceof Error ? scanError.message : 'QR link nahi ho saka.');
-              handledRef.current = false;
-            })
-            .finally(() => setLinking(false));
+        const hints = new Map();
+        hints.set(DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.QR_CODE]);
+        hints.set(DecodeHintType.TRY_HARDER, true);
+        const reader = new BrowserQRCodeReader(hints, {
+          delayBetweenScanAttempts: 100,
+          delayBetweenScanSuccess: 500,
         });
+        const controls = await reader.decodeFromConstraints(
+          {
+            audio: false,
+            video: {
+              facingMode: { ideal: 'environment' },
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+            },
+          },
+          videoRef.current,
+          (result, _scanError, scannerControls) => {
+            controlsRef.current = scannerControls;
+            if (!result || handledRef.current) return;
+            handledRef.current = true;
+            scannerControls.stop();
+            const inviteCode = extractInviteCode(result.getText());
+            setLinking(true);
+            fetch('/api/parent/accept-invite', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ inviteCode }),
+            })
+              .then(async (response) => ({ response, json: await response.json() }))
+              .then(({ response, json }) => {
+                if (!response.ok || json.status === 'error') throw new Error(json.error || 'Parent link nahi ho saka.');
+                toast.success(json.message || 'Parent account se link ho gaya.');
+                setOpen(false);
+                onLinkedRef.current?.(json.data?.linkId);
+              })
+              .catch((scanError) => {
+                setError(scanError instanceof Error ? scanError.message : 'QR link nahi ho saka.');
+                handledRef.current = false;
+              })
+              .finally(() => setLinking(false));
+          }
+        );
         if (!active) {
           controls.stop();
           return;
@@ -110,7 +128,7 @@ export function ParentQrScanner({ onLinked }: { onLinked?: (linkId?: string) => 
               </Button>
             </div>
             <div className="relative aspect-square overflow-hidden bg-black">
-              <video ref={videoRef} autoPlay muted playsInline className="h-full w-full object-cover" />
+              <video ref={videoRef} autoPlay muted playsInline className="h-full w-full object-contain" />
               <div className="pointer-events-none absolute inset-[14%] rounded-3xl border-2 border-white/80 shadow-[0_0_0_999px_rgba(0,0,0,0.36)]" />
               {(starting || linking) && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/45 text-white">

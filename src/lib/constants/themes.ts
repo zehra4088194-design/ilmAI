@@ -130,6 +130,7 @@ export const APP_THEME_IDS = APP_THEMES.map((theme) => theme.className);
 export const DEFAULT_THEME_FAMILY: ThemeFamilyId = 'dark';
 export const DEFAULT_THEME_MODE: ThemeMode = 'dark';
 export const DEFAULT_THEME_ID: AppThemeId = `${DEFAULT_THEME_FAMILY}-${DEFAULT_THEME_MODE}`;
+export const THEME_COOKIE_NAME = 'ilm-ai-theme';
 
 export function parseAppTheme(id?: string | null): { family: ThemeFamilyId; mode: ThemeMode; className: AppThemeId } {
   const match = APP_THEMES.find((theme) => theme.className === id);
@@ -149,4 +150,8 @@ export function buildThemeId(family: ThemeFamilyId, mode: ThemeMode): AppThemeId
 
 export function isDarkThemeId(id?: string | null) {
   return parseAppTheme(id).mode === 'dark';
+}
+
+export function getThemeStylesheetHref(family: ThemeFamilyId) {
+  return `/themes/${family}.css`;
 }

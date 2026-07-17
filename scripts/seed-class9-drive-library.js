@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
+const { syncClass9DriveChapters } = require('./sync-class9-drive-chapters');
 
 function loadLocalEnv() {
   const envPath = path.join(process.cwd(), '.env.local');
@@ -199,6 +200,7 @@ async function main() {
       `Verification failed: ${verifiedBooks.length}/${bookRows.length} books, ${verifiedNotes.length}/${noteRows.length} notes.`
     );
   }
+  const chapterSync = await syncClass9DriveChapters(client, notes);
 
   console.log(
     JSON.stringify(
@@ -207,6 +209,7 @@ async function main() {
         skippedExisting: desiredRows.length - missingRows.length,
         verifiedTextbooks: verifiedBooks.length,
         verifiedNotes: verifiedNotes.length,
+        chapterSync,
       },
       null,
       2
