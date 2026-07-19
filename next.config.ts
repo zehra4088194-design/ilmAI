@@ -1,9 +1,12 @@
 import type { NextConfig } from 'next';
+import { withSentryConfig } from '@sentry/nextjs';
 
-const hasAdsense = Boolean(process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID);
+const adsenseClientId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID || 'ca-pub-4877865173601332';
+const hasAdsense = Boolean(adsenseClientId);
+const hasPaddle = Boolean(process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN);
 
 function csp() {
-  const scriptSrc = ["'self'", "'unsafe-eval'", "'unsafe-inline'", 'https://vercel.live'];
+  const scriptSrc = ["'self'", "'unsafe-eval'", "'unsafe-inline'"];
   const frameSrc = [
     "'self'",
     'https://drive.google.com',
@@ -26,6 +29,8 @@ function csp() {
     'https://us.i.posthog.com',
     'https://app.posthog.com',
     'https://*.posthog.com',
+    'https://*.ingest.sentry.io',
+    'https://*.ingest.us.sentry.io',
   ];
 
   if (hasAdsense) {
@@ -33,6 +38,22 @@ function csp() {
     frameSrc.push('https://googleads.g.doubleclick.net', 'https://tpc.googlesyndication.com');
     imgSrc.push('https://googleads.g.doubleclick.net', 'https://pagead2.googlesyndication.com');
     connectSrc.push('https://pagead2.googlesyndication.com', 'https://googleads.g.doubleclick.net');
+  }
+
+  if (process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
+    scriptSrc.push('https://www.gstatic.com');
+    connectSrc.push(
+      'https://firebaseinstallations.googleapis.com',
+      'https://fcmregistrations.googleapis.com',
+      'https://fcm.googleapis.com'
+    );
+  }
+
+  if (hasPaddle) {
+    scriptSrc.push('https://cdn.paddle.com');
+    frameSrc.push('https://*.paddle.com', 'https://*.paddle.io');
+    imgSrc.push('https://*.paddle.com', 'https://*.paddle.io');
+    connectSrc.push('https://*.paddle.com', 'https://*.paddle.io');
   }
 
   return [
@@ -50,6 +71,8 @@ function csp() {
 }
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
+  poweredByHeader: false,
   serverExternalPackages: ['tesseract.js', 'tesseract.js-core'],
   experimental: {
     ppr: false,
@@ -72,7 +95,7 @@ const nextConfig: NextConfig = {
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-          { key: 'Permissions-Policy', value: 'camera=(), microphone=(self), geolocation=()' },
+          { key: 'Permissions-Policy', value: 'camera=(self), microphone=(self), geolocation=()' },
           { key: 'Content-Security-Policy', value: csp() },
         ],
       },
@@ -87,4 +110,15 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: true,
+  webpack: {
+    treeshake: { removeDebugLogging: true },
+  },
+  sourcemaps: {
+    disable: !process.env.SENTRY_AUTH_TOKEN,
+  },
+});

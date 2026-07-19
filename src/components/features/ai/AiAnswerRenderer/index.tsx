@@ -96,7 +96,7 @@ export function AiAnswerRenderer({ content, className, card = true, label, feedb
       {body}
       {feedback && (
         <div className="flex items-center gap-3 mt-4 pt-3 border-t border-border/60">
-          <span className="text-xs text-muted-foreground">Kya yeh madadgar tha?</span>
+          <span className="text-xs text-muted-foreground">Was this helpful?</span>
           <button
             type="button"
             onClick={() => submitFeedback(true)}
@@ -107,7 +107,7 @@ export function AiAnswerRenderer({ content, className, card = true, label, feedb
               voted && voted !== 'up' && 'opacity-40'
             )}
           >
-            <ThumbsUp className="w-3.5 h-3.5" /> Haan
+            <ThumbsUp className="w-3.5 h-3.5" /> Yes
           </button>
           <button
             type="button"
@@ -119,7 +119,7 @@ export function AiAnswerRenderer({ content, className, card = true, label, feedb
               voted && voted !== 'down' && 'opacity-40'
             )}
           >
-            <ThumbsDown className="w-3.5 h-3.5" /> Nahi
+            <ThumbsDown className="w-3.5 h-3.5" /> No
           </button>
         </div>
       )}

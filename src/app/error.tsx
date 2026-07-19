@@ -12,7 +12,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
         <AlertTriangle className="w-10 h-10 text-destructive" />
       </div>
       <h2 className="text-xl font-semibold mb-2">Kuch Ghalat Ho Gaya</h2>
-      <p className="text-muted-foreground mb-8 max-w-sm">Unexpected error aa gaya hai. Dobara try karo ya home page par jao.</p>
+      <p className="text-muted-foreground mb-8 max-w-sm">An unexpected error occurred. Try again or return to the home page.</p>
       <div className="flex gap-3">
         <Button variant="outline" onClick={reset}><RotateCcw className="w-4 h-4" />Try Again</Button>
         <Button asChild variant="gradient"><Link href="/"><Home className="w-4 h-4" />Home</Link></Button>

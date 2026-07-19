@@ -28,7 +28,7 @@ export default async function AdminSubjectChaptersPage({ params }: { params: Pro
         <h1 className="text-2xl font-bold">{subject.name} - Chapters</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Subject boards: {(subject.boards || []).join(', ') || 'none'}. Subject classes: {gradeLabels || 'none'}.
-          Har chapter ko board aur class dono se tag karo; khaali chhodo to woh subject ke saare selected boards/classes par dikhega.
+          Tag each chapter with a board and class. Leave them empty to show the subject across all selected boards and classes.
         </p>
       </div>
       <ChapterManager

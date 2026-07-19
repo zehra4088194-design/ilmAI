@@ -42,7 +42,7 @@ export async function createStudyPlan(payload: SetupPayload) {
     .single();
 
   if (error || !plan) {
-    return { status: 'error', error: error?.message || 'Plan create nahi ho saka' };
+    return { status: 'error', error: error?.message || 'The plan could not be created.' };
   }
 
   try {
@@ -56,7 +56,7 @@ export async function createStudyPlan(payload: SetupPayload) {
     });
   } catch (generationError) {
     console.error('Plan session generation failed:', generationError);
-    return { status: 'error', error: 'Plan bana, lekin sessions generate nahi ho sake' };
+    return { status: 'error', error: 'The plan was created, but sessions could not be generated.' };
   }
 
   revalidatePath('/planner/today');
@@ -65,7 +65,7 @@ export async function createStudyPlan(payload: SetupPayload) {
     user_id: user.id,
     type: 'REMINDER',
     title: 'Smart study plan created',
-    message: 'Aaj ka checklist ready hai. Planner open kar ke pehla session start karo.',
+    message: 'Today\'s checklist is ready. Open Planner to start your first session.',
     link: '/planner/today',
     is_read: false,
   });
@@ -132,7 +132,7 @@ export async function completePlannerSession(sessionId: string) {
     user_id: user.id,
     type: 'ACHIEVEMENT',
     title: 'Study session complete',
-    message: `Great! ${xpEarned} XP add ho gaya. Next session continue karo.`,
+    message: `${xpEarned} XP added. Continue to your next session.`,
     link: '/planner/today',
     is_read: false,
   });

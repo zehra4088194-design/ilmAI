@@ -21,20 +21,38 @@ const ACCESS_LABELS: Array<[keyof PlatformSettings['subscriptionPlans']['FREE'][
   ['liveVoice', 'Live Voice'],
   ['games', 'Live games'],
   ['restPlaylists', 'Rest playlists'],
+  ['parentDashboard', 'Parent dashboard'],
+  ['advancedParentAnalytics', 'Advanced parent analytics'],
+  ['parentReports', 'Weekly parent reports'],
   ['prioritySupport', 'Priority support'],
   ['adsFree', 'Hide ads'],
 ];
 
 const LIMIT_LABELS: Array<[keyof PlatformSettings['subscriptionPlans']['FREE']['limits'], string]> = [
-  ['aiSideChatDaily', 'Side chat/day'],
-  ['aiToolDaily', 'AI tools/day'],
+  ['aiLifetimeDemoCredits', 'Lifetime AI demos'],
+  ['aiCreditsWeekly', 'Shared AI/week (Free)'],
+  ['aiCreditsDaily', 'Shared AI/day'],
+  ['aiCreditsMonthly', 'Shared AI/month'],
+  ['premiumAiMonthly', 'Premium AI/month'],
   ['quizDaily', 'Testing/day'],
-  ['ocrPrintedWeekly', 'Printed scans/week'],
-  ['ocrHandwrittenWeekly', 'Handwritten scans/week'],
+  ['ocrPrintedMonthly', 'Printed scans/month'],
   ['universityHubWeekly', 'University Hub/week'],
   ['liveVoiceDaily', 'Live voice/day'],
   ['flashcardsTotal', 'Flashcards total'],
   ['gameMinutesDaily', 'Game minutes/day'],
+  ['parentGuardiansMax', 'Max guardians'],
+  ['parentAttachmentFilesMonthly', 'Parent files/month'],
+  ['parentAttachmentMegabytesMonthly', 'Parent MB/month'],
+];
+
+const AUDIENCE_LIMIT_LABELS: Array<
+  [keyof PlatformSettings['subscriptionPlans']['FREE']['audienceLimits']['school'], string]
+> = [
+  ['ocrHandwrittenMonthly', 'Handwritten OCR/month'],
+  ['presentationsMonthly', 'Presentations/month'],
+  ['presentationSlidesMax', 'Slides/presentation'],
+  ['fileSummariesMonthly', 'File summaries/month'],
+  ['fileTestsMonthly', 'File tests/month'],
 ];
 
 const PROVIDER_BUDGET_LABELS: Array<[keyof PlatformSettings['providerDailyBudgets'], string]> = [
@@ -76,11 +94,11 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
         body: JSON.stringify({ settings }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Settings save nahi hui');
+      if (!res.ok) throw new Error(json.error || 'Settings could not be saved.');
       setSettings(normalizePlatformSettings(json.settings));
       toast.success('Platform settings save ho gayi');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Settings save nahi hui');
+      toast.error(error instanceof Error ? error.message : 'Settings could not be saved.');
     } finally {
       setSaving(false);
     }
@@ -94,8 +112,7 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
             <Badge className="mb-2 bg-violet-600">Admin controlled</Badge>
             <h2 className="text-xl font-bold">Subscription Plans & Feature Limits</h2>
             <p className="text-muted-foreground mt-1 text-sm">
-              Yahan se Free, Pro aur Elite ki prices, daily/weekly usage limits, downloads aur feature toggles change
-              karo.
+              Change Free, Pro, and Elite prices, daily/weekly usage limits, downloads, and feature toggles here.
             </p>
           </div>
           <Button variant="gradient" onClick={save} loading={saving} className="shrink-0">
@@ -110,7 +127,7 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-muted-foreground text-sm">
-            Ye poore platform ke shared daily caps hain, per-user limits nahi. 0 provider ko disable karta hai. Provider
+              These are shared platform-wide daily caps, not per-user limits. 0 disables a provider. Provider
             dashboard ki actual quota dekh kar hi barhao.
           </p>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -132,8 +149,8 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
             ))}
           </div>
           <p className="text-muted-foreground text-xs">
-            Defaults conservative beta caps hain. Claude/GPT ka dependable permanent free API tier nahi, is liye dono 0
-            hain. Grok cap sirf available promotional credits ke liye hai.
+            Defaults are conservative beta caps. Claude/GPT do not have dependable permanent free API tiers, so both are 0.
+            The Grok cap is for available promotional credits only.
           </p>
         </CardContent>
       </Card>
@@ -171,6 +188,26 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
 
                 <div className="grid grid-cols-2 gap-3">
                   <NumberField
+                    label="USD/month"
+                    value={plan.price.USD.monthly}
+                    onChange={(value) =>
+                      updatePlan(tier, (item) => ({
+                        ...item,
+                        price: { ...item.price, USD: { ...item.price.USD, monthly: value } },
+                      }))
+                    }
+                  />
+                  <NumberField
+                    label="USD/year"
+                    value={plan.price.USD.annual}
+                    onChange={(value) =>
+                      updatePlan(tier, (item) => ({
+                        ...item,
+                        price: { ...item.price, USD: { ...item.price.USD, annual: value } },
+                      }))
+                    }
+                  />
+                  <NumberField
                     label="PKR/month"
                     value={plan.price.PKR.monthly}
                     onChange={(value) =>
@@ -187,26 +224,6 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
                       updatePlan(tier, (item) => ({
                         ...item,
                         price: { ...item.price, PKR: { ...item.price.PKR, annual: value } },
-                      }))
-                    }
-                  />
-                  <NumberField
-                    label="INR/month"
-                    value={plan.price.INR.monthly}
-                    onChange={(value) =>
-                      updatePlan(tier, (item) => ({
-                        ...item,
-                        price: { ...item.price, INR: { ...item.price.INR, monthly: value } },
-                      }))
-                    }
-                  />
-                  <NumberField
-                    label="INR/year"
-                    value={plan.price.INR.annual}
-                    onChange={(value) =>
-                      updatePlan(tier, (item) => ({
-                        ...item,
-                        price: { ...item.price, INR: { ...item.price.INR, annual: value } },
                       }))
                     }
                   />
@@ -227,8 +244,35 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
                     ))}
                   </div>
                   <p className="text-muted-foreground text-xs">
-                    Scan, University Hub aur Flashcards fields mein -1 ka matlab unlimited hai.
+                    In the Usage field, -1 means unlimited. AI credits use a shared pool rather than separate per-tool pools.
                   </p>
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-sm font-semibold">Audience-specific value</p>
+                  {(['school', 'college', 'university'] as const).map((audience) => (
+                    <div key={audience} className="bg-muted/20 space-y-2 rounded-xl border p-3">
+                      <p className="text-xs font-bold capitalize">{audience}</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {AUDIENCE_LIMIT_LABELS.map(([key, label]) => (
+                          <NumberField
+                            key={key}
+                            label={label}
+                            value={plan.audienceLimits[audience][key]}
+                            onChange={(value) =>
+                              updatePlan(tier, (item) => ({
+                                ...item,
+                                audienceLimits: {
+                                  ...item.audienceLimits,
+                                  [audience]: { ...item.audienceLimits[audience], [key]: value },
+                                },
+                              }))
+                            }
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
                 <div className="space-y-3">
@@ -290,7 +334,7 @@ function NumberField({ label, value, onChange }: { label: string; value: number;
   return (
     <label className="text-muted-foreground space-y-1 text-xs font-medium">
       <span>{label}</span>
-      <Input type="number" value={value} onChange={(event) => onChange(Number(event.target.value))} />
+      <Input type="number" step="any" value={value} onChange={(event) => onChange(Number(event.target.value))} />
     </label>
   );
 }

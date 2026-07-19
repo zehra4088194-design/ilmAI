@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { getPlatformSettings } from '@/lib/platform-settings/server';
+import { getCurrencyForBoard, getCurrencyForCountry } from '@/lib/constants';
 
 type PlanTier = 'PRO' | 'ELITE';
 type BillingCycle = 'monthly' | 'annual';
@@ -46,10 +47,13 @@ export async function POST(req: NextRequest) {
 
   const settings = await getPlatformSettings();
   const priceKey = billingCycle === 'annual' ? 'annual' : 'monthly';
-  const perStudentPrice = settings.subscriptionPlans[planTier as PlanTier].price.PKR[priceKey];
-  const discountedPrice = Math.round(perStudentPrice * studentCount * 0.5);
   const admin = (await createAdminClient()) as any;
-  const { data: profile } = await admin.from('profiles').select('full_name, email').eq('id', user.id).maybeSingle();
+  const { data: profile } = await admin.from('profiles').select('full_name, email, board').eq('id', user.id).maybeSingle();
+  const requestCountry = req.headers.get('cf-ipcountry') || req.headers.get('x-country-code') || 'PK';
+  const currency = profile?.board ? getCurrencyForBoard(profile.board) : getCurrencyForCountry(requestCountry);
+  const perStudentPrice = settings.subscriptionPlans[planTier as PlanTier].price[currency][priceKey];
+  const rawDiscountedPrice = perStudentPrice * studentCount * 0.5;
+  const discountedPrice = currency === 'PKR' ? Math.round(rawDiscountedPrice) : Number(rawDiscountedPrice.toFixed(2));
   const { data, error } = await admin
     .from('institution_plan_inquiries')
     .insert({
@@ -59,7 +63,9 @@ export async function POST(req: NextRequest) {
       student_count: studentCount,
       plan_tier: planTier,
       billing_cycle: billingCycle,
-      discounted_price_pkr: discountedPrice,
+      quote_currency: currency,
+      discounted_price: discountedPrice,
+      discounted_price_pkr: currency === 'PKR' ? discountedPrice : null,
       contact_name: body.contactName?.trim() || profile?.full_name || null,
       contact_email: body.contactEmail?.trim().toLowerCase() || profile?.email || user.email || null,
       message: body.message?.trim() || null,
@@ -68,5 +74,5 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: `Inquiry save nahi hui: ${error.message}` }, { status: 500 });
-  return NextResponse.json({ inquiry: data, discountedPrice });
+  return NextResponse.json({ inquiry: data, discountedPrice, currency });
 }

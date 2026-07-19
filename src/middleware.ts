@@ -1,19 +1,14 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { enforceOnboarding } from '@/lib/supabase/enforceOnboarding';
 import { updateSession } from '@/lib/supabase/middleware';
+import { matchesRoutePrefix } from '@/lib/navigation/route-prefix';
+import {
+  getPublicRequestUrl,
+  getRequestHost,
+  isPlayConsumptionOnlyHost,
+  PLAY_CONSUMPTION_ONLY_HEADER,
+} from '@/lib/payments/distribution';
 
-const PUBLIC_ROUTES = [
-  '/',
-  '/about',
-  '/pricing',
-  '/blog',
-  '/contact',
-  '/login',
-  '/register',
-  '/forgot-password',
-  '/reset-password',
-  '/verify-email',
-];
 const AUTH_ROUTES = ['/login', '/register', '/forgot-password'];
 const PROTECTED_PREFIXES = [
   '/dashboard',
@@ -21,17 +16,18 @@ const PROTECTED_PREFIXES = [
   '/practice',
   '/ai-tutor',
   '/student-chat',
-  '/past-papers',
+  // Library and past papers have a public, read-only SEO catalog. Their
+  // reader endpoint still keeps downloads, AI tools, and college resources gated.
   '/progress',
   '/leaderboard',
   '/settings',
   '/mcq',
   '/flashcards',
   '/notes',
+  '/scan',
   '/results',
   '/subscription',
   '/bookmarks',
-  '/library',
   '/doubts',
   '/routine',
   '/guess-paper',
@@ -57,20 +53,44 @@ const COLLEGE_ADMIN_PREFIXES = ['/college-admin'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const { user, response, supabase } = await updateSession(request);
+  const requestedPath = `${pathname}${request.nextUrl.search}`;
+  const playConsumptionOnly = isPlayConsumptionOnlyHost(getRequestHost(request.headers));
+
+  if (playConsumptionOnly && (pathname === '/checkout' || pathname === '/pricing')) {
+    return NextResponse.redirect(getPublicRequestUrl(request.headers, request.url, '/subscription'));
+  }
+  if (
+    playConsumptionOnly &&
+    request.method === 'POST' &&
+    (pathname === '/api/payments/create-session' || pathname === '/api/institution-plan-inquiry')
+  ) {
+    return NextResponse.json(
+      { status: 'consumption_only', error: 'Play Store app mein external purchase flow available nahi hai.' },
+      { status: 403 }
+    );
+  }
+
+  const forwardedHeaders = new Headers(request.headers);
+  forwardedHeaders.set('x-invoke-path', pathname);
+  if (playConsumptionOnly) {
+    forwardedHeaders.set(PLAY_CONSUMPTION_ONLY_HEADER, '1');
+  } else {
+    forwardedHeaders.delete(PLAY_CONSUMPTION_ONLY_HEADER);
+  }
+  const { user, response, supabase } = await updateSession(request, forwardedHeaders);
 
   // Admin routes
-  if (ADMIN_PREFIXES.some((p) => pathname.startsWith(p))) {
+  if (ADMIN_PREFIXES.some((p) => matchesRoutePrefix(pathname, p))) {
     if (!user) {
-      return NextResponse.redirect(new URL('/login?redirect=' + encodeURIComponent(pathname), request.url));
+      return NextResponse.redirect(new URL('/login?redirect=' + encodeURIComponent(requestedPath), request.url));
     }
     // Admin check would be done in the page component
     return response;
   }
 
-  if (pathname.startsWith('/teacher')) {
+  if (matchesRoutePrefix(pathname, '/teacher')) {
     if (!user) {
-      return NextResponse.redirect(new URL('/login?redirect=' + encodeURIComponent(pathname), request.url));
+      return NextResponse.redirect(new URL('/login?redirect=' + encodeURIComponent(requestedPath), request.url));
     }
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
     if (profile?.role !== 'teacher' && profile?.role !== 'admin') {
@@ -79,17 +99,17 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  if (COLLEGE_ADMIN_PREFIXES.some((p) => pathname.startsWith(p))) {
+  if (COLLEGE_ADMIN_PREFIXES.some((p) => matchesRoutePrefix(pathname, p))) {
     if (!user) {
-      return NextResponse.redirect(new URL('/login?redirect=' + encodeURIComponent(pathname), request.url));
+      return NextResponse.redirect(new URL('/login?redirect=' + encodeURIComponent(requestedPath), request.url));
     }
     return response;
   }
 
   // Protected dashboard routes
-  if (PROTECTED_PREFIXES.some((p) => pathname.startsWith(p))) {
+  if (PROTECTED_PREFIXES.some((p) => matchesRoutePrefix(pathname, p))) {
     if (!user) {
-      return NextResponse.redirect(new URL('/login?redirect=' + encodeURIComponent(pathname), request.url));
+      return NextResponse.redirect(new URL('/login?redirect=' + encodeURIComponent(requestedPath), request.url));
     }
     const onboardingRedirect = await enforceOnboarding(request, supabase);
     if (onboardingRedirect) {

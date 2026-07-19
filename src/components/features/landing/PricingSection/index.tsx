@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils/cn';
 import { useTranslations, useMessages } from '@/providers/I18nProvider';
-import { CURRENCY_SYMBOLS } from '@/lib/constants';
+import { CURRENCY_SYMBOLS, type Currency } from '@/lib/constants';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 
 const PLAN_IDS = ['free', 'pro', 'elite'] as const;
@@ -29,7 +29,7 @@ type PricingAudience = 'students' | 'institutions';
 type InstitutionType = 'school' | 'college';
 type InstitutionPlan = 'PRO' | 'ELITE';
 
-export function PricingSection() {
+export function PricingSection({ currency }: { currency: Currency }) {
   const [audience, setAudience] = useState<PricingAudience>('students');
   const [isAnnual, setIsAnnual] = useState(false);
   const [institutionType, setInstitutionType] = useState<InstitutionType>('school');
@@ -44,13 +44,13 @@ export function PricingSection() {
   const t = useTranslations();
   const messages = useMessages();
   const plans = messages.pricing.plans;
-  const symbol = CURRENCY_SYMBOLS.PKR;
+  const symbol = CURRENCY_SYMBOLS[currency];
   const settings = usePlatformSettings();
   const billingCycle = isAnnual ? 'annual' : 'monthly';
   const institutionCount = Math.min(100000, Math.max(0, Math.floor(Number(studentCount) || 0)));
-  const institutionPerStudent = settings.subscriptionPlans[institutionPlan].price.PKR[billingCycle];
+  const institutionPerStudent = settings.subscriptionPlans[institutionPlan].price[currency][billingCycle];
   const institutionListPrice = institutionPerStudent * institutionCount;
-  const institutionDiscountedPrice = Math.round(institutionListPrice * 0.5);
+  const institutionDiscountedPrice = institutionListPrice * 0.5;
 
   const submitInstitutionInquiry = async () => {
     if (!institutionName.trim() || institutionCount < 1) {
@@ -84,16 +84,16 @@ export function PricingSection() {
 
       if (response.status === 401) {
         window.sessionStorage.setItem('ilm-ai-institution-inquiry-draft', JSON.stringify(draft));
-        toast.info('Inquiry save karne aur admin chat ke liye pehle login karein');
+        toast.info('Please log in first to save the inquiry and contact the admin team.');
         router.push(`/login?redirect=${encodeURIComponent('/subscription#institution-plans')}`);
         return;
       }
-      if (!response.ok) throw new Error(json.error || 'Inquiry send nahi hui');
+      if (!response.ok) throw new Error(json.error || 'The inquiry could not be sent.');
 
-      toast.success('Inquiry admin ko send ho gayi. Admin panel mein dedicated message aa gaya hai.');
+      toast.success('The inquiry was sent to the admin team and added to the dedicated inbox.');
       setMessage('');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Inquiry send nahi hui');
+      toast.error(error instanceof Error ? error.message : 'The inquiry could not be sent.');
     } finally {
       setIsSendingInquiry(false);
     }
@@ -173,10 +173,10 @@ export function PricingSection() {
                 const meta = PLAN_META[id];
                 const Icon = meta.icon;
                 const dynamicPlan = settings.subscriptionPlans[PLAN_KEYS[id]];
-                const planPrice = dynamicPlan.price.PKR;
+                const planPrice = dynamicPlan.price[currency];
                 const monthly = planPrice.monthly;
                 const annual = planPrice.annual;
-                const annualPerMonth = monthly > 0 ? Math.round(annual / 12) : 0;
+                const annualPerMonth = monthly > 0 ? annual / 12 : 0;
                 const displayPrice = isAnnual ? annual : monthly;
                 const suffix = isAnnual && monthly > 0 ? '/year' : monthly > 0 ? t('pricing.perMonth') : '';
 
@@ -224,13 +224,13 @@ export function PricingSection() {
                     <div className="mb-6">
                       <span className="text-4xl font-bold">
                         {symbol}
-                        {displayPrice.toLocaleString()}
+                        {formatPrice(displayPrice, currency)}
                       </span>
                       {monthly > 0 && <span className="text-muted-foreground text-sm">{suffix}</span>}
                       {isAnnual && monthly > 0 && (
                         <p className="text-muted-foreground mt-1 text-xs">
                           {symbol}
-                          {annualPerMonth.toLocaleString()}/mo effective
+                          {formatPrice(annualPerMonth, currency)}/mo effective
                         </p>
                       )}
                     </div>
@@ -245,9 +245,15 @@ export function PricingSection() {
                       )}
                     </ul>
                     <Button asChild variant={meta.variant} className="w-full">
-                      <Link href={meta.href}>
+                      <Link
+                        href={
+                          id === 'free'
+                            ? meta.href
+                            : `/register?redirect=${encodeURIComponent(`/subscription/${id}?billing=${billingCycle}`)}`
+                        }
+                      >
                         <Zap className="h-4 w-4" />
-                        {plan.cta}
+                        {id === 'free' ? plan.cta : 'Checkout'}
                       </Link>
                     </Button>
                   </motion.div>
@@ -256,7 +262,7 @@ export function PricingSection() {
             </div>
 
             <div className="text-muted-foreground mx-auto mt-8 max-w-4xl rounded-2xl border border-violet-500/30 bg-violet-500/10 p-4 text-center text-sm">
-              Plan choose karne ke baad payment instructions next page par cleanly show hongi.
+              After you choose a plan, clear payment instructions will appear on the next page.
             </div>
           </>
         ) : (
@@ -365,7 +371,7 @@ export function PricingSection() {
                     </p>
                     <p className="text-primary mt-1 text-3xl font-bold">
                       {symbol}
-                      {institutionDiscountedPrice.toLocaleString()}
+                      {formatPrice(institutionDiscountedPrice, currency)}
                       <span className="text-muted-foreground ml-1 text-sm font-normal">
                         /{isAnnual ? 'year' : 'month'}
                       </span>
@@ -374,17 +380,17 @@ export function PricingSection() {
                   <div className="text-right text-xs">
                     <p className="text-muted-foreground line-through">
                       {symbol}
-                      {institutionListPrice.toLocaleString()}
+                      {formatPrice(institutionListPrice, currency)}
                     </p>
                     <p className="font-semibold text-emerald-500">
                       Save {symbol}
-                      {(institutionListPrice - institutionDiscountedPrice).toLocaleString()}
+                      {formatPrice(institutionListPrice - institutionDiscountedPrice, currency)}
                     </p>
                   </div>
                 </div>
                 <p className="text-muted-foreground mt-3 text-xs">
                   {symbol}
-                  {Math.round(institutionPerStudent * 0.5).toLocaleString()} per student, {billingCycle}.
+                  {formatPrice(institutionPerStudent * 0.5, currency)} per student, {billingCycle}.
                 </p>
               </div>
 
@@ -438,4 +444,11 @@ export function PricingSection() {
 
 function GraduationAudienceIcon() {
   return <Sparkles className="h-4 w-4" />;
+}
+
+function formatPrice(value: number, currency: Currency) {
+  return value.toLocaleString('en-US', {
+    minimumFractionDigits: currency === 'USD' ? 2 : 0,
+    maximumFractionDigits: currency === 'USD' ? 2 : 0,
+  });
 }

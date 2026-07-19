@@ -20,6 +20,16 @@ export type NotificationInsert = {
   is_read?: boolean;
 };
 
+async function deliverPush(notification: NotificationInsert) {
+  const { sendPushNotification } = await import('@/lib/push/server');
+  return sendPushNotification({
+    userId: notification.user_id,
+    title: notification.title,
+    message: notification.message,
+    link: notification.link,
+  });
+}
+
 const DEFAULT_LINKS: Record<NotificationPreferenceKey, string> = {
   studyReminders: '/planner',
   weakSubjectAlerts: '/dashboard',
@@ -53,7 +63,10 @@ export async function createNotificationIfEnabled(
   notification: NotificationInsert
 ) {
   if (!(await notificationAllowed(db, notification.user_id, key))) return { skipped: true };
-  return db.from('notifications').insert(withDestination(key, notification));
+  const prepared = withDestination(key, notification);
+  const result = await db.from('notifications').insert(prepared);
+  if (!result?.error) await deliverPush(prepared);
+  return result;
 }
 
 export async function createNotificationsIfEnabled(
@@ -68,5 +81,7 @@ export async function createNotificationsIfEnabled(
     }
   }
   if (!allowed.length) return { skipped: true };
-  return db.from('notifications').insert(allowed);
+  const result = await db.from('notifications').insert(allowed);
+  if (!result?.error) await Promise.allSettled(allowed.map(deliverPush));
+  return result;
 }

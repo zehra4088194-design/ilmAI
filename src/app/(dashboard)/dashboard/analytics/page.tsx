@@ -7,8 +7,30 @@ export const metadata: Metadata = { title: 'Student Analytics' };
 export default async function StudentAnalyticsPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = await supabase.from('profiles').select('xp, streak, subscription_tier').eq('id', user!.id).single();
+  const [{ data: profile }, { data: snapshots }, { data: quizzes }] = await Promise.all([
+    supabase.from('profiles').select('xp, streak, subscription_tier, total_study_time').eq('id', user!.id).single(),
+    supabase
+      .from('student_weekly_snapshots')
+      .select('week_start, study_minutes, average_score, quizzes_completed')
+      .eq('student_id', user!.id)
+      .order('week_start', { ascending: true })
+      .limit(8),
+    supabase
+      .from('quiz_sessions')
+      .select('subject_id, score')
+      .eq('user_id', user!.id)
+      .eq('status', 'COMPLETED')
+      .not('score', 'is', null)
+      .order('completed_at', { ascending: false })
+      .limit(100),
+  ]);
   const p = profile as any;
+  const weekly = (snapshots || []) as Array<{ week_start: string; study_minutes: number | null; average_score: number | null; quizzes_completed: number | null }>;
+  const completedQuizzes = (quizzes || []) as Array<{ subject_id: string | null; score: number | null }>;
+  const averageScore = completedQuizzes.length
+    ? Math.round(completedQuizzes.reduce((sum, quiz) => sum + Number(quiz.score || 0), 0) / completedQuizzes.length)
+    : Math.round(Number(weekly.at(-1)?.average_score || 0));
+  const studyMinutes = Number(p?.total_study_time || weekly.reduce((sum, item) => sum + Number(item.study_minutes || 0), 0));
   return (
     <RoleAnalyticsClient
       title="My Analytics"
@@ -16,16 +38,19 @@ export default async function StudentAnalyticsPage() {
       cards={[
         { label: 'XP', value: p?.xp || 0, detail: 'Total learning points' },
         { label: 'Streak', value: p?.streak || 0, detail: 'Active study days' },
-        { label: 'Tier', value: p?.subscription_tier || 'FREE', detail: 'Current subscription' },
-        { label: 'Focus', value: 'Study', detail: 'More detailed analytics unlock as usage grows' },
+        { label: 'Average score', value: `${averageScore}%`, detail: `${completedQuizzes.length} completed quizzes` },
+        { label: 'Study time', value: `${Math.round(studyMinutes / 60)}h`, detail: 'Recorded learning time' },
       ]}
-      trend={[
-        { label: 'Mon', value: 20 }, { label: 'Tue', value: 30 }, { label: 'Wed', value: 25 }, { label: 'Thu', value: 45 }, { label: 'Fri', value: 35 }, { label: 'Sat', value: 55 }, { label: 'Sun', value: 40 },
-      ]}
+      trend={weekly.map((item) => ({
+        label: new Date(`${item.week_start}T00:00:00Z`).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' }),
+        value: Number(item.study_minutes || 0),
+      }))}
       bars={[
-        { label: 'AI Tutor', value: 40 }, { label: 'Tests', value: 30 }, { label: 'Notes', value: 22 }, { label: 'PDFs', value: 18 },
+        { label: 'Quizzes', value: completedQuizzes.length },
+        { label: 'Study hours', value: Math.round(studyMinutes / 60) },
+        { label: 'Avg score', value: averageScore },
       ]}
-      omitted={['screen-time detail if no session table exists']}
+      omitted={weekly.length ? [] : ['Weekly study snapshots have not been recorded yet']}
     />
   );
 }

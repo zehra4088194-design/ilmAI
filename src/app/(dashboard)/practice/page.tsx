@@ -57,7 +57,7 @@ export default async function PracticePage() {
     <div className="max-w-6xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold">AI Testing</h1>
-        <p className="text-muted-foreground">Tumhari selected board/class ke chapters par AI MCQs, short aur long tests banayega.</p>
+        <p className="text-muted-foreground">AI will generate MCQ, short-question, and long-question tests from your selected board and class chapters.</p>
       </div>
       <AiPracticeHub subjects={subjects || []} chaptersBySubject={chaptersBySubject} />
     </div>

@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next';
-import Script from 'next/script';
 import { Inter, Geist_Mono } from 'next/font/google';
 import { cookies } from 'next/headers';
 import '@/styles/globals.css';
@@ -7,6 +6,8 @@ import 'katex/dist/katex.min.css';
 import { Providers } from '@/providers';
 import { getSiteUrl } from '@/lib/utils/siteUrl';
 import { getThemeStylesheetHref, parseAppTheme, THEME_COOKIE_NAME } from '@/lib/constants/themes';
+import { DEFAULT_LOCALE, isValidLocale, LOCALE_COOKIE_NAME, type Locale } from '@/lib/i18n/config';
+import { createClient } from '@/lib/supabase/server';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
 const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono', display: 'swap' });
@@ -59,10 +60,26 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies();
   const initialTheme = parseAppTheme(cookieStore.get(THEME_COOKIE_NAME)?.value);
+  const savedLocale = cookieStore.get(LOCALE_COOKIE_NAME)?.value;
+  let initialLocale: Locale = isValidLocale(savedLocale) ? savedLocale : DEFAULT_LOCALE;
+  if (!isValidLocale(savedLocale)) {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await (supabase.from('profiles') as any)
+        .select('preferred_language')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (isValidLocale(profile?.preferred_language)) initialLocale = profile.preferred_language;
+    }
+  }
 
   return (
     <html
-      lang="en"
+      lang={initialLocale === 'roman-ur' ? 'en-PK' : 'en'}
+      dir="ltr"
       className={initialTheme.className}
       data-theme-family={initialTheme.family}
       data-theme-mode={initialTheme.mode}
@@ -77,14 +94,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
       </head>
       <body className={`${inter.variable} ${geistMono.variable} font-sans antialiased`}>
-        <Providers locale="en" initialTheme={initialTheme.className}>
+        <Providers locale={initialLocale} initialTheme={initialTheme.className}>
           {children}
         </Providers>
-        <Script
-          src="https://static.cloudflareinsights.com/beacon.min.js"
-          strategy="afterInteractive"
-          data-cf-beacon='{"token": "af601028278a46aeb40dbb0ed0ef20df"}'
-        />
       </body>
     </html>
   );

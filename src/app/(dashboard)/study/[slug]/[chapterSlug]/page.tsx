@@ -80,26 +80,26 @@ export default async function ChapterDetailPage({
   const quickActions = [
     {
       href: '/ai-tutor',
-      title: 'AI Tutor se samjho',
-      description: 'Isi chapter ke concepts ko step-by-step samajhne ke liye tutor kholo.',
+      title: 'Learn with AI Tutor',
+      description: 'Open the tutor to understand this chapter step by step.',
       icon: <Brain className="h-5 w-5 text-violet-300" />,
     },
     {
       href: '/practice',
-      title: 'MCQ practice karo',
-      description: 'Concept read karne ke baad objective practice se understanding pakki karo.',
+      title: 'Practice MCQs',
+      description: 'Strengthen your understanding with objective practice after reading the concepts.',
       icon: <Target className="h-5 w-5 text-cyan-300" />,
     },
     {
       href: '/notes',
-      title: 'Notes banao',
-      description: 'Important formulas, definitions aur pitfalls apni notes me save karo.',
+      title: 'Create notes',
+      description: 'Save important formulas, definitions, and pitfalls in your notes.',
       icon: <NotebookPen className="h-5 w-5 text-emerald-300" />,
     },
     {
       href: '/full-test',
       title: 'Full test readiness',
-      description: 'Jab chapter cover ho jaye to subjective + MCQ mix test se khud ko check karo.',
+      description: 'Check your understanding with a mixed subjective and MCQ test after covering the chapter.',
       icon: <FileText className="h-5 w-5 text-amber-300" />,
     },
   ];
@@ -152,7 +152,7 @@ export default async function ChapterDetailPage({
               <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">{chapter.name}</h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground md:text-base">
                 {chapter.description ||
-                  'Is chapter ke liye ab dedicated stop ban gaya hai jahan se tum next study action quickly choose kar sako.'}
+                  'This chapter now has a dedicated space where you can quickly choose your next study action.'}
               </p>
             </div>
 
@@ -181,9 +181,9 @@ export default async function ChapterDetailPage({
             </div>
             <div className="mt-4 space-y-3">
               {[
-                'Pehle concept samjho aur chapter ki vocabulary clear karo.',
-                'Uske baad MCQs ya short practice se weak spots pakro.',
-                'End me notes ya test ke through retention solid karo.',
+                'Understand the concept first and clarify the chapter vocabulary.',
+                'Then use MCQs or short-question practice to find weak areas.',
+                'Finish with notes or a test to strengthen retention.',
               ].map((step, index) => (
                 <div key={step} className="flex gap-3 rounded-2xl border border-white/10 bg-background/40 p-4">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-sm font-bold text-violet-300">
@@ -202,7 +202,7 @@ export default async function ChapterDetailPage({
           <div>
             <h2 className="text-2xl font-bold">Lectures</h2>
             <p className="text-sm text-muted-foreground">
-              Is chapter ki videos yahin site ke andar watch karo.
+              Watch this chapter&apos;s videos directly inside the site.
             </p>
           </div>
           <LectureGrid lectures={(lectures || []) as StudyLecture[]} />
@@ -213,7 +213,7 @@ export default async function ChapterDetailPage({
         <div>
           <h2 className="text-2xl font-bold">Quick study actions</h2>
           <p className="text-sm text-muted-foreground">
-            Chapter open karte hi agla logical step seedha saamne hona chahiye.
+            The next logical step should be immediately available when you open a chapter.
           </p>
         </div>
 
@@ -256,7 +256,7 @@ export default async function ChapterDetailPage({
                 <ArrowLeft className="h-4 w-4 text-violet-300" />
               </Link>
             ) : (
-              <p className="mt-3 text-sm text-muted-foreground">Yeh pehla visible chapter hai.</p>
+              <p className="mt-3 text-sm text-muted-foreground">This is the first visible chapter.</p>
             )}
           </CardContent>
         </Card>
@@ -276,7 +276,7 @@ export default async function ChapterDetailPage({
                 <ArrowRight className="h-4 w-4 text-violet-300" />
               </Link>
             ) : (
-              <p className="mt-3 text-sm text-muted-foreground">Yeh aakhri visible chapter hai.</p>
+              <p className="mt-3 text-sm text-muted-foreground">This is the last visible chapter.</p>
             )}
           </CardContent>
         </Card>

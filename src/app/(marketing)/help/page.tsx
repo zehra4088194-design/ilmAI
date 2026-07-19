@@ -6,53 +6,53 @@ export const metadata: Metadata = {
   description: 'Account, billing, AI tools, parent dashboard, and technical support for ilm AI.',
 };
 
-export default function HelpPage() {
+export default async function HelpPage() {
   return (
     <StaticContentPage
       eyebrow="Support"
       title="Help Center"
-      description="ilm AI use karte waqt jo common sawalat aate hain, un sab ka quick jawab yahan diya gaya hai. Agar issue phir bhi solve na ho to humse direct rabta karein."
+      description="Find quick answers to common ilm AI questions here. If your issue is not resolved, contact us directly."
       sideTitle="Need direct help?"
-      sideText="Agar account, payment, parent linking, ya AI response se related koi masla ho to contact page se message bhejein."
+      sideText="If you have an account, payment, parent-linking, or AI response issue, send us a message from the contact page."
       sideActions={[
         { href: '/contact', label: 'Contact Support', variant: 'gradient' },
         { href: '/status', label: 'Check System Status' },
       ]}
       sections={[
         {
-          title: 'Account aur login',
+          title: 'Account and login',
           bullets: [
-            'Agar login nahi ho raha to pehle email aur password dobara check karein.',
-            'Forgot Password page se reset link hasil ki ja sakti hai.',
-            'Google sign-in use karte hain to wahi Google account dobara use karein.',
-            'Agar verification email na mile to spam folder bhi check karein.',
+            'If you cannot log in, check your email and password first.',
+            'You can request a reset link from the Forgot Password page.',
+            'If you use Google sign-in, use the same Google account again.',
+            'If you do not receive the verification email, check your spam folder.',
           ],
         },
         {
-          title: 'Subscriptions aur payments',
+          title: 'Subscriptions and payments',
           bullets: [
-            'Filhaal sirf manual Pakistan payments active hain.',
-            'Easypaisa number 03480049900 aur JazzCash number 03006596490 use karein.',
-            'Payment bhejne ke baad screenshot zehra4088194@gmail.com par share karein.',
-            'Within 1 hour your transaction will be verified.',
-            'Agar payment ho jaye lekin plan upgrade na ho to support se receipt ya transaction reference ke sath rabta karein.',
+            'Plans are shown in PKR for Pakistan and USD for other countries.',
+            'Paddle handles Visa/Mastercard recurring checkout; Pakistani cards must support international e-commerce and 3D Secure.',
+            'Easypaisa/JazzCash manual verification is available as a fallback in Pakistan.',
+            'The Play Store app uses and syncs existing web subscriptions.',
+            'If payment succeeds but the plan does not activate, contact support with your Paddle receipt or wallet proof.',
           ],
         },
         {
           title: 'AI tools',
           bullets: [
             'AI Tutor, Guess Paper, Full Test, OCR, aur Essay Writer sab AI Gateway ke zariye run karte hain.',
-            'Agar response slow ho to kuch seconds wait karke dobara try karein.',
-            'Agar OCR result weak ho to clear image, achhi lighting, aur seedha camera angle use karein.',
-            'Voice tutor issue ki surat mein microphone permission aur stable internet check karein.',
+            'If a response is slow, wait a few seconds and try again.',
+            'For weak OCR results, use a clear image, good lighting, and a straight camera angle.',
+            'For voice tutor issues, check microphone permission and use a stable internet connection.',
           ],
         },
         {
           title: 'Parent dashboard',
           bullets: [
-            'Student pehle parent invite ya link code generate kare.',
-            'Parent account approved link ke baad messages, routine tests, aur attachments dekh sakta hai.',
-            'Attachments private hoti hain aur linked users ke ilawa kisi ko access nahi hota.',
+            'The student should generate a parent invite or link code first.',
+            'A linked Free account can see locked progress indicators; live dashboards, reports, and communication unlock on the student\'s Pro or Elite plan.',
+            'Attachments are private and accessible only to linked users.',
           ],
         },
       ]}

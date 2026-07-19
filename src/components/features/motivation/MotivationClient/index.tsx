@@ -8,10 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
 const FALLBACK_QUOTES = [
-  'Aaj ka chhota focus kal ka strong result banata hai.',
-  'Bas 25 minutes honestly parho, momentum khud ban jata hai.',
-  'Mistakes weak point nahi, next improvement ka map hoti hain.',
-  'Consistency marks ko quietly upgrade karti rehti hai.',
+  'A small focus session today creates a stronger result tomorrow.',
+  'Study honestly for 25 minutes and let momentum build.',
+  'Mistakes are not weak points; they map your next improvement.',
+  'Consistency quietly improves your marks.',
 ];
 
 export function MotivationClient() {
@@ -31,14 +31,14 @@ export function MotivationClient() {
         body: JSON.stringify({ subject: 'today study focus' }),
       });
       const json = await res.json();
-      if (!res.ok || json.status === 'error') throw new Error(json.error || 'Motivation load nahi hui');
+      if (!res.ok || json.status === 'error') throw new Error(json.error || 'Motivation could not be loaded.');
       const next = Array.isArray(json.quotes) ? json.quotes.filter(Boolean) : [];
       if (next.length) {
         setQuotes(next);
         setIndex(0);
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Motivation load nahi hui');
+      toast.error(error instanceof Error ? error.message : 'Motivation could not be loaded.');
     } finally {
       setLoading(false);
     }
@@ -65,7 +65,7 @@ export function MotivationClient() {
           <Badge className="mb-4 bg-violet-600"><Sparkles className="h-3 w-3" /> Motivation AI</Badge>
           <h1 className="text-3xl font-black tracking-tight sm:text-4xl">Study Motivation</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Short, fresh reminders for focus breaks, exam stress, aur daily consistency.
+            Short, fresh reminders for focus breaks, exam stress, and daily consistency.
           </p>
         </div>
       </section>

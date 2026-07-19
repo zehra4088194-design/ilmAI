@@ -1,11 +1,11 @@
 import { Metadata } from 'next';
-import { Redis } from '@upstash/redis';
 import { Activity, Bot, CheckCircle2, Database, Gauge, ShieldAlert, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getPlatformSettings } from '@/lib/platform-settings/server';
 import { getPlanFromSettings } from '@/lib/platform-settings/shared';
+import { getRedisClient, isRedisConfigured, scanRedisKeys } from '@/lib/redis/client';
 
 export const metadata: Metadata = { title: 'Admin - AI Usage' };
 export const dynamic = 'force-dynamic';
@@ -38,12 +38,13 @@ function numericValue(value: unknown) {
 }
 
 async function getRedisStats(): Promise<RedisStats> {
-  if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
+  if (!isRedisConfigured()) {
     return { connected: false, error: null, keys: [], totalUsage: 0, byFeature: {}, sampleKeys: [] };
   }
 
   try {
-    const redis = new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN });
+    const redis = await getRedisClient();
+    if (!redis) return { connected: false, error: 'Redis connection unavailable', keys: [], totalUsage: 0, byFeature: {}, sampleKeys: [] };
     const today = new Date().toISOString().slice(0, 10);
     const patterns = [
       `*ilm-ai*${today}*`,
@@ -54,14 +55,13 @@ async function getRedisStats(): Promise<RedisStats> {
       '*ai_tool*',
       '*model_tier*',
     ];
-    const found = await Promise.all(patterns.map((pattern) => redis.keys(pattern).catch(() => [] as string[])));
-    const allKeys = Array.from(new Set(found.flat()));
+    const allKeys = await scanRedisKeys(patterns, 800);
     const ttlPairs = await Promise.all(allKeys.slice(0, 800).map(async (key) => ({ key, ttl: await redis.ttl(key).catch(() => null) })));
     const keys = ttlPairs
       .filter((item) => item.ttl === null || item.ttl > 0)
       .map((item) => item.key)
       .slice(0, 500);
-    const values = await Promise.all(keys.map((key) => redis.get(key).catch(() => 0)));
+    const values = keys.length ? await redis.mGet(keys) : [];
     const ttlMap = new Map(ttlPairs.map((item) => [item.key, item.ttl]));
     const byFeature: Record<string, number> = {};
     let totalUsage = 0;
@@ -116,7 +116,7 @@ export default async function AdminAiUsagePage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">AI Usage Monitoring</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Live Upstash Redis counters, subscription limits, and AI feedback data.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Live private Valkey counters, subscription limits, and AI feedback data.</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -136,19 +136,21 @@ export default async function AdminAiUsagePage() {
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-violet-400" />Daily Limits</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-violet-400" />Shared AI Limits</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             {[
-              ['Free', free.limits.aiToolDaily, free.limits.aiSideChatDaily],
-              ['Pro', pro.limits.aiToolDaily, pro.limits.aiSideChatDaily],
-              ['Elite', elite.limits.aiToolDaily, elite.limits.aiSideChatDaily],
-            ].map(([tier, tool, chat]) => (
+              ['Free', free.limits.aiCreditsWeekly, free.limits.aiCreditsWeekly],
+              ['Pro', pro.limits.aiCreditsDaily, pro.limits.aiCreditsMonthly],
+              ['Elite', elite.limits.aiCreditsDaily, elite.limits.aiCreditsMonthly],
+            ].map(([tier, daily, monthly]) => (
               <div key={tier} className="rounded-lg border border-border/60 p-3">
                 <div className="flex items-center justify-between">
                   <span className="font-medium">{tier}</span>
                   <Badge variant="secondary">{(tierCounts[String(tier).toUpperCase()] || 0).toLocaleString()} users</Badge>
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">AI tools {tool}/day · side chat {chat}/day</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {tier === 'Free' ? `${monthly}/week shared` : `${daily}/day, ${monthly}/month shared`}
+                </p>
               </div>
             ))}
           </CardContent>
@@ -168,7 +170,7 @@ export default async function AdminAiUsagePage() {
               </div>
             ) : (
               <div className="rounded-lg border border-border/60 p-4 text-sm text-muted-foreground">
-                Active Redis usage window abhi nahi mili. Pehla AI/tool request hote hi yahan live feature count aa jayega.
+                No active Redis usage window was found. Live feature counts will appear after the first AI/tool request.
               </div>
             )}
           </CardContent>
@@ -203,8 +205,8 @@ export default async function AdminAiUsagePage() {
           ) : (
             <div className="rounded-lg border border-border/60 p-4 text-sm text-muted-foreground">
               {redisStats.connected
-                ? 'Upstash connected hai, lekin active daily usage keys abhi nahi mile. First AI/tool request ke baad yahan key list aa jayegi.'
-                : redisStats.error || 'Upstash env missing ya unavailable hai.'}
+                ? 'Valkey is connected, but no active daily usage keys were found. The key list will appear after the first AI/tool request.'
+                : redisStats.error || 'Private Valkey environment variables are missing or unavailable.'}
             </div>
           )}
         </CardContent>

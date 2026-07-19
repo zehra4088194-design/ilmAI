@@ -10,7 +10,7 @@ export default function AdminUsersPage() {
       <div>
         <h1 className="text-2xl font-bold">Users</h1>
         <p className="text-muted-foreground text-sm">
-          Kisi bhi user ko Pro/Elite monthly, yearly ya lifetime grant karo, ya wapas Free par revert karo.
+          Grant any user Pro or Elite monthly, yearly, or lifetime access, or revert them to Free.
         </p>
       </div>
       <UserManagementTable />

@@ -1,0 +1,44 @@
+name: Manual maintenance fallback
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  maintenance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run scheduled app jobs
+        shell: bash
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+          test -n "$APP_URL"
+          test -n "$CRON_SECRET"
+
+          call_job() {
+            curl --fail --silent --show-error --retry 2 \
+              -H "Authorization: Bearer ${CRON_SECRET}" \
+              "${APP_URL%/}$1"
+          }
+
+          call_job /api/cron/resource-context
+
+          day=$(date -u +%u)
+          time=$(date -u +%H:%M)
+          case "$day:$time" in
+            1:00:00) call_job /api/cron/weekly-snapshots ;;
+            1:00:10) call_job /api/cron/weekly-league-rollover ;;
+          esac
+
+          case "$time" in
+            01:00) call_job /api/cron/student-predictions ;;
+            02:30) call_job /api/cron/daily-study-emails ;;
+            03:00) call_job /api/cron/weak-subjects ;;
+            04:00) call_job /api/cron/study-reminders ;;
+            04:30) call_job /api/cron/storage-cleanup ;;
+          esac

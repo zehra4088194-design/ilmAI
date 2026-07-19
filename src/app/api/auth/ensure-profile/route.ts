@@ -20,6 +20,7 @@ export async function POST() {
   const role = metadata.role === 'parent' ? 'parent' : 'student';
   const username = typeof metadata.username === 'string' ? metadata.username.trim().toLowerCase() : null;
   const gender = metadata.gender === 'girl' || metadata.gender === 'boy' ? metadata.gender : null;
+  const preferredLanguage = metadata.preferred_language === 'roman-ur' ? 'roman-ur' : 'en';
   const educationLevel = EDUCATION_LEVELS.some((level) => level.value === metadata.education_level)
     ? metadata.education_level
     : 'school';
@@ -62,6 +63,7 @@ export async function POST() {
       is_profile_complete: onboardingCompleted,
       onboarding_completed: onboardingCompleted,
       onboarding_step: 0,
+      preferred_language: preferredLanguage,
     };
     let { error } = await admin.from('profiles').insert(insertPayload);
     if (isMissingAcademicInstitutionColumn(error)) {
@@ -73,6 +75,7 @@ export async function POST() {
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   } else {
     const updates: Record<string, unknown> = {};
+    updates.preferred_language = preferredLanguage;
     if (username && !existing.username) updates.username = username;
     if (gender && !existing.gender) {
       updates.gender = gender;

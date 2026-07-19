@@ -18,8 +18,8 @@ interface AIProviderSelectorProps {
 
 /**
  * Dropdown used everywhere an AI call is made (AI Tutor, Quiz/Flashcard generation,
- * Side Chat, Explain, etc). Free tier always shows locked Claude/GPT/Gemini options
- * with an upgrade nudge - only Assistant is selectable.
+ * Side Chat, Explain, etc). Free and Pro use the budget Assistant. Elite can
+ * spend its capped premium-call allowance on other providers.
  */
 export function AIProviderSelector({ provider, tier, onChange, isFreeTier, userTier = isFreeTier ? 'FREE' : 'PRO', compact = false }: AIProviderSelectorProps) {
   const [open, setOpen] = useState(false);
@@ -50,7 +50,7 @@ const activeTier = MODEL_TIERS.find((t) => t.id === tier) || MODEL_TIERS[0]!;
         <div className="absolute z-50 top-full mt-1 left-0 w-64 glass rounded-xl border border-border shadow-xl p-2">
           <p className="text-[10px] uppercase tracking-wide text-muted-foreground px-2 py-1">AI Provider</p>
           {AI_PROVIDERS.map((p) => {
-            const locked = isFreeTier && !p.freeAvailable;
+            const locked = userTier !== 'ELITE' && p.id !== 'groq';
             return (
               <button
                 key={p.id}
@@ -90,15 +90,15 @@ const activeTier = MODEL_TIERS.find((t) => t.id === tier) || MODEL_TIERS[0]!;
               })}
               {userTier === 'PRO' && (
                 <Link href="/subscription" className="mt-1 flex items-center gap-1.5 px-2 py-2 rounded-lg text-xs bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-colors">
-                  <Sparkles className="w-3 h-3" />Elite lo Pro model tier unlock karne ke liye
+                  <Sparkles className="w-3 h-3" />Upgrade to Elite to unlock the Pro model tier
                 </Link>
               )}
             </>
           )}
 
-          {isFreeTier && (
+          {userTier !== 'ELITE' && (
             <Link href="/subscription" className="mt-2 flex items-center gap-1.5 px-2 py-2 rounded-lg text-xs bg-violet-500/10 text-violet-400 hover:bg-violet-500/20 transition-colors">
-              <Sparkles className="w-3 h-3" />Pro lo Claude, GPT & Gemini unlock karne ke liye
+              <Sparkles className="w-3 h-3" /> Unlock capped premium AI models with Elite
             </Link>
           )}
         </div>

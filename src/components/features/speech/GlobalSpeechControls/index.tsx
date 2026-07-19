@@ -151,12 +151,12 @@ export function GlobalSpeechControls() {
   const speak = () => {
     if (!activeElement) return;
     if (!('speechSynthesis' in window)) {
-      toast.error('Text-to-voice is browser mein supported nahi hai');
+      toast.error('Text-to-speech is not supported in this browser.');
       return;
     }
     const text = getElementText(activeElement);
     if (!text) {
-      toast.error('Read karne ke liye text likho ya select karo');
+      toast.error('Enter or select text to read.');
       return;
     }
     window.speechSynthesis.cancel();
@@ -177,7 +177,7 @@ export function GlobalSpeechControls() {
 
     const SpeechRecognition = (window as SpeechWindow).SpeechRecognition || (window as SpeechWindow).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      toast.error('Voice-to-text is browser mein supported nahi hai. Chrome/Edge try karo.');
+      toast.error('Voice-to-text is not supported in this browser. Try Chrome or Edge.');
       return;
     }
 
@@ -196,7 +196,7 @@ export function GlobalSpeechControls() {
     };
     recognition.onerror = (event) => {
       setListening(false);
-      toast.error(event.error === 'not-allowed' ? 'Microphone permission allow karo' : 'Voice input start nahi ho saka');
+      toast.error(event.error === 'not-allowed' ? 'Allow microphone access to continue.' : 'Voice input could not be started.');
     };
     recognition.onend = () => setListening(false);
 
@@ -205,7 +205,7 @@ export function GlobalSpeechControls() {
       setListening(true);
     } catch {
       setListening(false);
-      toast.error('Voice input start nahi ho saka');
+      toast.error('Voice input could not be started.');
     }
   };
 
@@ -248,7 +248,7 @@ export function GlobalSpeechControls() {
           setDismissed(true);
         }}
         className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-        title="Is tab ke liye hide karo"
+        title="Hide for this tab"
         aria-label="Hide voice controls for this tab"
       >
         <X className="h-3.5 w-3.5" />

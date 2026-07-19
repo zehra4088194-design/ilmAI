@@ -73,9 +73,9 @@ export function CompleteProfileStep({ initialGender }: { initialGender: 'girl' |
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-3xl flex-col justify-center gap-6 px-6 py-10">
       <div className="space-y-2 text-center">
-        <h1 className="text-xl font-semibold tracking-tight">Bas ek chhota sa step baaki hai</h1>
+        <h1 className="text-xl font-semibold tracking-tight">One more step</h1>
         <p className="text-muted-foreground text-sm">
-          Apna education level confirm kar do, phir dashboard tumhare study goals ke mutabiq set ho jayega.
+          Confirm your education level and we will tailor the dashboard to your study goals.
         </p>
       </div>
 
@@ -102,7 +102,7 @@ export function CompleteProfileStep({ initialGender }: { initialGender: 'girl' |
               </button>
             ))}
           </div>
-          <p className="text-muted-foreground text-xs">Study Buddies mein sirf same-gender students connect kar sakte hain.</p>
+          <p className="text-muted-foreground text-xs">Only students of the same gender can connect in Study Buddies.</p>
         </div>
         <div className="grid gap-2">
           {EDUCATION_LEVELS.map((level) => (
@@ -128,7 +128,7 @@ export function CompleteProfileStep({ initialGender }: { initialGender: 'girl' |
             placeholder="e.g. ahmad.study"
           />
           <p className="text-muted-foreground text-xs">
-            3-30 characters: letters, numbers, dot ya underscore. Isi se Study Buddies me search hoga.
+            3-30 characters: letters, numbers, dots, or underscores. Study Buddies uses this for search.
           </p>
         </div>
 
@@ -159,7 +159,7 @@ export function CompleteProfileStep({ initialGender }: { initialGender: 'girl' |
               <label className="text-sm font-medium">Degree / Program</label>
               <Select value={program} onValueChange={setProgram}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Apni degree select karo" />
+                  <SelectValue placeholder="Select your degree" />
                 </SelectTrigger>
                 <SelectContent>
                   {(UNIVERSITY_STREAMS.find((item) => item.value === stream)?.degrees || []).map((degree) => (
@@ -213,7 +213,7 @@ export function CompleteProfileStep({ initialGender }: { initialGender: 'girl' |
               <label className="text-sm font-medium">Board</label>
               <Select value={board} onValueChange={setBoard}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Apna board chuno" />
+                  <SelectValue placeholder="Select your board" />
                 </SelectTrigger>
                 <SelectContent>
                   {BOARDS.map((b) => (
@@ -229,7 +229,7 @@ export function CompleteProfileStep({ initialGender }: { initialGender: 'girl' |
               <label className="text-sm font-medium">Grade</label>
               <Select value={gradeLevel} onValueChange={setGradeLevel}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Apni grade chuno" />
+                  <SelectValue placeholder="Select your grade" />
                 </SelectTrigger>
                 <SelectContent>
                   {GRADE_LEVELS.map((g) => (
@@ -247,14 +247,14 @@ export function CompleteProfileStep({ initialGender }: { initialGender: 'girl' |
 
         <div className="border-border bg-card/80 space-y-3 rounded-2xl border p-4">
           <div>
-            <h2 className="text-sm font-semibold">Apni theme choose karo</h2>
-            <p className="text-muted-foreground mt-1 text-xs">Ye baad mein Settings se change ho sakti hai.</p>
+            <h2 className="text-sm font-semibold">Choose your theme</h2>
+            <p className="text-muted-foreground mt-1 text-xs">You can change this later in Settings.</p>
           </div>
           <ThemePicker compact />
         </div>
 
         <Button onClick={handleSubmit} disabled={!canSubmit} className="w-full">
-          {isPending ? 'Save ho raha hai...' : 'Aage badho'}
+          {isPending ? 'Saving...' : 'Continue'}
         </Button>
       </div>
     </div>

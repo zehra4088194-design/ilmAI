@@ -5,9 +5,9 @@ import { LandingFooter } from '@/components/features/landing/Footer';
 export const metadata: Metadata = { title: 'Blog - ilm AI' };
 
 const POSTS = [
-  { slug: 'fbise-exam-tips-2026', title: 'FBISE Exam Ki Tayari Kaise Karein - Complete Guide 2026', excerpt: 'Board exams ke liye proven strategies aur study techniques.', date: '2026-05-15' },
-  { slug: 'ai-tutoring-benefits', title: 'AI Tutoring Ke Fawaid Pakistani Students Ke Liye', excerpt: 'Kaise AI technology study experience ko better bana rahi hai.', date: '2026-04-22' },
-  { slug: 'time-management-students', title: 'Students Ke Liye Time Management Tips', excerpt: 'Study aur baqi zindagi mein balance kaise banayein.', date: '2026-03-10' },
+  { slug: 'fbise-exam-tips-2026', title: 'How to Prepare for FBISE Exams - Complete Guide 2026', excerpt: 'Proven strategies and study techniques for board exams.', date: '2026-05-15' },
+  { slug: 'ai-tutoring-benefits', title: 'Benefits of AI Tutoring for Pakistani Students', excerpt: 'How AI technology is improving the study experience.', date: '2026-04-22' },
+  { slug: 'time-management-students', title: 'Time Management Tips for Students', excerpt: 'How to balance study and the rest of your life.', date: '2026-03-10' },
 ];
 
 export default function BlogPage() {

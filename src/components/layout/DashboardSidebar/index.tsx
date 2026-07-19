@@ -19,6 +19,7 @@ const NAV_GROUPS = [
     items: [
       { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
       { icon: BookOpen, label: 'Study', href: '/study' },
+      { icon: Target, label: 'Diagnostic Test', href: '/diagnostic', badge: 'Start' },
       { icon: Zap, label: 'AI Testing', href: '/practice' },
       { icon: Brain, label: 'AI Tutor', href: '/ai-tutor', badge: 'AI' },
       { icon: Camera, label: 'Scan & Solve', href: '/scan', badge: 'AI' },
@@ -207,7 +208,7 @@ export function DashboardSidebar({ mobileOpen: controlledMobileOpen, onMobileOpe
   return (
     <>
       {/* Desktop */}
-      <aside className="hidden lg:flex fixed left-0 top-0 h-full w-64 bg-sidebar flex-col border-r border-sidebar-border z-40 overflow-hidden">
+      <aside className="bg-sidebar border-sidebar-border fixed top-0 left-0 z-40 hidden h-dvh w-64 flex-col overflow-hidden border-r lg:flex">
         <SidebarContent />
       </aside>
 
@@ -226,7 +227,7 @@ export function DashboardSidebar({ mobileOpen: controlledMobileOpen, onMobileOpe
       {mobileOpen && (
         <>
           <div className="fixed inset-0 z-[85] bg-black/60 lg:hidden" onClick={() => setMobileOpen(false)} />
-          <aside className="fixed left-0 top-0 z-[95] h-full w-72 overflow-hidden border-r border-sidebar-border bg-sidebar shadow-2xl lg:hidden">
+          <aside className="border-sidebar-border bg-sidebar fixed top-0 left-0 z-[95] h-dvh w-72 max-w-[86vw] overflow-hidden border-r shadow-2xl lg:hidden">
             <SidebarContent />
           </aside>
         </>

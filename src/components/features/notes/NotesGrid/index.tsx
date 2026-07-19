@@ -76,7 +76,7 @@ export function NotesGrid({ notes, userId }: { notes: Note[]; userId: string }) 
       .select('id')
       .single();
     if (error || !data) {
-      toast.error('Note create nahi hua');
+      toast.error('The note could not be created.');
       setCreating(false);
       return;
     }
@@ -86,7 +86,7 @@ export function NotesGrid({ notes, userId }: { notes: Note[]; userId: string }) 
   const togglePin = async (e: React.MouseEvent, note: Note) => {
     e.stopPropagation();
     const { error } = await supabase.from('notes').update({ is_starred: !note.is_starred }).eq('id', note.id);
-    if (error) toast.error('Pin update nahi hui');
+    if (error) toast.error('The pin could not be updated.');
     else router.refresh();
   };
 
@@ -106,7 +106,7 @@ export function NotesGrid({ notes, userId }: { notes: Note[]; userId: string }) 
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Notes mein search karo..."
+            placeholder="Search notes..."
             className="pl-9"
           />
         </div>
@@ -177,7 +177,7 @@ export function NotesGrid({ notes, userId }: { notes: Note[]; userId: string }) 
                   setNewFolderName('');
                 }
               }}
-              placeholder="Folder ka naam..."
+              placeholder="Folder name..."
               className="h-8 w-36 text-xs"
             />
             <Button variant="ghost" size="sm" className="h-8 px-2" onClick={confirmNewFolder}>
@@ -200,7 +200,7 @@ export function NotesGrid({ notes, userId }: { notes: Note[]; userId: string }) 
             onClick={() => setAddingFolder(true)}
             className="border-border text-muted-foreground hover:bg-muted flex items-center gap-1.5 rounded-full border border-dashed px-3 py-1.5 text-xs font-medium transition-colors"
           >
-            <FolderPlus className="h-3.5 w-3.5" /> Nayi Folder
+            <FolderPlus className="h-3.5 w-3.5" /> New folder
           </button>
         )}
       </div>
@@ -262,7 +262,7 @@ export function NotesGrid({ notes, userId }: { notes: Note[]; userId: string }) 
         {filtered.length === 0 && notes.length > 0 && (
           <div className="text-muted-foreground col-span-full py-16 text-center">
             <Search className="mx-auto mb-3 h-8 w-8 opacity-40" />
-            Is search/folder ke liye koi note nahi mila.
+            No notes found for this search or folder.
           </div>
         )}
 
@@ -271,8 +271,8 @@ export function NotesGrid({ notes, userId }: { notes: Note[]; userId: string }) 
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20">
               <StickyNote className="h-8 w-8 text-violet-300" />
             </div>
-            <p className="text-foreground mb-1 font-medium">Koi notes nahi hain abhi</p>
-            <p className="text-sm">Pehla note banao, ya kisi textbook page ko scan karo</p>
+            <p className="text-foreground mb-1 font-medium">No notes yet</p>
+            <p className="text-sm">Create your first note or scan a textbook page.</p>
           </div>
         )}
       </div>

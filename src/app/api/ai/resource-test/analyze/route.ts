@@ -7,7 +7,7 @@ import { fetchResourceContext, getProtectedResource, type ProtectedResourceKind 
 import { analyzeResourceSource, type ResourceAnalysis } from '@/lib/resources/source-fallback';
 
 export const runtime = 'nodejs';
-export const maxDuration = 60;
+export const maxDuration = 180;
 
 type Analysis = ResourceAnalysis;
 

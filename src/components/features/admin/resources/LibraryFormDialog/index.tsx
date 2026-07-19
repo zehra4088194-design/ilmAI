@@ -37,9 +37,11 @@ function isAcceptableResourceUrl(url: string) {
 
 const emptyForm = {
   title: '',
+  book_title: '',
   description: '',
   category: 'local' as LibraryResource['category'],
   resource_type: 'text_book' as LibraryResource['resource_type'],
+  content_section: 'reading' as LibraryResource['content_section'],
   subject_id: ALL_VALUE,
   chapter_id: ALL_VALUE,
   board: ALL_VALUE,
@@ -72,9 +74,11 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
     if (resource) {
       setForm({
         title: resource.title,
+        book_title: resource.book_title || '',
         description: resource.description ?? '',
         category: resource.category,
         resource_type: resource.resource_type ?? 'text_book',
+        content_section: resource.content_section ?? 'reading',
         subject_id: resource.subject_id ?? ALL_VALUE,
         chapter_id: resource.chapter_id ?? ALL_VALUE,
         board: resource.board ?? ALL_VALUE,
@@ -108,6 +112,14 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
     const lightFileUrl = form.light_file_url.trim();
     const darkFileUrl = form.dark_file_url.trim();
     const contextTextUrl = form.context_text_url.trim();
+    if (form.subject_id === ALL_VALUE || form.chapter_id === ALL_VALUE) {
+      setError('Subject and chapter are required for the organized library.');
+      return;
+    }
+    if (form.board === ALL_VALUE || form.grade_level === ALL_VALUE) {
+      setError('Board and grade/class are required for the correct student library.');
+      return;
+    }
     if (!isAcceptableResourceUrl(lightFileUrl)) {
       setError('Light/default Google Drive/Docs share link ya direct PDF URL paste karein.');
       return;
@@ -116,8 +128,8 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
       setError('Dark mode ke liye valid Google Drive/Docs ya direct PDF URL paste karein.');
       return;
     }
-    if (!/^https:\/\//i.test(contextTextUrl)) {
-      setError('AI summary/test ke liye companion .txt file ka HTTPS ya Google Drive link zaroori hai.');
+    if (contextTextUrl && !/^https:\/\//i.test(contextTextUrl)) {
+      setError('Companion .txt ke liye HTTPS ya Google Drive link paste karein.');
       return;
     }
 
@@ -126,9 +138,11 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
     try {
       const payload = {
         title: form.title.trim(),
+        book_title: form.book_title.trim() || null,
         description: form.description.trim() || null,
         category: form.category,
         resource_type: form.resource_type,
+        content_section: form.content_section,
         subject_id: form.subject_id === ALL_VALUE ? null : form.subject_id,
         chapter_id: form.chapter_id === ALL_VALUE ? null : form.chapter_id,
         board: form.board === ALL_VALUE ? null : form.board,
@@ -136,7 +150,7 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
         drive_url: lightFileUrl,
         light_file_url: lightFileUrl,
         dark_file_url: darkFileUrl || null,
-        context_text_url: contextTextUrl,
+        context_text_url: contextTextUrl || null,
         file_type: form.file_type,
       };
 
@@ -149,7 +163,7 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
         }
       );
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || data.details || 'Save nahi ho saka');
+      if (!res.ok) throw new Error(data.error || data.details || 'Save failed.');
 
       await onSaved();
       onOpenChange(false);
@@ -162,7 +176,7 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{isEdit ? 'Edit Resource' : 'Add Resource'}</DialogTitle>
         </DialogHeader>
@@ -180,6 +194,18 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
           </div>
 
           <div className="flex flex-col gap-1.5">
+            <Label htmlFor="resource-book-title">Book / Collection name</Label>
+            <Input
+              id="resource-book-title"
+              value={form.book_title}
+              onChange={(event) => setForm((current) => ({ ...current, book_title: event.target.value }))}
+              placeholder="Class 9 Physics Text Book"
+              required
+            />
+            <p className="text-muted-foreground text-xs">Isi naam wali chapter files ek book ke andar group hongi.</p>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
             <Label htmlFor="resource-description">Description</Label>
             <Textarea
               id="resource-description"
@@ -190,7 +216,7 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
               <Label>Subject</Label>
               <Select
@@ -203,7 +229,7 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={ALL_VALUE}>All Subjects</SelectItem>
+                  <SelectItem value={ALL_VALUE}>Select Subject</SelectItem>
                   {subjects.map((subject) => (
                     <SelectItem key={subject.id} value={subject.id}>
                       {subject.name}
@@ -224,7 +250,7 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={ALL_VALUE}>All Chapters</SelectItem>
+                  <SelectItem value={ALL_VALUE}>Select Chapter</SelectItem>
                   {chapters.map((chapter) => (
                     <SelectItem key={chapter.id} value={chapter.id}>
                       {chapter.name}
@@ -235,7 +261,7 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
               <Label>Resource Type</Label>
               <Select
@@ -251,6 +277,26 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
                   <SelectItem value="text_book">Text Book</SelectItem>
                   <SelectItem value="notes">Notes</SelectItem>
                   <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label>File Section</Label>
+              <Select
+                value={form.content_section}
+                onValueChange={(value) =>
+                  setForm((current) => ({ ...current, content_section: value as LibraryResource['content_section'] }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="reading">Chapter Reading</SelectItem>
+                  <SelectItem value="mcq">MCQs</SelectItem>
+                  <SelectItem value="short">Short Questions</SelectItem>
+                  <SelectItem value="long">Long Questions</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -295,7 +341,7 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
               <Label>Board</Label>
               <Select
@@ -363,16 +409,16 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="context-text-url">Companion context .txt link</Label>
+            <Label htmlFor="context-text-url">Companion context .txt link (optional)</Label>
             <Input
               id="context-text-url"
               value={form.context_text_url}
               onChange={(event) => setForm((current) => ({ ...current, context_text_url: event.target.value }))}
               placeholder="https://drive.google.com/file/d/.../view"
-              required
             />
             <p className="text-muted-foreground text-xs">
-              Complete readable text rakhein. Gemini summary aur file-test isi private server context se banenge.
+              If left empty, the server will OCR the PDF once and create a private TXT sidecar. Providing complete
+              readable TXT content is more accurate and faster.
             </p>
           </div>
 

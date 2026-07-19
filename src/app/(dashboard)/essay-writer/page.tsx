@@ -11,7 +11,7 @@ export default async function EssayWriterPage() {
   const { gradeLevel } = await getUserGradeLevel(supabase, user!.id);
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <div><h1 className="text-2xl font-bold">Essay Writer ✍️</h1><p className="text-muted-foreground">Topic do, essay type aur word count select karo — AI likh dega</p></div>
+      <div><h1 className="text-2xl font-bold">Essay Writer ✍️</h1><p className="text-muted-foreground">Enter a topic, choose an essay type and word count, and let AI write it for you.</p></div>
       <EssayWriterForm userTier={(profile?.subscription_tier as any) || 'FREE'} gradeLevel={gradeLevel} />
     </div>
   );

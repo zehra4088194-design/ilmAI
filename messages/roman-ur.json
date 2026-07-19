@@ -1,0 +1,107 @@
+{
+  "common": {
+    "save": "Changes save karein",
+    "saving": "Save ho raha hai...",
+    "cancel": "Cancel",
+    "loading": "Load ho raha hai..."
+  },
+  "navbar": {
+    "features": "Features",
+    "boards": "Boards",
+    "pricing": "Pricing",
+    "blog": "Blog",
+    "login": "Login",
+    "getStartedFree": "Free shuru karein",
+    "dashboard": "Dashboard",
+    "startFree": "Free shuru karein"
+  },
+  "auth": {
+    "login": {
+      "title": "Wapas khush aamdeed!",
+      "subtitle": "Apne account mein login karein",
+      "orEmail": "Ya email ke saath",
+      "emailPlaceholder": "Email address",
+      "passwordPlaceholder": "Password",
+      "forgotPassword": "Password bhool gaye?",
+      "submit": "Login",
+      "noAccount": "Account nahi hai?",
+      "registerLink": "Register"
+    },
+    "register": {
+      "title": "Account banayein",
+      "subtitle": "Free join karein, notes read karein aur limited AI demos try karein.",
+      "student": "Student",
+      "parent": "Parent",
+      "orEmail": "Ya email ke saath",
+      "fullNamePlaceholder": "Poora naam",
+      "emailPlaceholder": "Email address",
+      "boardLabel": "Board",
+      "boardPlaceholder": "Board select karein",
+      "gradeLabel": "Grade / Class",
+      "gradePlaceholder": "Class select karein",
+      "passwordPlaceholder": "Password (8+ characters)",
+      "confirmPasswordPlaceholder": "Password dobara likhein",
+      "submitStudent": "Free account banayein",
+      "submitParent": "Parent account banayein",
+      "haveAccount": "Pehle se account hai?",
+      "loginLink": "Login"
+    }
+  },
+  "dashboard": {
+    "greetingMorning": "Good Morning",
+    "greetingAfternoon": "Good Afternoon",
+    "greetingEvening": "Good Evening",
+    "subtitle": "Aaj kya parhna hai? Chalein shuru karte hain.",
+    "dayStreak": "Din ka streak!",
+    "keepItUp": "Aise hi jaari rakhein!"
+  },
+  "pricing": {
+    "title1": "Seedhi aur ",
+    "titleHighlight": "Affordable",
+    "titleSuffix": " Pricing",
+    "subtitle": "Student budget ke mutabiq plans",
+    "monthly": "Monthly",
+    "annual": "Annual",
+    "save20": "Annual saving",
+    "perMonth": "/month"
+  },
+  "settings": {
+    "tabs": {
+      "profile": "Profile",
+      "parentLink": "Parent Link",
+      "notifications": "Notifications",
+      "security": "Security",
+      "appearance": "Appearance",
+      "language": "Language"
+    },
+    "language": {
+      "title": "Preferred language",
+      "description": "App interface ke liye English ya Roman Urdu select karein.",
+      "saved": "Language update ho gayi!"
+    }
+  },
+  "languageSwitcher": {
+    "label": "Language"
+  },
+  "vision": {
+    "title": "Scan & Solve",
+    "subtitle": "Textbook pages, handwriting, formulas aur diagrams scan karein."
+  },
+  "voicePractice": {
+    "title": "AI Speaking Practice",
+    "subtitle": "Record karein, transcript aur pronunciation feedback lein."
+  },
+  "offline": {
+    "title": "Downloads",
+    "subtitle": "Saved resources offline parhein."
+  },
+  "demo": {
+    "title": "Free Demo Test Try Karein",
+    "subtitle": "5 real MCQs, signup ke baghair.",
+    "cta": "Free demo test try karein",
+    "signupCta": "Free signup",
+    "limitTitle": "Aaj ke free demos use ho gaye",
+    "limitMessage": "Free demos complete ho gaye; account bana kar progress save karein.",
+    "conversionTitle": "Pasand aaya? Free signup se practice aur progress tracking unlock karein."
+  }
+}

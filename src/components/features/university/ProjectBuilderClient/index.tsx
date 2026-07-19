@@ -32,7 +32,7 @@ export function ProjectBuilderClient({ isLocked = false }: { isLocked?: boolean 
 
   const generate = async () => {
     if (isLocked) {
-      toast.error('AI Project Builder is plan mein locked hai.');
+      toast.error('AI Project Builder is locked on your current plan.');
       return;
     }
     setLoading(true);
@@ -49,12 +49,12 @@ export function ProjectBuilderClient({ isLocked = false }: { isLocked?: boolean 
       }
       setContent(json.data.content);
       if (json.data.saved === false) {
-        toast.warning('Project generate ho gaya, lekin history me save nahi hua. Content yahan available hai.');
+        toast.warning('The project was generated, but it was not saved to history. The content is available here.');
       } else {
         toast.success('Project pack generate ho gaya!');
       }
     } catch {
-      toast.error('Project pack generate nahi ho saka.');
+      toast.error('The project pack could not be generated.');
     } finally {
       setLoading(false);
     }
@@ -96,7 +96,7 @@ export function ProjectBuilderClient({ isLocked = false }: { isLocked?: boolean 
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => {
               const ok = printElementById('project-builder-export', 'ilm AI Project Builder');
-              if (!ok) toast.error('Export content nahi mila.');
+              if (!ok) toast.error('No export content was found.');
             }}><Download className="h-4 w-4" />Export PDF / Print</Button>
           </div>
           <div id="project-builder-export" data-print-root="true" className="grid gap-4 lg:grid-cols-2">

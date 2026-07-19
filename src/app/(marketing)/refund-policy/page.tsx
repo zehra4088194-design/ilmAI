@@ -11,9 +11,9 @@ export default function RefundPolicyPage() {
     <StaticContentPage
       eyebrow="Legal"
       title="Refund Policy"
-      description="Ye Refund Policy explain karti hai ke ilm AI paid subscriptions, duplicate charges, failed activations, aur billing disputes ko kaise handle karta hai."
+      description="This Refund Policy explains how ilm AI handles paid subscriptions, duplicate charges, failed activations, and billing disputes."
       sideTitle="Billing support"
-      sideText="Agar aapko payment issue, duplicate charge, ya subscription activation delay ka masla ho to support team ko transaction details ke sath foran contact karein."
+      sideText="If you have a payment issue, duplicate charge, or subscription activation delay, contact support promptly with your transaction details."
       sideActions={[
         { href: '/contact', label: 'Contact Billing Support', variant: 'gradient' },
         { href: '/terms', label: 'Read Terms of Service' },
@@ -22,12 +22,12 @@ export default function RefundPolicyPage() {
         {
           title: 'General refund rule',
           paragraphs: [
-            'ilm AI digital subscription service hai, is liye successful activation ke baad refunds automatic nahi hote.',
-            'Har refund request manual review ke baad decide ki jati hai based on payment status, service activation, aur issue ki nature.',
+            'ilm AI is a digital subscription service, so refunds are not automatic after successful activation.',
+            'Every refund request is decided after a manual review of payment status, service activation, and the nature of the issue.',
           ],
         },
         {
-          title: 'Cases where refund review hoti hai',
+          title: 'Cases where a refund may be reviewed',
           bullets: [
             'Duplicate charge lag gaya ho.',
             'Payment capture ho gayi ho lekin subscription activate na hui ho.',
@@ -36,26 +36,26 @@ export default function RefundPolicyPage() {
           ],
         },
         {
-          title: 'Cases where refund reject ho sakti hai',
+          title: 'Cases where a refund may be rejected',
           bullets: [
-            'Paid features successfully unlock ho chuki hon aur normal use available raha ho.',
-            'User ne active plan use karne ke baad sirf change of mind ki basis par refund request bheji ho.',
+            'Paid features were successfully unlocked and normal use was available.',
+            'The user requests a refund only because they changed their mind after using the active plan.',
             'Policy violation, abuse, ya fraudulent activity detect hui ho.',
           ],
         },
         {
           title: 'How to request a refund',
           bullets: [
-            'Support team ko account email ke sath message bhejein.',
-            'Payment receipt, transaction id, Easypaisa/JazzCash number, aur issue ka short summary share karein.',
-            'Manual transfer ka screenshot aur jis plan ke liye payment ki thi wo bhi mention karein.',
+            'Message the support team using your account email.',
+            'Share the Paddle receipt/transaction ID for card payments or transaction proof for a local wallet.',
+            'Plan, billing cycle, charged currency aur issue ka short summary mention karein.',
           ],
         },
         {
           title: 'Resolution timeline',
           paragraphs: [
-            'Refund-related requests ko as early as possible review kiya jata hai, lekin exact timing payment verification par depend karti hai.',
-            'Approved refund ka final settlement internal review aur transfer trail ke mutabiq complete hota hai.',
+            'Refund requests are reviewed as early as possible, but timing depends on payment verification.',
+            'The final settlement of an approved refund follows internal review and the transfer trail.',
           ],
         },
       ]}

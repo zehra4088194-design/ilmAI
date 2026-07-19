@@ -80,7 +80,7 @@ async function getPostHogStats(): Promise<PostHogStats> {
     return {
       configured: ingestConfigured,
       queryReady: false,
-      error: 'PostHog events send ho rahe hain, live read ke liye POSTHOG_PERSONAL_API_KEY + POSTHOG_PROJECT_ID add karo.',
+      error: 'PostHog events are being sent. Add POSTHOG_PERSONAL_API_KEY and POSTHOG_PROJECT_ID for live reads.',
       events24h: 0,
       pageviews7d: 0,
       visitors7d: 0,

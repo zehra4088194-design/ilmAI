@@ -11,9 +11,9 @@ export default function CookiesPage() {
     <StaticContentPage
       eyebrow="Legal"
       title="Cookie Policy"
-      description="Ye Cookie Policy batati hai ke ilm AI cookies aur similar browser storage ko authentication, preferences, aur product experience improve karne ke liye kaise use karta hai."
+      description="This Cookie Policy explains how ilm AI uses cookies and similar browser storage for authentication, preferences, and product experience."
       sideTitle="Cookie-related help"
-      sideText="Agar language preference, login session, ya browser storage behavior par issue aaye to support page use karein."
+      sideText="If you have an issue with language preferences, login sessions, or browser storage, use the support page."
       sideActions={[
         { href: '/help', label: 'Open Help Center', variant: 'gradient' },
         { href: '/privacy', label: 'Read Privacy Policy' },
@@ -22,10 +22,10 @@ export default function CookiesPage() {
         {
           title: 'What cookies do here',
           bullets: [
-            'Login sessions maintain karne mein help karti hain.',
-            'Language aur interface preferences remember karne mein use hoti hain.',
-            'Security-related checks aur session continuity improve karti hain.',
-            'Daily study email permission optional hai. Agar allow ho to profile mein consent save hota hai aur AI-generated study reminders Resend ke through bheje ja sakte hain.',
+            'They help maintain login sessions.',
+            'They remember language and interface preferences.',
+            'They improve security checks and session continuity.',
+            'Daily study email permission is optional. If allowed, consent is saved to your profile and AI-generated study reminders may be sent through Resend.',
           ],
         },
         {
@@ -39,16 +39,16 @@ export default function CookiesPage() {
         {
           title: 'What cookies do not contain',
           bullets: [
-            'Raw AI provider secrets browser cookies mein store nahi kiye jate.',
-            'Payment provider secret keys browser cookies mein store nahi ki jati.',
-            'Sensitive backend-only credentials client-side storage mein expose nahi kiye jate.',
+            'Raw AI provider secrets are not stored in browser cookies.',
+            'Payment provider secret keys are not stored in browser cookies.',
+            'Sensitive backend-only credentials are not exposed in client-side storage.',
           ],
         },
         {
           title: 'Managing cookies',
           paragraphs: [
-            'Aap apne browser settings se cookies clear ya block kar sakte hain.',
-            'Cookies disable karne ki surat mein kuch parts of the platform, especially login and preference persistence, properly kaam nahi kar sakte.',
+            'You can clear or block cookies in your browser settings.',
+            'If cookies are disabled, some platform features, especially login and preference persistence, may not work correctly.',
           ],
         },
       ]}

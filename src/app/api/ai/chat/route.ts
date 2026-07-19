@@ -43,7 +43,7 @@ ${navigationCatalog}`
   return `You are ilm AI, an expert tutor for Pakistani students (Grades 9-12, O/A Levels, FBISE & provincial boards).${subject ? `\nThe student has chosen to focus this session on: ${subject}. Keep your answers scoped to that subject unless they explicitly ask about something else.` : ''}
 Rules:
 - Explain concepts clearly, step by step
-- Mix English with Roman Urdu phrases naturally when it helps understanding
+- Respond in professional English by default. Use Roman Urdu only when the student explicitly requests it.
 - For MCQs: explain why each option is right/wrong
 - For math/physics: show full working
 - Be encouraging and patient
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      return new Response(JSON.stringify({ error: 'Login required hai' }), { status: 401 });
+      return new Response(JSON.stringify({ error: 'Login is required.' }), { status: 401 });
     }
 
     const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
@@ -65,33 +65,37 @@ export async function POST(req: NextRequest) {
 
     const { message, history = [], provider: requestedProvider, tier: requestedTier, subject, source } = await req.json();
     if (!message || typeof message !== 'string') {
-      return new Response(JSON.stringify({ error: 'Message required hai' }), { status: 400 });
+      return new Response(JSON.stringify({ error: 'A message is required.' }), { status: 400 });
     }
 
-    // FREE tier is hard-locked to the default Assistant, no matter what the client sends
-    const provider: AiProviderId = userTier === 'FREE' ? 'groq' : (requestedProvider || 'groq');
-    const tier: ModelTier = requestedTier || 'mini';
+    // Free and Pro always use the budget provider. Elite may explicitly spend
+    // one of its capped premium calls on another provider.
+    const provider: AiProviderId = userTier === 'ELITE' ? requestedProvider || 'groq' : 'groq';
+    const tier: ModelTier = userTier === 'ELITE' ? requestedTier || 'mini' : 'mini';
     if (tier === 'pro' && userTier !== 'ELITE') {
-      return new Response(JSON.stringify({ error: 'Pro model tier sirf Elite users ke liye hai. Elite upgrade karo ya mini/medium use karo.' }), { status: 403 });
+      return new Response(JSON.stringify({ error: 'The Pro model tier is available only to Elite users. Upgrade to Elite or use the mini/medium tier.' }), { status: 403 });
     }
 
-    // Quota check: the default Assistant uses the daily AI-message pool; other providers use the
-    // mini/medium/pro tiered pool (10/7/3 per day) since they cost real money per call.
-    if (provider === 'groq') {
-      const isSideChat = source === 'side_chat';
-      const limitCheck = isSideChat
-        ? await checkAiSideChatLimit(user.id, userTier)
-        : await checkAiMessageLimit(user.id, userTier, 'ai_tutor');
-      if (!limitCheck.success) {
-        return new Response(JSON.stringify({ error: await getConfiguredLimitExceededMessage(userTier, isSideChat ? 'Side chat' : 'AI Tutor') }), { status: 429 });
-      }
-    } else {
-      if (userTier === 'FREE') {
-        return new Response(JSON.stringify({ error: 'Ye AI model sirf Pro/Elite users ke liye hai. Free plan mein Assistant available hai.' }), { status: 403 });
-      }
+    const isSideChat = source === 'side_chat';
+    const limitCheck = isSideChat
+      ? await checkAiSideChatLimit(user.id, userTier)
+      : await checkAiMessageLimit(user.id, userTier, 'ai_tutor');
+    if (!limitCheck.success) {
+      return new Response(
+        JSON.stringify({
+          error: await getConfiguredLimitExceededMessage(userTier, isSideChat ? 'Side chat' : 'AI Tutor'),
+        }),
+        { status: 429 }
+      );
+    }
+
+    if (provider !== 'groq') {
       const tierCheck = await checkModelTierLimit(user.id, provider, tier, userTier);
       if (!tierCheck.success) {
-        return new Response(JSON.stringify({ error: `Is model (${tier}) ki aaj ki limit khatam ho gayi. Kal phir try karo ya doosra model select karo.` }), { status: 429 });
+        return new Response(
+          JSON.stringify({ error: 'Premium AI is available only on Elite and is limited to 10 calls per month.' }),
+          { status: userTier === 'ELITE' ? 429 : 403 }
+        );
       }
     }
 
@@ -101,7 +105,14 @@ export async function POST(req: NextRequest) {
       { role: 'user' as const, content: message },
     ];
 
-    const result = await gatewayChat({ provider, tier, messages, maxTokens: source === 'side_chat' ? 1100 : 2048, temperature: 0.7 });
+    const result = await gatewayChat({
+      provider,
+      tier,
+      messages,
+      maxTokens: source === 'side_chat' ? 1100 : 2048,
+      temperature: 0.7,
+      strictProvider: true,
+    });
 
     // Simulate a stream so the existing chat UI (which reads response.body as a stream)
     // keeps its "typing" experience, even though the gateway itself is non-streaming
@@ -131,6 +142,6 @@ export async function POST(req: NextRequest) {
     if (error instanceof GatewayError) {
       return new Response(JSON.stringify({ error: error.message }), { status: error.status === 401 || error.status === 403 ? 502 : 500 });
     }
-    return new Response(JSON.stringify({ error: 'AI response generate nahi ho saka. Dobara try karo.' }), { status: 500 });
+    return new Response(JSON.stringify({ error: 'The AI response could not be generated. Please try again.' }), { status: 500 });
   }
 }

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { THEME_COOKIE_NAME } from '@/lib/constants/themes';
+import { LOCALE_COOKIE_NAME } from '@/lib/i18n/config';
 
 const PENDING_EMAIL_KEY = 'ilm-ai-pending-verification-email';
 
@@ -26,11 +27,11 @@ export function VerifyEmailForm() {
     event.preventDefault();
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail) {
-      toast.error('Wohi email enter karo jis se account banaya tha.');
+      toast.error('Enter the email address used to create your account.');
       return;
     }
     if (!/^\d{6}$/.test(code)) {
-      toast.error('Email wala 6-digit code enter karo.');
+      toast.error('Enter the 6-digit code from your email.');
       return;
     }
 
@@ -43,14 +44,14 @@ export function VerifyEmailForm() {
 
     if (error || !data.user) {
       setVerifying(false);
-      toast.error(error?.message || 'Code verify nahi ho saka.');
+      toast.error(error?.message || 'The code could not be verified.');
       return;
     }
 
     const profileResponse = await fetch('/api/auth/ensure-profile', { method: 'POST' });
     if (!profileResponse.ok) {
       setVerifying(false);
-      toast.error('Email verify ho gaya, lekin profile setup nahi ho saka. Dobara login karke try karo.');
+      toast.error('Email verified, but profile setup failed. Please log in and try again.');
       return;
     }
 
@@ -58,6 +59,8 @@ export function VerifyEmailForm() {
     const role = metadata.role === 'parent' ? 'parent' : 'student';
     const educationLevel = metadata.education_level;
     const gender = metadata.gender;
+    const preferredLanguage = metadata.preferred_language === 'roman-ur' ? 'roman-ur' : 'en';
+    document.cookie = `${LOCALE_COOKIE_NAME}=${preferredLanguage}; Path=/; Max-Age=31536000; SameSite=Lax`;
     if (role === 'student' && (gender === 'girl' || gender === 'boy')) {
       const genderTheme = gender === 'girl' ? 'theme-pink-light' : 'theme-midnight-dark';
       window.localStorage.setItem('theme', genderTheme);
@@ -66,7 +69,7 @@ export function VerifyEmailForm() {
     }
 
     window.sessionStorage.removeItem(PENDING_EMAIL_KEY);
-    toast.success('Email verify ho gaya!');
+    toast.success('Email verified successfully.');
     const destination =
       role === 'parent'
         ? '/parent'
@@ -79,7 +82,7 @@ export function VerifyEmailForm() {
   const resendCode = async () => {
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail) {
-      toast.error('Pehle apna signup email enter karo.');
+      toast.error('Enter your signup email first.');
       return;
     }
 
@@ -99,7 +102,7 @@ export function VerifyEmailForm() {
     }
 
     window.sessionStorage.setItem(PENDING_EMAIL_KEY, normalizedEmail);
-    toast.success('Naya verification link aur code bhej diya gaya hai.');
+    toast.success('A new verification link and code have been sent.');
   };
 
   return (
@@ -107,9 +110,9 @@ export function VerifyEmailForm() {
       <div className="bg-primary/10 mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl">
         <MailCheck className="text-primary h-8 w-8" />
       </div>
-      <h1 className="mb-2 text-center text-2xl font-bold">Email Verify Karo</h1>
+      <h1 className="mb-2 text-center text-2xl font-bold">Verify your email</h1>
       <p className="text-muted-foreground mb-6 text-center text-sm">
-        ilm AI email mein verification link aur 6-digit code dono bhejta hai. Link click karo ya code yahan enter karo.
+        ilm AI sends a verification link and a 6-digit code. Open the link or enter the code here.
       </p>
 
       <form onSubmit={verifyCode} className="space-y-4">
@@ -140,17 +143,17 @@ export function VerifyEmailForm() {
           />
         </div>
         <Button type="submit" variant="gradient" className="w-full" size="lg" loading={verifying}>
-          Code Se Verify Karo
+          Verify code
         </Button>
       </form>
 
-      <Button type="button" variant="outline" className="mt-3 w-full" onClick={resendCode} loading={resending}>
-        <RotateCw className="h-4 w-4" /> Link Aur Code Dobara Bhejo
+        <Button type="button" variant="outline" className="mt-3 w-full" onClick={resendCode} loading={resending}>
+        <RotateCw className="h-4 w-4" /> Resend link and code
       </Button>
       <p className="text-muted-foreground mt-6 text-center text-sm">
-        Pehle hi verify ho chuka?{' '}
+        Already verified?{' '}
         <Link href="/login" className="text-primary font-medium hover:underline">
-          Login karo
+          Log in
         </Link>
       </p>
     </div>

@@ -11,9 +11,9 @@ export default function StatusPage() {
     <StaticContentPage
       eyebrow="Operations"
       title="System Status"
-      description="Neeche ilm AI ke core systems ki current health summary di gayi hai. Agar kisi specific feature mein issue aaye to support team se rabta karein."
+      description="This page shows the current health summary of ilm AI core systems. If a specific feature has an issue, contact support."
       sideTitle="What to do if something breaks"
-      sideText="Agar kisi route, payment, ya AI tool mein issue nazar aaye to screenshot, exact error, aur apna account email ke sath support ko bhejein."
+      sideText="If a route, payment, or AI tool has an issue, send support a screenshot, exact error, and your account email."
       sideActions={[
         { href: '/contact', label: 'Report an Issue', variant: 'gradient' },
         { href: '/help', label: 'Open Help Center' },
@@ -33,16 +33,16 @@ export default function StatusPage() {
         {
           title: 'Known failure patterns',
           bullets: [
-            'Slow responses usually heavy AI load ya unstable network ki wajah se hoti hain.',
-            'Voice session issues aksar browser microphone permissions se related hoti hain.',
-            'Payment confirmation delay kabhi kabhi payment provider webhook sync ki wajah se ho sakti hai.',
+            'Slow responses are usually caused by heavy AI load or an unstable network.',
+            'Voice session issues are often related to browser microphone permissions.',
+            'Payment confirmation delays can sometimes be caused by payment provider webhook synchronization.',
           ],
         },
         {
           title: 'Support response flow',
           paragraphs: [
-            'Critical issues jaise login failure, payment captured but plan not activated, ya dashboard crash ko high priority par dekha jata hai.',
-            'General product questions, content suggestions, aur feature requests normal support queue mein handle hoti hain.',
+            'Critical issues such as login failure, captured payment with an inactive plan, or a dashboard crash receive high priority.',
+            'General product questions, content suggestions, and feature requests are handled in the normal support queue.',
           ],
         },
       ]}

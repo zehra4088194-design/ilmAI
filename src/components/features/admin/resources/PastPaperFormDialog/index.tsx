@@ -92,23 +92,23 @@ export function PastPaperFormDialog({ open, onOpenChange, paper, onSaved }: Prop
     event.preventDefault();
 
     if (!form.subject_id) {
-      setError('Subject select karna zaroori hai');
+      setError('Subject is required.');
       return;
     }
     if (!form.board) {
-      setError('Board select karna zaroori hai');
+      setError('Board is required.');
       return;
     }
     if (!form.grade_level) {
-      setError('Class select karna zaroori hai');
+      setError('Class is required.');
       return;
     }
     if (!/^https?:\/\//.test(form.file_url.trim())) {
-      setError('File URL valid nahi lag raha');
+      setError('The file URL is not valid.');
       return;
     }
-    if (!/^https:\/\//i.test(form.context_text_url.trim())) {
-      setError('AI summary/test ke liye companion .txt file ka HTTPS ya Google Drive link zaroori hai.');
+    if (form.context_text_url.trim() && !/^https:\/\//i.test(form.context_text_url.trim())) {
+      setError('Companion .txt ke liye HTTPS ya Google Drive link paste karein.');
       return;
     }
 
@@ -123,7 +123,7 @@ export function PastPaperFormDialog({ open, onOpenChange, paper, onSaved }: Prop
         year: Number(form.year),
         paper_type: form.paper_type,
         file_url: form.file_url.trim(),
-        context_text_url: form.context_text_url.trim(),
+        context_text_url: form.context_text_url.trim() || null,
         total_questions: Number(form.total_questions) || 0,
         duration: Number(form.duration) || 180,
         is_verified: form.is_verified,
@@ -135,7 +135,7 @@ export function PastPaperFormDialog({ open, onOpenChange, paper, onSaved }: Prop
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Save nahi ho saka');
+      if (!res.ok) throw new Error(data.error || 'Save failed.');
 
       await onSaved();
       onOpenChange(false);
@@ -256,15 +256,16 @@ export function PastPaperFormDialog({ open, onOpenChange, paper, onSaved }: Prop
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="paper-context-text-url">Companion context .txt link</Label>
+            <Label htmlFor="paper-context-text-url">Companion context .txt link (optional)</Label>
             <Input
               id="paper-context-text-url"
               value={form.context_text_url}
               onChange={(event) => setForm((current) => ({ ...current, context_text_url: event.target.value }))}
               placeholder="https://drive.google.com/file/d/.../view"
-              required
             />
-            <p className="text-muted-foreground text-xs">Paper ka complete text; summary aur test server isi file se banayega.</p>
+            <p className="text-muted-foreground text-xs">
+              If left empty, the server will OCR the PDF once and create a private TXT sidecar.
+            </p>
           </div>
 
           <div className="flex flex-col gap-1.5">

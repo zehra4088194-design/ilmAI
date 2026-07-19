@@ -1,7 +1,9 @@
 'use client';
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import QRCode from 'react-qr-code';
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import {
   AlertCircle,
   BookOpen,
@@ -45,6 +47,7 @@ export function ParentDashboardClient({
   initialView,
 }: ParentDashboardClientProps) {
   const approvedLinks = links.filter((link) => link.status === 'approved' && link.student);
+  const dashboardLinks = approvedLinks.filter((link) => link.student?.parent_entitlement?.dashboard);
   const pendingLinks = links.filter((link) => link.status === 'pending');
   const [showLinkForm, setShowLinkForm] = useState(approvedLinks.length === 0);
   const [inviteCode, setInviteCode] = useState(pendingLinks[0]?.invite_code || '');
@@ -89,7 +92,7 @@ export function ParentDashboardClient({
       setInviteCode(json.data.code);
       toast.success('Parent code ban gaya');
     } catch {
-      toast.error('Code generate nahi hua');
+      toast.error('The code could not be generated.');
     } finally {
       setCreating(false);
     }
@@ -117,10 +120,10 @@ export function ParentDashboardClient({
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-violet-500/10 text-violet-300">
               <LockKeyhole className="h-6 w-6" />
             </div>
-            <h2 className="text-xl font-bold">Parent dashboard locked hai</h2>
+            <h2 className="text-xl font-bold">Parent dashboard is locked</h2>
             <p className="text-muted-foreground mx-auto mt-2 max-w-xl text-sm">
-              Pehle parent code generate karo. Jab kam az kam ek student apne account mein ye code accept karega, tab
-              parent dashboard progress, chat aur schedules ke saath open hoga.
+              Generate a parent code first. The dashboard will open after at least one student accepts this code in
+              their account, showing progress, chat, and schedules.
             </p>
             <div className="mx-auto mt-5 max-w-md">
               <InviteBox
@@ -147,7 +150,7 @@ export function ParentDashboardClient({
                 <div key={link.id} className="bg-muted/30 rounded-lg p-3 text-sm">
                   <p className="font-mono font-semibold tracking-wider">{link.invite_code || 'Code generated'}</p>
                   <p className="text-muted-foreground text-xs">
-                    Student Settings &gt; Parent Link mein ye code enter karega.
+                    The student should enter this code under Settings &gt; Parent Link.
                   </p>
                 </div>
               ))}
@@ -160,26 +163,52 @@ export function ParentDashboardClient({
 
   return (
     <div className="space-y-6">
+      {dashboardLinks.length < approvedLinks.length && (
+        <Card className="border-amber-500/30 bg-amber-500/5">
+          <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="font-semibold">Parent Link is connected on the Free plan</p>
+              <p className="text-muted-foreground mt-1 text-sm">
+                Live progress, reports, chat, and files unlock with the student&apos;s Pro or Elite plan. QR/link setup
+                will remain connected.
+              </p>
+            </div>
+            <Button asChild variant="gradient" className="shrink-0">
+              <Link href="/subscription">View plans</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <StatCard icon={Users} label="Linked Students" value={approvedLinks.length} tone="text-violet-400" />
         <StatCard
           icon={TrendingUp}
           label="Avg XP"
-          value={Math.round(
-            approvedLinks.reduce((sum, link) => sum + ((link.student as any)?.xp || 0), 0) / approvedLinks.length
-          )}
+          value={
+            dashboardLinks.length
+              ? Math.round(
+                  dashboardLinks.reduce((sum, link) => sum + ((link.student as any)?.xp || 0), 0) /
+                    dashboardLinks.length
+                )
+              : '-'
+          }
           tone="text-green-400"
         />
         <StatCard
           icon={Flame}
           label="Best Streak"
-          value={Math.max(...approvedLinks.map((link) => (link.student as any)?.streak || 0), 0)}
+          value={Math.max(...dashboardLinks.map((link) => (link.student as any)?.streak || 0), 0)}
           tone="text-orange-400"
         />
         <StatCard
           icon={Clock}
           label="Total Study Time"
-          value={`${approvedLinks.reduce((sum, link) => sum + Math.round(((link.student as any)?.total_study_time || 0) / 60), 0)}h`}
+          value={
+            dashboardLinks.length
+              ? `${dashboardLinks.reduce((sum, link) => sum + Math.round(((link.student as any)?.total_study_time || 0) / 60), 0)}h`
+              : '-'
+          }
           tone="text-blue-400"
         />
       </div>
@@ -191,7 +220,7 @@ export function ParentDashboardClient({
               <h3 className="flex items-center gap-2 font-semibold">
                 <Plus className="h-4 w-4 text-violet-400" /> Add another student
               </h3>
-              <p className="text-muted-foreground mt-1 text-xs">New parent code generate karo aur student ko do.</p>
+              <p className="text-muted-foreground mt-1 text-xs">Generate a new parent code and share it with the student.</p>
             </div>
             <Button variant="gradient" onClick={() => setShowLinkForm((value) => !value)} size="sm">
               <QrCode className="h-4 w-4" /> Generate Code
@@ -219,6 +248,72 @@ export function ParentDashboardClient({
           const lastWeek = studentSnaps[0];
           const weekBefore = studentSnaps[1];
           const xpTrend = lastWeek && weekBefore ? lastWeek.xp_earned - weekBefore.xp_earned : 0;
+          const chartData = [...studentSnaps].reverse().map((snapshot) => ({
+            week: new Date(`${snapshot.week_start}T00:00:00`).toLocaleDateString(undefined, {
+              month: 'short',
+              day: 'numeric',
+            }),
+            xp: Number(snapshot.xp_earned) || 0,
+            score: Number(snapshot.average_score) || 0,
+            study: Number(snapshot.study_minutes) || 0,
+          }));
+
+          if (!student.parent_entitlement?.dashboard) {
+            return (
+              <motion.div
+                key={link.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+              >
+                <Card className="h-full border-dashed">
+                  <CardContent className="space-y-4 p-5">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 text-lg font-bold text-white">
+                          {student.full_name?.[0]?.toUpperCase() || 'S'}
+                        </div>
+                        <div>
+                          <h3 className="font-bold">{student.full_name}</h3>
+                          <p className="text-muted-foreground text-xs">Parent link connected</p>
+                        </div>
+                      </div>
+                      <Badge variant="outline">FREE</Badge>
+                    </div>
+
+                    <div className="relative grid grid-cols-2 gap-2 sm:grid-cols-3">
+                      {['Weekly XP', 'Quiz average', 'Study time', 'Accuracy', 'Streak', 'AI activity'].map((label) => (
+                        <div key={label} className="bg-muted/35 rounded-xl border p-3">
+                          <LockKeyhole className="text-muted-foreground mb-2 h-4 w-4" />
+                          <p className="text-lg font-bold blur-sm select-none">88%</p>
+                          <p className="text-muted-foreground text-[10px]">{label}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="relative flex h-36 items-end gap-2 overflow-hidden rounded-xl border bg-gradient-to-b from-violet-500/5 to-violet-500/15 p-4">
+                      {[34, 62, 48, 78, 58, 88, 72].map((height, chartIndex) => (
+                        <span
+                          key={chartIndex}
+                          className="flex-1 rounded-t bg-violet-500/35 blur-[1px]"
+                          style={{ height: `${height}%` }}
+                        />
+                      ))}
+                      <span className="bg-background/85 absolute inset-0 flex flex-col items-center justify-center text-center backdrop-blur-[2px]">
+                        <LockKeyhole className="mb-2 h-5 w-5 text-violet-500" />
+                        <span className="text-sm font-semibold">Weekly learning graph locked</span>
+                        <span className="text-muted-foreground mt-1 text-xs">Unlock live indicators with Pro or Elite</span>
+                      </span>
+                    </div>
+
+                    <Button asChild variant="gradient" className="w-full">
+                      <Link href="/subscription">Unlock parent dashboard</Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            );
+          }
 
           return (
             <motion.div
@@ -260,6 +355,34 @@ export function ParentDashboardClient({
                       value={`${xpTrend >= 0 ? '+' : ''}${xpTrend} XP`}
                       tone={xpTrend >= 0 ? 'text-green-400' : 'text-red-400'}
                     />
+                  </div>
+
+                  <div className="border-border/70 rounded-xl border p-3">
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-semibold">Weekly learning graph</p>
+                        <p className="text-muted-foreground text-[11px]">XP and average quiz score</p>
+                      </div>
+                      <Badge variant="outline">{chartData.length || 0} weeks</Badge>
+                    </div>
+                    {chartData.length ? (
+                      <div className="h-48 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={chartData} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                            <XAxis dataKey="week" tick={{ fontSize: 10 }} />
+                            <YAxis tick={{ fontSize: 10 }} />
+                            <Tooltip contentStyle={{ borderRadius: 12, fontSize: 12 }} />
+                            <Line type="monotone" dataKey="xp" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 3 }} />
+                            <Line type="monotone" dataKey="score" stroke="#22c55e" strokeWidth={2} dot={{ r: 2 }} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    ) : (
+                      <div className="text-muted-foreground flex h-28 items-center justify-center text-xs">
+                      The graph will appear here after the first weekly snapshot is created.
+                      </div>
+                    )}
                   </div>
 
                   {studentSnaps.length > 0 && (
@@ -305,13 +428,19 @@ export function ParentDashboardClient({
                   {!student.is_profile_complete && (
                     <div className="flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-500">
                       <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                      Student ka profile complete nahi. Board aur grade set karna baqi hai.
+                      The student&apos;s profile is incomplete. Board and grade still need to be set.
                     </div>
                   )}
 
                   <RoutineTestsWidget studentId={student.id} />
 
                   <div className="flex flex-wrap gap-2">
+                    <Button asChild variant="gradient" size="sm">
+                      <Link href={`/parent/analytics?studentId=${encodeURIComponent(student.id)}`}>
+                        <TrendingUp className="h-3.5 w-3.5" />
+                        {student.parent_entitlement?.advancedAnalytics ? 'Detailed analytics' : 'Progress details'}
+                      </Link>
+                    </Button>
                     <ParentMessageThread
                       linkId={link.id}
                       currentUserId={parentId}
@@ -359,13 +488,13 @@ function InviteBox({
   return (
     <div className="space-y-3">
       <p className="text-muted-foreground text-xs">
-        Student ko QR scan karwao ya ye code/link share karo. Scan ke baad account login/register hote hi parent se auto
-        link ho jayega.
+        Ask the student to scan the QR code or share this code/link. After the QR is read, the student will press
+        &ldquo;Press to connect&rdquo; to approve the parent link.
       </p>
       {inviteUrl && (
         <div className="rounded-xl border bg-white p-4 text-center">
           <QRCode
-            value={inviteCode}
+            value={inviteUrl}
             size={224}
             level="M"
             bgColor="#ffffff"
@@ -383,7 +512,7 @@ function InviteBox({
       <Button variant="outline" size="sm" onClick={copyLink} disabled={!inviteUrl} className="w-full">
         <LinkIcon className="h-4 w-4" /> Copy Scan Link
       </Button>
-      <p className="text-xs text-amber-500">Ye code 24 ghante mein expire ho jata hai.</p>
+      <p className="text-xs text-amber-500">This code expires after 24 hours.</p>
       <Button variant="ghost" size="sm" onClick={generateInvite} loading={creating}>
         New Code
       </Button>

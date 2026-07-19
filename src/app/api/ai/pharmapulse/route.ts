@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { gatewayChat } from '@/lib/ai/gateway';
-import { checkUniversityFeatureLimit, getUniversityLimitExceededMessage } from '@/lib/rate-limit';
+import { checkAiMessageLimit, checkUniversityFeatureLimit, getConfiguredLimitExceededMessage, getUniversityLimitExceededMessage } from '@/lib/rate-limit';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import type { SubscriptionTier } from '@/types';
 
@@ -148,6 +148,12 @@ export async function POST(req: NextRequest) {
     if (!query) return NextResponse.json({ status: 'error', error: 'Medicine name required hai' }, { status: 400 });
 
     if (action === 'suggestions') {
+      const { data: suggestionProfile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
+      const suggestionTier = (suggestionProfile?.subscription_tier as SubscriptionTier) || 'FREE';
+      const suggestionLimit = await checkAiMessageLimit(user.id, suggestionTier, 'pharmapulse_drug');
+      if (!suggestionLimit.success) {
+        return NextResponse.json({ status: 'error', error: await getConfiguredLimitExceededMessage(suggestionTier, 'PharmaPulse search') }, { status: 429 });
+      }
       const result = await gatewayChat({
         provider: 'groq',
         tier: 'mini',

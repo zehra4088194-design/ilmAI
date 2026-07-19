@@ -15,14 +15,14 @@ export default async function FullTestPage() {
   const { data: subjects } = await subjectsQuery;
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <div><h1 className="text-2xl font-bold">Full Test 📋</h1><p className="text-muted-foreground">Board pattern ya custom — MCQs + Short + Long questions ek saath</p></div>
+      <div><h1 className="text-2xl font-bold">Full Test 📋</h1><p className="text-muted-foreground">Choose a board pattern or custom test with MCQs, short questions, and long questions.</p></div>
       {(subjects || []).length > 0 ? (
         <FullTestSetup subjects={subjects || []} defaultBoard={profile?.board || 'FBISE'} defaultGrade={profile?.grade_level || 'GRADE_10'} userTier={(profile?.subscription_tier as any) || 'FREE'} />
       ) : (
         <EmptyState
           icon={ClipboardList}
           title="No subjects found for your class"
-          description="Profile ki board/class complete kar lo, ya admin se is class ke subjects add karwao. AI Tutor phir bhi topic-wise help kar sakta hai."
+          description="Complete your board and class profile, or ask an admin to add subjects for your class. AI Tutor can still help by topic."
           primaryHref="/settings"
           primaryLabel="Check Profile"
           secondaryHref="/ai-tutor"

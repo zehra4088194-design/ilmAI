@@ -22,11 +22,11 @@ export function PdfSummarizerMindMapper() {
   const process = async () => {
     if (!file) return;
     if (file.size > 900_000) {
-      toast.error('Free PDF OCR ke liye maximum 900KB aur 3 pages allowed hain.');
+      toast.error('Free PDF OCR supports files up to 900 KB and 3 pages.');
       return;
     }
     setLoading(true);
-    setProcessingStep('PDF OCR.space se scan ho rahi hai...');
+    setProcessingStep('PDF private OCR server par scan ho rahi hai...');
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -36,20 +36,20 @@ export function PdfSummarizerMindMapper() {
       try {
         ocrJson = JSON.parse(ocrText);
       } catch {
-        toast.error('PDF extractor server se valid response nahi aaya. File choti/clear karke dobara try karo.');
+      toast.error('The PDF extractor returned an invalid response. Try a smaller, clearer file.');
         return;
       }
       if (!ocrRes.ok || ocrJson.status === 'error') {
-        toast.error(ocrJson.error || 'PDF text extract nahi ho saka.');
+      toast.error(ocrJson.error || 'Text could not be extracted from the PDF.');
         return;
       }
       const pdfText = String(ocrJson.text || ocrJson.data?.text || '').trim();
       if (pdfText.length < 20) {
-        toast.error('Is PDF se readable text nahi nikla. Clear scan ya text PDF upload karo.');
+      toast.error('No readable text was found in this PDF. Upload a clear scan or text-based PDF.');
         return;
       }
       setExtractedText(pdfText);
-      setProcessingStep('Groq detailed summary aur mind map bana raha hai...');
+      setProcessingStep('Groq is preparing a detailed summary and mind map...');
       const res = await fetch('/api/ai/pdf-summarizer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -63,7 +63,7 @@ export function PdfSummarizerMindMapper() {
       setResult(json.data);
       setActiveTab('summary');
     } catch {
-      toast.error('PDF process nahi ho saka.');
+      toast.error('The PDF could not be processed.');
     } finally {
       setLoading(false);
       setProcessingStep('');
@@ -73,7 +73,7 @@ export function PdfSummarizerMindMapper() {
   const onFile = (next: File | null) => {
     if (!next) return;
     if (next.type !== 'application/pdf' && !next.name.toLowerCase().endsWith('.pdf')) {
-      toast.error('Sirf PDF file upload karo.');
+      toast.error('Upload a PDF file only.');
       return;
     }
     setFile(next);
@@ -95,7 +95,7 @@ export function PdfSummarizerMindMapper() {
         </Badge>
         <h1 className="text-2xl font-bold">PDF Summarizer & Mind-Mapper AI</h1>
         <p className="text-muted-foreground">
-          Research papers ko methodology, findings, conclusion aur concept map mein break karo.
+          Break research papers into methodology, findings, conclusions, and a concept map.
         </p>
       </div>
 
@@ -148,7 +148,7 @@ export function PdfSummarizerMindMapper() {
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="font-semibold">Extracted PDF Text</h2>
-                <p className="text-muted-foreground text-xs">Ye OCR.space PDF scan se nikla hua text hai.</p>
+                <p className="text-muted-foreground text-xs">Ye private OCR server se nikla hua text hai.</p>
               </div>
               <Button variant="outline" size="sm" onClick={copyExtractedText}>
                 <Clipboard className="h-3.5 w-3.5" /> Copy to Clipboard

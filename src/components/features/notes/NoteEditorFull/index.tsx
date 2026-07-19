@@ -25,24 +25,24 @@ export function NoteEditor({ note }: { note: any }) {
   const save = useCallback(async () => {
     setSaving(true);
     const { error } = await supabase.from('notes').update({ title, content, is_starred: starred, updated_at: new Date().toISOString() }).eq('id', note.id);
-    if (error) toast.error('Save nahi hua'); else toast.success('Saved ✓');
+    if (error) toast.error('The note could not be saved.'); else toast.success('Saved');
     setSaving(false);
   }, [title, content, starred, note.id, supabase]);
 
   const aiSummarize = async () => {
     if (!canUseAiSummary) {
-      toast.info('AI Summary Pro mein unlock hoti hai.');
+      toast.info('AI Summary is available on the Pro plan.');
       return;
     }
-    if (!content.trim()) { toast.error('Pehle kuch likho'); return; }
+    if (!content.trim()) { toast.error('Write something first.'); return; }
     setAiSummarizing(true);
     try {
       const res = await fetch('/api/ai/summarize', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: content }) });
       const json = await res.json();
       if (json.status === 'error') { toast.error(json.error); return; }
       setContent(c => `${c}\n\n---\n📋 AI Summary:\n${json.data.summary}`);
-      toast.success('Summary add ho gayi!');
-    } catch { toast.error('Summary generate nahi ho saki'); }
+      toast.success('Summary added.');
+    } catch { toast.error('The summary could not be generated.'); }
     finally { setAiSummarizing(false); }
   };
 
@@ -78,7 +78,7 @@ export function NoteEditor({ note }: { note: any }) {
 
       {/* Content */}
       <textarea value={content} onChange={e => setContent(e.target.value)}
-        placeholder="Yahan likhna shuru karo... ya 📷 scan button se textbook page scan karo"
+        placeholder="Start writing here, or use the scan button to scan a textbook page"
         className="w-full min-h-[calc(100vh-18rem)] bg-transparent border-none outline-none resize-none text-sm leading-relaxed placeholder:text-muted-foreground/40" />
     </div>
   );

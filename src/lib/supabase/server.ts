@@ -30,7 +30,7 @@ export async function createAdminClient() {
     process.env.SUPABASE_SERVICE_ROLE;
 
   if (!serviceRoleKey) {
-    throw new Error('Supabase service role key missing. Set SUPABASE_SERVICE_ROLE_KEY in Vercel.');
+    throw new Error('Supabase service role key missing. Set SUPABASE_SERVICE_ROLE_KEY in the server environment.');
   }
 
   return createSupabaseClient<Database>(

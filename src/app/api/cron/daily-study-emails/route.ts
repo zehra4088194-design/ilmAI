@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { gatewayChat } from '@/lib/ai/gateway';
+import { isEmailConfigured, sendEmail } from '@/lib/email/send';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -81,29 +82,12 @@ async function generateStudyEmail(profile: EmailProfile) {
   };
 }
 
-async function sendWithResend(params: { to: string; subject: string; html: string; preview?: string }) {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM_EMAIL || 'ilm AI <onboarding@resend.dev>';
-  if (!apiKey) throw new Error('RESEND_API_KEY missing');
-
-  const response = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from,
-      to: params.to,
-      subject: params.subject,
-      html: params.preview ? `<span style="display:none!important">${htmlEscape(params.preview)}</span>${params.html}` : params.html,
-    }),
+async function sendStudyEmail(params: { to: string; subject: string; html: string; preview?: string }) {
+  await sendEmail({
+    to: params.to,
+    subject: params.subject,
+    html: params.preview ? `<span style="display:none!important">${htmlEscape(params.preview)}</span>${params.html}` : params.html,
   });
-
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Resend failed: ${response.status} ${text}`);
-  }
 }
 
 export async function GET(req: NextRequest) {
@@ -112,8 +96,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  if (!process.env.RESEND_API_KEY) {
-    return NextResponse.json({ status: 'skipped', reason: 'RESEND_API_KEY missing' });
+  if (!isEmailConfigured()) {
+    return NextResponse.json({ status: 'skipped', reason: 'SMTP email service is not configured' });
   }
 
   const supabase = await createAdminClient();
@@ -132,7 +116,7 @@ export async function GET(req: NextRequest) {
   for (const profile of (profiles || []) as EmailProfile[]) {
     try {
       const email = await generateStudyEmail(profile);
-      await sendWithResend({ to: profile.email, ...email });
+      await sendStudyEmail({ to: profile.email, ...email });
       await (supabase.from('profiles') as any)
         .update({ study_email_last_sent_at: new Date().toISOString() })
         .eq('id', profile.id);

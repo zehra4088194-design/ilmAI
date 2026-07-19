@@ -46,7 +46,7 @@ export function PastPapersTab() {
     try {
       const res = await fetch('/api/admin/past-papers');
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Past papers load nahi ho sakay');
+      if (!res.ok) throw new Error(data.error || 'Past papers could not be loaded.');
       setPapers(data.papers ?? []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Kuch ghalat ho gaya');
@@ -69,7 +69,7 @@ export function PastPapersTab() {
       setDeleteTarget(null);
       await refetch();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Delete mein masla hua');
+      setError(err instanceof Error ? err.message : 'Delete failed.');
     } finally {
       setDeleting(false);
     }
@@ -80,7 +80,7 @@ export function PastPapersTab() {
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm text-muted-foreground">{filteredPapers.length} of {papers.length} paper{papers.length === 1 ? '' : 's'}</p>
-          <p className="text-xs text-muted-foreground">Class select karke usi class ke papers manage karo.</p>
+          <p className="text-xs text-muted-foreground">Select a class to manage its papers.</p>
         </div>
         <Button
           onClick={() => {
@@ -135,7 +135,7 @@ export function PastPapersTab() {
             ) : filteredPapers.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                  Is class ke liye koi past paper nahi mila.
+                  No past papers found for this class.
                 </TableCell>
               </TableRow>
             ) : (
@@ -190,7 +190,7 @@ export function PastPapersTab() {
           <AlertDialogHeader>
             <AlertDialogTitle>Past paper delete karein?</AlertDialogTitle>
             <AlertDialogDescription>
-              {deleteTarget?.subject_name ?? 'Yeh paper'} ({deleteTarget?.year}) permanently delete ho jayega. Yeh action undo nahi ho sakta.
+              {deleteTarget?.subject_name ?? 'This paper'} ({deleteTarget?.year}) will be permanently deleted. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

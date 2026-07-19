@@ -28,7 +28,7 @@ export default async function CareerPage() {
       </div>
       {profile?.subscription_tier === 'FREE' && (
         <div className="rounded-xl border border-violet-500/30 bg-violet-500/10 p-4 text-sm text-muted-foreground">
-          Free plan mein limited daily preview hai. Pro/Elite se zyada AI generations aur premium tools unlock hotay hain.
+          The Free plan includes a limited daily preview. Pro and Elite unlock more AI generations and premium tools.
         </div>
       )}
       {!data ? (

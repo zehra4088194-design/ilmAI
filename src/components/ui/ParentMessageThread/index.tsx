@@ -107,7 +107,7 @@ export function ParentMessageThread({
       // Realtime subscription above will append it — but add optimistically
       // in case the realtime event lags.
     } catch {
-      toast.error('Message send nahi hua');
+      toast.error('The message could not be sent.');
       setText(content);
     } finally {
       setSending(false);
@@ -135,7 +135,7 @@ export function ParentMessageThread({
       <div className="bg-background/50 h-56 space-y-2 overflow-y-auto p-3">
         {messages.length === 0 && (
           <p className="text-muted-foreground mt-4 text-center text-xs">
-            Koi message nahi abhi - Hi bol ke shuru karo!
+            No messages yet. Say hello to start.
           </p>
         )}
         {messages.map((m) => {
@@ -170,7 +170,7 @@ export function ParentMessageThread({
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && !sending && send()}
-          placeholder="Message likho..."
+          placeholder="Write a message..."
           className="text-sm"
         />
         <Button size="icon" variant="gradient" onClick={send} disabled={sending}>

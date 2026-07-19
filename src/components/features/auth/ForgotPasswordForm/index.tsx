@@ -35,7 +35,7 @@ export function ForgotPasswordForm() {
 
     setEmail(normalizedEmail);
     setSent(true);
-    toast.success('Password reset link aur code bhej diya gaya hai.');
+    toast.success('Password reset link and code have been sent.');
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -46,7 +46,7 @@ export function ForgotPasswordForm() {
   const verifyCode = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!/^\d{6}$/.test(code)) {
-      toast.error('Email wala 6-digit code enter karo.');
+      toast.error('Enter the 6-digit code from your email.');
       return;
     }
 
@@ -63,7 +63,7 @@ export function ForgotPasswordForm() {
       return;
     }
 
-    toast.success('Code verify ho gaya. Ab naya password set karo.');
+    toast.success('Code verified. Set a new password.');
     router.replace('/reset-password');
     router.refresh();
   };
@@ -74,10 +74,10 @@ export function ForgotPasswordForm() {
         <div className="bg-primary/10 mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl">
           <KeyRound className="text-primary h-8 w-8" />
         </div>
-        <h1 className="mb-2 text-center text-2xl font-bold">Email Check Karo</h1>
+        <h1 className="mb-2 text-center text-2xl font-bold">Check your email</h1>
         <p className="text-muted-foreground mb-6 text-center text-sm">
-          <span className="text-foreground font-medium">{email}</span> par ilm AI ka reset link aur 6-digit code bheja
-          gaya hai. Dono mein se koi ek use kar lo.
+          ilm AI sent a reset link and a 6-digit code to <span className="text-foreground font-medium">{email}</span>.
+          Use either option.
         </p>
 
         <form onSubmit={verifyCode} className="space-y-4">
@@ -92,7 +92,7 @@ export function ForgotPasswordForm() {
             className="h-14 text-center font-mono text-2xl tracking-[0.45em]"
           />
           <Button type="submit" variant="gradient" className="w-full" size="lg" loading={verifying}>
-            Code Verify Karo
+            Verify code
           </Button>
         </form>
 
@@ -108,7 +108,7 @@ export function ForgotPasswordForm() {
               setCode('');
             }}
           >
-            Email Badlo
+            Change email
           </Button>
         </div>
 
@@ -116,7 +116,7 @@ export function ForgotPasswordForm() {
           href="/login"
           className="text-primary mt-6 flex items-center justify-center gap-1 text-sm hover:underline"
         >
-          <ArrowLeft className="h-3 w-3" /> Login par wapis jao
+          <ArrowLeft className="h-3 w-3" /> Return to login
         </Link>
       </div>
     );
@@ -124,8 +124,8 @@ export function ForgotPasswordForm() {
 
   return (
     <div>
-      <h1 className="mb-2 text-2xl font-bold">Password Bhool Gaye?</h1>
-      <p className="text-muted-foreground mb-8">Email daalo, ilm AI reset link aur 6-digit code dono bhej dega.</p>
+      <h1 className="mb-2 text-2xl font-bold">Forgot your password?</h1>
+      <p className="text-muted-foreground mb-8">Enter your email and ilm AI will send a reset link and 6-digit code.</p>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="relative">
           <Mail className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
@@ -145,7 +145,7 @@ export function ForgotPasswordForm() {
       </form>
       <div className="mt-6 text-center">
         <Link href="/login" className="text-primary flex items-center justify-center gap-1 text-sm hover:underline">
-          <ArrowLeft className="h-3 w-3" /> Login par wapis jao
+          <ArrowLeft className="h-3 w-3" /> Return to login
         </Link>
       </div>
     </div>

@@ -21,7 +21,7 @@ function getManualExpiry(tier: SubscriptionTier, duration: ManualSubscriptionDur
 // POST /api/admin/grant-pro
 // body: { userId: string, tier: 'FREE' | 'PRO' | 'ELITE', duration?: 'monthly' | 'yearly' | 'lifetime', sponsoredInstitutionName?: string, sponsoredInstitutionType?: 'school' | 'college' }
 // Lets an admin manually move any user onto Pro/Elite (or back to Free), bypassing
-// Paddle/PayPro entirely. Used by the admin Users panel.
+// automated gateways entirely. Used by the admin Users panel.
 export async function POST(req: NextRequest) {
   const adminUser = await requireAdminUser();
   if (!adminUser) {

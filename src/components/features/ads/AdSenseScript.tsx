@@ -3,10 +3,12 @@
 import Script from 'next/script';
 import { useEffect, useState } from 'react';
 import { readCookieConsent, type CookieConsentPreferences } from '@/lib/utils/cookieConsent';
+import { useAuth } from '@/hooks/auth/useAuth';
 
 export function AdSenseScript() {
+  const { user, isLoading } = useAuth();
   const [preferences, setPreferences] = useState<CookieConsentPreferences | null>(null);
-  const clientId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
+  const clientId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID || 'ca-pub-4877865173601332';
 
   useEffect(() => {
     setPreferences(readCookieConsent());
@@ -17,7 +19,8 @@ export function AdSenseScript() {
     return () => window.removeEventListener('ilm-ai-cookie-consent-change', handleConsentChange);
   }, []);
 
-  if (!clientId || !preferences?.marketing) return null;
+  // Do not load the provider for guests or paid users. Paid plans are ad-free.
+  if (isLoading || (user && user.subscriptionTier !== 'FREE') || !clientId || !preferences?.marketing) return null;
 
   return (
     <Script

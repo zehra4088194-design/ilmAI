@@ -37,7 +37,7 @@ export function ServerPdfOcrUploader({ onTextExtracted }: ServerPdfOcrUploaderPr
       onTextExtracted?.(extracted);
       toast.success(json.data?.usedOcr ? 'PDF OCR complete ho gaya' : 'PDF text extract ho gaya');
     } catch {
-      toast.error('PDF process nahi ho saka');
+      toast.error('The PDF could not be processed.');
     } finally {
       setLoading(false);
     }
@@ -62,7 +62,7 @@ export function ServerPdfOcrUploader({ onTextExtracted }: ServerPdfOcrUploaderPr
           <UploadCloud className="mb-3 h-9 w-9 text-violet-400" />
           <p className="font-semibold">Upload PDF for Server OCR</p>
           <p className="text-muted-foreground mt-2 text-sm">
-            {file ? file.name : 'Free OCR: maximum 900KB aur 3 pages ka PDF select karo.'}
+            {file ? file.name : 'Free OCR: select a PDF up to 900 KB and 3 pages.'}
           </p>
         </label>
 
@@ -74,7 +74,7 @@ export function ServerPdfOcrUploader({ onTextExtracted }: ServerPdfOcrUploaderPr
         {loading && (
           <div className="bg-muted/20 text-muted-foreground flex items-center gap-3 rounded-xl border p-4 text-sm">
             <Loader2 className="h-5 w-5 animate-spin text-violet-400" />
-            Server PDF OCR chal raha hai. Scanned pages par thora waqt lag sakta hai.
+            Server PDF OCR is running. Scanned pages may take a little while.
           </div>
         )}
 

@@ -5,16 +5,25 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
 import { formatRelativeTime } from '@/lib/utils/format';
 
-export function ConversationSidebar() {
+export function ConversationSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
   const { conversations, activeConversationId, createConversation, setActiveConversation, deleteConversation } = useChatStore();
   return (
     <div className="flex flex-col h-full">
       <div className="p-4">
-        <Button variant="gradient" className="w-full" onClick={() => createConversation()}><Plus className="w-4 h-4" />New Chat</Button>
+        <Button
+          variant="gradient"
+          className="w-full"
+          onClick={() => {
+            createConversation();
+            onNavigate?.();
+          }}
+        >
+          <Plus className="w-4 h-4" />New Chat
+        </Button>
       </div>
       <div className="flex-1 overflow-y-auto px-2 space-y-1">
         {conversations.map((conv) => (
-          <div key={conv.id} onClick={() => setActiveConversation(conv.id)}
+          <div key={conv.id} onClick={() => { setActiveConversation(conv.id); onNavigate?.(); }}
             className={cn('group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-colors', activeConversationId === conv.id ? 'bg-accent' : 'hover:bg-accent/50')}>
             <MessageSquare className="w-4 h-4 text-muted-foreground shrink-0" />
             <div className="flex-1 min-w-0">

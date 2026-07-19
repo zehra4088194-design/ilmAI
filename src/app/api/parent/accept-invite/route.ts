@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { createNotificationIfEnabled } from '@/lib/notifications/preferences';
+import { getPlatformSettings } from '@/lib/platform-settings/server';
+import { getPlanFromSettings } from '@/lib/platform-settings/shared';
+import type { SubscriptionTier } from '@/types';
 
 export async function POST(req: NextRequest) {
   try {
@@ -28,7 +31,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: 'error', error: 'Invite code expire ho gaya' }, { status: 410 });
     }
 
-    const { data: profile } = await admin.from('profiles').select('full_name, role').eq('id', user.id).single();
+    const { data: profile } = await admin
+      .from('profiles')
+      .select('full_name, role, subscription_tier')
+      .eq('id', user.id)
+      .single();
     if (profile?.role && profile.role !== 'student') {
       return NextResponse.json(
         { status: 'error', error: 'Parent link sirf student account se accept ho sakta hai.' },
@@ -50,6 +57,27 @@ export async function POST(req: NextRequest) {
         message: 'Aap already is parent account se linked ho.',
         data: { linkId: existingLink.id },
       });
+    }
+
+    const tier: SubscriptionTier =
+      profile?.subscription_tier === 'PRO' || profile?.subscription_tier === 'ELITE'
+        ? profile.subscription_tier
+        : 'FREE';
+    const settings = await getPlatformSettings();
+    const plan = getPlanFromSettings(settings, tier);
+    const { count: guardianCount } = await admin
+      .from('parent_student_links')
+      .select('id', { count: 'exact', head: true })
+      .eq('student_id', user.id)
+      .eq('status', 'approved');
+    if ((guardianCount || 0) >= plan.limits.parentGuardiansMax) {
+      return NextResponse.json(
+        {
+          status: 'error',
+          error: `${plan.name} plan mein maximum ${plan.limits.parentGuardiansMax} guardian link allowed ${plan.limits.parentGuardiansMax === 1 ? 'hai' : 'hain'}.`,
+        },
+        { status: 403 }
+      );
     }
 
     const { error } = await (admin.from('parent_student_links') as any)

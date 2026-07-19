@@ -3,9 +3,9 @@ import { LandingFooter } from '@/components/features/landing/Footer';
 import { notFound } from 'next/navigation';
 
 const POSTS: Record<string, { title: string; date: string; content: string }> = {
-  'fbise-exam-tips-2026': { title: 'FBISE Exam Ki Tayari Kaise Karein - Complete Guide 2026', date: '2026-05-15', content: 'FBISE exams ki tayari ke liye sabse zaroori cheez hai consistent practice. Past papers solve karo, MCQs ki practice karo, aur apni weak areas identify karo. ilm AI Tutor se concepts clear karo jo samajh nahi aate.' },
-  'ai-tutoring-benefits': { title: 'AI Tutoring Ke Fawaid Pakistani Students Ke Liye', date: '2026-04-22', content: 'AI tutoring 24/7 available hoti hai, personalized explanations deti hai, aur traditional tuition se kaafi affordable hai. Pakistani students ke liye ye game-changer ban raha hai.' },
-  'time-management-students': { title: 'Students Ke Liye Time Management Tips', date: '2026-03-10', content: 'Pomodoro technique use karo, daily goals set karo, aur distractions minimize karo. ilm AI ka Study Timer feature isme madad karta hai.' },
+  'fbise-exam-tips-2026': { title: 'How to Prepare for FBISE Exams - Complete Guide 2026', date: '2026-05-15', content: 'Consistent practice is essential for FBISE exams. Solve past papers, practise MCQs, and identify your weak areas. Use ilm AI Tutor to clarify difficult concepts.' },
+  'ai-tutoring-benefits': { title: 'Benefits of AI Tutoring for Pakistani Students', date: '2026-04-22', content: 'AI tutoring is available 24/7, provides personalized explanations, and is more affordable than traditional tuition. It is becoming a game changer for Pakistani students.' },
+  'time-management-students': { title: 'Time Management Tips for Students', date: '2026-03-10', content: 'Use the Pomodoro technique, set daily goals, and minimize distractions. ilm AI Study Timer can help you stay on track.' },
 };
 
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {

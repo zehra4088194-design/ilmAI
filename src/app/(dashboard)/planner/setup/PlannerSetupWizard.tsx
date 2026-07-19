@@ -53,7 +53,7 @@ export function PlannerSetupWizard({
         toast.success('Study plan generated');
         router.push('/planner/today');
       } else {
-        toast.error(result.error || 'Plan generate nahi ho saka');
+        toast.error(result.error || 'The plan could not be generated.');
       }
     });
   };

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Run: node scripts/check-env.js
-// Validates that all required environment variables are set before deployment.
+// Validates required environment variables before deployment.
 const fs = require('fs');
 const path = require('path');
 
@@ -28,11 +28,12 @@ const required = [
   'SUPABASE_SERVICE_ROLE_KEY',
   'AI_GATEWAY_URL',
   'AI_GATEWAY_SECRET',
-  'UPSTASH_REDIS_REST_URL',
-  'UPSTASH_REDIS_REST_TOKEN',
+  'OCR_SERVICE_URL',
+  'OCR_SERVICE_SECRET',
   'CRON_SECRET',
 ];
 const optional = [
+  'REDIS_URL',
   'PADDLE_API_KEY',
   'PADDLE_WEBHOOK_SECRET',
   'NEXT_PUBLIC_PADDLE_CLIENT_TOKEN',
@@ -40,29 +41,49 @@ const optional = [
   'PADDLE_PRICE_ID_PRO_ANNUAL',
   'PADDLE_PRICE_ID_ELITE_MONTHLY',
   'PADDLE_PRICE_ID_ELITE_ANNUAL',
-  'PAYPRO_API_KEY',
-  'PAYPRO_WEBHOOK_SECRET',
   'NEXT_PUBLIC_ADSENSE_CLIENT_ID',
   'ADMIN_EMAILS',
-  'RESEND_API_KEY',
+  'SMTP_HOST',
+  'SMTP_USER',
+  'SMTP_PASSWORD',
+  'EMAIL_FROM',
+  'NEXT_PUBLIC_POSTHOG_KEY',
+  'NEXT_PUBLIC_POSTHOG_HOST',
+  'NEXT_PUBLIC_SENTRY_DSN',
+  'SENTRY_DSN',
+  'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
+  'NEXT_PUBLIC_FIREBASE_VAPID_KEY',
+  'FIREBASE_PROJECT_ID',
+  'FIREBASE_SERVICE_ACCOUNT_JSON_BASE64',
+  'R2_ACCOUNT_ID',
+  'R2_ACCESS_KEY_ID',
+  'R2_SECRET_ACCESS_KEY',
+  'R2_BUCKET',
+  'ALGOLIA_ENABLED',
+  'ALGOLIA_APP_ID',
+  'ALGOLIA_SEARCH_API_KEY',
+  'ALGOLIA_ADMIN_API_KEY',
+  'ANDROID_PACKAGE_NAME',
+  'ANDROID_SHA256_CERT_FINGERPRINTS',
+  'PLAY_CONSUMPTION_ONLY_HOSTS',
 ];
 
 let ok = true;
-console.log('\n🔍 Checking environment variables...\n');
+console.log('\n[check] Environment variables\n');
 required.forEach((key) => {
   if (!env[key]) {
-    console.error(`❌ MISSING (required): ${key}`);
+    console.error(`[missing] Required: ${key}`);
     ok = false;
   } else {
-    console.log(`✅ ${key}`);
+    console.log(`[ok] ${key}`);
   }
 });
 optional.forEach((key) => {
   if (!env[key]) {
-    console.warn(`⚠️ MISSING (optional): ${key}`);
+    console.warn(`[optional] Not set: ${key}`);
   } else {
-    console.log(`✅ ${key}`);
+    console.log(`[ok] ${key}`);
   }
 });
-console.log(ok ? '\n✅ All required env vars are set!\n' : '\n❌ Fix missing required vars before deploying.\n');
+console.log(ok ? '\n[ok] All required env vars are set.\n' : '\n[failed] Set required vars before deploying.\n');
 process.exit(ok ? 0 : 1);

@@ -138,6 +138,20 @@ export function SideChatWidget() {
   const handleSend = async () => {
     const text = input.trim();
     if (!text || isLoading) return;
+    if (!user) {
+      setInput('');
+      setMessages((prev) => [
+        ...prev,
+        { id: nanoid(), role: 'user', content: text },
+        {
+          id: nanoid(),
+          role: 'assistant',
+          content: 'Sign in with a free account to use side chat.',
+          links: [{ label: 'Sign in to continue', href: `/login?redirect=${encodeURIComponent(pathname || '/')}` }],
+        },
+      ]);
+      return;
+    }
     setInput('');
     const userMsg: SideChatMessage = { id: nanoid(), role: 'user', content: text };
     const assistantMsg: SideChatMessage = {
@@ -190,7 +204,7 @@ export function SideChatWidget() {
       setMessages((prev) =>
         prev.map((message) =>
           message.id === assistantMsg.id
-            ? { ...message, content: err instanceof Error ? err.message : 'Kuch ghalat ho gaya' }
+            ? { ...message, content: err instanceof Error ? err.message : 'Something went wrong.' }
             : message
         )
       );
@@ -219,7 +233,7 @@ export function SideChatWidget() {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="bg-background fixed right-5 bottom-5 z-50 flex h-[32rem] w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-2xl border border-white/10 shadow-2xl shadow-black/45 sm:w-96"
+            className="bg-background fixed right-2 bottom-2 z-50 flex h-[min(40rem,calc(100dvh-1rem))] w-[calc(100vw-1rem)] flex-col overflow-hidden rounded-2xl border border-white/10 shadow-2xl shadow-black/45 sm:right-5 sm:bottom-5 sm:h-[32rem] sm:w-96"
           >
             <div className="border-border/80 bg-background/70 flex shrink-0 items-center gap-2 border-b p-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600">
@@ -227,7 +241,7 @@ export function SideChatWidget() {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-semibold">Quick Help</p>
-                <p className="text-muted-foreground text-[10px]">Side chat | koi bhi sawal puchho</p>
+                <p className="text-muted-foreground text-[10px]">Side chat | ask anything</p>
               </div>
               <AIProviderSelector
                 provider={provider}
@@ -251,7 +265,7 @@ export function SideChatWidget() {
               {messages.length === 0 && (
                 <div className="px-4 py-8 text-center">
                   <p className="text-muted-foreground text-sm">
-                    Yahan se quick sawal puchho, AI Tutor page par jaane ki zaroorat nahi.
+                    Ask a quick question here without opening the AI Tutor page.
                   </p>
                 </div>
               )}

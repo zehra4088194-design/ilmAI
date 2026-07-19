@@ -192,7 +192,7 @@ export function PharmaPulseClient() {
   async function searchDrug(searchTerm = query) {
     const q = searchTerm.trim();
     if (!q) {
-      toast.error('Medicine ka naam likho');
+      toast.error('Enter a medicine name.');
       return;
     }
     setQuery(q);
@@ -217,7 +217,7 @@ export function PharmaPulseClient() {
       setResult(json.data.result);
       saveHistory(json.data.result?.medicine_name || q);
     } catch {
-      toast.error('PharmaPulse response nahi aa saka');
+      toast.error('PharmaPulse could not return a response.');
     } finally {
       setLoading(false);
     }
@@ -241,7 +241,7 @@ export function PharmaPulseClient() {
       }
       setMcqs(json.data.result || []);
     } catch {
-      toast.error('MCQs generate nahi ho sake');
+      toast.error('MCQs could not be generated.');
     } finally {
       setMcqLoading(false);
     }
@@ -349,7 +349,7 @@ export function PharmaPulseClient() {
                     <span className="truncate">{item}</span>
                   </button>
                 )) : (
-                  <p className="rounded-md border border-dashed p-3 text-xs leading-5 text-muted-foreground">Search history yahan appear hogi.</p>
+                  <p className="rounded-md border border-dashed p-3 text-xs leading-5 text-muted-foreground">Your search history will appear here.</p>
                 )}
               </div>
             </div>
@@ -689,7 +689,7 @@ function DrugHero({
 function exportPharmaPulsePdf(drug: DrugInfo, mode: PharmaMode) {
   const win = window.open('', '_blank', 'width=920,height=900');
   if (!win) {
-    toast.error('PDF export ke liye popups allow karo');
+    toast.error('Allow pop-ups to export the PDF.');
     return;
   }
 
@@ -1017,7 +1017,7 @@ function StructureModal({ drug, onClose }: { drug: DrugInfo; onClose: () => void
           </div>
           <div className="rounded-md border bg-muted/20 p-3">
             <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">View</p>
-            <p className="mt-1 font-semibold">{view === '2d' ? '2D structure' : '3D conformer'}</p>
+            <p className="mt-1 font-semibold">{view === '2d' ? '2D structure' : '3D conformer / 2D fallback'}</p>
           </div>
           <div className="rounded-md border bg-muted/20 p-3">
             <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Compound</p>

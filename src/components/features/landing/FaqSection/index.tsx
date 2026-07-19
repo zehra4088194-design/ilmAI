@@ -5,11 +5,11 @@ import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
 const FAQS = [
-  { q: 'ilm AI bilkul free hai?', a: 'Haan! Free plan mein notes/read mode free hai, side chat 10/day aur AI tools/testing 3/day preview milta hai. Zyada chahiye to Pro ya Elite plan lo.' },
-  { q: 'Kaunse boards support kiye jaate hain?', a: 'FBISE, BISE Lahore, BISE Karachi, BISE Rawalpindi, BISE Faisalabad, Aga Khan University aur bahut saare boards support kiye jaate hain.' },
-  { q: 'AI Tutor kis language mein jawab deta hai?', a: 'AI Tutor English aur Urdu dono mein jawab de sakta hai. Aap jo language prefer karo usi mein likh sakte ho.' },
-  { q: 'Subscription cancel kaise karte hain?', a: 'Kabhi bhi settings se subscription cancel kar sakte ho. Billing period khatam hone tak Pro access rehti hai.' },
-  { q: 'Offline study possible hai?', a: 'Elite plan mein offline mode available hai. Notes, flashcards aur kuch content offline download kar sakte ho.' },
+  { q: 'Is ilm AI free?', a: 'Yes. The Free plan includes notes and reading mode, 10 side-chat messages per day, and a 3-use daily preview of AI tools. Upgrade to Pro or Elite for more access.' },
+  { q: 'Which boards are supported?', a: 'ilm AI supports FBISE, BISE Lahore, BISE Karachi, BISE Rawalpindi, BISE Faisalabad, Aga Khan University, and many other boards.' },
+  { q: 'Which languages does the AI Tutor support?', a: 'The AI Tutor can respond in English and Urdu. You can write in the language you prefer.' },
+  { q: 'How do I cancel a subscription?', a: 'You can cancel your subscription from Settings at any time. Pro access remains active until the current billing period ends.' },
+  { q: 'Is offline study available?', a: 'Offline mode is available on the Elite plan. You can download notes, flashcards, and eligible content for offline use.' },
   { q: 'MCQ questions kaun verify karta hai?', a: 'Sab MCQs subject expert teachers ne verify kiye hain. Agar koi mistake mile to report karein, hum fix kar denge.' },
 ];
 

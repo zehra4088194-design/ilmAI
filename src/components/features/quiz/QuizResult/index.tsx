@@ -41,7 +41,7 @@ export function QuizResult({ session, onRetry }: { session: QuizSession; onRetry
         <Trophy className={`w-10 h-10 ${isGood ? 'text-green-500' : 'text-amber-500'}`} />
       </div>
       <h2 className="text-3xl font-bold mb-2">{score}%</h2>
-      <p className="text-muted-foreground mb-8">{isGood ? 'Shabash! Bohat acha kiya!' : 'Acha attempt! Aur practice karo.'}</p>
+      <p className="text-muted-foreground mb-8">{isGood ? 'Excellent work!' : 'Good attempt. Keep practising.'}</p>
       <div className="grid grid-cols-3 gap-4 max-w-md mx-auto mb-8">
         <Card><CardContent className="p-4"><p className="text-2xl font-bold text-green-500">{session.correctCount}</p><p className="text-xs text-muted-foreground">Correct</p></CardContent></Card>
         <Card><CardContent className="p-4"><p className="text-2xl font-bold text-red-500">{session.incorrectCount}</p><p className="text-xs text-muted-foreground">Wrong</p></CardContent></Card>

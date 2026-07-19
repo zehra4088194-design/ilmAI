@@ -1,7 +1,10 @@
 import { Metadata } from 'next';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { ParentDashboardClient } from '@/components/features/parent/ParentDashboardClient';
+import { getPlatformSettings } from '@/lib/platform-settings/server';
+import { getPlanFromSettings } from '@/lib/platform-settings/shared';
+import type { SubscriptionTier } from '@/types';
 
 export const metadata: Metadata = { title: 'Parent Dashboard' };
 
@@ -41,7 +44,24 @@ export default async function ParentDashboardPage({
           .in('id', approvedStudentIds)
       : { data: [] as any[] };
 
-  const studentMap = new Map((students || []).map((student) => [student.id, student]));
+  const platformSettings = await getPlatformSettings();
+  const normalizedStudents = (students || []).map((student) => {
+    const tier: SubscriptionTier =
+      student.subscription_tier === 'PRO' || student.subscription_tier === 'ELITE'
+        ? student.subscription_tier
+        : 'FREE';
+    const plan = getPlanFromSettings(platformSettings, tier);
+    return {
+      ...student,
+      parent_entitlement: {
+        dashboard: plan.access.parentDashboard,
+        reports: plan.access.parentReports,
+        advancedAnalytics: plan.access.advancedParentAnalytics,
+        guardiansMax: plan.limits.parentGuardiansMax,
+      },
+    };
+  });
+  const studentMap = new Map(normalizedStudents.map((student) => [student.id, student]));
   const normalizedLinks = (links || []).map((link) => ({
     ...link,
     student: link.student_id ? studentMap.get(link.student_id) || null : null,
@@ -51,25 +71,38 @@ export default async function ParentDashboardPage({
   let snapshots: any[] = [];
   let reports: any[] = [];
   let predictions: any[] = [];
-  if (approvedStudentIds.length > 0) {
+  const dashboardStudentIds = normalizedStudents
+    .filter((student) => student.parent_entitlement.dashboard)
+    .map((student) => student.id);
+  const reportStudentIds = normalizedStudents
+    .filter((student) => student.parent_entitlement.reports)
+    .map((student) => student.id);
+  const advancedStudentIds = normalizedStudents
+    .filter((student) => student.parent_entitlement.advancedAnalytics)
+    .map((student) => student.id);
+  if (dashboardStudentIds.length > 0) {
+    const predictionQuery = advancedStudentIds.length
+      ? (await createAdminClient())
+          .from('student_predictions' as any)
+          .select('student_id, dropout_risk_score, burnout_risk_score, computed_at')
+          .in('student_id', advancedStudentIds)
+          .order('computed_at', { ascending: false })
+      : Promise.resolve({ data: [] as any[] });
     const [{ data }, { data: reportRows }, { data: predictionRows }] = await Promise.all([
       supabase
         .from('student_weekly_snapshots')
         .select('*')
-        .in('student_id', approvedStudentIds)
+        .in('student_id', dashboardStudentIds)
         .gte('week_start', new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10))
         .order('week_start', { ascending: false }),
       supabase
         .from('parent_weekly_reports' as any)
         .select('*')
-        .in('student_id', approvedStudentIds)
+        .eq('parent_id', user.id)
+        .in('student_id', reportStudentIds.length ? reportStudentIds : ['00000000-0000-0000-0000-000000000000'])
         .order('week_start_date', { ascending: false })
         .limit(6),
-      supabase
-        .from('student_predictions' as any)
-        .select('student_id, dropout_risk_score, burnout_risk_score, computed_at')
-        .in('student_id', approvedStudentIds)
-        .order('computed_at', { ascending: false }),
+      predictionQuery,
     ]);
     snapshots = data || [];
     reports = reportRows || [];
@@ -82,7 +115,7 @@ export default async function ParentDashboardPage({
       <div>
         <h1 className="text-2xl font-bold">Parent Dashboard</h1>
         <p className="text-muted-foreground">
-          Linked students ki progress, chat aur routine schedule yahin manage hota hai.
+          Manage linked student progress, chat, and routine schedules here.
         </p>
       </div>
       <ParentDashboardClient

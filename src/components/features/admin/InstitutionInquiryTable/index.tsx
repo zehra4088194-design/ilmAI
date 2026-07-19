@@ -14,7 +14,8 @@ type Inquiry = {
   student_count: number;
   plan_tier: 'PRO' | 'ELITE';
   billing_cycle: 'monthly' | 'annual';
-  discounted_price_pkr: number;
+  quote_currency: 'USD' | 'PKR';
+  discounted_price: number;
   contact_name: string | null;
   contact_email: string | null;
   message: string | null;
@@ -31,10 +32,10 @@ export function InstitutionInquiryTable() {
     try {
       const response = await fetch('/api/admin/institution-inquiries');
       const json = await response.json();
-      if (!response.ok) throw new Error(json.error || 'Inquiries load nahi hui');
+      if (!response.ok) throw new Error(json.error || 'Inquiries could not be loaded.');
       setInquiries(json.inquiries || []);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Inquiries load nahi hui');
+      toast.error(error instanceof Error ? error.message : 'Inquiries could not be loaded.');
     } finally {
       setLoading(false);
     }
@@ -52,7 +53,7 @@ export function InstitutionInquiryTable() {
     });
     const json = await response.json();
     if (!response.ok) {
-      toast.error(json.error || 'Status update nahi hui');
+      toast.error(json.error || 'Status could not be updated.');
       return;
     }
     setInquiries((items) => items.map((item) => (item.id === id ? { ...item, ...json.inquiry } : item)));
@@ -66,14 +67,14 @@ export function InstitutionInquiryTable() {
           <Building2 className="text-primary h-5 w-5" /> School / College Inquiries
         </CardTitle>
         <p className="text-muted-foreground text-sm">
-          Yahan institutional paid-plan requests aur un ke selected student counts aayenge.
+          Institutional paid-plan requests and their selected student counts will appear here.
         </p>
       </CardHeader>
       <CardContent className="overflow-x-auto p-0">
         {loading ? (
           <p className="text-muted-foreground p-6 text-sm">Loading...</p>
         ) : inquiries.length === 0 ? (
-          <p className="text-muted-foreground p-6 text-sm">Abhi koi inquiry nahi aayi.</p>
+          <p className="text-muted-foreground p-6 text-sm">No inquiries yet.</p>
         ) : (
           <table className="w-full min-w-[900px] text-sm">
             <thead>
@@ -101,15 +102,21 @@ export function InstitutionInquiryTable() {
                     <p className="text-muted-foreground mt-1 text-xs">{inquiry.billing_cycle}</p>
                   </td>
                   <td className="p-4 font-medium">{inquiry.student_count.toLocaleString()}</td>
-                  <td className="p-4 font-semibold">PKR {inquiry.discounted_price_pkr.toLocaleString()}</td>
+                  <td className="p-4 font-semibold">
+                    {inquiry.quote_currency === 'USD' ? '$' : 'Rs. '}
+                    {inquiry.discounted_price.toLocaleString(undefined, {
+                      minimumFractionDigits: inquiry.quote_currency === 'USD' ? 2 : 0,
+                      maximumFractionDigits: inquiry.quote_currency === 'USD' ? 2 : 0,
+                    })}
+                  </td>
                   <td className="text-muted-foreground p-4 text-xs">
                     <p className="flex items-center gap-1">
                       <PhoneCall className="h-3 w-3" />
-                      {inquiry.contact_name || '—'}
+                      {inquiry.contact_name || '-'}
                     </p>
                     <p className="mt-1 flex items-center gap-1">
                       <Mail className="h-3 w-3" />
-                      {inquiry.contact_email || '—'}
+                      {inquiry.contact_email || '-'}
                     </p>
                   </td>
                   <td className="p-4">

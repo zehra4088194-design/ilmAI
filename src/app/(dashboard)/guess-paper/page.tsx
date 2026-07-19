@@ -17,7 +17,7 @@ export default async function GuessPaperPage() {
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold">AI Guess Paper 🎯</h1>
-        <p className="text-muted-foreground">AI predict karta hai kaunse questions board exam mein aa sakte hain</p>
+        <p className="text-muted-foreground">AI predicts which questions may appear in your board exam.</p>
       </div>
       {(subjects || []).length > 0 ? (
         <GuessPaperClient subjects={subjects || []} userTier={(profile?.subscription_tier as any) || 'FREE'} defaultBoard={profile?.board || undefined} defaultGrade={profile?.grade_level || undefined} />
@@ -25,7 +25,7 @@ export default async function GuessPaperPage() {
         <EmptyState
           icon={FileQuestion}
           title="No subjects found for guess papers"
-          description="Guess papers class aur board ke subjects se bante hain. Profile check karo, ya AI Tutor se topic-wise expected questions le lo."
+          description="Guess papers are generated from your class and board subjects. Check your profile or ask AI Tutor for expected questions by topic."
           primaryHref="/settings"
           primaryLabel="Check Profile"
           secondaryHref="/ai-tutor"

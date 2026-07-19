@@ -104,7 +104,7 @@ export default async function DashboardPage() {
           <div>
             <p className="text-sm font-semibold text-violet-300">Upgrade to Pro</p>
             <p className="text-muted-foreground text-sm">
-              AI tools, summaries, downloads, Study Buddies chat aur higher daily limits unlock karo.
+              Unlock AI tools, summaries, downloads, Study Buddies chat, and higher daily limits.
             </p>
           </div>
           <Button asChild variant="gradient" className="shrink-0">

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdminUser } from '@/lib/admin/auth';
 import { extractGoogleDriveFileId, getGoogleDriveThumbnailUrl } from '@/lib/utils/filePreview';
+import { queueResourceContextProcessing } from '@/lib/resources/processing';
 import type { Database } from '@/lib/supabase/database.types';
 
 type LibraryInsert = Database['public']['Tables']['library_resources']['Insert'] & {
@@ -10,6 +11,8 @@ type LibraryInsert = Database['public']['Tables']['library_resources']['Insert']
   light_file_url?: string | null;
   dark_file_url?: string | null;
   context_text_url?: string | null;
+  book_title?: string | null;
+  content_section?: 'reading' | 'mcq' | 'short' | 'long';
 };
 type SubjectJoin = { name: string | null } | null;
 type ChapterJoin = { name: string | null } | null;
@@ -52,8 +55,8 @@ export async function POST(req: NextRequest) {
   const lightFileUrl = (body.light_file_url ?? body.drive_url ?? '').trim();
   const darkFileUrl = body.dark_file_url?.trim() || null;
   const contextTextUrl = body.context_text_url?.trim() || null;
-  if (!body.title?.trim() || !lightFileUrl || !contextTextUrl) {
-    return NextResponse.json({ error: 'Title, PDF URL aur companion TXT URL zaroori hain' }, { status: 400 });
+  if (!body.title?.trim() || !lightFileUrl) {
+    return NextResponse.json({ error: 'Title aur PDF URL zaroori hain' }, { status: 400 });
   }
   const driveUrl = lightFileUrl;
   const driveFileId = body.drive_file_id ?? extractGoogleDriveFileId(driveUrl);
@@ -75,6 +78,8 @@ export async function POST(req: NextRequest) {
       description: body.description ?? null,
       category: body.category ?? 'local',
       resource_type: body.resource_type ?? 'text_book',
+      book_title: body.book_title?.trim() || body.title.trim(),
+      content_section: body.content_section ?? 'reading',
       subject_id: body.subject_id ?? null,
       chapter_id: body.chapter_id ?? null,
       board: body.board ?? null,
@@ -96,5 +101,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `Resource add nahi hua: ${error.message}` }, { status: 500 });
   }
 
-  return NextResponse.json({ resource: data }, { status: 201 });
+  let processingWarning: string | null = null;
+  {
+    try {
+      await queueResourceContextProcessing('library', data.id);
+    } catch (queueError) {
+      processingWarning =
+        queueError instanceof Error ? queueError.message : 'Automatic OCR queue start nahi ho saki.';
+      console.error('library context queue error:', queueError);
+    }
+  }
+
+  return NextResponse.json(
+    {
+      resource: data,
+      contextStatus: processingWarning ? 'queue_failed' : contextTextUrl ? 'provided_and_queued' : 'queued',
+      warning: processingWarning,
+    },
+    { status: 201 }
+  );
 }

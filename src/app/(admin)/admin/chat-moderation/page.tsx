@@ -45,7 +45,7 @@ export default async function ChatModerationPage() {
       <div>
         <h1 className="text-2xl font-bold">Chat Blocks</h1>
         <p className="text-sm text-muted-foreground">
-          Student-to-student chats jo study se hatne ki wajah se temporarily block hui hain. 2 din baad auto expire ho jaati hain, ya admin yahan se unblock kar sakta hai.
+          Student-to-student chats temporarily blocked for moving off study topics. Blocks expire after 2 days, or an admin can unblock them here.
         </p>
       </div>
 
@@ -69,7 +69,7 @@ export default async function ChatModerationPage() {
             <div>
               <p className="font-semibold">Moderation rule</p>
               <p className="text-sm text-muted-foreground">
-                Har 50 combined messages ke baad AI conversation classify karta hai. Pehli off-topic detection par warning, doosri par 2 din ka block.
+                AI classifies the conversation after every 50 combined messages. The first off-topic detection warns users; the second blocks the chat for 2 days.
               </p>
             </div>
           </CardContent>
@@ -81,12 +81,12 @@ export default async function ChatModerationPage() {
           <CardTitle className="text-base">Blocked conversations</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {error && <p className="text-sm text-destructive">Blocked chats load nahi hue: {error.message}</p>}
+          {error && <p className="text-sm text-destructive">Blocked chats could not be loaded: {error.message}</p>}
           {!error && chats.length === 0 && (
             <div className="rounded-xl border border-dashed border-border p-8 text-center">
               <ShieldCheck className="mx-auto mb-3 h-8 w-8 text-emerald-400" />
-              <p className="font-semibold">Abhi koi active chat block nahi hai</p>
-              <p className="mt-1 text-sm text-muted-foreground">Off-topic repeated chats yahan automatically aa jaayengi.</p>
+              <p className="font-semibold">No active chat blocks</p>
+              <p className="mt-1 text-sm text-muted-foreground">Repeated off-topic chats will appear here automatically.</p>
             </div>
           )}
           {chats.map((chat) => {

@@ -149,7 +149,7 @@ export function FullTestSetup({
       });
       if (!hitLimit) toast.success('Scan ho gaya — jawabaat check kar lo, zaroorat ho to edit karo.');
     } else if (!hitLimit) {
-      toast.error('Koi text scan nahi ho saka');
+      toast.error('No text could be scanned.');
     }
 
     setScanningWhole(false);
@@ -272,7 +272,7 @@ export function FullTestSetup({
 
       {state === 'loading' && (
         <motion.div key="loading" className="text-center py-20">
-          <BrandLoader label="AI poora paper bana raha hai..." />
+          <BrandLoader label="AI is generating the full paper..." />
         </motion.div>
       )}
 
@@ -297,7 +297,7 @@ export function FullTestSetup({
               <input ref={wholeTestFileRef} type="file" accept="image/*" multiple capture="environment" className="hidden" onChange={handleScanWholeTest} />
               <Button variant="outline" onClick={() => wholeTestFileRef.current?.click()} disabled={scanningWhole}>
                 <Camera className="w-4 h-4" />
-                {scanningWhole ? `Scanning page ${scanProgress?.current} of ${scanProgress?.total}...` : 'Poora Test Scan Karo'}
+                {scanningWhole ? `Scanning page ${scanProgress?.current} of ${scanProgress?.total}...` : 'Scan the full test'}
               </Button>
               <Button variant="gradient" onClick={submitTest}><FileCheck className="w-4 h-4" />Submit Test</Button>
             </div>
@@ -394,8 +394,8 @@ function WrittenQuestion({ index, question, value, onChange, rows }: { index: nu
       const res = await fetch('/api/ocr', { method: 'POST', body: formData });
       const json = await res.json();
       if (json.data?.text) onChange((value ? `${value}\n\n` : '') + json.data.text);
-      else toast.error('Text scan nahi hua');
-    } catch { toast.error('Scan fail ho gaya'); }
+      else toast.error('Text could not be scanned.');
+    } catch { toast.error('Scan failed.'); }
     finally { setScanning(false); if (fileRef.current) fileRef.current.value = ''; }
   };
 
@@ -408,12 +408,12 @@ function WrittenQuestion({ index, question, value, onChange, rows }: { index: nu
         </div>
       </div>
       {question.guide && <p className="text-xs text-violet-400 mb-2">💡 {question.guide}</p>}
-      <textarea value={value} onChange={e => onChange(e.target.value)} rows={rows} placeholder="Apna jawab yahan likho..."
+      <textarea value={value} onChange={e => onChange(e.target.value)} rows={rows} placeholder="Write your answer here..."
         className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm resize-y" />
       <div className="flex items-center gap-2 mt-1.5">
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleScan} />
         <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => fileRef.current?.click()} disabled={scanning}>
-          <Camera className="w-3 h-3" />{scanning ? 'Scanning...' : 'Handwritten Answer Scan Karo'}
+          <Camera className="w-3 h-3" />{scanning ? 'Scanning...' : 'Scan handwritten answer'}
         </Button>
         <span className="text-xs text-muted-foreground ml-auto">{value.trim().split(/\s+/).filter(Boolean).length} words</span>
       </div>
@@ -494,7 +494,7 @@ function TestResult({ paper, gradeResults, answers, onRetry }: { paper: any; gra
       )}
 
       <div className="flex gap-3">
-        <Button variant="outline" className="flex-1" onClick={onRetry}>Naya Test</Button>
+        <Button variant="outline" className="flex-1" onClick={onRetry}>New test</Button>
         <Button variant="gradient" className="flex-1" onClick={() => window.location.href = '/dashboard'}><CheckCircle2 className="w-4 h-4" />Dashboard</Button>
       </div>
     </motion.div>

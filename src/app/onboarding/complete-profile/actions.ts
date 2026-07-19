@@ -23,7 +23,7 @@ export interface ActionResult {
 export async function completeUsername(username: string): Promise<ActionResult> {
   const normalizedUsername = username.trim().toLowerCase();
   if (!USERNAME_REGEX.test(normalizedUsername)) {
-    return { success: false, error: 'Username 3-30 chars aur sirf letters, numbers, dot, underscore ho.' };
+    return { success: false, error: 'Username must be 3-30 characters and use only letters, numbers, dots, or underscores.' };
   }
   const supabase = await createClient();
   const {
@@ -37,9 +37,9 @@ export async function completeUsername(username: string): Promise<ActionResult> 
     .eq('username', normalizedUsername)
     .neq('id', user.id)
     .maybeSingle();
-  if (usernameOwner) return { success: false, error: 'Ye username already taken hai.' };
+  if (usernameOwner) return { success: false, error: 'This username is already taken.' };
   const { error } = await supabase.from('profiles').update({ username: normalizedUsername }).eq('id', user.id);
-  if (error) return { success: false, error: 'Username save nahi ho saka. Dobara try karein.' };
+  if (error) return { success: false, error: 'The username could not be saved. Please try again.' };
   revalidatePath('/', 'layout');
   return { success: true };
 }
@@ -62,7 +62,7 @@ function isValidUniversityStream(value: unknown): value is UniversityStream {
 
 export async function completeProfile(board: string, gradeLevel: string, username: string, gender: string): Promise<ActionResult> {
   if (!isValidBoard(board) || !isValidGradeLevel(gradeLevel) || !USERNAME_REGEX.test(username.trim()) || (gender !== 'girl' && gender !== 'boy')) {
-    return { success: false, error: 'Username, board aur grade dono zaroori hain.' };
+    return { success: false, error: 'Username, board, and grade are required.' };
   }
 
   const normalizedUsername = username.trim().toLowerCase();
@@ -82,7 +82,7 @@ export async function completeProfile(board: string, gradeLevel: string, usernam
     .eq('username', normalizedUsername)
     .neq('id', user.id)
     .maybeSingle();
-  if (usernameOwner) return { success: false, error: 'Ye username already taken hai.' };
+  if (usernameOwner) return { success: false, error: 'This username is already taken.' };
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
@@ -147,7 +147,7 @@ export async function completeUniversityProfile(input: {
     (input.gender !== 'girl' && input.gender !== 'boy') ||
     !USERNAME_REGEX.test(input.username.trim())
   ) {
-    return { success: false, error: 'Username, section, degree aur semester zaroori hain.' };
+    return { success: false, error: 'Username, section, degree, and semester are required.' };
   }
 
   const supabase = await createClient();
@@ -168,7 +168,7 @@ export async function completeUniversityProfile(input: {
     .eq('username', normalizedUsername)
     .neq('id', user.id)
     .maybeSingle();
-  if (usernameOwner) return { success: false, error: 'Ye username already taken hai.' };
+  if (usernameOwner) return { success: false, error: 'This username is already taken.' };
   const { error } = await supabase
     .from('profiles')
     .update({

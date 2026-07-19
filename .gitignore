@@ -16,6 +16,10 @@
 # misc
 .DS_Store
 *.pem
+*.key
+*.p12
+*.pfx
+oracle-keys/
 
 # debug
 npm-debug.log*
@@ -25,9 +29,6 @@ yarn-error.log*
 # local env files
 .env*.local
 .env
-
-# vercel
-.vercel
 
 # typescript
 *.tsbuildinfo
@@ -42,3 +43,4 @@ next-env.d.ts
 .branches
 .temp
 .env*
+!.env.oracle.example

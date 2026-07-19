@@ -1,0 +1,241 @@
+name: ilm-ai
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:?}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:?}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:?}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:?}
+        NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-ilm AI}
+        NEXT_PUBLIC_APP_VERSION: ${NEXT_PUBLIC_APP_VERSION:-1.0.0}
+        NEXT_PUBLIC_ADSENSE_CLIENT_ID: ${NEXT_PUBLIC_ADSENSE_CLIENT_ID:-}
+        NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR: ${NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR:-}
+        NEXT_PUBLIC_ADSENSE_SLOT_INLINE: ${NEXT_PUBLIC_ADSENSE_SLOT_INLINE:-}
+        NEXT_PUBLIC_PADDLE_CLIENT_TOKEN: ${NEXT_PUBLIC_PADDLE_CLIENT_TOKEN:-}
+        NEXT_PUBLIC_POSTHOG_KEY: ${NEXT_PUBLIC_POSTHOG_KEY:-}
+        NEXT_PUBLIC_POSTHOG_HOST: ${NEXT_PUBLIC_POSTHOG_HOST:-}
+        NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
+        NEXT_PUBLIC_SENTRY_ENVIRONMENT: ${NEXT_PUBLIC_SENTRY_ENVIRONMENT:-production}
+        NEXT_PUBLIC_FIREBASE_API_KEY: ${NEXT_PUBLIC_FIREBASE_API_KEY:-}
+        NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN:-}
+        NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${NEXT_PUBLIC_FIREBASE_PROJECT_ID:-}
+        NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET:-}
+        NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID:-}
+        NEXT_PUBLIC_FIREBASE_APP_ID: ${NEXT_PUBLIC_FIREBASE_APP_ID:-}
+        NEXT_PUBLIC_FIREBASE_VAPID_KEY: ${NEXT_PUBLIC_FIREBASE_VAPID_KEY:-}
+        PLAY_CONSUMPTION_ONLY_HOSTS: ${PLAY_CONSUMPTION_ONLY_HOSTS:-}
+    restart: unless-stopped
+    expose:
+      - '3000'
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:?}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:?}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:?}
+      SUPABASE_PROJECT_ID: ${SUPABASE_PROJECT_ID:-}
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:?}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:?}
+      NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-ilm AI}
+      NEXT_PUBLIC_APP_VERSION: ${NEXT_PUBLIC_APP_VERSION:-1.0.0}
+      AI_GATEWAY_URL: http://ai-gateway:8787
+      AI_GATEWAY_SECRET: ${AI_GATEWAY_SECRET:?}
+      OCR_SERVICE_URL: http://ocr:8000
+      OCR_SERVICE_SECRET: ${OCR_SERVICE_SECRET:?}
+      REDIS_URL: redis://:${VALKEY_PASSWORD:?}@valkey:6379/0
+      CRON_SECRET: ${CRON_SECRET:?}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:?}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+      PADDLE_API_KEY: ${PADDLE_API_KEY:-}
+      PADDLE_WEBHOOK_SECRET: ${PADDLE_WEBHOOK_SECRET:-}
+      NEXT_PUBLIC_PADDLE_CLIENT_TOKEN: ${NEXT_PUBLIC_PADDLE_CLIENT_TOKEN:-}
+      PADDLE_PRICE_ID_PRO_MONTHLY: ${PADDLE_PRICE_ID_PRO_MONTHLY:-}
+      PADDLE_PRICE_ID_PRO_ANNUAL: ${PADDLE_PRICE_ID_PRO_ANNUAL:-}
+      PADDLE_PRICE_ID_ELITE_MONTHLY: ${PADDLE_PRICE_ID_ELITE_MONTHLY:-}
+      PADDLE_PRICE_ID_ELITE_ANNUAL: ${PADDLE_PRICE_ID_ELITE_ANNUAL:-}
+      NEXT_PUBLIC_ADSENSE_CLIENT_ID: ${NEXT_PUBLIC_ADSENSE_CLIENT_ID:-}
+      NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR: ${NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR:-}
+      NEXT_PUBLIC_ADSENSE_SLOT_INLINE: ${NEXT_PUBLIC_ADSENSE_SLOT_INLINE:-}
+      NEXT_PUBLIC_POSTHOG_KEY: ${NEXT_PUBLIC_POSTHOG_KEY:-}
+      NEXT_PUBLIC_POSTHOG_HOST: ${NEXT_PUBLIC_POSTHOG_HOST:-}
+      NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
+      NEXT_PUBLIC_SENTRY_ENVIRONMENT: ${NEXT_PUBLIC_SENTRY_ENVIRONMENT:-production}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
+      NEXT_PUBLIC_FIREBASE_API_KEY: ${NEXT_PUBLIC_FIREBASE_API_KEY:-}
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN:-}
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${NEXT_PUBLIC_FIREBASE_PROJECT_ID:-}
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET:-}
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID:-}
+      NEXT_PUBLIC_FIREBASE_APP_ID: ${NEXT_PUBLIC_FIREBASE_APP_ID:-}
+      NEXT_PUBLIC_FIREBASE_VAPID_KEY: ${NEXT_PUBLIC_FIREBASE_VAPID_KEY:-}
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-}
+      FIREBASE_SERVICE_ACCOUNT_JSON_BASE64: ${FIREBASE_SERVICE_ACCOUNT_JSON_BASE64:-}
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:-}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+      R2_BUCKET: ${R2_BUCKET:-}
+      ALGOLIA_ENABLED: ${ALGOLIA_ENABLED:-false}
+      ALGOLIA_APP_ID: ${ALGOLIA_APP_ID:-}
+      ALGOLIA_SEARCH_API_KEY: ${ALGOLIA_SEARCH_API_KEY:-}
+      ALGOLIA_ADMIN_API_KEY: ${ALGOLIA_ADMIN_API_KEY:-}
+      ALGOLIA_INDEX_NAME: ${ALGOLIA_INDEX_NAME:-ilm_ai_public_catalog}
+      PAYPRO_CHECKOUT_URL: ${PAYPRO_CHECKOUT_URL:-}
+      PAYPRO_WEBHOOK_SECRET: ${PAYPRO_WEBHOOK_SECRET:-}
+      PAYPRO_PLAN_ID_PRO_MONTHLY: ${PAYPRO_PLAN_ID_PRO_MONTHLY:-}
+      PAYPRO_PLAN_ID_PRO_ANNUAL: ${PAYPRO_PLAN_ID_PRO_ANNUAL:-}
+      PAYPRO_PLAN_ID_ELITE_MONTHLY: ${PAYPRO_PLAN_ID_ELITE_MONTHLY:-}
+      PAYPRO_PLAN_ID_ELITE_ANNUAL: ${PAYPRO_PLAN_ID_ELITE_ANNUAL:-}
+      ANDROID_PACKAGE_NAME: ${ANDROID_PACKAGE_NAME:-}
+      ANDROID_SHA256_CERT_FINGERPRINTS: ${ANDROID_SHA256_CERT_FINGERPRINTS:-}
+      PLAY_CONSUMPTION_ONLY_HOSTS: ${PLAY_CONSUMPTION_ONLY_HOSTS:-}
+    depends_on:
+      ai-gateway:
+        condition: service_healthy
+      ocr:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 8s
+      retries: 5
+      start_period: 45s
+    deploy:
+      resources:
+        limits:
+          memory: 3G
+
+  ai-gateway:
+    build:
+      context: .
+      dockerfile: services/ai-gateway/Dockerfile
+    restart: unless-stopped
+    expose:
+      - '8787'
+    environment:
+      PORT: 8787
+      GATEWAY_SECRET: ${AI_GATEWAY_SECRET:?}
+      ALLOWED_ORIGIN: ${NEXT_PUBLIC_SITE_URL:?}
+      GROQ_API_KEYS_JSON: ${GROQ_API_KEYS_JSON:-[]}
+      GROK_API_KEYS_JSON: ${GROK_API_KEYS_JSON:-[]}
+      CLAUDE_API_KEYS_JSON: ${CLAUDE_API_KEYS_JSON:-[]}
+      GPT_API_KEYS_JSON: ${GPT_API_KEYS_JSON:-[]}
+      GEMINI_API_KEYS_JSON: ${GEMINI_API_KEYS_JSON:-[]}
+      OCRSPACE_API_KEYS_JSON: ${OCRSPACE_API_KEYS_JSON:-[]}
+      OPENROUTER_API_KEYS_JSON: ${OPENROUTER_API_KEYS_JSON:-[]}
+      GEMINI_LIVE_MODEL: ${GEMINI_LIVE_MODEL:-}
+      GEMINI_VISION_MODEL: ${GEMINI_VISION_MODEL:-}
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:8787/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 8s
+      retries: 4
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+
+  ocr:
+    build:
+      context: services/ocr
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    expose:
+      - '8000'
+    environment:
+      OCR_SERVICE_SECRET: ${OCR_SERVICE_SECRET:?}
+      OCR_LANGUAGES: ${OCR_LANGUAGES:-eng+urd}
+      OCR_MAX_FILE_BYTES: ${OCR_MAX_FILE_BYTES:-26214400}
+      OCR_MAX_PDF_PAGES: ${OCR_MAX_PDF_PAGES:-30}
+      OCR_MAX_CONCURRENT_JOBS: ${OCR_MAX_CONCURRENT_JOBS:-1}
+      OCR_JOB_TIMEOUT_SECONDS: ${OCR_JOB_TIMEOUT_SECONDS:-180}
+    read_only: true
+    tmpfs:
+      - /tmp:size=2G,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'python',
+          '-c',
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5)",
+        ]
+      interval: 30s
+      timeout: 8s
+      retries: 4
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+
+  valkey:
+    image: valkey/valkey:8-alpine
+    restart: unless-stopped
+    environment:
+      VALKEY_PASSWORD: ${VALKEY_PASSWORD:?}
+    command:
+      - /bin/sh
+      - -c
+      - exec valkey-server --appendonly yes --appendfsync everysec --maxmemory 192mb --maxmemory-policy volatile-lru --requirepass "$${VALKEY_PASSWORD}"
+    expose:
+      - '6379'
+    volumes:
+      - valkey-data:/data
+    healthcheck:
+      test: ['CMD-SHELL', 'valkey-cli -a "$$VALKEY_PASSWORD" ping | grep PONG']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  cron:
+    build:
+      context: services/cron
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      APP_INTERNAL_URL: http://web:3000
+      CRON_SECRET: ${CRON_SECRET:?}
+      TZ: UTC
+    depends_on:
+      web:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+
+volumes:
+  valkey-data:

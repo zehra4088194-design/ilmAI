@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { PlayCircle, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,9 +25,15 @@ function formatDuration(seconds?: number | null) {
   return `${minutes}:${String(rest).padStart(2, '0')}`;
 }
 
-export function LectureGrid({ lectures }: { lectures: StudyLecture[] }) {
-  const [activeLecture, setActiveLecture] = useState<StudyLecture | null>(null);
+export function LectureGrid({ lectures, autoOpenId }: { lectures: StudyLecture[]; autoOpenId?: string }) {
+  const [activeLecture, setActiveLecture] = useState<StudyLecture | null>(
+    () => lectures.find((lecture) => lecture.id === autoOpenId) || null
+  );
   const activeVideoId = activeLecture ? extractYouTubeId(activeLecture.youtube_url) : null;
+
+  useEffect(() => {
+    if (autoOpenId) setActiveLecture(lectures.find((lecture) => lecture.id === autoOpenId) || null);
+  }, [autoOpenId, lectures]);
 
   return (
     <>

@@ -20,7 +20,7 @@ export function UsernameStep() {
     startTransition(async () => {
       const result = await completeUsername(username);
       if (!result.success) {
-        setError(result.error || 'Username save nahi ho saka.');
+        setError(result.error || 'The username could not be saved.');
         return;
       }
       router.replace(next.startsWith('/') ? next : '/dashboard');
@@ -36,7 +36,7 @@ export function UsernameStep() {
         </div>
         <h1 className="text-2xl font-bold">Choose your username</h1>
         <p className="text-muted-foreground mt-2 text-sm">
-          Ye unique username admin search aur Study Buddies dono me use hoga.
+          This unique username will be used for admin search and Study Buddies.
         </p>
       </div>
       <div className="space-y-3">
@@ -49,7 +49,7 @@ export function UsernameStep() {
             if (event.key === 'Enter') submit();
           }}
         />
-        <p className="text-muted-foreground text-xs">3-30 characters: letters, numbers, dot ya underscore.</p>
+        <p className="text-muted-foreground text-xs">3-30 characters: letters, numbers, dots, or underscores.</p>
         {error && <p className="text-destructive text-sm">{error}</p>}
         <Button className="w-full" variant="gradient" onClick={submit} loading={isPending}>
           Save username

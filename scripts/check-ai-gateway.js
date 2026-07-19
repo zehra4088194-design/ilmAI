@@ -82,13 +82,13 @@ async function main() {
 
   const undefinedSecret = await postJson(`${gatewayUrl}/chat`, payload, 'undefined');
   if (configured.status === 401 && undefinedSecret.status === 200) {
-    console.error('\nDiagnosis: Cloudflare Worker me GATEWAY_SECRET set nahi hai.');
-    console.error('Fix: Worker ke Variables/Secrets me GATEWAY_SECRET set karo, aur Next.js app me AI_GATEWAY_SECRET ko usi exact value par rakho.\n');
+    console.error('\nDiagnosis: AI gateway me GATEWAY_SECRET set nahi hai.');
+    console.error('Fix: Coolify environment me AI_GATEWAY_SECRET set karo; web aur ai-gateway services same value use karte hain.\n');
     process.exit(1);
   }
 
   if (configured.status === 401 || configured.status === 403) {
-    console.error('\nDiagnosis: AI_GATEWAY_SECRET aur Worker ka GATEWAY_SECRET mismatch kar rahe hain.\n');
+    console.error('\nDiagnosis: web aur private AI gateway secrets mismatch kar rahe hain.\n');
     process.exit(1);
   }
 

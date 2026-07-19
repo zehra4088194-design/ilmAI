@@ -23,6 +23,9 @@ export type LibraryResource = {
   description: string | null;
   category: 'local' | 'international';
   resource_type: 'text_book' | 'notes' | 'other';
+  book_title: string | null;
+  content_section: 'reading' | 'mcq' | 'short' | 'long';
+  has_context_text?: boolean;
   subject_id: string | null;
   subject_name?: string | null;
   chapter_id?: string | null;
@@ -62,7 +65,7 @@ export function LibraryTab() {
     try {
       const res = await fetch('/api/admin/library-resources');
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Library load nahi ho saki');
+      if (!res.ok) throw new Error(data.error || 'Library could not be loaded.');
       setResources(data.resources ?? []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Kuch ghalat ho gaya');
@@ -85,7 +88,7 @@ export function LibraryTab() {
       setDeleteTarget(null);
       await refetch();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Delete mein masla hua');
+      setError(err instanceof Error ? err.message : 'Delete failed.');
     } finally {
       setDeleting(false);
     }
@@ -98,7 +101,7 @@ export function LibraryTab() {
           <p className="text-muted-foreground text-sm">
             {filteredResources.length} of {resources.length} resource{resources.length === 1 ? '' : 's'}
           </p>
-          <p className="text-muted-foreground text-xs">Class aur type select karke manage karo.</p>
+          <p className="text-muted-foreground text-xs">Select a class and type to manage resources.</p>
         </div>
         <Button
           onClick={() => {
@@ -141,11 +144,12 @@ export function LibraryTab() {
         </select>
       </div>
 
-      <div className="rounded-md border">
+      <div className="overflow-x-auto rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Title</TableHead>
+              <TableHead>Book / Collection</TableHead>
               <TableHead>Subject</TableHead>
               <TableHead>Chapter</TableHead>
               <TableHead>Grade</TableHead>
@@ -159,21 +163,22 @@ export function LibraryTab() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={9} className="py-8 text-center">
+                <TableCell colSpan={10} className="py-8 text-center">
                   <Loader2 className="mr-2 inline-block h-4 w-4 animate-spin" />
                   Loading...
                 </TableCell>
               </TableRow>
             ) : filteredResources.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-muted-foreground py-8 text-center">
-                  Is filter ke liye koi resource nahi mila.
+                <TableCell colSpan={10} className="text-muted-foreground py-8 text-center">
+                  No resources found for this filter.
                 </TableCell>
               </TableRow>
             ) : (
               filteredResources.map((resource) => (
                 <TableRow key={resource.id}>
                   <TableCell className="font-medium">{resource.title}</TableCell>
+                  <TableCell>{resource.book_title || 'General collection'}</TableCell>
                   <TableCell>{resource.subject_name ?? 'All Subjects'}</TableCell>
                   <TableCell>{resource.chapter_name ?? 'All Chapters'}</TableCell>
                   <TableCell>{resource.grade_level ?? 'All Grades'}</TableCell>
@@ -184,6 +189,7 @@ export function LibraryTab() {
                         {resource.resource_type === 'text_book' ? 'Text Book' : resource.resource_type}
                       </Badge>
                       <Badge variant="secondary">{resource.file_type}</Badge>
+                      <Badge variant="outline">{resource.content_section || 'reading'}</Badge>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -232,7 +238,7 @@ export function LibraryTab() {
           <AlertDialogHeader>
             <AlertDialogTitle>Resource delete karein?</AlertDialogTitle>
             <AlertDialogDescription>
-              &quot;{deleteTarget?.title}&quot; permanently delete ho jayega. Yeh action undo nahi ho sakta.
+              &quot;{deleteTarget?.title}&quot; will be permanently deleted. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

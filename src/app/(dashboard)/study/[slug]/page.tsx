@@ -98,7 +98,7 @@ export default async function SubjectDetailPage({
               <h1 className="text-3xl font-bold tracking-tight md:text-4xl">{subject.name}</h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground md:text-base">
                 {subject.description ||
-                  `${subject.name} ke chapters ab cleaner hierarchy me available hain taa-ke board se chapter tak navigation zyada natural lage.`}
+                  `${subject.name} chapters are organized in a clear hierarchy for natural board-to-chapter navigation.`}
               </p>
             </div>
 
@@ -130,7 +130,7 @@ export default async function SubjectDetailPage({
                   Structured chapter path
                 </div>
                 <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                  Har chapter ko alag screen milti hai jahan se next actions aur navigation clear rehta hai.
+                  Each chapter has its own screen with clear next actions and navigation.
                 </p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-background/40 p-4">
@@ -140,8 +140,8 @@ export default async function SubjectDetailPage({
                 </div>
                 <p className="mt-1 text-sm leading-6 text-muted-foreground">
                   {firstChapter
-                    ? `Start with "${firstChapter.name}" aur phir sequence me aage barho.`
-                    : 'Chapter list abhi populate honi baqi hai.'}
+                    ? `Start with "${firstChapter.name}" and continue in sequence.`
+                    : 'The chapter list is not available yet.'}
                 </p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-background/40 p-4">
@@ -150,7 +150,7 @@ export default async function SubjectDetailPage({
                   Cleaner board fit
                 </div>
                 <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                  Board-specific chapters automatically filter ho jate hain taa-ke extra noise kam ho.
+                  Board-specific chapters are filtered automatically to reduce irrelevant content.
                 </p>
               </div>
             </div>
@@ -163,7 +163,7 @@ export default async function SubjectDetailPage({
           <div>
             <h2 className="text-2xl font-bold">Chapter list</h2>
             <p className="text-sm text-muted-foreground">
-              Ab har chapter ko alag route aur clearer preview mil raha hai.
+              Every chapter now has its own route and a clearer preview.
             </p>
           </div>
           {firstChapter && (
@@ -199,7 +199,7 @@ export default async function SubjectDetailPage({
                         </div>
                         <p className="mt-1 text-sm leading-6 text-muted-foreground">
                           {chapter.description ||
-                            `${chapter.total_topics || 0} topics aur ${chapter.total_questions || 0} questions ke sath chapter detail open karo.`}
+                            `Open chapter details with ${chapter.total_topics || 0} topics and ${chapter.total_questions || 0} questions.`}
                         </p>
                       </div>
                     </div>
@@ -221,7 +221,7 @@ export default async function SubjectDetailPage({
 
           {chapters.length === 0 && (
             <div className="rounded-3xl border border-dashed border-border/70 bg-card/60 px-6 py-16 text-center text-muted-foreground">
-              Is subject ke liye abhi visible chapters nahi mile.
+              No visible chapters were found for this subject.
             </div>
           )}
         </div>

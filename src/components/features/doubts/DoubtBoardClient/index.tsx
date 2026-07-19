@@ -72,24 +72,24 @@ export function DoubtBoardClient({ doubts, subjects, userId }: { doubts: Doubt[]
       {/* Ask button / form — prominent CTA */}
       {!showForm ? (
         <Button variant="gradient" size="lg" onClick={() => setShowForm(true)} className="w-full sm:w-auto shadow-lg shadow-violet-500/20">
-          <Plus className="w-4 h-4" />Naya Sawaal Poocho
+          <Plus className="w-4 h-4" />Ask a New Question
         </Button>
       ) : (
         <Card className="border-violet-500/30">
           <CardContent className="p-5 space-y-3">
-            <h3 className="font-semibold flex items-center gap-2"><HelpCircle className="w-4 h-4 text-violet-400" />Apna Sawaal Likho</h3>
-            <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Sawaal ka title (e.g. Newton's 3rd Law samajh nahi aya)" className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm" />
+            <h3 className="font-semibold flex items-center gap-2"><HelpCircle className="w-4 h-4 text-violet-400" />Write Your Question</h3>
+            <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Question title (e.g. I do not understand Newton's 3rd Law)" className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm" />
             <select value={subjectId} onChange={e => setSubjectId(e.target.value)} className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm">
-              <option value="">Subject select karo (optional)</option>
+              <option value="">Select a subject (optional)</option>
               {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
             <div className="flex gap-2 items-start">
-              <textarea value={body} onChange={e => setBody(e.target.value)} placeholder="Puri detail mein sawaal likho..." rows={4} className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm resize-none" />
+              <textarea value={body} onChange={e => setBody(e.target.value)} placeholder="Describe your question in detail..." rows={4} className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm resize-none" />
             </div>
             <div className="flex gap-2 flex-wrap">
               <ScanUpload onTextExtracted={(text) => setBody(b => b ? `${b}\n\n${text}` : text)} trigger={<Button variant="outline" size="sm">Photo se Scan</Button>} />
               <Button asChild variant="outline" size="sm"><Link href="/scan">Scan & Solve</Link></Button>
-              <Button variant="gradient" onClick={handleSubmit} loading={submitting} className="ml-auto"><Send className="w-3.5 h-3.5" />Post Karo</Button>
+            <Button variant="gradient" onClick={handleSubmit} loading={submitting} className="ml-auto"><Send className="w-3.5 h-3.5" />Post Question</Button>
               <Button variant="ghost" onClick={() => setShowForm(false)}>Cancel</Button>
             </div>
           </CardContent>
@@ -185,7 +185,7 @@ export function DoubtBoardClient({ doubts, subjects, userId }: { doubts: Doubt[]
                   {isExpanded && !hasReplies && (
                     <div className="flex items-center gap-2 text-xs text-muted-foreground border-t border-border pt-3">
                       <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                      Teacher jawab likh rahe hain, thodi der mein aa jayega...
+                      A teacher is preparing an answer. It will appear here shortly...
                     </div>
                   )}
                 </CardContent>
@@ -196,7 +196,7 @@ export function DoubtBoardClient({ doubts, subjects, userId }: { doubts: Doubt[]
         {filteredDoubts.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">
             <HelpCircle className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p>{localDoubts.length === 0 ? 'Koi sawaal nahi hai abhi. Pehla sawaal tum pucho!' : 'Is filter ke liye koi sawaal nahi mila.'}</p>
+            <p>{localDoubts.length === 0 ? 'There are no questions yet. Ask the first one!' : 'No questions match this filter.'}</p>
           </div>
         )}
       </div>

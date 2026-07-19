@@ -47,7 +47,7 @@ export function CareerDocsBuilder() {
       setOutputs((current) => ({ ...current, [type]: json.data.markdown }));
       toast.success(type === 'resume' ? 'ATS resume generated' : 'Cover letter generated');
     } catch {
-      toast.error('Document generate nahi ho saka.');
+      toast.error('The document could not be generated.');
     } finally {
       setLoading(null);
     }
@@ -65,7 +65,7 @@ export function CareerDocsBuilder() {
     if (!activeOutput) return;
     const ok = printElementById('career-doc-preview', view === 'resume' ? 'ilm AI Resume' : 'ilm AI Cover Letter');
     if (ok) toast.success('Sirf preview document ka print dialog open ho gaya.');
-    else toast.error('Preview content nahi mila.');
+    else toast.error('No preview content was found.');
   };
 
   return (
@@ -73,7 +73,7 @@ export function CareerDocsBuilder() {
       <div>
         <Badge variant="secondary" className="mb-3">University Career Tool</Badge>
         <h1 className="text-2xl font-bold">ATS-Friendly Resume & Cover Letter Builder AI</h1>
-        <p className="text-muted-foreground">Final-year students ke liye professional ATS resume aur concise cover letter drafts.</p>
+        <p className="text-muted-foreground">Professional ATS resume and concise cover letter drafts for final-year students.</p>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[420px_1fr]">
@@ -126,8 +126,8 @@ export function CareerDocsBuilder() {
               ) : (
                 <div className="flex min-h-[520px] flex-col items-center justify-center text-center">
                   <Sparkles className="mb-3 h-10 w-10 text-violet-400" />
-                  <h2 className="font-semibold">Generated preview yahan show hogi</h2>
-                  <p className="mt-2 max-w-md text-sm text-muted-foreground">Left side details fill karo, phir resume ya cover letter generate karo.</p>
+                  <h2 className="font-semibold">Your generated preview will appear here</h2>
+                  <p className="mt-2 max-w-md text-sm text-muted-foreground">Fill in the details on the left, then generate a resume or cover letter.</p>
                 </div>
               )}
             </div>

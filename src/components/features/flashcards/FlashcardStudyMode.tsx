@@ -61,7 +61,7 @@ export function FlashcardStudyMode({ deckId, deckName, cards }: { deckId: string
     setRating(true);
     const schedule = nextSchedule(card, r);
     const { error } = await supabase.from('flashcards').update({ ...schedule, last_rating: r.key }).eq('id', card.id);
-    if (error) toast.error('Progress save nahi hua');
+    if (error) toast.error('Progress could not be saved.');
 
     setReviewedCount(c => c + 1);
     setFlipped(false);
@@ -80,8 +80,8 @@ export function FlashcardStudyMode({ deckId, deckName, cards }: { deckId: string
   if (cards.length === 0) {
     return (
       <div className="text-center py-20 text-muted-foreground">
-        <p className="mb-4">Is deck mein koi cards nahi hain.</p>
-        <Button variant="ghost" onClick={() => router.back()}><ArrowLeft className="w-4 h-4" />Wapas jao</Button>
+        <p className="mb-4">This deck has no cards yet.</p>
+        <Button variant="ghost" onClick={() => router.back()}><ArrowLeft className="w-4 h-4" />Go Back</Button>
       </div>
     );
   }
@@ -93,15 +93,15 @@ export function FlashcardStudyMode({ deckId, deckName, cards }: { deckId: string
           <Check className="w-10 h-10 text-white" />
         </div>
         <h2 className="text-xl font-bold mb-1">Deck complete!</h2>
-        <p className="text-muted-foreground mb-6">{cards.length} cards review kiye &quot;{deckName}&quot; mein.</p>
+        <p className="text-muted-foreground mb-6">You reviewed {cards.length} cards in &quot;{deckName}&quot;.</p>
         <div className="flex flex-col gap-3 sm:flex-row">
-          <Button variant="outline" onClick={() => router.back()}>Decks pe wapas jao</Button>
+          <Button variant="outline" onClick={() => router.back()}>Back to Decks</Button>
           <Button
             variant="gradient"
             className="bg-gradient-to-r from-violet-600 to-fuchsia-500"
             onClick={() => { setIndex(0); setReviewedCount(0); setFlipped(false); }}
           >
-            <RotateCw className="w-4 h-4" />Dobara study karo
+            <RotateCw className="w-4 h-4" />Study Again
           </Button>
         </div>
       </div>
@@ -161,7 +161,7 @@ export function FlashcardStudyMode({ deckId, deckName, cards }: { deckId: string
           ))}
         </div>
       ) : (
-        <p className="text-center text-xs text-muted-foreground">Card ko tap karo answer dekhne ke liye</p>
+        <p className="text-center text-xs text-muted-foreground">Tap the card to reveal the answer.</p>
       )}
     </div>
   );

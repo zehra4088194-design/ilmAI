@@ -1,14 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Cheap, dependency-free country detection for the signup form's board
-// default (Pakistan vs India). Vercel automatically sets x-vercel-ip-country
-// on every request in production — no external API call needed there.
-// Falls back to 'PK' locally / on other hosts where that header is absent.
+// A CDN/reverse proxy may provide a country header. Pakistan remains the
+// product default when the Oracle origin receives no geolocation metadata.
 export async function GET(req: NextRequest) {
-  const country =
-    req.headers.get('x-vercel-ip-country') ||
-    req.headers.get('cf-ipcountry') || // if ever proxied through Cloudflare
-    'PK';
-
+  const country = req.headers.get('cf-ipcountry') || req.headers.get('x-country-code') || 'PK';
   return NextResponse.json({ country: country.toUpperCase() });
 }

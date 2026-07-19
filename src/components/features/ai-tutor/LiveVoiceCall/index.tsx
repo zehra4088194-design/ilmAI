@@ -355,11 +355,11 @@ export function LiveVoiceCall({ subject, hasAccess, userTier = 'FREE', onSession
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500" />
             </span>
-            AI bol raha hai...
+            AI is speaking...
           </>
         ) : (
           <>
-            <Mic className="w-3 h-3" /> Sun raha hai...
+            <Mic className="w-3 h-3" /> Listening...
           </>
         )}
       </div>

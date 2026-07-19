@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { getPaymentProvider, isPaymentRegionConfigured, type PaymentRegion } from '@/lib/payments';
-import { getCurrencyForBoard } from '@/lib/constants';
+import {
+  getPaymentAvailability,
+  getPaymentProvider,
+  isPaymentRegionConfigured,
+  type PaymentRegion,
+} from '@/lib/payments';
 import { getSiteUrl } from '@/lib/utils/siteUrl';
 
 export async function POST(req: NextRequest) {
@@ -14,36 +18,56 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: 'error', error: 'Login required' }, { status: 401 });
     }
 
-    const { tier, billingCycle, region } = (await req.json()) as {
+    if (getPaymentAvailability(req.headers).consumptionOnly) {
+      return NextResponse.json(
+        { status: 'consumption_only', error: 'Play Store app mein external checkout available nahi hai.' },
+        { status: 403 }
+      );
+    }
+
+    const { data: activeSubscriptions, error: subscriptionError } = await (supabase.from('subscriptions') as any)
+      .select('id')
+      .eq('user_id', user.id)
+      .in('status', ['active', 'trialing', 'past_due'])
+      .gt('current_period_end', new Date().toISOString())
+      .limit(1);
+    if (subscriptionError) {
+      throw new Error(`Subscription lookup failed: ${subscriptionError.message}`);
+    }
+    if (activeSubscriptions?.length) {
+      return NextResponse.json(
+        {
+          status: 'active_subscription',
+          error:
+            'Aap ka paid plan pehle se active hai. Duplicate billing se bachne ke liye plan change support se karein.',
+        },
+        { status: 409 }
+      );
+    }
+
+    const body = (await req.json()) as {
       tier: 'PRO' | 'ELITE';
       billingCycle?: 'monthly' | 'annual';
-      region: PaymentRegion;
+      provider?: 'paddle' | 'paypro';
     };
+    const { tier, billingCycle } = body;
+    const providerId = body.provider === 'paypro' ? 'paypro' : 'paddle';
+    const region: PaymentRegion = providerId === 'paypro' ? 'PK' : 'GLOBAL';
+    const currency = providerId === 'paypro' ? 'PKR' : 'USD';
 
     if (tier !== 'PRO' && tier !== 'ELITE') {
       return NextResponse.json({ status: 'error', error: 'Invalid plan selected' }, { status: 400 });
     }
-    if (region !== 'INTERNATIONAL' && region !== 'PAKISTAN') {
-      return NextResponse.json({ status: 'error', error: 'Invalid payment region' }, { status: 400 });
-    }
-    if (region === 'INTERNATIONAL') {
+    if (!isPaymentRegionConfigured(region, req.headers)) {
+      const providerLabel = providerId === 'paypro' ? 'PayPro' : 'Paddle';
       return NextResponse.json(
-        { status: 'manual_required', error: 'Card/Paddle checkout abhi disabled hai. PayPro ya manual Easypaisa/JazzCash use karein.' },
+        {
+          status: 'checkout_unavailable',
+          error: `${providerLabel} checkout abhi configure nahi hua.`,
+        },
         { status: 400 }
       );
     }
-    if (!isPaymentRegionConfigured(region)) {
-      return NextResponse.json(
-        { status: 'manual_required', error: 'Online checkout is not configured yet. Manual Easypaisa/JazzCash payment is currently available.' },
-        { status: 400 }
-      );
-    }
-
-    // Currency is resolved server-side from the user's own profile — never
-    // trusted from the client — same board->country logic the pricing page
-    // uses for anonymous visitors (see lib/constants.ts).
-    const { data: profile } = await supabase.from('profiles').select('board').eq('id', user.id).single();
-    const currency = getCurrencyForBoard(profile?.board);
 
     const provider = getPaymentProvider(region);
     const appUrl = getSiteUrl();

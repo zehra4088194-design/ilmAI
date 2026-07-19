@@ -24,6 +24,7 @@ export function VisionScanClient() {
   const settings = usePlatformSettings();
   const tier = user?.subscriptionTier || 'FREE';
   const plan = settings.subscriptionPlans[tier];
+  const audience = user?.educationLevel || 'school';
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [scanType, setScanType] = useState('textbook_page');
@@ -38,7 +39,7 @@ export function VisionScanClient() {
   const onFile = (next: File | null) => {
     if (!next) return;
     if (!next.type.startsWith('image/')) {
-      toast.error('Sirf image upload karo.');
+      toast.error('Upload an image only.');
       return;
     }
     if (next.size > 4 * 1024 * 1024) {
@@ -66,7 +67,7 @@ export function VisionScanClient() {
       }
       setResult(json.data);
     } catch {
-      toast.error('Scan process nahi ho saka.');
+      toast.error('The scan could not be processed.');
     } finally {
       setLoading(false);
     }
@@ -80,7 +81,7 @@ export function VisionScanClient() {
         </Badge>
         <h1 className="text-2xl font-bold">Scan & Solve</h1>
         <p className="text-muted-foreground">
-          Textbook, handwritten answer, formula ya diagram scan karo aur step-by-step explanation lo.
+          Scan a textbook, handwritten answer, formula, or diagram and get a step-by-step explanation.
         </p>
       </div>
 
@@ -101,8 +102,8 @@ export function VisionScanClient() {
               ) : (
                 <>
                   <Camera className="mb-3 h-10 w-10 text-violet-400" />
-                  <p className="font-semibold">Camera se photo lo ya image upload karo</p>
-                  <p className="text-muted-foreground mt-1 text-sm">Mobile par camera directly open hoga.</p>
+                  <p className="font-semibold">Take a photo with your camera or upload an image</p>
+                  <p className="text-muted-foreground mt-1 text-sm">The camera will open directly on mobile.</p>
                   <p className="text-muted-foreground mt-1 text-xs">Maximum image size 4MB.</p>
                 </>
               )}
@@ -149,11 +150,14 @@ export function VisionScanClient() {
             <Card className="min-h-72">
               <CardContent className="flex min-h-72 flex-col items-center justify-center p-8 text-center">
                 <FileImage className="text-muted-foreground/50 mb-3 h-10 w-10" />
-                <p className="font-semibold">Result yahan show hoga</p>
+                <p className="font-semibold">Your result will appear here</p>
                 <p className="text-muted-foreground mt-1 text-sm">
-                  {plan.name}: {plan.limits.ocrPrintedWeekly < 0 ? 'Unlimited' : plan.limits.ocrPrintedWeekly} printed
-                  aur {plan.limits.ocrHandwrittenWeekly < 0 ? 'Unlimited' : plan.limits.ocrHandwrittenWeekly}{' '}
-                  handwritten scans/week.
+                  {plan.name}: {plan.limits.ocrPrintedMonthly < 0 ? 'Unlimited' : plan.limits.ocrPrintedMonthly} printed
+                  aur{' '}
+                  {plan.audienceLimits[audience].ocrHandwrittenMonthly < 0
+                    ? 'Unlimited'
+                    : plan.audienceLimits[audience].ocrHandwrittenMonthly}{' '}
+                  handwritten scans/month.
                 </p>
               </CardContent>
             </Card>
@@ -166,11 +170,11 @@ export function VisionScanClient() {
                     <Sparkles className="h-4 w-4 text-violet-400" /> OCR Text
                   </div>
                   <p className="text-muted-foreground text-sm leading-6 whitespace-pre-wrap">
-                    {result.ocr_text || 'Text clearly extract nahi hua.'}
+                    {result.ocr_text || 'Text could not be extracted clearly.'}
                   </p>
                   {typeof result.remaining_scans === 'number' && result.remaining_scans >= 0 && (
                     <p className="text-muted-foreground mt-2 text-xs">
-                      {result.remaining_scans} scans is week baqi hain.
+                      {result.remaining_scans} scans remaining this month.
                     </p>
                   )}
                 </CardContent>

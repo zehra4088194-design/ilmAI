@@ -15,7 +15,7 @@ export function ResearchProjectStarter() {
 
   const create = async () => {
     if (!title.trim()) {
-      toast.error('Research project ka title likho.');
+      toast.error('Enter a title for the research project.');
       return;
     }
     setLoading(true);
@@ -32,7 +32,7 @@ export function ResearchProjectStarter() {
       }
       router.push(`/university/research/${json.data.id}`);
     } catch {
-      toast.error('Workspace create nahi ho saka.');
+      toast.error('The workspace could not be created.');
     } finally {
       setLoading(false);
     }

@@ -9,7 +9,7 @@ export default function AdminQuestionsPage() {
       <div>
         <h1 className="text-2xl font-bold">Question Bank</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Class, subject, chapter aur topic select karke MCQs aur short questions manually add karo.
+          Select a class, subject, chapter, and topic to add MCQs and short questions manually.
         </p>
       </div>
       <QuestionBankManager />

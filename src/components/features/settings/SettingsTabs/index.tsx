@@ -33,6 +33,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { DownloadsClient } from '@/components/features/offline/DownloadsClient';
 import { ParentQrScanner } from '@/components/features/parent/ParentQrScanner';
 import Link from 'next/link';
+import { disablePushNotifications, enablePushNotifications } from '@/lib/push/client';
 
 const DEFAULT_NOTIFICATION_PREFERENCES = {
   browserNotifications: true,
@@ -284,14 +285,9 @@ export function SettingsTabs({
   const handleNotificationSave = async () => {
     setNotificationSaving(true);
     try {
-      if (
-        notificationPreferences.browserNotifications &&
-        typeof window !== 'undefined' &&
-        'Notification' in window &&
-        window.Notification.permission === 'default'
-      ) {
-        await window.Notification.requestPermission().catch(() => undefined);
-      }
+      const pushResult = notificationPreferences.browserNotifications
+        ? await enablePushNotifications()
+        : await disablePushNotifications().then(() => ({ status: 'disabled' as const }));
       const res = await fetch('/api/preferences/notifications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -303,12 +299,32 @@ export function SettingsTabs({
         return;
       }
       setNotificationPreferences(normalizeNotificationPreferences(json.data?.preferences));
-      toast.success('Notification preferences save ho gayi!');
+      if (pushResult.status === 'denied') {
+        toast.warning('Preferences saved, but browser notification permission was denied.');
+      } else {
+        toast.success('Notification preferences saved.');
+      }
     } catch {
       toast.error('Notification preferences save nahi hui');
     } finally {
       setNotificationSaving(false);
     }
+  };
+
+  const handleLanguageChange = async (nextLocale: Locale) => {
+    if (locale === nextLocale) return;
+    const previousLocale = locale;
+    setLocale(nextLocale);
+    const { error } = await (supabase.from('profiles') as any)
+      .update({ preferred_language: nextLocale, updated_at: new Date().toISOString() })
+      .eq('id', localProfile.id);
+    if (error) {
+      setLocale(previousLocale);
+      toast.error('Language save nahi hui. Database migration check karein.');
+      return;
+    }
+    setLocalProfile((current: any) => ({ ...current, preferred_language: nextLocale }));
+    toast.success(nextLocale === 'en' ? 'Language changed to English.' : 'Language Roman Urdu mein update ho gayi!');
   };
 
   const handleLinkParent = async () => {
@@ -589,17 +605,7 @@ export function SettingsTabs({
                     </span>
                     <span className="bg-border h-px flex-1" />
                   </div>
-                  <ParentQrScanner
-                    onLinked={async () => {
-                      const { data } = await supabase
-                        .from('parent_student_links')
-                        .select('id, parent_id')
-                        .eq('student_id', localProfile.id)
-                        .eq('status', 'approved')
-                        .maybeSingle();
-                      setApprovedLink(data);
-                    }}
-                  />
+                  <ParentQrScanner />
                   <p className="text-muted-foreground text-xs">
                     Parent apne dashboard se &ldquo;Generate Invite Code&rdquo; pe click kar ke ye code bana sakte hain.
                   </p>
@@ -674,7 +680,7 @@ export function SettingsTabs({
             </div>
           )}
           {activeTab === 'security' && (
-            <p className="text-muted-foreground text-sm">Password change aur 2FA settings jald aayengi.</p>
+            <p className="text-muted-foreground text-sm">Password change and 2FA settings are coming soon.</p>
           )}
           {activeTab === 'appearance' && (
             <div className="space-y-4">
@@ -684,7 +690,7 @@ export function SettingsTabs({
                   Theme
                 </h3>
                 <p className="text-muted-foreground text-sm">
-                  Apni study vibe choose karo. Server aglay page load par sirf isi theme ka light/dark pair bhejega.
+                  Choose your study style. The server loads only this theme&apos;s light/dark pair on the next page load.
                 </p>
               </div>
               <ThemePicker />
@@ -695,7 +701,7 @@ export function SettingsTabs({
               <div className="rounded-xl border border-amber-500/25 bg-amber-500/10 p-5">
                 <h3 className="font-semibold">App-only Downloads are a Pro feature</h3>
                 <p className="text-muted-foreground mt-1 text-sm">
-                  Pro/Elite files app ke private offline storage mein save aur read ki ja sakti hain.
+                  Pro and Elite files can be saved and read in the app&apos;s private offline storage.
                 </p>
                 <Button asChild variant="gradient" className="mt-4">
                   <Link href="/subscription">View Pro Plans</Link>
@@ -717,10 +723,7 @@ export function SettingsTabs({
                 {LOCALES.map((value: Locale) => (
                   <button
                     key={value}
-                    onClick={() => {
-                      setLocale(value);
-                      toast.success(t('settings.language.saved'));
-                    }}
+                    onClick={() => void handleLanguageChange(value)}
                     className={cn(
                       'flex items-center justify-center gap-2 rounded-xl border-2 p-3 text-sm font-medium transition-all',
                       locale === value

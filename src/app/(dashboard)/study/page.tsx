@@ -108,12 +108,11 @@ export default async function StudyPage() {
 
             <div className="space-y-2">
               <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
-                Study material ab sirf flat list nahi, proper structure ke sath.
+                Study material with a clear, structured path.
               </h1>
               <p className="max-w-2xl text-sm leading-6 text-muted-foreground md:text-base">
-                Yahan tumhare board aur class ke mutabiq subjects milenge, har subject ke andar
-                chapter preview bhi nazar aayega taa-ke books aur chapters dono ek nazar me clear
-                hon.
+                Find subjects for your board and class, with chapter previews inside each subject so
+                books and chapters are easy to navigate.
               </p>
             </div>
 
@@ -145,13 +144,13 @@ export default async function StudyPage() {
               {[
                 {
                   icon: <Layers3 className="h-4 w-4 text-cyan-300" />,
-                  title: boardMeta?.label || 'Apna board set karo',
-                  text: 'Board ko top level par highlight kiya gaya hai taa-ke irrelevant cheezen kam dikhen.',
+                  title: boardMeta?.label || 'Set your board',
+                  text: 'Your board is highlighted at the top so irrelevant content stays out of the way.',
                 },
                 {
                   icon: <BookOpen className="h-4 w-4 text-emerald-300" />,
                   title: `${subjects?.length || 0} subject${subjects?.length === 1 ? '' : 's'} ready`,
-                  text: 'Har card me chapter preview aur direct subject open action milega.',
+                  text: 'Every card includes a chapter preview and a direct action to open the subject.',
                 },
                 {
                   icon: <BookMarked className="h-4 w-4 text-amber-300" />,
@@ -175,14 +174,14 @@ export default async function StudyPage() {
       <section className="space-y-4">
         <div className="flex items-end justify-between gap-3">
           <div>
-            <h2 className="text-2xl font-bold">Subjects aur unke chapter previews</h2>
+            <h2 className="text-2xl font-bold">Subjects and chapter previews</h2>
             <p className="text-sm text-muted-foreground">
-              Har subject ke andar ka structure yahin se skim kar lo, phir detail me khol lo.
+              Preview each subject structure here, then open it for the full detail.
             </p>
           </div>
           {(!activeBoard || !activeGrade) && (
             <p className="text-right text-xs text-muted-foreground">
-              Board ya class set nahi hai, is liye abhi wider catalog dikh raha hai.
+              No board or class is set, so the wider catalog is currently shown.
             </p>
           )}
         </div>
@@ -249,12 +248,12 @@ export default async function StudyPage() {
                         ))}
                         {visibleChapters.length === 0 && (
                           <p className="text-sm text-muted-foreground">
-                            Is subject ki chapter list jald hi yahan show hogi.
+                            This subject&apos;s chapter list will appear here soon.
                           </p>
                         )}
                         {visibleChapters.length > 4 && (
                           <p className="text-xs font-medium text-violet-300">
-                            +{visibleChapters.length - 4} aur chapters andar available hain
+                            +{visibleChapters.length - 4} more chapters are available inside
                           </p>
                         )}
                       </div>
@@ -271,7 +270,7 @@ export default async function StudyPage() {
           })}
           {(!subjects || subjects.length === 0) && (
             <div className="col-span-full rounded-3xl border border-dashed border-border/70 bg-card/60 px-6 py-16 text-center text-muted-foreground">
-              Is board/class ke liye abhi subjects available nahi hain. Thori dair baad dobara check karo.
+              No subjects are currently available for this board and class. Please check again later.
             </div>
           )}
         </div>

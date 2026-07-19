@@ -11,9 +11,9 @@ export default function PrivacyPage() {
     <StaticContentPage
       eyebrow="Legal"
       title="Privacy Policy"
-      description="Ye Privacy Policy batati hai ke ilm AI user data ko kaise collect, use, protect, aur retain karta hai jab aap website, dashboard, AI features, payments, aur parent tools use karte hain."
+      description="This Privacy Policy explains how ilm AI collects, uses, protects, and retains user data when you use the website, dashboard, AI features, payments, and parent tools."
       sideTitle="Questions about data?"
-      sideText="Agar aapko data handling, account removal, ya privacy concerns par sawal hai to support team se direct rabta karein."
+      sideText="If you have questions about data handling, account removal, or privacy, contact our support team directly."
       sideActions={[
         { href: '/contact', label: 'Contact Support', variant: 'gradient' },
         { href: '/terms', label: 'Read Terms of Service' },
@@ -22,42 +22,42 @@ export default function PrivacyPage() {
         {
           title: 'What we collect',
           bullets: [
-            'Account data jaise naam, email address, board, grade, aur subscription tier.',
-            'Learning activity jaise quiz attempts, notes, routines, bookmarks, flashcards, aur progress records.',
-            'Parent linking data, messages, aur attachments jab parent dashboard features use kiye jate hain.',
-            'Payment-related metadata jo provider verification aur subscription management ke liye zaroori ho.',
+            'Account data such as name, email address, board, grade, and subscription tier.',
+            'Learning activity such as quiz attempts, notes, routines, bookmarks, flashcards, and progress records.',
+            'Parent-linking data, messages, and attachments when parent dashboard features are used.',
+            'Payment-related metadata required for provider verification and subscription management.',
           ],
         },
         {
           title: 'How we use your data',
           bullets: [
-            'Account chalane, dashboard personalize karne, aur academic recommendations dene ke liye.',
-            'AI tools ko better context dene ke liye, jaise board, grade, aur selected subjects.',
-            'Subscription activation, billing verification, aur abuse prevention ke liye.',
-            'Support issues diagnose karne aur platform improve karne ke liye.',
+            'To operate the account, personalize the dashboard, and provide academic recommendations.',
+            'To give AI tools better context, such as board, grade, and selected subjects.',
+            'For subscription activation, billing verification, and abuse prevention.',
+            'To diagnose support issues and improve the platform.',
           ],
         },
         {
           title: 'Who processes sensitive AI data',
           paragraphs: [
-            'Saare raw AI aur scan provider secrets directly browser ya public frontend mein expose nahi kiye jate.',
-            'AI aur OCR requests secure gateway ke zariye route hoti hain. External providers request process kar sakte hain sirf response generate karne ke liye.',
+            'Raw AI and scan provider secrets are never exposed directly in the browser or public frontend.',
+            'AI and OCR requests are routed through a secure gateway. External providers may process a request only to generate its response.',
           ],
         },
         {
           title: 'Data storage and protection',
           bullets: [
-            'User records secure backend services mein store kiye jate hain.',
-            'Private attachments aur parent-linked files protected storage access rules ke sath rakhi jati hain.',
-            'Hum unauthorized access, misuse, aur accidental disclosure ko limit karne ke liye technical safeguards use karte hain.',
+            'User records are stored in secure backend services.',
+            'Private attachments and parent-linked files use protected storage access rules.',
+            'We use technical safeguards to limit unauthorized access, misuse, and accidental disclosure.',
           ],
         },
         {
           title: 'User choices',
           bullets: [
-            'Aap apna profile data update kar sakte hain.',
-            'Aap support ke zariye account deletion ya data removal request bhej sakte hain.',
-            'Aap marketing ya support communication preferences ke hawale se humse direct rabta kar sakte hain.',
+            'You can update your profile data.',
+            'You can request account deletion or data removal through support.',
+            'You can contact us directly about marketing or support communication preferences.',
           ],
         },
       ]}

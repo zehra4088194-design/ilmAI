@@ -31,7 +31,7 @@ export function NoteEditor({ note }: { note: any }) {
       .from('notes')
       .update({ title, content, is_starred: starred, folder: folder.trim() || null, updated_at: new Date().toISOString() })
       .eq('id', note.id);
-    if (error) toast.error('Save nahi hua'); else toast.success('Saved âœ“');
+    if (error) toast.error('The note could not be saved.'); else toast.success('Saved');
     setSaving(false);
   }, [title, content, starred, folder, note.id, supabase]);
 
@@ -69,18 +69,18 @@ export function NoteEditor({ note }: { note: any }) {
 
   const aiSummarize = async () => {
     if (!canUseAiSummary) {
-      toast.info('AI Summary Pro mein unlock hoti hai.');
+      toast.info('AI Summary is available on the Pro plan.');
       return;
     }
-    if (!content.trim()) { toast.error('Pehle kuch likho'); return; }
+    if (!content.trim()) { toast.error('Write something first.'); return; }
     setAiSummarizing(true);
     try {
       const res = await fetch('/api/ai/summarize', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: content }) });
       const json = await res.json();
       if (json.status === 'error') { toast.error(json.error); return; }
       setContent(c => `${c}\n\n---\nðŸ“‹ AI Summary:\n${json.data.summary}`);
-      toast.success('Summary add ho gayi!');
-    } catch { toast.error('Summary generate nahi ho saki'); }
+      toast.success('Summary added.');
+    } catch { toast.error('The summary could not be generated.'); }
     finally { setAiSummarizing(false); }
   };
 
@@ -122,7 +122,7 @@ export function NoteEditor({ note }: { note: any }) {
             onChange={e => setFolder(e.target.value)}
             onBlur={() => setEditingFolder(false)}
             onKeyDown={e => { if (e.key === 'Enter') setEditingFolder(false); }}
-            placeholder="Folder ka naam..."
+            placeholder="Folder name..."
             className="text-xs px-2 py-1 rounded-md bg-violet-500/10 text-violet-300 border border-violet-500/20 outline-none w-40"
           />
         ) : (
@@ -131,7 +131,7 @@ export function NoteEditor({ note }: { note: any }) {
             className="text-xs px-2 py-1 rounded-full bg-violet-500/10 text-violet-300 hover:bg-violet-500/20 transition-colors flex items-center gap-1 w-fit"
           >
             <Folder className="w-3 h-3" />
-            {folder || 'Folder set karo'}
+            {folder || 'Set a folder'}
           </button>
         )}
       </div>
@@ -147,7 +147,7 @@ export function NoteEditor({ note }: { note: any }) {
         <button onClick={() => applyFormat('list')} title="Bullet list" className="p-2 rounded-md hover:bg-muted transition-colors">
           <List className="w-4 h-4" />
         </button>
-        <span className="text-[10px] text-muted-foreground ml-2">Markdown supported â€” **bold**, ## heading, - list</span>
+        <span className="text-[10px] text-muted-foreground ml-2">Markdown supported: **bold**, ## heading, - list</span>
       </div>
 
       {/* Content */}
@@ -155,7 +155,7 @@ export function NoteEditor({ note }: { note: any }) {
         ref={textareaRef}
         value={content}
         onChange={e => setContent(e.target.value)}
-        placeholder="Yahan likhna shuru karo... ya ðŸ“· scan button se textbook page scan karo"
+        placeholder="Start writing here, or use the scan button to scan a textbook page"
         className="w-full min-h-[calc(100vh-22rem)] bg-transparent border-none outline-none resize-none text-sm leading-relaxed placeholder:text-muted-foreground/40"
       />
     </div>

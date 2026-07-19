@@ -8,7 +8,7 @@ export default function HumanizerPage() {
     <div className="mx-auto max-w-6xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold">AI Humanizer</h1>
-        <p className="text-muted-foreground">AI-like text ko natural, readable aur personalized study draft mein convert karo.</p>
+        <p className="text-muted-foreground">Convert AI-like text into a natural, readable, personalized study draft.</p>
       </div>
       <AIHumanizerTool />
     </div>

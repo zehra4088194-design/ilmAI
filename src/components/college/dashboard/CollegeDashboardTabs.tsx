@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useTheme } from 'next-themes';
-import { FileText, Video, DownloadCloud, LockKeyhole, Loader2, Maximize2 } from 'lucide-react';
+import { BookOpen, FileText, Video, DownloadCloud, LockKeyhole, Loader2, Maximize2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,6 @@ import {
   fetchProtectedResourceResponse,
 } from '@/components/features/resources/ProtectedResourceReader';
 import { ResourceAiTools } from '@/components/features/resources/ResourceAiTools';
-import { ResourcePreviewFrame } from '@/components/features/resources/ResourcePreviewFrame';
 import { saveOfflineResourceResponse } from '@/lib/offline/resources';
 import { toast } from 'sonner';
 
@@ -120,7 +119,7 @@ export function CollegeDashboardTabs({
       );
       toast.success('College file app Downloads mein save ho gayi.');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Offline save nahi ho saka.');
+      toast.error(error instanceof Error ? error.message : 'Offline save failed.');
     } finally {
       setDownloadingId(null);
     }
@@ -229,13 +228,11 @@ export function CollegeDashboardTabs({
                         key={resource.id}
                         className="glass border-border/60 bg-card/60 space-y-4 rounded-2xl border p-4 backdrop-blur-xl transition-shadow hover:shadow-md"
                       >
-                        <ResourcePreviewFrame
-                          kind="college-resource"
-                          resourceId={resource.id}
-                          mode={mode}
-                          title={resource.title}
-                          className="border-border aspect-[4/3] w-full rounded-xl border"
-                        />
+                        <div className="from-primary/10 via-background to-cyan-500/10 flex aspect-[4/3] items-center justify-center rounded-xl border bg-gradient-to-br">
+                          <div className="border-primary/20 bg-background/75 flex h-16 w-16 items-center justify-center rounded-2xl border shadow-lg">
+                            <BookOpen className="text-primary h-7 w-7" />
+                          </div>
+                        </div>
                         <div className="flex items-start justify-between gap-4">
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">

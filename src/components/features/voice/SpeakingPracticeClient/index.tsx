@@ -55,7 +55,7 @@ export function SpeakingPracticeClient() {
 
   const submit = async () => {
     if (!transcript.trim()) {
-      toast.error('Transcript likho ya speech-to-text se fill karo.');
+      toast.error('Write a transcript or fill it using speech-to-text.');
       return;
     }
     setLoading(true);
@@ -73,7 +73,7 @@ export function SpeakingPracticeClient() {
       }
       setFeedback({ score: json.data.score, text: json.data.feedback });
     } catch {
-      toast.error('Speaking feedback generate nahi ho saki.');
+      toast.error('Speaking feedback could not be generated.');
     } finally {
       setLoading(false);
     }
@@ -84,7 +84,7 @@ export function SpeakingPracticeClient() {
       <div>
         <Badge variant="secondary" className="mb-3">Pro+</Badge>
         <h1 className="text-2xl font-bold">AI Speaking Practice</h1>
-        <p className="text-muted-foreground">Prompt read karo, record karo, transcript paste/likho, phir AI pronunciation aur viva confidence feedback dega.</p>
+        <p className="text-muted-foreground">Read the prompt, record yourself, paste or write the transcript, and get AI pronunciation and viva-confidence feedback.</p>
       </div>
       <Card>
         <CardContent className="space-y-4 p-5">
@@ -113,7 +113,7 @@ export function SpeakingPracticeClient() {
             )}
           </div>
           {audioBlob && <audio src={URL.createObjectURL(audioBlob)} controls className="w-full" />}
-          <textarea value={transcript} onChange={(event) => setTranscript(event.target.value)} rows={5} className="w-full rounded-xl border bg-background p-3 text-sm" placeholder="Apni speech ka transcript yahan likho/paste karo..." />
+          <textarea value={transcript} onChange={(event) => setTranscript(event.target.value)} rows={5} className="w-full rounded-xl border bg-background p-3 text-sm" placeholder="Write or paste your speech transcript here..." />
           <Button variant="gradient" onClick={submit} disabled={loading}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <WandSparkles className="h-4 w-4" />}
             Get AI feedback

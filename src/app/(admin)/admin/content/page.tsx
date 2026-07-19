@@ -21,7 +21,7 @@ export default async function AdminContentPage({ searchParams }: { searchParams:
       <div>
         <h1 className="text-2xl font-bold">Content Management</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Class select karo, phir us class ke subjects aur chapters manage karo. Board aur grade tags se curriculum separate rahega.
+          Select a class, then manage its subjects and chapters. Board and grade tags keep curricula separate.
         </p>
       </div>
 
@@ -58,7 +58,7 @@ export default async function AdminContentPage({ searchParams }: { searchParams:
             </Card>
           </Link>
         ))}
-        {(!subjects || subjects.length === 0) && <p className="text-muted-foreground col-span-full text-center py-8">Is class ke liye koi subject nahi mila.</p>}
+        {(!subjects || subjects.length === 0) && <p className="text-muted-foreground col-span-full text-center py-8">No subjects found for this class.</p>}
       </div>
     </div>
   );

@@ -27,11 +27,11 @@ export const COUNTRY_BOARD_DEFAULTS: Record<string, string> = {
   IN: 'CBSE',
 };
 
-export type Currency = 'PKR' | 'INR';
+export type Currency = 'USD' | 'PKR';
 
 export const CURRENCY_SYMBOLS: Record<Currency, string> = {
+  USD: '$',
   PKR: 'Rs.',
-  INR: 'Rs.',
 };
 
 export const MANUAL_PAYMENT_OPTIONS = [
@@ -49,9 +49,9 @@ export function getCountryForBoard(board?: string | null): 'PK' | 'IN' {
   return entry?.country === 'IN' ? 'IN' : 'PK';
 }
 
-/** Country code (from /api/geo or a resolved board) -> display currency. */
+/** Pakistan uses fixed PKR pricing; every other country uses USD. */
 export function getCurrencyForCountry(country?: string | null): Currency {
-  return country === 'IN' ? 'INR' : 'PKR';
+  return country?.toUpperCase() === 'PK' ? 'PKR' : 'USD';
 }
 
 /**
@@ -67,13 +67,13 @@ export const SUBSCRIPTION_PLANS = {
   FREE: {
     name: 'Free',
     price: {
+      USD: { monthly: 0, annual: 0 },
       PKR: { monthly: 0, annual: 0 },
-      INR: { monthly: 0, annual: 0 },
     },
     limits: { aiMessages: 10, quizzes: 3, flashcards: 50, pastPapers: false, downloadPDF: false },
     features: [
       '10 side-chat messages/day',
-      '3 shared AI tool uses/day',
+      '20 shared weighted AI credits/week',
       '10 printed and 5 handwritten scans/week',
       '3 University Hub uses/week',
       'Read notes/books in-app',
@@ -84,13 +84,13 @@ export const SUBSCRIPTION_PLANS = {
   PRO: {
     name: 'Pro',
     price: {
-      PKR: { monthly: 500, annual: 4800 },
-      INR: { monthly: 149, annual: 1499 },
+      USD: { monthly: 2.99, annual: 28.7 },
+      PKR: { monthly: 849, annual: 8150 },
     },
-    limits: { aiMessages: 20, quizzes: 20, flashcards: 1000, pastPapers: true, downloadPDF: true },
+    limits: { aiMessages: 20, quizzes: 10, flashcards: 1000, pastPapers: true, downloadPDF: true },
     features: [
-      '20 shared AI tool uses/day',
-      'Unlimited OCR.space printed scans and 50 handwritten scans/week',
+      '8 shared AI tool uses/day',
+      '50 printed and 10 handwritten scans/week',
       '1000 flashcards',
       'All past papers',
       'PDF downloads unlocked',
@@ -102,16 +102,16 @@ export const SUBSCRIPTION_PLANS = {
   ELITE: {
     name: 'Elite',
     price: {
-      PKR: { monthly: 800, annual: 7680 },
-      INR: { monthly: 299, annual: 2999 },
+      USD: { monthly: 4.99, annual: 47.9 },
+      PKR: { monthly: 1399, annual: 13430 },
     },
-    limits: { aiMessages: 50, quizzes: 50, flashcards: -1, pastPapers: true, downloadPDF: true },
+    limits: { aiMessages: 40, quizzes: 25, flashcards: 5000, pastPapers: true, downloadPDF: true },
     features: [
-      '50 shared AI tool uses/day',
+      '15 shared AI tool uses/day',
       'Offline mode',
       'Live Voice Call coming soon',
-      'Pro AI model tier',
-      '200 printed and 100 handwritten scans/week',
+      'Priority AI routing when capacity is available',
+      '100 printed and 25 handwritten scans/week',
       'Elite parent insights',
       'Exam simulations',
       'Parent dashboard',

@@ -1,61 +1,54 @@
-# Free-Tier Deployment Checklist
+# Oracle Free-Tier Launch Checklist
 
-This checklist starts after `20260715150000_institution_usage_indexes.sql`.
+Use this short checklist after following `ORACLE_COOLIFY_DEPLOYMENT.md`.
 
-## 1. Supabase SQL Editor
+## Supabase migrations
 
-Run these complete files in this exact order:
+If the last migration you manually ran was `20260717100000_profile_academic_institution.sql`, run these complete files in order:
 
-1. `supabase/migrations/20260715180000_library_theme_resource_links.sql`
-2. `supabase/migrations/20260716120000_gender_private_resource_ai_realtime.sql`
+1. `20260717120000_oracle_runtime_settings.sql`
+2. `20260717123000_paddle_plan_prices.sql`
+3. `20260717150000_resource_catalog_sections.sql`
+4. `20260717163000_regional_billing.sql`
+5. `20260717164000_audience_plan_entitlements.sql`
+6. `20260717165000_resource_processing_queue.sql`
+7. `20260717166000_notification_dismiss_policy.sql`
+8. `20260717167000_profile_preferred_language.sql`
+9. `20260717168000_subject_condition_baseline.sql`
+10. `20260717169000_payment_provider_paypro.sql`
+11. `20260719090000_weighted_ai_credits.sql`
+12. `20260719100000_resource_mcq_sets.sql`
+13. `20260719110000_diagnostic_mastery.sql`
+14. `20260719130000_public_resource_catalog.sql`
+15. `20260719140000_user_data_retention.sql`
+16. `20260719200000_push_subscriptions.sql`
 
-The second migration updates the existing `parent-attachments` bucket to a private 4MB limit. It also adds gender enforcement, protected resource context columns, restricted source-URL grants, and Parent/Study Buddy Realtime tables.
+These migrations add Oracle runtime settings, regional billing, audience-specific plan limits, processing queues, diagnostics/mastery, public catalog indexing, two-day transient-data retention, and push subscriptions.
 
-No additional migration is required for provider budgets or storage retention. Provider budgets are stored inside the existing `platform_settings.value` JSON, and retention uses existing tables.
+## Coolify
 
-## 2. Cloudflare Worker
+1. Deploy the repository as a Docker Compose resource using `docker-compose.oracle.yml`.
+2. Paste every required value from `.env.oracle.example` into Coolify.
+3. Attach the public domain only to service `web`, port `3000`.
+4. Keep `ai-gateway`, `ocr`, `valkey`, and `cron` private; do not publish ports `8787`, `8000`, or `6379`.
+5. Redeploy whenever a `NEXT_PUBLIC_*` value changes because those values are compiled into the browser bundle.
 
-Replace the deployed Worker with `cloudflare-worker/worker.js`, then configure:
-
-- `GATEWAY_SECRET`
-- `GROQ_API_KEYS_JSON`
-- `GROK_API_KEYS_JSON`
-- `GEMINI_API_KEYS_JSON`
-- `OCR_API_KEYS_JSON`
-- `OPENROUTER_API_KEYS_JSON`
-- `CLAUDE_API_KEYS_JSON` only when paid credits exist
-- `GPT_API_KEYS_JSON` only when paid credits exist
-
-Each pool is a JSON array with up to 20 unique keys. Numbered secrets remain compatible, but JSON pools keep the Worker below the Free plan's environment-variable limit.
-
-## 3. Vercel Environment
-
-Confirm Production has the same values that pass `node scripts/check-env.js`, especially:
-
-- `AI_GATEWAY_URL`
-- `AI_GATEWAY_SECRET` matching the Worker's `GATEWAY_SECRET` exactly
-- `UPSTASH_REDIS_REST_URL`
-- `UPSTASH_REDIS_REST_TOKEN`
-- `CRON_SECRET`
-- Supabase URL, anon key, and service-role key
-
-Deploy the app after the Worker. `vercel.json` will register the daily storage-cleanup cron.
-
-## 4. Admin Settings
-
-Open Admin Settings and save once. This persists the normalized plan limits and platform provider budgets. Keep Claude and GPT at 0 unless paid credits are intentionally available. Tune Grok according to promotional credits in its provider dashboard.
-
-## 5. Smoke Tests
-
-Run:
+## Smoke tests
 
 ```powershell
 node scripts/check-env.js
 node scripts/check-ai-gateway.js
-node node_modules/typescript/bin/tsc --noEmit
-node node_modules/next/dist/bin/next build
+& 'C:\Program Files\nodejs\npm.cmd' run typecheck
+& 'C:\Program Files\nodejs\npm.cmd' test -- --run
+& 'C:\Program Files\nodejs\npm.cmd' run build
 ```
 
-Then test one printed scan, one handwritten scan, one themed Library PDF, Parent file upload/chat notification, Study Buddy gender restriction, and Admin provider-budget save.
+After deploy, verify `/api/health`, one printed scan, one handwritten scan, a protected themed PDF, Summary/Test with and without a companion `.txt`, Parent attachment/chat notification, Study Buddy gender restriction, and Admin plan/provider settings.
 
-Vercel Hobby is suitable for a private non-commercial beta, not a paid commercial launch. Move to an eligible hosting plan before accepting paid subscriptions in production.
+## Safe free-tier defaults
+
+- Oracle OCR concurrency: `1` job on the 2-OCPU Always Free VM.
+- Claude and GPT platform budgets: `0` until paid credits exist.
+- Printed OCR: self-hosted; handwriting: Gemini first, Tesseract fallback.
+- Valkey is private and capped at 192 MB with eviction.
+- Email Delivery includes a limited monthly allowance; watch the OCI dashboard rather than treating email as unlimited.

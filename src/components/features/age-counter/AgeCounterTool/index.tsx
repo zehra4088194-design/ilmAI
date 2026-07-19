@@ -115,10 +115,10 @@ export function AgeCounterTool() {
 
             <div className="flex items-center gap-3 bg-violet-500/10 border border-violet-500/20 rounded-xl p-4">
               <Calendar className="w-5 h-5 text-violet-400 shrink-0" />
-              <p className="text-sm">Agla birthday <strong>{result.nextBirthdayIn} din</strong> mein hai 🎉</p>
+              <p className="text-sm">Your next birthday is in <strong>{result.nextBirthdayIn} days</strong> 🎉</p>
             </div>
 
-            <Button variant="outline" onClick={handleReset}>Reset Karo</Button>
+            <Button variant="outline" onClick={handleReset}>Reset</Button>
           </motion.div>
         )}
       </AnimatePresence>

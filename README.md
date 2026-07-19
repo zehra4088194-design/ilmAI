@@ -1,58 +1,71 @@
 # ilm AI
 
-**Pakistan ka #1 AI-Powered Study Platform** — MCQs, AI Tutor, Guess Papers, Full Tests, OCR scanning, Study Routines, Parent Dashboard, aur bahut kuch.
+AI-powered study platform for school, college, and university students. It includes structured resources, themed PDF readers, AI tutoring and tests, OCR, parent/student linking, study buddies, subscriptions, and institution reporting.
 
-Made with ❤️ by **Hafiz M. Husnain Noor**
+## Local development
 
-## Quick Start
-
-```bash
-npm install
-cp .env.local.example .env.local # fill in your values
-node scripts/check-env.js # verify env vars
-npm run dev
+```powershell
+& 'C:\Program Files\nodejs\npm.cmd' install
+Copy-Item .env.local.example .env.local
+node scripts/check-env.js
+& 'C:\Program Files\nodejs\npm.cmd' run dev
 ```
 
-**Full setup instructions:** See `ilm-AI-Deployment-Guide.docx` in the project root — it covers Cloudflare Worker setup, Supabase, Payments (Paddle/PayPro), AdSense, and production deployment step by step.
+The web app can run without Redis in a single-process development or beta deployment. The private AI gateway and OCR service are required only for features that use them.
 
-## Key Features
+## Production architecture
 
-- 🤖 Multi-provider AI (Assistant/Claude/GPT/Gemini) with automatic 5-key rotation + silent failover
-- 📷 OCR scanning (OCR.space for printed, Gemini Vision for handwritten)
-- 🎯 AI Guess Papers, Full Board-Pattern Tests, AI Testing with MCQs, short and long questions
-- 📚 Library with Google Drive book links (Local + International)
-- 🎓 "Ask a Teacher" doubt board (AI-operated teacher accounts)
-- 📅 AI-generated personalized study routines
-- 👨‍👩‍👧 Parent Dashboard with weekly progress tracking
-- 💬 Site-wide floating AI chat widget
-- 💳 Subscriptions (Free/Pro/Elite) via Paddle (International) or PayPro (Pakistan), with Google AdSense on Free tier
-
-## Architecture
-
-```
-Browser → Next.js (Vercel) → Cloudflare Worker (AI Gateway) → Assistant/Claude/GPT/Gemini/OCR.space
-                            → Supabase (Postgres + Auth)
-                            → Upstash Redis (rate limiting)
-                            → Paddle / PayPro (payments)
+```text
+Browser / PWA / future Android wrapper
+  -> Oracle Always Free VM + Coolify
+     -> Next.js standalone web container
+     -> private Node AI gateway with provider rotation/fallback
+     -> private Tesseract/OCRmyPDF service
+     -> private persistent Valkey
+     -> private cron scheduler
+     -> managed Supabase: Postgres, Auth, Storage, Realtime
 ```
 
-All AI/OCR provider API keys live **only** in the Cloudflare Worker (`cloudflare-worker/worker.js`), never in the Next.js app itself.
+The app uses a Node.js standalone Docker image because several API routes require the Node runtime, document libraries, image processing, or server-side file handling. `docker-compose.oracle.yml` starts all five production services on the same private Docker network; only the `web` service receives a public domain.
 
-For protected file tests, configure `GROK_API_KEYS_JSON` in the Worker. The gateway accepts JSON arrays of up to 20 keys through `GROQ_API_KEYS_JSON`, `GROK_API_KEYS_JSON`, `CLAUDE_API_KEYS_JSON`, `GPT_API_KEYS_JSON`, `GEMINI_API_KEYS_JSON`, `OCR_API_KEYS_JSON`, and `OPENROUTER_API_KEYS_JSON`; old numbered secrets remain compatible. PDF/printed OCR uses OCR.space first, while handwritten OCR uses Gemini Vision first; both routes rotate keys and use budgeted cross-provider fallback.
+The current 2 OCPU/12 GB Oracle VM uses one web replica, one OCR worker, strict upload/page limits, and a 4 GB swap file. These limits prevent the OCR worker from exhausting the host but are not unlimited production capacity.
 
-Free-hosted beta safety is enforced in two layers: per-user plans and platform-wide provider budgets under Admin Settings. Upstash Redis is required in production so those counters are shared across Vercel instances. Temporary Vision originals and speaking audio are retained for 7 days, while parent attachments are retained for 30 days by `/api/cron/storage-cleanup`.
+## Optional free-tier services
 
-## Payments
+Supabase remains the source of truth. These integrations are additive and automatically fall back to the existing app behavior when they are not configured:
 
-Payments go through a provider abstraction in `src/lib/payments/` (`provider.ts` defines the interface; `paddle.ts` and `paypro.ts` implement it). The app never imports a payment gateway SDK directly — only `getPaymentProvider()` from `src/lib/payments/index.ts`. See that folder's comments for how to wire up real Paddle/PayPro credentials.
+- Sentry captures application errors with PII, replay, and high-volume tracing disabled by default.
+- Firebase Cloud Messaging adds background web notifications and reuses the same token table for the future Android app.
+- Cloudflare R2 stores new YouTube thumbnail caches and generated resource context sidecars; existing Supabase Storage objects remain valid.
+- Algolia can offload public catalog search. Keep `ALGOLIA_ENABLED=false` until `POST /api/cron/search-index` succeeds with the cron bearer token.
+- UptimeRobot needs no SDK. Monitor `/api/health` every five minutes; use `/api/health/ready` as a separate dependency-status monitor.
 
-## Project Structure
+All of these products have usage-limited free tiers. R2 and some production Algolia account options can require billing details, so provider budget alerts and hard quota controls should be configured before enabling them.
 
-```
-src/app/          Next.js App Router pages + API routes
-src/components/   React components (features/, ui/, layout/)
-src/lib/          AI gateway client, Supabase clients, payments, utils
-database/         SQL migrations, RLS policies, functions, seeds
-cloudflare-worker/ AI Gateway Worker source
-scripts/          Setup and maintenance scripts
+## Deployment
+
+1. In Coolify, create a Docker Compose resource from this repository's `main` branch.
+2. Set the base directory to `/` and the compose file to `docker-compose.oracle.yml`.
+3. Copy `.env.oracle.example` into Coolify and replace every required placeholder.
+4. Attach the HTTPS domain only to service `web`, port `3000`.
+5. Keep `ai-gateway`, `ocr`, `valkey`, and `cron` private.
+6. Update Supabase Auth Site URL and redirect URLs to the production HTTPS domain.
+
+See [docs/ORACLE_COOLIFY_DEPLOYMENT.md](docs/ORACLE_COOLIFY_DEPLOYMENT.md) for exact setup, migration, and smoke-test steps.
+
+## Data and file safety
+
+Raw AI keys remain only in the gateway secret store. Supabase resource buckets remain private. The OCR service uses a temporary directory and deletes it after every job. Free users read resources through authenticated server routes; no design can make a PDF impossible to capture by a determined browser user, so access checks, short-lived URLs, and watermarking are used instead.
+
+## Main directories
+
+```text
+src/app/             Next.js pages and API routes
+src/components/      Feature and UI components
+src/lib/             AI, OCR, Supabase, payments, limits, and utilities
+services/ocr/        Private printed OCR service
+services/cron/       Optional local/container maintenance scheduler
+cloudflare-worker/   AI gateway source and Wrangler configuration
+supabase/migrations/ Database migrations and policies
+scripts/             Validation, seeding, and maintenance scripts
 ```

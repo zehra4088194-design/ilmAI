@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { LibraryGrid } from '@/components/features/library/LibraryGrid';
+import { AdSenseBanner } from '@/components/features/ads/AdSenseBanner';
 
 export const metadata: Metadata = { title: 'Library' };
 
@@ -9,27 +10,28 @@ export default async function LibraryPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const { data: profile } = await supabase.from('profiles').select('board, grade_level').eq('id', user!.id).single();
+  const { data: profile } = user
+    ? await supabase.from('profiles').select('board, grade_level').eq('id', user.id).single()
+    : { data: null };
   const { data: resources } = await (supabase.from('library_resources') as any)
     .select(
-      'id, title, description, category, resource_type, subject_id, chapter_id, board, grade_level, file_type, created_at, subjects(name, color), chapters(name, order_index)'
+      'id, title, description, category, resource_type, book_title, content_section, has_context_text, subject_id, chapter_id, board, grade_level, file_type, created_at, subjects(id, name, slug, color), chapters(id, name, slug, order_index)'
     )
     .order('created_at', { ascending: false });
 
   const visibleResources = (resources || []).filter((resource: any) => {
     const boardVisible = !resource.board || resource.board === profile?.board;
-    const gradeVisible = profile?.grade_level
-      ? !resource.grade_level || resource.grade_level === profile.grade_level
-      : false;
+    const gradeVisible = !profile?.grade_level || !resource.grade_level || resource.grade_level === profile.grade_level;
     return boardVisible && gradeVisible;
   });
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Text Books & Notes</h1>
-        <p className="text-muted-foreground">Sirf aapki selected class ke text books aur notes</p>
+        <h1 className="text-2xl font-bold sm:text-3xl">Library</h1>
+        <p className="text-muted-foreground mt-1">Book select karein, phir chapter aur exact file section open karein.</p>
       </div>
+      <AdSenseBanner slot="inline" className="mx-auto max-w-5xl" />
       <LibraryGrid resources={visibleResources as any} />
     </div>
   );

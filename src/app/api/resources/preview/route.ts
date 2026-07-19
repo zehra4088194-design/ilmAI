@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { getProtectedResource, type ProtectedResourceKind, type ResourceMode } from '@/lib/resources/server';
-import { getEmbeddableFilePreviewUrl } from '@/lib/utils/filePreview';
+import {
+  fetchProtectedFile,
+  getPublicResource,
+  getProtectedResource,
+  type ProtectedResourceKind,
+  type ResourceMode,
+} from '@/lib/resources/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -14,7 +19,6 @@ export async function GET(req: NextRequest) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Login required hai.' }, { status: 401 });
 
     const kind = req.nextUrl.searchParams.get('kind') as ProtectedResourceKind | null;
     const id = req.nextUrl.searchParams.get('id');
@@ -23,18 +27,32 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid resource request.' }, { status: 400 });
     }
 
-    const resource = await getProtectedResource(user.id, kind, id, mode);
+    const resource = user
+      ? await getProtectedResource(user.id, kind, id, mode)
+      : kind === 'library' || kind === 'past-paper'
+        ? await getPublicResource(kind, id, mode)
+        : null;
     if (!resource) return NextResponse.json({ error: 'Resource available nahi hai.' }, { status: 404 });
 
-    const previewUrl = getEmbeddableFilePreviewUrl(resource.sourceUrl);
-    if (!previewUrl) {
-      return NextResponse.json({ error: 'Is file ka inline preview available nahi hai.' }, { status: 422 });
-    }
-
-    const response = NextResponse.redirect(previewUrl, 307);
-    response.headers.set('Cache-Control', 'private, no-store, max-age=0');
-    response.headers.set('Pragma', 'no-cache');
-    return response;
+    const remote = await fetchProtectedFile(resource);
+    if (!remote.body) throw new Error('Resource stream empty hai.');
+    const remoteContentType = remote.headers.get('content-type')?.toLowerCase() || '';
+    const contentType =
+      resource.fileType.toLowerCase().includes('pdf') &&
+      (!remoteContentType || remoteContentType === 'application/octet-stream')
+        ? 'application/pdf'
+        : remoteContentType || 'application/pdf';
+    const headers = new Headers({
+      'Content-Type': contentType,
+      'Content-Disposition': 'inline',
+      'Cache-Control': 'private, no-store, max-age=0',
+      Pragma: 'no-cache',
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'SAMEORIGIN',
+    });
+    const contentLength = remote.headers.get('content-length');
+    if (contentLength) headers.set('Content-Length', contentLength);
+    return new NextResponse(remote.body, { headers });
   } catch (error) {
     console.error('Resource preview failed:', error);
     return NextResponse.json(

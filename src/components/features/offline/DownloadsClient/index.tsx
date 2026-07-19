@@ -102,7 +102,7 @@ export function DownloadsClient({ embedded = false }: { embedded?: boolean }) {
             <WifiOff className="text-muted-foreground/50 mb-3 h-10 w-10" />
             <p className="font-semibold">No app downloads yet</p>
             <p className="text-muted-foreground mt-1 text-sm">
-              Library ya Past Papers par “Save in app for offline” use karo.
+              Use “Save in app for offline” on Library or Past Papers.
             </p>
           </CardContent>
         </Card>

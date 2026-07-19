@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdminUser } from '@/lib/admin/auth';
 import { extractGoogleDriveFileId, getGoogleDriveThumbnailUrl } from '@/lib/utils/filePreview';
+import { queueResourceContextProcessing } from '@/lib/resources/processing';
 import type { Database } from '@/lib/supabase/database.types';
 
 type LibraryUpdate = Database['public']['Tables']['library_resources']['Update'] & {
@@ -10,6 +11,8 @@ type LibraryUpdate = Database['public']['Tables']['library_resources']['Update']
   light_file_url?: string | null;
   dark_file_url?: string | null;
   context_text_url?: string | null;
+  book_title?: string | null;
+  content_section?: 'reading' | 'mcq' | 'short' | 'long';
 };
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -24,6 +27,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (body.description !== undefined) update.description = body.description;
   if (body.category !== undefined) update.category = body.category;
   if (body.resource_type !== undefined) (update as any).resource_type = body.resource_type;
+  if (body.book_title !== undefined) (update as any).book_title = body.book_title?.trim() || null;
+  if (body.content_section !== undefined) (update as any).content_section = body.content_section;
   if (body.subject_id !== undefined) update.subject_id = body.subject_id;
   if (body.chapter_id !== undefined) (update as any).chapter_id = body.chapter_id;
   if (body.board !== undefined) update.board = body.board;
@@ -79,7 +84,25 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
   if (!data) return NextResponse.json({ error: 'Resource nahi mila' }, { status: 404 });
 
-  return NextResponse.json({ resource: data });
+  const sourceChanged = body.light_file_url !== undefined || body.drive_url !== undefined;
+  const needsGeneratedContext =
+    body.context_text_url === null || body.context_text_url?.trim() === '' || (sourceChanged && !data.context_text_url);
+  let processingWarning: string | null = null;
+  if (needsGeneratedContext) {
+    try {
+      await queueResourceContextProcessing('library', id);
+    } catch (queueError) {
+      processingWarning =
+        queueError instanceof Error ? queueError.message : 'Automatic OCR queue start nahi ho saki.';
+      console.error('library context requeue error:', queueError);
+    }
+  }
+
+  return NextResponse.json({
+    resource: data,
+    contextStatus: needsGeneratedContext ? (processingWarning ? 'queue_failed' : 'queued') : 'provided',
+    warning: processingWarning,
+  });
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

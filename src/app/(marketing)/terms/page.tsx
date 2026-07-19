@@ -11,9 +11,9 @@ export default function TermsPage() {
     <StaticContentPage
       eyebrow="Legal"
       title="Terms of Service"
-      description="Ye Terms of Service ilm AI platform, AI tools, subscriptions, parent features, aur website use karne ke rules define karti hai. Platform use karne ka matlab hai ke aap in rules se agree karte hain."
+      description="These Terms of Service define the rules for using the ilm AI platform, AI tools, subscriptions, parent features, and website. Using the platform means you agree to these rules."
       sideTitle="Need clarification?"
-      sideText="Agar aapko billing, acceptable use, ya account restrictions par koi clarification chahiye ho to support se rabta karein."
+      sideText="If you need clarification about billing, acceptable use, or account restrictions, contact support."
       sideActions={[
         { href: '/contact', label: 'Ask Support', variant: 'gradient' },
         { href: '/privacy', label: 'Read Privacy Policy' },
@@ -22,40 +22,40 @@ export default function TermsPage() {
         {
           title: 'Use of the platform',
           bullets: [
-            'ilm AI educational support ke liye design ki gayi platform hai.',
-            'Aap apna account lawful aur honest tareeqe se use karenge.',
-            'Aap kisi doosre user ke account ya data ko unauthorized access karne ki koshish nahi karenge.',
-            'Aap platform ko spam, abuse, cheating automation, ya harmful activity ke liye use nahi karenge.',
+            'ilm AI is designed to provide educational support.',
+            'You will use your account lawfully and honestly.',
+            'You will not attempt to access another user\'s account or data without authorization.',
+            'You will not use the platform for spam, abuse, cheating automation, or harmful activity.',
           ],
         },
         {
           title: 'AI-generated content',
           bullets: [
             'AI responses guidance ke liye hoti hain; unhein final academic or professional advice ka exact substitute na samjhein.',
-            'Student ko apna kaam review karna aur academic policy ke mutabiq responsibly use karna zaroori hai.',
-            'Hum response quality improve karte rehte hain lekin har output ki absolute correctness guarantee nahi di jati.',
+            'Students must review their work and use AI responsibly according to their academic policy.',
+            'We continuously improve response quality, but cannot guarantee absolute correctness for every output.',
           ],
         },
         {
           title: 'Subscriptions and billing',
           bullets: [
-            'Paid plans feature access, quotas, aur limits ke sath aati hain.',
-            'Billing and payment processing external providers ke zariye handle ho sakti hai.',
-            'Agar payment fraud, abuse, ya reversal detect ho to account features temporarily restrict kiye ja sakte hain.',
+            'Paid plans include feature access, quotas, and limits.',
+            'Billing and payment processing may be handled by external providers.',
+            'If payment fraud, abuse, or reversal is detected, account features may be temporarily restricted.',
           ],
         },
         {
           title: 'Suspension and termination',
           bullets: [
-            'Hum abusive, fraudulent, ya policy-violating accounts ko suspend ya terminate kar sakte hain.',
-            'Aap support ke zariye apna account close karne ki request bhej sakte hain.',
+            'We may suspend or terminate abusive, fraudulent, or policy-violating accounts.',
+            'You can request account closure through support.',
           ],
         },
         {
           title: 'Service changes',
           paragraphs: [
-            'ilm AI apne features, pricing, limits, supported tools, aur platform behavior ko waqt ke sath update kar sakta hai.',
-            'Hum major operational changes ke liye reasonable communication maintain karne ki koshish karte hain.',
+            'ilm AI may update its features, pricing, limits, supported tools, and platform behavior over time.',
+            'We will try to provide reasonable communication about major operational changes.',
           ],
         },
       ]}

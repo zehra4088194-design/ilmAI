@@ -1,7 +1,8 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
-import Link from 'next/link';
-import { Bell, CheckCircle2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
+import { Bell, CheckCircle2, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { useNotifications } from '@/hooks/data/useNotifications';
@@ -10,7 +11,7 @@ import { cn } from '@/lib/utils/cn';
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { data: notifications, unreadCount, markAsRead, isLoading } = useNotifications();
+  const { data: notifications, unreadCount, markAsRead, dismiss, isLoading } = useNotifications();
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -50,50 +51,95 @@ export function NotificationBell() {
             {unreadCount > 0 && <span className="text-xs text-muted-foreground">{unreadCount} nayi</span>}
           </div>
 
-          {isLoading && <p className="px-4 py-6 text-sm text-muted-foreground text-center">Load ho raha hai...</p>}
+          {isLoading && <p className="px-4 py-6 text-sm text-muted-foreground text-center">Loading...</p>}
 
           {!isLoading && (!notifications || notifications.length === 0) && (
             <div className="px-4 py-7 text-center">
               <CheckCircle2 className="mx-auto mb-2 h-8 w-8 text-emerald-500" />
               <p className="text-sm font-semibold">No notifications</p>
-              <p className="mt-1 text-xs text-muted-foreground">Study routine, messages, requests aur progress alerts yahin aayenge.</p>
+              <p className="mt-1 text-xs text-muted-foreground">Study routine, messages, requests, and progress alerts will appear here.</p>
             </div>
           )}
 
-          {(notifications || []).map((n) => {
-            const body = (
-              <div
-                onClick={() => {
-                  if (!n.isRead) markAsRead(n.id);
-                  setOpen(false);
-                }}
-                className={cn(
-                  'px-4 py-3 border-b border-border last:border-0 cursor-pointer hover:bg-accent transition-colors',
-                  !n.isRead && 'bg-violet-500/5'
-                )}
-              >
-                <div className="flex items-start gap-2">
-                  {!n.isRead && <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-violet-500 flex-shrink-0" />}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium">{n.title}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{n.message}</p>
-                    <p className="text-[10px] text-muted-foreground mt-1">
-                      {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            );
-            return n.link ? (
-              <Link key={n.id} href={n.link}>
-                {body}
-              </Link>
-            ) : (
-              <div key={n.id}>{body}</div>
-            );
-          })}
+          {(notifications || []).map((notification) => (
+            <SwipeableNotification
+              key={notification.id}
+              notification={notification}
+              markAsRead={markAsRead}
+              dismiss={dismiss}
+              close={() => setOpen(false)}
+            />
+          ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function SwipeableNotification({
+  notification,
+  markAsRead,
+  dismiss,
+  close,
+}: {
+  notification: NonNullable<ReturnType<typeof useNotifications>['data']>[number];
+  markAsRead: (id: string) => void;
+  dismiss: (id: string) => void;
+  close: () => void;
+}) {
+  const router = useRouter();
+  const openDestination = () => {
+    if (!notification.isRead) markAsRead(notification.id);
+    close();
+    router.push(notification.link || '/dashboard');
+  };
+
+  return (
+    <div className="relative overflow-hidden border-b border-border last:border-0">
+      <div className="absolute inset-y-0 right-0 flex w-24 items-center justify-center bg-red-500 text-white">
+        <Trash2 className="h-5 w-5" />
+      </div>
+      <motion.div
+        drag="x"
+        dragConstraints={{ left: -104, right: 0 }}
+        dragElastic={0.08}
+        onDragEnd={(_event, info) => {
+          if (info.offset.x < -72 || info.velocity.x < -550) dismiss(notification.id);
+        }}
+        onClick={openDestination}
+        role="link"
+        tabIndex={0}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') openDestination();
+        }}
+        className={cn(
+          'relative cursor-pointer bg-card px-4 py-3 transition-colors hover:bg-accent',
+          !notification.isRead && 'bg-violet-500/5'
+        )}
+      >
+        <div className="flex items-start gap-2">
+          {!notification.isRead && <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-500" />}
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium">{notification.title}</p>
+            <p className="text-muted-foreground mt-0.5 text-xs">{notification.message}</p>
+            <p className="text-muted-foreground mt-1 text-[10px]">
+              {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+              <span className="ml-2 sm:hidden">Swipe left to dismiss</span>
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              dismiss(notification.id);
+            }}
+            className="text-muted-foreground hover:text-destructive hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg hover:bg-destructive/10 sm:flex"
+            aria-label="Dismiss notification"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
+      </motion.div>
     </div>
   );
 }

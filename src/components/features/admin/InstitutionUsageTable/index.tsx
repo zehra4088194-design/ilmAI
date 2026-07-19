@@ -26,10 +26,10 @@ export function InstitutionUsageTable() {
     try {
       const response = await fetch('/api/admin/institution-usage');
       const json = await response.json();
-      if (!response.ok) throw new Error(json.error || 'Usage load nahi hui');
+      if (!response.ok) throw new Error(json.error || 'Usage could not be loaded.');
       setItems(json.institutions || []);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Institution usage load nahi hui');
+      toast.error(error instanceof Error ? error.message : 'Institution usage could not be loaded.');
     } finally {
       setLoading(false);
     }
@@ -51,9 +51,9 @@ export function InstitutionUsageTable() {
       </CardHeader>
       <CardContent className="overflow-x-auto p-0">
         {loading ? (
-          <p className="text-muted-foreground p-6 text-sm">Usage load ho rahi hai...</p>
+          <p className="text-muted-foreground p-6 text-sm">Loading usage...</p>
         ) : items.length === 0 ? (
-          <p className="text-muted-foreground p-6 text-sm">Abhi kisi school/college ko plan assign nahi hua.</p>
+          <p className="text-muted-foreground p-6 text-sm">No school or college plan has been assigned yet.</p>
         ) : (
           <table className="w-full min-w-[950px] text-sm">
             <thead>

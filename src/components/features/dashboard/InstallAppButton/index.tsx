@@ -56,8 +56,8 @@ export function InstallAppButton() {
     const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
     toast.info(
       isIos
-        ? 'Safari mein Share button dabao, phir “Add to Home Screen” select karo.'
-        : 'Browser menu se “Install app” ya “Add to Home screen” select karo.',
+        ? 'Tap the Share button in Safari, then select “Add to Home Screen”.'
+        : 'Open the browser menu and select “Install app” or “Add to Home screen”.',
       { duration: 6500 }
     );
   };

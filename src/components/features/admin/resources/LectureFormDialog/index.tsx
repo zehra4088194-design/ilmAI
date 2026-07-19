@@ -106,18 +106,18 @@ export function LectureFormDialog({ open, onOpenChange, lecture, onSaved }: Prop
 
   function handleUrlChange(value: string) {
     setForm((current) => ({ ...current, youtube_url: value }));
-    setUrlError(value && !isValidYouTubeUrl(value) ? 'Yeh valid YouTube link nahi lag raha' : null);
+    setUrlError(value && !isValidYouTubeUrl(value) ? 'This is not a valid YouTube link.' : null);
   }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
 
     if (!form.chapter_id) {
-      setError('Chapter select karna zaroori hai');
+      setError('Chapter is required.');
       return;
     }
     if (!isValidYouTubeUrl(form.youtube_url)) {
-      setUrlError('Yeh valid YouTube link nahi lag raha');
+      setUrlError('This is not a valid YouTube link.');
       return;
     }
 
@@ -141,7 +141,7 @@ export function LectureFormDialog({ open, onOpenChange, lecture, onSaved }: Prop
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || data.details || 'Save nahi ho saka');
+      if (!res.ok) throw new Error(data.error || data.details || 'Save failed.');
 
       await onSaved();
       onOpenChange(false);
@@ -232,7 +232,7 @@ export function LectureFormDialog({ open, onOpenChange, lecture, onSaved }: Prop
               ) : (
                 <div className="flex flex-col items-center gap-1 text-muted-foreground">
                   <ImageOff className="h-5 w-5" />
-                  <span className="text-xs">{form.youtube_url ? 'Thumbnail nahi mila' : 'Thumbnail yahan dikhega'}</span>
+                  <span className="text-xs">{form.youtube_url ? 'Thumbnail not found' : 'Thumbnail will appear here'}</span>
                 </div>
               )}
             </div>

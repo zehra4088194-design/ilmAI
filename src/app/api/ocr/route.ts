@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           status: 'error',
-          error: `${mode === 'handwritten' ? 'Handwritten' : 'Printed'} scans ki weekly limit complete ho gayi. ${new Date(limitCheck.reset).toLocaleDateString('en-PK')} ko reset hogi.`,
+          error: `${mode === 'handwritten' ? 'Handwritten' : 'Printed'} scans ki monthly limit complete ho gayi. ${new Date(limitCheck.reset).toLocaleDateString('en-PK')} ko reset hogi.`,
         },
         { status: 429 }
       );

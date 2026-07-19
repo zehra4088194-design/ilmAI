@@ -39,20 +39,20 @@ export function ChatInput({ onSend, disabled, value, onChange, textareaRef }: Ch
   // we prefix it so the AI knows this came from a scanned question/homework
   const handleScannedText = (extractedText: string) => {
     if (!extractedText) {
-      toast.error('Koi text nahi mila is image mein');
+      toast.error('No text was found in this image.');
       return;
     }
-    setText(text ? `${text}\n\n${extractedText}` : `Is sawal ko explain karo:\n\n${extractedText}`);
+    setText(text ? `${text}\n\n${extractedText}` : `Explain this question:\n\n${extractedText}`);
     activeTextareaRef.current?.focus();
   };
 
   return (
-    <div className="p-4 border-t border-border">
+    <div className="border-border px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:px-4 sm:pt-3">
       <div className="flex items-end gap-2 glass rounded-2xl border border-border/50 p-2">
         <ScanUpload
           onTextExtracted={handleScannedText}
           trigger={
-            <Button variant="ghost" size="icon" className="shrink-0" title="Photo se sawal scan karo">
+            <Button variant="ghost" size="icon" className="shrink-0" title="Scan a question from a photo">
               <Camera className="w-4 h-4" />
             </Button>
           }
@@ -66,16 +66,16 @@ export function ChatInput({ onSend, disabled, value, onChange, textareaRef }: Ch
             e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
           }}
           onKeyDown={handleKeyDown}
-          placeholder="Apna sawal yahan likho ya camera se scan karo..."
+          placeholder="Write your question here or scan it with the camera..."
           rows={1}
           disabled={disabled}
-          className="flex-1 bg-transparent resize-none outline-none text-sm py-2 max-h-32 placeholder:text-muted-foreground disabled:opacity-50"
+          className="max-h-32 min-w-0 flex-1 resize-none bg-transparent py-2 text-sm outline-none placeholder:text-muted-foreground disabled:opacity-50"
         />
         <Button variant="gradient" size="icon" className="shrink-0" onClick={handleSend} disabled={disabled || !text.trim()}>
           <Send className="w-4 h-4" />
         </Button>
       </div>
-      <p className="text-xs text-muted-foreground text-center mt-2">ilm AI mistakes kar sakta hai. Important info verify kar lena.</p>
+      <p className="text-muted-foreground mt-1.5 hidden text-center text-[11px] sm:block">ilm AI can make mistakes. Verify important information.</p>
     </div>
   );
 }

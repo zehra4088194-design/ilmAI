@@ -5,7 +5,7 @@ export const metadata: Metadata = { title: 'Age Counter' };
 export default function AgeCounterPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <div><h1 className="text-2xl font-bold">Age Counter 🎂</h1><p className="text-muted-foreground">Apni date of birth daalo, exact age saal/mahine/din mein dekho</p></div>
+      <div><h1 className="text-2xl font-bold">Age Counter 🎂</h1><p className="text-muted-foreground">Enter your date of birth to see your exact age in years, months, and days.</p></div>
       <AgeCounterTool />
     </div>
   );

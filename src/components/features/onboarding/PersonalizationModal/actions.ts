@@ -9,9 +9,13 @@ interface PersonalizationData {
   totalMarksPercentage?: number;
   targetMarksPercentage?: number;
   optionalSubjectIds?: string[];
+  subjectConditionBaseline?: Record<string, 'strong' | 'steady' | 'needs-work'>;
 }
 
-type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
+type ProfileUpdate = Database['public']['Tables']['profiles']['Update'] & {
+  subject_condition_baseline?: Record<string, 'strong' | 'steady' | 'needs-work'>;
+  baseline_completed_at?: string;
+};
 
 export async function savePersonalization(data: PersonalizationData) {
   const supabase = await createClient();
@@ -46,8 +50,15 @@ export async function savePersonalization(data: PersonalizationData) {
   if (data.optionalSubjectIds !== undefined) {
     update.optional_subject_ids = data.optionalSubjectIds;
   }
+  if (data.subjectConditionBaseline !== undefined) {
+    update.subject_condition_baseline = data.subjectConditionBaseline;
+    update.baseline_completed_at = new Date().toISOString();
+  }
 
-  const { error } = await supabase.from('profiles').update(update).eq('id', user.id);
+  const { error } = await supabase
+    .from('profiles')
+    .update(update as any)
+    .eq('id', user.id);
 
   if (error) {
     console.error('[savePersonalization] Update failed:', error);

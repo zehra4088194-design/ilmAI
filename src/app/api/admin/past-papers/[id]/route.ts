@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdminUser } from '@/lib/admin/auth';
+import { queueResourceContextProcessing } from '@/lib/resources/processing';
 import type { Database } from '@/lib/supabase/database.types';
 
 type PastPaperUpdate = Database['public']['Tables']['past_papers']['Update'] & {
@@ -43,7 +44,25 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
   if (!data) return NextResponse.json({ error: 'Past paper nahi mila' }, { status: 404 });
 
-  return NextResponse.json({ paper: data });
+  const sourceChanged = body.file_url !== undefined;
+  const needsGeneratedContext =
+    body.context_text_url === null || body.context_text_url?.trim() === '' || (sourceChanged && !data.context_text_url);
+  let processingWarning: string | null = null;
+  if (needsGeneratedContext) {
+    try {
+      await queueResourceContextProcessing('past-paper', id);
+    } catch (queueError) {
+      processingWarning =
+        queueError instanceof Error ? queueError.message : 'Automatic OCR queue start nahi ho saki.';
+      console.error('past paper context requeue error:', queueError);
+    }
+  }
+
+  return NextResponse.json({
+    paper: data,
+    contextStatus: needsGeneratedContext ? (processingWarning ? 'queue_failed' : 'queued') : 'provided',
+    warning: processingWarning,
+  });
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

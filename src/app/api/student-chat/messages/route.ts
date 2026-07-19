@@ -5,6 +5,7 @@ import { getPlanFromSettings } from '@/lib/platform-settings/shared';
 import { gatewayChat } from '@/lib/ai/gateway';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import { createNotificationIfEnabled, createNotificationsIfEnabled } from '@/lib/notifications/preferences';
+import { checkAiMessageLimit, getConfiguredLimitExceededMessage } from '@/lib/rate-limit';
 import type { SubscriptionTier } from '@/types';
 
 async function getUser() {
@@ -210,6 +211,10 @@ export async function POST(req: NextRequest) {
   const plan = getPlanFromSettings(settings, tier);
   if (!plan.access.studentChat) {
     return NextResponse.json({ error: 'Student chat messaging is plan mein locked hai. Free users request bhej/accept kar sakte hain.' }, { status: 403 });
+  }
+  const moderationLimit = await checkAiMessageLimit(user.id, tier, 'student_chat_moderation');
+  if (!moderationLimit.success) {
+    return NextResponse.json({ error: await getConfiguredLimitExceededMessage(tier, 'Study buddy safety check') }, { status: 429 });
   }
 
   const request = await getApprovedRequest(admin, requestId, user.id);

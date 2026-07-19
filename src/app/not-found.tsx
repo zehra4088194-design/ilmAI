@@ -9,9 +9,9 @@ export default function NotFound() {
         <Search className="w-10 h-10 text-violet-400" />
       </div>
       <h1 className="text-6xl font-bold gradient-text mb-4">404</h1>
-      <h2 className="text-xl font-semibold mb-2">Page Nahi Mila</h2>
-      <p className="text-muted-foreground mb-8 max-w-sm">Ye page exist nahi karta ya move ho gaya hai. Dashboard par wapis jao.</p>
-      <Button asChild variant="gradient"><Link href="/"><Home className="w-4 h-4" />Home Par Jao</Link></Button>
+      <h2 className="text-xl font-semibold mb-2">Page not found</h2>
+      <p className="text-muted-foreground mb-8 max-w-sm">This page does not exist or has moved. Return to the dashboard.</p>
+      <Button asChild variant="gradient"><Link href="/"><Home className="w-4 h-4" />Go home</Link></Button>
     </div>
   );
 }

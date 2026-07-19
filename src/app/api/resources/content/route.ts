@@ -4,6 +4,7 @@ import { getPlatformSettings } from '@/lib/platform-settings/server';
 import { getPlanFromSettings } from '@/lib/platform-settings/shared';
 import {
   fetchProtectedFile,
+  getPublicResource,
   getProtectedResource,
   type ProtectedResourceKind,
   type ResourceMode,
@@ -25,7 +26,6 @@ export async function POST(req: NextRequest) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Login required hai.' }, { status: 401 });
 
     const body = await req.json();
     const kind = body.kind as ProtectedResourceKind;
@@ -35,7 +35,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid resource request.' }, { status: 400 });
     }
 
-    const resource = await getProtectedResource(user.id, kind, body.id, mode);
+    const resource = user
+      ? await getProtectedResource(user.id, kind, body.id, mode)
+      : kind === 'library' || kind === 'past-paper'
+        ? await getPublicResource(kind, body.id, mode)
+        : null;
     if (!resource) return NextResponse.json({ error: 'Resource available nahi hai.' }, { status: 404 });
     if (purpose === 'offline') {
       const settings = await getPlatformSettings();

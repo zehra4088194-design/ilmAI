@@ -2,7 +2,7 @@
 // ============================================
 // IMAGE COMPRESSION — runs in the browser before OCR upload
 // Shrinks large photos to ≤1400px on longest side, JPEG at 85% quality.
-// This keeps uploads under OCR provider limits (OCR.space free = 1MB,
+// This keeps uploads efficient for self-hosted OCR and Gemini fallback,
 // Gemini Vision = 20MB) without the user having to think about it.
 // ============================================
 

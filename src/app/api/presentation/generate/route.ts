@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { checkUniversityFeatureLimit, getUniversityLimitExceededMessage } from '@/lib/rate-limit';
+import { checkAiMessageLimit, checkPresentationLimit } from '@/lib/rate-limit';
 import { generatePresentationDeck } from '@/lib/presentation/generator';
 import type { PresentationGenerateInput } from '@/lib/presentation/types';
 import type { SubscriptionTier } from '@/types';
@@ -39,15 +39,25 @@ export async function POST(req: NextRequest) {
       .single();
 
     const tier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
-    const limitCheck = await checkUniversityFeatureLimit(user.id, tier, 'university_presentation');
-    if (!limitCheck.success) {
+    const requestedSlides = cleanNumber(body.slideCount, 8, 4, 24);
+    const presentationLimit = await checkPresentationLimit(user.id, tier, requestedSlides);
+    if (!presentationLimit.success) {
       return NextResponse.json(
         {
           status: 'error',
-          error: await getUniversityLimitExceededMessage(tier, limitCheck.scope, 'AI Presentation Builder'),
+          error:
+            presentationLimit.maxSlides <= 0
+              ? 'AI Presentation Builder Pro/Elite plans mein unlock hota hai.'
+              : requestedSlides > presentationLimit.maxSlides
+                ? `Aap ke plan mein maximum ${presentationLimit.maxSlides} slides per presentation hain.`
+                : 'Presentations ki monthly plan limit complete ho gayi.',
         },
-        { status: 429 }
+        { status: tier === 'FREE' ? 403 : 429 }
       );
+    }
+    const aiLimit = await checkAiMessageLimit(user.id, tier, 'university_presentation');
+    if (!aiLimit.success) {
+      return NextResponse.json({ status: 'error', error: 'Shared AI credits complete ho gaye.' }, { status: 429 });
     }
 
     const input: PresentationGenerateInput = {
@@ -57,7 +67,7 @@ export async function POST(req: NextRequest) {
         Array.isArray(profile?.university_courses) ? profile?.university_courses?.[0] || 'General' : 'General',
         160
       ),
-      slideCount: cleanNumber(body.slideCount, 8, 4, 24),
+      slideCount: requestedSlides,
       tone: cleanString(body.tone, 'Professional', 80),
       audienceLevel: cleanString(body.audienceLevel, 'University students', 120),
       language: cleanString(body.language, 'English', 80),
@@ -65,7 +75,7 @@ export async function POST(req: NextRequest) {
       mode: body.mode === 'bulk' ? 'bulk' : 'per-slide',
     };
 
-    const deck = await generatePresentationDeck(input, 'pro');
+    const deck = await generatePresentationDeck(input, tier === 'ELITE' ? 'medium' : 'mini');
     return NextResponse.json({ status: 'success', data: { deck, mode: input.mode } });
   } catch (error) {
     console.error('Presentation generate route error:', error);

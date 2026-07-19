@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { createNotificationIfEnabled } from '@/lib/notifications/preferences';
+import { getParentLinkAccess } from '@/lib/parent/access';
+import { checkParentAttachmentLimits } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -9,17 +11,6 @@ const BUCKET = 'parent-attachments';
 const MAX_FILE_SIZE = 4 * 1024 * 1024;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf'];
 const SIGNED_URL_TTL = 60 * 60; // 1 hour
-
-async function getApprovedLink(linkId: string, userId: string) {
-  const admin = await createAdminClient();
-  const { data } = await admin
-    .from('parent_student_links')
-    .select('id, parent_id, student_id, status')
-    .eq('id', linkId)
-    .maybeSingle();
-  if (!data || data.status !== 'approved' || (data.parent_id !== userId && data.student_id !== userId)) return null;
-  return { admin, link: data };
-}
 
 async function ensureBucket(admin: Awaited<ReturnType<typeof createAdminClient>>) {
   const { error } = await admin.storage.getBucket(BUCKET);
@@ -44,8 +35,14 @@ export async function GET(req: NextRequest) {
     const linkId = req.nextUrl.searchParams.get('linkId');
     if (!linkId) return NextResponse.json({ status: 'error', error: 'linkId required hai' }, { status: 400 });
 
-    const access = await getApprovedLink(linkId, user.id);
+    const access = await getParentLinkAccess(linkId, user.id);
     if (!access) return NextResponse.json({ status: 'error', error: 'Ye link aapka nahi hai' }, { status: 403 });
+    if (!access.plan.access.parentDashboard || access.plan.limits.parentAttachmentFilesMonthly <= 0) {
+      return NextResponse.json(
+        { status: 'error', error: 'Parent shared files linked student ke Pro/Elite plan mein available hain.' },
+        { status: 403 }
+      );
+    }
 
     const { admin } = access;
     const { data, error } = await admin
@@ -98,9 +95,15 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate the authenticated sender before using the service-role client.
-    const access = await getApprovedLink(linkId, user.id);
+    const access = await getParentLinkAccess(linkId, user.id);
     if (!access) {
       return NextResponse.json({ status: 'error', error: 'Ye link aapka nahi hai' }, { status: 403 });
+    }
+    if (!access.plan.access.parentDashboard || access.plan.limits.parentAttachmentFilesMonthly <= 0) {
+      return NextResponse.json(
+        { status: 'error', error: 'Parent file sharing linked student ke Pro/Elite plan mein available hai.' },
+        { status: 403 }
+      );
     }
     const { admin, link } = access;
     await ensureBucket(admin);
@@ -116,6 +119,18 @@ export async function POST(req: NextRequest) {
     if (uploadError) {
       console.error('Attachment upload error:', uploadError);
       return NextResponse.json({ status: 'error', error: 'File upload nahi hui' }, { status: 500 });
+    }
+
+    const quota = await checkParentAttachmentLimits(link.student_id!, access.tier, file.size);
+    if (!quota.success) {
+      await admin.storage.from(BUCKET).remove([path]);
+      return NextResponse.json(
+        {
+          status: 'error',
+          error: `Is month ki parent file limit complete ho gayi (${access.plan.limits.parentAttachmentFilesMonthly} files / ${access.plan.limits.parentAttachmentMegabytesMonthly}MB).`,
+        },
+        { status: 429 }
+      );
     }
 
     const { data: record, error: insertError } = await admin

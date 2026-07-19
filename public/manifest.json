@@ -1,13 +1,25 @@
 {
+  "id": "/",
   "name": "ilm AI",
   "short_name": "ilm AI",
   "description": "Pakistan aur India ka #1 AI-Powered Study Platform",
-  "start_url": "/dashboard",
+  "start_url": "/dashboard?source=pwa",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["education", "productivity"],
   "background_color": "#0a0118",
   "theme_color": "#7c3aed",
   "icons": [
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "shortcuts": [
+    { "name": "AI Tutor", "short_name": "Tutor", "url": "/ai-tutor?source=shortcut" },
+    { "name": "Library", "short_name": "Library", "url": "/library?source=shortcut" },
+    { "name": "Scan Notes", "short_name": "Scan", "url": "/scan?source=shortcut" }
   ]
 }

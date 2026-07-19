@@ -38,7 +38,7 @@ Used a **lightweight, cookie-based i18n system** instead of `next-intl`'s URL-pr
 | File | Change |
 |---|---|
 | `src/app/layout.tsx` | Now an `async` server component. Reads `NEXT_LOCALE` from `cookies()`, falls back to `en` if missing/invalid, and sets `<html lang={locale} dir={isRtl(locale) ? 'rtl' : 'ltr'}>`. Passes `locale` down to `<Providers>`. |
-| `src/middleware.ts` | Added `applyLocaleCookie(request, response)`: if the visitor has **no** `NEXT_LOCALE` cookie yet, reads `x-vercel-ip-country` / `cf-ipcountry` (same headers `/api/geo` already uses) and sets the cookie via `localeForCountry()` — Pakistan → Urdu, India → Hindi, else English. Never overwrites an existing cookie, so an explicit choice from the LanguageSwitcher/Settings is always respected. Applied to every response branch (admin redirect, protected-route redirect, auth-route redirect, pass-through). |
+| `src/middleware.ts` | Locale middleware historically used a hosting country header. The Oracle deployment now uses the reverse-proxy `x-country-code`/`cf-ipcountry` behavior exposed by `/api/geo`; explicit language choices still take priority. |
 | `src/providers/index.tsx` (`Providers`) | Now accepts a `locale` prop and wraps children in `<I18nProvider initialLocale={locale}>`, nested outside `ThemeProvider`. |
 | `src/components/features/landing/Navbar/index.tsx` | Nav links (`Features`, `Boards`, `Pricing`, `Blog`) and CTA buttons (`Login`, `Get Started Free`, `Dashboard`, `Start Free`) now pulled from `t('navbar.*')`. `<LanguageSwitcher />` added to both the desktop bar and the mobile header (next to the menu toggle). |
 | `src/components/layout/DashboardNavbar/index.tsx` | `<LanguageSwitcher />` added next to the existing theme toggle button. |
@@ -114,4 +114,4 @@ Google Drive cannot overwrite a file in place, so every edit created a new `inde
 ## 8. Migrations & Environment Variables
 
 - **Database migrations:** none. No new tables or columns were introduced.
-- **Environment variables:** none. Locale detection reuses the same `x-vercel-ip-country` / `cf-ipcountry` headers already used by `/api/geo`.
+- **Environment variables:** none. Locale detection can use the same `x-country-code` / `cf-ipcountry` headers already used by `/api/geo`.

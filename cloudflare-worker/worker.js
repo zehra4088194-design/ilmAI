@@ -7,23 +7,21 @@
  * talks to this Worker over HTTPS with a shared secret.
  *
  * WHAT IT DOES
- * - Holds up to 20 keys per provider (Assistant, Grok, Claude, GPT, Gemini, OCR.space)
+ * - Holds up to 20 keys per AI provider (Assistant, Grok, Claude, GPT, Gemini)
  * - Accepts one JSON key-pool secret per provider, avoiding the Workers Free
  *   limit of 64 environment variables
  * - Rotates the starting key and retries a bounded subset when a key is unavailable
  * - If all keys fail, it can fall back to Assistant unless strict provider mode is requested
  *   so an empty provider response is never sent to the student
- * - Routes OCR: printed text to OCR.space, handwritten/messy to Gemini Vision,
- *   each with up to 20 keys and cross-provider fallback
+ * - Routes handwritten/messy OCR to Gemini Vision. Printed OCR runs in the
+ *   private Tesseract/OCRmyPDF container.
  * - Mints short-lived ephemeral tokens for Live Voice Call (see LIVE VOICE
  *   section below) so the browser can talk to Gemini Live directly without
  *   ever seeing a real API key. The token also locks in AUDIO transcription
  *   (input + output) so the Next.js backend can turn a voice lesson into
  *   Short Notes + Flashcards when the call ends (see /api/voice/session-end).
  *
- * DEPLOY: Cloudflare Dashboard → Workers & Pages → Create → paste this file →
- * add the secrets listed in SECRETS REFERENCE below → Deploy.
- * Full step-by-step is in the "ilm AI - Deployment Guide.docx" file.
+ * DEPLOY: use cloudflare-worker/wrangler.toml and set the secrets listed below.
  *
  * ------------------------------------------------------------
  * SECRETS REFERENCE (set under Settings → Variables and Secrets)
@@ -35,7 +33,7 @@
  * CLAUDE_API_KEYS_JSON -> JSON array with up to 20 Anthropic keys
  * GPT_API_KEYS_JSON -> JSON array with up to 20 OpenAI keys
  * GEMINI_API_KEYS_JSON -> JSON array with up to 20 Gemini keys
- * OCR_API_KEYS_JSON -> JSON array with up to 20 OCR.space keys
+ * OCRSPACE_API_KEYS_JSON -> JSON array with up to 20 OCR.space keys
  * OPENROUTER_API_KEYS_JSON -> JSON array with up to 20 OpenRouter keys
  * Numbered PREFIX_1 .. PREFIX_20 secrets remain backwards-compatible.
  *
@@ -119,12 +117,13 @@ Rules:
 - Tum FBISE, provincial boards (Punjab, Sindh, KPK), O/A Levels, aur CBSE/ICSE curricula ke mutabiq kisi bhi subject — Math, Physics, Chemistry, Biology, English, Urdu, Computer Science — mein madad kar sakte ho.`;
 
 // Daily call ceilings PER USER for non-default providers, by model tier.
-// (Actual per-user counting happens in the Next.js backend via Supabase + Upstash —
+// (Actual per-user counting happens in the Next.js backend via Supabase and the
+// optional shared quota store —
 // this object is just exposed back in responses so the backend can display/enforce it.)
 const TIER_DAILY_LIMITS = { mini: 10, medium: 7, pro: 3 };
 
 const KEY_COUNT = 20;
-const DEFAULT_KEY_ATTEMPTS = 12;
+const DEFAULT_KEY_ATTEMPTS = KEY_COUNT;
 const RETRYABLE_STATUS = new Set([401, 403, 429, 500, 502, 503, 504]);
 const keyCursors = new Map();
 
@@ -168,12 +167,12 @@ function getKeys(env, prefix) {
  * Rotates to next key on auth/rate-limit/server errors.
  * Does NOT rotate on 400 (bad request) — rotating won't fix a malformed request.
  */
-async function withKeyRotation(keys, callFn, label, maxAttempts = DEFAULT_KEY_ATTEMPTS) {
+async function withKeyRotation(keys, callFn, label, maxAttempts = DEFAULT_KEY_ATTEMPTS, cursorKey = label) {
   if (!keys.length) return { ok: false, error: `No keys configured for ${label}` };
   let lastError = null;
-  const start = keyCursors.get(label) || 0;
+  const start = keyCursors.get(cursorKey) || 0;
   const attemptCount = Math.min(keys.length, Math.max(1, maxAttempts));
-  keyCursors.set(label, (start + attemptCount) % keys.length);
+  keyCursors.set(cursorKey, (start + 1) % keys.length);
 
   for (let i = 0; i < attemptCount; i++) {
     const keyIndex = (start + i) % keys.length;
@@ -184,7 +183,7 @@ async function withKeyRotation(keys, callFn, label, maxAttempts = DEFAULT_KEY_AT
           lastError = `${label} key #${keyIndex + 1} returned an empty response`;
           continue;
         }
-        keyCursors.set(label, (keyIndex + 1) % keys.length);
+        keyCursors.set(cursorKey, (keyIndex + 1) % keys.length);
         return { ok: true, data: result.data, keyIndexUsed: keyIndex + 1 };
       }
       if (!RETRYABLE_STATUS.has(result.status)) {
@@ -310,7 +309,7 @@ async function withOpenRouterFallback(env, messages, maxTokens, temperature) {
   if (!keys.length) return { ok: false, error: 'No keys configured for OpenRouter' };
 
   let lastError = null;
-  let attemptsRemaining = 12;
+  let attemptsRemaining = KEY_COUNT;
   for (const model of OPENROUTER_FALLBACK_MODELS) {
     if (attemptsRemaining <= 0) break;
     const attemptsForModel = Math.min(2, attemptsRemaining);
@@ -318,7 +317,8 @@ async function withOpenRouterFallback(env, messages, maxTokens, temperature) {
       keys,
       (k) => callOpenRouter(k, model, messages, maxTokens, temperature),
       `OpenRouter ${model}`,
-      attemptsForModel
+      attemptsForModel,
+      'openrouter'
     );
     if (result.ok) return { ...result, modelUsed: model };
     lastError = result.error;
@@ -371,33 +371,30 @@ async function callGeminiVisionOcr(key, base64Image, mimeType, env) {
   return { ok: false, status: 502, error: lastError || 'Gemini Vision OCR failed' };
 }
 
-async function callOcrSpace(key, base64Image, mimeType) {
+async function callOcrSpace(key, base64Image, mimeType, language = 'eng') {
   const form = new FormData();
-  const byteChars = atob(base64Image);
-  const byteNumbers = new Array(byteChars.length);
-  for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
-  const blob = new Blob([new Uint8Array(byteNumbers)], { type: mimeType });
-  form.append('file', blob, mimeType === 'application/pdf' ? 'scan.pdf' : 'scan.jpg');
-  form.append('apikey', key);
-  form.append('language', 'eng');
-  form.append('OCREngine', '2');
-  form.append('scale', 'true');
+  form.append('base64Image', `data:${mimeType};base64,${base64Image}`);
+  form.append('language', language === 'urd' ? 'urd' : 'eng');
+  form.append('isOverlayRequired', 'false');
   form.append('detectOrientation', 'true');
+  form.append('scale', 'true');
+  form.append('OCREngine', '2');
 
-  const res = await fetch('https://api.ocr.space/parse/image', { method: 'POST', body: form });
+  const res = await fetch('https://api.ocr.space/parse/image', {
+    method: 'POST',
+    headers: { apikey: key },
+    body: form,
+  });
   if (!res.ok) return { ok: false, status: res.status, error: await res.text() };
-  const json = await res.json();
-  if (json.IsErroredOnProcessing) {
-    return {
-      ok: false,
-      status: 500,
-      error: Array.isArray(json.ErrorMessage) ? json.ErrorMessage.join(', ') : json.ErrorMessage,
-    };
+  const payload = await res.json();
+  if (payload.IsErroredOnProcessing) {
+    const messages = Array.isArray(payload.ErrorMessage) ? payload.ErrorMessage.join('; ') : payload.ErrorMessage;
+    return { ok: false, status: 422, error: messages || 'OCR.space could not process the file' };
   }
-  const text = (json.ParsedResults || [])
-    .map((page) => page?.ParsedText?.trim() || '')
-    .filter(Boolean)
-    .join('\n\n');
+  const text = (payload.ParsedResults || [])
+    .map((page) => page.ParsedText || '')
+    .join('\n\n')
+    .trim();
   return { ok: true, data: text };
 }
 
@@ -477,31 +474,41 @@ async function handleChat(req, env) {
     result = await withKeyRotation(
       getKeys(env, 'GROQ_API_KEY'),
       (k) => callGroq(k, model, messages, max_tokens, temperature),
-      'Assistant'
+      'Assistant',
+      DEFAULT_KEY_ATTEMPTS,
+      'groq'
     );
   } else if (provider === 'grok') {
     result = await withKeyRotation(
       getKeys(env, 'GROK_API_KEY'),
       (k) => callGrok(k, model, messages, max_tokens),
-      'Grok'
+      'Grok',
+      DEFAULT_KEY_ATTEMPTS,
+      'grok'
     );
   } else if (provider === 'claude') {
     result = await withKeyRotation(
       getKeys(env, 'CLAUDE_API_KEY'),
       (k) => callClaude(k, model, messages, max_tokens),
-      'Claude'
+      'Claude',
+      DEFAULT_KEY_ATTEMPTS,
+      'claude'
     );
   } else if (provider === 'gpt') {
     result = await withKeyRotation(
       getKeys(env, 'GPT_API_KEY'),
       (k) => callOpenAI(k, model, messages, max_tokens, temperature),
-      'GPT'
+      'GPT',
+      DEFAULT_KEY_ATTEMPTS,
+      'gpt'
     );
   } else if (provider === 'gemini') {
     result = await withKeyRotation(
       getKeys(env, 'GEMINI_API_KEY'),
       (k) => callGemini(k, model, messages, max_tokens, temperature),
-      'Gemini'
+      'Gemini',
+      DEFAULT_KEY_ATTEMPTS,
+      'gemini'
     );
   } else if (provider === 'openrouter') {
     result = await withOpenRouterFallback(env, messages, max_tokens, temperature);
@@ -531,7 +538,8 @@ async function handleChat(req, env) {
       getKeys(env, 'GROQ_API_KEY'),
       (k) => callGroq(k, MODEL_MAP.groq.mini, messages, max_tokens, temperature),
       'Assistant (fallback)',
-      8
+      DEFAULT_KEY_ATTEMPTS,
+      'groq'
     );
     if (fallback.ok) {
       return json({
@@ -559,40 +567,35 @@ async function handleChat(req, env) {
 // ---------------- ROUTE: /ocr ----------------
 async function handleOcr(req, env) {
   const body = await req.json();
-  const { mode = 'printed', imageBase64, mimeType = 'image/jpeg', strict_provider = false } = body;
+  const { imageBase64, mimeType = 'image/jpeg' } = body;
   if (!imageBase64) return json({ error: 'imageBase64 required' }, 400);
 
-  const ocrKeys = getKeys(env, 'OCR_API_KEY');
   const geminiKeys = getKeys(env, 'GEMINI_API_KEY');
+  const result = await withKeyRotation(
+    geminiKeys,
+    (key) => callGeminiVisionOcr(key, imageBase64, mimeType, env),
+    'Gemini Vision OCR',
+    DEFAULT_KEY_ATTEMPTS,
+    'gemini'
+  );
+  if (!result.ok) return json({ error: result.error || 'Gemini Vision OCR failed' }, 502);
+  return json({ text: result.data, providerUsed: 'gemini-vision' });
+}
 
-  if (mode === 'handwritten') {
-    let result = await withKeyRotation(
-      geminiKeys,
-      (k) => callGeminiVisionOcr(k, imageBase64, mimeType, env),
-      'Gemini Vision OCR'
-    );
-    if (!result.ok && !strict_provider) {
-      result = await withKeyRotation(ocrKeys, (k) => callOcrSpace(k, imageBase64, mimeType), 'OCR.space (fallback)');
-      if (result.ok) return json({ text: result.data, providerUsed: 'ocr-space', fallbackTriggered: true });
-    } else {
-      return json({ text: result.data, providerUsed: 'gemini-vision' });
-    }
-    return json({ error: result.error || 'OCR failed on all providers' }, 502);
-  }
+async function handleOcrSpace(req, env) {
+  const body = await req.json();
+  const { imageBase64, mimeType = 'image/jpeg', language = 'eng' } = body;
+  if (!imageBase64) return json({ error: 'imageBase64 required' }, 400);
 
-  // mode === 'printed' (default, free tier)
-  let result = await withKeyRotation(ocrKeys, (k) => callOcrSpace(k, imageBase64, mimeType), 'OCR.space');
-  if (!result.ok && !strict_provider) {
-    result = await withKeyRotation(
-      geminiKeys,
-      (k) => callGeminiVisionOcr(k, imageBase64, mimeType, env),
-      'Gemini Vision (fallback)'
-    );
-    if (result.ok) return json({ text: result.data, providerUsed: 'gemini-vision', fallbackTriggered: true });
-  } else {
-    return json({ text: result.data, providerUsed: 'ocr-space' });
-  }
-  return json({ error: result.error || 'OCR failed on all providers' }, 502);
+  const result = await withKeyRotation(
+    getKeys(env, 'OCRSPACE_API_KEY'),
+    (key) => callOcrSpace(key, imageBase64, mimeType, language),
+    'OCR.space',
+    DEFAULT_KEY_ATTEMPTS,
+    'ocrspace'
+  );
+  if (!result.ok) return json({ error: result.error || 'OCR.space failed' }, 502);
+  return json({ text: result.data, providerUsed: 'ocr-space', keyIndexUsed: result.keyIndexUsed });
 }
 
 // ---------------- ROUTE: /live/token ----------------
@@ -608,7 +611,9 @@ async function handleLiveToken(req, env) {
   const result = await withKeyRotation(
     getKeys(env, 'GEMINI_API_KEY'),
     (k) => mintEphemeralToken(k, model, systemInstruction),
-    'Gemini Live Token'
+    'Gemini Live Token',
+    DEFAULT_KEY_ATTEMPTS,
+    'gemini'
   );
 
   if (!result.ok) return json({ error: result.error || 'Could not start a live voice session' }, 502);
@@ -642,8 +647,9 @@ export default {
     try {
       if (url.pathname === '/chat' && req.method === 'POST') return await handleChat(req, env);
       if (url.pathname === '/ocr' && req.method === 'POST') return await handleOcr(req, env);
+      if (url.pathname === '/ocr-space' && req.method === 'POST') return await handleOcrSpace(req, env);
       if (url.pathname === '/live/token' && req.method === 'POST') return await handleLiveToken(req, env);
-      return json({ error: 'Not found. Use /chat, /ocr, /live/token, or /health' }, 404);
+      return json({ error: 'Not found. Use /chat, /ocr, /ocr-space, /live/token, or /health' }, 404);
     } catch (err) {
       return json({ error: `Gateway error: ${err.message}` }, 500);
     }

@@ -14,7 +14,7 @@ export default async function ResultsPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <div><h1 className="text-2xl font-bold">Quiz Results</h1><p className="text-muted-foreground">Apni quiz history dekho</p></div>
+      <div><h1 className="text-2xl font-bold">Quiz Results</h1><p className="text-muted-foreground">Review your quiz history.</p></div>
       <div className="space-y-3">
         {(sessions || []).map((session) => (
           <Card key={session.id}>
@@ -31,7 +31,7 @@ export default async function ResultsPage() {
           <EmptyState
             icon={BarChart3}
             title="No quiz results yet"
-            description="Practice ya AI Testing complete karte hi tumhari score history, accuracy aur progress yahan show hogi."
+                description="Your score history, accuracy, and progress will appear here after you complete practice or an AI test."
             primaryHref="/practice"
             primaryLabel="Start Practice"
             secondaryHref="/dashboard"

@@ -87,8 +87,8 @@ export function ChatInterface() {
         }
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Kuch ghalat ho gaya');
-      updateLastMessage('Sorry, kuch error aa gaya. Dobara try karo.');
+      toast.error(error instanceof Error ? error.message : 'Something went wrong.');
+      updateLastMessage('Sorry, something went wrong. Please try again.');
     } finally {
       setStreaming(false);
     }
@@ -110,7 +110,7 @@ export function ChatInterface() {
         return;
       }
       if (json.data?.noteId || json.data?.deckId) {
-        toast.success('Voice lesson se Notes aur Flashcards ban gaye! Notes/Flashcards section mein dekho.');
+        toast.success('Voice lesson notes and flashcards were created. View them in Notes or Flashcards.');
       }
     } catch (error) {
       console.error('Voice session-end request failed:', error);
@@ -144,8 +144,8 @@ export function ChatInterface() {
           ) : messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center px-4">
               <TeacherIdentityCard subjectName={subject?.name} size="lg" className="flex-col text-center mb-4 [&>div:last-child]:mt-2" />
-              <h2 className="text-xl font-bold mb-2">AI Tutor Se Puchho!</h2>
-              <p className="text-muted-foreground text-sm mb-6 max-w-sm">Koi bhi sawal puchho - Physics, Chemistry, Math, ya kuch bhi. Photo bhi scan kar sakte ho! Ya phir Voice Call se seedha baat karo.</p>
+              <h2 className="text-xl font-bold mb-2">Ask AI Tutor</h2>
+              <p className="text-muted-foreground text-sm mb-6 max-w-sm">Ask anything about Physics, Chemistry, Math, or another subject. Scan a photo or start a voice call.</p>
               <SuggestionChips onSelect={handleSend} />
             </div>
           ) : (

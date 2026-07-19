@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { gatewayChat, MARKDOWN_ANSWER_FORMAT_INSTRUCTION } from '@/lib/ai/gateway';
-import { checkAiMessageLimit } from '@/lib/rate-limit';
+import { checkAiMessageLimit, checkFileSummaryLimit } from '@/lib/rate-limit';
 import { fetchResourceContext, getProtectedResource, type ProtectedResourceKind } from '@/lib/resources/server';
 import { buildResourceSourceSummary } from '@/lib/resources/source-fallback';
 import type { SubscriptionTier } from '@/types';
 
 export const runtime = 'nodejs';
-export const maxDuration = 60;
+export const maxDuration = 180;
 
 export async function POST(req: NextRequest) {
   try {
@@ -29,11 +29,18 @@ export async function POST(req: NextRequest) {
         { status: 403 }
       );
     }
-    const context = await fetchResourceContext(resource);
+    const featureLimit = await checkFileSummaryLimit(user.id, resource.tier as SubscriptionTier);
+    if (!featureLimit.success) {
+      return NextResponse.json(
+        { status: 'error', error: 'File summaries ki monthly plan limit complete ho gayi.' },
+        { status: 429 }
+      );
+    }
     const limit = await checkAiMessageLimit(user.id, resource.tier as SubscriptionTier, 'resource_summary');
     if (!limit.success) {
       return NextResponse.json({ status: 'error', error: 'Aaj ki AI limit khatam ho gayi.' }, { status: 429 });
     }
+    const context = await fetchResourceContext(resource);
 
     let summary: string;
     let provider = 'source-fallback';
@@ -41,8 +48,8 @@ export async function POST(req: NextRequest) {
     let fallbackUsed = false;
     try {
       const result = await gatewayChat({
-        provider: 'gemini',
-        tier: 'medium',
+        provider: 'groq',
+        tier: 'mini',
         maxTokens: 1800,
         temperature: 0.25,
         messages: [
@@ -61,13 +68,24 @@ export async function POST(req: NextRequest) {
       model = result.modelUsed;
     } catch (gatewayError) {
       fallbackUsed = true;
-      console.warn('AI summary gateway unavailable; using source fallback:', gatewayError);
+      console.warn('Groq summary gateway unavailable; using source fallback:', gatewayError);
       summary = buildResourceSourceSummary(resource.title, context);
     }
 
     return NextResponse.json({
       status: 'success',
-      data: { summary, provider, model, fallbackUsed },
+      data: {
+        summary,
+        provider,
+        model,
+        fallbackUsed,
+        source: {
+          title: resource.title,
+          excerpt: context.replace(/\s+/g, ' ').trim().slice(0, 360),
+          confidence: fallbackUsed ? 100 : 85,
+          pageReference: context.includes('\f') ? 'Page markers available in source context' : 'Companion text / extracted source',
+        },
+      },
     });
   } catch (error) {
     console.error('Resource summary failed:', error);

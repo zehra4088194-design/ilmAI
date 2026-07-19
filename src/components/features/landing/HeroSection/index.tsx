@@ -43,7 +43,7 @@ export function HeroSection() {
             <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
               className="mx-auto mb-7 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg lg:mx-0 lg:mb-8">
               Board exams se semester assignments tak: AI Tutor, MCQs, Past Papers, Essays,
-              Presentations, Viva Prep aur Study Plans. <strong className="text-foreground">Free mein start karo!</strong>
+              Presentations, viva preparation, and study plans. <strong className="text-foreground">Start for free!</strong>
             </motion.p>
 
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
@@ -51,7 +51,7 @@ export function HeroSection() {
               <Button asChild size="xl" variant="gradient" className="h-auto min-h-14 w-full whitespace-normal px-5 text-base leading-snug shadow-2xl shadow-violet-500/30 sm:w-auto sm:px-8 sm:text-lg">
                 <Link href="/register">
                   <Sparkles className="h-5 w-5 flex-shrink-0" />
-                  <span>Free mein Start Karo</span>
+                  <span>Start for Free</span>
                   <ArrowRight className="h-5 w-5 flex-shrink-0" />
                 </Link>
               </Button>
@@ -59,7 +59,7 @@ export function HeroSection() {
                 <Link href="/demo">Try Free Demo</Link>
               </Button>
               <Button asChild size="xl" variant="outline" className="h-auto min-h-14 w-full whitespace-normal border-violet-500/35 bg-background/20 px-5 text-base leading-snug sm:w-auto sm:px-8 sm:text-lg">
-                <Link href="/pricing">Pricing Dekho</Link>
+                <Link href="/pricing">View Pricing</Link>
               </Button>
             </motion.div>
 
@@ -92,11 +92,11 @@ export function HeroSection() {
               <div className="space-y-3">
                 <div className="bg-muted/50 rounded-lg p-3 text-sm">
                   <p className="text-muted-foreground text-xs mb-1">AI Tutor</p>
-                  <p>Newton ke 3rd Law mein action aur reaction forces hamesha equal aur opposite hote hain...</p>
+                  <p>In Newton&apos;s 3rd Law, action and reaction forces are always equal and opposite...</p>
                 </div>
                 <div className="bg-violet-500/10 rounded-lg p-3 text-sm border border-violet-500/20">
                   <p className="text-violet-400 text-xs mb-1">Student</p>
-                  <p>Kya aap iska example de sakte hain?</p>
+                  <p>Can you give an example?</p>
                 </div>
               </div>
             </motion.div>

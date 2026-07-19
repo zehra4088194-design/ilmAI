@@ -1,14 +1,9 @@
 import { createHash, randomBytes } from 'crypto';
-import { Ratelimit } from '@upstash/ratelimit';
-import { Redis } from '@upstash/redis';
 import type { NextRequest } from 'next/server';
+import { incrementRedisWindow } from '@/lib/redis/client';
 
 export const DEMO_ATTEMPTS_PER_DAY = 3;
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-const redis = process.env.UPSTASH_REDIS_REST_URL
-  ? new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN! })
-  : null;
 
 const memoryStore = new Map<string, { count: number; resetAt: number }>();
 
@@ -40,15 +35,21 @@ export function createDemoSessionToken() {
 
 export async function checkDemoRateLimit(req: NextRequest) {
   const ipHash = hashDemoIp(getRequestIp(req));
-  const key = `demo_attempt:${ipHash}:${new Date().toISOString().slice(0, 10)}`;
-  if (redis) {
-    const ratelimit = new Ratelimit({
-      redis,
-      limiter: Ratelimit.fixedWindow(DEMO_ATTEMPTS_PER_DAY, '1 d'),
-      prefix: 'ilm-ai',
-    });
-    const result = await ratelimit.limit(key);
-    return { success: result.success, remaining: result.remaining, reset: result.reset, ipHash };
+  const now = new Date();
+  const reset = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
+  const key = `demo_attempt:${ipHash}:${now.toISOString().slice(0, 10)}`;
+  try {
+    const count = await incrementRedisWindow(`ilm-ai:${key}`, reset);
+    if (count !== null) {
+      return {
+        success: count <= DEMO_ATTEMPTS_PER_DAY,
+        remaining: Math.max(0, DEMO_ATTEMPTS_PER_DAY - count),
+        reset,
+        ipHash,
+      };
+    }
+  } catch (error) {
+    console.error('Redis demo rate-limit operation failed:', error);
   }
   return { ...checkMemoryLimit(key, DEMO_ATTEMPTS_PER_DAY), ipHash };
 }

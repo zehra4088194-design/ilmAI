@@ -2,11 +2,19 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { PersonalizationModal } from '@/components/features/onboarding/PersonalizationModal';
+import { PublicResourceShell } from '@/components/layout/PublicResourceShell';
+import { headers } from 'next/headers';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
+  if (!user) {
+    const pathname = (await headers()).get('x-invoke-path') || '';
+    if (pathname.startsWith('/library') || pathname.startsWith('/past-papers')) {
+      return <PublicResourceShell>{children}</PublicResourceShell>;
+    }
+    redirect('/login');
+  }
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -14,7 +22,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .eq('id', user.id)
     .single();
 
-  let optionalSubjects: { id: string; name: string }[] = [];
+  let personalizationSubjects: { id: string; name: string; isOptional: boolean }[] = [];
   const shouldShowPersonalization =
     profile?.role === 'student' &&
     profile.ai_onboarding_complete === false &&
@@ -26,14 +34,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (shouldShowPersonalization) {
     const { data } = await supabase
       .from('subjects')
-      .select('id, name')
+      .select('id, name, is_optional')
       .eq('is_active', true)
-      .eq('is_optional', true)
       .contains('boards', [profile.board])
       .contains('grade_levels', [profile.grade_level])
       .order('name');
 
-    optionalSubjects = data ?? [];
+    personalizationSubjects = (data ?? []).map((subject) => ({
+      id: subject.id,
+      name: subject.name,
+      isOptional: subject.is_optional,
+    }));
   }
 
   return (
@@ -42,7 +53,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       {shouldShowPersonalization && personalizationGradeLevel && (
         <PersonalizationModal
           gradeLevel={personalizationGradeLevel}
-          optionalSubjects={optionalSubjects}
+          subjects={personalizationSubjects}
         />
       )}
     </>

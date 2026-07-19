@@ -286,13 +286,15 @@ function buildSyntheticMcqs(context: string, count: number) {
         verb: 'states',
         definition: point,
       }));
-  if (!source.length) return [];
+  const safeSource = source.length
+    ? source
+    : [{ term: 'the uploaded chapter', verb: 'contains', definition: context.trim().slice(0, 240) }];
 
   return Array.from({ length: count }, (_, index) => {
-    const card = source[index % source.length]!;
+    const card = safeSource[index % safeSource.length]!;
     const distractors = Array.from(
       { length: 3 },
-      (__, offset) => source[(index + offset + 1) % source.length]!.definition
+      (__, offset) => safeSource[(index + offset + 1) % safeSource.length]!.definition
     );
     while (distractors.length < 3) distractors.push('This statement is not supported by the uploaded source.');
     const correct = index % 4;

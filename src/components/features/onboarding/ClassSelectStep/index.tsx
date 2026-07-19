@@ -57,7 +57,7 @@ export function ClassSelectStep() {
         preferredOutputStyle,
       });
       if (!result.success) {
-        setError(result.error ?? 'University mode save nahi hua. Please try again.');
+        setError(result.error ?? 'University mode could not be saved. Please try again.');
         return;
       }
       router.push('/dashboard');
@@ -70,10 +70,10 @@ export function ClassSelectStep() {
       <div className="w-full max-w-md space-y-8">
         <div className="space-y-2 text-center">
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            Aap kis level par study kar rahe hain?
+            What level are you studying at?
           </h1>
           <p className="text-sm text-muted-foreground">
-            Ye sirf ek dafa poocha jayega. Baad mein Settings se change kar sakte hain.
+            You will be asked this once. You can change it later in Settings.
           </p>
         </div>
 
@@ -103,7 +103,7 @@ export function ClassSelectStep() {
           <div className="space-y-3 rounded-2xl border bg-card p-4">
             <Input value={program} onChange={(event) => setProgram(event.target.value)} placeholder="Degree / Program, e.g. BS Psychology" />
             <Input value={semester} onChange={(event) => setSemester(event.target.value)} placeholder="Semester, e.g. Semester 3" />
-            <Input value={courses} onChange={(event) => setCourses(event.target.value)} placeholder="Courses comma se likho" />
+            <Input value={courses} onChange={(event) => setCourses(event.target.value)} placeholder="Enter courses separated by commas" />
             <div className="grid grid-cols-2 gap-3">
               <Input type="date" value={examTargetDate} onChange={(event) => setExamTargetDate(event.target.value)} />
               <select value={preferredOutputStyle} onChange={(event) => setPreferredOutputStyle(event.target.value as PreferredOutputStyle)} className="h-10 rounded-lg border border-input bg-background px-3 text-sm">
@@ -111,7 +111,7 @@ export function ClassSelectStep() {
               </select>
             </div>
             <Button onClick={handleUniversitySubmit} disabled={isPending || !program.trim() || !semester.trim()} className="w-full">
-              {isPending ? 'Save ho raha hai...' : 'University Mode Start Karo'}
+              {isPending ? 'Saving...' : 'Start university mode'}
             </Button>
           </div>
         ) : (
@@ -148,7 +148,7 @@ export function ClassSelectStep() {
                   <CardContent className="flex flex-col items-center gap-1 p-0">
                     <span className="text-3xl font-bold text-foreground">{option.label}</span>
                     <span className="text-xs text-muted-foreground">{option.sublabel}</span>
-                    {isSelected && isPending && <span className="mt-2 text-xs font-medium text-primary">Save ho raha hai...</span>}
+                    {isSelected && isPending && <span className="mt-2 text-xs font-medium text-primary">Saving...</span>}
                   </CardContent>
                 </Card>
               );
@@ -163,7 +163,7 @@ export function ClassSelectStep() {
         )}
 
         <p className="text-center text-xs text-muted-foreground">
-          Aapki class ke mutabiq essays, guess papers aur resources dikhaye jayenge.
+          Essays, guess papers, and resources will be shown for your class.
         </p>
       </div>
     </div>

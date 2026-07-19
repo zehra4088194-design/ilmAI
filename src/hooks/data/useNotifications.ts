@@ -34,7 +34,7 @@ export function useNotifications() {
         title: n.title,
         message: n.message,
         iconUrl: n.icon_url ?? undefined,
-        link: n.link ?? undefined,
+        link: n.link || '/dashboard',
         isRead: n.is_read,
         createdAt: n.created_at,
       }));
@@ -52,6 +52,26 @@ export function useNotifications() {
   });
 
   const unreadCount = (query.data || []).filter((n) => !n.isRead).length;
+
+  const dismissMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('notifications').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['notifications'] });
+      const previous = queryClient.getQueryData<Notification[]>(['notifications']);
+      queryClient.setQueryData<Notification[]>(['notifications'], (current = []) =>
+        current.filter((notification) => notification.id !== id)
+      );
+      return { previous };
+    },
+    onError: (_error, _id, context) => {
+      if (context?.previous) queryClient.setQueryData(['notifications'], context.previous);
+      toast.error('Notification dismiss nahi hui');
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+  });
 
   useEffect(() => {
     let channel: ReturnType<typeof supabase.channel> | null = null;
@@ -111,5 +131,6 @@ export function useNotifications() {
     ...query,
     unreadCount,
     markAsRead: markAsReadMutation.mutate,
+    dismiss: dismissMutation.mutate,
   };
 }

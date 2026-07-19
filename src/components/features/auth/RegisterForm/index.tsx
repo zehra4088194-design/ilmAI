@@ -16,6 +16,7 @@ import {
   EyeOff,
   GraduationCap,
   Lock,
+  Languages,
   Mail,
   School,
   ShieldCheck,
@@ -31,8 +32,9 @@ import { BOARDS, COUNTRY_BOARD_DEFAULTS, GRADE_LEVELS } from '@/lib/constants';
 import { EDUCATION_LEVELS, type EducationLevel } from '@/lib/constants/university';
 import { cn } from '@/lib/utils/cn';
 import { toast } from 'sonner';
-import { useTranslations } from '@/providers/I18nProvider';
+import { useLocale, useTranslations } from '@/providers/I18nProvider';
 import { THEME_COOKIE_NAME } from '@/lib/constants/themes';
+import type { Locale } from '@/lib/i18n/config';
 
 const formSchema = z.object({
   fullName: z.string().trim().min(2, 'Min 2 characters'),
@@ -51,7 +53,7 @@ const formSchema = z.object({
 });
 
 const schema = formSchema.refine((data) => data.password === data.confirmPassword, {
-  message: 'Passwords match nahi karte',
+  message: 'Passwords do not match',
   path: ['confirmPassword'],
 });
 
@@ -59,7 +61,16 @@ type FormData = z.infer<typeof schema>;
 type AccountType = 'student' | 'parent';
 type Gender = 'girl' | 'boy';
 type SignupStepId =
-  'name' | 'email' | 'password' | 'username' | 'gender' | 'education' | 'institution' | 'grade' | 'board';
+  | 'language'
+  | 'name'
+  | 'email'
+  | 'password'
+  | 'username'
+  | 'gender'
+  | 'education'
+  | 'institution'
+  | 'grade'
+  | 'board';
 
 type SignupStep = {
   id: SignupStepId;
@@ -68,33 +79,34 @@ type SignupStep = {
 };
 
 const BASE_STEPS: SignupStep[] = [
-  { id: 'name', title: 'Aapka naam?', description: 'Pehle sirf woh naam jo app mein show hoga.' },
-  { id: 'email', title: 'Email address', description: 'Login aur account recovery ke liye.' },
+  { id: 'language', title: 'Choose your language', description: 'Choose English or Roman Urdu for the interface.' },
+  { id: 'name', title: 'Your name', description: 'Enter the name that will appear in the app.' },
+  { id: 'email', title: 'Email address', description: 'Used for login and account recovery.' },
   {
     id: 'password',
     title: 'Secure password',
-    description: 'Browser ka suggested strong password bhi use kar sakte hain.',
+    description: 'You can also use the strong password suggested by your browser.',
   },
-  { id: 'username', title: 'Unique username', description: 'Isi @username se search aur Study Buddies mein milenge.' },
+  { id: 'username', title: 'Unique username', description: 'People can find you by this @username in search and Study Buddies.' },
 ];
 
 const STUDENT_STEPS: SignupStep[] = [
-  { id: 'gender', title: 'Girl ya boy?', description: 'Study Buddies privacy aur default theme ke liye.' },
+  { id: 'gender', title: 'Gender', description: 'Used for Study Buddies privacy and your default theme.' },
   {
     id: 'education',
-    title: 'Aap kahan study karte hain?',
-    description: 'School, college ya university select karein.',
+    title: 'Where do you study?',
+    description: 'Select your school, college, or university level.',
   },
   {
     id: 'institution',
-    title: 'Institution ka naam',
-    description: 'Apne school, college ya university ka naam likhein.',
+    title: 'Institution name',
+    description: 'Enter the name of your school, college, or university.',
   },
 ];
 
 const SCHOOL_STEPS: SignupStep[] = [
-  { id: 'grade', title: 'Aapki class?', description: 'Isi class ke lectures, notes aur papers show honge.' },
-  { id: 'board', title: 'Aapka board?', description: 'Aakhri step. Board-specific content isi se filter hoga.' },
+  { id: 'grade', title: 'Your class', description: 'Lectures, notes, and papers for this class will be shown.' },
+  { id: 'board', title: 'Your board', description: 'The final step. Board-specific content will be filtered using this choice.' },
 ];
 
 export function getSignupSteps(accountType: AccountType, educationLevel: EducationLevel) {
@@ -107,6 +119,8 @@ export function RegisterForm() {
   const [accountType, setAccountType] = useState<AccountType>('student');
   const [educationLevel, setEducationLevel] = useState<EducationLevel>('school');
   const [gender, setGender] = useState<Gender | null>(null);
+  const { locale, setLocale } = useLocale();
+  const [preferredLanguage, setPreferredLanguage] = useState<Locale>(locale);
   const [stepIndex, setStepIndex] = useState(0);
   const [checkingUsername, setCheckingUsername] = useState(false);
   const [detectedCountry, setDetectedCountry] = useState<string | null>(null);
@@ -182,13 +196,13 @@ export function RegisterForm() {
       const response = await fetch(`/api/auth/check-username?username=${encodeURIComponent(username)}`);
       const json = await response.json().catch(() => ({ available: false }));
       if (!response.ok || json.available !== true) {
-        toast.error(json.error || 'Username already taken hai');
+        toast.error(json.error || 'This username is already taken.');
         return false;
       }
       setValue('username', username, { shouldValidate: true });
       return true;
     } catch {
-      toast.error('Username check nahi ho saka. Dobara try karein.');
+      toast.error('We could not check the username. Please try again.');
       return false;
     } finally {
       setCheckingUsername(false);
@@ -214,7 +228,7 @@ export function RegisterForm() {
       case 'password': {
         if (!validateField('password')) return false;
         if (getValues('password') !== getValues('confirmPassword')) {
-          setError('confirmPassword', { type: 'manual', message: 'Passwords match nahi karte' });
+          setError('confirmPassword', { type: 'manual', message: 'Passwords do not match' });
           return false;
         }
         clearErrors('confirmPassword');
@@ -226,25 +240,25 @@ export function RegisterForm() {
       }
       case 'gender':
         if (!gender) {
-          toast.error('Girl ya boy select karo');
+          toast.error('Please select your gender.');
           return false;
         }
         return true;
       case 'institution':
         if ((getValues('institutionName') || '').trim().length < 2) {
-          toast.error('Apne institution ka valid naam likhein');
+          toast.error('Enter a valid institution name.');
           return false;
         }
         return true;
       case 'grade':
         if (!getValues('gradeLevel')) {
-          toast.error('Apni class select karein');
+          toast.error('Please select your class.');
           return false;
         }
         return true;
       case 'board':
         if (!getValues('board')) {
-          toast.error('Apna board select karo');
+          toast.error('Please select your board.');
           return false;
         }
         return true;
@@ -267,15 +281,15 @@ export function RegisterForm() {
   const onSubmit = async (data: FormData) => {
     if (accountType === 'student') {
       if (!gender) {
-        toast.error('Girl ya boy select karo');
+        toast.error('Please select your gender.');
         return;
       }
       if (!data.institutionName?.trim()) {
-        toast.error('Apne institution ka naam likhein');
+        toast.error('Enter your institution name.');
         return;
       }
       if (educationLevel !== 'university' && (!data.gradeLevel || !data.board)) {
-        toast.error('Apni class aur board select karein');
+        toast.error('Select your class and board.');
         return;
       }
     }
@@ -299,6 +313,7 @@ export function RegisterForm() {
           academic_institution_name: accountType === 'student' ? data.institutionName?.trim() || undefined : undefined,
           academic_institution_type: accountType === 'student' ? educationLevel : undefined,
           gender: accountType === 'student' ? gender : undefined,
+          preferred_language: preferredLanguage,
         },
         emailRedirectTo: callbackUrl.toString(),
       },
@@ -311,10 +326,10 @@ export function RegisterForm() {
     if (signUpData.session) {
       const profileResponse = await fetch('/api/auth/ensure-profile', { method: 'POST' });
       if (!profileResponse.ok) {
-        toast.error('Profile setup nahi ho saka. Dobara login karke try karein.');
+        toast.error('Profile setup failed. Please log in again and try.');
         return;
       }
-      toast.success('Account ban gaya!');
+      toast.success('Account created successfully.');
       if (accountType === 'student' && gender) {
         const genderTheme = gender === 'girl' ? 'theme-pink-light' : 'theme-midnight-dark';
         window.localStorage.setItem('theme', genderTheme);
@@ -332,7 +347,7 @@ export function RegisterForm() {
       return;
     }
 
-    toast.success('Account ban gaya! Email check karo.');
+    toast.success('Account created. Check your email.');
     window.sessionStorage.setItem('ilm-ai-pending-verification-email', data.email.trim().toLowerCase());
     router.push('/verify-email');
   };
@@ -365,6 +380,10 @@ export function RegisterForm() {
             />
           ))}
         </div>
+        <p className="text-muted-foreground mt-3 text-[11px] leading-4">
+          Privacy: AI chats, scans, voice files, parent attachments, and in-app messages are retained for up to 2 days
+          and then automatically deleted. Library resources and academic progress are not affected.
+        </p>
       </div>
 
       <div className="mb-5 grid grid-cols-2 gap-2">
@@ -396,7 +415,7 @@ export function RegisterForm() {
         </button>
       </div>
 
-      {isFirstStep && (
+      {currentStep.id === 'name' && (
         <>
           <OAuthButtons action="Register" role={accountType} />
           <div className="relative my-5">
@@ -420,6 +439,40 @@ export function RegisterForm() {
       >
         <div className="min-h-36">
           <h2 className="mb-4 text-xl font-bold">{currentStep.title}</h2>
+
+          {currentStep.id === 'language' && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {([
+                { value: 'en' as const, label: 'English', description: 'Load the interface in English.' },
+                {
+                  value: 'roman-ur' as const,
+                  label: 'Roman Urdu',
+                  description: 'Read Urdu using English letters.',
+                },
+              ]).map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  aria-pressed={preferredLanguage === option.value}
+                  onClick={() => {
+                    setPreferredLanguage(option.value);
+                    setLocale(option.value);
+                  }}
+                  className={cn(
+                    'relative rounded-2xl border-2 p-5 text-left transition-all',
+                    preferredLanguage === option.value
+                      ? 'border-primary bg-primary/15 shadow-primary/15 shadow-lg'
+                      : 'border-border bg-card/70 hover:border-primary/40'
+                  )}
+                >
+                  <Languages className="text-primary mb-4 h-6 w-6" />
+                  <span className="block font-bold">{option.label}</span>
+                  <span className="text-muted-foreground mt-1 block text-xs leading-5">{option.description}</span>
+                  {preferredLanguage === option.value && <Check className="text-primary absolute top-4 right-4 h-4 w-4" />}
+                </button>
+              ))}
+            </div>
+          )}
 
           {currentStep.id === 'name' && (
             <div>
@@ -516,7 +569,7 @@ export function RegisterForm() {
                 />
               </div>
               <p className="text-muted-foreground flex items-center gap-2 text-xs">
-                <ShieldCheck className="text-primary h-4 w-4" /> Chrome ka strong password suggestion ab supported hai.
+                <ShieldCheck className="text-primary h-4 w-4" /> Chrome password suggestions are supported.
               </p>
             </div>
           )}
@@ -540,7 +593,7 @@ export function RegisterForm() {
                 />
               </div>
               <p className="text-muted-foreground mt-2 text-xs">
-                Letters, numbers, dot aur underscore. Har username unique hoga.
+                Use letters, numbers, dots, and underscores. Every username must be unique.
               </p>
             </div>
           )}
@@ -618,7 +671,7 @@ export function RegisterForm() {
                   {...register('institutionName')}
                   id="signup-institution"
                   autoComplete="organization"
-                  placeholder={`Apne ${educationLevel} ka naam`}
+                  placeholder={`Enter your ${educationLevel} name`}
                   className="pl-10"
                   error={errors.institutionName?.message}
                 />
@@ -670,8 +723,8 @@ export function RegisterForm() {
               {detectedCountry && (
                 <p className="text-muted-foreground mt-2 text-xs">
                   {detectedCountry === 'IN'
-                    ? 'India detect hui, CBSE default select hua hai.'
-                    : 'Pakistan detect hua, FBISE default select hua hai.'}
+                    ? 'India detected; CBSE was selected by default.'
+                    : 'Pakistan detected; FBISE was selected by default.'}
                 </p>
               )}
             </div>

@@ -6,6 +6,7 @@ export const maxDuration = 60;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const BATCH_SIZE = 200;
+const MAX_BATCHES_PER_TABLE = 5;
 
 function olderThan(days: number) {
   return new Date(Date.now() - days * DAY_MS).toISOString();
@@ -18,6 +19,48 @@ async function removeFiles(db: any, bucket: string, paths: string[]) {
   if (error) console.error(`${bucket} retention storage cleanup failed:`, error);
 }
 
+async function deleteOldRows(db: any, table: string, timestampColumn: string, cutoff: string) {
+  let deleted = 0;
+  for (let batch = 0; batch < MAX_BATCHES_PER_TABLE; batch += 1) {
+    const { data, error } = await db
+      .from(table)
+      .select('id')
+      .lt(timestampColumn, cutoff)
+      .limit(BATCH_SIZE);
+    if (error) throw error;
+    const ids = (data || []).map((row: { id: string }) => row.id).filter(Boolean);
+    if (!ids.length) break;
+    const { error: deleteError } = await db.from(table).delete().in('id', ids);
+    if (deleteError) throw deleteError;
+    deleted += ids.length;
+    if (ids.length < BATCH_SIZE) break;
+  }
+  return deleted;
+}
+
+async function cleanupMediaRows(db: any, table: string, bucket: string, cutoff: string, urlColumn: string) {
+  let deleted = 0;
+  for (let batch = 0; batch < MAX_BATCHES_PER_TABLE; batch += 1) {
+    const { data, error } = await db
+      .from(table)
+      .select(`id, ${urlColumn}`)
+      .lt('created_at', cutoff)
+      .limit(BATCH_SIZE);
+    if (error) throw error;
+    const rows = (data || []) as Array<{ id: string; [key: string]: string | null }>;
+    if (!rows.length) break;
+    await removeFiles(db, bucket, rows.map((row) => row[urlColumn] || '').filter(Boolean));
+    const { error: deleteError } = await db
+      .from(table)
+      .delete()
+      .in('id', rows.map((row) => row.id));
+    if (deleteError) throw deleteError;
+    deleted += rows.length;
+    if (rows.length < BATCH_SIZE) break;
+  }
+  return deleted;
+}
+
 export async function GET(req: NextRequest) {
   if (req.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -26,76 +69,32 @@ export async function GET(req: NextRequest) {
   try {
     const db = (await createAdminClient()) as any;
 
-    const { data: scans, error: scansError } = await db
-      .from('vision_scans')
-      .select('id, image_url')
-      .lt('created_at', olderThan(7))
-      .limit(BATCH_SIZE);
-    if (scansError) throw scansError;
-    await removeFiles(
+    const cutoff = olderThan(2);
+    const visionScans = await cleanupMediaRows(db, 'vision_scans', 'vision-scans', cutoff, 'image_url');
+    const speakingAudio = await cleanupMediaRows(
       db,
-      'vision-scans',
-      (scans || []).map((scan: { image_url: string }) => scan.image_url)
-    );
-    if (scans?.length) {
-      await db
-        .from('vision_scans')
-        .delete()
-        .in(
-          'id',
-          scans.map((scan: { id: string }) => scan.id)
-        );
-    }
-
-    const { data: audioSessions, error: audioError } = await db
-      .from('speaking_practice_sessions')
-      .select('id, audio_url')
-      .not('audio_url', 'is', null)
-      .lt('created_at', olderThan(7))
-      .limit(BATCH_SIZE);
-    if (audioError) throw audioError;
-    await removeFiles(
-      db,
+      'speaking_practice_sessions',
       'speaking-practice-audio',
-      (audioSessions || []).map((session: { audio_url: string }) => session.audio_url)
+      cutoff,
+      'audio_url'
     );
-    if (audioSessions?.length) {
-      await db
-        .from('speaking_practice_sessions')
-        .update({ audio_url: null })
-        .in(
-          'id',
-          audioSessions.map((session: { id: string }) => session.id)
-        );
-    }
-
-    const { data: attachments, error: attachmentsError } = await db
-      .from('parent_attachments')
-      .select('id, file_url')
-      .lt('created_at', olderThan(30))
-      .limit(BATCH_SIZE);
-    if (attachmentsError) throw attachmentsError;
-    await removeFiles(
-      db,
-      'parent-attachments',
-      (attachments || []).map((attachment: { file_url: string }) => attachment.file_url)
-    );
-    if (attachments?.length) {
-      await db
-        .from('parent_attachments')
-        .delete()
-        .in(
-          'id',
-          attachments.map((attachment: { id: string }) => attachment.id)
-        );
-    }
+    const parentAttachments = await cleanupMediaRows(db, 'parent_attachments', 'parent-attachments', cutoff, 'file_url');
+    const conversations = await deleteOldRows(db, 'conversations', 'updated_at', cutoff);
+    const studentChatMessages = await deleteOldRows(db, 'student_chat_messages', 'created_at', cutoff);
+    const parentMessages = await deleteOldRows(db, 'parent_messages', 'created_at', cutoff);
+    const notifications = await deleteOldRows(db, 'notifications', 'created_at', cutoff);
 
     return NextResponse.json({
       status: 'success',
       cleaned: {
-        visionScans: scans?.length || 0,
-        speakingAudio: audioSessions?.length || 0,
-        parentAttachments: attachments?.length || 0,
+        retentionWindow: '48 hours',
+        visionScans,
+        speakingAudio,
+        parentAttachments,
+        conversations,
+        studentChatMessages,
+        parentMessages,
+        notifications,
       },
     });
   } catch (error) {

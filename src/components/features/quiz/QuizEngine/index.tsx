@@ -27,8 +27,8 @@ export function QuizEngine() {
   if (!loaded) return <div className="text-center py-12 text-muted-foreground">Loading...</div>;
   if (!session) return (
     <div className="text-center py-12">
-      <p className="text-muted-foreground mb-4">Koi active quiz nahi hai</p>
-      <Button variant="gradient" onClick={() => router.push('/practice')}>Practice Shuru Karo</Button>
+      <p className="text-muted-foreground mb-4">There is no active quiz.</p>
+      <Button variant="gradient" onClick={() => router.push('/practice')}>Start practice</Button>
     </div>
   );
 

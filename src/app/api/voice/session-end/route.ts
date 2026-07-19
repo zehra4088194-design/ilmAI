@@ -44,17 +44,17 @@ export async function POST(req: NextRequest) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ status: 'error', error: 'Login required hai' }, { status: 401 });
+    if (!user) return NextResponse.json({ status: 'error', error: 'Login is required.' }, { status: 401 });
 
     const { transcript, subjectId, subjectName } = (await req.json().catch(() => ({}))) as Partial<SessionEndBody>;
 
     if (!transcript || typeof transcript !== 'string') {
-      return NextResponse.json({ status: 'success', message: 'Transcript nahi mila, skip kar diya' });
+      return NextResponse.json({ status: 'success', message: 'No transcript was found, so the session was skipped.' });
     }
 
     const wordCount = transcript.trim().split(/\s+/).filter(Boolean).length;
     if (wordCount < 40) {
-      return NextResponse.json({ status: 'success', message: 'Session bohot chota tha, notes nahi banaye' });
+      return NextResponse.json({ status: 'success', message: 'The session was too short to create notes.' });
     }
 
     const prompt = `Yeh ek student aur AI Teacher ke beech hue voice lesson ki transcript hai${subjectName ? ` (subject: ${subjectName})` : ''}.
@@ -71,9 +71,10 @@ ${transcript.slice(0, 12000)}
 Return ONLY valid JSON, no markdown fences, no extra text:
 {"noteTitle":"...", "noteContent":"... (markdown)", "flashcards":[{"front":"...","back":"...","hint":"..."}]}`;
 
+    const englishPrompt = `${prompt}\n\nImportant language instruction: write all note and flashcard content in professional English. Do not use Roman Urdu unless the student explicitly requested it.`;
     const messages = [
-      { role: 'system' as const, content: 'Expert study-notes and flashcard creator for Pakistani/Indian students. Return only valid JSON.' },
-      { role: 'user' as const, content: prompt },
+      { role: 'system' as const, content: 'Expert study-notes and flashcard creator for Pakistani/Indian students. Return only valid JSON in professional English.' },
+      { role: 'user' as const, content: englishPrompt },
     ];
 
     // Prefer Gemini (per the product spec) while the daily quota lasts;
@@ -90,7 +91,7 @@ Return ONLY valid JSON, no markdown fences, no extra text:
     const parsed = parseAiJson<MagicNotesResult>(result.text, { noteTitle: 'Voice Lesson Notes', noteContent: '', flashcards: [] });
 
     if (!parsed.noteContent && (!parsed.flashcards || parsed.flashcards.length === 0)) {
-      return NextResponse.json({ status: 'error', error: 'Notes generate nahi ho sake' }, { status: 500 });
+      return NextResponse.json({ status: 'error', error: 'Notes could not be generated.' }, { status: 500 });
     }
 
     // 1. Short Notes -> existing `notes` table (uuid id, Postgres-generated)

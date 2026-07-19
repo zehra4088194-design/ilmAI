@@ -12,7 +12,7 @@ export default async function ProgressPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      <div><h1 className="text-2xl font-bold">Your Progress</h1><p className="text-muted-foreground">Apna performance track karo aur improve karo</p></div>
+      <div><h1 className="text-2xl font-bold">Your Progress</h1><p className="text-muted-foreground">Track your performance and improve.</p></div>
       <ProgressChart sessions={sessions || []} />
       <div className="grid lg:grid-cols-2 gap-6">
         <SubjectHeatmap userId={user!.id} />

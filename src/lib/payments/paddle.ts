@@ -189,15 +189,18 @@ export const paddleProvider: PaymentProvider = {
       return { valid: false };
     }
 
-    const parts = signatureHeader.split(';').reduce<Record<string, string>>((acc, part) => {
+    const parts = signatureHeader.split(';').reduce<Record<string, string[]>>((acc, part) => {
       const [key, value] = part.split('=');
-      if (key && value) acc[key.trim()] = value.trim();
+      if (key && value) {
+        const normalizedKey = key.trim();
+        acc[normalizedKey] = [...(acc[normalizedKey] || []), value.trim()];
+      }
       return acc;
     }, {});
 
-    const timestamp = parts.ts;
-    const signature = parts.h1;
-    if (!timestamp || !signature) {
+    const timestamp = parts.ts?.[0];
+    const signatures = parts.h1 || [];
+    if (!timestamp || signatures.length === 0) {
       return { valid: false };
     }
 
@@ -211,13 +214,13 @@ export const paddleProvider: PaymentProvider = {
       .update(`${timestamp}:${rawBody}`)
       .digest('hex');
 
-    const receivedBuffer = Buffer.from(signature, 'hex');
     const expectedBuffer = Buffer.from(expectedSignature, 'hex');
+    const signatureMatches = signatures.some((signature) => {
+      const receivedBuffer = Buffer.from(signature, 'hex');
+      return receivedBuffer.length === expectedBuffer.length && crypto.timingSafeEqual(receivedBuffer, expectedBuffer);
+    });
 
-    if (
-      receivedBuffer.length !== expectedBuffer.length ||
-      !crypto.timingSafeEqual(receivedBuffer, expectedBuffer)
-    ) {
+    if (!signatureMatches) {
       return { valid: false };
     }
 

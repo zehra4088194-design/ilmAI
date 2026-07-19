@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { gatewayChat, MARKDOWN_ANSWER_FORMAT_INSTRUCTION } from '@/lib/ai/gateway';
 import { performOcr, validateOcrFile } from '@/lib/ocr';
 import { createClient } from '@/lib/supabase/server';
-import { checkOcrLimit } from '@/lib/rate-limit';
+import { checkAiMessageLimit, checkOcrLimit, getConfiguredLimitExceededMessage } from '@/lib/rate-limit';
 import type { SubscriptionTier } from '@/types';
 
 export const runtime = 'nodejs';
@@ -48,6 +48,10 @@ export async function POST(req: NextRequest) {
     if (!validation.valid) return NextResponse.json({ status: 'error', error: validation.error }, { status: 400 });
 
     const mode = scanType === 'handwritten' || scanType === 'math' ? 'handwritten' : 'printed';
+    const aiLimit = await checkAiMessageLimit(user.id, tier, 'vision_scan');
+    if (!aiLimit.success) {
+      return NextResponse.json({ status: 'error', error: await getConfiguredLimitExceededMessage(tier, 'Vision explanation') }, { status: 429 });
+    }
     const scanLimit = await checkOcrLimit(user.id, tier, mode);
     if (!scanLimit.success) {
       return NextResponse.json(

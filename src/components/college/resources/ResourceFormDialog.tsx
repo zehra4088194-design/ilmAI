@@ -142,7 +142,7 @@ export function ResourceFormDialog({ open, onOpenChange, collegeId, resource, on
                 defaultValue={resource?.light_file_url || resource?.file_url || ''}
                 placeholder="https://drive.google.com/..."
               />
-              <p className="text-muted-foreground text-xs">Students ko light mode mein ye version dikhega.</p>
+              <p className="text-muted-foreground text-xs">Students will see this version in light mode.</p>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="resource-dark-file">Dark PDF / Drive link</Label>

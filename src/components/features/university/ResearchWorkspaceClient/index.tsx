@@ -24,7 +24,7 @@ export function ResearchWorkspaceClient({
 
   const generateCitation = async () => {
     if (sourceInput.trim().length < 3) {
-      toast.error('Source URL, DOI ya title enter karo.');
+      toast.error('Enter a source URL, DOI, or title.');
       return;
     }
     setLoadingCitation(true);
@@ -39,7 +39,7 @@ export function ResearchWorkspaceClient({
       });
       const payload = await citationRes.json();
       if (!citationRes.ok || payload.status === 'error') {
-        throw new Error(payload.error || 'Citation generate nahi ho saki.');
+        throw new Error(payload.error || 'The citation could not be generated.');
       }
 
       const citations = Array.isArray(payload.data?.citations) ? payload.data.citations : [];
@@ -62,7 +62,7 @@ export function ResearchWorkspaceClient({
       });
       toast.success('Source saved to research workspace');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Citation save nahi ho saki.');
+      toast.error(error instanceof Error ? error.message : 'The citation could not be saved.');
     } finally {
       setLoadingCitation(false);
     }
@@ -113,10 +113,10 @@ export function ResearchWorkspaceClient({
                 onChange={(event) => setSummary(event.target.value)}
                 rows={7}
                 className="bg-background w-full rounded-xl border p-3 text-sm"
-                placeholder="PDF Summarizer ka output yahan paste/save karo..."
+                placeholder="Paste or save the PDF Summarizer output here..."
               />
               <p className="text-muted-foreground text-xs">
-                Existing PDF Summarizer & Mind Mapper reuse karo, phir useful summary yahan source ke saath save ho
+                Reuse the existing PDF Summarizer and Mind Mapper, then save useful, source-linked summaries here.
                 sakti hai.
               </p>
             </CardContent>
@@ -173,8 +173,8 @@ export function ResearchWorkspaceClient({
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground text-sm leading-6">
-                Ye plagiarism detector nahi hai. Ye sirf citation, paraphrasing aur source hygiene ki guidance deta hai.
-                Final submission se pehle facts aur references manually verify karo.
+                This is not a plagiarism detector. It provides guidance on citations, paraphrasing, and source hygiene.
+                Manually verify facts and references before final submission.
               </p>
             </CardContent>
           </Card>

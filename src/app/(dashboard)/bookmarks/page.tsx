@@ -9,7 +9,7 @@ export default function BookmarksPage() {
       <EmptyState
         icon={Bookmark}
         title="No bookmarks yet"
-        description="Important questions, notes aur resources save karoge to yahan ek jagah mil jayenge."
+        description="Your saved questions, notes, and resources will appear here in one place."
         primaryHref="/practice"
         primaryLabel="Practice Questions"
         secondaryHref="/library"

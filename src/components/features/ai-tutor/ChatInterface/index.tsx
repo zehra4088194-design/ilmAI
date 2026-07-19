@@ -11,7 +11,7 @@ import { LiveVoiceCall } from '@/components/features/ai-tutor/LiveVoiceCall';
 import { MotivationCarousel } from '@/components/features/ai-tutor/MotivationCarousel';
 import { TeacherIdentityCard } from '@/components/features/teacher/TeacherIdentityCard';
 import { AIProviderSelector } from '@/components/features/ai-selector/AIProviderSelector';
-import { Menu } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
@@ -41,7 +41,16 @@ export function ChatInterface() {
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages.length, messages.at(-1)?.content]);
+
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSidebarOpen(false);
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [sidebarOpen]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -87,8 +96,8 @@ export function ChatInterface() {
         }
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Kuch ghalat ho gaya');
-      updateLastMessage('Sorry, kuch error aa gaya. Dobara try karo.');
+      toast.error(error instanceof Error ? error.message : 'Something went wrong.');
+      updateLastMessage('Sorry, something went wrong. Please try again.');
     } finally {
       setStreaming(false);
     }
@@ -97,32 +106,58 @@ export function ChatInterface() {
   const showSubjectPicker = !subjectPicked && messages.length === 0 && subjects.length > 0;
 
   return (
-    <div className="flex h-full">
-      <div className="hidden lg:block w-72 border-r border-border shrink-0">
+    <div className="bg-background relative flex h-full min-h-0 min-w-0 overflow-hidden">
+      <div className="border-border hidden w-72 shrink-0 border-r lg:block">
         <ConversationSidebar />
       </div>
 
-      <div className="flex-1 flex flex-col min-w-0">
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-[140] lg:hidden" role="dialog" aria-modal="true" aria-label="Chat history">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/65 backdrop-blur-sm"
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Close chat history"
+          />
+          <aside className="bg-background border-border relative flex h-dvh w-72 max-w-[86vw] flex-col border-r shadow-2xl">
+            <div className="border-border flex min-h-14 items-center justify-between border-b px-4">
+              <p className="font-semibold">Chat history</p>
+              <Button variant="ghost" size="icon-sm" onClick={() => setSidebarOpen(false)} aria-label="Close chat history">
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="min-h-0 flex-1">
+              <ConversationSidebar onNavigate={() => setSidebarOpen(false)} />
+            </div>
+          </aside>
+        </div>
+      )}
+
+      <div className="flex min-w-0 flex-1 flex-col">
         {/* Header */}
-        <div className="flex items-center gap-3 p-4 border-b border-border">
-          <Button variant="ghost" size="icon-sm" className="lg:hidden" onClick={() => setSidebarOpen(true)}><Menu className="w-4 h-4" /></Button>
-          <TeacherIdentityCard subjectName={subject?.name} size="md" className="flex-1" />
-          <LiveVoiceCall subject={subject?.name} hasAccess={hasLiveVoiceAccess} userTier={userTier} />
-          <AIProviderSelector provider={provider} tier={tier} onChange={(p, t) => { setProvider(p); setTier(t); }} isFreeTier={isFreeTier} userTier={user?.subscriptionTier || 'FREE'} compact />
+        <div className="border-border flex min-h-14 min-w-0 items-center gap-2 border-b px-2 py-2 sm:gap-3 sm:px-4">
+          <Button variant="ghost" size="icon-sm" className="shrink-0 lg:hidden" onClick={() => setSidebarOpen(true)} aria-label="Open chat history"><Menu className="h-4 w-4" /></Button>
+          <TeacherIdentityCard subjectName={subject?.name} size="md" className="min-w-0 flex-1" />
+          <div className="hidden shrink-0 md:block">
+            <LiveVoiceCall subject={subject?.name} hasAccess={hasLiveVoiceAccess} userTier={userTier} />
+          </div>
+          <div className="shrink-0">
+            <AIProviderSelector provider={provider} tier={tier} onChange={(p, t) => { setProvider(p); setTier(t); }} isFreeTier={isFreeTier} userTier={user?.subscriptionTier || 'FREE'} compact />
+          </div>
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-3 sm:p-4">
           {showSubjectPicker ? (
             <SubjectPicker
               subjects={subjects}
               onSelect={(s) => { setSubject(s); setSubjectPicked(true); }}
             />
           ) : messages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center px-4">
+            <div className="flex min-h-full flex-col items-center justify-center px-2 py-6 text-center sm:px-4">
               <TeacherIdentityCard subjectName={subject?.name} size="lg" className="flex-col text-center mb-4 [&>div:last-child]:mt-2" />
-              <h2 className="text-xl font-bold mb-2">AI Tutor Se Puchho!</h2>
-              <p className="text-muted-foreground text-sm mb-6 max-w-sm">Koi bhi sawal puchho - Physics, Chemistry, Math, ya kuch bhi. Photo bhi scan kar sakte ho! Ya phir Voice Call se seedha baat karo.</p>
+              <h2 className="text-xl font-bold mb-2">Ask AI Tutor</h2>
+              <p className="text-muted-foreground text-sm mb-6 max-w-sm">Ask anything about Physics, Chemistry, Math, or another subject. Scan a photo or start a voice call.</p>
               <SuggestionChips
                 subjectName={subject?.name}
                 onSelect={(prompt) => {
@@ -142,7 +177,7 @@ export function ChatInterface() {
 
         {/* Input */}
         {!showSubjectPicker && (
-          <div className="border-t border-border bg-background/80">
+          <div className="border-border bg-background/95 shrink-0 border-t backdrop-blur">
             <MotivationCarousel subjectName={subject?.name} />
             <ChatInput
               onSend={handleSend}

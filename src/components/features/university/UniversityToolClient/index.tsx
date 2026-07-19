@@ -53,7 +53,7 @@ export function UniversityToolClient({ tool, title, description, defaultSubject 
 
   async function generate(modifier?: string) {
     if (!formReady) {
-      toast.error('Topic likho');
+      toast.error('Enter a topic.');
       return;
     }
     setLoading(true);
@@ -83,7 +83,7 @@ export function UniversityToolClient({ tool, title, description, defaultSubject 
       }
       setResult(json.data.result);
     } catch {
-      toast.error('Assistant response generate nahi ho saka');
+      toast.error('The assistant response could not be generated.');
     } finally {
       setLoading(false);
     }
@@ -161,7 +161,7 @@ export function UniversityToolClient({ tool, title, description, defaultSubject 
           {loading && (
             <Card>
               <CardContent className="min-h-[360px] p-8">
-                <BrandLoader label="Assistant university draft bana raha hai..." className="min-h-[300px]" />
+                <BrandLoader label="The assistant is preparing your university draft..." className="min-h-[300px]" />
               </CardContent>
             </Card>
           )}
@@ -272,7 +272,7 @@ function ResultActions({ tool, onShorter, onAcademic, onBullets }: { tool: Tool;
       )}
       <Button variant="outline" size="sm" onClick={() => {
         const ok = printElementById('university-export', 'ilm AI University Draft');
-        if (!ok) toast.error('Export content nahi mila.');
+        if (!ok) toast.error('No export content was found.');
       }}><Download className="h-3.5 w-3.5" /> Export PDF / Print</Button>
       {tool !== 'presentation' && (
         <Button asChild variant="outline" size="sm">

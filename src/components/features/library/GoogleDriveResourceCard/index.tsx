@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { DownloadCloud, FileType2, Loader2, Maximize2 } from 'lucide-react';
+import { BookOpen, CheckCircle2, DownloadCloud, FileType2, Loader2, Maximize2 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -17,7 +17,6 @@ import {
   fetchProtectedResourceResponse,
 } from '@/components/features/resources/ProtectedResourceReader';
 import { ResourceAiTools } from '@/components/features/resources/ResourceAiTools';
-import { ResourcePreviewFrame } from '@/components/features/resources/ResourcePreviewFrame';
 
 export interface DriveResourceData {
   id: string;
@@ -27,17 +26,23 @@ export interface DriveResourceData {
   subjectName?: string | null;
   subjectColor?: string | null;
   chapterName?: string | null;
+  bookTitle?: string | null;
+  hasContextText?: boolean;
 }
 
-export function GoogleDriveResourceCard({ resource }: { resource: DriveResourceData }) {
+export function GoogleDriveResourceCard({ resource, autoOpen = false }: { resource: DriveResourceData; autoOpen?: boolean }) {
   const { theme } = useTheme();
   const mode = isDarkThemeId(theme) ? 'dark' : 'light';
   const { user } = useAuth();
   const settings = usePlatformSettings();
   const tier = user?.subscriptionTier || 'FREE';
   const canDownload = settings.subscriptionPlans[tier].access.downloadPDF;
-  const [readerOpen, setReaderOpen] = useState(false);
+  const [readerOpen, setReaderOpen] = useState(autoOpen);
   const [downloading, setDownloading] = useState(false);
+
+  useEffect(() => {
+    if (autoOpen) setReaderOpen(true);
+  }, [autoOpen]);
 
   const saveForOffline = async () => {
     setDownloading(true);
@@ -73,13 +78,11 @@ export function GoogleDriveResourceCard({ resource }: { resource: DriveResourceD
 
   return (
     <Card className="group border-border/70 bg-card/85 hover:border-primary/35 overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-xl">
-      <ResourcePreviewFrame
-        kind="library"
-        resourceId={resource.id}
-        mode={mode}
-        title={resource.title}
-        className="border-border aspect-[4/3] border-b"
-      />
+      <div className="from-primary/10 via-background to-cyan-500/10 flex aspect-[4/3] items-center justify-center border-b bg-gradient-to-br">
+        <div className="border-primary/20 bg-background/75 flex h-20 w-20 items-center justify-center rounded-3xl border shadow-lg">
+          <BookOpen className="text-primary h-9 w-9" />
+        </div>
+      </div>
       <CardContent className="space-y-3 p-4">
         <div className="flex flex-wrap items-center gap-2">
           {resource.subjectName && (
@@ -88,6 +91,11 @@ export function GoogleDriveResourceCard({ resource }: { resource: DriveResourceD
             </Badge>
           )}
           {resource.chapterName && <Badge variant="secondary">{resource.chapterName}</Badge>}
+          {resource.hasContextText && (
+            <Badge variant="success">
+              <CheckCircle2 className="mr-1 h-3 w-3" /> AI text attached
+            </Badge>
+          )}
           {resource.fileType && (
             <Badge variant="outline">
               <FileType2 className="mr-1 h-3 w-3" />
@@ -96,6 +104,7 @@ export function GoogleDriveResourceCard({ resource }: { resource: DriveResourceD
           )}
         </div>
         <div>
+          {resource.bookTitle && <p className="text-primary mb-1 truncate text-xs font-semibold">{resource.bookTitle}</p>}
           <h3 className="line-clamp-1 text-sm font-semibold">{resource.title}</h3>
           {resource.description && (
             <p className="text-muted-foreground mt-1 line-clamp-2 text-xs">{resource.description}</p>
@@ -105,20 +114,26 @@ export function GoogleDriveResourceCard({ resource }: { resource: DriveResourceD
           <Maximize2 className="h-3.5 w-3.5" />
           Read full screen
         </Button>
-        <ResourceAiTools kind="library" resourceId={resource.id} />
-        {canDownload ? (
+        {user ? <ResourceAiTools kind="library" resourceId={resource.id} /> : (
+          <Button asChild variant="outline" size="sm" className="w-full">
+            <Link href={`/login?redirect=${encodeURIComponent(typeof window === 'undefined' ? '/library' : window.location.pathname + window.location.search)}`}>
+              Sign in for AI tools
+            </Link>
+          </Button>
+        )}
+        {user && canDownload ? (
           <Button variant="outline" size="sm" className="w-full" onClick={saveForOffline} disabled={downloading}>
             {downloading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <DownloadCloud className="h-3.5 w-3.5" />}
             Save in app for offline
           </Button>
-        ) : (
+        ) : user ? (
           <Button asChild variant="outline" size="sm" className="w-full">
             <Link href="/subscription">
               <DownloadCloud className="h-3.5 w-3.5" />
               Offline save <Badge className="ml-1 text-[10px]">Pro</Badge>
             </Link>
           </Button>
-        )}
+        ) : null}
       </CardContent>
       <ProtectedResourceReader
         open={readerOpen}

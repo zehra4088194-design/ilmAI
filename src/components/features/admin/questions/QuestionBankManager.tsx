@@ -69,11 +69,11 @@ export function QuestionBankManager() {
         fetch('/api/admin/subjects'),
       ]);
       const [questionsJson, subjectsJson] = await Promise.all([questionsRes.json(), subjectsRes.json()]);
-      if (!questionsRes.ok) throw new Error(questionsJson.error || 'Questions load nahi hue');
+      if (!questionsRes.ok) throw new Error(questionsJson.error || 'Questions could not be loaded.');
       setQuestions(questionsJson.questions || []);
       setSubjects(subjectsJson.subjects || []);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Question bank load nahi hua');
+      toast.error(error instanceof Error ? error.message : 'Question bank could not be loaded.');
     } finally {
       setLoading(false);
     }
@@ -160,7 +160,7 @@ export function QuestionBankManager() {
       setIsDemoEligible(false);
       await refetch();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Question add nahi hua');
+      toast.error(error instanceof Error ? error.message : 'Question could not be added.');
     } finally {
       setSaving(false);
     }
@@ -175,17 +175,17 @@ export function QuestionBankManager() {
     });
     if (!res.ok) {
       setQuestions((current) => current.map((question) => question.id === id ? { ...question, is_demo_eligible: !value } : question));
-      toast.error('Demo toggle save nahi hua');
+      toast.error('Demo toggle could not be saved.');
       return;
     }
-    toast.success(value ? 'Question demo mein show ho sakta hai' : 'Question demo se remove ho gaya');
+    toast.success(value ? 'Question can appear in the demo.' : 'Question removed from the demo.');
   }
 
   async function deleteQuestion(id: string) {
-    if (!confirm('Question delete karna hai?')) return;
+    if (!confirm('Delete this question?')) return;
     const res = await fetch(`/api/admin/questions/${id}`, { method: 'DELETE' });
     if (!res.ok) {
-      toast.error('Question delete nahi hua');
+      toast.error('Question could not be deleted.');
       return;
     }
     setQuestions((current) => current.filter((question) => question.id !== id));
@@ -225,7 +225,7 @@ export function QuestionBankManager() {
         {loading ? (
           <p className="py-8 text-center text-sm text-muted-foreground"><Loader2 className="mr-2 inline h-4 w-4 animate-spin" />Loading...</p>
         ) : questions.length === 0 ? (
-          <p className="text-muted-foreground text-center py-8">Koi questions nahi hain. Upar se MCQ ya short question add karo.</p>
+          <p className="text-muted-foreground text-center py-8">No questions yet. Add an MCQ or short question above.</p>
         ) : (
           questions.map((question) => (
             <Card key={question.id}>

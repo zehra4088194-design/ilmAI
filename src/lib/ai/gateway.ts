@@ -1,7 +1,7 @@
 // ============================================
 // AI GATEWAY CLIENT
-// Talks to the Cloudflare Worker (cloudflare-worker/worker.js) instead of
-// calling provider APIs directly. The Worker holds all API keys
+// Talks to the private Oracle AI gateway instead of calling provider APIs
+// directly. The gateway holds all API keys
 // (up to 20 per provider) and handles rotation + automatic provider fallback.
 //
 // IMPORTANT: this file must only ever run on the SERVER (API routes,
@@ -15,7 +15,7 @@ import type { ProviderBudgetKey } from '@/lib/platform-settings/shared';
 export type AiProviderId = 'groq' | 'grok' | 'claude' | 'gpt' | 'gemini' | 'advanced';
 export type ModelTier = 'mini' | 'medium' | 'pro';
 
-const GATEWAY_URL = process.env.AI_GATEWAY_URL || 'https://ilm-ai1.noorhusnain791.workers.dev';
+const GATEWAY_URL = process.env.AI_GATEWAY_URL || 'http://127.0.0.1:8787';
 const GATEWAY_SECRET = process.env.AI_GATEWAY_SECRET || '';
 const ADVANCED_GATEWAY_PROVIDER = `open${'router'}`;
 
@@ -70,7 +70,7 @@ async function gatewayFetch(path: string, body: unknown) {
       typeof data === 'string' ? data : (data as { error?: string })?.error || `Gateway request failed (${res.status})`;
     const message =
       res.status === 401 || res.status === 403
-        ? 'AI gateway authorization failed. Cloudflare Worker ka GATEWAY_SECRET ya to missing hai, ya app ke AI_GATEWAY_SECRET se mismatch kar raha hai.'
+        ? 'AI gateway authorization failed. Gateway ka GATEWAY_SECRET missing hai ya app ke AI_GATEWAY_SECRET se mismatch kar raha hai.'
         : rawMessage;
     throw new GatewayError(message, res.status, data);
   }
@@ -105,7 +105,7 @@ export async function gatewayChat({
       const budgetKey = getProviderBudgetKey(attempt.provider, attempt.tier);
       const budget = await checkProviderDailyLimit(budgetKey);
       if (!budget.success) {
-        lastError = new GatewayError(`${attempt.provider} ka platform free daily budget complete ho gaya.`, 429, {
+        lastError = new GatewayError(`${attempt.provider} has reached its free daily budget.`, 429, {
           provider: attempt.provider,
           reset: budget.reset,
         });
@@ -189,7 +189,7 @@ export const MARKDOWN_ANSWER_FORMAT_INSTRUCTION = `Format your answer as a well-
 function buildSystemPrompt(subject?: string): string {
   const base = `You are ilm AI, an expert tutor for Pakistani students (Grades 9-12, O/A Levels).
 You specialize in FBISE and provincial board curricula.
-- Explain concepts clearly, mixing in Roman Urdu phrases naturally when helpful
+- Explain concepts clearly in professional English by default. Use Roman Urdu only when the student explicitly requests it.
 - For MCQs, explain why each option is correct or incorrect
 - Encourage and motivate students
 - Be concise but thorough
@@ -240,7 +240,7 @@ export async function explainConceptViaGateway(
     messages: [
       {
         role: 'system',
-        content: `Expert ${subject} tutor for Pakistani ${gradeLevel} students. Roman Urdu mixed with English where helpful.\n\n${MARKDOWN_ANSWER_FORMAT_INSTRUCTION}`,
+        content: `Expert ${subject} tutor for Pakistani ${gradeLevel} students. Respond in professional English by default; use Roman Urdu only when explicitly requested.\n\n${MARKDOWN_ANSWER_FORMAT_INSTRUCTION}`,
       },
       {
         role: 'user',
@@ -285,7 +285,7 @@ export async function generateFlashcardsViaGateway(
 // The gateway mints a short-lived, single-use ephemeral Gemini token with
 // the AI Teacher persona locked in server-side. The browser then connects
 // directly to Gemini Live using that token; the raw Gemini key never leaves
-// the Worker, and audio never flows through our own servers.
+// the private gateway, and audio never flows through our own servers.
 // ============================================
 export interface LiveVoiceSession {
   token: string;

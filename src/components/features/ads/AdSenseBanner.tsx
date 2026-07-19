@@ -19,18 +19,18 @@ declare global {
  * Pro/Elite users see nothing — no layout shift, no wasted space.
  */
 export function AdSenseBanner({ slot, className = '' }: AdSenseBannerProps) {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const adRef = useRef<HTMLDivElement>(null);
   const pushed = useRef(false);
   const [preferences, setPreferences] = useState<CookieConsentPreferences | null>(null);
 
-  const clientId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
+  const clientId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID || 'ca-pub-4877865173601332';
   const slotId = slot === 'sidebar'
     ? process.env.NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR
     : process.env.NEXT_PUBLIC_ADSENSE_SLOT_INLINE;
 
-  const isPaid = user && user.subscriptionTier !== 'FREE';
-  const shouldShow = !isPaid && !!clientId && !!slotId && !!preferences?.marketing;
+  const isFreeOrGuest = !isLoading && (!user || user.subscriptionTier === 'FREE');
+  const shouldShow = isFreeOrGuest && !!clientId && !!slotId && !!preferences?.marketing;
 
   useEffect(() => {
     setPreferences(readCookieConsent());

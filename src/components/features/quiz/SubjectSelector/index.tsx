@@ -30,7 +30,7 @@ export function SubjectSelector({
       sessionStorage.setItem('current-quiz', JSON.stringify(json.data));
       router.push('/mcq/session');
     } catch {
-      toast.error('Quiz start nahi ho saka');
+      toast.error('The quiz could not be started.');
     } finally {
       setLoading(false);
     }
@@ -57,14 +57,14 @@ export function SubjectSelector({
                 <h3 className="font-semibold mb-1">{subject.name}</h3>
                 <p className="text-xs text-muted-foreground mb-4">{subject.total_chapters} chapters &middot; {subject.total_questions} questions</p>
                 <Button variant="gradient" size="sm" className="w-full" onClick={(e) => { e.stopPropagation(); openChapters(subject.id); }}>
-                  <Zap className="w-3.5 h-3.5" />Chapter Choose Karo
+                  <Zap className="w-3.5 h-3.5" />Choose a chapter
                 </Button>
               </CardContent>
             </Card>
           </motion.div>
         ))}
         {subjects.length === 0 && (
-          <div className="col-span-full text-center py-12 text-muted-foreground">Koi subjects available nahi hain abhi. Jald hi add honge!</div>
+          <div className="col-span-full text-center py-12 text-muted-foreground">No subjects are available yet. They will be added soon.</div>
         )}
       </div>
 
@@ -75,7 +75,7 @@ export function SubjectSelector({
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
               className="glass rounded-2xl border border-border w-full max-w-md p-6 max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold">{selectedSubject?.name} &mdash; Chapter Choose Karo</h3>
+                <h3 className="font-semibold">{selectedSubject?.name} &mdash; Choose a chapter</h3>
                 <button onClick={() => setOpenSubjectId(null)} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
               </div>
 
@@ -89,14 +89,14 @@ export function SubjectSelector({
                 ))}
                 {chapters.length === 0 && (
                   <p className="text-sm text-muted-foreground text-center py-8">
-                    Aapki class ke liye is subject mein abhi koi chapter available nahi hai.
+                    No chapters are currently available for this subject and class.
                   </p>
                 )}
               </div>
 
               <Button variant="gradient" size="lg" className="w-full mt-4" disabled={!chapterId || loading}
                 onClick={() => chapterId && startQuiz(openSubjectId, chapterId)}>
-                <Zap className="w-4 h-4" />{loading ? 'Shuru ho raha hai...' : 'Practice Shuru Karo'}
+                <Zap className="w-4 h-4" />{loading ? 'Starting...' : 'Start practice'}
               </Button>
             </motion.div>
           </motion.div>

@@ -1,7 +1,7 @@
 // ============================================
 // PAYMENT PROVIDER INTERFACE
 // ============================================
-// Every payment gateway (Paddle, PayPro, or additional providers) implements
+// Every payment gateway (Paddle or additional verified providers) implements
 // this interface. Business logic (API routes, UI components) should NEVER
 // import a specific gateway SDK directly — only this contract.
 //
@@ -13,11 +13,9 @@
 
 export type SubscriptionTier = 'FREE' | 'PRO' | 'ELITE';
 
-export type PaymentRegion = 'INTERNATIONAL' | 'PAKISTAN';
+export type PaymentRegion = 'GLOBAL' | 'PK';
 
-// Module 8 (currency localization): PKR for Pakistan, INR for India — see
-// getCurrencyForBoard()/getCurrencyForCountry() in lib/constants.ts.
-export type CheckoutCurrency = 'PKR' | 'INR';
+export type CheckoutCurrency = 'USD' | 'PKR';
 
 export interface CreateCheckoutParams {
   /** Internal Supabase user id */
@@ -28,12 +26,10 @@ export interface CreateCheckoutParams {
   tier: Exclude<SubscriptionTier, 'FREE'>;
   /** Billing cycle */
   billingCycle: 'monthly' | 'annual';
-  /** Which regional gateway flow to use (International vs Pakistan) */
+  /** Payment region selected server-side. */
   region: PaymentRegion;
   /**
-   * Currency to charge in — resolved server-side from the user's
-   * profiles.board (see /api/payments/create-session), not trusted from the
-   * client. PKR is the safe default when a board isn't set yet.
+   * Currency is fixed server-side and never trusted from the client.
    */
   currency: CheckoutCurrency;
   /** Where to send the user after success/cancel */
@@ -81,7 +77,7 @@ export interface WebhookVerificationResult {
  * Keep this interface provider-agnostic — no gateway-specific types here.
  */
 export interface PaymentProvider {
-  /** Human-readable id, e.g. 'paddle' | 'paypro' */
+  /** Human-readable id, e.g. 'paddle' */
   readonly id: string;
 
   /** Create a hosted checkout session and return the redirect URL. */

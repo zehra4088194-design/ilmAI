@@ -89,7 +89,7 @@ export function StudentChatClient() {
     try {
       const res = await fetch('/api/student-chat/requests');
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Requests load nahi hui');
+      if (!res.ok) throw new Error(json.error || 'Requests could not be loaded.');
       setRequests(json.requests || []);
       const requested = json.requests?.find(
         (request: ChatRequest) => request.status === 'approved' && request.id === requestedChatId
@@ -100,7 +100,7 @@ export function StudentChatClient() {
         setSelectedId(json.requests.find((request: ChatRequest) => request.status === 'approved')?.id || null);
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Requests load nahi hui');
+      toast.error(error instanceof Error ? error.message : 'Requests could not be loaded.');
     } finally {
       if (showLoading) setLoading(false);
     }
@@ -110,10 +110,10 @@ export function StudentChatClient() {
     try {
       const res = await fetch(`/api/student-chat/messages?requestId=${requestId}`);
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Messages load nahi hue');
+      if (!res.ok) throw new Error(json.error || 'Messages could not be loaded.');
       setMessages(json.messages || []);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Messages load nahi hue');
+      toast.error(error instanceof Error ? error.message : 'Messages could not be loaded.');
     }
   };
 
@@ -199,12 +199,12 @@ export function StudentChatClient() {
         body: JSON.stringify({ recipientIdentifier: identifier }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Request send nahi hui');
+      if (!res.ok) throw new Error(json.error || 'The request could not be sent.');
       setIdentifier('');
       toast.success('Study buddy request send ho gayi');
       await loadRequests();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Request send nahi hui');
+      toast.error(error instanceof Error ? error.message : 'The request could not be sent.');
     } finally {
       setSending(false);
     }
@@ -218,11 +218,11 @@ export function StudentChatClient() {
         body: JSON.stringify({ requestId, status }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Request update nahi hui');
+      if (!res.ok) throw new Error(json.error || 'The request could not be updated.');
       toast.success(status === 'approved' ? 'Request approved' : 'Request declined');
       await loadRequests();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Request update nahi hui');
+      toast.error(error instanceof Error ? error.message : 'The request could not be updated.');
     }
   };
 
@@ -236,7 +236,7 @@ export function StudentChatClient() {
         body: JSON.stringify({ requestId: selected.id, content: message }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Message send nahi hua');
+      if (!res.ok) throw new Error(json.error || 'The message could not be sent.');
       upsertMessage(json.message);
       setMessage('');
       if (json.moderation?.alert) {
@@ -244,7 +244,7 @@ export function StudentChatClient() {
         if (json.moderation.action === 'blocked') await loadRequests();
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Message send nahi hua');
+      toast.error(error instanceof Error ? error.message : 'The message could not be sent.');
     } finally {
       setSending(false);
     }
@@ -258,8 +258,8 @@ export function StudentChatClient() {
             <Badge className="bg-primary text-primary-foreground mb-2">Request-first safe chat</Badge>
             <h1 className="text-2xl font-bold">Study Buddies</h1>
             <p className="text-muted-foreground mt-1 text-sm">
-              Student ke unique username (ya email) se request bhejo. Approval ke baad chat open hogi; messaging
-              Pro/Elite feature hai.
+              Send a request using the student&apos;s unique username or email. Chat opens after approval; messaging is a
+              Pro or Elite feature.
             </p>
           </div>
           {!canUseStudentChat && (
@@ -286,7 +286,7 @@ export function StudentChatClient() {
                 onChange={(event) => setIdentifier(event.target.value)}
                 placeholder="@student_username ya email"
               />
-              <p className="text-muted-foreground text-xs">Username unique hota hai; @ lagana optional hai.</p>
+              <p className="text-muted-foreground text-xs">Usernames are unique; the @ symbol is optional.</p>
               <Button variant="gradient" onClick={sendRequest} loading={sending} className="w-full">
                 <Send className="h-4 w-4" /> Send study request
               </Button>
@@ -327,7 +327,7 @@ export function StudentChatClient() {
             <CardContent className="space-y-2">
               {loading && <p className="text-muted-foreground text-sm">Loading...</p>}
               {!loading && approved.length === 0 && (
-                <p className="text-muted-foreground text-sm">Abhi koi approved buddy nahi.</p>
+                <p className="text-muted-foreground text-sm">There are no approved buddies yet.</p>
               )}
               {approved.map((request) => {
                 const buddy = request.requester_id === user?.id ? request.recipient : request.requester;
@@ -383,9 +383,9 @@ export function StudentChatClient() {
             {!selected ? (
               <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
                 <MessageCircle className="text-muted-foreground mb-3 h-10 w-10" />
-                <p className="font-semibold">Approved chat select karo</p>
+                <p className="font-semibold">Select an approved chat</p>
                 <p className="text-muted-foreground mt-1 max-w-sm text-sm">
-                  Request approve hone ke baad yahan conversation start hogi.
+                  A conversation will start here after the request is approved.
                 </p>
               </div>
             ) : (
@@ -396,7 +396,7 @@ export function StudentChatClient() {
                       <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                       <p>
                         {selectedBlockedUntil
-                          ? `Ye chat study se hatne ki wajah se ${new Date(selectedBlockedUntil).toLocaleString()} tak blocked hai.`
+                          ? `This chat is blocked until ${new Date(selectedBlockedUntil).toLocaleString()} because it moved off study topics.`
                           : moderationAlert}
                       </p>
                     </div>
@@ -452,9 +452,9 @@ export function StudentChatClient() {
                   <div className="border-border border-t p-4">
                     <div className="bg-muted/20 rounded-xl border border-dashed p-4 text-center">
                       <LockKeyhole className="text-primary mx-auto mb-2 h-5 w-5" />
-                      <p className="font-semibold">Messaging Pro/Elite feature hai</p>
+                      <p className="font-semibold">Messaging is a Pro or Elite feature</p>
                       <p className="text-muted-foreground mt-1 text-xs">
-                        Free users request bhej aur accept kar sakte hain. Actual chat unlock karne ke liye Pro lo.
+                        Free users can send and accept requests. Upgrade to Pro to unlock the actual chat.
                       </p>
                       <Button asChild variant="gradient" size="sm" className="mt-3">
                         <Link href="/subscription">Pro to unlock chat</Link>
@@ -465,7 +465,7 @@ export function StudentChatClient() {
                   <div className="border-border border-t p-4">
                     <div className="rounded-xl border border-amber-500/25 bg-amber-500/10 p-4 text-center text-sm text-amber-700 dark:text-amber-200">
                       <AlertTriangle className="mx-auto mb-2 h-5 w-5" />
-                      Chat temporarily blocked hai. Study related baat ke liye block expire hone ka wait karo.
+                      Chat is temporarily blocked. Wait for the block to expire before sending study-related messages.
                     </div>
                   </div>
                 ) : (

@@ -67,7 +67,7 @@ export function ChapterManager({ subjectId, subjectBoards, subjectGradeLevels, i
   const handleAdd = async () => {
     if (!newName.trim()) return;
     if (availableGrades.length > 1 && newGradeLevels.length === 0) {
-      toast.error('Is subject me multiple classes hain, chapter ke liye class select karo');
+      toast.error('This subject has multiple classes. Select a class for the chapter.');
       return;
     }
     setIsAdding(true);
@@ -92,14 +92,14 @@ export function ChapterManager({ subjectId, subjectBoards, subjectGradeLevels, i
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Yeh chapter delete karna hai? Iske topics/questions bhi saath delete ho jayenge.')) return;
+    if (!confirm('Delete this chapter? Its topics and questions will also be deleted.')) return;
     try {
       const res = await fetch(`/api/admin/chapters/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error((await res.json()).error);
       setChapters((prev) => prev.filter((c) => c.id !== id));
       toast.success('Chapter delete ho gaya');
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Delete nahi hua');
+      toast.error(err instanceof Error ? err.message : 'Delete failed.');
     }
   };
 
@@ -112,7 +112,7 @@ export function ChapterManager({ subjectId, subjectBoards, subjectGradeLevels, i
 
   const saveEdit = async (id: string) => {
     if (availableGrades.length > 1 && editGradeLevels.length === 0) {
-      toast.error('Is subject me multiple classes hain, chapter ke liye class select karo');
+      toast.error('This subject has multiple classes. Select a class for the chapter.');
       return;
     }
     try {
@@ -127,7 +127,7 @@ export function ChapterManager({ subjectId, subjectBoards, subjectGradeLevels, i
       setEditingId(null);
       toast.success('Update ho gaya!');
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Update nahi hua');
+      toast.error(err instanceof Error ? err.message : 'Update failed.');
     }
   };
 
@@ -145,7 +145,7 @@ export function ChapterManager({ subjectId, subjectBoards, subjectGradeLevels, i
         fetch(`/api/admin/chapters/${b.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderIndex: a.order_index }) }),
       ]);
     } catch {
-      toast.error('Reorder save nahi hua, refresh karke dobara try karo');
+      toast.error('Reordering could not be saved. Refresh and try again.');
     }
   };
 
@@ -199,7 +199,7 @@ export function ChapterManager({ subjectId, subjectBoards, subjectGradeLevels, i
       if (!res.ok) throw new Error(json.error);
       setTopicsByChapter((prev) => ({ ...prev, [chapterId]: json.topics || [] }));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Topics load nahi hue');
+      toast.error(err instanceof Error ? err.message : 'Topics could not be loaded.');
     } finally {
       setLoadingTopics(null);
     }
@@ -219,7 +219,7 @@ export function ChapterManager({ subjectId, subjectBoards, subjectGradeLevels, i
       setNewTopicName('');
       toast.success('Topic add ho gaya');
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Topic add nahi hua');
+      toast.error(err instanceof Error ? err.message : 'Topic could not be added.');
     }
   };
 
@@ -240,12 +240,12 @@ export function ChapterManager({ subjectId, subjectBoards, subjectGradeLevels, i
       setEditingTopicId(null);
       toast.success('Topic update ho gaya');
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Topic update nahi hua');
+      toast.error(err instanceof Error ? err.message : 'Topic could not be updated.');
     }
   };
 
   const deleteTopic = async (chapterId: string, topicId: string) => {
-    if (!confirm('Yeh topic delete karna hai?')) return;
+    if (!confirm('Delete this topic?')) return;
     try {
       const res = await fetch(`/api/admin/topics/${topicId}`, { method: 'DELETE' });
       const json = await res.json();
@@ -253,7 +253,7 @@ export function ChapterManager({ subjectId, subjectBoards, subjectGradeLevels, i
       setTopicsByChapter((prev) => ({ ...prev, [chapterId]: (prev[chapterId] || []).filter((topic) => topic.id !== topicId) }));
       toast.success('Topic delete ho gaya');
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Topic delete nahi hua');
+      toast.error(err instanceof Error ? err.message : 'Topic could not be deleted.');
     }
   };
 
@@ -261,7 +261,7 @@ export function ChapterManager({ subjectId, subjectBoards, subjectGradeLevels, i
     <div className="space-y-4">
       <Card>
         <CardContent className="p-5 space-y-3">
-          <p className="text-sm font-semibold">Naya chapter add karo</p>
+          <p className="text-sm font-semibold">Add a new chapter</p>
           <div className="flex gap-2">
             <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Chapter ka naam (e.g. Kinematics)" onKeyDown={(e) => { if (e.key === 'Enter') handleAdd(); }} />
             <Button onClick={handleAdd} disabled={isAdding || !newName.trim()}><Plus className="w-4 h-4 mr-1" /> Add</Button>
@@ -269,7 +269,7 @@ export function ChapterManager({ subjectId, subjectBoards, subjectGradeLevels, i
           <BoardCheckboxes selected={newBoards} onToggle={(v) => toggleValue(newBoards, v, setNewBoards)} />
           <GradeCheckboxes selected={newGradeLevels} onToggle={(v) => toggleValue(newGradeLevels, v, setNewGradeLevels)} />
           <p className="text-[11px] text-muted-foreground">
-            Koi board/class select nahi ki to chapter subject ke saare boards/classes par dikhega.
+            If no board or class is selected, the chapter will appear across all subject boards and classes.
           </p>
         </CardContent>
       </Card>
@@ -343,7 +343,7 @@ export function ChapterManager({ subjectId, subjectBoards, subjectGradeLevels, i
                       </div>
                     ))}
                     {loadingTopics !== c.id && (topicsByChapter[c.id] || []).length === 0 && (
-                      <p className="py-3 text-center text-sm text-muted-foreground">Abhi topics nahi hain. Upar se add karo.</p>
+                      <p className="py-3 text-center text-sm text-muted-foreground">No topics yet. Add one above.</p>
                     )}
                   </div>
                 </div>
@@ -351,7 +351,7 @@ export function ChapterManager({ subjectId, subjectBoards, subjectGradeLevels, i
             </CardContent>
           </Card>
         ))}
-        {chapters.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">Abhi koi chapter nahi hai. Upar se add karo.</p>}
+        {chapters.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">No chapters yet. Add one above.</p>}
       </div>
     </div>
   );

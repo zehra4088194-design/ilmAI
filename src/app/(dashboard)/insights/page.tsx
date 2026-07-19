@@ -57,6 +57,7 @@ export default async function InsightsPage() {
     { data: historyRows },
     { data: cachedRoadmap },
     { data: quizRows },
+    { data: masteryRows },
   ] = await Promise.all([
     supabase.from('profiles').select('subscription_tier').eq('id', user!.id).single(),
     db
@@ -84,6 +85,12 @@ export default async function InsightsPage() {
       .eq('status', 'COMPLETED')
       .order('completed_at', { ascending: false })
       .limit(30),
+    db
+      .from('chapter_mastery')
+      .select('chapter_id, mastery, attempts, last_attempt_at')
+      .eq('student_id', user!.id)
+      .order('mastery', { ascending: true })
+      .limit(30),
   ]);
 
   const twin = (twinRow || {}) as Twin;
@@ -92,6 +99,16 @@ export default async function InsightsPage() {
     key,
     confidence: Number(confidence),
   }));
+  const knownChapterIds = new Set(weaknessEntries.map((item) => item.chapterId).filter(Boolean));
+  for (const row of masteryRows || []) {
+    if (!row.chapter_id || knownChapterIds.has(row.chapter_id)) continue;
+    weaknessEntries.push({
+      subjectId: '',
+      chapterId: row.chapter_id,
+      key: `diagnostic:${row.chapter_id}`,
+      confidence: Number(row.mastery || 0),
+    });
+  }
   const subjectIds = [...new Set(weaknessEntries.map((item) => item.subjectId).filter((id): id is string => !!id && uuidPattern.test(id)))];
   const chapterIds = [...new Set(weaknessEntries.map((item) => item.chapterId).filter((id): id is string => !!id && uuidPattern.test(id)))];
   const [{ data: subjects }, { data: chapters }] = await Promise.all([

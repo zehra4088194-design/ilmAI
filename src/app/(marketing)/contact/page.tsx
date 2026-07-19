@@ -11,7 +11,7 @@ export default function ContactPage() {
   const [loading, setLoading] = useState(false);
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault(); setLoading(true);
-    setTimeout(() => { toast.success('Message bhej diya! Hum jald reply karenge.'); setLoading(false); }, 1000);
+    setTimeout(() => { toast.success('Message sent. We will reply soon.'); setLoading(false); }, 1000);
   };
   return (
     <div className="min-h-screen bg-background">
@@ -19,14 +19,14 @@ export default function ContactPage() {
       <main className="pt-32 pb-20 container mx-auto px-4 max-w-xl">
         <div className="text-center mb-10">
           <MessageSquare className="w-10 h-10 text-violet-400 mx-auto mb-4" />
-          <h1 className="text-3xl font-bold mb-2">Humse Rabta Karo</h1>
-          <p className="text-muted-foreground">Koi sawal hai? Hum yahan help ke liye hain!</p>
+          <h1 className="text-3xl font-bold mb-2">Contact us</h1>
+          <p className="text-muted-foreground">Have a question? We are here to help.</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4 glass rounded-2xl p-6 border border-border/50">
-          <Input placeholder="Aapka naam" required />
+          <Input placeholder="Your name" required />
           <Input type="email" placeholder="Email address" required />
-          <textarea placeholder="Apna message likho..." rows={5} required className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
-          <Button type="submit" variant="gradient" className="w-full" loading={loading}><Mail className="w-4 h-4" />Message Bhejo</Button>
+          <textarea placeholder="Write your message..." rows={5} required className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+          <Button type="submit" variant="gradient" className="w-full" loading={loading}><Mail className="w-4 h-4" />Send message</Button>
         </form>
       </main>
       <LandingFooter />

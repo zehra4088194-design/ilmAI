@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
 import { NotificationBell } from '@/components/ui/NotificationBell';
+import { CreditBalancePill } from '@/components/features/ai-selector/CreditBalancePill';
 
 type DashboardNavbarProps = {
   mobileMenuOpen?: boolean;
@@ -16,7 +17,7 @@ type DashboardNavbarProps = {
 
 type SearchResult = {
   id: string;
-  type: 'subject' | 'chapter' | 'resource' | 'lecture' | 'note';
+  type: 'subject' | 'chapter' | 'resource' | 'lecture' | 'note' | 'past-paper';
   name: string;
   subtitle: string;
   href: string;
@@ -69,7 +70,7 @@ export function DashboardNavbar({
   };
 
   return (
-    <header className="border-border bg-background/95 pointer-events-auto fixed top-0 right-0 left-0 z-[80] flex h-16 items-center gap-4 border-b px-4 backdrop-blur-[1px] md:px-6 lg:left-64 lg:z-30">
+    <header className="border-border bg-background/95 pointer-events-auto fixed top-0 right-0 left-0 z-[80] flex h-16 min-w-0 items-center gap-2 border-b px-2 backdrop-blur-[1px] sm:gap-3 sm:px-4 md:px-6 lg:left-64 lg:z-30">
       <button
         type="button"
         className="relative z-[120] inline-flex h-10 w-10 shrink-0 touch-manipulation items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 text-white shadow-lg shadow-violet-500/20 lg:hidden"
@@ -80,7 +81,7 @@ export function DashboardNavbar({
         {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
       </button>
       {/* Search */}
-      <div className="relative max-w-md flex-1">
+      <div className="relative min-w-0 max-w-md flex-1">
         <div className="relative">
           <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
           <input
@@ -94,7 +95,7 @@ export function DashboardNavbar({
               if (event.key === 'Escape') setSearchOpen(false);
               if (event.key === 'Enter' && searchResults[0]) window.location.href = searchResults[0].href;
             }}
-            placeholder="Search subjects, chapters..."
+            placeholder="Search..."
             className="border-border bg-muted/50 focus:ring-primary/50 w-full rounded-lg border py-2 pr-4 pl-9 text-sm transition-all focus:ring-2 focus:outline-none"
           />
         </div>
@@ -113,12 +114,13 @@ export function DashboardNavbar({
                 </Link>
               ))
             ) : (
-              <p className="text-muted-foreground px-4 py-3 text-sm">Koi subject ya chapter nahi mila.</p>
+              <p className="text-muted-foreground px-4 py-3 text-sm">No subject or chapter found.</p>
             )}
           </div>
         )}
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+        <CreditBalancePill className="hidden sm:inline-flex" />
         {/* XP Display */}
         {user && (
           <Badge
@@ -135,7 +137,9 @@ export function DashboardNavbar({
           </Button>
         )}
         {/* Language */}
-        <LanguageSwitcher />
+        <div className="hidden sm:block">
+          <LanguageSwitcher />
+        </div>
         {/* Theme */}
         <ThemeToggle />
         {/* Notifications */}

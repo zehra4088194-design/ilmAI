@@ -17,7 +17,7 @@ export function CitationGeneratorTool() {
 
   const generate = async () => {
     if (input.trim().length < 3) {
-      toast.error('Valid URL, DOI, book title ya author name enter karo.');
+      toast.error('Enter a valid URL, DOI, book title, or author name.');
       return;
     }
     setLoading(true);
@@ -34,7 +34,7 @@ export function CitationGeneratorTool() {
       }
       setResult(json.data);
     } catch {
-      toast.error('Citation generate nahi ho saki.');
+      toast.error('The citation could not be generated.');
     } finally {
       setLoading(false);
     }
@@ -50,7 +50,7 @@ export function CitationGeneratorTool() {
       <div>
         <Badge variant="secondary" className="mb-3">University Tool</Badge>
         <h1 className="text-2xl font-bold">AI Citation & Reference Generator</h1>
-        <p className="text-muted-foreground">Study drafts ke liye citations banao. Final submission se pehle source details verify zaroor karo.</p>
+        <p className="text-muted-foreground">Create citations for study drafts. Always verify source details before final submission.</p>
       </div>
 
       <Card>
@@ -82,7 +82,7 @@ export function CitationGeneratorTool() {
           <CardTitle className="flex items-center gap-2 text-base"><Quote className="h-4 w-4 text-violet-400" /> Results</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {!result && !loading && <p className="text-sm text-muted-foreground">Generated in-text citation aur full bibliography yahan show hogi.</p>}
+          {!result && !loading && <p className="text-sm text-muted-foreground">The generated in-text citation and full bibliography will appear here.</p>}
           {loading && <div className="h-24 animate-pulse rounded-xl bg-muted/40" />}
           {result && (
             <>

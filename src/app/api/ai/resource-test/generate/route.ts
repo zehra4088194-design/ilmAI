@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { gatewayChat } from '@/lib/ai/gateway';
-import { checkAiMessageLimit } from '@/lib/rate-limit';
+import { checkAiMessageLimit, checkFileTestLimit } from '@/lib/rate-limit';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import { fetchResourceContext, getProtectedResource, type ProtectedResourceKind } from '@/lib/resources/server';
 import type { FullTestPaper } from '@/app/api/ai/full-test/route';
 import { buildResourceSourceTest } from '@/lib/resources/source-fallback';
 
 export const runtime = 'nodejs';
-export const maxDuration = 60;
+export const maxDuration = 180;
 
 function count(value: unknown, max: number) {
   return Math.max(0, Math.min(max, Math.floor(Number(value) || 0)));
@@ -40,11 +40,18 @@ export async function POST(req: NextRequest) {
     if (mcqCount + shortCount + longCount === 0) {
       return NextResponse.json({ status: 'error', error: 'Kam az kam ek question select karo.' }, { status: 400 });
     }
-    const context = await fetchResourceContext(resource);
+    const featureLimit = await checkFileTestLimit(user.id, resource.tier);
+    if (!featureLimit.success) {
+      return NextResponse.json(
+        { status: 'error', error: 'File-based tests ki monthly plan limit complete ho gayi.' },
+        { status: 429 }
+      );
+    }
     const limit = await checkAiMessageLimit(user.id, resource.tier, 'resource_test_generate');
     if (!limit.success) {
       return NextResponse.json({ status: 'error', error: 'Aaj ki AI limit khatam ho gayi.' }, { status: 429 });
     }
+    const context = await fetchResourceContext(resource);
     const fallback: FullTestPaper = {
       title: `${resource.title} - AI Test`,
       totalMarks: mcqCount + shortCount * 3 + longCount * 8,

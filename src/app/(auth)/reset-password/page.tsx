@@ -32,11 +32,11 @@ export default function ResetPasswordPage() {
   const handleReset = async (event: React.FormEvent) => {
     event.preventDefault();
     if (password.length < 8) {
-      toast.error('Password kam az kam 8 characters ka rakho.');
+      toast.error('Password must be at least 8 characters.');
       return;
     }
     if (password !== confirmPassword) {
-      toast.error('Dono passwords match nahi karte.');
+      toast.error('The passwords do not match.');
       return;
     }
 
@@ -49,21 +49,21 @@ export default function ResetPasswordPage() {
     }
 
     await supabase.auth.signOut();
-    toast.success('Password update ho gaya. Ab naye password se login karo.');
+    toast.success('Password updated. Log in with your new password.');
     router.replace('/login?password=updated');
     router.refresh();
   };
 
   if (checkingSession) {
-    return <p className="text-muted-foreground text-center text-sm">Secure reset session check ho rahi hai...</p>;
+    return <p className="text-muted-foreground text-center text-sm">Checking secure reset session...</p>;
   }
 
   if (!hasRecoverySession) {
     return (
       <div className="text-center">
-        <h1 className="mb-2 text-2xl font-bold">Reset Link Invalid Hai</h1>
+        <h1 className="mb-2 text-2xl font-bold">Reset link is invalid</h1>
         <p className="text-muted-foreground mb-6">
-          Naya password set karne ke liye email wala link ya code dobara use karo.
+          Use the link or code from your email again to set a new password.
         </p>
         <Button asChild variant="gradient" className="w-full">
           <Link href="/forgot-password">Naya Link Aur Code Lo</Link>
@@ -74,8 +74,8 @@ export default function ResetPasswordPage() {
 
   return (
     <div>
-      <h1 className="mb-2 text-2xl font-bold">Naya Password Banao</h1>
-      <p className="text-muted-foreground mb-8">Kam az kam 8 characters ka secure password rakho.</p>
+      <h1 className="mb-2 text-2xl font-bold">Create a new password</h1>
+      <p className="text-muted-foreground mb-8">Use a secure password with at least 8 characters.</p>
       <form onSubmit={handleReset} className="space-y-4">
         <Input
           type="password"
@@ -96,7 +96,7 @@ export default function ResetPasswordPage() {
           autoComplete="new-password"
         />
         <Button type="submit" variant="gradient" className="w-full" size="lg" loading={loading}>
-          Password Update Karo
+          Update password
         </Button>
       </form>
     </div>

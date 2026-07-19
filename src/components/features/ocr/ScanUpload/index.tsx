@@ -29,13 +29,14 @@ export function ScanUpload({ onTextExtracted, trigger }: ScanUploadProps) {
   const settings = usePlatformSettings();
   const tier = user?.subscriptionTier || 'FREE';
   const plan = settings.subscriptionPlans[tier];
-  const printedLimit = plan.limits.ocrPrintedWeekly;
-  const handwrittenLimit = plan.limits.ocrHandwrittenWeekly;
+  const audience = user?.educationLevel || 'school';
+  const printedLimit = plan.limits.ocrPrintedMonthly;
+  const handwrittenLimit = plan.audienceLimits[audience].ocrHandwrittenMonthly;
   const limitLabel = (value: number) => (value < 0 ? 'Unlimited' : String(value));
 
   const handleFileSelect = useCallback((file: File) => {
     if (!file.type.startsWith('image/')) {
-      toast.error('Sirf image upload karo');
+      toast.error('Upload an image only.');
       return;
     }
     setSelectedFile(file);
@@ -63,7 +64,7 @@ export function ScanUpload({ onTextExtracted, trigger }: ScanUploadProps) {
       setRemaining(json.data.remaining);
       setState('done');
     } catch {
-      setErrorMsg('Kuch ghalat ho gaya. Internet check karo aur dobara try karo.');
+      setErrorMsg('Something went wrong. Check your internet connection and try again.');
       setState('error');
     }
   };
@@ -120,7 +121,7 @@ export function ScanUpload({ onTextExtracted, trigger }: ScanUploadProps) {
 
               <p className="text-muted-foreground mb-4 rounded-lg bg-violet-500/10 px-3 py-2 text-xs text-violet-300">
                 {plan.name}: {limitLabel(printedLimit)} printed aur {limitLabel(handwrittenLimit)} handwritten
-                scans/week.
+                scans/month.
               </p>
 
               <div className="mb-4 grid grid-cols-2 gap-2">
@@ -162,7 +163,7 @@ export function ScanUpload({ onTextExtracted, trigger }: ScanUploadProps) {
                   onDragOver={(e) => e.preventDefault()}
                 >
                   <Upload className="text-muted-foreground mx-auto mb-3 h-8 w-8" />
-                  <p className="mb-1 text-sm font-medium">Photo upload karo ya yahan drag karo</p>
+                  <p className="mb-1 text-sm font-medium">Upload a photo or drag it here</p>
                   <p className="text-muted-foreground text-xs">Question, notes, ya textbook page ki clear image</p>
                 </div>
               )}
@@ -199,11 +200,11 @@ export function ScanUpload({ onTextExtracted, trigger }: ScanUploadProps) {
               {state === 'scanning' && (
                 <div className="py-12 text-center">
                   <Loader2 className="mx-auto mb-3 h-8 w-8 animate-spin text-violet-400" />
-                  <p className="text-sm font-medium">Text extract kar rahe hain...</p>
+                  <p className="text-sm font-medium">Extracting text...</p>
                   <p className="text-muted-foreground mt-1 text-xs">
                     {scanMode === 'printed'
-                      ? 'Printed OCR se process ho raha hai'
-                      : 'Gemini Vision AI se process ho raha hai'}
+                      ? 'Processing with printed OCR'
+                      : 'Processing with Gemini Vision AI'}
                   </p>
                 </div>
               )}
@@ -214,7 +215,7 @@ export function ScanUpload({ onTextExtracted, trigger }: ScanUploadProps) {
                     <p className="text-sm whitespace-pre-wrap">{extractedText}</p>
                   </div>
                   {remaining !== null && remaining >= 0 && (
-                    <p className="text-muted-foreground mb-3 text-xs">{remaining} scans is week baqi hain</p>
+                    <p className="text-muted-foreground mb-3 text-xs">{remaining} scans remaining this month</p>
                   )}
                   <div className="flex gap-2">
                     <Button
@@ -226,7 +227,7 @@ export function ScanUpload({ onTextExtracted, trigger }: ScanUploadProps) {
                         setSelectedFile(null);
                       }}
                     >
-                      Dobara Scan Karo
+                      Scan again
                     </Button>
                     <Button variant="gradient" className="flex-1" onClick={handleUseText}>
                       <Check className="h-4 w-4" />

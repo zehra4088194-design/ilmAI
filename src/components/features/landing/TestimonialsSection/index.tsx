@@ -3,12 +3,12 @@ import { motion } from 'framer-motion';
 import { Star, Quote } from 'lucide-react';
 
 const TESTIMONIALS = [
-  { name: 'Ahmed Ali', board: 'FBISE', grade: 'Grade 10', score: '95%', text: 'ilm AI ne meri physics bilkul clear kar di! AI Tutor 24/7 available hai aur MCQ practice se mera confidence bahut badh gaya.', avatar: 'AA' },
-  { name: 'Fatima Khan', board: 'BISE Lahore', grade: 'Grade 12', score: '980/1100', text: 'Chemistry mein A+ aai sirf ilm AI ki wajah se. Past papers aur flashcards really helped. Highly recommended!', avatar: 'FK' },
-  { name: 'Usman Raza', board: 'FBISE', grade: 'Grade 11', score: 'Top 5%', text: 'AI Tutor se mathematics ke problems explain karna aur samajhna bahut easy ho gaya. Pehle tuition fee bohot ziada tha.', avatar: 'UR' },
-  { name: 'Sara Ahmed', board: 'BISE Karachi', grade: 'Grade 9', score: '88%', text: 'Pehli baar online study kiya aur result itna acha aaya! ilm AI ka UI bahut clean hai aur AI bahut helpful hai.', avatar: 'SA' },
-  { name: 'Hassan Malik', board: 'BISE Rawalpindi', grade: 'Grade 12', score: 'A+', text: 'Leaderboard feature mein apne dosto se compete karna mujhe motivated rakhta hai. Study fun ban gaya!', avatar: 'HM' },
-  { name: 'Zara Noor', board: 'BISE Faisalabad', grade: 'Grade 10', score: '92%', text: 'Flashcard system amazing hai! Spaced repetition se definitions yaad rehti hain. Biology mein finally confidence aa gaya.', avatar: 'ZN' },
+  { name: 'Ahmed Ali', board: 'FBISE', grade: 'Grade 10', score: '95%', text: 'ilm AI made physics much clearer for me. The AI Tutor is available 24/7, and MCQ practice built my confidence.', avatar: 'AA' },
+  { name: 'Fatima Khan', board: 'BISE Lahore', grade: 'Grade 12', score: '980/1100', text: 'I earned an A+ in Chemistry with help from ilm AI. The past papers and flashcards were especially useful.', avatar: 'FK' },
+  { name: 'Usman Raza', board: 'FBISE', grade: 'Grade 11', score: 'Top 5%', text: 'The AI Tutor makes mathematics problems much easier to understand. It is a valuable alternative to expensive tuition.', avatar: 'UR' },
+  { name: 'Sara Ahmed', board: 'BISE Karachi', grade: 'Grade 9', score: '88%', text: 'Online study finally feels simple. ilm AI has a clean interface and the AI tools are genuinely helpful.', avatar: 'SA' },
+  { name: 'Hassan Malik', board: 'BISE Rawalpindi', grade: 'Grade 12', score: 'A+', text: 'The leaderboard keeps me motivated to compete with friends. Studying has become more engaging.', avatar: 'HM' },
+  { name: 'Zara Noor', board: 'BISE Faisalabad', grade: 'Grade 10', score: '92%', text: 'The flashcard system is excellent. Spaced repetition helps me remember Biology definitions with confidence.', avatar: 'ZN' },
 ];
 
 export function TestimonialsSection() {

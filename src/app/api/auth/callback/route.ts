@@ -4,6 +4,7 @@ import type { Database } from '@/lib/supabase/database.types';
 import { BOARDS, GRADE_LEVELS } from '@/lib/constants';
 import { needsProfileCompletion } from '@/lib/utils/checkProfileComplete';
 import { nanoid } from 'nanoid';
+import { LOCALE_COOKIE_NAME } from '@/lib/i18n/config';
 
 type BoardType = Database['public']['Enums']['board_type'];
 type GradeLevel = Database['public']['Enums']['grade_level'];
@@ -92,15 +93,19 @@ export async function GET(request: NextRequest) {
         resolveEducationLevel(userMetadata?.academic_institution_type) ?? metadataEducationLevel;
       const metadataUsername =
         typeof userMetadata?.username === 'string' ? userMetadata.username.trim().toLowerCase() : null;
+      const metadataPreferredLanguage =
+        userMetadata?.preferred_language === 'roman-ur' || userMetadata?.preferred_language === 'en'
+          ? userMetadata.preferred_language
+          : null;
 
       // Ensure a profile row exists (for OAuth sign-ups that skip our register form)
-      const { data: existingProfile } = await supabase
+      const { data: existingProfile } = await (supabase
         .from('profiles')
         .select(
-          'id, role, username, gender, board, grade_level, education_level, university_program, university_semester, onboarding_completed, is_profile_complete'
+          'id, role, username, gender, board, grade_level, education_level, university_program, university_semester, onboarding_completed, is_profile_complete, preferred_language'
         )
         .eq('id', data.user.id)
-        .maybeSingle();
+        .maybeSingle() as any);
       const resolvedRole = metadataRole ?? existingProfile?.role ?? 'student';
       const metadataOnboardingCompleted =
         resolvedRole !== 'student' ||
@@ -142,6 +147,7 @@ export async function GET(request: NextRequest) {
           is_profile_complete: metadataOnboardingCompleted,
           onboarding_step: 0,
         };
+        (insertPayload as any).preferred_language = metadataPreferredLanguage || 'en';
         let { error: insertError } = await supabase.from('profiles').insert(insertPayload);
         if (isMissingAcademicInstitutionColumn(insertError)) {
           delete insertPayload.academic_institution_name;
@@ -166,6 +172,8 @@ export async function GET(request: NextRequest) {
         };
       } else {
         const updates: Database['public']['Tables']['profiles']['Update'] = {};
+
+        if (metadataPreferredLanguage) (updates as any).preferred_language = metadataPreferredLanguage;
 
         if (existingProfile.role !== resolvedRole) {
           updates.role = resolvedRole;
@@ -246,7 +254,13 @@ export async function GET(request: NextRequest) {
                 ? '/parent'
                 : redirectTo;
 
-      return NextResponse.redirect(`${origin}${destination}`);
+      const response = NextResponse.redirect(`${origin}${destination}`);
+      response.cookies.set(
+        LOCALE_COOKIE_NAME,
+        metadataPreferredLanguage || existingProfile?.preferred_language || 'en',
+        { path: '/', maxAge: 365 * 24 * 60 * 60, sameSite: 'lax' }
+      );
+      return response;
     }
   }
   return NextResponse.redirect(`${origin}/login?error=auth_failed`);

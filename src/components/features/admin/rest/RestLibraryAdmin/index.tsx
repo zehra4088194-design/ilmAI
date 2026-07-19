@@ -51,13 +51,13 @@ export function RestLibraryAdmin() {
     try {
       const res = await fetch('/api/admin/music-playlists');
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Playlists load nahi hui');
+      if (!res.ok) throw new Error(json.error || 'Playlists could not be loaded.');
       setPlaylists(json.playlists || []);
       if (!songForm.playlist_id && json.playlists?.[0]?.id) {
         setSongForm((current) => ({ ...current, playlist_id: json.playlists[0].id }));
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Playlists load nahi hui');
+      toast.error(error instanceof Error ? error.message : 'Playlists could not be loaded.');
     } finally {
       setLoading(false);
     }
@@ -77,12 +77,12 @@ export function RestLibraryAdmin() {
         body: JSON.stringify({ ...playlistForm, is_pro: true }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Playlist save nahi hui');
+      if (!res.ok) throw new Error(json.error || 'Playlist could not be saved.');
       setPlaylistForm({ name: '', description: '', cover_image_url: '', order_index: 0 });
       toast.success('Playlist add ho gayi');
       await load();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Playlist save nahi hui');
+      toast.error(error instanceof Error ? error.message : 'Playlist could not be saved.');
     } finally {
       setSaving(false);
     }
@@ -100,19 +100,19 @@ export function RestLibraryAdmin() {
         body: JSON.stringify(songForm),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Song save nahi hua');
+      if (!res.ok) throw new Error(json.error || 'Song could not be saved.');
       setSongForm((current) => ({ ...current, title: '', artist: '', youtube_url: '', order_index: current.order_index + 1 }));
-      toast.success('Song playlist mein add ho gaya');
+      toast.success('Song added to the playlist.');
       await load();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Song save nahi hua');
+      toast.error(error instanceof Error ? error.message : 'Song could not be saved.');
     } finally {
       setSaving(false);
     }
   };
 
   const deletePlaylist = async (id: string) => {
-    if (!confirm('Playlist delete karni hai? Is ke songs bhi delete honge.')) return;
+    if (!confirm('Delete this playlist? Its songs will also be deleted.')) return;
     const res = await fetch(`/api/admin/music-playlists?id=${id}`, { method: 'DELETE' });
     const json = await res.json();
     if (!res.ok) return toast.error(json.error || 'Delete fail');
@@ -133,7 +133,7 @@ export function RestLibraryAdmin() {
       <div>
         <h1 className="text-2xl font-bold">Rest Library</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Pro relaxing playlists manage karo. Students study breaks mein yahan se calm sounds listen karenge.
+          Manage Pro relaxing playlists. Students can listen to calming sounds here during study breaks.
         </p>
       </div>
 

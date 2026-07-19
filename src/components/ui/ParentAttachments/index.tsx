@@ -91,11 +91,11 @@ export function ParentAttachments({
     if (!file) return;
 
     if (file.size > MAX_FILE_SIZE) {
-      toast.error('File 4MB se bari nahi honi chahiye');
+      toast.error('Files must be 4 MB or smaller.');
       return;
     }
     if (!ALLOWED_TYPES.includes(file.type)) {
-      toast.error('Sirf images ya PDF allowed hain');
+      toast.error('Only images and PDFs are allowed.');
       return;
     }
 
@@ -115,7 +115,7 @@ export function ParentAttachments({
       setAttachments((prev) => [json.data, ...prev]);
       toast.success('File share ho gayi!');
     } catch {
-      toast.error('Upload nahi hui, dobara try karo');
+      toast.error('Upload failed. Please try again.');
     } finally {
       setUploading(false);
     }
@@ -143,7 +143,7 @@ export function ParentAttachments({
       <div className="bg-background/50 max-h-64 space-y-2 overflow-y-auto p-3">
         {loading && <p className="text-muted-foreground mt-2 text-center text-xs">Loading...</p>}
         {!loading && attachments.length === 0 && (
-          <p className="text-muted-foreground mt-4 text-center text-xs">Koi file share nahi hui abhi</p>
+          <p className="text-muted-foreground mt-4 text-center text-xs">No files have been shared yet.</p>
         )}
         {attachments.map((a) => (
           <a
@@ -197,7 +197,7 @@ export function ParentAttachments({
           <Upload className="h-3.5 w-3.5" /> Upload File
         </Button>
         <p className="text-muted-foreground mt-1.5 text-center text-[10px]">
-          Shared files 30 din tak available rehti hain.
+          Shared files remain available for 30 days.
         </p>
       </div>
     </div>

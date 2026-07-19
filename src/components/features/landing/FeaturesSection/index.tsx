@@ -3,12 +3,12 @@ import { motion } from 'framer-motion';
 import { Brain, Zap, Trophy, BookOpen, BarChart3, FileText } from 'lucide-react';
 
 const FEATURES = [
-  { icon: Brain, title: 'AI Tutor 24/7', desc: 'Kabhi bhi, kahin bhi sawal pucho. Assistant se instant, detailed answers milenge Urdu ya English mein.', color: 'from-violet-500 to-purple-600', badge: 'Most Popular' },
-  { icon: Zap, title: 'Smart MCQ Engine', desc: '50,000+ verified MCQs with adaptive difficulty. Jitna practice karo, utna hi improve karo.', color: 'from-blue-500 to-indigo-600', badge: '50K+ Questions' },
-  { icon: FileText, title: 'Past Papers', desc: '20 saal ke past papers ek jagah. Board-wise, year-wise filter karke practice karo.', color: 'from-green-500 to-emerald-600', badge: '20 Years' },
-  { icon: BookOpen, title: 'Smart Flashcards', desc: 'AI-powered spaced repetition. Sirf woh cards dobara dikhaaye jaate hain jo tum nahi jaante.', color: 'from-amber-500 to-orange-600', badge: 'Spaced Repetition' },
-  { icon: BarChart3, title: 'Progress Analytics', desc: 'Har subject mein tumhara performance track karo. Weak areas identify karo aur improve karo.', color: 'from-pink-500 to-rose-600', badge: 'AI Analytics' },
-  { icon: Trophy, title: 'Leaderboard & XP', desc: 'Dosto se compete karo, XP earn karo, achievements unlock karo. Study ko game banao!', color: 'from-cyan-500 to-sky-600', badge: 'Gamification' },
+  { icon: Brain, title: 'AI Tutor 24/7', desc: 'Ask questions anytime, anywhere. Get instant, detailed answers in English or Urdu.', color: 'from-violet-500 to-purple-600', badge: 'Most Popular' },
+  { icon: Zap, title: 'Smart MCQ Engine', desc: '50,000+ verified MCQs with adaptive difficulty. Practice more and improve faster.', color: 'from-blue-500 to-indigo-600', badge: '50K+ Questions' },
+  { icon: FileText, title: 'Past Papers', desc: 'Access 20 years of past papers in one place. Filter by board and year for focused practice.', color: 'from-green-500 to-emerald-600', badge: '20 Years' },
+  { icon: BookOpen, title: 'Smart Flashcards', desc: 'AI-powered spaced repetition shows you the cards you need to review most.', color: 'from-amber-500 to-orange-600', badge: 'Spaced Repetition' },
+  { icon: BarChart3, title: 'Progress Analytics', desc: 'Track performance by subject, identify weak areas, and improve with clear insights.', color: 'from-pink-500 to-rose-600', badge: 'AI Analytics' },
+  { icon: Trophy, title: 'Leaderboard & XP', desc: 'Compete with friends, earn XP, and unlock achievements while you study.', color: 'from-cyan-500 to-sky-600', badge: 'Gamification' },
 ];
 
 export function FeaturesSection() {
@@ -16,8 +16,8 @@ export function FeaturesSection() {
     <section id="features" className="py-24">
       <div className="container mx-auto px-4">
         <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Sab Kuch Ek Jagah <span className="gradient-text">ilm AI</span> Mein</h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">Pakistani students ke liye specially designed features jo board exams ki tayari ko asaan banate hain.</p>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">Everything in One Place with <span className="gradient-text">ilm AI</span></h2>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">Purpose-built features that make exam preparation clearer and more effective for students.</p>
         </motion.div>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {FEATURES.map((feature, i) => (

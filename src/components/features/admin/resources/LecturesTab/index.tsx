@@ -41,7 +41,7 @@ export function LecturesTab() {
     try {
       const res = await fetch('/api/admin/lectures');
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Lectures load nahi ho saki');
+      if (!res.ok) throw new Error(data.error || 'Lectures could not be loaded.');
       setLectures(data.lectures ?? []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Kuch ghalat ho gaya');
@@ -64,7 +64,7 @@ export function LecturesTab() {
       setDeleteTarget(null);
       await refetch();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Delete mein masla hua');
+      setError(err instanceof Error ? err.message : 'Delete failed.');
     } finally {
       setDeleting(false);
     }
@@ -113,7 +113,7 @@ export function LecturesTab() {
             ) : lectures.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                  Abhi tak koi lecture add nahi hua.
+                  No lectures have been added yet.
                 </TableCell>
               </TableRow>
             ) : (
@@ -169,7 +169,7 @@ export function LecturesTab() {
           <AlertDialogHeader>
             <AlertDialogTitle>Lecture delete karein?</AlertDialogTitle>
             <AlertDialogDescription>
-              &quot;{deleteTarget?.title}&quot; permanently delete ho jayega. Yeh action undo nahi ho sakta.
+              &quot;{deleteTarget?.title}&quot; will be permanently deleted. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

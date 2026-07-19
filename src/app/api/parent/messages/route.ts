@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { createNotificationIfEnabled } from '@/lib/notifications/preferences';
+import { getParentLinkAccess } from '@/lib/parent/access';
 
 async function getUser() {
   const supabase = await createClient();
@@ -10,25 +11,18 @@ async function getUser() {
   return user;
 }
 
-async function getApprovedLink(linkId: string, userId: string) {
-  const admin = await createAdminClient();
-  const { data } = await admin
-    .from('parent_student_links')
-    .select('id, parent_id, student_id, status')
-    .eq('id', linkId)
-    .maybeSingle();
-  if (!data || data.status !== 'approved' || (data.parent_id !== userId && data.student_id !== userId)) return null;
-  return data;
-}
-
 export async function GET(req: NextRequest) {
   const user = await getUser();
   if (!user) return NextResponse.json({ error: 'Login required' }, { status: 401 });
 
   const linkId = req.nextUrl.searchParams.get('linkId');
   if (!linkId) return NextResponse.json({ error: 'linkId required hai' }, { status: 400 });
-  const link = await getApprovedLink(linkId, user.id);
-  if (!link) return NextResponse.json({ error: 'Ye link aapka nahi hai' }, { status: 403 });
+  const access = await getParentLinkAccess(linkId, user.id);
+  if (!access) return NextResponse.json({ error: 'Ye link aapka nahi hai' }, { status: 403 });
+  if (!access.plan.access.parentDashboard) {
+    return NextResponse.json({ error: 'Parent chat linked student ke Pro/Elite plan mein available hai.' }, { status: 403 });
+  }
+  const { link } = access;
 
   const admin = await createAdminClient();
   await admin
@@ -58,8 +52,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'linkId aur content required hain' }, { status: 400 });
   }
 
-  const link = await getApprovedLink(linkId, user.id);
-  if (!link || !link.student_id) return NextResponse.json({ error: 'Ye link aapka nahi hai' }, { status: 403 });
+  const access = await getParentLinkAccess(linkId, user.id);
+  if (!access || !access.link.student_id) return NextResponse.json({ error: 'Ye link aapka nahi hai' }, { status: 403 });
+  if (!access.plan.access.parentDashboard) {
+    return NextResponse.json({ error: 'Parent chat linked student ke Pro/Elite plan mein available hai.' }, { status: 403 });
+  }
+  const { link } = access;
 
   const admin = await createAdminClient();
   const { data, error } = await admin
@@ -71,6 +69,7 @@ export async function POST(req: NextRequest) {
   if (error) return NextResponse.json({ error: 'Message send nahi hua' }, { status: 500 });
 
   const recipientId = user.id === link.parent_id ? link.student_id : link.parent_id;
+  if (!recipientId) return NextResponse.json({ error: 'Linked recipient nahi mila' }, { status: 409 });
   await createNotificationIfEnabled(admin, 'parentMessages', {
     user_id: recipientId,
     type: 'SOCIAL',
@@ -93,8 +92,12 @@ export async function PATCH(req: NextRequest) {
   const { linkId } = await req.json();
   if (!linkId) return NextResponse.json({ error: 'linkId required hai' }, { status: 400 });
 
-  const link = await getApprovedLink(linkId, user.id);
-  if (!link) return NextResponse.json({ error: 'Ye link aapka nahi hai' }, { status: 403 });
+  const access = await getParentLinkAccess(linkId, user.id);
+  if (!access) return NextResponse.json({ error: 'Ye link aapka nahi hai' }, { status: 403 });
+  if (!access.plan.access.parentDashboard) {
+    return NextResponse.json({ error: 'Parent chat linked student ke Pro/Elite plan mein available hai.' }, { status: 403 });
+  }
+  const { link } = access;
 
   const admin = await createAdminClient();
   const { error } = await admin
