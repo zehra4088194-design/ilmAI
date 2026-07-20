@@ -61,7 +61,7 @@ export function AdSenseBanner({ slot, className = '' }: AdSenseBannerProps) {
         style={{ display: 'block' }}
         data-ad-client={clientId}
         data-ad-slot={slotId}
-        data-ad-format={slot === 'sidebar' ? 'auto' : 'fluid'}
+        data-ad-format="auto"
         data-full-width-responsive="true"
       />
     </div>
