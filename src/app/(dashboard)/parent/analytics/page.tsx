@@ -8,6 +8,7 @@ import { getPlanFromSettings } from '@/lib/platform-settings/shared';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ParentDetailedAnalytics } from '@/components/features/parent/ParentDetailedAnalytics';
+import { aiDecisionFeaturesEnabled } from '@/lib/compliance/ai-decision-features';
 import type { SubscriptionTier } from '@/types';
 
 export const metadata: Metadata = { title: 'Parent Analytics' };
@@ -122,7 +123,7 @@ export default async function ParentAnalyticsPage({
     : { data: [] as Array<{ id: string; name: string; color: string }> };
 
   let advanced: { prediction: any; digitalTwin: any } | null = null;
-  if (plan.access.advancedParentAnalytics) {
+  if (plan.access.advancedParentAnalytics && aiDecisionFeaturesEnabled()) {
     // The approved relationship was verified above. Service-role reads avoid
     // exposing these Elite-only records through broad parent RLS policies.
     const admin = (await createAdminClient()) as any;

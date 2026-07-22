@@ -44,7 +44,6 @@ export default async function CareerPage() {
                 </div>
                 <p className="mt-2 text-sm text-muted-foreground">{career.description}</p>
                 <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                  {career.automation_risk && <span className="rounded-full border px-2 py-1">Automation: {career.automation_risk}</span>}
                   {career.avg_salary_pkr && <span className="rounded-full border px-2 py-1">{career.avg_salary_pkr}</span>}
                 </div>
               </div>

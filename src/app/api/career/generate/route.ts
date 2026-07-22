@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     }
 
     const fallback = {
-      recommended_careers: [{ title: 'Data Analyst', match_score: 72, description: 'Estimated fit based on analytical strengths.', automation_risk: 'medium', avg_salary_pkr: 'varies by city and experience', growth_outlook: 'steady' }],
+      recommended_careers: [{ title: 'Data Analyst', match_score: 72, description: 'Study pathway suggestion based on selected interests and subjects.', avg_salary_pkr: 'varies by city and experience', growth_outlook: 'steady' }],
       recommended_degrees: [],
       recommended_universities: [],
       merit_estimation: {},

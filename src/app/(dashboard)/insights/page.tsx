@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { WeaknessRadar, type WeaknessRadarPoint } from '@/components/insights/WeaknessRadar';
 import { RoadmapPanel } from '@/components/insights/RoadmapPanel';
+import { aiDecisionFeaturesEnabled } from '@/lib/compliance/ai-decision-features';
 
 export const metadata: Metadata = { title: 'Insights' };
 
@@ -143,8 +144,8 @@ export default async function InsightsPage() {
   }
   const mistakePatterns = Array.from(mistakeMap.entries()).sort((a, b) => b[1] - a[1]).slice(0, 5);
   const confidence = Number(twin.confidence_level || 50);
-  const predicted = Number(twin.predicted_exam_score || confidence);
   const tier = profile?.subscription_tier || 'FREE';
+  const showAiDecisionFeatures = aiDecisionFeaturesEnabled();
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
@@ -218,18 +219,36 @@ export default async function InsightsPage() {
             </CardContent>
           </Card>
 
-          <Card className="glass">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Target className="h-5 w-5 text-violet-400" />
-                Predicted Score Range
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{Math.max(0, Math.round(predicted - 5))}-{Math.min(100, Math.round(predicted + 5))}%</p>
-              <p className="mt-1 text-sm text-muted-foreground">Based on recent accuracy, solve speed, and consistency.</p>
-            </CardContent>
-          </Card>
+          {showAiDecisionFeatures ? (
+            <Card className="glass">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Target className="h-5 w-5 text-violet-400" />
+                  Predicted Score Range
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold">
+                  {Math.max(0, Math.round(Number(twin.predicted_exam_score || confidence) - 5))}-
+                  {Math.min(100, Math.round(Number(twin.predicted_exam_score || confidence) + 5))}%
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">Based on recent accuracy, solve speed, and consistency.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="glass">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Target className="h-5 w-5 text-violet-400" />
+                  Next Study Focus
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold">{weakConcepts.length}</p>
+                <p className="mt-1 text-sm text-muted-foreground">Chapters currently marked for focused practice.</p>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 

@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { ParentDashboardClient } from '@/components/features/parent/ParentDashboardClient';
 import { getPlatformSettings } from '@/lib/platform-settings/server';
 import { getPlanFromSettings } from '@/lib/platform-settings/shared';
+import { aiDecisionFeaturesEnabled } from '@/lib/compliance/ai-decision-features';
 import type { SubscriptionTier } from '@/types';
 
 export const metadata: Metadata = { title: 'Parent Dashboard' };
@@ -71,6 +72,8 @@ export default async function ParentDashboardPage({
   let snapshots: any[] = [];
   let reports: any[] = [];
   let predictions: any[] = [];
+  let parentInsights: Record<string, any[]> = {};
+  const showAiDecisionFeatures = aiDecisionFeaturesEnabled();
   const dashboardStudentIds = normalizedStudents
     .filter((student) => student.parent_entitlement.dashboard)
     .map((student) => student.id);
@@ -81,14 +84,21 @@ export default async function ParentDashboardPage({
     .filter((student) => student.parent_entitlement.advancedAnalytics)
     .map((student) => student.id);
   if (dashboardStudentIds.length > 0) {
-    const predictionQuery = advancedStudentIds.length
+    const predictionQuery = showAiDecisionFeatures && advancedStudentIds.length
       ? (await createAdminClient())
           .from('student_predictions' as any)
           .select('student_id, dropout_risk_score, burnout_risk_score, computed_at')
           .in('student_id', advancedStudentIds)
           .order('computed_at', { ascending: false })
       : Promise.resolve({ data: [] as any[] });
-    const [{ data }, { data: reportRows }, { data: predictionRows }] = await Promise.all([
+    const dueCutoff = new Date().toISOString();
+    const [
+      { data },
+      { data: reportRows },
+      { data: predictionRows },
+      { data: masteryRows },
+      { data: revisionRows },
+    ] = await Promise.all([
       supabase
         .from('student_weekly_snapshots')
         .select('*')
@@ -103,10 +113,77 @@ export default async function ParentDashboardPage({
         .order('week_start_date', { ascending: false })
         .limit(6),
       predictionQuery,
+      supabase
+        .from('chapter_mastery' as any)
+        .select('student_id, mastery, status, chapters(name, subjects(name))')
+        .in('student_id', dashboardStudentIds)
+        .in('status', ['needs_revision', 'learning'])
+        .order('mastery', { ascending: true })
+        .limit(30),
+      supabase
+        .from('student_revision_items' as any)
+        .select('student_id, id')
+        .in('student_id', dashboardStudentIds)
+        .eq('status', 'due')
+        .lte('due_at', dueCutoff)
+        .limit(200),
     ]);
     snapshots = data || [];
     reports = reportRows || [];
     predictions = predictionRows || [];
+    const dueRevisionCount = new Map<string, number>();
+    for (const row of (revisionRows || []) as any[]) {
+      dueRevisionCount.set(row.student_id, (dueRevisionCount.get(row.student_id) || 0) + 1);
+    }
+    const weakByStudent = new Map<string, any>();
+    for (const row of (masteryRows || []) as any[]) {
+      if (!weakByStudent.has(row.student_id)) weakByStudent.set(row.student_id, row);
+    }
+    parentInsights = Object.fromEntries(
+      dashboardStudentIds.map((studentId) => {
+        const studentSnapshots = (data || [])
+          .filter((snapshot) => snapshot.student_id === studentId)
+          .slice(0, 2);
+        const latest = studentSnapshots[0];
+        const previous = studentSnapshots[1];
+        const weak = weakByStudent.get(studentId);
+        const insights = [];
+        if (weak) {
+          insights.push({
+            type: 'weak_chapter',
+            title: `${weak.chapters?.subjects?.name || 'Subject'} needs attention`,
+            body: `${weak.chapters?.name || 'A chapter'} is at ${Math.round(Number(weak.mastery) || 0)}% mastery.`,
+            action: 'Assign 15 minutes of practice today.',
+          });
+        }
+        const dueCount = dueRevisionCount.get(studentId) || 0;
+        if (dueCount > 0) {
+          insights.push({
+            type: 'revision_due',
+            title: `${dueCount} revision item${dueCount === 1 ? '' : 's'} due`,
+            body: 'These are based on previous mistakes and spaced repetition.',
+            action: 'Ask the student to complete revision before new practice.',
+          });
+        }
+        if (latest && previous && Number(latest.study_minutes || 0) < Number(previous.study_minutes || 0) * 0.75) {
+          insights.push({
+            type: 'study_drop',
+            title: 'Study time dropped',
+            body: `This week is ${Math.round(Number(latest.study_minutes || 0))} minutes vs ${Math.round(Number(previous.study_minutes || 0))} minutes last week.`,
+            action: 'Set one small daily study target instead of a long session.',
+          });
+        }
+        if (!insights.length) {
+          insights.push({
+            type: 'steady',
+            title: 'No urgent study item detected',
+            body: 'Current activity looks stable from the available records.',
+            action: 'Keep the daily mission active and review weak chapters weekly.',
+          });
+        }
+        return [studentId, insights.slice(0, 3)];
+      })
+    );
   }
   const predictionByStudent = new Map(predictions.map((prediction) => [prediction.student_id, prediction]));
   const params = await searchParams;
@@ -121,6 +198,7 @@ export default async function ParentDashboardPage({
       <ParentDashboardClient
         links={normalizedLinks}
         snapshots={snapshots}
+        insights={parentInsights}
         parentId={user.id}
         initialLinkId={params?.linkId}
         initialView={params?.view === 'files' ? 'files' : params?.view === 'chat' ? 'chat' : undefined}
@@ -151,13 +229,13 @@ export default async function ParentDashboardPage({
                     </ul>
                   </>
                 )}
-                {predictionByStudent.get(report.student_id) && (
+                {showAiDecisionFeatures && predictionByStudent.get(report.student_id) && (
                   <div className="mt-3 rounded-lg border border-violet-500/30 p-2 text-xs">
                     <p>
-                      Dropout risk: {Math.round(predictionByStudent.get(report.student_id).dropout_risk_score || 0)}%
+                      Study continuity signal: {Math.round(predictionByStudent.get(report.student_id).dropout_risk_score || 0)}%
                     </p>
                     <p>
-                      Burnout risk: {Math.round(predictionByStudent.get(report.student_id).burnout_risk_score || 0)}%
+                      Study load signal: {Math.round(predictionByStudent.get(report.student_id).burnout_risk_score || 0)}%
                     </p>
                   </div>
                 )}

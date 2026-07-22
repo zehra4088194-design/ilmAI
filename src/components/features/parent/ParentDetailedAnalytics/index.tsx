@@ -202,16 +202,16 @@ export function ParentDetailedAnalytics({
         <Card className="border-violet-500/30 bg-violet-500/5">
           <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Sparkles className="h-4 w-4 text-violet-500" />Elite detailed insights</CardTitle></CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <Insight label="Predicted exam" value={advanced.digitalTwin?.predicted_exam_score} suffix="%" />
+            <Insight label="Study score estimate" value={advanced.digitalTwin?.predicted_exam_score} suffix="%" />
             <Insight label="Confidence" value={advanced.digitalTwin?.confidence_level ?? advanced.prediction?.confidence_score} suffix="%" />
-            <Insight label="Entry test estimate" value={advanced.prediction?.predicted_entry_test_score} suffix="%" />
-            <Insight label="Burnout risk" value={advanced.prediction?.burnout_risk_score} suffix="%" warning />
+            <Insight label="Practice estimate" value={advanced.prediction?.predicted_entry_test_score} suffix="%" />
+            <Insight label="Study load signal" value={advanced.prediction?.burnout_risk_score} suffix="%" warning />
             <div className="bg-background/70 rounded-xl p-3 sm:col-span-2"><p className="text-muted-foreground text-xs">Learning style</p><p className="mt-1 font-semibold">{advanced.digitalTwin?.learning_style || 'Collecting signals'}</p></div>
             <div className="bg-background/70 rounded-xl p-3 sm:col-span-2"><p className="text-muted-foreground text-xs">Preferred study time</p><p className="mt-1 font-semibold">{advanced.digitalTwin?.preferred_study_time || 'Collecting signals'}</p></div>
           </CardContent>
         </Card>
       ) : (
-        <Card className="border-dashed"><CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-semibold">Advanced predictive analytics</p><p className="text-muted-foreground mt-1 text-sm">Burnout risk, digital twin and detailed predictions Elite mein unlock hoti hain.</p></div><Button asChild variant="outline"><Link href="/subscription/elite">View Elite</Link></Button></CardContent></Card>
+        <Card className="border-dashed"><CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-semibold">Detailed activity insights</p><p className="text-muted-foreground mt-1 text-sm">Elite includes richer factual progress records, reports, and study history views.</p></div><Button asChild variant="outline"><Link href="/subscription/elite">View Elite</Link></Button></CardContent></Card>
       )}
     </div>
   );

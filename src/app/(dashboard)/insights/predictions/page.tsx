@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { aiDecisionFeaturesEnabled } from '@/lib/compliance/ai-decision-features';
 
 export const metadata: Metadata = { title: 'Predictions' };
 
@@ -13,6 +14,27 @@ function supportTone(score: number | null | undefined) {
 }
 
 export default async function PredictionsPage() {
+  if (!aiDecisionFeaturesEnabled()) {
+    return (
+      <div className="mx-auto max-w-4xl space-y-6">
+        <div>
+          <p className="text-sm font-semibold text-violet-400">Learning insights</p>
+          <h1 className="mt-1 text-2xl font-bold">Activity forecast is disabled</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Predictive AI decision features are currently disabled. Use factual progress, mastery, revision, and planner tools instead.
+          </p>
+        </div>
+        <div className="glass rounded-xl p-6">
+          <p className="font-semibold">Available now</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Mastery map, weak chapters, mistakes, revision items, and study planner remain available.
+          </p>
+          <Button asChild variant="gradient" className="mt-4"><Link href="/insights">Open insights</Link></Button>
+        </div>
+      </div>
+    );
+  }
+
   const supabase = await createClient();
   const db = supabase as any;
   const { data: { user } } = await supabase.auth.getUser();
@@ -39,8 +61,8 @@ export default async function PredictionsPage() {
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Card title="Board marks estimate" value={`${Math.round(prediction.predicted_board_marks || 0)}%`} />
-            <Card title="Entry test estimate" value={`${Math.round(prediction.predicted_entry_test_score || 0)}%`} />
+            <Card title="Study score estimate" value={`${Math.round(prediction.predicted_board_marks || 0)}%`} />
+            <Card title="Practice estimate" value={`${Math.round(prediction.predicted_entry_test_score || 0)}%`} />
           </div>
           <section className="glass rounded-xl p-5">
             <h2 className="font-bold">Study rhythm support</h2>
@@ -49,7 +71,7 @@ export default async function PredictionsPage() {
             <Button asChild variant="gradient" className="mt-4"><Link href="/planner/setup">Adjust my plan</Link></Button>
           </section>
           <section className="glass rounded-xl p-5">
-            <h2 className="mb-3 font-bold">Weak chapter risk</h2>
+            <h2 className="mb-3 font-bold">Weak chapter focus</h2>
             <div className="space-y-2">
               {(prediction.weak_chapter_risk || []).slice(0, 8).map((item: any) => <p key={item.chapter_id} className="rounded-lg border p-3 text-sm">Chapter {item.chapter_id}: needs focused revision</p>)}
             </div>
