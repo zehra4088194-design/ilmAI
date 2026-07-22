@@ -45,6 +45,11 @@ services:
       AI_GATEWAY_SECRET: ${AI_GATEWAY_SECRET:?}
       OCR_SERVICE_URL: http://ocr:8000
       OCR_SERVICE_SECRET: ${OCR_SERVICE_SECRET:?}
+      EASYOCR_API_URL: ${EASYOCR_API_URL:-https://console.easyocr.org/api/ocr}
+      EASYOCR_API_KEY: ${EASYOCR_API_KEY:-}
+      EASYOCR_API_KEYS_JSON: ${EASYOCR_API_KEYS_JSON:-[]}
+      QRCODECAT_API_URL: ${QRCODECAT_API_URL:-}
+      QRCODECAT_API_KEY: ${QRCODECAT_API_KEY:-}
       REDIS_URL: redis://:${VALKEY_PASSWORD:?}@valkey:6379/0
       CRON_SECRET: ${CRON_SECRET:?}
       ADMIN_EMAILS: ${ADMIN_EMAILS:?}
@@ -179,7 +184,6 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
-    pids_limit: 256
     healthcheck:
       test:
         [
