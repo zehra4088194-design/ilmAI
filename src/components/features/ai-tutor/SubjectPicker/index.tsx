@@ -16,9 +16,9 @@ export function SubjectPicker({ subjects, onSelect }: SubjectPickerProps) {
       <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center mb-4 shadow-lg shadow-violet-500/20">
         <GraduationCap className="w-7 h-7 text-white" />
       </div>
-      <h2 className="text-lg font-bold gradient-text mb-1">Aaj kis subject pe baat karni hai?</h2>
+      <h2 className="text-lg font-bold gradient-text mb-1">Which subject would you like to study today?</h2>
       <p className="text-sm text-muted-foreground mb-6 max-w-sm">
-        Subject select karo taake tutor tumhare board aur syllabus ke hisaab se sahi jawab de.
+        Select a subject so the tutor can answer according to your board and syllabus.
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full max-w-lg">
         {subjects.map((subject, i) => {
@@ -48,7 +48,7 @@ export function SubjectPicker({ subjects, onSelect }: SubjectPickerProps) {
         })}
       </div>
       <button onClick={() => onSelect(null)} className="mt-6 text-xs text-muted-foreground hover:text-foreground underline underline-offset-2">
-        Skip karo, general sawaal poochna hai
+        Skip and ask a general question
       </button>
     </div>
   );

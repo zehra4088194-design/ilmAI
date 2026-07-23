@@ -25,7 +25,7 @@ export async function GET() {
     .order('order_index', { ascending: true })
     .order('created_at', { ascending: false });
 
-  if (error) return NextResponse.json({ error: `Lectures load nahi hue: ${error.message}` }, { status: 500 });
+  if (error) return NextResponse.json({ error: `Lectures could not be loaded: ${error.message}` }, { status: 500 });
 
   const lectures = (data ?? []).map((lecture) => {
     const chapters = lecture.chapters as ChapterJoin;
@@ -47,10 +47,10 @@ export async function POST(req: NextRequest) {
 
   const body = (await req.json()) as LectureInsert;
   if (!body.chapter_id || !body.title?.trim() || !body.youtube_url?.trim()) {
-    return NextResponse.json({ error: 'Chapter, title aur YouTube URL zaroori hain' }, { status: 400 });
+    return NextResponse.json({ error: 'Chapter, title, and YouTube URL are required' }, { status: 400 });
   }
   if (body.kind === 'exercise_walkthrough' && !body.exercise_number?.trim()) {
-    return NextResponse.json({ error: 'Exercise walkthrough ke liye exercise number zaroori hai' }, { status: 400 });
+    return NextResponse.json({ error: 'An exercise number is required for an exercise walkthrough' }, { status: 400 });
   }
 
   let adminClient;
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
 
   if (error) {
     console.error('lecture create error:', error);
-    return NextResponse.json({ error: `Lecture add nahi hua: ${error.message}` }, { status: 500 });
+    return NextResponse.json({ error: `Lecture could not be added: ${error.message}` }, { status: 500 });
   }
 
   return NextResponse.json({ lecture: data }, { status: 201 });

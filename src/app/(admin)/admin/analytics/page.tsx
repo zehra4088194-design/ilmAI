@@ -51,7 +51,7 @@ function getPostHogPrivateHost() {
 async function posthogQuery<T extends unknown[]>(query: string): Promise<T[]> {
   const apiKey = process.env.POSTHOG_PERSONAL_API_KEY || process.env.POSTHOG_API_KEY || process.env.POSTHOG_QUERY_API_KEY;
   const projectId = process.env.POSTHOG_PROJECT_ID || process.env.NEXT_PUBLIC_POSTHOG_PROJECT_ID;
-  if (!apiKey || !projectId) throw new Error('POSTHOG_PERSONAL_API_KEY aur POSTHOG_PROJECT_ID required hain');
+  if (!apiKey || !projectId) throw new Error('POSTHOG_PERSONAL_API_KEY and POSTHOG_PROJECT_ID are required');
 
   const response = await fetch(`${getPostHogPrivateHost()}/api/projects/${projectId}/query/`, {
     method: 'POST',

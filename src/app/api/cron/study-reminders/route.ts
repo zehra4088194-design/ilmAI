@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
 
   for (const session of sessions || []) {
     const isToday = session.session_date === today;
-    const title = isToday ? 'Aaj ka study plan ready hai' : 'Kal ka study plan ready hai';
+    const title = isToday ? "Today's study plan is ready" : "Tomorrow's study plan is ready";
     const link = `${isToday ? '/planner/today' : '/planner/week'}?session=${session.id}`;
     if (await recentlyNotified(admin, session.student_id, link, title, oneDayAgo)) continue;
 

@@ -1,18 +1,47 @@
 'use client';
+import dynamic from 'next/dynamic';
 import { ThemeProvider } from 'next-themes';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Toaster } from 'sonner';
 import { useState, type ReactNode } from 'react';
 import { I18nProvider } from '@/providers/I18nProvider';
 import type { Locale } from '@/lib/i18n/config';
-import { GlobalSpeechControls } from '@/components/features/speech/GlobalSpeechControls';
-import { CookieConsent } from '@/components/features/cookies/CookieConsent';
-import { AdSenseScript } from '@/components/features/ads/AdSenseScript';
-import { PostHogClient } from '@/components/features/analytics/PostHogClient';
 import { APP_THEME_IDS, DEFAULT_THEME_ID, type AppThemeId } from '@/lib/constants/themes';
-import { ServiceWorkerRegister } from '@/components/features/offline/ServiceWorkerRegister';
 import { ThemeRuntime } from '@/components/common/ThemeRuntime';
+
+const AdSenseScript = dynamic(
+  () => import('@/components/features/ads/AdSenseScript').then((module) => module.AdSenseScript),
+  { ssr: false }
+);
+const CookieConsent = dynamic(
+  () => import('@/components/features/cookies/CookieConsent').then((module) => module.CookieConsent),
+  { ssr: false }
+);
+const GlobalSpeechControls = dynamic(
+  () => import('@/components/features/speech/GlobalSpeechControls').then((module) => module.GlobalSpeechControls),
+  { ssr: false }
+);
+const PostHogClient = dynamic(
+  () => import('@/components/features/analytics/PostHogClient').then((module) => module.PostHogClient),
+  { ssr: false }
+);
+const ServiceWorkerRegister = dynamic(
+  () =>
+    import('@/components/features/offline/ServiceWorkerRegister').then(
+      (module) => module.ServiceWorkerRegister
+    ),
+  { ssr: false }
+);
+const ReactQueryDevtools =
+  process.env.NODE_ENV === 'development'
+    ? dynamic(
+        () =>
+          import('@tanstack/react-query-devtools').then(
+            (module) => module.ReactQueryDevtools
+          ),
+        { ssr: false }
+      )
+    : null;
 
 export function Providers({
   children,
@@ -61,7 +90,7 @@ export function Providers({
           />
         </ThemeProvider>
       </I18nProvider>
-      {process.env.NODE_ENV === 'development' && <ReactQueryDevtools initialIsOpen={false} />}
+      {ReactQueryDevtools && <ReactQueryDevtools initialIsOpen={false} />}
     </QueryClientProvider>
   );
 }

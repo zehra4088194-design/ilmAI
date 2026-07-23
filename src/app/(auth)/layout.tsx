@@ -2,10 +2,10 @@ import Link from 'next/link';
 import { BookOpen } from 'lucide-react';
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen grid lg:grid-cols-2">
+    <div className="min-h-dvh grid lg:grid-cols-2">
       {/* Left - Form */}
-      <div className="flex flex-col justify-center items-center p-8 bg-background">
-        <div className="w-full max-w-md space-y-8">
+      <div className="flex flex-col items-center bg-background px-4 py-6 sm:justify-center sm:p-8">
+        <div className="w-full max-w-md space-y-6 sm:space-y-8">
           <Link href="/" className="flex items-center gap-2 mb-8">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center"><BookOpen className="w-5 h-5 text-white" /></div>
             <span className="font-bold text-xl">ilm <span className="gradient-text">AI</span></span>

@@ -38,7 +38,7 @@ export function RoutineTestsWidget({ studentId, readOnly = false }: { studentId?
       const json = await res.json();
       setTests(json.tests || []);
     } catch {
-      toast.error('Routine tests load nahi ho sake');
+      toast.error('Routine tests could not be loaded.');
     } finally {
       setLoading(false);
     }
@@ -56,11 +56,11 @@ export function RoutineTestsWidget({ studentId, readOnly = false }: { studentId?
         body: JSON.stringify({ subject, title, scheduledAt, studentId }),
       });
       if (!res.ok) throw new Error();
-      toast.success('Routine test add ho gaya');
+      toast.success('Routine test added.');
       setSubject(''); setTitle(''); setScheduledAt(''); setShowForm(false);
       load();
     } catch {
-      toast.error('Add nahi ho saka');
+      toast.error('The routine test could not be added.');
     } finally {
       setSaving(false);
     }
@@ -91,7 +91,7 @@ export function RoutineTestsWidget({ studentId, readOnly = false }: { studentId?
         {loading ? (
           <p className="text-sm text-muted-foreground">Loading...</p>
         ) : tests.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Koi routine test schedule nahi hai abhi.</p>
+          <p className="text-sm text-muted-foreground">No routine tests are scheduled yet.</p>
         ) : (
           <div className="space-y-2">
             {tests.map((t) => (

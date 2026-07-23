@@ -65,7 +65,7 @@ export async function middleware(request: NextRequest) {
     (pathname === '/api/payments/create-session' || pathname === '/api/institution-plan-inquiry')
   ) {
     return NextResponse.json(
-      { status: 'consumption_only', error: 'Play Store app mein external purchase flow available nahi hai.' },
+      { status: 'consumption_only', error: 'External purchases are not available in the Play Store app.' },
       { status: 403 }
     );
   }

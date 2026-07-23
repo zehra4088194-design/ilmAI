@@ -117,7 +117,6 @@ export function ResearchWorkspaceClient({
               />
               <p className="text-muted-foreground text-xs">
                 Reuse the existing PDF Summarizer and Mind Mapper, then save useful, source-linked summaries here.
-                sakti hai.
               </p>
             </CardContent>
           </Card>

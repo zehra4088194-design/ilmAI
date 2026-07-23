@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
     };
     const jobDescription = clean(body.jobDescription, 4000);
     if (!userData.name || !userData.degree)
-      return NextResponse.json({ status: 'error', error: 'Name aur degree zaroori hain.' }, { status: 400 });
+      return NextResponse.json({ status: 'error', error: 'Name and degree are required.' }, { status: 400 });
 
     const limit = await checkUniversityFeatureLimit(user.id, tier, 'career_docs');
     if (!limit.success) {
@@ -89,6 +89,6 @@ export async function POST(req: NextRequest) {
     const result = await generateCareerDocs(userData, jobDescription, type);
     return NextResponse.json({ status: 'success', data: result });
   } catch {
-    return NextResponse.json({ status: 'error', error: 'Career document generate nahi ho saka.' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: 'The career document could not be generated.' }, { status: 500 });
   }
 }

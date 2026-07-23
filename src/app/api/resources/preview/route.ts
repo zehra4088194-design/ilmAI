@@ -32,10 +32,10 @@ export async function GET(req: NextRequest) {
       : kind === 'library' || kind === 'past-paper'
         ? await getPublicResource(kind, id, mode)
         : null;
-    if (!resource) return NextResponse.json({ error: 'Resource available nahi hai.' }, { status: 404 });
+    if (!resource) return NextResponse.json({ error: 'The resource is unavailable.' }, { status: 404 });
 
     const remote = await fetchProtectedFile(resource);
-    if (!remote.body) throw new Error('Resource stream empty hai.');
+    if (!remote.body) throw new Error('The resource stream is empty.');
     const remoteContentType = remote.headers.get('content-type')?.toLowerCase() || '';
     const contentType =
       resource.fileType.toLowerCase().includes('pdf') &&
@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     console.error('Resource preview failed:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Resource preview open nahi ho saka.' },
+      { error: error instanceof Error ? error.message : 'The resource preview could not be opened.' },
       { status: 500 }
     );
   }

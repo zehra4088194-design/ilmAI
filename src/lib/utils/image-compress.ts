@@ -58,7 +58,7 @@ export async function compressImageForOcr(file: File, maxDimension = 1400, quali
 export function validateImageFile(file: File): { valid: boolean; error?: string } {
   const ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
   const MAX_MB = 10;
-  if (!ALLOWED.includes(file.type)) return { valid: false, error: 'Sirf JPG, PNG, WEBP ya GIF upload karo' };
-  if (file.size > MAX_MB * 1024 * 1024) return { valid: false, error: `File ${MAX_MB}MB se choti honi chahiye` };
+  if (!ALLOWED.includes(file.type)) return { valid: false, error: 'Upload a JPG, PNG, WEBP, or GIF file.' };
+  if (file.size > MAX_MB * 1024 * 1024) return { valid: false, error: `The file must be smaller than ${MAX_MB} MB.` };
   return { valid: true };
 }

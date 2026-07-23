@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
   const youtubeUrl = String(body.youtube_url || '').trim();
   const videoId = extractYouTubeId(youtubeUrl);
   if (!playlistId || !title || !videoId) {
-    return NextResponse.json({ error: 'Playlist, title aur valid YouTube URL required hain' }, { status: 400 });
+    return NextResponse.json({ error: 'Playlist, title, and a valid YouTube URL are required' }, { status: 400 });
   }
   const db = await createAdminClient();
   const { data, error } = await (db.from('playlist_songs' as any) as any)

@@ -215,7 +215,7 @@ export function ParentQrScanner() {
                   <CheckCircle2 className="h-8 w-8" />
                 </span>
                 <div>
-                  <p className="text-lg font-bold">Valid parent invite mil gaya</p>
+                  <p className="text-lg font-bold">Valid parent invite found</p>
                   <p className="text-muted-foreground mt-2 text-sm">
                     The account is not connected yet. Press the button below to open the confirmation page.
                   </p>
@@ -305,7 +305,7 @@ export function ParentQrLinkCard() {
             <p className="font-semibold">Connect the parent dashboard</p>
             <p className="text-muted-foreground mt-1 text-sm">
               Scan with the camera or choose a QR image. When a valid link is found, press &ldquo;Press to connect&rdquo;
-              button aayega.
+              to finish linking.
             </p>
           </div>
         </div>

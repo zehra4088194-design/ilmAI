@@ -22,7 +22,7 @@ export async function GET() {
     .order('year', { ascending: false })
     .order('created_at', { ascending: false });
 
-  if (error) return NextResponse.json({ error: 'Past papers load nahi hue' }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'Past papers could not be loaded' }, { status: 500 });
 
   const papers = (data ?? []).map((paper) => {
     const subjects = paper.subjects as SubjectJoin;
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
   const body = (await req.json()) as PastPaperInsert;
   const year = Number(body.year);
   if (!body.subject_id || !body.board || !body.file_url?.trim() || !Number.isInteger(year) || year < 1900 || year > 2100) {
-    return NextResponse.json({ error: 'Subject, board, valid year aur PDF URL zaroori hain' }, { status: 400 });
+    return NextResponse.json({ error: 'Subject, board, a valid year, and PDF URL are required' }, { status: 400 });
   }
   const contextTextUrl = body.context_text_url?.trim() || null;
 
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
 
   if (error) {
     console.error('past paper create error:', error);
-    return NextResponse.json({ error: `Past paper add nahi hua: ${error.message}` }, { status: 500 });
+    return NextResponse.json({ error: `Past paper could not be added: ${error.message}` }, { status: 500 });
   }
 
   let processingWarning: string | null = null;
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
       await queueResourceContextProcessing('past-paper', data.id);
     } catch (queueError) {
       processingWarning =
-        queueError instanceof Error ? queueError.message : 'Automatic OCR queue start nahi ho saki.';
+        queueError instanceof Error ? queueError.message : 'The automatic OCR queue could not be started.';
       console.error('past paper context queue error:', queueError);
     }
   }

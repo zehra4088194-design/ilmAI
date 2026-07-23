@@ -21,6 +21,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ settings: saved });
   } catch (error) {
     console.error('platform settings save error:', error);
-    return NextResponse.json({ error: 'Settings save nahi hui. Migration run hai ya nahi check karo.' }, { status: 500 });
+    return NextResponse.json({ error: 'Settings could not be saved. Confirm that the required migration has run.' }, { status: 500 });
   }
 }

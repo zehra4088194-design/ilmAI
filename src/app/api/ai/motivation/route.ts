@@ -8,12 +8,12 @@ export const runtime = 'nodejs';
 export const maxDuration = 20;
 
 const FALLBACK_QUOTES = [
-  'Aaj ka ek solved question kal ke confidence ka seed hai.',
-  'Topic mushkil hai to bas pehla example solve karo, momentum khud banega.',
-  'Smart study ka matlab hai: samjho, recall karo, phir test karo.',
-  'Tum jitni baar revise karte ho, utni baar anxiety kam hoti hai.',
-  'Slow progress bhi progress hai, bas streak break mat hone do.',
-  'Concept clear ho jaye to marks naturally follow karte hain.',
+  'One solved question today builds confidence for tomorrow.',
+  'If a topic feels difficult, solve the first example and build momentum from there.',
+  'Smart study means understanding, recalling, and then testing yourself.',
+  'Every revision makes the material feel more familiar and manageable.',
+  'Slow progress is still progress. Keep your learning streak active.',
+  'Strong concepts lead to stronger results.',
 ];
 
 function parseQuotes(text: string) {
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       tier: 'mini',
       messages: [
         { role: 'system', content: 'You write short motivational study quotes for Pakistani students. Return only JSON: {"quotes":["..."]}. No markdown.' },
-        { role: 'user', content: `Generate 8 warm, fresh, non-cringey motivational quotes in simple English + Roman Urdu mix${subject ? ` for ${subject}` : ''}. Each quote under 18 words.` },
+        { role: 'user', content: `Generate 8 warm, fresh, non-cringey motivational quotes in professional, student-friendly English${subject ? ` for ${subject}` : ''}. Keep each quote under 18 words.` },
       ],
       maxTokens: 500,
       temperature: 0.9,

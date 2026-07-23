@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
   const institutionName = typeof sponsoredInstitutionName === 'string' ? sponsoredInstitutionName.trim() : '';
   if (tier !== 'FREE' && (!institutionName || !['school', 'college'].includes(sponsoredInstitutionType || ''))) {
     return NextResponse.json(
-      { error: 'Paid plan ke liye school/college aur institution name select karein.' },
+      { error: 'Select the institution type and name for a paid plan.' },
       { status: 400 }
     );
   }
@@ -90,11 +90,11 @@ export async function POST(req: NextRequest) {
 
   if (error) {
     console.error('grant-pro error:', error);
-    return NextResponse.json({ error: `Update fail ho gaya: ${error.message}` }, { status: 500 });
+    return NextResponse.json({ error: `The update failed.: ${error.message}` }, { status: 500 });
   }
 
   if (!profile) {
-    return NextResponse.json({ error: 'User profile nahi mila, plan update nahi hua' }, { status: 404 });
+    return NextResponse.json({ error: 'The user profile was not found, so the plan was not updated' }, { status: 404 });
   }
 
   const now = new Date().toISOString();
@@ -138,7 +138,7 @@ export async function POST(req: NextRequest) {
     if (existingError) {
       console.error('manual subscription lookup error:', existingError);
       return NextResponse.json(
-        { error: `Profile update ho gaya, subscription lookup fail: ${existingError.message}` },
+        { error: `The profile was updated, but the subscription lookup failed: ${existingError.message}` },
         { status: 500 }
       );
     }
@@ -153,7 +153,7 @@ export async function POST(req: NextRequest) {
     if (subscriptionError) {
       console.error('manual subscription sync error:', subscriptionError);
       return NextResponse.json(
-        { error: `Profile update ho gaya, subscription sync fail: ${subscriptionError.message}` },
+        { error: `The profile was updated, but subscription sync failed: ${subscriptionError.message}` },
         { status: 500 }
       );
     }

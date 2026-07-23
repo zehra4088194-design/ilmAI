@@ -17,23 +17,23 @@ export async function POST(req: NextRequest) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ status: 'error', error: 'Login required hai.' }, { status: 401 });
+    if (!user) return NextResponse.json({ status: 'error', error: 'Authentication is required.' }, { status: 401 });
     const { kind, id } = await req.json();
     if ((kind !== 'library' && kind !== 'past-paper' && kind !== 'college-resource') || typeof id !== 'string') {
       return NextResponse.json({ status: 'error', error: 'Invalid resource.' }, { status: 400 });
     }
     const resource = await getProtectedResource(user.id, kind as ProtectedResourceKind, id, 'light');
-    if (!resource) return NextResponse.json({ status: 'error', error: 'Resource nahi mila.' }, { status: 404 });
+    if (!resource) return NextResponse.json({ status: 'error', error: 'The resource was not found.' }, { status: 404 });
     if (resource.tier === 'FREE') {
       return NextResponse.json(
-        { status: 'error', error: 'File se test Pro/Elite mein unlock hota hai.' },
+        { status: 'error', error: 'File-based tests are available on Pro and Elite.' },
         { status: 403 }
       );
     }
     const context = await fetchResourceContext(resource);
     const limit = await checkAiMessageLimit(user.id, resource.tier, 'resource_test_analyze');
     if (!limit.success) {
-      return NextResponse.json({ status: 'error', error: 'Aaj ki AI limit khatam ho gayi.' }, { status: 429 });
+      return NextResponse.json({ status: 'error', error: "Today's AI limit has been reached." }, { status: 429 });
     }
     let parsed: Analysis;
     let provider = 'source-fallback';
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('Grok resource analysis failed:', error);
     return NextResponse.json(
-      { status: 'error', error: error instanceof Error ? error.message : 'Grok file analyze nahi kar saka.' },
+      { status: 'error', error: error instanceof Error ? error.message : 'Grok could not analyze the file.' },
       { status: 500 }
     );
   }

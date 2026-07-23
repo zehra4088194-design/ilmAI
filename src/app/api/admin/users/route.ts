@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await query;
   if (error) {
-    return NextResponse.json({ error: `Users load nahi hue: ${error.message}` }, { status: 500 });
+    return NextResponse.json({ error: `Users could not be loaded: ${error.message}` }, { status: 500 });
   }
   return NextResponse.json({ users: data });
 }

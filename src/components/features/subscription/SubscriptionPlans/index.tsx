@@ -130,13 +130,15 @@ export function SubscriptionPlans({
   return (
     <div className="space-y-6">
       <div className="rounded-2xl border border-violet-500/25 bg-violet-500/10 p-4 text-sm">
-        <p id="credits" className="font-semibold">One shared AI credit pool</p>
+        <p id="credits" className="font-semibold">
+          One shared AI credit pool
+        </p>
         <p className="text-muted-foreground mt-2">
           Free: {free.limits.aiCreditsWeekly} credits/week. Pro: {pro.limits.aiCreditsMonthly}/month, max{' '}
           {pro.limits.aiCreditsDaily}/day. Elite: {elite.limits.aiCreditsMonthly}/month, max{' '}
           {elite.limits.aiCreditsDaily}/day plus {elite.limits.premiumAiMonthly} premium calls/month.
         </p>
-        <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+        <div className="text-muted-foreground mt-3 flex flex-wrap gap-2 text-xs">
           {[
             ['Tutor / side chat', 1],
             ['Flashcards / practice', 2],
@@ -144,7 +146,7 @@ export function SubscriptionPlans({
             ['Full test / guess paper', 4],
             ['Presentation', 8],
           ].map(([label, cost]) => (
-            <span key={String(label)} className="rounded-full border border-border/70 bg-background/50 px-2.5 py-1">
+            <span key={String(label)} className="border-border/70 bg-background/50 rounded-full border px-2.5 py-1">
               {label}: <strong className="text-foreground">{cost}</strong>
             </span>
           ))}
@@ -194,6 +196,8 @@ export function SubscriptionPlans({
           const displayPrice = billingCycle === 'annual' && !isFree ? pricing.annual : pricing.monthly;
           const priceSuffix = billingCycle === 'annual' && !isFree ? '/year' : '/mo';
           const monthlyEquivalent = billingCycle === 'annual' && !isFree ? pricing.annual / 12 : null;
+          const creditAmount = isFree ? plan.limits.aiCreditsWeekly : plan.limits.aiCreditsMonthly;
+          const creditPeriod = isFree ? 'every week' : 'every month';
           const PlanIcon = key === 'FREE' ? Sparkles : key === 'PRO' ? Rocket : Crown;
           const iconBg =
             key === 'FREE'
@@ -243,6 +247,14 @@ export function SubscriptionPlans({
                     </p>
                   )}
                 </div>
+                <div className="border-primary/25 from-primary/10 to-primary/5 mb-5 rounded-2xl border bg-gradient-to-br p-4">
+                  <p className="text-primary text-xs font-bold tracking-[0.16em] uppercase">AI Credits</p>
+                  <p className="mt-1 text-2xl font-bold">{creditAmount.toLocaleString()}</p>
+                  <p className="text-muted-foreground text-xs">
+                    Shared credits {creditPeriod}
+                    {plan.limits.aiCreditsDaily > 0 ? ` - up to ${plan.limits.aiCreditsDaily}/day` : ''}
+                  </p>
+                </div>
                 <ul className="mb-6 space-y-2">
                   {plan.features.map((feature, index) => (
                     <li key={index} className="flex items-center gap-2 text-sm">
@@ -290,8 +302,8 @@ export function SubscriptionPlans({
                   <Building2 className="text-primary h-5 w-5" /> Institutional plans
                 </h2>
                 <p className="text-muted-foreground mt-2 max-w-2xl text-sm">
-                  Apne school ya college ke students ki tadaad select karein. Pro/Elite plan per-student price par 50%
-                  discount ke saath admin se direct connection milega.
+                  Select the number of students in your school or college. Pro and Elite are available at a 50%
+                  per-student discount with a direct admin inquiry.
                 </p>
               </div>
               <div className="border-primary/20 bg-background/60 rounded-xl border px-4 py-3 text-right">

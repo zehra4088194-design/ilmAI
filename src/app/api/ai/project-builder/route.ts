@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ status: 'error', error: 'Login required hai' }, { status: 401 });
+    if (!user) return NextResponse.json({ status: 'error', error: 'Authentication is required' }, { status: 401 });
     const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
     const tier = (profile?.subscription_tier || 'FREE') as SubscriptionTier;
     const body = await req.json();
@@ -125,6 +125,6 @@ Do not add markdown fences.`,
     return NextResponse.json({ status: 'success', data: { id: projectId, content: generated, saved } });
   } catch (error) {
     console.error('Project builder error:', error);
-    return NextResponse.json({ status: 'error', error: 'Project builder generate nahi ho saka.' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: 'The project could not be generated.' }, { status: 500 });
   }
 }

@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     studentCount > 100000
   ) {
     return NextResponse.json(
-      { error: 'Institution, paid plan, billing aur valid student count required hai.' },
+      { error: 'Institution, paid plan, billing cycle, and a valid student count are required.' },
       { status: 400 }
     );
   }
@@ -73,6 +73,6 @@ export async function POST(req: NextRequest) {
     .select('*')
     .single();
 
-  if (error) return NextResponse.json({ error: `Inquiry save nahi hui: ${error.message}` }, { status: 500 });
+  if (error) return NextResponse.json({ error: `The inquiry could not be saved.: ${error.message}` }, { status: 500 });
   return NextResponse.json({ inquiry: data, discountedPrice, currency });
 }

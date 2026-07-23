@@ -6,14 +6,18 @@ const GATEWAY_URL = process.env.AI_GATEWAY_URL || 'http://127.0.0.1:8787';
 const GATEWAY_SECRET = process.env.AI_GATEWAY_SECRET || '';
 const OCR_SERVICE_URL = process.env.OCR_SERVICE_URL || 'http://127.0.0.1:8000';
 const OCR_SERVICE_SECRET = process.env.OCR_SERVICE_SECRET || '';
+const EASYOCR_API_URL = process.env.EASYOCR_API_URL || 'https://console.easyocr.org/api/ocr';
 const GEMINI_SAFE_BYTES = 4 * 1024 * 1024;
+const OCRSPACE_FREE_PDF_BYTES = 5 * 1024 * 1024;
+let pdfProviderCursor = 0;
 
 export type OcrProvider =
   | 'self-hosted-tesseract'
   | 'self-hosted-ocrmypdf'
   | 'native-pdf'
   | 'gemini-vision'
-  | 'ocr-space';
+  | 'ocr-space'
+  | 'easyocr';
 
 export interface OcrResult {
   text: string;
@@ -66,6 +70,27 @@ function normalizeLocalProvider(value: unknown): OcrProvider {
   return 'self-hosted-tesseract';
 }
 
+function parseKeyList(jsonValue?: string, singleValue?: string) {
+  const keys: string[] = [];
+  if (jsonValue) {
+    try {
+      const parsed = JSON.parse(jsonValue);
+      if (Array.isArray(parsed)) {
+        for (const item of parsed) {
+          if (typeof item === 'string' && item.trim()) keys.push(item.trim());
+          else if (item && typeof item === 'object' && typeof item.key === 'string') keys.push(item.key.trim());
+        }
+      }
+    } catch {
+      for (const item of jsonValue.split(',')) {
+        if (item.trim()) keys.push(item.trim());
+      }
+    }
+  }
+  if (singleValue?.trim()) keys.push(singleValue.trim());
+  return [...new Set(keys.filter(Boolean))];
+}
+
 export async function performSelfHostedOcr({
   fileBuffer,
   mimeType,
@@ -107,7 +132,7 @@ export async function performSelfHostedOcr({
 
 async function performGeminiOcr(imageBuffer: Buffer, mimeType: string, timeoutMs: number): Promise<OcrResult> {
   const budget = await checkProviderDailyLimit('gemini');
-  if (!budget.success) throw new Error('Gemini ka platform free daily budget complete ho gaya.');
+  if (!budget.success) throw new Error('The platform daily free Gemini budget has been reached.');
 
   const optimized = await optimizeImageForGemini(imageBuffer, mimeType);
   const res = await fetch(`${GATEWAY_URL}/ocr`, {
@@ -131,7 +156,7 @@ async function performGeminiOcr(imageBuffer: Buffer, mimeType: string, timeoutMs
 
 async function performOcrSpace(imageBuffer: Buffer, mimeType: string, timeoutMs: number): Promise<OcrResult> {
   const budget = await checkProviderDailyLimit('ocrSpace');
-  if (!budget.success) throw new Error('OCR.space ka platform daily budget complete ho gaya.');
+  if (!budget.success) throw new Error('The platform daily OCR.space budget has been reached.');
 
   const optimized = mimeType === 'application/pdf' ? { imageBuffer, mimeType } : await optimizeImageForGemini(imageBuffer, mimeType);
   const res = await fetch(`${GATEWAY_URL}/ocr-space`, {
@@ -152,6 +177,44 @@ async function performOcrSpace(imageBuffer: Buffer, mimeType: string, timeoutMs:
   return { text, provider: 'ocr-space', pages: 1 };
 }
 
+async function performEasyOcr(imageBuffer: Buffer, mimeType: string, timeoutMs: number): Promise<OcrResult> {
+  const keys = parseKeyList(process.env.EASYOCR_API_KEYS_JSON, process.env.EASYOCR_API_KEY);
+  if (!keys.length) throw new Error('EasyOCR API key is not configured');
+
+  const optimized = mimeType === 'application/pdf' ? { imageBuffer, mimeType } : await optimizeImageForGemini(imageBuffer, mimeType);
+  let lastError: unknown;
+  for (const key of keys) {
+    try {
+      const form = new FormData();
+      const extension = optimized.mimeType === 'application/pdf' ? 'pdf' : optimized.mimeType.includes('png') ? 'png' : 'jpg';
+      form.append('file', new Blob([new Uint8Array(optimized.imageBuffer)], { type: optimized.mimeType }), `scan.${extension}`);
+      form.append('language', 'eng');
+
+      const res = await fetch(EASYOCR_API_URL, {
+        method: 'POST',
+        headers: { 'X-Access-Key': key },
+        body: form,
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+      const data = await readJsonResponse(res);
+      if (!res.ok) throw new Error(data.error || data.message || `EasyOCR request failed (${res.status})`);
+
+      const text = String(data.text || data.result || data.data?.text || data.ParsedText || '').trim();
+      if (!text) throw new Error('EasyOCR returned empty text');
+      return {
+        text,
+        provider: 'easyocr',
+        pages: Number(data.pages) || Number(data.pageCount) || 1,
+        confidence: Number(data.confidence) || undefined,
+      };
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error('EasyOCR failed on all configured keys');
+}
+
 export async function performOcr({
   imageBuffer,
   mimeType,
@@ -163,11 +226,13 @@ export async function performOcr({
     mode === 'handwritten'
       ? [
           () => performGeminiOcr(imageBuffer, mimeType, timeoutMs),
+          () => performEasyOcr(imageBuffer, mimeType, timeoutMs),
           () => performOcrSpace(imageBuffer, mimeType, timeoutMs),
           () => performSelfHostedOcr({ fileBuffer: imageBuffer, mimeType, mode, timeoutMs }),
         ]
       : [
           () => performSelfHostedOcr({ fileBuffer: imageBuffer, mimeType, mode, timeoutMs }),
+          () => performEasyOcr(imageBuffer, mimeType, timeoutMs),
           () => performOcrSpace(imageBuffer, mimeType, timeoutMs),
           () => performGeminiOcr(imageBuffer, mimeType, timeoutMs),
         ];
@@ -188,12 +253,57 @@ export async function performOcr({
   throw lastError instanceof Error ? lastError : new Error('OCR failed on all providers');
 }
 
+/**
+ * PDFs can be processed by the private OCRmyPDF service or OCR.space. The
+ * first provider alternates for each request, while the other remains a
+ * fallback. EasyOCR and Gemini Vision only accept images, so they are not
+ * sent PDF files they cannot process.
+ */
+export async function performPdfOcr({
+  fileBuffer,
+  mimeType,
+  filename,
+  timeoutMs = 180_000,
+}: {
+  fileBuffer: Buffer;
+  mimeType: string;
+  filename?: string;
+  timeoutMs?: number;
+}): Promise<OcrResult> {
+  const attempts: Array<() => Promise<OcrResult>> = [
+    () => performSelfHostedOcr({ fileBuffer, mimeType, filename, timeoutMs }),
+  ];
+
+  // OCR.space's free PDF endpoint has a smaller file allowance. Larger PDFs
+  // remain on the private service instead of failing before OCR starts.
+  if (fileBuffer.length <= OCRSPACE_FREE_PDF_BYTES) {
+    attempts.push(() => performOcrSpace(fileBuffer, mimeType, timeoutMs));
+  }
+
+  const start = pdfProviderCursor % attempts.length;
+  pdfProviderCursor = (start + 1) % attempts.length;
+  let lastError: unknown;
+
+  for (let offset = 0; offset < attempts.length; offset++) {
+    const attempt = attempts[(start + offset) % attempts.length];
+    if (!attempt) continue;
+    try {
+      const result = await attempt();
+      return { ...result, fallbackTriggered: offset > 0 };
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error('PDF OCR failed on all configured providers');
+}
+
 export function validateOcrFile(mimeType: string, sizeBytes: number): { valid: boolean; error?: string } {
   const maxSize = 12 * 1024 * 1024;
   const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
   if (!allowed.includes(mimeType.toLowerCase())) {
-    return { valid: false, error: 'JPG, PNG ya WebP image upload karo' };
+    return { valid: false, error: 'Upload a JPG, PNG, or WebP image.' };
   }
-  if (sizeBytes > maxSize) return { valid: false, error: 'Image 12MB se choti honi chahiye' };
+  if (sizeBytes > maxSize) return { valid: false, error: 'The image must be smaller than 12 MB.' };
   return { valid: true };
 }

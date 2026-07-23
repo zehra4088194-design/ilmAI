@@ -79,7 +79,7 @@ export function ResourceAiTools({ kind, resourceId }: { kind: ProtectedResourceK
       if (!response.ok || json.status === 'error') throw new Error(json.error || 'The file could not be analyzed.');
       setAnalysis(json.data);
       setAnalysisLabel(json.fallbackUsed ? 'Source file analysis' : `${String(json.provider || 'Grok')} file analysis`);
-      if (json.fallbackUsed) toast.info('AI gateway unavailable tha; uploaded TXT locally analyze hui.');
+      if (json.fallbackUsed) toast.info('The AI gateway was unavailable, so the uploaded TXT file was analyzed locally.');
       setCounts({
         mcq: Math.min(30, json.data.available.mcq),
         short: Math.min(5, json.data.available.short),
@@ -158,8 +158,11 @@ export function ResourceAiTools({ kind, resourceId }: { kind: ProtectedResourceK
             <p className="font-semibold text-emerald-700 dark:text-emerald-300">Verified against: {summarySource.title}</p>
             <span className="rounded-full bg-emerald-500/15 px-2 py-1 font-semibold text-emerald-700 dark:text-emerald-300">{summarySource.confidence}% source confidence</span>
           </div>
-          <p className="text-muted-foreground mt-2 leading-5">“{summarySource.excerpt}”</p>
-          <p className="text-muted-foreground mt-2">Reference: {summarySource.pageReference}. Exact page numbers appear when the uploaded context contains page markers.</p>
+          <p className="text-muted-foreground mt-2 leading-5">&quot;{summarySource.excerpt}&quot;</p>
+          <p className="text-muted-foreground mt-2">
+            Reference: {summarySource.pageReference}. If no page marker exists in the uploaded text, ilm AI will not
+            invent an exact page number.
+          </p>
         </div>
       )}
       {analysis && (

@@ -16,7 +16,7 @@ const ROSTER: Record<string, TeacherPersona> = {
   chemistry: { name: 'Miss Ayesha', specialty: 'Chemistry Specialist', bio: 'Organic & inorganic chemistry expert', initials: 'AY', gradient: 'from-emerald-500 to-teal-600' },
   biology: { name: 'Dr. Hina', specialty: 'Biology Specialist', bio: 'MBBS, loves making biology click', initials: 'HN', gradient: 'from-pink-500 to-rose-600' },
   english: { name: 'Miss Sara', specialty: 'English Specialist', bio: 'Grammar, comprehension & essay writing', initials: 'SR', gradient: 'from-amber-500 to-orange-600' },
-  urdu: { name: 'Sir Kashif', specialty: 'Urdu Specialist', bio: 'Adab aur grammar dono mein mahir', initials: 'KF', gradient: 'from-fuchsia-500 to-purple-600' },
+  urdu: { name: 'Sir Kashif', specialty: 'Urdu Specialist', bio: 'Specialist in literature and grammar', initials: 'KF', gradient: 'from-fuchsia-500 to-purple-600' },
   computer: { name: 'Sir Bilal', specialty: 'Computer Science Specialist', bio: 'Programming & CS fundamentals expert', initials: 'BL', gradient: 'from-slate-500 to-zinc-700' },
   islamiyat: { name: 'Sir Usman', specialty: 'Islamiyat Specialist', bio: 'Islamic studies, clear & thoughtful', initials: 'US', gradient: 'from-green-600 to-emerald-700' },
   pakistan: { name: 'Miss Fatima', specialty: 'Pakistan Studies Specialist', bio: 'History & civics made simple', initials: 'FT', gradient: 'from-teal-500 to-green-600' },

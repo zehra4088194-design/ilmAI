@@ -44,7 +44,7 @@ export function LecturesTab() {
       if (!res.ok) throw new Error(data.error || 'Lectures could not be loaded.');
       setLectures(data.lectures ?? []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Kuch ghalat ho gaya');
+      setError(err instanceof Error ? err.message : 'Something went wrong.');
     } finally {
       setLoading(false);
     }
@@ -60,7 +60,7 @@ export function LecturesTab() {
     try {
       const res = await fetch(`/api/admin/lectures/${deleteTarget.id}`, { method: 'DELETE' });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Delete fail ho gaya');
+      if (!res.ok) throw new Error(data.error || 'The item could not be deleted.');
       setDeleteTarget(null);
       await refetch();
     } catch (err) {

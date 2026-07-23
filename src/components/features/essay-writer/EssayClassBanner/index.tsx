@@ -11,7 +11,7 @@ interface EssayClassBannerProps {
 export function EssayClassBanner({ gradeLevel, onChangeClick }: EssayClassBannerProps) {
   return (
     <div className="flex items-center justify-between gap-2 rounded-md border border-border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
-      <span>Yeh essay Grade {GRADE_SHORT_LABEL[gradeLevel]} ke hisaab se likhi gayi hai</span>
+      <span>This essay is written for Grade {GRADE_SHORT_LABEL[gradeLevel]}</span>
       <Button
         type="button"
         variant="link"

@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
     const tier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
     const limitCheck = await checkAiMessageLimit(user.id, tier, 'full_test');
-    if (!limitCheck.success) return NextResponse.json({ status: 'error', error: 'Daily AI limit khatam ho gayi' }, { status: 429 });
+    if (!limitCheck.success) return NextResponse.json({ status: 'error', error: 'The daily AI limit has been reached.' }, { status: 429 });
 
     const { subjectName, chapterName, className, boardName, mcqCount = 15, shortCount = 6, longCount = 3, provider = 'groq', aiTier = 'medium' } = await req.json();
 
@@ -79,6 +79,6 @@ Return ONLY valid JSON, no markdown, no extra text:
     return NextResponse.json({ status: 'success', data: parsed, providerUsed: result.providerUsed });
   } catch (error) {
     console.error('Full test error:', error);
-    return NextResponse.json({ status: 'error', error: 'Test paper generate nahi hua. Dobara try karo.' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: 'The test paper could not be generated. Please try again.' }, { status: 500 });
   }
 }

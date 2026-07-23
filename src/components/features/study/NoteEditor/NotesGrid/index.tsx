@@ -24,7 +24,7 @@ export function NotesGrid({ notes, userId }: { notes: any[]; userId: string }) {
       .insert({ user_id: userId, title, content, is_starred: false, is_public: false })
       .select('id')
       .single();
-    if (error || !data) { toast.error('Note create nahi hua'); setCreating(false); return; }
+    if (error || !data) { toast.error('The note could not be created.'); setCreating(false); return; }
     router.push(`/notes/${data.id}`);
   };
 
@@ -48,7 +48,7 @@ export function NotesGrid({ notes, userId }: { notes: any[]; userId: string }) {
             </CardContent>
           </Card>
         ))}
-        {notes.length === 0 && <div className="col-span-full text-center py-12 text-muted-foreground">Koi notes nahi hain abhi. Naya note banao!</div>}
+        {notes.length === 0 && <div className="col-span-full text-center py-12 text-muted-foreground">No notes yet. Create your first note.</div>}
       </div>
     </div>
   );

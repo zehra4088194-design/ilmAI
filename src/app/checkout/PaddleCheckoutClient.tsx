@@ -11,7 +11,7 @@ export function PaddleCheckoutClient() {
   const searchParams = useSearchParams();
   const openedTransaction = useRef<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const transactionId = searchParams.get('transaction_id');
+  const transactionId = searchParams.get('transaction_id') || searchParams.get('_ptxn');
 
   useEffect(() => {
     const token = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;

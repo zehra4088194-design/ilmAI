@@ -4,6 +4,7 @@ import { gatewayChat } from '@/lib/ai/gateway';
 import { checkAiMessageLimit, checkFileTestLimit } from '@/lib/rate-limit';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import { fetchResourceContext, getProtectedResource, type ProtectedResourceKind } from '@/lib/resources/server';
+import { buildResourceEvidence, buildResourceEvidenceFromChunk, verifiedSourceInstruction } from '@/lib/resources/evidence';
 import type { FullTestPaper } from '@/app/api/ai/full-test/route';
 import { buildResourceSourceTest } from '@/lib/resources/source-fallback';
 
@@ -20,17 +21,17 @@ export async function POST(req: NextRequest) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ status: 'error', error: 'Login required hai.' }, { status: 401 });
+    if (!user) return NextResponse.json({ status: 'error', error: 'Authentication is required.' }, { status: 401 });
     const body = await req.json();
     const kind = body.kind as ProtectedResourceKind;
     if ((kind !== 'library' && kind !== 'past-paper' && kind !== 'college-resource') || typeof body.id !== 'string') {
       return NextResponse.json({ status: 'error', error: 'Invalid resource.' }, { status: 400 });
     }
     const resource = await getProtectedResource(user.id, kind, body.id, 'light');
-    if (!resource) return NextResponse.json({ status: 'error', error: 'Resource nahi mila.' }, { status: 404 });
+    if (!resource) return NextResponse.json({ status: 'error', error: 'The resource was not found.' }, { status: 404 });
     if (resource.tier === 'FREE') {
       return NextResponse.json(
-        { status: 'error', error: 'File se test Pro/Elite mein unlock hota hai.' },
+        { status: 'error', error: 'File-based tests are available on Pro and Elite.' },
         { status: 403 }
       );
     }
@@ -38,18 +39,18 @@ export async function POST(req: NextRequest) {
     const shortCount = count(body.counts?.short, 15);
     const longCount = count(body.counts?.long, 8);
     if (mcqCount + shortCount + longCount === 0) {
-      return NextResponse.json({ status: 'error', error: 'Kam az kam ek question select karo.' }, { status: 400 });
+      return NextResponse.json({ status: 'error', error: 'Select at least one question.' }, { status: 400 });
     }
     const featureLimit = await checkFileTestLimit(user.id, resource.tier);
     if (!featureLimit.success) {
       return NextResponse.json(
-        { status: 'error', error: 'File-based tests ki monthly plan limit complete ho gayi.' },
+        { status: 'error', error: 'The monthly file-based test limit has been reached.' },
         { status: 429 }
       );
     }
     const limit = await checkAiMessageLimit(user.id, resource.tier, 'resource_test_generate');
     if (!limit.success) {
-      return NextResponse.json({ status: 'error', error: 'Aaj ki AI limit khatam ho gayi.' }, { status: 429 });
+      return NextResponse.json({ status: 'error', error: "Today's AI limit has been reached." }, { status: 429 });
     }
     const context = await fetchResourceContext(resource);
     const fallback: FullTestPaper = {
@@ -78,7 +79,7 @@ export async function POST(req: NextRequest) {
           {
             role: 'system',
             content:
-              'You are an expert exam setter. Use only the supplied source text. Return valid JSON only, with no markdown fences.',
+              `You are an expert exam setter. ${verifiedSourceInstruction()} Return valid JSON only, with no markdown fences.`,
           },
           {
             role: 'user',
@@ -100,15 +101,31 @@ export async function POST(req: NextRequest) {
       paper.mcqs.length +
       paper.shortQs.reduce((sum, item) => sum + item.marks, 0) +
       paper.longQs.reduce((sum, item) => sum + item.marks, 0);
+    const { data: evidenceChunk } = await (supabase as any)
+      .from('resource_source_chunks')
+      .select('content, page_number, metadata')
+      .eq('resource_kind', resource.kind)
+      .eq('resource_id', resource.id)
+      .order('chunk_index', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
     return NextResponse.json({
       status: 'success',
-      data: { paper, resourceTitle: resource.title, fallbackUsed },
+      data: {
+        paper,
+        resourceTitle: resource.title,
+        fallbackUsed,
+        source: evidenceChunk
+          ? buildResourceEvidenceFromChunk(resource.title, evidenceChunk as any, fallbackUsed ? 100 : 92)
+          : buildResourceEvidence(resource.title, context, fallbackUsed ? 100 : 88),
+      },
       provider,
     });
   } catch (error) {
     console.error('Gemini resource test generation failed:', error);
     return NextResponse.json(
-      { status: 'error', error: error instanceof Error ? error.message : 'Test generate nahi hua.' },
+      { status: 'error', error: error instanceof Error ? error.message : 'The test could not be generated.' },
       { status: 500 }
     );
   }

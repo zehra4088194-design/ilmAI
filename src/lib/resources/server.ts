@@ -74,18 +74,24 @@ function isGoogleDriveDownloadUrl(url: string) {
 
 function getGoogleDriveConfirmationUrl(response: Response, html: string) {
   const action = html.match(/<form\b[^>]*\baction=["']([^"']+)["'][^>]*>/i)?.[1];
-  if (!action) return null;
+  const confirmationUrl = action ? new URL(action, response.url) : null;
 
-  const confirmationUrl = new URL(action, response.url);
-  if (!isGoogleDriveDownloadUrl(confirmationUrl.toString())) return null;
+  if (confirmationUrl && isGoogleDriveDownloadUrl(confirmationUrl.toString())) {
+    for (const input of html.match(/<input\b[^>]*>/gi) || []) {
+      const name = input.match(/\bname=["']([^"']+)["']/i)?.[1];
+      const value = input.match(/\bvalue=["']([^"']*)["']/i)?.[1];
+      if (name && value !== undefined) confirmationUrl.searchParams.set(name, value);
+    }
 
-  for (const input of html.match(/<input\b[^>]*>/gi) || []) {
-    const name = input.match(/\bname=["']([^"']+)["']/i)?.[1];
-    const value = input.match(/\bvalue=["']([^"']*)["']/i)?.[1];
-    if (name && value !== undefined) confirmationUrl.searchParams.set(name, value);
+    return confirmationUrl.toString();
   }
 
-  return confirmationUrl.toString();
+  for (const hrefMatch of html.matchAll(/\bhref=["']([^"']*(?:uc\?|download\?)[^"']*)["']/gi)) {
+    const candidate = new URL(hrefMatch[1]!.replace(/&amp;/g, '&'), response.url);
+    if (isGoogleDriveDownloadUrl(candidate.toString())) return candidate.toString();
+  }
+
+  return null;
 }
 
 export async function getProtectedResource(
@@ -242,13 +248,13 @@ export async function fetchProtectedFile(resource: ProtectedResource) {
   const contentType = response.headers.get('content-type')?.toLowerCase() || '';
   if (contentType.includes('text/html') && isGoogleDriveDownloadUrl(response.url)) {
     const confirmationUrl = getGoogleDriveConfirmationUrl(response, await response.text());
-    if (!confirmationUrl) throw new Error('Google Drive ne file download confirmation maangi hai.');
+    if (!confirmationUrl) throw new Error('Google Drive requires a download confirmation that could not be resolved.');
     response = await fetch(confirmationUrl, requestInit);
     if (!response.ok) throw new Error(`Resource fetch failed (${response.status}).`);
   }
 
   if (response.headers.get('content-type')?.toLowerCase().includes('text/html')) {
-    throw new Error('Drive se PDF file ki jagah HTML response mila.');
+    throw new Error('Drive returned an HTML page instead of the file. Make the file public with "Anyone with the link".');
   }
   const contentLength = Number(response.headers.get('content-length') || 0);
   if (contentLength > MAX_PROTECTED_RESOURCE_BYTES) {
@@ -273,9 +279,9 @@ async function fetchCompanionContext(resource: ProtectedResource) {
     if (!path || path.includes('..')) throw new Error('Invalid stored context path.');
     const admin = (await createAdminClient()) as any;
     const { data, error } = await admin.storage.from(RESOURCE_CONTEXT_BUCKET).download(path);
-    if (error || !data) throw new Error(`Stored context file load nahi hui: ${error?.message || 'missing file'}`);
+    if (error || !data) throw new Error(`Stored context file could not be loaded: ${error?.message || 'missing file'}`);
     const text = normalizeContextText(await data.text());
-    if (text.length < 50) throw new Error('Stored context file mein readable text bohat kam hai.');
+    if (text.length < 50) throw new Error('Stored context file has too little readable text.');
     return text;
   }
   const requestInit: RequestInit = {
@@ -285,23 +291,23 @@ async function fetchCompanionContext(resource: ProtectedResource) {
     signal: AbortSignal.timeout(30_000),
   };
   let response = await fetch(safeRemoteUrl(resource.contextTextUrl), requestInit);
-  if (!response.ok) throw new Error(`Context file fetch nahi hui (${response.status}).`);
+  if (!response.ok) throw new Error(`Context file fetch failed (${response.status}).`);
 
   const initialContentType = response.headers.get('content-type')?.toLowerCase() || '';
   if (initialContentType.includes('text/html') && isGoogleDriveDownloadUrl(response.url)) {
     const confirmationUrl = getGoogleDriveConfirmationUrl(response, await response.text());
-    if (!confirmationUrl) throw new Error('Google Drive ne context file ki download confirmation rok di.');
+    if (!confirmationUrl) throw new Error('Google Drive context download confirmation could not be resolved.');
     response = await fetch(confirmationUrl, requestInit);
-    if (!response.ok) throw new Error(`Context file fetch nahi hui (${response.status}).`);
+    if (!response.ok) throw new Error(`Context file fetch failed (${response.status}).`);
   }
 
   const contentType = response.headers.get('content-type')?.toLowerCase() || '';
   if (contentType.includes('text/html')) {
-    throw new Error('Context URL se .txt file ki jagah HTML page mila. Drive sharing ko Anyone with link karo.');
+    throw new Error('The context URL returned an HTML page instead of a .txt file. Set Drive sharing to Anyone with the link.');
   }
   const contentLength = Number(response.headers.get('content-length') || 0);
   if (contentLength > MAX_RESOURCE_CONTEXT_BYTES) {
-    throw new Error('Context .txt file 5MB se bari hai. Isay compact text file mein divide karo.');
+    throw new Error('The context .txt file exceeds 5 MB. Split it into smaller text files.');
   }
 
   const text = (await response.text())
@@ -309,9 +315,9 @@ async function fetchCompanionContext(resource: ProtectedResource) {
     .replace(/\0/g, '')
     .trim();
   if (/^\s*(?:<!doctype\s+html|<html\b)/i.test(text)) {
-    throw new Error('Context URL se .txt file ki jagah Google Drive HTML page mila.');
+    throw new Error('The context URL returned a Google Drive HTML page instead of a .txt file.');
   }
-  if (text.length < 50) throw new Error('Context .txt file mein readable text bohat kam hai.');
+  if (text.length < 50) throw new Error('The context .txt file does not contain enough readable text.');
   return text.slice(0, MAX_AI_CONTEXT_CHARACTERS);
 }
 
@@ -401,11 +407,11 @@ export async function fetchResourceContext(resource: ProtectedResource) {
   const response = await fetchProtectedFile(resource);
   const contentLength = Number(response.headers.get('content-length') || 0);
   if (contentLength > MAX_RESOURCE_OCR_BYTES) {
-    throw new Error('AI Summary/Test ke liye PDF 25MB se choti honi chahiye ya companion .txt file add karo.');
+    throw new Error('For AI summaries or tests, use a PDF smaller than 25 MB or add a companion .txt file.');
   }
   const fileBuffer = Buffer.from(await response.arrayBuffer());
   if (fileBuffer.length > MAX_RESOURCE_OCR_BYTES) {
-    throw new Error('AI Summary/Test ke liye PDF 25MB se choti honi chahiye ya companion .txt file add karo.');
+    throw new Error('For AI summaries or tests, use a PDF smaller than 25 MB or add a companion .txt file.');
   }
 
   const responseMime = response.headers.get('content-type')?.split(';')[0]?.trim().toLowerCase();
@@ -422,7 +428,7 @@ export async function fetchResourceContext(resource: ProtectedResource) {
   });
   const context = normalizeContextText(ocrResult.text);
   if (context.length < 50) {
-    throw new Error('PDF se AI Summary/Test ke liye readable text nahi nikla. Companion .txt file add karo.');
+    throw new Error('No readable text could be extracted for the AI summary or test. Add a companion .txt file.');
   }
   await persistResourceContext(resource, context);
   await cacheOcrContext(cacheKey, context);

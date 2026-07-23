@@ -8,11 +8,11 @@ export async function POST(req: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ status: 'error', error: 'Login required hai.' }, { status: 401 });
+  if (!user) return NextResponse.json({ status: 'error', error: 'Authentication is required.' }, { status: 401 });
 
   const { gender } = await req.json();
   if (gender !== 'girl' && gender !== 'boy') {
-    return NextResponse.json({ status: 'error', error: 'Girl ya boy select karo.' }, { status: 400 });
+    return NextResponse.json({ status: 'error', error: 'Select a gender.' }, { status: 400 });
   }
 
   const { data: profile } = await supabase
@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     .eq('id', user.id)
     .single();
   if (!profile || profile.role !== 'student') {
-    return NextResponse.json({ status: 'error', error: 'Ye setting sirf student account ke liye hai.' }, { status: 403 });
+    return NextResponse.json({ status: 'error', error: 'This setting is available only to student accounts.' }, { status: 403 });
   }
   if (profile.gender === gender) {
     return NextResponse.json({ status: 'success', data: { gender, genderChangedAt: profile.gender_changed_at } });
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         status: 'error',
-        error: `Gender ${new Date(nextChangeAt).toLocaleString('en-PK')} ke baad change ho sakta hai.`,
+        error: `Gender can be changed after ${new Date(nextChangeAt).toLocaleString('en-PK')}.`,
         nextChangeAt: new Date(nextChangeAt).toISOString(),
       },
       { status: 429 }

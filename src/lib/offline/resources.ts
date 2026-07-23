@@ -50,7 +50,7 @@ async function transact<T>(mode: IDBTransactionMode, run: (store: IDBObjectStore
     };
     transaction.onabort = () => {
       db.close();
-      reject(transaction.error || new Error('Offline storage transaction abort ho gayi.'));
+      reject(transaction.error || new Error('Offline storage transaction was aborted.'));
     };
   });
 }
@@ -75,33 +75,31 @@ export async function saveOfflineResourceResponse(
 ) {
   const mimeType = response.headers.get('content-type') || 'application/pdf';
   const key = offlineResourceKey(item.kind, item.resourceId, item.mode);
+  const blob = await response.blob();
+  const value: OfflineResource = { ...item, key, mimeType, blob };
 
-  if (typeof caches === 'undefined') {
-    return saveOfflineResource({ ...item, mimeType, blob: await response.blob() });
-  }
+  await transact('readwrite', (store) => store.put(value));
+  if (typeof caches === 'undefined') return value;
 
   const cache = await caches.open(CACHE_NAME);
   const request = cacheRequest(key);
   try {
-    await cache.put(request, response);
-    const value: OfflineResource = { ...item, key, mimeType };
-    await transact('readwrite', (store) => store.put(value));
-    return value;
+    await cache.put(request, new Response(blob, { headers: { 'Content-Type': mimeType } }));
   } catch (error) {
     await cache.delete(request).catch(() => false);
     if (error instanceof DOMException && error.name === 'QuotaExceededError') {
-      throw new Error('Device storage kam hai. Kuch purani Downloads remove karke dobara try karo.');
+      throw new Error('Device storage is low. Remove older Downloads and try again.');
     }
-    throw error;
   }
+  return value;
 }
 
 export async function getOfflineResourceBlob(item: OfflineResource) {
   if (item.blob) return item.blob;
-  if (typeof caches === 'undefined') throw new Error('Is browser mein offline file storage available nahi hai.');
+  if (typeof caches === 'undefined') throw new Error('Offline file storage is not available in this browser.');
   const cache = await caches.open(CACHE_NAME);
   const response = await cache.match(cacheRequest(item.key));
-  if (!response) throw new Error('Offline file missing hai. Library se dobara save karo.');
+  if (!response) throw new Error('Offline file is missing. Save it again from Library.');
   return response.blob();
 }
 

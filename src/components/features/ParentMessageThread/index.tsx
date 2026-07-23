@@ -70,7 +70,7 @@ export function ParentMessageThread({ linkId, currentUserId }: { linkId: string;
       // Realtime subscription above will append it — but add optimistically
       // in case the realtime event lags.
     } catch {
-      toast.error('Message send nahi hua');
+      toast.error('The message could not be sent.');
       setText(content);
     } finally {
       setSending(false);
@@ -92,7 +92,7 @@ export function ParentMessageThread({ linkId, currentUserId }: { linkId: string;
         <button onClick={() => setOpen(false)} className="text-xs text-muted-foreground hover:text-foreground">Close</button>
       </div>
       <div className="h-56 overflow-y-auto p-3 space-y-2 bg-background/50">
-        {messages.length === 0 && <p className="text-xs text-muted-foreground text-center mt-4">Koi message nahi abhi - Hi bol ke shuru karo!</p>}
+        {messages.length === 0 && <p className="text-xs text-muted-foreground text-center mt-4">No messages yet. Say hello to begin.</p>}
         {messages.map((m) => (
           <div key={m.id} className={cn('max-w-[80%] px-3 py-1.5 rounded-xl text-sm', m.sender_id === currentUserId ? 'ml-auto bg-violet-600 text-white' : 'bg-muted')}>
             {m.content}

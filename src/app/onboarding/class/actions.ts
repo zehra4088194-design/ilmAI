@@ -112,7 +112,7 @@ export async function completeUniversityOnboarding(input: {
   const preferredOutputStyle = isValidOutputStyle(input.preferredOutputStyle) ? input.preferredOutputStyle : 'simple';
 
   if (!program || !semester) {
-    return { success: false, error: 'Program aur semester zaroori hain.' };
+    return { success: false, error: 'Program and semester are required.' };
   }
 
   const { supabase, user, error } = await requireStudentProfile();

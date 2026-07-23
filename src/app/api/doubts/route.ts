@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     if (!user) return NextResponse.json({ status: 'error', error: 'Login required' }, { status: 401 });
 
     const { title, body, subjectId } = await req.json();
-    if (!title?.trim() || !body?.trim()) return NextResponse.json({ status: 'error', error: 'Title aur sawaal dono likhna zaroori hai' }, { status: 400 });
+    if (!title?.trim() || !body?.trim()) return NextResponse.json({ status: 'error', error: 'Enter both a title and a question.' }, { status: 400 });
 
     const id = nanoid();
     const { data, error } = await supabase.from('doubts').insert({
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       const aiReply = await gatewayChat({
         provider: 'groq', tier: 'medium',
         messages: [
-          { role: 'system', content: `You are an expert Pakistani board exam teacher (Class 9-12). Answer student doubts clearly, patiently, and encouragingly. Use simple English with some Roman Urdu. Be thorough but concise.\n\n${MARKDOWN_ANSWER_FORMAT_INSTRUCTION}` },
+          { role: 'system', content: `You are an expert Pakistani board exam teacher (Class 9-12). Answer student questions clearly, patiently, and encouragingly in professional English. Use Roman Urdu only when the student explicitly requests it. Be thorough but concise.\n\n${MARKDOWN_ANSWER_FORMAT_INSTRUCTION}` },
           { role: 'user', content: `Student question: ${title}\n\nDetails: ${body}` },
         ],
         maxTokens: 1024, temperature: 0.6,
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ status: 'success', data });
   } catch (error) {
     console.error('Doubt post error:', error);
-    return NextResponse.json({ status: 'error', error: 'Sawaal post nahi ho saka' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: 'The question could not be posted.' }, { status: 500 });
   }
 }
 
@@ -67,6 +67,6 @@ export async function GET(req: NextRequest) {
     if (error) throw error;
     return NextResponse.json({ status: 'success', data });
   } catch (error) {
-    return NextResponse.json({ status: 'error', error: 'Doubts load nahi ho sake' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: 'Questions could not be loaded.' }, { status: 500 });
   }
 }

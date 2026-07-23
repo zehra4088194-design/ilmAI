@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
     const tier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
     const limitCheck = await checkAiMessageLimit(user.id, tier, 'grade_test');
-    if (!limitCheck.success) return NextResponse.json({ status: 'error', error: 'Daily AI limit khatam ho gayi' }, { status: 429 });
+    if (!limitCheck.success) return NextResponse.json({ status: 'error', error: 'The daily AI limit has been reached.' }, { status: 429 });
 
     const { questions, answers, subjectName, className, provider, aiTier } = await req.json();
     const gradeProvider: AiProviderId = provider || 'groq';
@@ -53,6 +53,6 @@ The "feedback" value should be a short Markdown-formatted mini-document: a one-l
     return NextResponse.json({ status: 'success', data: evals });
   } catch (error) {
     console.error('Grade test error:', error);
-    return NextResponse.json({ status: 'error', error: 'Grading fail ho gai' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: 'Grading failed' }, { status: 500 });
   }
 }

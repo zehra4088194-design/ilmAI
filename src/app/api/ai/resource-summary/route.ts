@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { gatewayChat, MARKDOWN_ANSWER_FORMAT_INSTRUCTION } from '@/lib/ai/gateway';
 import { checkAiMessageLimit, checkFileSummaryLimit } from '@/lib/rate-limit';
 import { fetchResourceContext, getProtectedResource, type ProtectedResourceKind } from '@/lib/resources/server';
+import { buildResourceEvidence, buildResourceEvidenceFromChunk, verifiedSourceInstruction } from '@/lib/resources/evidence';
 import { buildResourceSourceSummary } from '@/lib/resources/source-fallback';
 import type { SubscriptionTier } from '@/types';
 
@@ -15,30 +16,30 @@ export async function POST(req: NextRequest) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ status: 'error', error: 'Login required hai.' }, { status: 401 });
+    if (!user) return NextResponse.json({ status: 'error', error: 'Authentication is required.' }, { status: 401 });
 
     const { kind, id } = await req.json();
     if ((kind !== 'library' && kind !== 'past-paper' && kind !== 'college-resource') || typeof id !== 'string') {
       return NextResponse.json({ status: 'error', error: 'Invalid resource.' }, { status: 400 });
     }
     const resource = await getProtectedResource(user.id, kind as ProtectedResourceKind, id, 'light');
-    if (!resource) return NextResponse.json({ status: 'error', error: 'Resource nahi mila.' }, { status: 404 });
+    if (!resource) return NextResponse.json({ status: 'error', error: 'The resource was not found.' }, { status: 404 });
     if (resource.tier === 'FREE') {
       return NextResponse.json(
-        { status: 'error', error: 'AI Summary Pro/Elite mein unlock hoti hai.' },
+        { status: 'error', error: 'AI Summary is available on Pro and Elite.' },
         { status: 403 }
       );
     }
     const featureLimit = await checkFileSummaryLimit(user.id, resource.tier as SubscriptionTier);
     if (!featureLimit.success) {
       return NextResponse.json(
-        { status: 'error', error: 'File summaries ki monthly plan limit complete ho gayi.' },
+        { status: 'error', error: 'The monthly file-summary limit has been reached.' },
         { status: 429 }
       );
     }
     const limit = await checkAiMessageLimit(user.id, resource.tier as SubscriptionTier, 'resource_summary');
     if (!limit.success) {
-      return NextResponse.json({ status: 'error', error: 'Aaj ki AI limit khatam ho gayi.' }, { status: 429 });
+      return NextResponse.json({ status: 'error', error: "Today's AI limit has been reached." }, { status: 429 });
     }
     const context = await fetchResourceContext(resource);
 
@@ -55,7 +56,7 @@ export async function POST(req: NextRequest) {
         messages: [
           {
             role: 'system',
-            content: `You summarize only the supplied educational source. Never add facts not present in it. ${MARKDOWN_ANSWER_FORMAT_INSTRUCTION}`,
+            content: `${verifiedSourceInstruction()} ${MARKDOWN_ANSWER_FORMAT_INSTRUCTION}`,
           },
           {
             role: 'user',
@@ -72,6 +73,15 @@ export async function POST(req: NextRequest) {
       summary = buildResourceSourceSummary(resource.title, context);
     }
 
+    const { data: evidenceChunk } = await (supabase as any)
+      .from('resource_source_chunks')
+      .select('content, page_number, metadata')
+      .eq('resource_kind', resource.kind)
+      .eq('resource_id', resource.id)
+      .order('chunk_index', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
     return NextResponse.json({
       status: 'success',
       data: {
@@ -79,18 +89,15 @@ export async function POST(req: NextRequest) {
         provider,
         model,
         fallbackUsed,
-        source: {
-          title: resource.title,
-          excerpt: context.replace(/\s+/g, ' ').trim().slice(0, 360),
-          confidence: fallbackUsed ? 100 : 85,
-          pageReference: context.includes('\f') ? 'Page markers available in source context' : 'Companion text / extracted source',
-        },
+        source: evidenceChunk
+          ? buildResourceEvidenceFromChunk(resource.title, evidenceChunk as any, fallbackUsed ? 100 : 92)
+          : buildResourceEvidence(resource.title, context, fallbackUsed ? 100 : 88),
       },
     });
   } catch (error) {
     console.error('Resource summary failed:', error);
     return NextResponse.json(
-      { status: 'error', error: error instanceof Error ? error.message : 'Summary generate nahi hui.' },
+      { status: 'error', error: error instanceof Error ? error.message : 'The summary could not be generated.' },
       { status: 500 }
     );
   }

@@ -14,10 +14,10 @@ export async function POST(req: NextRequest) {
     const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
     const tier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
     const limitCheck = await checkAiMessageLimit(user.id, tier, 'grade_answer');
-    if (!limitCheck.success) return NextResponse.json({ status: 'error', error: 'Daily AI limit khatam ho gayi' }, { status: 429 });
+    if (!limitCheck.success) return NextResponse.json({ status: 'error', error: 'The daily AI limit has been reached.' }, { status: 429 });
 
     const { question, studentAnswer, modelAnswer, marks } = await req.json();
-    if (!question || !studentAnswer) return NextResponse.json({ status: 'error', error: 'Question aur answer required hain' }, { status: 400 });
+    if (!question || !studentAnswer) return NextResponse.json({ status: 'error', error: 'A question and answer are required' }, { status: 400 });
 
     const result = await gatewayChat({
       provider: 'groq', tier: 'mini',
@@ -47,6 +47,6 @@ Each "improvements" array item should be one concise sentence (plain text, no ma
     return NextResponse.json({ status: 'success', data: parsed });
   } catch (error) {
     console.error('Grade answer API error:', error);
-    return NextResponse.json({ status: 'error', error: 'Grading fail ho gayi' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: 'Grading failed' }, { status: 500 });
   }
 }

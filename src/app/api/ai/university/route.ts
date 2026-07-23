@@ -176,7 +176,7 @@ export async function POST(req: NextRequest) {
     const data = parseAiJson<Record<string, unknown>>(result.text, {});
     if (!Object.keys(data).length) {
       return NextResponse.json(
-        { status: 'error', error: 'Assistant response parse nahi ho saka. Dobara try karo.' },
+        { status: 'error', error: 'The assistant response could not be parsed. Please try again.' },
         { status: 500 }
       );
     }
@@ -185,7 +185,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('University AI route error:', error);
     return NextResponse.json(
-      { status: 'error', error: 'University assistant response generate nahi ho saka' },
+      { status: 'error', error: 'The university assistant response could not be generated.' },
       { status: 500 }
     );
   }

@@ -6,11 +6,14 @@ import { gatewayChat } from '@/lib/ai/gateway';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import { createNotificationIfEnabled, createNotificationsIfEnabled } from '@/lib/notifications/preferences';
 import { checkAiMessageLimit, getConfiguredLimitExceededMessage } from '@/lib/rate-limit';
+import { loadArchivedChatMessages, mergeChatMessages } from '@/lib/storage/chat-archive';
 import type { SubscriptionTier } from '@/types';
 
 async function getUser() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   return user;
 }
 
@@ -70,7 +73,16 @@ async function moderateIfNeeded(admin: any, request: any) {
       .select('id', { count: 'exact', head: true })
       .eq('request_id', request.id);
 
-    const totalMessages = count || 0;
+    const { data: archiveCounts } = await admin
+      .from('chat_archives')
+      .select('message_count')
+      .eq('archive_type', 'student')
+      .eq('conversation_id', request.id);
+    const archivedMessages = (archiveCounts || []).reduce(
+      (total: number, archive: { message_count?: number }) => total + Number(archive.message_count || 0),
+      0
+    );
+    const totalMessages = (count || 0) + archivedMessages;
     const lastChecked = Number(request.moderation_last_checked_message_count || 0);
     if (totalMessages < 50 || totalMessages - lastChecked < 50) return null;
 
@@ -83,7 +95,10 @@ async function moderateIfNeeded(admin: any, request: any) {
 
     const transcript = (recent || [])
       .reverse()
-      .map((message: any, index: number) => `${index + 1}. ${message.sender_id === request.requester_id ? 'Student A' : 'Student B'}: ${message.content}`)
+      .map(
+        (message: any, index: number) =>
+          `${index + 1}. ${message.sender_id === request.requester_id ? 'Student A' : 'Student B'}: ${message.content}`
+      )
       .join('\n');
 
     const ai = await gatewayChat({
@@ -92,7 +107,8 @@ async function moderateIfNeeded(admin: any, request: any) {
       messages: [
         {
           role: 'system',
-          content: 'You are a student safety moderator for an education app. Return only valid JSON. Be strict about keeping student chat study-related, but do not punish tiny greetings, short jokes, or study logistics.',
+          content:
+            'You are a student safety moderator for an education app. Return only valid JSON. Be strict about keeping student chat study-related, but do not punish tiny greetings, short jokes, or study logistics.',
         },
         {
           role: 'user',
@@ -113,8 +129,10 @@ ${transcript}`,
     });
 
     const verdict = parseAiJson<{ status?: string; reason?: string; alert?: string }>(ai.text, {});
-    const reason = verdict.reason || 'Conversation study se related nahi lag rahi.';
-    const alert = verdict.alert || 'Please chat ko study se related rakho. Study ke ilawa baat allow nahi. Dobara off-topic baat hui to ye chat 2 din ke liye block ho jaayegi.';
+    const reason = verdict.reason || 'The conversation does not appear to be study-related.';
+    const alert =
+      verdict.alert ||
+      'Keep the conversation study-related. Another off-topic message will block this chat for two days.';
     const updateBase = {
       moderation_last_checked_message_count: totalMessages,
       moderation_last_reason: reason,
@@ -139,9 +157,13 @@ ${transcript}`,
         .eq('id', request.id);
       await notifyBoth(admin, request, {
         title: 'Study buddy chat blocked',
-        message: 'Chat study se hat gayi thi, is liye ye conversation 2 din ke liye block ho gayi hai.',
+        message: 'This conversation was blocked for two days because it moved away from study-related topics.',
       });
-      return { action: 'blocked', alert: 'Chat study se hat gayi thi, is liye dono students ki ye chat 2 din ke liye block ho gayi hai.', blockedUntil };
+      return {
+        action: 'blocked',
+        alert: 'This chat was blocked for both students for two days because it moved away from study-related topics.',
+        blockedUntil,
+      };
     }
 
     await admin
@@ -166,16 +188,19 @@ export async function GET(req: NextRequest) {
   const user = await getUser();
   if (!user) return NextResponse.json({ error: 'Login required' }, { status: 401 });
   const requestId = req.nextUrl.searchParams.get('requestId');
-  if (!requestId) return NextResponse.json({ error: 'requestId required hai' }, { status: 400 });
+  if (!requestId) return NextResponse.json({ error: 'A request ID is required' }, { status: 400 });
 
-  const admin = await createAdminClient() as any;
+  const admin = (await createAdminClient()) as any;
   const request = await getApprovedRequest(admin, requestId, user.id);
-  if (!request) return NextResponse.json({ error: 'Approved chat nahi mili.' }, { status: 403 });
+  if (!request) return NextResponse.json({ error: 'An approved chat was not found.' }, { status: 403 });
   if (isBlocked(request)) {
-    return NextResponse.json({
-      error: 'Ye chat moderation ki wajah se temporarily blocked hai.',
-      blockedUntil: request.moderation_blocked_until,
-    }, { status: 423 });
+    return NextResponse.json(
+      {
+        error: 'This chat is temporarily blocked by moderation.',
+        blockedUntil: request.moderation_blocked_until,
+      },
+      { status: 423 }
+    );
   }
 
   await admin
@@ -192,8 +217,9 @@ export async function GET(req: NextRequest) {
     .order('created_at', { ascending: true })
     .limit(200);
 
-  if (error) return NextResponse.json({ error: 'Messages load nahi hue. Migration 011 check karein.' }, { status: 500 });
-  return NextResponse.json({ messages: data || [] });
+  if (error) return NextResponse.json({ error: 'Messages could not be loaded. Check migration 011.' }, { status: 500 });
+  const archived = await loadArchivedChatMessages<any>(admin, 'student', requestId);
+  return NextResponse.json({ messages: mergeChatMessages(archived, data || []) });
 }
 
 export async function POST(req: NextRequest) {
@@ -202,23 +228,30 @@ export async function POST(req: NextRequest) {
 
   const { requestId, content } = await req.json();
   const message = typeof content === 'string' ? content.trim() : '';
-  if (!requestId || !message) return NextResponse.json({ error: 'requestId aur message required hain' }, { status: 400 });
+  if (!requestId || !message)
+    return NextResponse.json({ error: 'A request ID and message are required' }, { status: 400 });
 
-  const admin = await createAdminClient() as any;
+  const admin = (await createAdminClient()) as any;
   const { data: profile } = await admin.from('profiles').select('subscription_tier').eq('id', user.id).maybeSingle();
   const tier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
   const settings = await getPlatformSettings();
   const plan = getPlanFromSettings(settings, tier);
   if (!plan.access.studentChat) {
-    return NextResponse.json({ error: 'Student chat messaging is plan mein locked hai. Free users request bhej/accept kar sakte hain.' }, { status: 403 });
+    return NextResponse.json(
+      { error: 'Student chat messaging is locked on this plan. Free users can send and accept connection requests.' },
+      { status: 403 }
+    );
   }
   const moderationLimit = await checkAiMessageLimit(user.id, tier, 'student_chat_moderation');
   if (!moderationLimit.success) {
-    return NextResponse.json({ error: await getConfiguredLimitExceededMessage(tier, 'Study buddy safety check') }, { status: 429 });
+    return NextResponse.json(
+      { error: await getConfiguredLimitExceededMessage(tier, 'Study buddy safety check') },
+      { status: 429 }
+    );
   }
 
   const request = await getApprovedRequest(admin, requestId, user.id);
-  if (!request) return NextResponse.json({ error: 'Approved chat nahi mili.' }, { status: 403 });
+  if (!request) return NextResponse.json({ error: 'An approved chat was not found.' }, { status: 403 });
 
   const { data, error } = await admin
     .from('student_chat_messages')
@@ -226,7 +259,7 @@ export async function POST(req: NextRequest) {
     .select('*')
     .single();
 
-  if (error) return NextResponse.json({ error: 'Message send nahi hua.' }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'The message could not be sent.' }, { status: 500 });
 
   const recipientId = user.id === request.requester_id ? request.recipient_id : request.requester_id;
   await createNotificationIfEnabled(admin, 'studentChat', {
@@ -248,11 +281,11 @@ export async function PATCH(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Login required' }, { status: 401 });
 
   const { requestId } = await req.json();
-  if (!requestId) return NextResponse.json({ error: 'requestId required hai' }, { status: 400 });
+  if (!requestId) return NextResponse.json({ error: 'A request ID is required' }, { status: 400 });
 
-  const admin = await createAdminClient() as any;
+  const admin = (await createAdminClient()) as any;
   const request = await getApprovedRequest(admin, requestId, user.id);
-  if (!request) return NextResponse.json({ error: 'Approved chat nahi mili.' }, { status: 403 });
+  if (!request) return NextResponse.json({ error: 'An approved chat was not found.' }, { status: 403 });
 
   const { error } = await admin
     .from('student_chat_messages')
@@ -261,6 +294,6 @@ export async function PATCH(req: NextRequest) {
     .neq('sender_id', user.id)
     .is('read_at', null);
 
-  if (error) return NextResponse.json({ error: 'Seen update nahi hua' }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'The read status could not be updated.' }, { status: 500 });
   return NextResponse.json({ status: 'success' });
 }

@@ -9,6 +9,7 @@ import {
   buildCatalogSearch,
   isCatalogResourceVisible,
   LIBRARY_SECTIONS,
+  normalizeLegacyCatalogResource,
   parseLibraryResourceType,
 } from '@/lib/resources/catalog';
 
@@ -35,7 +36,9 @@ export default async function LibraryChapterPage({
   } = await supabase.auth.getUser();
 
   const [{ data: profile }, subjectResult] = await Promise.all([
-    user ? supabase.from('profiles').select('board, grade_level').eq('id', user.id).single() : Promise.resolve({ data: null }),
+    user
+      ? supabase.from('profiles').select('board, grade_level').eq('id', user.id).single()
+      : Promise.resolve({ data: null }),
     subjectSlug === 'general'
       ? Promise.resolve({ data: null })
       : supabase.from('subjects').select('id, name, slug').eq('slug', subjectSlug).maybeSingle(),
@@ -55,20 +58,44 @@ export default async function LibraryChapterPage({
   if (chapterSlug !== 'general' && !chapter) notFound();
 
   let resourcesQuery = (supabase.from('library_resources') as any)
-    .select('id, title, book_title, content_section, has_context_text, board, grade_level')
+    .select('id, title, book_title, content_section, has_context_text, drive_url, light_file_url, dark_file_url, board, grade_level')
     .eq('resource_type', resourceType);
   resourcesQuery = subject ? resourcesQuery.eq('subject_id', subject.id) : resourcesQuery.is('subject_id', null);
   resourcesQuery = chapter ? resourcesQuery.eq('chapter_id', chapter.id) : resourcesQuery.is('chapter_id', null);
   if (bookTitle) resourcesQuery = resourcesQuery.eq('book_title', bookTitle);
-  const { data: resources } = await resourcesQuery;
+  const catalogResult = await resourcesQuery;
+  let resources = catalogResult.data;
+  if (catalogResult.error) {
+    console.warn('Structured library catalog is not migrated yet; using the safe legacy chapter fallback.');
+    let fallbackQuery = (supabase.from('library_resources') as any)
+      .select('id, title, context_text_url, drive_url, light_file_url, dark_file_url, board, grade_level')
+      .eq('resource_type', resourceType);
+    fallbackQuery = subject ? fallbackQuery.eq('subject_id', subject.id) : fallbackQuery.is('subject_id', null);
+    fallbackQuery = chapter ? fallbackQuery.eq('chapter_id', chapter.id) : fallbackQuery.is('chapter_id', null);
+    const fallbackResult = await fallbackQuery;
+    resources = (fallbackResult.data || [])
+      .map((resource: any) =>
+        normalizeLegacyCatalogResource({
+          ...resource,
+          resource_type: resourceType,
+          subjects: subject,
+        })
+      )
+      .filter((resource: any) => !bookTitle || resource.book_title === bookTitle);
+  }
   const visibleResources = (resources || []).filter((resource: any) => isCatalogResourceVisible(resource, profile));
   const resolvedBookTitle =
-    bookTitle || visibleResources[0]?.book_title || `${subject?.name || 'General'} ${resourceType === 'notes' ? 'Notes' : 'Text Book'}`;
+    bookTitle ||
+    visibleResources[0]?.book_title ||
+    `${subject?.name || 'General'} ${resourceType === 'notes' ? 'Notes' : 'Text Book'}`;
   const catalogSearch = buildCatalogSearch(resourceType, resolvedBookTitle);
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <Link href={`/library/${subjectSlug}?${catalogSearch}`} className="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 text-sm font-medium">
+      <Link
+        href={`/library/${subjectSlug}?${catalogSearch}`}
+        className="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 text-sm font-medium"
+      >
         <ArrowLeft className="h-4 w-4" /> Back to chapters
       </Link>
 

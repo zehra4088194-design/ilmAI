@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
 
     if (getPaymentAvailability(req.headers).consumptionOnly) {
       return NextResponse.json(
-        { status: 'consumption_only', error: 'Play Store app mein external checkout available nahi hai.' },
+        { status: 'consumption_only', error: 'External checkout is not available in the Play Store app.' },
         { status: 403 }
       );
     }
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
         {
           status: 'active_subscription',
           error:
-            'Aap ka paid plan pehle se active hai. Duplicate billing se bachne ke liye plan change support se karein.',
+            'A paid plan is already active. Contact support to change plans and avoid duplicate billing.',
         },
         { status: 409 }
       );
@@ -51,19 +51,21 @@ export async function POST(req: NextRequest) {
       provider?: 'paddle' | 'paypro';
     };
     const { tier, billingCycle } = body;
-    const providerId = body.provider === 'paypro' ? 'paypro' : 'paddle';
-    const region: PaymentRegion = providerId === 'paypro' ? 'PK' : 'GLOBAL';
-    const currency = providerId === 'paypro' ? 'PKR' : 'USD';
+    // PayPro currently does not support automatic recurring subscriptions for
+    // the local wallet flow. Keep automated checkout on Paddle; Easypaisa and
+    // JazzCash remain manual verification flows from the upgrade page.
+    const providerId = 'paddle';
+    const region: PaymentRegion = 'GLOBAL';
+    const currency = 'USD';
 
     if (tier !== 'PRO' && tier !== 'ELITE') {
       return NextResponse.json({ status: 'error', error: 'Invalid plan selected' }, { status: 400 });
     }
     if (!isPaymentRegionConfigured(region, req.headers)) {
-      const providerLabel = providerId === 'paypro' ? 'PayPro' : 'Paddle';
       return NextResponse.json(
         {
           status: 'checkout_unavailable',
-          error: `${providerLabel} checkout abhi configure nahi hua.`,
+          error: 'Paddle checkout is not configured yet.',
         },
         { status: 400 }
       );
@@ -86,6 +88,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ url: session.url });
   } catch (error) {
     console.error('Checkout session error:', error);
-    return NextResponse.json({ status: 'error', error: 'Checkout session create nahi hua' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: 'The checkout session could not be created.' }, { status: 500 });
   }
 }

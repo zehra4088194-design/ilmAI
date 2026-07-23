@@ -47,7 +47,7 @@ export async function GET() {
     .eq('id', user.id)
     .single();
 
-  if (error) return NextResponse.json({ status: 'error', error: 'Preferences load nahi ho sakin' }, { status: 500 });
+  if (error) return NextResponse.json({ status: 'error', error: 'Preferences could not be loaded.' }, { status: 500 });
   const storedPreferences = data?.notification_preferences && typeof data.notification_preferences === 'object'
     ? data.notification_preferences as Record<string, unknown>
     : {};
@@ -74,6 +74,6 @@ export async function POST(req: NextRequest) {
     })
     .eq('id', user.id);
 
-  if (error) return NextResponse.json({ status: 'error', error: 'Notification preferences save nahi hui' }, { status: 500 });
+  if (error) return NextResponse.json({ status: 'error', error: 'Notification preferences could not be saved.' }, { status: 500 });
   return NextResponse.json({ status: 'success', data: { preferences } });
 }

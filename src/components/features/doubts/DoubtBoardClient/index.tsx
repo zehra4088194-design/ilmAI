@@ -50,7 +50,7 @@ export function DoubtBoardClient({ doubts, subjects, userId }: { doubts: Doubt[]
   }, [localDoubts, filterSubject, filterStatus]);
 
   const handleSubmit = async () => {
-    if (!title.trim() || !body.trim()) { toast.error('Title aur sawal dono likhna zaroori hai'); return; }
+    if (!title.trim() || !body.trim()) { toast.error('Enter both a title and a question.'); return; }
     setSubmitting(true);
     try {
       const res = await fetch('/api/doubts', {
@@ -59,11 +59,11 @@ export function DoubtBoardClient({ doubts, subjects, userId }: { doubts: Doubt[]
       });
       const json = await res.json();
       if (json.status === 'error') { toast.error(json.error); return; }
-      toast.success('Sawaal post ho gaya! Teacher jald jawab denge 🎓');
+      toast.success('Question posted. A teacher will respond soon.');
       setLocalDoubts([json.data, ...localDoubts]);
       setTitle(''); setBody(''); setSubjectId(''); setShowForm(false);
       setExpandedId(json.data.id);
-    } catch { toast.error('Kuch ghalat ho gaya'); }
+    } catch { toast.error('Something went wrong.'); }
     finally { setSubmitting(false); }
   };
 

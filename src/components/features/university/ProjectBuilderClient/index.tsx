@@ -51,7 +51,7 @@ export function ProjectBuilderClient({ isLocked = false }: { isLocked?: boolean 
       if (json.data.saved === false) {
         toast.warning('The project was generated, but it was not saved to history. The content is available here.');
       } else {
-        toast.success('Project pack generate ho gaya!');
+        toast.success('Project pack generated.');
       }
     } catch {
       toast.error('The project pack could not be generated.');
@@ -65,7 +65,7 @@ export function ProjectBuilderClient({ isLocked = false }: { isLocked?: boolean 
       <div>
         <Badge variant={isLocked ? 'secondary' : 'default'} className="mb-3">{isLocked ? 'Pro/Elite Locked' : 'Pro/Elite'}</Badge>
         <h1 className="text-2xl font-bold">AI Project Builder</h1>
-        <p className="text-muted-foreground">One-line idea do, AI proposal, report, flowchart, poster copy aur pitch script draft karega.</p>
+        <p className="text-muted-foreground">Enter a one-line idea and AI will draft a proposal, report, flowchart, poster copy, and pitch script.</p>
       </div>
 
       <Card>

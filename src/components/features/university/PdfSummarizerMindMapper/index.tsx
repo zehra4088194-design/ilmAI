@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils/cn';
 import { toast } from 'sonner';
 
 type Summary = { methodology: string; key_findings: string; conclusion: string };
+const MAX_PDF_BYTES = 20 * 1024 * 1024;
 
 export function PdfSummarizerMindMapper() {
   const [file, setFile] = useState<File | null>(null);
@@ -21,12 +22,12 @@ export function PdfSummarizerMindMapper() {
 
   const process = async () => {
     if (!file) return;
-    if (file.size > 900_000) {
-      toast.error('Free PDF OCR supports files up to 900 KB and 3 pages.');
+    if (file.size > MAX_PDF_BYTES) {
+      toast.error('Upload a PDF smaller than 20 MB and 30 pages.');
       return;
     }
     setLoading(true);
-    setProcessingStep('PDF private OCR server par scan ho rahi hai...');
+    setProcessingStep('The PDF is being scanned by the available OCR service...');
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -84,7 +85,7 @@ export function PdfSummarizerMindMapper() {
   const copyExtractedText = async () => {
     if (!extractedText) return;
     await navigator.clipboard.writeText(extractedText);
-    toast.success('Extracted text copy ho gaya');
+    toast.success('Extracted text copied.');
   };
 
   return (
@@ -124,7 +125,7 @@ export function PdfSummarizerMindMapper() {
               onChange={(event) => onFile(event.target.files?.[0] || null)}
             />
             <UploadCloud className="mb-3 h-10 w-10 text-violet-400" />
-            <p className="font-semibold">Upload Research Paper (Max 900KB / 3 pages)</p>
+            <p className="font-semibold">Upload Research Paper (Max 20 MB / 30 pages)</p>
             <p className="text-muted-foreground mt-2 text-sm">
               {file ? file.name : 'Drag and drop PDF here, or click to browse.'}
             </p>
@@ -136,7 +137,7 @@ export function PdfSummarizerMindMapper() {
           {loading && (
             <div className="bg-muted/20 text-muted-foreground flex items-center gap-3 rounded-xl border p-4 text-sm">
               <Loader2 className="h-5 w-5 animate-spin text-violet-400" />
-              {processingStep || 'PDF process ho rahi hai...'}
+              {processingStep || 'The PDF is being processed...'}
             </div>
           )}
         </CardContent>
@@ -148,7 +149,7 @@ export function PdfSummarizerMindMapper() {
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="font-semibold">Extracted PDF Text</h2>
-                <p className="text-muted-foreground text-xs">Ye private OCR server se nikla hua text hai.</p>
+                <p className="text-muted-foreground text-xs">This text was extracted by the available OCR service.</p>
               </div>
               <Button variant="outline" size="sm" onClick={copyExtractedText}>
                 <Clipboard className="h-3.5 w-3.5" /> Copy to Clipboard

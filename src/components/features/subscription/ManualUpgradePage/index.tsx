@@ -13,7 +13,7 @@ import type { PaymentAvailability } from '@/lib/payments';
 
 type BillingCycle = 'monthly' | 'annual';
 type CheckoutCountry = 'PK' | 'OTHER';
-type CheckoutMethod = 'card' | 'paypro' | 'wallet';
+type CheckoutMethod = 'card' | 'wallet';
 
 export function ManualUpgradePage({
   tier,
@@ -133,17 +133,6 @@ export function ManualUpgradePage({
                   >
                     Visa / Mastercard
                   </button>
-                  {country === 'PK' && paymentAvailability.localGatewayConfigured && (
-                    <button
-                      type="button"
-                      onClick={() => setMethod('paypro')}
-                      className={`rounded-xl border px-3 py-2 text-sm font-medium ${
-                        method === 'paypro' ? 'border-primary bg-primary/10 text-primary' : 'bg-background'
-                      }`}
-                    >
-                      PayPro
-                    </button>
-                  )}
                   {country === 'PK' && (
                     <button
                       type="button"
@@ -195,26 +184,9 @@ export function ManualUpgradePage({
               </Button>
               {!paymentAvailability.paddleConfigured && (
                 <p className="text-muted-foreground mt-3 text-xs">
-                  Paddle keys aur matching USD price IDs configure hone ke baad checkout active ho jayega.
+                  Checkout will become active after Paddle keys and matching USD price IDs are configured.
                 </p>
               )}
-            </div>
-          ) : method === 'paypro' ? (
-            <div className="rounded-2xl border border-sky-500/30 bg-sky-500/10 p-5">
-              <h2 className="text-lg font-bold">PayPro Pakistan checkout</h2>
-              <p className="text-muted-foreground mt-2 text-sm leading-6">
-                When PayPro is configured, Pakistan users can complete local checkout for Rs. {formatPrice(price, 'PKR')}.
-                The plan will sync automatically when the webhook is active.
-              </p>
-              <Button
-                type="button"
-                variant="gradient"
-                className="mt-4 w-full sm:w-auto"
-                loading={checkoutLoading}
-                onClick={() => beginCheckout('paypro')}
-              >
-                <CreditCard className="h-4 w-4" /> Pay Rs. {formatPrice(price, 'PKR')} with PayPro
-              </Button>
             </div>
           ) : null}
 

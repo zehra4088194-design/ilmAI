@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
     const tier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
     const limitCheck = await checkAiMessageLimit(user.id, tier, 'routine');
-    if (!limitCheck.success) return NextResponse.json({ status: 'error', error: 'Daily AI limit khatam ho gayi' }, { status: 429 });
+    if (!limitCheck.success) return NextResponse.json({ status: 'error', error: 'The daily AI limit has been reached.' }, { status: 429 });
 
     const { preferences } = await req.json();
     const { availableDays, hoursPerDay, preferredTime, subjects, examDate, weakSubjects, goals } = preferences;
@@ -58,7 +58,7 @@ Return ONLY valid JSON, no extra text:
       user_id: user.id,
       type: 'REMINDER',
       title: 'Study routine ready',
-      message: `Tumhari ${parsed.weeklySchedule?.length || 0} day routine ready hai. Aaj ka plan start karo.`,
+      message: `Your ${parsed.weeklySchedule?.length || 0}-day routine is ready. Start today's plan.`,
       link: '/routine',
       is_read: false,
     });
@@ -66,6 +66,6 @@ Return ONLY valid JSON, no extra text:
     return NextResponse.json({ status: 'success', data: parsed });
   } catch (error) {
     console.error('Routine generation error:', error);
-    return NextResponse.json({ status: 'error', error: 'Schedule generate nahi ho saka' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: 'The schedule could not be generated.' }, { status: 500 });
   }
 }

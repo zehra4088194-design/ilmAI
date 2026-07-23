@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ status: 'error', error: 'Login required hai' }, { status: 401 });
+    if (!user) return NextResponse.json({ status: 'error', error: 'Authentication is required' }, { status: 401 });
 
     const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
     const tier = ((profile as any)?.subscription_tier || 'FREE') as SubscriptionTier;
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
         ? String(formData.get('chapter_id'))
         : null;
 
-    if (!file) return NextResponse.json({ status: 'error', error: 'Image required hai' }, { status: 400 });
+    if (!file) return NextResponse.json({ status: 'error', error: 'An image is required' }, { status: 400 });
     const validation = validateOcrFile(file.type, file.size);
     if (!validation.valid) return NextResponse.json({ status: 'error', error: validation.error }, { status: 400 });
 
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           status: 'error',
-          error: `${mode === 'handwritten' ? 'Handwritten' : 'Printed'} scans ki weekly limit complete ho gayi. ${new Date(scanLimit.reset).toLocaleDateString('en-PK')} ko reset hogi.`,
+          error: `The weekly limit for ${mode === 'handwritten' ? 'handwritten' : 'printed'} scans has been reached. It resets on ${new Date(scanLimit.reset).toLocaleDateString('en-PK')}.`,
         },
         { status: 429 }
       );
@@ -120,6 +120,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error('Vision scan error:', error);
-    return NextResponse.json({ status: 'error', error: 'Vision scan process nahi ho saka.' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: 'The vision scan could not be processed.' }, { status: 500 });
   }
 }

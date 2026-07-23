@@ -68,7 +68,7 @@ export function LibraryTab() {
       if (!res.ok) throw new Error(data.error || 'Library could not be loaded.');
       setResources(data.resources ?? []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Kuch ghalat ho gaya');
+      setError(err instanceof Error ? err.message : 'Something went wrong.');
     } finally {
       setLoading(false);
     }
@@ -84,7 +84,7 @@ export function LibraryTab() {
     try {
       const res = await fetch(`/api/admin/library-resources/${deleteTarget.id}`, { method: 'DELETE' });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Delete fail ho gaya');
+      if (!res.ok) throw new Error(data.error || 'The item could not be deleted.');
       setDeleteTarget(null);
       await refetch();
     } catch (err) {

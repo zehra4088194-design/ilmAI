@@ -23,7 +23,7 @@ export function AIHumanizerTool() {
 
   async function humanize() {
     if (text.trim().length < 20) {
-      toast.error('Kam az kam 20 characters ka text paste karo');
+      toast.error('Paste at least 20 characters.');
       return;
     }
     setLoading(true);
@@ -39,9 +39,9 @@ export function AIHumanizerTool() {
         return;
       }
       setResult(json.data.text);
-      toast.success('Text humanize ho gaya');
+      toast.success('Text humanized.');
     } catch {
-      toast.error('Humanizer response nahi aa saka');
+      toast.error('The humanizer could not return a response.');
     } finally {
       setLoading(false);
     }
@@ -51,9 +51,9 @@ export function AIHumanizerTool() {
     if (!result) return;
     try {
       await navigator.clipboard.writeText(result);
-      toast.success('Humanized text copy ho gaya');
+      toast.success('Humanized text copied.');
     } catch {
-      toast.error('Copy nahi ho saka');
+      toast.error('The text could not be copied.');
     }
   }
 
@@ -91,8 +91,8 @@ export function AIHumanizerTool() {
               className="mt-1"
             />
             <span>
-              <span className="font-medium">Meaning preserve karo</span>
-              <span className="block text-xs text-muted-foreground">Facts aur core points same rahenge, sirf wording natural hogi.</span>
+              <span className="font-medium">Preserve meaning</span>
+              <span className="block text-xs text-muted-foreground">Facts and key points stay unchanged while the wording becomes more natural.</span>
             </span>
           </label>
 
@@ -120,15 +120,15 @@ export function AIHumanizerTool() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <BrandLoader label="Assistant text ko natural bana raha hai..." className="min-h-80" />
+            <BrandLoader label="The assistant is making the text sound more natural..." className="min-h-80" />
           ) : result ? (
             <AiAnswerRenderer content={result} />
           ) : (
             <div className="flex min-h-80 flex-col items-center justify-center text-center">
               <WandSparkles className="mb-4 h-10 w-10 text-violet-400" />
-              <h2 className="font-semibold">Humanized result yahan ayega</h2>
+              <h2 className="font-semibold">Your humanized result will appear here</h2>
               <p className="mt-2 max-w-md text-sm text-muted-foreground">
-                AI-generated text ko zyada natural, readable aur student-style banane ke liye left side se text paste karo.
+                Paste AI-generated text on the left to make it more natural, readable, and student-friendly.
               </p>
             </div>
           )}

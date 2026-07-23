@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 
+const TEST_TYPES = ['MCQ practice', 'Full test', 'Revision task'] as const;
+
 interface RoutineTest {
   id: string;
   subject: string;
@@ -27,6 +29,7 @@ export function RoutineTestsWidget({ studentId, readOnly = false }: { studentId?
   const [showForm, setShowForm] = useState(false);
   const [subject, setSubject] = useState('');
   const [title, setTitle] = useState('');
+  const [testType, setTestType] = useState<(typeof TEST_TYPES)[number]>('MCQ practice');
   const [scheduledAt, setScheduledAt] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -53,10 +56,10 @@ export function RoutineTestsWidget({ studentId, readOnly = false }: { studentId?
       const res = await fetch('/api/routine-tests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subject, title, scheduledAt, studentId }),
+        body: JSON.stringify({ subject, title, scheduledAt, studentId, testType }),
       });
       if (!res.ok) throw new Error();
-      toast.success('Routine test add ho gaya');
+      toast.success('Routine test added.');
       setSubject(''); setTitle(''); setScheduledAt(''); setShowForm(false);
       load();
     } catch {
@@ -80,11 +83,19 @@ export function RoutineTestsWidget({ studentId, readOnly = false }: { studentId?
       </CardHeader>
       <CardContent className="space-y-3">
         {showForm && !readOnly && (
-          <div className="grid grid-cols-2 gap-2 p-3 rounded-lg bg-muted/30">
+          <div className="grid gap-2 rounded-lg bg-muted/30 p-3 sm:grid-cols-2">
+            <select
+              value={testType}
+              onChange={(event) => setTestType(event.target.value as (typeof TEST_TYPES)[number])}
+              className="h-10 rounded-lg border border-input bg-background px-3 text-sm"
+              aria-label="Test type"
+            >
+              {TEST_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}
+            </select>
             <Input placeholder="Subject" value={subject} onChange={(e) => setSubject(e.target.value)} />
             <Input placeholder="Test title" value={title} onChange={(e) => setTitle(e.target.value)} />
-            <Input type="datetime-local" className="col-span-2" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} />
-            <Button className="col-span-2" variant="gradient" size="sm" loading={saving} onClick={addTest}>Save</Button>
+            <Input type="datetime-local" className="sm:col-span-2" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} />
+            <Button className="sm:col-span-2" variant="gradient" size="sm" loading={saving} onClick={addTest}>Assign test</Button>
           </div>
         )}
 

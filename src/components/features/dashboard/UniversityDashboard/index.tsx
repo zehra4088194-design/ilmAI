@@ -86,7 +86,7 @@ export function UniversityDashboard({ profile }: Props) {
                 ))
               ) : (
                 <p className="text-muted-foreground text-sm">
-                  Courses Settings me add karo taake prompts aur plans zyada personal ho jayen.
+                  Add courses in Settings to personalize prompts and study plans.
                 </p>
               )}
             </div>

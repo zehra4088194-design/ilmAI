@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const chapterId = req.nextUrl.searchParams.get('chapterId');
-  if (!chapterId) return NextResponse.json({ error: 'chapterId required hai' }, { status: 400 });
+  if (!chapterId) return NextResponse.json({ error: 'A chapter ID is required' }, { status: 400 });
 
   const adminClient = await createAdminClient();
   const { data, error } = await adminClient
@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     .eq('chapter_id', chapterId)
     .order('order_index', { ascending: true });
 
-  if (error) return NextResponse.json({ error: 'Topics load nahi hue' }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'Topics could not be loaded' }, { status: 500 });
   return NextResponse.json({ topics: data });
 }
 
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
 
   const { chapterId, name, content = '' } = (await req.json()) as { chapterId?: string; name?: string; content?: string };
   if (!chapterId || !name?.trim()) {
-    return NextResponse.json({ error: 'Chapter aur topic name zaroori hain' }, { status: 400 });
+    return NextResponse.json({ error: 'Chapter and topic name are required' }, { status: 400 });
   }
 
   const adminClient = await createAdminClient();
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
 
   if (error) {
     console.error('topic create error:', error);
-    return NextResponse.json({ error: 'Topic add nahi hua' }, { status: 500 });
+    return NextResponse.json({ error: 'The topic could not be added' }, { status: 500 });
   }
 
   try { await adminClient.rpc('refresh_subject_counts'); } catch {}

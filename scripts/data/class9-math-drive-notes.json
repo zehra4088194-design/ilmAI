@@ -1,0 +1,2758 @@
+[
+  {
+    "title": "Mathematics - Unit 1: Complex Numbers - Exercise 1.3 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 1.3 solved exercise for Unit 1: Complex Numbers. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 1: Complex Numbers",
+    "chapter_order": 1,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1ifI0g5NXshS8Y6dg3XLFNvtBlyLgz-lX",
+      "title": "Exercise_1.3_Solved_Light.pdf",
+      "url": "https://drive.google.com/file/d/1ifI0g5NXshS8Y6dg3XLFNvtBlyLgz-lX/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1NkNnPQCgul-j4FvC3fO0SBNM7xxzqJuP",
+      "title": "Exercise_1.3_Solved_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1NkNnPQCgul-j4FvC3fO0SBNM7xxzqJuP/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "16ZrX6Rog0j8sClJqt_Ex3RGt9KRZWdSe",
+      "title": "Exercise_1.3_Content.txt",
+      "url": "https://drive.google.com/file/d/16ZrX6Rog0j8sClJqt_Ex3RGt9KRZWdSe/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 1: Complex Numbers - Review Exercise - Solved Exercise",
+    "description": "Class 9 Mathematics review exercise solved exercise for Unit 1: Complex Numbers. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 1: Complex Numbers",
+    "chapter_order": 1,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1LlsR4EFVpi5Rw7yTTSy4MaG8U9iY3a1P",
+      "title": "Review_Exercise_1_Solved_Light.pdf",
+      "url": "https://drive.google.com/file/d/1LlsR4EFVpi5Rw7yTTSy4MaG8U9iY3a1P/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1-_fy5U5NdaDJaEF-sYPM2Sr-qm8O4lwq",
+      "title": "Review_Exercise_1_Solved_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1-_fy5U5NdaDJaEF-sYPM2Sr-qm8O4lwq/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1aJ61wGBNxZgGYeCDwU2AJcj0L8K9bUVY",
+      "title": "Review_Exercise_1_Content.txt",
+      "url": "https://drive.google.com/file/d/1aJ61wGBNxZgGYeCDwU2AJcj0L8K9bUVY/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 1: Complex Numbers - Exercise 1.3 - MCQs",
+    "description": "Class 9 Mathematics exercise 1.3 mcqs for Unit 1: Complex Numbers. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 1: Complex Numbers",
+    "chapter_order": 1,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "15n5Gmp0FInd4nn1XUFGD_AKdgaIxR3hP",
+      "title": "Exercise_1.3_30MCQs_Light.pdf",
+      "url": "https://drive.google.com/file/d/15n5Gmp0FInd4nn1XUFGD_AKdgaIxR3hP/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1x_I2LJwFOGBhtkPbTi7nhthtC6fRiFhX",
+      "title": "Exercise_1.3_30MCQs_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1x_I2LJwFOGBhtkPbTi7nhthtC6fRiFhX/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1uAJ3hEL77nLMLkj0mz3nsKpuMvaJ_DyK",
+      "title": "Exercise_1.3_30MCQs_Content.txt",
+      "url": "https://drive.google.com/file/d/1uAJ3hEL77nLMLkj0mz3nsKpuMvaJ_DyK/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 1: Complex Numbers - Review Exercise - MCQs",
+    "description": "Class 9 Mathematics review exercise mcqs for Unit 1: Complex Numbers. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 1: Complex Numbers",
+    "chapter_order": 1,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1p-DwlEMguQWt9KGnP0xUjWm4VzdbhUrX",
+      "title": "Review_Exercise_1_30MCQs_Light.pdf",
+      "url": "https://drive.google.com/file/d/1p-DwlEMguQWt9KGnP0xUjWm4VzdbhUrX/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1DLYnZwcEV9wgQOojaUye1vLdzSMRqkz0",
+      "title": "Review_Exercise_1_30MCQs_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1DLYnZwcEV9wgQOojaUye1vLdzSMRqkz0/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1ZGl23xMhqm5vZe0avn2_9Yuola8vaA_4",
+      "title": "Review_Exercise_1_30MCQs_Content.txt",
+      "url": "https://drive.google.com/file/d/1ZGl23xMhqm5vZe0avn2_9Yuola8vaA_4/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 1: Complex Numbers - Exercise 1.2 - MCQs",
+    "description": "Class 9 Mathematics exercise 1.2 mcqs for Unit 1: Complex Numbers. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 1: Complex Numbers",
+    "chapter_order": 1,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1iK4eGTxrgFGxyb6XVcoPxmrgdbALVIN8",
+      "title": "Exercise_1.2_MCQs30_Light.pdf",
+      "url": "https://drive.google.com/file/d/1iK4eGTxrgFGxyb6XVcoPxmrgdbALVIN8/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1KHKwMhq3M1y2-sMj5ZQu82GaQpsCQynz",
+      "title": "Exercise_1.2_MCQs30_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1KHKwMhq3M1y2-sMj5ZQu82GaQpsCQynz/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1IDDF2mm1uZZ4-WQT9bfggo2zJSLo2n_2",
+      "title": "Exercise_1.2_MCQs_30.txt",
+      "url": "https://drive.google.com/file/d/1IDDF2mm1uZZ4-WQT9bfggo2zJSLo2n_2/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 1: Complex Numbers - Exercise 1.2 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 1.2 solved exercise for Unit 1: Complex Numbers. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 1: Complex Numbers",
+    "chapter_order": 1,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1Y-AbkuAE75srcLi_VI3Exhbi6ZBKdmh_",
+      "title": "Exercise_1.2_Solved_Light.pdf",
+      "url": "https://drive.google.com/file/d/1Y-AbkuAE75srcLi_VI3Exhbi6ZBKdmh_/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1HrGS5SkXtw3xaZ4zI-mgBQUAjrP5h2mw",
+      "title": "Exercise_1.2_Solved_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1HrGS5SkXtw3xaZ4zI-mgBQUAjrP5h2mw/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1WWWFraaYD3Y4yzdvyyuBAsp7eLm1F1ds",
+      "title": "Exercise_1.2_Solved_Full_Content.txt",
+      "url": "https://drive.google.com/file/d/1WWWFraaYD3Y4yzdvyyuBAsp7eLm1F1ds/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 1: Complex Numbers - Exercise 1.1 - MCQs",
+    "description": "Class 9 Mathematics exercise 1.1 mcqs for Unit 1: Complex Numbers. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 1: Complex Numbers",
+    "chapter_order": 1,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1eKwKNvRcDx3vt8BRMnZvjUh6qZs2eVx6",
+      "title": "Exercise_1.1_MCQs30_Light.pdf",
+      "url": "https://drive.google.com/file/d/1eKwKNvRcDx3vt8BRMnZvjUh6qZs2eVx6/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1CgLwrtqxCG4zGLtgg4TDZ7YVIn_VTMn3",
+      "title": "Exercise_1.1_MCQs30_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1CgLwrtqxCG4zGLtgg4TDZ7YVIn_VTMn3/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1Y6pmTJnTS95aKQqN9mEzZC79zxVEdzBR",
+      "title": "Exercise_1.1_MCQs_30.txt",
+      "url": "https://drive.google.com/file/d/1Y6pmTJnTS95aKQqN9mEzZC79zxVEdzBR/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 1: Complex Numbers - Exercise 1.1 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 1.1 solved exercise for Unit 1: Complex Numbers. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 1: Complex Numbers",
+    "chapter_order": 1,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "18zWGJaRW2IWm7Srho27--xH4pb0IdQfo",
+      "title": "Exercise_1.1_Solved_Light.pdf",
+      "url": "https://drive.google.com/file/d/18zWGJaRW2IWm7Srho27--xH4pb0IdQfo/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1lhtN_moSaSpmpk8MKzbhi4S7L780UfrN",
+      "title": "Exercise_1.1_Solved_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1lhtN_moSaSpmpk8MKzbhi4S7L780UfrN/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1P6qL5b_0VPU6B2H8AMU2NPZ95v2Dw1yo",
+      "title": "Exercise_1.1_Solved_Full_Content.txt",
+      "url": "https://drive.google.com/file/d/1P6qL5b_0VPU6B2H8AMU2NPZ95v2Dw1yo/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 2: Quadratic Equations and Inequalities - Review Exercise - MCQs",
+    "description": "Class 9 Mathematics review exercise mcqs for Unit 2: Quadratic Equations and Inequalities. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 2: Quadratic Equations and Inequalities",
+    "chapter_order": 2,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1vTfuJVuwyxHNFq6x2yZFqt94o-DcKOra",
+      "title": "Review_Ex2_MCQs30_Light.pdf",
+      "url": "https://drive.google.com/file/d/1vTfuJVuwyxHNFq6x2yZFqt94o-DcKOra/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1D-1ZsgR1VMwRusRbZRiP0ZC9VBb0-aKg",
+      "title": "Review_Ex2_MCQs30_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1D-1ZsgR1VMwRusRbZRiP0ZC9VBb0-aKg/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1jzgrgG5-ncU_1ztReitVr0HLHYBYNxhO",
+      "title": "Review_Ex2_MCQs30_Content.txt",
+      "url": "https://drive.google.com/file/d/1jzgrgG5-ncU_1ztReitVr0HLHYBYNxhO/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 2: Quadratic Equations and Inequalities - Exercise 2.4 - MCQs",
+    "description": "Class 9 Mathematics exercise 2.4 mcqs for Unit 2: Quadratic Equations and Inequalities. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 2: Quadratic Equations and Inequalities",
+    "chapter_order": 2,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1njFgTRscWujfub9mvGAP35f1VeUkp2ZU",
+      "title": "Ex2.4_MCQs30_Light.pdf",
+      "url": "https://drive.google.com/file/d/1njFgTRscWujfub9mvGAP35f1VeUkp2ZU/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1_hD3GS6pKb4O916UHQdr98KIabHC5UUh",
+      "title": "Ex2.4_MCQs30_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1_hD3GS6pKb4O916UHQdr98KIabHC5UUh/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1Ta55rN0ClY2qKz6MNAxiwIQk13q0vXI8",
+      "title": "Ex2.4_MCQs30_Content.txt",
+      "url": "https://drive.google.com/file/d/1Ta55rN0ClY2qKz6MNAxiwIQk13q0vXI8/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 2: Quadratic Equations and Inequalities - Review Exercise - Solved Exercise",
+    "description": "Class 9 Mathematics review exercise solved exercise for Unit 2: Quadratic Equations and Inequalities. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 2: Quadratic Equations and Inequalities",
+    "chapter_order": 2,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1-hwjIs6t_IwRghWo6y_ESN5Xc-itJ4k0",
+      "title": "Review_Ex2_Solved_Light.pdf",
+      "url": "https://drive.google.com/file/d/1-hwjIs6t_IwRghWo6y_ESN5Xc-itJ4k0/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1fYdWhRlsflTbn3X_n87dGk9QUMSW7UyV",
+      "title": "Review_Ex2_Solved_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1fYdWhRlsflTbn3X_n87dGk9QUMSW7UyV/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1P3TZzdA1yoacedj4XqOY-wA29VYBm-eZ",
+      "title": "Review_Ex2_Content.txt",
+      "url": "https://drive.google.com/file/d/1P3TZzdA1yoacedj4XqOY-wA29VYBm-eZ/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 2: Quadratic Equations and Inequalities - Exercise 2.4 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 2.4 solved exercise for Unit 2: Quadratic Equations and Inequalities. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 2: Quadratic Equations and Inequalities",
+    "chapter_order": 2,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "10pIIdhoST1JtHgYA8STGUZPxw9y7gR94",
+      "title": "Ex2.4_Solved_Light.pdf",
+      "url": "https://drive.google.com/file/d/10pIIdhoST1JtHgYA8STGUZPxw9y7gR94/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1Zukcpbyxm9eDzqO1Qf7uNSjKrGTiDwoO",
+      "title": "Ex2.4_Solved_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1Zukcpbyxm9eDzqO1Qf7uNSjKrGTiDwoO/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1PjhLmuu_XhxIIXmFnQ7OVTwqxAoxHYOu",
+      "title": "Ex2.4_Content.txt",
+      "url": "https://drive.google.com/file/d/1PjhLmuu_XhxIIXmFnQ7OVTwqxAoxHYOu/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 2: Quadratic Equations and Inequalities - Exercise 2.2 - MCQs",
+    "description": "Class 9 Mathematics exercise 2.2 mcqs for Unit 2: Quadratic Equations and Inequalities. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 2: Quadratic Equations and Inequalities",
+    "chapter_order": 2,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "17MPp8LdT21x3civImOeoti29Wyy1XyYn",
+      "title": "MCQs_Exercise_2.2_Light.pdf",
+      "url": "https://drive.google.com/file/d/17MPp8LdT21x3civImOeoti29Wyy1XyYn/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1hOBvYtsMrJBc4oxvi_miwFmQbf1R083Q",
+      "title": "MCQs_Exercise_2.2_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1hOBvYtsMrJBc4oxvi_miwFmQbf1R083Q/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1tLPSwENC-R8cD6bm_Cn8c0_SnamoEMaa",
+      "title": "MCQs_Exercise_2.2.txt",
+      "url": "https://drive.google.com/file/d/1tLPSwENC-R8cD6bm_Cn8c0_SnamoEMaa/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 2: Quadratic Equations and Inequalities - Exercise 2.1 - MCQs",
+    "description": "Class 9 Mathematics exercise 2.1 mcqs for Unit 2: Quadratic Equations and Inequalities. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 2: Quadratic Equations and Inequalities",
+    "chapter_order": 2,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1ovqrJAxnIASa0jjJqdB9gaDF63wOVfqj",
+      "title": "MCQs_Exercise_2.1_Light.pdf",
+      "url": "https://drive.google.com/file/d/1ovqrJAxnIASa0jjJqdB9gaDF63wOVfqj/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1ZrHjUz75JDY0IMW2BSlP_bT0lm4KWY7T",
+      "title": "MCQs_Exercise_2.1_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1ZrHjUz75JDY0IMW2BSlP_bT0lm4KWY7T/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1x72qesBZfj5obo85tlhTH5_9DrQXwSB7",
+      "title": "MCQs_Exercise_2.1.txt",
+      "url": "https://drive.google.com/file/d/1x72qesBZfj5obo85tlhTH5_9DrQXwSB7/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 2: Quadratic Equations and Inequalities - Exercise 2.3 - MCQs",
+    "description": "Class 9 Mathematics exercise 2.3 mcqs for Unit 2: Quadratic Equations and Inequalities. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 2: Quadratic Equations and Inequalities",
+    "chapter_order": 2,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1twLulb6WnYKm_LMTfCrqdWEoRH2AxK7v",
+      "title": "MCQs_Exercise_2.3_Light.pdf",
+      "url": "https://drive.google.com/file/d/1twLulb6WnYKm_LMTfCrqdWEoRH2AxK7v/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1xd_i--4XJ4DLQhvd2yDOnVLqktcnds5i",
+      "title": "MCQs_Exercise_2.3_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1xd_i--4XJ4DLQhvd2yDOnVLqktcnds5i/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1_R2mW_TysCmMAi_57LCp03LY3B9mg4xK",
+      "title": "MCQs_Exercise_2.3.txt",
+      "url": "https://drive.google.com/file/d/1_R2mW_TysCmMAi_57LCp03LY3B9mg4xK/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 2: Quadratic Equations and Inequalities - Exercise 2.3 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 2.3 solved exercise for Unit 2: Quadratic Equations and Inequalities. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 2: Quadratic Equations and Inequalities",
+    "chapter_order": 2,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1e61VKyFnJinooJ_6kmUlrgxdt_u46TSu",
+      "title": "Exercise_2.3_Light.pdf",
+      "url": "https://drive.google.com/file/d/1e61VKyFnJinooJ_6kmUlrgxdt_u46TSu/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1TJcJf7HLie8Noev9ub9MNHNT8-Z892Gu",
+      "title": "Exercise_2.3_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1TJcJf7HLie8Noev9ub9MNHNT8-Z892Gu/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1MePKprP-8G71ikSCGgr7XySTm8Cgfyk2",
+      "title": "Exercise_2.3.txt",
+      "url": "https://drive.google.com/file/d/1MePKprP-8G71ikSCGgr7XySTm8Cgfyk2/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 2: Quadratic Equations and Inequalities - Exercise 2.1 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 2.1 solved exercise for Unit 2: Quadratic Equations and Inequalities. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 2: Quadratic Equations and Inequalities",
+    "chapter_order": 2,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1LLIcc1ELxXQat1WIGaJhHUgoYZq97Z52",
+      "title": "Exercise_2.1_Light.pdf",
+      "url": "https://drive.google.com/file/d/1LLIcc1ELxXQat1WIGaJhHUgoYZq97Z52/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1V3Q4OzJPe4i50XesWGt456dvhs-QBvhk",
+      "title": "Exercise_2.1_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1V3Q4OzJPe4i50XesWGt456dvhs-QBvhk/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "10VoWiL5w1bXCAsu4qG2BvhuihVAzD_sR",
+      "title": "Exercise_2.1.txt",
+      "url": "https://drive.google.com/file/d/10VoWiL5w1bXCAsu4qG2BvhuihVAzD_sR/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 2: Quadratic Equations and Inequalities - Exercise 2.2 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 2.2 solved exercise for Unit 2: Quadratic Equations and Inequalities. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 2: Quadratic Equations and Inequalities",
+    "chapter_order": 2,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1UehzL807sAtwXMMxbVpG31aFKcTRG70f",
+      "title": "Exercise_2.2_Light.pdf",
+      "url": "https://drive.google.com/file/d/1UehzL807sAtwXMMxbVpG31aFKcTRG70f/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1PINNIARW1uY58RHXBW3N64yWhMpfUxMG",
+      "title": "Exercise_2.2_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1PINNIARW1uY58RHXBW3N64yWhMpfUxMG/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1kWWnkVOUak4mkPolKJoaxerW2wm7EpZl",
+      "title": "Exercise_2.2.txt",
+      "url": "https://drive.google.com/file/d/1kWWnkVOUak4mkPolKJoaxerW2wm7EpZl/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 3: Matrices and Determinants - Review Exercise - MCQs",
+    "description": "Class 9 Mathematics review exercise mcqs for Unit 3: Matrices and Determinants. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 3: Matrices and Determinants",
+    "chapter_order": 3,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1PSLaqpq5o--i3ojvBdmHpU7eRNDm4iRu",
+      "title": "Review Exercise 3 - 30 MCQs Set 2 (Light).pdf",
+      "url": "https://drive.google.com/file/d/1PSLaqpq5o--i3ojvBdmHpU7eRNDm4iRu/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1JS4OAaVbBpdGCgmWrx0uJ745Vn4puuOZ",
+      "title": "Review Exercise 3 - 30 MCQs Set 2 (Dark).pdf",
+      "url": "https://drive.google.com/file/d/1JS4OAaVbBpdGCgmWrx0uJ745Vn4puuOZ/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1OKhW845Dfx2RSnWyl9S6hZO_W9CmJzE1",
+      "title": "Review_Exercise_3_MCQs_Set2.txt",
+      "url": "https://drive.google.com/file/d/1OKhW845Dfx2RSnWyl9S6hZO_W9CmJzE1/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 3: Matrices and Determinants - Exercise 3.3 - MCQs",
+    "description": "Class 9 Mathematics exercise 3.3 mcqs for Unit 3: Matrices and Determinants. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 3: Matrices and Determinants",
+    "chapter_order": 3,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1Py1fIAQOQCHKRqTftR_YJIXICoQzgSxX",
+      "title": "Exercise 3.3 - 30 MCQs (Light).pdf",
+      "url": "https://drive.google.com/file/d/1Py1fIAQOQCHKRqTftR_YJIXICoQzgSxX/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "17DMbhe7JEjpY5_NIh1VWVBLf1vR-A_y_",
+      "title": "Exercise 3.3 - 30 MCQs (Dark).pdf",
+      "url": "https://drive.google.com/file/d/17DMbhe7JEjpY5_NIh1VWVBLf1vR-A_y_/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1MgF1Hge4tXKZGrWlxLpZ05DnMcab0ohA",
+      "title": "Exercise_3.3_MCQs.txt",
+      "url": "https://drive.google.com/file/d/1MgF1Hge4tXKZGrWlxLpZ05DnMcab0ohA/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 3: Matrices and Determinants - Exercise 3.2 - MCQs",
+    "description": "Class 9 Mathematics exercise 3.2 mcqs for Unit 3: Matrices and Determinants. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 3: Matrices and Determinants",
+    "chapter_order": 3,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1ycH5K79R8vjGQTrSryW6NsMA5RfXhh4V",
+      "title": "Exercise 3.2 - 30 MCQs (Light).pdf",
+      "url": "https://drive.google.com/file/d/1ycH5K79R8vjGQTrSryW6NsMA5RfXhh4V/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1mPg1ygSnW-1mLZlK7f4vpNxnDFqqv25R",
+      "title": "Exercise 3.2 - 30 MCQs (Dark).pdf",
+      "url": "https://drive.google.com/file/d/1mPg1ygSnW-1mLZlK7f4vpNxnDFqqv25R/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1tqmInD6OnCMTHQZXgr3BQLykDTGEx7rb",
+      "title": "Exercise_3.2_MCQs.txt",
+      "url": "https://drive.google.com/file/d/1tqmInD6OnCMTHQZXgr3BQLykDTGEx7rb/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 3: Matrices and Determinants - Exercise 3.2 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 3.2 solved exercise for Unit 3: Matrices and Determinants. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 3: Matrices and Determinants",
+    "chapter_order": 3,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1Ne2ltDnK1hR064ikR0r6K-Vuj-5BZjea",
+      "title": "Exercise 3.2 - Solved (Light).pdf",
+      "url": "https://drive.google.com/file/d/1Ne2ltDnK1hR064ikR0r6K-Vuj-5BZjea/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1EISsWq17Jt2n3IskQ7ht6FzmEtYDjGlJ",
+      "title": "Exercise 3.2 - Solved (Dark).pdf",
+      "url": "https://drive.google.com/file/d/1EISsWq17Jt2n3IskQ7ht6FzmEtYDjGlJ/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "12JydYL-9p80K4oXD5UQT7ViwEoVYaDWL",
+      "title": "Exercise_3.2.txt",
+      "url": "https://drive.google.com/file/d/12JydYL-9p80K4oXD5UQT7ViwEoVYaDWL/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 3: Matrices and Determinants - Review Exercise - Solved Exercise",
+    "description": "Class 9 Mathematics review exercise solved exercise for Unit 3: Matrices and Determinants. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 3: Matrices and Determinants",
+    "chapter_order": 3,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1_Kz3oXE1e5nNPeQ4bgx_HmntE6_2wp9q",
+      "title": "Review Exercise 3 - Solved (Light).pdf",
+      "url": "https://drive.google.com/file/d/1_Kz3oXE1e5nNPeQ4bgx_HmntE6_2wp9q/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1syWUEBPTJlJ15UljIXFlqeKJl3JWlmaB",
+      "title": "Review Exercise 3 - Solved (Dark).pdf",
+      "url": "https://drive.google.com/file/d/1syWUEBPTJlJ15UljIXFlqeKJl3JWlmaB/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1pnWaRwV7_ulp_JDxt2cJCQyXipU2fjKF",
+      "title": "Review_Exercise_3.txt",
+      "url": "https://drive.google.com/file/d/1pnWaRwV7_ulp_JDxt2cJCQyXipU2fjKF/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 3: Matrices and Determinants - Exercise 3.3 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 3.3 solved exercise for Unit 3: Matrices and Determinants. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 3: Matrices and Determinants",
+    "chapter_order": 3,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1Tk0TiIuHmQOevF-qTMXaPslYeoKIJTHL",
+      "title": "Exercise 3.3 - Solved (Light).pdf",
+      "url": "https://drive.google.com/file/d/1Tk0TiIuHmQOevF-qTMXaPslYeoKIJTHL/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1UjwgE4dRjfZG3-O7cTP8QCBQ0OgYFgmE",
+      "title": "Exercise 3.3 - Solved (Dark).pdf",
+      "url": "https://drive.google.com/file/d/1UjwgE4dRjfZG3-O7cTP8QCBQ0OgYFgmE/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1bZY0-B-7uY5khhusRWVwchQSgsmZsQOF",
+      "title": "Exercise_3.3.txt",
+      "url": "https://drive.google.com/file/d/1bZY0-B-7uY5khhusRWVwchQSgsmZsQOF/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 3: Matrices and Determinants - Exercise 3.1 - MCQs",
+    "description": "Class 9 Mathematics exercise 3.1 mcqs for Unit 3: Matrices and Determinants. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 3: Matrices and Determinants",
+    "chapter_order": 3,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1iBuoMJ9ljG-oeBOvLkfionMg5OS7-0cH",
+      "title": "Ex3.1_MCQs30_Light.pdf",
+      "url": "https://drive.google.com/file/d/1iBuoMJ9ljG-oeBOvLkfionMg5OS7-0cH/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1IacVIwRhkPQCA4as1AlhqVkzgMJpAPV7",
+      "title": "Ex3.1_MCQs30_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1IacVIwRhkPQCA4as1AlhqVkzgMJpAPV7/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1GZ4xBs_Gs3gNOxMjPb1xTQE2aWeVOhAx",
+      "title": "Ex3.1_MCQs30_Content.txt",
+      "url": "https://drive.google.com/file/d/1GZ4xBs_Gs3gNOxMjPb1xTQE2aWeVOhAx/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 3: Matrices and Determinants - Exercise 3.1 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 3.1 solved exercise for Unit 3: Matrices and Determinants. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 3: Matrices and Determinants",
+    "chapter_order": 3,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "14DjSqdEThXMcPbsSWvsLiWP5_ZlcU-0A",
+      "title": "Ex3.1_Solved_Light.pdf",
+      "url": "https://drive.google.com/file/d/14DjSqdEThXMcPbsSWvsLiWP5_ZlcU-0A/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1SfG_iKWf3PDlHvdWJnyYGS7abkB0ujQa",
+      "title": "Ex3.1_Solved_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1SfG_iKWf3PDlHvdWJnyYGS7abkB0ujQa/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1FJhB09-UrsogubtZBVt-zXE4cqS-li20",
+      "title": "Ex3.1_Content.txt",
+      "url": "https://drive.google.com/file/d/1FJhB09-UrsogubtZBVt-zXE4cqS-li20/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 4: Functions and Graphs - Review Exercise - Solved Exercise",
+    "description": "Class 9 Mathematics review exercise solved exercise for Unit 4: Functions and Graphs. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 4: Functions and Graphs",
+    "chapter_order": 4,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1pJ3jiMD2fpif9pft6UFQ892nRRwoPJr3",
+      "title": "ReviewEx4_Solved_Light.pdf",
+      "url": "https://drive.google.com/file/d/1pJ3jiMD2fpif9pft6UFQ892nRRwoPJr3/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1W69ZiSdwBLUZIxRTXNg4Pz5rBD50Cesk",
+      "title": "ReviewEx4_Solved_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1W69ZiSdwBLUZIxRTXNg4Pz5rBD50Cesk/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1q6nUGh3D3TL-AH7Ekvxjo3Eq3dx6-NyI",
+      "title": "ReviewEx4_Solved_Content.txt",
+      "url": "https://drive.google.com/file/d/1q6nUGh3D3TL-AH7Ekvxjo3Eq3dx6-NyI/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 4: Functions and Graphs - Exercise 4.4 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 4.4 solved exercise for Unit 4: Functions and Graphs. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 4: Functions and Graphs",
+    "chapter_order": 4,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1MoDuPoqupFnzCcjl2tHxVWvEF8s2htQE",
+      "title": "Ex4.4_Solved_Light.pdf",
+      "url": "https://drive.google.com/file/d/1MoDuPoqupFnzCcjl2tHxVWvEF8s2htQE/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1tXyvYwIpHQ4nXMD97iHekz6ngpv8Urdh",
+      "title": "Ex4.4_Solved_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1tXyvYwIpHQ4nXMD97iHekz6ngpv8Urdh/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1a3J5bFvnYDSf_AeyjG_9qesDdyJWT6CA",
+      "title": "Ex4.4_Solved_Content.txt",
+      "url": "https://drive.google.com/file/d/1a3J5bFvnYDSf_AeyjG_9qesDdyJWT6CA/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 4: Functions and Graphs - Exercise 4.4 - MCQs",
+    "description": "Class 9 Mathematics exercise 4.4 mcqs for Unit 4: Functions and Graphs. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 4: Functions and Graphs",
+    "chapter_order": 4,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1OP8HnFODQAjHrd9gUiDZsUmxHYwS8vcK",
+      "title": "Ex4.4_MCQs30_Light.pdf",
+      "url": "https://drive.google.com/file/d/1OP8HnFODQAjHrd9gUiDZsUmxHYwS8vcK/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1RWuUmF1ZhDa-DHiRTG6Qj3_ota3VPf6F",
+      "title": "Ex4.4_MCQs30_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1RWuUmF1ZhDa-DHiRTG6Qj3_ota3VPf6F/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1mTVoNdhNIjVKbBMbEPmE_IFHybp183ma",
+      "title": "Ex4.4_MCQs30.txt",
+      "url": "https://drive.google.com/file/d/1mTVoNdhNIjVKbBMbEPmE_IFHybp183ma/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 4: Functions and Graphs - Review Exercise - MCQs",
+    "description": "Class 9 Mathematics review exercise mcqs for Unit 4: Functions and Graphs. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 4: Functions and Graphs",
+    "chapter_order": 4,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1uwgDjC_hKobO8cC3VIJlR1qbY_IGyIWk",
+      "title": "ReviewEx4_MCQs30_Light.pdf",
+      "url": "https://drive.google.com/file/d/1uwgDjC_hKobO8cC3VIJlR1qbY_IGyIWk/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1DRICW6xbqnwipmY_6tb74GhlweXx8Ard",
+      "title": "ReviewEx4_MCQs30_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1DRICW6xbqnwipmY_6tb74GhlweXx8Ard/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1M_p-zzyRZARIUgPx8_rd1KMChULro6H4",
+      "title": "ReviewEx4_MCQs30.txt",
+      "url": "https://drive.google.com/file/d/1M_p-zzyRZARIUgPx8_rd1KMChULro6H4/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 4: Functions and Graphs - Exercise 4.3 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 4.3 solved exercise for Unit 4: Functions and Graphs. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 4: Functions and Graphs",
+    "chapter_order": 4,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1ImSogh-2PjVZtil-KPDTx2MRDsObHWLt",
+      "title": "Exercise4_3_light.pdf",
+      "url": "https://drive.google.com/file/d/1ImSogh-2PjVZtil-KPDTx2MRDsObHWLt/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1caYuEwbEMI-Udzxwc_yMS7trLjVnkpKa",
+      "title": "Exercise4_3_dark.pdf",
+      "url": "https://drive.google.com/file/d/1caYuEwbEMI-Udzxwc_yMS7trLjVnkpKa/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1EVEysD1K989o7PmPiLkjvBkeKwuq2JHB",
+      "title": "Exercise4_3_content.txt",
+      "url": "https://drive.google.com/file/d/1EVEysD1K989o7PmPiLkjvBkeKwuq2JHB/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 4: Functions and Graphs - Exercise 4.1 - MCQs",
+    "description": "Class 9 Mathematics exercise 4.1 mcqs for Unit 4: Functions and Graphs. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 4: Functions and Graphs",
+    "chapter_order": 4,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1BchZnoikvbu7QiLheXw6wxCqSFubrA-r",
+      "title": "MCQ_4_1_light.pdf",
+      "url": "https://drive.google.com/file/d/1BchZnoikvbu7QiLheXw6wxCqSFubrA-r/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1AEv53i1g9vomfqrGW8dkpzFGH2m3p8vP",
+      "title": "MCQ_4_1_dark.pdf",
+      "url": "https://drive.google.com/file/d/1AEv53i1g9vomfqrGW8dkpzFGH2m3p8vP/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1tCiNTayfHmu14vW8BhSJOzPZUMDeNpn5",
+      "title": "MCQ_4_1.txt",
+      "url": "https://drive.google.com/file/d/1tCiNTayfHmu14vW8BhSJOzPZUMDeNpn5/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 4: Functions and Graphs - Exercise 4.2 - MCQs",
+    "description": "Class 9 Mathematics exercise 4.2 mcqs for Unit 4: Functions and Graphs. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 4: Functions and Graphs",
+    "chapter_order": 4,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1KfBTdlBhL9N87a5pvIM_ZWJT51uXY9Nu",
+      "title": "MCQ_4_2_light.pdf",
+      "url": "https://drive.google.com/file/d/1KfBTdlBhL9N87a5pvIM_ZWJT51uXY9Nu/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1JwHqJnA73dfhEssMDEho1c2kdzPVh6nd",
+      "title": "MCQ_4_2_dark.pdf",
+      "url": "https://drive.google.com/file/d/1JwHqJnA73dfhEssMDEho1c2kdzPVh6nd/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1MxdZNKDP6_yaiyp7bNEv41o0YwWLKb-C",
+      "title": "MCQ_4_2.txt",
+      "url": "https://drive.google.com/file/d/1MxdZNKDP6_yaiyp7bNEv41o0YwWLKb-C/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 4: Functions and Graphs - Exercise 4.3 - MCQs",
+    "description": "Class 9 Mathematics exercise 4.3 mcqs for Unit 4: Functions and Graphs. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 4: Functions and Graphs",
+    "chapter_order": 4,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1suwZ8IdUSKbyo1r8YmsVItp9-nMlBkpG",
+      "title": "MCQ_4_3_light.pdf",
+      "url": "https://drive.google.com/file/d/1suwZ8IdUSKbyo1r8YmsVItp9-nMlBkpG/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1gBY7J0CZCIO3l5f5PhMNPNif1tv5jRYl",
+      "title": "MCQ_4_3_dark.pdf",
+      "url": "https://drive.google.com/file/d/1gBY7J0CZCIO3l5f5PhMNPNif1tv5jRYl/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1vSh0c7_BWuiVGELTnOOnghmevB8KeuIG",
+      "title": "MCQ_4_3.txt",
+      "url": "https://drive.google.com/file/d/1vSh0c7_BWuiVGELTnOOnghmevB8KeuIG/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 4: Functions and Graphs - Exercise 4.1 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 4.1 solved exercise for Unit 4: Functions and Graphs. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 4: Functions and Graphs",
+    "chapter_order": 4,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1mvW5dYdI4gyzmbY64fUH3gUCyJChxNmX",
+      "title": "Exercise4_1_light.pdf",
+      "url": "https://drive.google.com/file/d/1mvW5dYdI4gyzmbY64fUH3gUCyJChxNmX/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1ovGi_kSL0ZRdhXyNitDYvRqTTm3n8w8Z",
+      "title": "Exercise4_1_dark.pdf",
+      "url": "https://drive.google.com/file/d/1ovGi_kSL0ZRdhXyNitDYvRqTTm3n8w8Z/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1DBHouxdgpmNB1efcRkZ1yaYvRpblVtsA",
+      "title": "Exercise4_1_content.txt",
+      "url": "https://drive.google.com/file/d/1DBHouxdgpmNB1efcRkZ1yaYvRpblVtsA/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 4: Functions and Graphs - Exercise 4.2 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 4.2 solved exercise for Unit 4: Functions and Graphs. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 4: Functions and Graphs",
+    "chapter_order": 4,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1Rx5Bo5ibFoReNIMUAbFDcXkx17-8pKfX",
+      "title": "Exercise4_2_light.pdf",
+      "url": "https://drive.google.com/file/d/1Rx5Bo5ibFoReNIMUAbFDcXkx17-8pKfX/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1VG3opFW11IZcuh4HpLYzJJWomIcj4ZwE",
+      "title": "Exercise4_2_dark.pdf",
+      "url": "https://drive.google.com/file/d/1VG3opFW11IZcuh4HpLYzJJWomIcj4ZwE/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "16UdUEk-TABHiO0rYZG61pYP3RsyJNaRE",
+      "title": "Exercise4_2_content.txt",
+      "url": "https://drive.google.com/file/d/16UdUEk-TABHiO0rYZG61pYP3RsyJNaRE/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 5: Algebraic Fractions - Exercise 5.2 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 5.2 solved exercise for Unit 5: Algebraic Fractions. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 5: Algebraic Fractions",
+    "chapter_order": 5,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1HLYDW3lIUuIU236xyraa8gRw-sVuZBLp",
+      "title": "Ch5_Ex5.2_Solved_Light.pdf",
+      "url": "https://drive.google.com/file/d/1HLYDW3lIUuIU236xyraa8gRw-sVuZBLp/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1onOXT8PrNb0x8Sw3VC1Kf6au_9pqc_g_",
+      "title": "Ch5_Ex5.2_Solved_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1onOXT8PrNb0x8Sw3VC1Kf6au_9pqc_g_/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1Q1Q4FoEWdlggfQFMPVVjweBE-07U493U",
+      "title": "Ch5_Ex5.2_Solved.txt",
+      "url": "https://drive.google.com/file/d/1Q1Q4FoEWdlggfQFMPVVjweBE-07U493U/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 5: Algebraic Fractions - Review Exercise - MCQs",
+    "description": "Class 9 Mathematics review exercise mcqs for Unit 5: Algebraic Fractions. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 5: Algebraic Fractions",
+    "chapter_order": 5,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1-ot63udRRtxWb-56p1IEH6oKySalz_Tf",
+      "title": "Ch5_ReviewEx5_MCQs30_Light.pdf",
+      "url": "https://drive.google.com/file/d/1-ot63udRRtxWb-56p1IEH6oKySalz_Tf/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1lNDVX23c5Uri_r5RcuMbzk7vZSCuAF4w",
+      "title": "Ch5_ReviewEx5_MCQs30_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1lNDVX23c5Uri_r5RcuMbzk7vZSCuAF4w/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1JFm3Dt7qn5GMwyq1ljsJ-phfFqA4pT3P",
+      "title": "Ch5_ReviewEx5_MCQs30.txt",
+      "url": "https://drive.google.com/file/d/1JFm3Dt7qn5GMwyq1ljsJ-phfFqA4pT3P/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 5: Algebraic Fractions - Exercise 5.2 - MCQs",
+    "description": "Class 9 Mathematics exercise 5.2 mcqs for Unit 5: Algebraic Fractions. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 5: Algebraic Fractions",
+    "chapter_order": 5,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1IBWGTBh97i2s6YphybzVkzR0-fUjO30A",
+      "title": "Ch5_Ex5.2_MCQs30_Light.pdf",
+      "url": "https://drive.google.com/file/d/1IBWGTBh97i2s6YphybzVkzR0-fUjO30A/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1nBNpMdOINjRN_GQU4ks7yqfC1YYR_SyU",
+      "title": "Ch5_Ex5.2_MCQs30_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1nBNpMdOINjRN_GQU4ks7yqfC1YYR_SyU/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1VNBPR61X9qvbGCMu-b-Oc_8kPQHSFVrw",
+      "title": "Ch5_Ex5.2_MCQs30.txt",
+      "url": "https://drive.google.com/file/d/1VNBPR61X9qvbGCMu-b-Oc_8kPQHSFVrw/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 5: Algebraic Fractions - Review Exercise - Solved Exercise",
+    "description": "Class 9 Mathematics review exercise solved exercise for Unit 5: Algebraic Fractions. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 5: Algebraic Fractions",
+    "chapter_order": 5,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1TKPlb48mph31sb7OPntYuLbX3CTTNg6H",
+      "title": "Ch5_ReviewEx5_Solved_Light.pdf",
+      "url": "https://drive.google.com/file/d/1TKPlb48mph31sb7OPntYuLbX3CTTNg6H/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "11RYueCxzN71F1YKPgfJe2--eOmCfjLtI",
+      "title": "Ch5_ReviewEx5_Solved_Dark.pdf",
+      "url": "https://drive.google.com/file/d/11RYueCxzN71F1YKPgfJe2--eOmCfjLtI/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1IlapZ0Oce1pRpd0y3UCUa09PnHisFeUM",
+      "title": "Ch5_ReviewEx5_Solved.txt",
+      "url": "https://drive.google.com/file/d/1IlapZ0Oce1pRpd0y3UCUa09PnHisFeUM/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 5: Algebraic Fractions - Exercise 5.1 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 5.1 solved exercise for Unit 5: Algebraic Fractions. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 5: Algebraic Fractions",
+    "chapter_order": 5,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1OXAAaxxYcw65eg4BP_7A44x-WhkNbaLK",
+      "title": "Ex5.1_Solved_Light.pdf",
+      "url": "https://drive.google.com/file/d/1OXAAaxxYcw65eg4BP_7A44x-WhkNbaLK/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1O3tUumPlDrgoC7E6VwlaRvV7elNX5uCs",
+      "title": "Ex5.1_Solved_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1O3tUumPlDrgoC7E6VwlaRvV7elNX5uCs/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "145duE_SMsig8uls3Ip4-wQAK4hYmbbo-",
+      "title": "Ex5.1_Solved_Content.txt",
+      "url": "https://drive.google.com/file/d/145duE_SMsig8uls3Ip4-wQAK4hYmbbo-/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 5: Algebraic Fractions - Exercise 5.1 - MCQs",
+    "description": "Class 9 Mathematics exercise 5.1 mcqs for Unit 5: Algebraic Fractions. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 5: Algebraic Fractions",
+    "chapter_order": 5,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1fhds6h2ZWf66kc44xkN9oIiVv9VbGzgp",
+      "title": "Ex5.1_MCQs30_Light.pdf",
+      "url": "https://drive.google.com/file/d/1fhds6h2ZWf66kc44xkN9oIiVv9VbGzgp/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1sBCI2mBtneSudaWx5fi44864itLEjQKA",
+      "title": "Ex5.1_MCQs30_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1sBCI2mBtneSudaWx5fi44864itLEjQKA/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1EP4hN6uvx7ZaI05BiA6VpDyBOlcoOgDW",
+      "title": "Ex5.1_MCQs30.txt",
+      "url": "https://drive.google.com/file/d/1EP4hN6uvx7ZaI05BiA6VpDyBOlcoOgDW/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 6: Vectors in Plane - Exercise 6.1 - MCQs",
+    "description": "Class 9 Mathematics exercise 6.1 mcqs for Unit 6: Vectors in Plane. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 6: Vectors in Plane",
+    "chapter_order": 6,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1KZwb9LVqFEFHfUapdd2UyjC3_J1cSppX",
+      "title": "Ch6_Ex6.1_MCQs30_Light.pdf",
+      "url": "https://drive.google.com/file/d/1KZwb9LVqFEFHfUapdd2UyjC3_J1cSppX/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1jBR68cUQ3sP9Z7yCqBFaSKunIisNbTLT",
+      "title": "Ch6_Ex6.1_MCQs30_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1jBR68cUQ3sP9Z7yCqBFaSKunIisNbTLT/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1t6wETgSbnUCBDYgbak-cHfUCLLhWXqoh",
+      "title": "Ch6_Ex6.1_MCQs30.txt",
+      "url": "https://drive.google.com/file/d/1t6wETgSbnUCBDYgbak-cHfUCLLhWXqoh/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 6: Vectors in Plane - Exercise 6.2 - MCQs",
+    "description": "Class 9 Mathematics exercise 6.2 mcqs for Unit 6: Vectors in Plane. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 6: Vectors in Plane",
+    "chapter_order": 6,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1MAhoyzPW_11uUaqQEpa2JuQjYoe18Np5",
+      "title": "Ch6_Ex6.2_MCQs30_Light.pdf",
+      "url": "https://drive.google.com/file/d/1MAhoyzPW_11uUaqQEpa2JuQjYoe18Np5/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1QcZ2_tC8rKP6k4RkaORtfE9wVyDfdjRS",
+      "title": "Ch6_Ex6.2_MCQs30_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1QcZ2_tC8rKP6k4RkaORtfE9wVyDfdjRS/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1mV2ijxnMMDViqZWUxqu050FBEQyNOzf6",
+      "title": "Ch6_Ex6.2_MCQs30.txt",
+      "url": "https://drive.google.com/file/d/1mV2ijxnMMDViqZWUxqu050FBEQyNOzf6/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 6: Vectors in Plane - Exercise 6.3 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 6.3 solved exercise for Unit 6: Vectors in Plane. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 6: Vectors in Plane",
+    "chapter_order": 6,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1YJB6wezp3v-VSpxyaT5yTNQtPqBvuF8j",
+      "title": "Ch6_Ex6.3_Solved_Light.pdf",
+      "url": "https://drive.google.com/file/d/1YJB6wezp3v-VSpxyaT5yTNQtPqBvuF8j/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1QbGZffNpDrNBb0wug2STRk6AyoohBrLK",
+      "title": "Ch6_Ex6.3_Solved_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1QbGZffNpDrNBb0wug2STRk6AyoohBrLK/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1ikeZy48CI3sD0QZ5qnDV6ifINS7ROB4H",
+      "title": "Ch6_Ex6.3_Solved.txt",
+      "url": "https://drive.google.com/file/d/1ikeZy48CI3sD0QZ5qnDV6ifINS7ROB4H/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 6: Vectors in Plane - Exercise 6.2 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 6.2 solved exercise for Unit 6: Vectors in Plane. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 6: Vectors in Plane",
+    "chapter_order": 6,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1BE8W6NE6SaIcl5MVmLpS2n7nDBOBgaxG",
+      "title": "Ch6_Ex6.2_Solved_Light.pdf",
+      "url": "https://drive.google.com/file/d/1BE8W6NE6SaIcl5MVmLpS2n7nDBOBgaxG/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1wqhbgxm2uJEoQvz-2NoDd8BnUDtuIaqz",
+      "title": "Ch6_Ex6.2_Solved_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1wqhbgxm2uJEoQvz-2NoDd8BnUDtuIaqz/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1CGqGWXyn63xnzYZHKGGxxw573AK4MYAR",
+      "title": "Ch6_Ex6.2_Solved.txt",
+      "url": "https://drive.google.com/file/d/1CGqGWXyn63xnzYZHKGGxxw573AK4MYAR/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 6: Vectors in Plane - Exercise 6.3 - MCQs",
+    "description": "Class 9 Mathematics exercise 6.3 mcqs for Unit 6: Vectors in Plane. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 6: Vectors in Plane",
+    "chapter_order": 6,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "11V21IwggFzM8037Ui0KwTUW5ZbawlKua",
+      "title": "Ch6_Ex6.3_MCQs30_Light.pdf",
+      "url": "https://drive.google.com/file/d/11V21IwggFzM8037Ui0KwTUW5ZbawlKua/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "19PrTC1ltgUMtk2kZzLHxXJYUON3cZngr",
+      "title": "Ch6_Ex6.3_MCQs30_Dark.pdf",
+      "url": "https://drive.google.com/file/d/19PrTC1ltgUMtk2kZzLHxXJYUON3cZngr/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "171HJaIbRo9EgP_sZQCUv6yLw-Zs8y3hd",
+      "title": "Ch6_Ex6.3_MCQs30.txt",
+      "url": "https://drive.google.com/file/d/171HJaIbRo9EgP_sZQCUv6yLw-Zs8y3hd/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 6: Vectors in Plane - Exercise 6.1 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 6.1 solved exercise for Unit 6: Vectors in Plane. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 6: Vectors in Plane",
+    "chapter_order": 6,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1nps1epoqR92ZYxx-yovaUVsIJg1rWk4p",
+      "title": "Ch6_Ex6.1_Solved_Light.pdf",
+      "url": "https://drive.google.com/file/d/1nps1epoqR92ZYxx-yovaUVsIJg1rWk4p/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1T7YI8K7_g32tW7wbygmkAH3JKPBLn8fi",
+      "title": "Ch6_Ex6.1_Solved_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1T7YI8K7_g32tW7wbygmkAH3JKPBLn8fi/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1PxiBQnvkUptHKKRCWUasyBQysHf5oATj",
+      "title": "Ch6_Ex6.1_Solved.txt",
+      "url": "https://drive.google.com/file/d/1PxiBQnvkUptHKKRCWUasyBQysHf5oATj/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 6: Vectors in Plane - Exercise 6.6 - MCQs",
+    "description": "Class 9 Mathematics exercise 6.6 mcqs for Unit 6: Vectors in Plane. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 6: Vectors in Plane",
+    "chapter_order": 6,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1M8ijsxYTVH6PCIpUX_lGNAwAcQUfU7C4",
+      "title": "Ex6.6_MCQs_Light.pdf",
+      "url": "https://drive.google.com/file/d/1M8ijsxYTVH6PCIpUX_lGNAwAcQUfU7C4/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1Tmj9ZWx8hJb5Fpc4UpoYwe4OnzGYPP89",
+      "title": "Ex6.6_MCQs_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1Tmj9ZWx8hJb5Fpc4UpoYwe4OnzGYPP89/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1LktCIj9EZiQEvkSYwYirwL_JIdIQCdFX",
+      "title": "Ex6.6_MCQs.txt",
+      "url": "https://drive.google.com/file/d/1LktCIj9EZiQEvkSYwYirwL_JIdIQCdFX/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 6: Vectors in Plane - Exercise 6.5 - MCQs",
+    "description": "Class 9 Mathematics exercise 6.5 mcqs for Unit 6: Vectors in Plane. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 6: Vectors in Plane",
+    "chapter_order": 6,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1ldA5mIFAFoD0rFQLofx-4oG4ZMynRFMV",
+      "title": "Ex6.5_MCQs_Light.pdf",
+      "url": "https://drive.google.com/file/d/1ldA5mIFAFoD0rFQLofx-4oG4ZMynRFMV/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1sseldOe204OgMwmj3FE3idlXnQVOUGjY",
+      "title": "Ex6.5_MCQs_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1sseldOe204OgMwmj3FE3idlXnQVOUGjY/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1nFHZZOXubi8QICHL_C6uwsGbBKTTihBr",
+      "title": "Ex6.5_MCQs.txt",
+      "url": "https://drive.google.com/file/d/1nFHZZOXubi8QICHL_C6uwsGbBKTTihBr/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 6: Vectors in Plane - Exercise 6.6 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 6.6 solved exercise for Unit 6: Vectors in Plane. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 6: Vectors in Plane",
+    "chapter_order": 6,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1-3fGXpJhx4JCk_3XoQHov-pIMNbrwmpi",
+      "title": "Ex6.6_Solved_Light.pdf",
+      "url": "https://drive.google.com/file/d/1-3fGXpJhx4JCk_3XoQHov-pIMNbrwmpi/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1Ffwa0K8nh5exvnmn0ibny3bZM18jjsMB",
+      "title": "Ex6.6_Solved_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1Ffwa0K8nh5exvnmn0ibny3bZM18jjsMB/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1hJ9eIBkQDcqovySN9WX33uDPs0bBz3x6",
+      "title": "Ex6.6_Solved.txt",
+      "url": "https://drive.google.com/file/d/1hJ9eIBkQDcqovySN9WX33uDPs0bBz3x6/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 6: Vectors in Plane - Review Exercise - MCQs",
+    "description": "Class 9 Mathematics review exercise mcqs for Unit 6: Vectors in Plane. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 6: Vectors in Plane",
+    "chapter_order": 6,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1dZqoRhkN976nd9EZzv_LZfFTxvPgAQ_f",
+      "title": "ReviewEx6_MCQs_Light.pdf",
+      "url": "https://drive.google.com/file/d/1dZqoRhkN976nd9EZzv_LZfFTxvPgAQ_f/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "19f6UoC_9tlA5s7fd1smnsQ5rOhDHZTow",
+      "title": "ReviewEx6_MCQs_Dark.pdf",
+      "url": "https://drive.google.com/file/d/19f6UoC_9tlA5s7fd1smnsQ5rOhDHZTow/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1EC3dulcd_rwFUtOg0YMJsdXuz-jY4Ioz",
+      "title": "ReviewEx6_MCQs.txt",
+      "url": "https://drive.google.com/file/d/1EC3dulcd_rwFUtOg0YMJsdXuz-jY4Ioz/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 6: Vectors in Plane - Exercise 6.5 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 6.5 solved exercise for Unit 6: Vectors in Plane. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 6: Vectors in Plane",
+    "chapter_order": 6,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1RD1iDl3nsvULm5mZ4Um93cK_IenT9nHM",
+      "title": "Ex6.5_Solved_Light.pdf",
+      "url": "https://drive.google.com/file/d/1RD1iDl3nsvULm5mZ4Um93cK_IenT9nHM/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "18Ak6Yd00z3LER6cxLwENb-1W1rPzy3Y1",
+      "title": "Ex6.5_Solved_Dark.pdf",
+      "url": "https://drive.google.com/file/d/18Ak6Yd00z3LER6cxLwENb-1W1rPzy3Y1/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "18HjIf7bavuTtaDaXfPfLQ0JraWX0pFdC",
+      "title": "Ex6.5_Solved.txt",
+      "url": "https://drive.google.com/file/d/18HjIf7bavuTtaDaXfPfLQ0JraWX0pFdC/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 6: Vectors in Plane - Review Exercise - Solved Exercise",
+    "description": "Class 9 Mathematics review exercise solved exercise for Unit 6: Vectors in Plane. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 6: Vectors in Plane",
+    "chapter_order": 6,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "12ULESxO2tCelNrCvqmamDTKOtT6ZeXNa",
+      "title": "ReviewEx6_Solved_Light.pdf",
+      "url": "https://drive.google.com/file/d/12ULESxO2tCelNrCvqmamDTKOtT6ZeXNa/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "11EhFLpjl5cyYr2Nbfn69556FDU9_gndU",
+      "title": "ReviewEx6_Solved_Dark.pdf",
+      "url": "https://drive.google.com/file/d/11EhFLpjl5cyYr2Nbfn69556FDU9_gndU/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1fbVyYu3q6eCBM7cTQHzE_O-cTOwn_5N5",
+      "title": "ReviewEx6_Solved.txt",
+      "url": "https://drive.google.com/file/d/1fbVyYu3q6eCBM7cTQHzE_O-cTOwn_5N5/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 6: Vectors in Plane - Exercise 6.4 - MCQs",
+    "description": "Class 9 Mathematics exercise 6.4 mcqs for Unit 6: Vectors in Plane. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 6: Vectors in Plane",
+    "chapter_order": 6,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1UnRr1_XK8eNyL71RADl8yuUbyT90MLlm",
+      "title": "Ex6.4_MCQs_Light.pdf",
+      "url": "https://drive.google.com/file/d/1UnRr1_XK8eNyL71RADl8yuUbyT90MLlm/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "18RBxpvtBLU-NgvUTQtqCFNNeZgbn64TS",
+      "title": "Ex6.4_MCQs_Dark.pdf",
+      "url": "https://drive.google.com/file/d/18RBxpvtBLU-NgvUTQtqCFNNeZgbn64TS/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1cj2CB7HnRs06z42Wgw1pydkotxAsYaXI",
+      "title": "Ex6.4_MCQs.txt",
+      "url": "https://drive.google.com/file/d/1cj2CB7HnRs06z42Wgw1pydkotxAsYaXI/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 6: Vectors in Plane - Exercise 6.4 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 6.4 solved exercise for Unit 6: Vectors in Plane. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 6: Vectors in Plane",
+    "chapter_order": 6,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1upN6wr128QgddFaMYBeIIfTg1kAXRLpC",
+      "title": "Ex6.4_Solved_Light.pdf",
+      "url": "https://drive.google.com/file/d/1upN6wr128QgddFaMYBeIIfTg1kAXRLpC/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1IxgXgnddnyNFNxA2WicbKHVU1XEtJ1cP",
+      "title": "Ex6.4_Solved_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1IxgXgnddnyNFNxA2WicbKHVU1XEtJ1cP/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1OglCy9DhCnk2BJDmyfI1_oAPfs2sb3ZS",
+      "title": "Ex6.4_Solved.txt",
+      "url": "https://drive.google.com/file/d/1OglCy9DhCnk2BJDmyfI1_oAPfs2sb3ZS/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 7: Coordinate Geometry - Review Exercise - MCQs",
+    "description": "Class 9 Mathematics review exercise mcqs for Unit 7: Coordinate Geometry. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 7: Coordinate Geometry",
+    "chapter_order": 7,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1dtZBFUBnEpKutBGJJNBK62gfH3_2CVyW",
+      "title": "Ch7_ReviewExercise_MCQs_Light.pdf",
+      "url": "https://drive.google.com/file/d/1dtZBFUBnEpKutBGJJNBK62gfH3_2CVyW/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "159BcguxafWz-YzPE7sy-Nzn1NCBFNWl4",
+      "title": "Ch7_ReviewExercise_MCQs_Dark.pdf",
+      "url": "https://drive.google.com/file/d/159BcguxafWz-YzPE7sy-Nzn1NCBFNWl4/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1PAOKf8rn0atOUkdo3FTCdDuhQWCMhtnI",
+      "title": "Ch7_ReviewExercise_MCQs_SetA_Dark.txt",
+      "url": "https://drive.google.com/file/d/1PAOKf8rn0atOUkdo3FTCdDuhQWCMhtnI/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 7: Coordinate Geometry - Review Exercise - Solved Exercise",
+    "description": "Class 9 Mathematics review exercise solved exercise for Unit 7: Coordinate Geometry. Includes matching light and dark PDF versions.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 7: Coordinate Geometry",
+    "chapter_order": 7,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1L-pdH2lSgdqSLGc6YSn6_srf5-wmyqY3",
+      "title": "Ch7_Review_Exercise_Light.pdf",
+      "url": "https://drive.google.com/file/d/1L-pdH2lSgdqSLGc6YSn6_srf5-wmyqY3/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1BQrtZ1imoS8YM9Ko93UVanwMwSBU7dm3",
+      "title": "Ch7_Review_Exercise_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1BQrtZ1imoS8YM9Ko93UVanwMwSBU7dm3/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": null
+  },
+  {
+    "title": "Mathematics - Unit 7: Coordinate Geometry - Exercise 7.3 - MCQs",
+    "description": "Class 9 Mathematics exercise 7.3 mcqs for Unit 7: Coordinate Geometry. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 7: Coordinate Geometry",
+    "chapter_order": 7,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1gbcs8bNkcZdSR9NG5Fyu8TNoa29jdYJO",
+      "title": "Ch7_Ex7.3_MCQs_Light.pdf",
+      "url": "https://drive.google.com/file/d/1gbcs8bNkcZdSR9NG5Fyu8TNoa29jdYJO/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "19s7MPBOs_WPgcpkydNqn3sFUKHwlgkNn",
+      "title": "Ch7_Ex7.3_MCQs_Dark.pdf",
+      "url": "https://drive.google.com/file/d/19s7MPBOs_WPgcpkydNqn3sFUKHwlgkNn/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "14aEtBvMG4Bf9zEK_H7Ygm6H7OPt99_4V",
+      "title": "Ch7_Ex7.3_MCQs_SetA_Dark.txt",
+      "url": "https://drive.google.com/file/d/14aEtBvMG4Bf9zEK_H7Ygm6H7OPt99_4V/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 7: Coordinate Geometry - Exercise 7.3 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 7.3 solved exercise for Unit 7: Coordinate Geometry. Includes matching light and dark PDF versions.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 7: Coordinate Geometry",
+    "chapter_order": 7,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1h9I4iSq44FApQ4YMkya4BFyMC1_oGG_x",
+      "title": "Ch7_Ex7.3_Light.pdf",
+      "url": "https://drive.google.com/file/d/1h9I4iSq44FApQ4YMkya4BFyMC1_oGG_x/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1RmbElbOl22VovXfjzP4HPIW0agA0P2zn",
+      "title": "Ch7_Ex7.3_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1RmbElbOl22VovXfjzP4HPIW0agA0P2zn/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": null
+  },
+  {
+    "title": "Mathematics - Unit 7: Coordinate Geometry - Exercise 7.2 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 7.2 solved exercise for Unit 7: Coordinate Geometry. Includes matching light and dark PDF versions.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 7: Coordinate Geometry",
+    "chapter_order": 7,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1exSPXti6ySxB3X0Oh3NMo0nbFK4mSvTy",
+      "title": "Ch7_Ex7.2_Light.pdf",
+      "url": "https://drive.google.com/file/d/1exSPXti6ySxB3X0Oh3NMo0nbFK4mSvTy/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1D2EKuiAjNt4ldQi3nkCa8PNLQCzSzohj",
+      "title": "Ch7_Ex7.2_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1D2EKuiAjNt4ldQi3nkCa8PNLQCzSzohj/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": null
+  },
+  {
+    "title": "Mathematics - Unit 7: Coordinate Geometry - Exercise 7.2 - MCQs",
+    "description": "Class 9 Mathematics exercise 7.2 mcqs for Unit 7: Coordinate Geometry. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 7: Coordinate Geometry",
+    "chapter_order": 7,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1KU5g_5nBHXsSNsIQabnw2ItfPAYnKXRV",
+      "title": "Ch7_Ex7.2_MCQs_Light.pdf",
+      "url": "https://drive.google.com/file/d/1KU5g_5nBHXsSNsIQabnw2ItfPAYnKXRV/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1bcecMMaKktDrCJUh2IsdPZSQKFGmXI6v",
+      "title": "Ch7_Ex7.2_MCQs_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1bcecMMaKktDrCJUh2IsdPZSQKFGmXI6v/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1avdH25DjU52BS1nhfmGTFVEyHBP3MR3j",
+      "title": "Ch7_Ex7.2_MCQs_SetA_Dark.txt",
+      "url": "https://drive.google.com/file/d/1avdH25DjU52BS1nhfmGTFVEyHBP3MR3j/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 7: Coordinate Geometry - Exercise 7.1 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 7.1 solved exercise for Unit 7: Coordinate Geometry. Includes matching light and dark PDF versions.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 7: Coordinate Geometry",
+    "chapter_order": 7,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1XS6dL3xkV8WFjEiL3PeDpwnQ3_r11giE",
+      "title": "Ch7_Ex7.1_Light.pdf",
+      "url": "https://drive.google.com/file/d/1XS6dL3xkV8WFjEiL3PeDpwnQ3_r11giE/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1OAloDqSvIbcAUx7Qspw-tcKUMlIJxYMh",
+      "title": "Ch7_Ex7.1_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1OAloDqSvIbcAUx7Qspw-tcKUMlIJxYMh/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": null
+  },
+  {
+    "title": "Mathematics - Unit 7: Coordinate Geometry - Exercise 7.1 - MCQs",
+    "description": "Class 9 Mathematics exercise 7.1 mcqs for Unit 7: Coordinate Geometry. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 7: Coordinate Geometry",
+    "chapter_order": 7,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1qukIc3AYZuhUW7u9aQKNIyVhPZawEd__",
+      "title": "Ch7_Ex7.1_MCQs_Light.pdf",
+      "url": "https://drive.google.com/file/d/1qukIc3AYZuhUW7u9aQKNIyVhPZawEd__/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1aIjiGhHZpv7TZnKGNN7VyhKALyFb4T4d",
+      "title": "Ch7_Ex7.1_MCQs_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1aIjiGhHZpv7TZnKGNN7VyhKALyFb4T4d/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "15uKjIxKNsvoOUBNdzz4rFsrCDg2DHN2w",
+      "title": "Ch7_Ex7.1_MCQs_SetA_Dark.txt",
+      "url": "https://drive.google.com/file/d/15uKjIxKNsvoOUBNdzz4rFsrCDg2DHN2w/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 8: Logic - Review Exercise - Solved Exercise",
+    "description": "Class 9 Mathematics review exercise solved exercise for Unit 8: Logic. Includes matching light and dark PDF versions.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 8: Logic",
+    "chapter_order": 8,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1iJfV2AusUmTcbE48uns7U2Gki0XBZoN9",
+      "title": "Ch8_Review_Exercise_Light.pdf",
+      "url": "https://drive.google.com/file/d/1iJfV2AusUmTcbE48uns7U2Gki0XBZoN9/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1mlM82_9kU08BTpm30jkfDIg2whJ2zXfc",
+      "title": "Ch8_Review_Exercise_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1mlM82_9kU08BTpm30jkfDIg2whJ2zXfc/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": null
+  },
+  {
+    "title": "Mathematics - Unit 8: Logic - Review Exercise - MCQs",
+    "description": "Class 9 Mathematics review exercise mcqs for Unit 8: Logic. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 8: Logic",
+    "chapter_order": 8,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1GJlF1hElDUSqdBsEqrjaMGJ1oM6sd6zb",
+      "title": "Ch8_ReviewExercise_MCQs_Light.pdf",
+      "url": "https://drive.google.com/file/d/1GJlF1hElDUSqdBsEqrjaMGJ1oM6sd6zb/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1VnfIe8Nyi6bY8MqvvTilA0IMD66YD0tZ",
+      "title": "Ch8_ReviewExercise_MCQs_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1VnfIe8Nyi6bY8MqvvTilA0IMD66YD0tZ/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1tzTnk0gYe-Z6g5n8Bx5UrFkc5Ax-DhaM",
+      "title": "Ch8_ReviewExercise_MCQs_SetA_Dark.txt",
+      "url": "https://drive.google.com/file/d/1tzTnk0gYe-Z6g5n8Bx5UrFkc5Ax-DhaM/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 9: Similar Figures - Review Exercise - Solved Exercise",
+    "description": "Class 9 Mathematics review exercise solved exercise for Unit 9: Similar Figures. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 9: Similar Figures",
+    "chapter_order": 9,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "10j3zEAftRsGYvJcOQP1lfRK-0s0eWUpZ",
+      "title": "Review_Exercise_9_Light.pdf",
+      "url": "https://drive.google.com/file/d/10j3zEAftRsGYvJcOQP1lfRK-0s0eWUpZ/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1IALTusanI2TIIIOOTIxK_pZEjR33JmrX",
+      "title": "Review_Exercise_9_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1IALTusanI2TIIIOOTIxK_pZEjR33JmrX/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1KB84nN62Zg4ZRlsXwrG6nPG-dPI6ifJQ",
+      "title": "Review_Exercise_9_Solved.txt",
+      "url": "https://drive.google.com/file/d/1KB84nN62Zg4ZRlsXwrG6nPG-dPI6ifJQ/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 9: Similar Figures - Exercise 9.4 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 9.4 solved exercise for Unit 9: Similar Figures. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 9: Similar Figures",
+    "chapter_order": 9,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1hsdEEN5IKv66hzvaX0pKrs5KX6I2qG2b",
+      "title": "Exercise_9.4_Light.pdf",
+      "url": "https://drive.google.com/file/d/1hsdEEN5IKv66hzvaX0pKrs5KX6I2qG2b/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1Swokmw82SQGKX1dqtkXHHAstyLDj63Eb",
+      "title": "Exercise_9.4_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1Swokmw82SQGKX1dqtkXHHAstyLDj63Eb/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1S8ucu-S-_yuZlgl_7wLLJRmX1nOf-Dgx",
+      "title": "Exercise_9.4_Solved.txt",
+      "url": "https://drive.google.com/file/d/1S8ucu-S-_yuZlgl_7wLLJRmX1nOf-Dgx/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 9: Similar Figures - Exercise 9.1 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 9.1 solved exercise for Unit 9: Similar Figures. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 9: Similar Figures",
+    "chapter_order": 9,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "16EY1BNz8egYeyxlbsh7VIqN1xh40Y0KX",
+      "title": "Exercise_9.1_Light.pdf",
+      "url": "https://drive.google.com/file/d/16EY1BNz8egYeyxlbsh7VIqN1xh40Y0KX/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "10pvbyZ8EyLrZiGyGb4u6oURR85Dk38q4",
+      "title": "Exercise_9.1_Dark.pdf",
+      "url": "https://drive.google.com/file/d/10pvbyZ8EyLrZiGyGb4u6oURR85Dk38q4/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "110_0fAlunbXO_ZBHOZT_l0yXb3pRNMjC",
+      "title": "Exercise_9.1_Solved.txt",
+      "url": "https://drive.google.com/file/d/110_0fAlunbXO_ZBHOZT_l0yXb3pRNMjC/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 9: Similar Figures - Exercise 9.2 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 9.2 solved exercise for Unit 9: Similar Figures. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 9: Similar Figures",
+    "chapter_order": 9,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1p95fndu1wzAiH8DV2l6TWdBO9SFRpkbP",
+      "title": "Exercise_9.2_Light.pdf",
+      "url": "https://drive.google.com/file/d/1p95fndu1wzAiH8DV2l6TWdBO9SFRpkbP/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1tAvyIVPZa6Cc4iWWlCp1lmSXCtykgM9j",
+      "title": "Exercise_9.2_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1tAvyIVPZa6Cc4iWWlCp1lmSXCtykgM9j/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "104_-6wpWeVRnNA5Hb-CdnZubcJojNcOP",
+      "title": "Exercise_9.2_Solved.txt",
+      "url": "https://drive.google.com/file/d/104_-6wpWeVRnNA5Hb-CdnZubcJojNcOP/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 9: Similar Figures - Exercise 9.3 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 9.3 solved exercise for Unit 9: Similar Figures. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 9: Similar Figures",
+    "chapter_order": 9,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "143fyzgprFfWO6prRL6ezpZn8rLlGVXYm",
+      "title": "Exercise_9.3_Light.pdf",
+      "url": "https://drive.google.com/file/d/143fyzgprFfWO6prRL6ezpZn8rLlGVXYm/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1Zx-Y_F88ZbJKi8Imh2N2cd7LoYp8nfCv",
+      "title": "Exercise_9.3_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1Zx-Y_F88ZbJKi8Imh2N2cd7LoYp8nfCv/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1R43TESDPpqenwJNm18ucST_iF-T85054",
+      "title": "Exercise_9.3_Solved.txt",
+      "url": "https://drive.google.com/file/d/1R43TESDPpqenwJNm18ucST_iF-T85054/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 9: Similar Figures - Exercise 9.2 - MCQs",
+    "description": "Class 9 Mathematics exercise 9.2 mcqs for Unit 9: Similar Figures. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 9: Similar Figures",
+    "chapter_order": 9,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1ZgCSbObkPLLE4SZusVjucPXO5IO9Bh0C",
+      "title": "Exercise_9.2_MCQs_Light.pdf",
+      "url": "https://drive.google.com/file/d/1ZgCSbObkPLLE4SZusVjucPXO5IO9Bh0C/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1dC8bMo-kMfinN0HkHzwY7U5SYm5eJ1wT",
+      "title": "Exercise_9.2_MCQs_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1dC8bMo-kMfinN0HkHzwY7U5SYm5eJ1wT/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1PJ1KVkGzN4gwKlxi9dqajwzghCz6lRdl",
+      "title": "Exercise_9.2_MCQs_30.txt",
+      "url": "https://drive.google.com/file/d/1PJ1KVkGzN4gwKlxi9dqajwzghCz6lRdl/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 9: Similar Figures - Exercise 9.1 - MCQs",
+    "description": "Class 9 Mathematics exercise 9.1 mcqs for Unit 9: Similar Figures. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 9: Similar Figures",
+    "chapter_order": 9,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1qYK-SPwpBxJG4_x_1XE1lD46_KmnGJMI",
+      "title": "Exercise_9.1_MCQs_Light.pdf",
+      "url": "https://drive.google.com/file/d/1qYK-SPwpBxJG4_x_1XE1lD46_KmnGJMI/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "14MMj5Ud7y9zZoM3GPoB6Pn3hWGhY9qUa",
+      "title": "Exercise_9.1_MCQs_Dark.pdf",
+      "url": "https://drive.google.com/file/d/14MMj5Ud7y9zZoM3GPoB6Pn3hWGhY9qUa/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1Wo0Yn3z6Mu9oLMNxJDo18a1ZJ6iKgmWB",
+      "title": "Exercise_9.1_MCQs_30.txt",
+      "url": "https://drive.google.com/file/d/1Wo0Yn3z6Mu9oLMNxJDo18a1ZJ6iKgmWB/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 9: Similar Figures - Review Exercise - MCQs",
+    "description": "Class 9 Mathematics review exercise mcqs for Unit 9: Similar Figures. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 9: Similar Figures",
+    "chapter_order": 9,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1x33tfIsEcDcOc1tStjNeJYWXbgiqg5og",
+      "title": "Review_Exercise_9_MCQs_Light.pdf",
+      "url": "https://drive.google.com/file/d/1x33tfIsEcDcOc1tStjNeJYWXbgiqg5og/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "16gmAIPgrl8UkuwGS405ZWl-9s_ECnD5m",
+      "title": "Review_Exercise_9_MCQs_Dark.pdf",
+      "url": "https://drive.google.com/file/d/16gmAIPgrl8UkuwGS405ZWl-9s_ECnD5m/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1BOMJ4mBMtLjGmtKCXgU1-hUxi68xg19a",
+      "title": "Review_Exercise_9_MCQs_30.txt",
+      "url": "https://drive.google.com/file/d/1BOMJ4mBMtLjGmtKCXgU1-hUxi68xg19a/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 9: Similar Figures - Exercise 9.4 - MCQs",
+    "description": "Class 9 Mathematics exercise 9.4 mcqs for Unit 9: Similar Figures. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 9: Similar Figures",
+    "chapter_order": 9,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1LEhuZq4N32xhageJBLgzVKjACf1F-yCc",
+      "title": "Exercise_9.4_MCQs_Light.pdf",
+      "url": "https://drive.google.com/file/d/1LEhuZq4N32xhageJBLgzVKjACf1F-yCc/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1-GXMSQ5lD33Lnzok1jCmDwmzgTc0YIgh",
+      "title": "Exercise_9.4_MCQs_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1-GXMSQ5lD33Lnzok1jCmDwmzgTc0YIgh/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1JZIwUgLbufP0OHABP0K7bQgImXO-kduH",
+      "title": "Exercise_9.4_MCQs_30.txt",
+      "url": "https://drive.google.com/file/d/1JZIwUgLbufP0OHABP0K7bQgImXO-kduH/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 9: Similar Figures - Exercise 9.3 - MCQs",
+    "description": "Class 9 Mathematics exercise 9.3 mcqs for Unit 9: Similar Figures. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 9: Similar Figures",
+    "chapter_order": 9,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1raaTEDy3zrqG_TEUywfD7KDjuyEWosTE",
+      "title": "Exercise_9.3_MCQs_Light.pdf",
+      "url": "https://drive.google.com/file/d/1raaTEDy3zrqG_TEUywfD7KDjuyEWosTE/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1Z9rbYWaM8jF-nCqEJlIxqq9lbrl4AdkV",
+      "title": "Exercise_9.3_MCQs_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1Z9rbYWaM8jF-nCqEJlIxqq9lbrl4AdkV/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1dSF3LfadTZunoErJYpT2TE9ATjYVF69H",
+      "title": "Exercise_9.3_MCQs_30.txt",
+      "url": "https://drive.google.com/file/d/1dSF3LfadTZunoErJYpT2TE9ATjYVF69H/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 10: Graphs of Functions - Exercise 10.2 - MCQs",
+    "description": "Class 9 Mathematics exercise 10.2 mcqs for Unit 10: Graphs of Functions. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 10: Graphs of Functions",
+    "chapter_order": 10,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1mz5cyeNVgjS9_xqN5d_nRiVucsnb0dey",
+      "title": "Exercise_10.2_MCQs_Light.pdf",
+      "url": "https://drive.google.com/file/d/1mz5cyeNVgjS9_xqN5d_nRiVucsnb0dey/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "16Y3Rq2dGXlWDCbqSYRJwpXqSwldJ4Maw",
+      "title": "Exercise_10.2_MCQs_Dark.pdf",
+      "url": "https://drive.google.com/file/d/16Y3Rq2dGXlWDCbqSYRJwpXqSwldJ4Maw/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1oj6ok0fbE3uKNQdwoY90W8mLafaTaiyv",
+      "title": "Exercise_10.2_MCQs.txt",
+      "url": "https://drive.google.com/file/d/1oj6ok0fbE3uKNQdwoY90W8mLafaTaiyv/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 10: Graphs of Functions - Review Exercise - Solved Exercise",
+    "description": "Class 9 Mathematics review exercise solved exercise for Unit 10: Graphs of Functions. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 10: Graphs of Functions",
+    "chapter_order": 10,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "15QGynZSngNCOdgqh99NnzjMYmTBIteVj",
+      "title": "Review_Exercise_10_Solved_Light.pdf",
+      "url": "https://drive.google.com/file/d/15QGynZSngNCOdgqh99NnzjMYmTBIteVj/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1M-OegsfgeKQrf3ce3s4u43TDUfDjMlWA",
+      "title": "Review_Exercise_10_Solved_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1M-OegsfgeKQrf3ce3s4u43TDUfDjMlWA/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "12d3q99FEMUEMDjGhnW1HScx_YrPst8jT",
+      "title": "Review_Exercise_10_Solved.txt",
+      "url": "https://drive.google.com/file/d/12d3q99FEMUEMDjGhnW1HScx_YrPst8jT/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 10: Graphs of Functions - Exercise 10.2 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 10.2 solved exercise for Unit 10: Graphs of Functions. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 10: Graphs of Functions",
+    "chapter_order": 10,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "14jR0ztkZgMHPx8D5IYBB8a7qy9GHHoEq",
+      "title": "Exercise_10.2_Solved_Light.pdf",
+      "url": "https://drive.google.com/file/d/14jR0ztkZgMHPx8D5IYBB8a7qy9GHHoEq/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1K_yMA8NMQO68tbBmlofjTNZhc5u--Bst",
+      "title": "Exercise_10.2_Solved_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1K_yMA8NMQO68tbBmlofjTNZhc5u--Bst/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1yEHhzCjjn3E_xvg9rAjKr6qA2OnoHyR7",
+      "title": "Exercise_10.2_Solved.txt",
+      "url": "https://drive.google.com/file/d/1yEHhzCjjn3E_xvg9rAjKr6qA2OnoHyR7/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 10: Graphs of Functions - Review Exercise - MCQs",
+    "description": "Class 9 Mathematics review exercise mcqs for Unit 10: Graphs of Functions. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 10: Graphs of Functions",
+    "chapter_order": 10,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1a3P4_B4Yqk338ZHfCf7sJLyEopyszCPJ",
+      "title": "Review_Exercise_10_MCQs_Light.pdf",
+      "url": "https://drive.google.com/file/d/1a3P4_B4Yqk338ZHfCf7sJLyEopyszCPJ/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1N-GM9b07fQUVtalm08EjY59DjtPmbAXs",
+      "title": "Review_Exercise_10_MCQs_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1N-GM9b07fQUVtalm08EjY59DjtPmbAXs/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1-KXGbRK4WqeawUqkQymRxULRB_4jfq2K",
+      "title": "Review_Exercise_10_MCQs.txt",
+      "url": "https://drive.google.com/file/d/1-KXGbRK4WqeawUqkQymRxULRB_4jfq2K/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 10: Graphs of Functions - Exercise 10.1 - MCQs",
+    "description": "Class 9 Mathematics exercise 10.1 mcqs for Unit 10: Graphs of Functions. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 10: Graphs of Functions",
+    "chapter_order": 10,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "11eCBgUcOsvpWmifIkeNeSx-Brx_GEPh2",
+      "title": "Exercise_10.1_MCQs_Light.pdf",
+      "url": "https://drive.google.com/file/d/11eCBgUcOsvpWmifIkeNeSx-Brx_GEPh2/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1yGHWPOvRHQJSNkNiJfKFv-mA9ywHL54m",
+      "title": "Exercise_10.1_MCQs_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1yGHWPOvRHQJSNkNiJfKFv-mA9ywHL54m/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1b_U6olzuYiyFhJGme2-Czz64SUrA1cSB",
+      "title": "Exercise_10.1_MCQs.txt",
+      "url": "https://drive.google.com/file/d/1b_U6olzuYiyFhJGme2-Czz64SUrA1cSB/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 10: Graphs of Functions - Exercise 10.1 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 10.1 solved exercise for Unit 10: Graphs of Functions. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 10: Graphs of Functions",
+    "chapter_order": 10,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1ZEq7xN-NqDczybSvqz-YmRCZPVoBv6Va",
+      "title": "Exercise_10.1_Solved_Light.pdf",
+      "url": "https://drive.google.com/file/d/1ZEq7xN-NqDczybSvqz-YmRCZPVoBv6Va/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1dP5G8rkB90G_WiTvkOt86af3WVkiAm7h",
+      "title": "Exercise_10.1_Solved_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1dP5G8rkB90G_WiTvkOt86af3WVkiAm7h/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1UAaXN0ALQ5k6p5YVGmkN_Tkppmwc3Qus",
+      "title": "Exercise_10.1_Solved.txt",
+      "url": "https://drive.google.com/file/d/1UAaXN0ALQ5k6p5YVGmkN_Tkppmwc3Qus/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 11: Loci and Construction - Exercise 11.2 - MCQs",
+    "description": "Class 9 Mathematics exercise 11.2 mcqs for Unit 11: Loci and Construction. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 11: Loci and Construction",
+    "chapter_order": 11,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1JT_Yb2jy7NGUJd_WLCe-hc8xMbr9Pece",
+      "title": "ex11_2_mcqs_light.pdf",
+      "url": "https://drive.google.com/file/d/1JT_Yb2jy7NGUJd_WLCe-hc8xMbr9Pece/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1pTtqenruqxubap6A3k9vIfjrRYBpnwOd",
+      "title": "ex11_2_mcqs_dark.pdf",
+      "url": "https://drive.google.com/file/d/1pTtqenruqxubap6A3k9vIfjrRYBpnwOd/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1bpn9Qz0u3693xiVwv6oCgO3_9GLSXy_P",
+      "title": "Ex11_2_MCQs_30.txt",
+      "url": "https://drive.google.com/file/d/1bpn9Qz0u3693xiVwv6oCgO3_9GLSXy_P/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 11: Loci and Construction - Review Exercise - MCQs",
+    "description": "Class 9 Mathematics review exercise mcqs for Unit 11: Loci and Construction. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 11: Loci and Construction",
+    "chapter_order": 11,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "13-E932BaDAPp0AHkcS2JvDT7xhPC4a2a",
+      "title": "rev11_mcqs_light.pdf",
+      "url": "https://drive.google.com/file/d/13-E932BaDAPp0AHkcS2JvDT7xhPC4a2a/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1skvyJpaFecOT6zDXJdYOHFiH3xNmw49t",
+      "title": "rev11_mcqs_dark.pdf",
+      "url": "https://drive.google.com/file/d/1skvyJpaFecOT6zDXJdYOHFiH3xNmw49t/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1OUQEAl5aFJHjJXDa1yEApZogdd5hRo4y",
+      "title": "Rev11_MCQs_30.txt",
+      "url": "https://drive.google.com/file/d/1OUQEAl5aFJHjJXDa1yEApZogdd5hRo4y/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 11: Loci and Construction - Exercise 11.2 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 11.2 solved exercise for Unit 11: Loci and Construction. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 11: Loci and Construction",
+    "chapter_order": 11,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1JfPjF37DgCBjx-ihNxVJ-nvsAyiLILBx",
+      "title": "ex11_2_solved_light.pdf",
+      "url": "https://drive.google.com/file/d/1JfPjF37DgCBjx-ihNxVJ-nvsAyiLILBx/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1wiX1OCAe8v42V5j4tVfWxjK76eYM5A-v",
+      "title": "ex11_2_solved_dark.pdf",
+      "url": "https://drive.google.com/file/d/1wiX1OCAe8v42V5j4tVfWxjK76eYM5A-v/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1YP5tm6U0WhoTcWj_zSskN66D-4iE1_VE",
+      "title": "Ex11_2_Solved.txt",
+      "url": "https://drive.google.com/file/d/1YP5tm6U0WhoTcWj_zSskN66D-4iE1_VE/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 11: Loci and Construction - Review Exercise - Solved Exercise",
+    "description": "Class 9 Mathematics review exercise solved exercise for Unit 11: Loci and Construction. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 11: Loci and Construction",
+    "chapter_order": 11,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "16w-nm045efmIKawsWbC4dxyDI-0kNPjc",
+      "title": "rev11_solved_light.pdf",
+      "url": "https://drive.google.com/file/d/16w-nm045efmIKawsWbC4dxyDI-0kNPjc/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1N1jTps72WA22dfe74YpuFsREsNZWU8RI",
+      "title": "rev11_solved_dark.pdf",
+      "url": "https://drive.google.com/file/d/1N1jTps72WA22dfe74YpuFsREsNZWU8RI/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1Mxew1InR5ngU3khnDPqu_G5hI2rplTnd",
+      "title": "Rev11_Solved.txt",
+      "url": "https://drive.google.com/file/d/1Mxew1InR5ngU3khnDPqu_G5hI2rplTnd/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 11: Loci and Construction - Exercise 11.1 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 11.1 solved exercise for Unit 11: Loci and Construction. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 11: Loci and Construction",
+    "chapter_order": 11,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1fs-5-0A5Y4q-l0n_xzHNOE7A6BRUwLxU",
+      "title": "ex11_1_solved_light.pdf",
+      "url": "https://drive.google.com/file/d/1fs-5-0A5Y4q-l0n_xzHNOE7A6BRUwLxU/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1eYs7ZAw5ewJ5AnvUzSknLiZ-1ftRojP_",
+      "title": "ex11_1_solved_dark.pdf",
+      "url": "https://drive.google.com/file/d/1eYs7ZAw5ewJ5AnvUzSknLiZ-1ftRojP_/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1zA916FCV7oKH35rplcbbtN2TwttdzV4M",
+      "title": "Ex11_1_Solved.txt",
+      "url": "https://drive.google.com/file/d/1zA916FCV7oKH35rplcbbtN2TwttdzV4M/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 11: Loci and Construction - Exercise 11.1 - MCQs",
+    "description": "Class 9 Mathematics exercise 11.1 mcqs for Unit 11: Loci and Construction. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 11: Loci and Construction",
+    "chapter_order": 11,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1XOp_Rtnhq2cOfWZl4euvUnVAsnuj8X6E",
+      "title": "ex11_1_mcqs_light.pdf",
+      "url": "https://drive.google.com/file/d/1XOp_Rtnhq2cOfWZl4euvUnVAsnuj8X6E/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "13EzaXj8p77HhmqKUbG0L4Lk8WQ8SjyEH",
+      "title": "ex11_1_mcqs_dark.pdf",
+      "url": "https://drive.google.com/file/d/13EzaXj8p77HhmqKUbG0L4Lk8WQ8SjyEH/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "15XXVNK39NtIdkBy8cDlKUXYNpB2eOzX9",
+      "title": "Ex11_1_MCQs_30.txt",
+      "url": "https://drive.google.com/file/d/15XXVNK39NtIdkBy8cDlKUXYNpB2eOzX9/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 12: Information Handling - Exercise 12.2 - MCQs",
+    "description": "Class 9 Mathematics exercise 12.2 mcqs for Unit 12: Information Handling. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 12: Information Handling",
+    "chapter_order": 12,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1EgDSyruA45tjzoKM2degcsbCKZWg49fM",
+      "title": "ex12_2_mcqs_light.pdf",
+      "url": "https://drive.google.com/file/d/1EgDSyruA45tjzoKM2degcsbCKZWg49fM/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "12eALr0SbLyzJS1ajErrCOIX--XmQnWWi",
+      "title": "ex12_2_mcqs_dark.pdf",
+      "url": "https://drive.google.com/file/d/12eALr0SbLyzJS1ajErrCOIX--XmQnWWi/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1MDIOwwzMMt5n1EvkKbtx-ZBGTKpfrRs-",
+      "title": "Ex12_2_MCQs_30.txt",
+      "url": "https://drive.google.com/file/d/1MDIOwwzMMt5n1EvkKbtx-ZBGTKpfrRs-/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 12: Information Handling - Exercise 12.1 - MCQs",
+    "description": "Class 9 Mathematics exercise 12.1 mcqs for Unit 12: Information Handling. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 12: Information Handling",
+    "chapter_order": 12,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1dPeuXu03HtkiWNnOUORW59GDhEY-g1EO",
+      "title": "ex12_1_mcqs_light.pdf",
+      "url": "https://drive.google.com/file/d/1dPeuXu03HtkiWNnOUORW59GDhEY-g1EO/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1YBe9UaFYEqYVgmJ62ls8HXgSaKmaXbUs",
+      "title": "ex12_1_mcqs_dark.pdf",
+      "url": "https://drive.google.com/file/d/1YBe9UaFYEqYVgmJ62ls8HXgSaKmaXbUs/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1lRvIz4OoTquKaOuIgD-0llMkl67A_A0d",
+      "title": "Ex12_1_MCQs_30.txt",
+      "url": "https://drive.google.com/file/d/1lRvIz4OoTquKaOuIgD-0llMkl67A_A0d/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 12: Information Handling - Review Exercise - Solved Exercise",
+    "description": "Class 9 Mathematics review exercise solved exercise for Unit 12: Information Handling. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 12: Information Handling",
+    "chapter_order": 12,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "10SImRx3rmvEX6ysNFkSaNjqmI_NARD6w",
+      "title": "rev12_solved_light.pdf",
+      "url": "https://drive.google.com/file/d/10SImRx3rmvEX6ysNFkSaNjqmI_NARD6w/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "143rShq1eQW2tWcWgYAaaBg44RUaQFpug",
+      "title": "rev12_solved_dark.pdf",
+      "url": "https://drive.google.com/file/d/143rShq1eQW2tWcWgYAaaBg44RUaQFpug/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1P_LYGpO3t_RHFzx2Kz3GmM80bPseTODN",
+      "title": "Rev12_Solved.txt",
+      "url": "https://drive.google.com/file/d/1P_LYGpO3t_RHFzx2Kz3GmM80bPseTODN/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 12: Information Handling - Exercise 12.2 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 12.2 solved exercise for Unit 12: Information Handling. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 12: Information Handling",
+    "chapter_order": 12,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1J3KzVDju-XKYIFD8pYlaapwqVxhu4Lys",
+      "title": "ex12_2_solved_light.pdf",
+      "url": "https://drive.google.com/file/d/1J3KzVDju-XKYIFD8pYlaapwqVxhu4Lys/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1XwTKNZmpr17HA8NZwupYsHmv9CTbly4X",
+      "title": "ex12_2_solved_dark.pdf",
+      "url": "https://drive.google.com/file/d/1XwTKNZmpr17HA8NZwupYsHmv9CTbly4X/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1OHQ0j4Vscw2aGTDEIheOOz3wyOBljF0L",
+      "title": "Ex12_2_Solved.txt",
+      "url": "https://drive.google.com/file/d/1OHQ0j4Vscw2aGTDEIheOOz3wyOBljF0L/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 12: Information Handling - Review Exercise - MCQs",
+    "description": "Class 9 Mathematics review exercise mcqs for Unit 12: Information Handling. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 12: Information Handling",
+    "chapter_order": 12,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1nCUWZkErtjNYiOodvJODgB4lIpNDnHrH",
+      "title": "rev12_mcqs_light.pdf",
+      "url": "https://drive.google.com/file/d/1nCUWZkErtjNYiOodvJODgB4lIpNDnHrH/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1O7LGD2yL7uK7o42ZKiWGKRJJCjXiaNzc",
+      "title": "rev12_mcqs_dark.pdf",
+      "url": "https://drive.google.com/file/d/1O7LGD2yL7uK7o42ZKiWGKRJJCjXiaNzc/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1_lWUgjGxZeZVNNyJZTS4wJVmTlQfOTzR",
+      "title": "Rev12_MCQs_30.txt",
+      "url": "https://drive.google.com/file/d/1_lWUgjGxZeZVNNyJZTS4wJVmTlQfOTzR/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 12: Information Handling - Exercise 12.1 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 12.1 solved exercise for Unit 12: Information Handling. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 12: Information Handling",
+    "chapter_order": 12,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1IX2sI6epLYtuvueBtq-mHXDUEURWw_4D",
+      "title": "ex12_1_solved_light.pdf",
+      "url": "https://drive.google.com/file/d/1IX2sI6epLYtuvueBtq-mHXDUEURWw_4D/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1pjhgDt7O6LfIj79-ApkYqE52oj9LD10Q",
+      "title": "ex12_1_solved_dark.pdf",
+      "url": "https://drive.google.com/file/d/1pjhgDt7O6LfIj79-ApkYqE52oj9LD10Q/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "11hawcMxdB3FZ9x98fWMh9SHZcd6ANhDD",
+      "title": "Ex12_1_Solved.txt",
+      "url": "https://drive.google.com/file/d/11hawcMxdB3FZ9x98fWMh9SHZcd6ANhDD/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 13: Probability - Exercise 13.2 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 13.2 solved exercise for Unit 13: Probability. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 13: Probability",
+    "chapter_order": 13,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1kOFOd-9KPvZz5lRf-3q03yWTNTFdZ-M3",
+      "title": "Ex13.2_Solved_MathSolved_Light.pdf",
+      "url": "https://drive.google.com/file/d/1kOFOd-9KPvZz5lRf-3q03yWTNTFdZ-M3/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1aWqs_4k-VLW0_72WGyYx2XxHsYBJoeQs",
+      "title": "Ex13.2_Solved_MathSolved_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1aWqs_4k-VLW0_72WGyYx2XxHsYBJoeQs/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1sarGV1sWbB5oxDRPqHxpW91Cr0v7aHfi",
+      "title": "Ex13.2_Solved_MathSolved.txt",
+      "url": "https://drive.google.com/file/d/1sarGV1sWbB5oxDRPqHxpW91Cr0v7aHfi/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 13: Probability - Review Exercise - MCQs",
+    "description": "Class 9 Mathematics review exercise mcqs for Unit 13: Probability. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 13: Probability",
+    "chapter_order": 13,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "10qNmMTUqYUjIFEIf8vtQtvlV-zkzclrp",
+      "title": "ReviewEx13_MCQs30_Light.pdf",
+      "url": "https://drive.google.com/file/d/10qNmMTUqYUjIFEIf8vtQtvlV-zkzclrp/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1gAwJd8i7epHbiQqjLm8AfPyUjfBFXuyW",
+      "title": "ReviewEx13_MCQs30_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1gAwJd8i7epHbiQqjLm8AfPyUjfBFXuyW/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1GUPiHWqvfiocT17E1zZvrxdmnBEAmArA",
+      "title": "ReviewEx13_MCQs30.txt",
+      "url": "https://drive.google.com/file/d/1GUPiHWqvfiocT17E1zZvrxdmnBEAmArA/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 13: Probability - Exercise 13.2 - Diagrams",
+    "description": "Class 9 Mathematics exercise 13.2 diagrams for Unit 13: Probability. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 13: Probability",
+    "chapter_order": 13,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1msOYnaC4dRnWdxkrBvw4q5J_K6iLkGYk",
+      "title": "Ex13.2_Diagrams_Light.pdf",
+      "url": "https://drive.google.com/file/d/1msOYnaC4dRnWdxkrBvw4q5J_K6iLkGYk/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1iGQEtsfTRD4Xi21By1lbrXgPYcRZceWc",
+      "title": "Ex13.2_Diagrams_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1iGQEtsfTRD4Xi21By1lbrXgPYcRZceWc/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1zxrF8Z7b7eSvBKBV_hr0pVBJxzvOb8Tt",
+      "title": "Ex13.2_Diagrams.txt",
+      "url": "https://drive.google.com/file/d/1zxrF8Z7b7eSvBKBV_hr0pVBJxzvOb8Tt/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 13: Probability - Review Exercise - Solved Exercise",
+    "description": "Class 9 Mathematics review exercise solved exercise for Unit 13: Probability. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 13: Probability",
+    "chapter_order": 13,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1Hknl8bmIQPWFv4TXuNW62rp3B5SwBjMg",
+      "title": "ReviewEx13_Solved_MathSolved_Light.pdf",
+      "url": "https://drive.google.com/file/d/1Hknl8bmIQPWFv4TXuNW62rp3B5SwBjMg/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "16Bfodwuva3KKzLgUahfJWIODAp6XeRrf",
+      "title": "ReviewEx13_Solved_MathSolved_Dark.pdf",
+      "url": "https://drive.google.com/file/d/16Bfodwuva3KKzLgUahfJWIODAp6XeRrf/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1sORPP87Bfh1OqgJGNo24ZaHDPYvKvtU-",
+      "title": "ReviewEx13_Solved_MathSolved.txt",
+      "url": "https://drive.google.com/file/d/1sORPP87Bfh1OqgJGNo24ZaHDPYvKvtU-/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 13: Probability - Review Exercise - Diagrams",
+    "description": "Class 9 Mathematics review exercise diagrams for Unit 13: Probability. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 13: Probability",
+    "chapter_order": 13,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1uxLl5tjWAJQfd8NMJWWS5BUE1Xz_1jXr",
+      "title": "ReviewEx13_Diagrams_Light.pdf",
+      "url": "https://drive.google.com/file/d/1uxLl5tjWAJQfd8NMJWWS5BUE1Xz_1jXr/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1z8K7MD5onDN-D2LMGmNoCTMt5vXEzS8K",
+      "title": "ReviewEx13_Diagrams_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1z8K7MD5onDN-D2LMGmNoCTMt5vXEzS8K/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1n6vUJngeaSV54KOK09q5lgUAQAsqUQLH",
+      "title": "ReviewEx13_Diagrams.txt",
+      "url": "https://drive.google.com/file/d/1n6vUJngeaSV54KOK09q5lgUAQAsqUQLH/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 13: Probability - Exercise 13.2 - MCQs",
+    "description": "Class 9 Mathematics exercise 13.2 mcqs for Unit 13: Probability. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 13: Probability",
+    "chapter_order": 13,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1Fyh8-GvybGph1TFLw4Veed1F8ITr1iHX",
+      "title": "Ex13.2_MCQs30_Light.pdf",
+      "url": "https://drive.google.com/file/d/1Fyh8-GvybGph1TFLw4Veed1F8ITr1iHX/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1B_pNwe9eDNFyg0nL5ffpBiJilXj_Qv3B",
+      "title": "Ex13.2_MCQs30_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1B_pNwe9eDNFyg0nL5ffpBiJilXj_Qv3B/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "18fXskbOIBYyKVZYPs2LmJJ-gnSVu21RW",
+      "title": "Ex13.2_MCQs30.txt",
+      "url": "https://drive.google.com/file/d/18fXskbOIBYyKVZYPs2LmJJ-gnSVu21RW/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 13: Probability - Exercise 13.1 - MCQs",
+    "description": "Class 9 Mathematics exercise 13.1 mcqs for Unit 13: Probability. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 13: Probability",
+    "chapter_order": 13,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "mcq",
+    "light": {
+      "id": "1u4z3fDW7t8MJPZCN_HEeEXTgHshlZ0LA",
+      "title": "Ex13.1_MCQs30_Light.pdf",
+      "url": "https://drive.google.com/file/d/1u4z3fDW7t8MJPZCN_HEeEXTgHshlZ0LA/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1rX4SjxH0RFZoTQPySzCRZ9ECpZamyW9k",
+      "title": "Ex13.1_MCQs30_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1rX4SjxH0RFZoTQPySzCRZ9ECpZamyW9k/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1ccmmbjvWypGb9FzMxI3FWaG_j0NiISVV",
+      "title": "Ex13.1_MCQs30.txt",
+      "url": "https://drive.google.com/file/d/1ccmmbjvWypGb9FzMxI3FWaG_j0NiISVV/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 13: Probability - Exercise 13.1 - Diagrams",
+    "description": "Class 9 Mathematics exercise 13.1 diagrams for Unit 13: Probability. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 13: Probability",
+    "chapter_order": 13,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1AE_Sxu-4H-6XS0CL6EempDM64m8gmza3",
+      "title": "Ex13.1_Diagrams_Light.pdf",
+      "url": "https://drive.google.com/file/d/1AE_Sxu-4H-6XS0CL6EempDM64m8gmza3/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1TJmJdikjOoe2kYDAN2ZEdoqwNRM9m0Vd",
+      "title": "Ex13.1_Diagrams_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1TJmJdikjOoe2kYDAN2ZEdoqwNRM9m0Vd/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1V_ZJIeN2ybtBahDX7N0Dxm-0cA-Qtyt5",
+      "title": "Ex13.1_Diagrams.txt",
+      "url": "https://drive.google.com/file/d/1V_ZJIeN2ybtBahDX7N0Dxm-0cA-Qtyt5/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  },
+  {
+    "title": "Mathematics - Unit 13: Probability - Exercise 13.1 - Solved Exercise",
+    "description": "Class 9 Mathematics exercise 13.1 solved exercise for Unit 13: Probability. Includes matching light and dark PDF versions with a companion text file for search and AI features.",
+    "subject_slug": "mathematics",
+    "chapter_label": "Unit 13: Probability",
+    "chapter_order": 13,
+    "book_title": "Class 9 Mathematics Notes (Punjab)",
+    "content_section": "reading",
+    "light": {
+      "id": "1ROrJl414_CTrH9kTZMxIx2PXj7RtkCZI",
+      "title": "Ex13.1_Solved_MathSolved_Light.pdf",
+      "url": "https://drive.google.com/file/d/1ROrJl414_CTrH9kTZMxIx2PXj7RtkCZI/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "dark": {
+      "id": "1273Mmi_gpuQD91PRyJXqR2bFozto87ri",
+      "title": "Ex13.1_Solved_MathSolved_Dark.pdf",
+      "url": "https://drive.google.com/file/d/1273Mmi_gpuQD91PRyJXqR2bFozto87ri/view?usp=drivesdk",
+      "mime": "application/pdf"
+    },
+    "text": {
+      "id": "1SFCPft1jPUnGO1gQpOTqpMycpg2PRSR7",
+      "title": "Ex13.1_Solved_MathSolved.txt",
+      "url": "https://drive.google.com/file/d/1SFCPft1jPUnGO1gQpOTqpMycpg2PRSR7/view?usp=drivesdk",
+      "mime": "text/plain"
+    }
+  }
+]

@@ -98,9 +98,11 @@ const NAV_GROUPS = [
 type DashboardSidebarProps = {
   mobileOpen?: boolean;
   onMobileOpenChange?: (open: boolean) => void;
+  desktopOpen?: boolean;
+  onDesktopOpenChange?: (open: boolean) => void;
 };
 
-export function DashboardSidebar({ mobileOpen: controlledMobileOpen, onMobileOpenChange }: DashboardSidebarProps = {}) {
+export function DashboardSidebar({ mobileOpen: controlledMobileOpen, onMobileOpenChange, desktopOpen = true, onDesktopOpenChange }: DashboardSidebarProps = {}) {
   const pathname = usePathname();
   const { user, signOut } = useAuth();
   const [uncontrolledMobileOpen, setUncontrolledMobileOpen] = useState(false);
@@ -139,12 +141,19 @@ export function DashboardSidebar({ mobileOpen: controlledMobileOpen, onMobileOpe
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       {/* Logo */}
-      <Link href="/" className="flex items-center gap-2.5 p-5 border-b border-sidebar-border shrink-0 hover:opacity-80 transition-opacity">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
-          <BookOpen className="w-4 h-4 text-white" />
-        </div>
-        <span className="font-bold text-sidebar-foreground">ilm <span className="text-violet-400">AI</span></span>
-      </Link>
+      <div className="flex items-center justify-between border-b border-sidebar-border p-5">
+        <Link href="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
+            <BookOpen className="w-4 h-4 text-white" />
+          </div>
+          <span className="font-bold text-sidebar-foreground">ilm <span className="text-violet-400">AI</span></span>
+        </Link>
+        {onDesktopOpenChange && (
+          <button type="button" onClick={() => onDesktopOpenChange(false)} className="hidden rounded-lg p-1.5 text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground lg:inline-flex" aria-label="Close sidebar" title="Close sidebar">
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
 
       {/* Nav groups */}
       <nav ref={navRef} className="flex-1 p-3 overflow-y-auto space-y-4">
@@ -208,7 +217,7 @@ export function DashboardSidebar({ mobileOpen: controlledMobileOpen, onMobileOpe
   return (
     <>
       {/* Desktop */}
-      <aside className="bg-sidebar border-sidebar-border fixed top-0 left-0 z-40 hidden h-dvh w-64 flex-col overflow-hidden border-r lg:flex">
+      <aside className={`bg-sidebar border-sidebar-border fixed top-0 left-0 z-40 hidden h-dvh w-64 flex-col overflow-hidden border-r transition-transform duration-300 lg:flex ${desktopOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <SidebarContent />
       </aside>
 

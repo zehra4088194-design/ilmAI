@@ -1,19 +1,19 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, ArrowRight, Brain, FileText, NotebookPen, Sparkles, Target } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookMarked, FileQuestion, FileText, ListChecks } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
-import { BOARDS, GRADE_LEVELS } from '@/lib/constants';
 import { Card, CardContent } from '@/components/ui/card';
 import { LectureGrid, type StudyLecture } from '@/components/features/study/LectureGrid';
+import { LIBRARY_SECTIONS } from '@/lib/resources/catalog';
+import { loadStudyCatalogResources } from '@/lib/resources/study-catalog';
 import type { Board, GradeLevel } from '@/types';
 
-function getBoardMeta(board?: string | null) {
-  return BOARDS.find((item) => item.value === board);
-}
-
-function getGradeMeta(grade?: string | null) {
-  return GRADE_LEVELS.find((item) => item.value === grade);
-}
+const SECTION_ICONS = {
+  reading: BookMarked,
+  mcq: ListChecks,
+  short: FileQuestion,
+  long: FileText,
+};
 
 export default async function ChapterDetailPage({
   params,
@@ -22,30 +22,20 @@ export default async function ChapterDetailPage({
 }) {
   const { slug, chapterSlug } = await params;
   const supabase = await createClient();
-
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   let activeBoard: Board | null = null;
   let activeGrade: GradeLevel | null = null;
-
   if (user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('board, grade_level')
-      .eq('id', user.id)
-      .single();
-
+    const { data: profile } = await supabase.from('profiles').select('board, grade_level').eq('id', user.id).single();
     activeBoard = (profile?.board as Board | null) ?? null;
     activeGrade = (profile?.grade_level as GradeLevel | null) ?? null;
   }
 
   const { data: subject } = await supabase.from('subjects').select('*').eq('slug', slug).single();
   if (!subject) notFound();
-  const subjectBoardVisible = !activeBoard || !Array.isArray(subject.boards) || subject.boards.length === 0 || subject.boards.includes(activeBoard);
-  const subjectGradeVisible = !activeGrade || !Array.isArray(subject.grade_levels) || subject.grade_levels.length === 0 || subject.grade_levels.includes(activeGrade);
-  if (!subjectBoardVisible || !subjectGradeVisible) notFound();
 
   const { data: rawChapters } = await supabase
     .from('chapters')
@@ -54,233 +44,127 @@ export default async function ChapterDetailPage({
     .eq('is_active', true)
     .order('order_index');
 
-  const chapters = (rawChapters || []).filter((item) => {
-    const boardVisible = !activeBoard || !Array.isArray(item.boards) || item.boards.length === 0 || item.boards.includes(activeBoard);
+  const chapters = (rawChapters || []).filter((chapter) => {
+    const boardVisible =
+      !activeBoard ||
+      !Array.isArray(chapter.boards) ||
+      chapter.boards.length === 0 ||
+      chapter.boards.includes(activeBoard);
     const subjectHasMultipleGrades = Array.isArray(subject.grade_levels) && subject.grade_levels.length > 1;
-    const chapterHasGrades = Array.isArray(item.grade_levels) && item.grade_levels.length > 0;
-    const gradeVisible = !activeGrade || (chapterHasGrades ? item.grade_levels.includes(activeGrade) : !subjectHasMultipleGrades);
+    const chapterHasGrades = Array.isArray(chapter.grade_levels) && chapter.grade_levels.length > 0;
+    const gradeVisible =
+      !activeGrade || (chapterHasGrades ? chapter.grade_levels.includes(activeGrade) : !subjectHasMultipleGrades);
     return boardVisible && gradeVisible;
   });
 
-  const chapterIndex = chapters.findIndex((item) => item.slug === chapterSlug);
+  const chapterIndex = chapters.findIndex((chapter) => chapter.slug === chapterSlug);
   if (chapterIndex === -1) notFound();
-
   const chapter = chapters[chapterIndex]!;
   const previousChapter = chapterIndex > 0 ? chapters[chapterIndex - 1] : null;
   const nextChapter = chapterIndex < chapters.length - 1 ? chapters[chapterIndex + 1] : null;
-  const boardMeta = getBoardMeta(activeBoard);
-  const gradeMeta = getGradeMeta(activeGrade);
-  const { data: lectures } = await supabase
-    .from('lectures')
-    .select('id, title, youtube_url, thumbnail_url, kind, exercise_number, duration_seconds')
-    .eq('chapter_id', chapter.id)
-    .order('order_index', { ascending: true })
-    .order('created_at', { ascending: true });
 
-  const quickActions = [
-    {
-      href: '/ai-tutor',
-      title: 'Learn with AI Tutor',
-      description: 'Open the tutor to understand this chapter step by step.',
-      icon: <Brain className="h-5 w-5 text-violet-300" />,
-    },
-    {
-      href: '/practice',
-      title: 'Practice MCQs',
-      description: 'Strengthen your understanding with objective practice after reading the concepts.',
-      icon: <Target className="h-5 w-5 text-cyan-300" />,
-    },
-    {
-      href: '/notes',
-      title: 'Create notes',
-      description: 'Save important formulas, definitions, and pitfalls in your notes.',
-      icon: <NotebookPen className="h-5 w-5 text-emerald-300" />,
-    },
-    {
-      href: '/full-test',
-      title: 'Full test readiness',
-      description: 'Check your understanding with a mixed subjective and MCQ test after covering the chapter.',
-      icon: <FileText className="h-5 w-5 text-amber-300" />,
-    },
-  ];
+  const [{ data: lectures }, studyResources] = await Promise.all([
+    supabase
+      .from('lectures')
+      .select('id, title, youtube_url, thumbnail_url, kind, exercise_number, duration_seconds')
+      .eq('chapter_id', chapter.id)
+      .order('order_index', { ascending: true })
+      .order('created_at', { ascending: true }),
+    loadStudyCatalogResources(supabase, {
+      subjectId: subject.id,
+      subjectName: subject.name,
+      chapterId: chapter.id,
+      profile: { board: activeBoard, grade_level: activeGrade },
+    }),
+  ]);
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
-      <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-        <Link href="/study" className="transition-colors hover:text-foreground">
-          Study
-        </Link>
-        <span>/</span>
-        <Link href={`/study/${subject.slug}`} className="transition-colors hover:text-foreground">
-          {subject.name}
-        </Link>
-        <span>/</span>
-        <span className="text-foreground">{chapter.name}</span>
-      </div>
-
+    <div className="mx-auto max-w-4xl space-y-6">
       <Link
         href={`/study/${subject.slug}`}
-        className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+        className="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 text-sm font-medium"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to {subject.name}
+        {subject.name}
       </Link>
 
-      <section className="overflow-hidden rounded-[2rem] border border-border/60 bg-gradient-to-br from-background via-violet-500/10 to-cyan-500/10">
-        <div className="grid gap-6 px-6 py-7 md:grid-cols-[1.3fr_0.9fr] md:px-8">
-          <div className="space-y-4">
-            <div className="flex flex-wrap gap-2 text-xs font-semibold">
-              <span className="rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1 text-violet-300">
-                Chapter {chapterIndex + 1} of {chapters.length}
-              </span>
-              {boardMeta && (
-                <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-cyan-300">
-                  {boardMeta.label}
-                </span>
-              )}
-              {gradeMeta && (
-                <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-emerald-300">
-                  {gradeMeta.label}
-                </span>
-              )}
-            </div>
+      <header>
+        <p className="text-sm font-semibold text-violet-300">
+          Chapter {chapterIndex + 1} of {chapters.length}
+        </p>
+        <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">{chapter.name}</h1>
+        <p className="text-muted-foreground mt-2 text-sm">What would you like to study?</p>
+      </header>
 
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-                {subject.name}
-              </p>
-              <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">{chapter.name}</h1>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground md:text-base">
-                {chapter.description ||
-                  'This chapter now has a dedicated space where you can quickly choose your next study action.'}
-              </p>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
-                <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Topics</p>
-                <p className="mt-2 text-2xl font-bold">{chapter.total_topics || 0}</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
-                <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Questions</p>
-                <p className="mt-2 text-2xl font-bold">{chapter.total_questions || 0}</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
-                <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Position</p>
-                <p className="mt-2 text-sm font-semibold text-foreground/90">
-                  {chapterIndex + 1} / {chapters.length}
+      <div className="grid grid-cols-2 gap-3">
+        {LIBRARY_SECTIONS.map((section) => {
+          const Icon = SECTION_ICONS[section.value];
+          const files = studyResources.filter((resource) => resource.content_section === section.value);
+          const available = files.length > 0;
+          const card = (
+            <Card
+              className={`border-border/60 bg-card/80 h-full transition-colors ${
+                available ? 'group-hover:border-violet-500/40' : 'opacity-55'
+              }`}
+            >
+              <CardContent className="flex min-h-32 flex-col p-4">
+                <Icon className="h-6 w-6 text-violet-300" />
+                <h2 className="mt-3 font-semibold">{section.title}</h2>
+                <p className="text-muted-foreground mt-1 text-xs">
+                  {available ? `${files.length} ${files.length === 1 ? 'file' : 'files'}` : 'Not available'}
                 </p>
-              </div>
-            </div>
-          </div>
+                {available && (
+                  <ArrowRight className="mt-auto h-4 w-4 self-end text-violet-300 transition-transform group-hover:translate-x-1" />
+                )}
+              </CardContent>
+            </Card>
+          );
 
-          <div className="rounded-[1.75rem] border border-white/10 bg-black/10 p-5">
-            <div className="flex items-center gap-2 text-sm font-semibold text-violet-300">
-              <Sparkles className="h-4 w-4" />
-              Recommended flow
-            </div>
-            <div className="mt-4 space-y-3">
-              {[
-                'Understand the concept first and clarify the chapter vocabulary.',
-                'Then use MCQs or short-question practice to find weak areas.',
-                'Finish with notes or a test to strengthen retention.',
-              ].map((step, index) => (
-                <div key={step} className="flex gap-3 rounded-2xl border border-white/10 bg-background/40 p-4">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-sm font-bold text-violet-300">
-                    {index + 1}
-                  </div>
-                  <p className="text-sm leading-6 text-muted-foreground">{step}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+          return available ? (
+            <Link
+              key={section.value}
+              href={`/library/${subject.slug}/${chapter.slug}/${section.slug}?type=notes`}
+              className="group block"
+            >
+              {card}
+            </Link>
+          ) : (
+            <div key={section.value}>{card}</div>
+          );
+        })}
+      </div>
 
-      {(lectures?.length ?? 0) > 0 && (
-        <section className="space-y-4">
-          <div>
-            <h2 className="text-2xl font-bold">Lectures</h2>
-            <p className="text-sm text-muted-foreground">
-              Watch this chapter&apos;s videos directly inside the site.
-            </p>
-          </div>
+      {(lectures?.length || 0) > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-xl font-bold">Lectures</h2>
           <LectureGrid lectures={(lectures || []) as StudyLecture[]} />
         </section>
       )}
 
-      <section className="space-y-4">
-        <div>
-          <h2 className="text-2xl font-bold">Quick study actions</h2>
-          <p className="text-sm text-muted-foreground">
-            The next logical step should be immediately available when you open a chapter.
-          </p>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          {quickActions.map((action) => (
-            <Link key={action.title} href={action.href} className="group block h-full">
-              <Card className="h-full border-border/60 bg-card/80 transition-all duration-200 hover:-translate-y-1 hover:border-violet-500/35 hover:shadow-[0_16px_48px_-28px_rgba(109,40,217,0.55)]">
-                <CardContent className="flex h-full flex-col p-5">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-black/10">
-                    {action.icon}
-                  </div>
-                  <h3 className="mt-4 text-lg font-semibold">{action.title}</h3>
-                  <p className="mt-2 flex-1 text-sm leading-6 text-muted-foreground">
-                    {action.description}
-                  </p>
-                  <div className="mt-4 flex items-center justify-between text-sm font-semibold text-violet-300">
-                    <span>Open</span>
-                    <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="grid gap-4 md:grid-cols-2">
-        <Card className="border-border/60 bg-card/80">
-          <CardContent className="p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">Previous</p>
-            {previousChapter ? (
-              <Link
-                href={`/study/${subject.slug}/${previousChapter.slug}`}
-                className="mt-3 flex items-center justify-between rounded-2xl border border-border/60 bg-muted/20 p-4 transition-colors hover:border-violet-500/30"
-              >
-                <div>
-                  <p className="font-semibold">{previousChapter.name}</p>
-                  <p className="text-sm text-muted-foreground">Chapter {chapterIndex}</p>
-                </div>
-                <ArrowLeft className="h-4 w-4 text-violet-300" />
-              </Link>
-            ) : (
-              <p className="mt-3 text-sm text-muted-foreground">This is the first visible chapter.</p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/60 bg-card/80">
-          <CardContent className="p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">Next</p>
-            {nextChapter ? (
-              <Link
-                href={`/study/${subject.slug}/${nextChapter.slug}`}
-                className="mt-3 flex items-center justify-between rounded-2xl border border-border/60 bg-muted/20 p-4 transition-colors hover:border-violet-500/30"
-              >
-                <div>
-                  <p className="font-semibold">{nextChapter.name}</p>
-                  <p className="text-sm text-muted-foreground">Chapter {chapterIndex + 2}</p>
-                </div>
-                <ArrowRight className="h-4 w-4 text-violet-300" />
-              </Link>
-            ) : (
-              <p className="mt-3 text-sm text-muted-foreground">This is the last visible chapter.</p>
-            )}
-          </CardContent>
-        </Card>
-      </section>
+      <nav className="border-border/60 flex items-center justify-between gap-3 border-t pt-5">
+        {previousChapter ? (
+          <Link
+            href={`/study/${subject.slug}/${previousChapter.slug}`}
+            className="text-muted-foreground hover:text-foreground inline-flex min-w-0 items-center gap-2 text-sm font-medium"
+          >
+            <ArrowLeft className="h-4 w-4 shrink-0" />
+            <span className="truncate">Previous</span>
+          </Link>
+        ) : (
+          <span />
+        )}
+        {nextChapter ? (
+          <Link
+            href={`/study/${subject.slug}/${nextChapter.slug}`}
+            className="text-muted-foreground hover:text-foreground inline-flex min-w-0 items-center gap-2 text-sm font-medium"
+          >
+            <span className="truncate">Next chapter</span>
+            <ArrowRight className="h-4 w-4 shrink-0" />
+          </Link>
+        ) : (
+          <span className="text-muted-foreground text-sm">Last chapter</span>
+        )}
+      </nav>
     </div>
   );
 }

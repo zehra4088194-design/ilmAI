@@ -54,6 +54,7 @@ export type PresentationGenerateInput = {
   audienceLevel?: string;
   language?: string;
   outputStyle?: string;
+  theme?: PresentationTheme;
   mode?: PresentationGenerateMode;
 };
 

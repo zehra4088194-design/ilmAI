@@ -8,21 +8,21 @@ const KINDS = new Set<ProtectedResourceKind>(['library', 'past-paper', 'college-
 export async function GET(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ status: 'error', error: 'Login required hai' }, { status: 401 });
+  if (!user) return NextResponse.json({ status: 'error', error: 'Authentication is required' }, { status: 401 });
 
   const kind = req.nextUrl.searchParams.get('kind') as ProtectedResourceKind;
   const id = req.nextUrl.searchParams.get('id');
-  if (!KINDS.has(kind) || !id) return NextResponse.json({ status: 'error', error: 'Resource reference invalid hai' }, { status: 400 });
+  if (!KINDS.has(kind) || !id) return NextResponse.json({ status: 'error', error: 'The resource reference is invalid' }, { status: 400 });
 
   const resource = await getResourceForProcessing(kind, id);
-  if (!resource) return NextResponse.json({ status: 'error', error: 'Resource nahi mila' }, { status: 404 });
+  if (!resource) return NextResponse.json({ status: 'error', error: 'The resource was not found.' }, { status: 404 });
   const { data, error } = await (supabase
     .from('resource_mcq_sets' as any)
     .select('questions, status, generated_at')
     .eq('resource_kind', kind)
     .eq('resource_id', id)
     .maybeSingle() as any);
-  if (error) return NextResponse.json({ status: 'error', error: 'MCQs load nahi huay' }, { status: 500 });
+  if (error) return NextResponse.json({ status: 'error', error: 'MCQs could not be loaded.' }, { status: 500 });
   if (!data || data.status !== 'ready') {
     return NextResponse.json({ status: 'processing', data: { questions: [], status: data?.status || 'queued' } }, { status: 202 });
   }

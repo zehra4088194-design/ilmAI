@@ -59,7 +59,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (body.file_type !== undefined) update.file_type = body.file_type;
 
   if (Object.keys(update).length === 0) {
-    return NextResponse.json({ error: 'Koi field update ke liye nahi diya' }, { status: 400 });
+    return NextResponse.json({ error: 'No fields were provided for update' }, { status: 400 });
   }
 
   let adminClient;
@@ -80,9 +80,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   if (error) {
     console.error('library resource update error:', error);
-    return NextResponse.json({ error: `Resource update nahi hua: ${error.message}` }, { status: 500 });
+    return NextResponse.json({ error: `Resource could not be updated: ${error.message}` }, { status: 500 });
   }
-  if (!data) return NextResponse.json({ error: 'Resource nahi mila' }, { status: 404 });
+  if (!data) return NextResponse.json({ error: 'The resource was not found.' }, { status: 404 });
 
   const sourceChanged = body.light_file_url !== undefined || body.drive_url !== undefined;
   const needsGeneratedContext =
@@ -93,7 +93,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       await queueResourceContextProcessing('library', id);
     } catch (queueError) {
       processingWarning =
-        queueError instanceof Error ? queueError.message : 'Automatic OCR queue start nahi ho saki.';
+        queueError instanceof Error ? queueError.message : 'The automatic OCR queue could not be started.';
       console.error('library context requeue error:', queueError);
     }
   }
@@ -124,7 +124,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
   if (error) {
     console.error('library resource delete error:', error);
-    return NextResponse.json({ error: `Resource delete nahi hua: ${error.message}` }, { status: 500 });
+    return NextResponse.json({ error: `Resource could not be deleted: ${error.message}` }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });

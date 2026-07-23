@@ -30,9 +30,9 @@ function formatFileSize(kb: number) {
  * Shared file attachments between a parent and their linked student — fee
  * receipts, notes, homework photos, report cards, etc. Used on both the
  * Parent Dashboard (per student card) and the student's Settings > Parent
- * Link tab, right next to ParentMessageThread. Files live in the private
- * `parent-attachments` Supabase Storage bucket and are only ever accessed
- * via short-lived signed URLs — nothing here is publicly listable.
+ * Link tab, right next to ParentMessageThread. Files live in private R2
+ * storage (with legacy Supabase Storage support) and are only accessed
+ * through an authenticated API route.
  */
 export function ParentAttachments({
   linkId,
@@ -113,7 +113,7 @@ export function ParentAttachments({
       }
 
       setAttachments((prev) => [json.data, ...prev]);
-      toast.success('File share ho gayi!');
+      toast.success('File shared.');
     } catch {
       toast.error('Upload failed. Please try again.');
     } finally {
@@ -197,7 +197,7 @@ export function ParentAttachments({
           <Upload className="h-3.5 w-3.5" /> Upload File
         </Button>
         <p className="text-muted-foreground mt-1.5 text-center text-[10px]">
-          Shared files remain available for 30 days.
+          Shared files remain available in secure archive storage.
         </p>
       </div>
     </div>

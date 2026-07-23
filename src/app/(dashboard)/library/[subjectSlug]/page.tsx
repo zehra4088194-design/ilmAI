@@ -9,6 +9,7 @@ import { AdSenseBanner } from '@/components/features/ads/AdSenseBanner';
 import {
   buildCatalogSearch,
   isCatalogResourceVisible,
+  normalizeLegacyCatalogResource,
   parseLibraryResourceType,
 } from '@/lib/resources/catalog';
 
@@ -28,7 +29,9 @@ export default async function LibraryBookPage({
   } = await supabase.auth.getUser();
 
   const [{ data: profile }, subjectResult] = await Promise.all([
-    user ? supabase.from('profiles').select('board, grade_level').eq('id', user.id).single() : Promise.resolve({ data: null }),
+    user
+      ? supabase.from('profiles').select('board, grade_level').eq('id', user.id).single()
+      : Promise.resolve({ data: null }),
     subjectSlug === 'general'
       ? Promise.resolve({ data: null })
       : supabase.from('subjects').select('id, name, slug, color').eq('slug', subjectSlug).maybeSingle(),
@@ -38,17 +41,30 @@ export default async function LibraryBookPage({
 
   let resourcesQuery = (supabase.from('library_resources') as any)
     .select(
-      'id, title, description, book_title, content_section, has_context_text, resource_type, subject_id, chapter_id, board, grade_level, chapters(id, name, slug, order_index)'
+      'id, title, description, book_title, content_section, has_context_text, resource_type, drive_url, light_file_url, dark_file_url, subject_id, chapter_id, board, grade_level, chapters(id, name, slug, order_index)'
     )
     .eq('resource_type', resourceType)
     .order('created_at', { ascending: true });
   resourcesQuery = subject ? resourcesQuery.eq('subject_id', subject.id) : resourcesQuery.is('subject_id', null);
   if (requestedBook) resourcesQuery = resourcesQuery.eq('book_title', requestedBook);
-  const { data: resources } = await resourcesQuery;
+  const catalogResult = await resourcesQuery;
+  let resources = catalogResult.data;
+  if (catalogResult.error) {
+    console.warn('Structured library catalog is not migrated yet; using the safe legacy subject fallback.');
+    let fallbackQuery = (supabase.from('library_resources') as any)
+      .select(
+        'id, title, description, context_text_url, resource_type, drive_url, light_file_url, dark_file_url, subject_id, chapter_id, board, grade_level, chapters(id, name, slug, order_index)'
+      )
+      .eq('resource_type', resourceType)
+      .order('created_at', { ascending: true });
+    fallbackQuery = subject ? fallbackQuery.eq('subject_id', subject.id) : fallbackQuery.is('subject_id', null);
+    const fallbackResult = await fallbackQuery;
+    resources = (fallbackResult.data || [])
+      .map((resource: any) => normalizeLegacyCatalogResource({ ...resource, subjects: subject }))
+      .filter((resource: any) => !requestedBook || resource.book_title === requestedBook);
+  }
 
-  const visibleResources = (resources || []).filter((resource: any) =>
-    isCatalogResourceVisible(resource, profile)
-  );
+  const visibleResources = (resources || []).filter((resource: any) => isCatalogResourceVisible(resource, profile));
   const bookTitle =
     requestedBook ||
     visibleResources[0]?.book_title ||
@@ -82,11 +98,14 @@ export default async function LibraryBookPage({
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
-      <Link href={`/library?type=${resourceType}`} className="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 text-sm font-medium">
+      <Link
+        href={`/library?type=${resourceType}`}
+        className="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 text-sm font-medium"
+      >
         <ArrowLeft className="h-4 w-4" /> Back to library
       </Link>
 
-      <section className="border-border/70 from-primary/15 via-card to-cyan-500/10 overflow-hidden rounded-3xl border bg-gradient-to-br p-5 sm:p-7">
+      <section className="border-border/70 from-primary/15 via-card overflow-hidden rounded-3xl border bg-gradient-to-br to-cyan-500/10 p-5 sm:p-7">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
             <div className="mb-3 flex flex-wrap gap-2">
@@ -94,7 +113,7 @@ export default async function LibraryBookPage({
               <Badge variant="outline">{resourceType === 'notes' ? 'Notes collection' : 'Text book'}</Badge>
             </div>
             <h1 className="text-2xl font-bold tracking-tight sm:text-4xl">{bookTitle}</h1>
-            <p className="text-muted-foreground mt-2">Ab chapter select karein. Files agle level par type ke hisaab se khulengi.</p>
+            <p className="text-muted-foreground mt-2">Select a chapter to view its files organized by content type.</p>
           </div>
           <div className="grid shrink-0 grid-cols-2 gap-2">
             <div className="border-border/60 bg-background/50 rounded-2xl border p-4 text-center">
@@ -129,9 +148,18 @@ export default async function LibraryBookPage({
                     <div className="min-w-0 flex-1">
                       <h2 className="text-lg font-semibold">{chapter.name}</h2>
                       <div className="text-muted-foreground mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs">
-                        <span className="inline-flex items-center gap-1"><FileText className="h-3.5 w-3.5" />{chapter.resources.length} files</span>
-                        <span className="inline-flex items-center gap-1"><Layers3 className="h-3.5 w-3.5" />{sections.size} sections</span>
-                        <span className="inline-flex items-center gap-1"><BookOpen className="h-3.5 w-3.5" />{contextCount} AI text</span>
+                        <span className="inline-flex items-center gap-1">
+                          <FileText className="h-3.5 w-3.5" />
+                          {chapter.resources.length} files
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <Layers3 className="h-3.5 w-3.5" />
+                          {sections.size} sections
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <BookOpen className="h-3.5 w-3.5" />
+                          {contextCount} AI text
+                        </span>
                       </div>
                     </div>
                     <ArrowRight className="text-primary mt-1 h-4 w-4 shrink-0 transition-transform group-hover:translate-x-1" />

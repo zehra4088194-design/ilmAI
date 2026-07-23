@@ -49,7 +49,7 @@ export function GuessPaperClient({
 
   const generate = async () => {
     if (!selectedSubject) {
-      toast.error('Subject select karo');
+      toast.error('Select a subject.');
       return;
     }
     setLoading(true);
@@ -68,7 +68,7 @@ export function GuessPaperClient({
       }
       setResult(json.data);
     } catch {
-      toast.error('Kuch ghalat ho gaya. Dobara try karo.');
+      toast.error('Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -88,10 +88,10 @@ export function GuessPaperClient({
         body: JSON.stringify({ text: JSON.stringify(result, null, 2) }),
       });
       const json = await response.json();
-      if (!response.ok || json.status === 'error') throw new Error(json.error || 'Summary generate nahi hui.');
+      if (!response.ok || json.status === 'error') throw new Error(json.error || 'The summary could not be generated.');
       setSummary(json.data.summary);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Summary generate nahi hui.');
+      toast.error(error instanceof Error ? error.message : 'The summary could not be generated.');
     } finally {
       setSummaryLoading(false);
     }
@@ -176,7 +176,7 @@ export function GuessPaperClient({
       {/* Loading */}
       {loading && (
         <div className="py-12 text-center">
-          <BrandLoader label="AI predict kar raha hai..." />
+          <BrandLoader label="AI is generating predictions..." />
         </div>
       )}
 
@@ -293,7 +293,7 @@ export function GuessPaperClient({
                 <div>
                   <p className="font-semibold">AI Revision Summary</p>
                   <p className="text-muted-foreground text-xs">
-                    Guess paper ke important topics aur exam strategy points mein.
+                    Important guess-paper topics and exam strategy in clear points.
                   </p>
                 </div>
                 {isFreeTier ? (
@@ -320,7 +320,7 @@ export function GuessPaperClient({
 
           <Button variant="outline" className="w-full" onClick={generate} loading={loading}>
             <Sparkles className="h-4 w-4" />
-            Dobara Generate Karo
+            Regenerate
           </Button>
         </motion.div>
       )}

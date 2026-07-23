@@ -102,10 +102,7 @@ export interface CollegeResource {
   created_at: string;
 }
 
-export type CollegeResourceMetadata = Omit<
-  CollegeResource,
-  'uploaded_by' | 'file_url' | 'light_file_url' | 'dark_file_url' | 'context_text_url'
->;
+export type CollegeResourceMetadata = Omit<CollegeResource, 'uploaded_by' | 'context_text_url'>;
 
 /** The current student's relationship to the College Portal (sidebar / browse grid). */
 export type StudentCollegeState =

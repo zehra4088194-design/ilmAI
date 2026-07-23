@@ -52,7 +52,7 @@ export function UserManagementTable() {
       const json = await res.json();
       setUsers(json.users || []);
     } catch {
-      toast.error('Users load nahi ho sake');
+      toast.error('Users could not be loaded.');
     } finally {
       setLoading(false);
     }
@@ -68,7 +68,7 @@ export function UserManagementTable() {
 
   const grant = async (user: AdminUser, selection: GrantSelection) => {
     if (selection.tier !== 'FREE' && !selection.institutionName.trim()) {
-      toast.error('Paid plan ke liye school/college ka naam zaroori hai');
+      toast.error('A school or college name is required for a paid plan.');
       return;
     }
     const actionId = `${user.id}:${selection.tier}:${selection.duration}`;
@@ -86,15 +86,15 @@ export function UserManagementTable() {
         }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Update fail ho gaya');
+      if (!res.ok) throw new Error(json.error || 'The update failed.');
       toast.success(
         selection.tier === 'FREE'
-          ? 'User Free plan par revert ho gaya'
-          : `User ko ${selection.tier} ${DURATION_LABELS[selection.duration]} mil gaya`
+          ? 'The user was moved back to the Free plan.'
+          : `${selection.tier} access granted for ${DURATION_LABELS[selection.duration]}`
       );
       await load(query);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Update fail ho gaya');
+      toast.error(error instanceof Error ? error.message : 'The update failed.');
     } finally {
       setActingOn(null);
     }
@@ -129,7 +129,7 @@ export function UserManagementTable() {
       <div className="relative max-w-sm">
         <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
         <Input
-          placeholder="Username, email, naam ya school se search karo..."
+          placeholder="Search by username, email, name, or school..."
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           className="pl-9"
@@ -160,7 +160,7 @@ export function UserManagementTable() {
               ) : users.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="text-muted-foreground p-6 text-center">
-                    Koi user nahi mila
+                    No users found.
                   </td>
                 </tr>
               ) : (

@@ -40,16 +40,16 @@ export async function POST(req: NextRequest) {
       : kind === 'library' || kind === 'past-paper'
         ? await getPublicResource(kind, body.id, mode)
         : null;
-    if (!resource) return NextResponse.json({ error: 'Resource available nahi hai.' }, { status: 404 });
+    if (!resource) return NextResponse.json({ error: 'Resource is not available.' }, { status: 404 });
     if (purpose === 'offline') {
       const settings = await getPlatformSettings();
       if (!getPlanFromSettings(settings, resource.tier).access.downloadPDF) {
-        return NextResponse.json({ error: 'Offline save Pro/Elite mein available hai.' }, { status: 403 });
+        return NextResponse.json({ error: 'Offline save is available on Pro and Elite plans.' }, { status: 403 });
       }
     }
 
     const remote = await fetchProtectedFile(resource);
-    if (!remote.body) throw new Error('Resource stream empty hai.');
+    if (!remote.body) throw new Error('Resource stream is empty.');
     const remoteContentType = remote.headers.get('content-type')?.toLowerCase() || '';
     const contentType =
       resource.fileType === 'pdf' && (!remoteContentType || remoteContentType === 'application/octet-stream')
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('Protected resource stream failed:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Resource open nahi ho saka.' },
+      { error: error instanceof Error ? error.message : 'The resource could not be opened.' },
       { status: 502 }
     );
   }

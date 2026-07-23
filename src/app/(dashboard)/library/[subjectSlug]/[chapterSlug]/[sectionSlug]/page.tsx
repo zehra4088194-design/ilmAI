@@ -9,6 +9,7 @@ import {
   buildCatalogSearch,
   getLibrarySection,
   isCatalogResourceVisible,
+  normalizeLegacyCatalogResource,
   parseLibraryResourceType,
 } from '@/lib/resources/catalog';
 
@@ -30,7 +31,9 @@ export default async function LibrarySectionPage({
   } = await supabase.auth.getUser();
 
   const [{ data: profile }, subjectResult] = await Promise.all([
-    user ? supabase.from('profiles').select('board, grade_level').eq('id', user.id).single() : Promise.resolve({ data: null }),
+    user
+      ? supabase.from('profiles').select('board, grade_level').eq('id', user.id).single()
+      : Promise.resolve({ data: null }),
     subjectSlug === 'general'
       ? Promise.resolve({ data: null })
       : supabase.from('subjects').select('id, name, slug, color').eq('slug', subjectSlug).maybeSingle(),
@@ -51,7 +54,7 @@ export default async function LibrarySectionPage({
 
   let resourcesQuery = (supabase.from('library_resources') as any)
     .select(
-      'id, title, description, book_title, content_section, has_context_text, resource_type, board, grade_level, file_type, subjects(id, name, slug, color), chapters(id, name, slug, order_index)'
+      'id, title, description, book_title, content_section, has_context_text, resource_type, drive_url, light_file_url, dark_file_url, board, grade_level, file_type, subjects(id, name, slug, color), chapters(id, name, slug, order_index)'
     )
     .eq('resource_type', resourceType)
     .eq('content_section', section.value)
@@ -59,15 +62,39 @@ export default async function LibrarySectionPage({
   resourcesQuery = subject ? resourcesQuery.eq('subject_id', subject.id) : resourcesQuery.is('subject_id', null);
   resourcesQuery = chapter ? resourcesQuery.eq('chapter_id', chapter.id) : resourcesQuery.is('chapter_id', null);
   if (bookTitle) resourcesQuery = resourcesQuery.eq('book_title', bookTitle);
-  const { data: resources } = await resourcesQuery;
+  const catalogResult = await resourcesQuery;
+  let resources = catalogResult.data;
+  if (catalogResult.error) {
+    console.warn('Structured library catalog is not migrated yet; using the safe legacy section fallback.');
+    let fallbackQuery = (supabase.from('library_resources') as any)
+      .select(
+        'id, title, description, context_text_url, resource_type, drive_url, light_file_url, dark_file_url, board, grade_level, file_type, subjects(id, name, slug, color), chapters(id, name, slug, order_index)'
+      )
+      .eq('resource_type', resourceType)
+      .order('title');
+    fallbackQuery = subject ? fallbackQuery.eq('subject_id', subject.id) : fallbackQuery.is('subject_id', null);
+    fallbackQuery = chapter ? fallbackQuery.eq('chapter_id', chapter.id) : fallbackQuery.is('chapter_id', null);
+    const fallbackResult = await fallbackQuery;
+    resources = (fallbackResult.data || [])
+      .map(normalizeLegacyCatalogResource)
+      .filter(
+        (resource: any) =>
+          resource.content_section === section.value && (!bookTitle || resource.book_title === bookTitle)
+      );
+  }
   const visibleResources = (resources || []).filter((resource: any) => isCatalogResourceVisible(resource, profile));
   const resolvedBookTitle =
-    bookTitle || visibleResources[0]?.book_title || `${subject?.name || 'General'} ${resourceType === 'notes' ? 'Notes' : 'Text Book'}`;
+    bookTitle ||
+    visibleResources[0]?.book_title ||
+    `${subject?.name || 'General'} ${resourceType === 'notes' ? 'Notes' : 'Text Book'}`;
   const catalogSearch = buildCatalogSearch(resourceType, resolvedBookTitle);
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
-      <Link href={`/library/${subjectSlug}/${chapterSlug}?${catalogSearch}`} className="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 text-sm font-medium">
+      <Link
+        href={`/library/${subjectSlug}/${chapterSlug}?${catalogSearch}`}
+        className="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 text-sm font-medium"
+      >
         <ArrowLeft className="h-4 w-4" /> Back to file sections
       </Link>
 
@@ -97,6 +124,9 @@ export default async function LibrarySectionPage({
                 subjectName: resource.subjects?.name,
                 subjectColor: resource.subjects?.color,
                 chapterName: resource.chapters?.name,
+                driveUrl: resource.drive_url,
+                lightFileUrl: resource.light_file_url,
+                darkFileUrl: resource.dark_file_url,
               }}
             />
           ))}

@@ -14,7 +14,7 @@ export async function POST() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Login required hai' }, { status: 401 });
+  if (!user) return NextResponse.json({ error: 'Authentication is required' }, { status: 401 });
 
   const metadata = user.user_metadata || {};
   const role = metadata.role === 'parent' ? 'parent' : 'student';

@@ -1,8 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { BookOpen, Camera, CheckCircle2, FileQuestion, ListChecks, Loader2, PenLine, Sparkles, X, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,11 @@ type Chapter = {
   name: string;
 };
 
+type ChapterResource = {
+  id: string;
+  title: string;
+};
+
 type PracticeMode = 'mcq' | 'short' | 'long';
 
 type SubjectiveQuestion = {
@@ -47,17 +52,20 @@ type Evaluation = {
 interface AiPracticeHubProps {
   subjects: Subject[];
   chaptersBySubject: Record<string, Chapter[]>;
+  resourcesByChapter: Record<string, ChapterResource[]>;
 }
 
 const MCQ_COUNTS = [5, 10, 15, 20];
 const SHORT_COUNTS = [3, 5, 8, 10];
 const LONG_COUNTS = [1, 2, 3, 5];
 
-export function AiPracticeHub({ subjects, chaptersBySubject }: AiPracticeHubProps) {
+export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter }: AiPracticeHubProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const updateUser = useAuthStore((state) => state.updateUser);
   const [openSubjectId, setOpenSubjectId] = useState<string | null>(null);
   const [chapterId, setChapterId] = useState<string | null>(null);
+  const [resourceId, setResourceId] = useState<string | null>(null);
   const [mode, setMode] = useState<PracticeMode>('mcq');
   const [count, setCount] = useState(10);
   const [loading, setLoading] = useState(false);
@@ -75,7 +83,18 @@ export function AiPracticeHub({ subjects, chaptersBySubject }: AiPracticeHubProp
   const selectedSubject = subjects.find((subject) => subject.id === openSubjectId) ?? null;
   const chapters = openSubjectId ? chaptersBySubject[openSubjectId] || [] : [];
   const selectedChapter = chapters.find((chapter) => chapter.id === chapterId) ?? null;
+  const chapterResources = chapterId ? resourcesByChapter[chapterId] || [] : [];
   const currentSubjectiveQuestion = subjective?.questions[questionIndex] ?? null;
+
+  useEffect(() => {
+    const subjectId = searchParams.get('subject');
+    const nextChapterId = searchParams.get('chapter');
+    if (!subjectId || !subjects.some((subject) => subject.id === subjectId)) return;
+    setOpenSubjectId(subjectId);
+    if ((chaptersBySubject[subjectId] || []).some((chapter) => chapter.id === nextChapterId)) {
+      setChapterId(nextChapterId);
+    }
+  }, [chaptersBySubject, searchParams, subjects]);
 
   const countOptions = useMemo(() => {
     if (mode === 'short') return SHORT_COUNTS;
@@ -86,6 +105,7 @@ export function AiPracticeHub({ subjects, chaptersBySubject }: AiPracticeHubProp
   function openChapters(subjectId: string) {
     setOpenSubjectId(subjectId);
     setChapterId(null);
+    setResourceId(null);
     setMode('mcq');
     setCount(10);
   }
@@ -109,13 +129,13 @@ export function AiPracticeHub({ subjects, chaptersBySubject }: AiPracticeHubProp
   }
 
   async function startMcq() {
-    if (!openSubjectId || !chapterId) return;
+    if (!resourceId) return;
     setLoading(true);
     try {
       const res = await fetch('/api/ai/generate-quiz', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subjectId: openSubjectId, chapterIds: [chapterId], count, difficulty: 'MEDIUM' }),
+        body: JSON.stringify({ resourceId, count }),
       });
       const json = await res.json();
       if (json.status === 'error') {
@@ -125,7 +145,7 @@ export function AiPracticeHub({ subjects, chaptersBySubject }: AiPracticeHubProp
       sessionStorage.setItem('current-quiz', JSON.stringify(json.data));
       router.push('/mcq/session');
     } catch {
-      toast.error('AI MCQs generate nahi ho sake');
+      toast.error('The saved file MCQs could not be loaded.');
     } finally {
       setLoading(false);
     }
@@ -155,23 +175,19 @@ export function AiPracticeHub({ subjects, chaptersBySubject }: AiPracticeHubProp
       resetSubjectiveAnswer();
       setOpenSubjectId(null);
     } catch {
-      toast.error('Questions generate nahi ho sake');
+      toast.error('Questions could not be generated.');
     } finally {
       setLoading(false);
     }
   }
 
   async function startPractice() {
-    if (mode === 'mcq') {
-      await startMcq();
-    } else {
-      await startSubjective(mode);
-    }
+    await startMcq();
   }
 
   async function checkAnswer() {
     if (!currentSubjectiveQuestion || !answer.trim()) {
-      toast.error('Pehle answer likho ya scan karo');
+      toast.error('Write or scan your answer first.');
       return;
     }
     setChecking(true);
@@ -196,7 +212,7 @@ export function AiPracticeHub({ subjects, chaptersBySubject }: AiPracticeHubProp
       await awardXp(earned);
       if (earned > 0) toast.success(`+${earned} XP`);
     } catch {
-      toast.error('Answer check nahi ho saka');
+      toast.error('The answer could not be checked.');
     } finally {
       setChecking(false);
     }
@@ -240,14 +256,14 @@ export function AiPracticeHub({ subjects, chaptersBySubject }: AiPracticeHubProp
                 <Textarea
                   value={answer}
                   onChange={(e) => setAnswer(e.target.value)}
-                  placeholder="Apna jawab yahan likho..."
+                  placeholder="Write your answer here..."
                   className={cn('min-h-36 pr-12', subjective.type === 'long' && 'min-h-56')}
                 />
                 <div className="absolute right-2 top-2">
                   <ScanUpload
                     onTextExtracted={(text) => setAnswer((prev) => (prev ? `${prev}\n\n${text}` : text))}
                     trigger={
-                      <Button variant="ghost" size="icon-sm" title="Answer scan karo">
+                      <Button variant="ghost" size="icon-sm" title="Scan answer">
                         <Camera className="w-4 h-4" />
                       </Button>
                     }
@@ -260,7 +276,7 @@ export function AiPracticeHub({ subjects, chaptersBySubject }: AiPracticeHubProp
                 </p>
                 <Button variant="gradient" disabled={checking || !answer.trim()} onClick={checkAnswer}>
                   {checking ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                  AI se Check Karo
+                  Check with AI
                 </Button>
               </div>
             </CardContent>
@@ -299,7 +315,7 @@ export function AiPracticeHub({ subjects, chaptersBySubject }: AiPracticeHubProp
                   <h3 className="font-semibold mb-1">{subject.name}</h3>
                   <p className="text-xs text-muted-foreground mb-4">{chaptersBySubject[subject.id]?.length || 0} class chapters</p>
                   <Button variant="gradient" size="sm" className="w-full" onClick={(e) => { e.stopPropagation(); openChapters(subject.id); }}>
-                    <Sparkles className="w-3.5 h-3.5" />AI Testing
+                    <FileQuestion className="w-3.5 h-3.5" />Choose chapter file
                   </Button>
                 </CardContent>
               </Card>
@@ -310,7 +326,7 @@ export function AiPracticeHub({ subjects, chaptersBySubject }: AiPracticeHubProp
               <EmptyState
                 icon={BookOpen}
                 title="No subjects found for your class"
-                description="Profile ki board/class ke mutabiq subjects yahan aate hain. Profile check karo, ya AI Tutor se topic-wise help le lo."
+                description="Subjects appear here based on your profile board and class. Check your profile or ask AI Tutor for topic-specific help."
                 primaryHref="/settings"
                 primaryLabel="Check Profile"
                 secondaryHref="/ai-tutor"
@@ -329,8 +345,8 @@ export function AiPracticeHub({ subjects, chaptersBySubject }: AiPracticeHubProp
               className="w-full max-w-2xl max-h-[86vh] overflow-y-auto rounded-2xl border border-border bg-background p-6 shadow-2xl shadow-black/70" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-5">
                 <div>
-                  <h3 className="font-semibold">{selectedSubject.name} AI Testing Setup</h3>
-                  <p className="text-xs text-muted-foreground">Sirf tumhari selected board/class ke chapters yahan dikh rahe hain.</p>
+                  <h3 className="font-semibold">{selectedSubject.name} Chapter Test</h3>
+                  <p className="text-xs text-muted-foreground">Select a chapter, then choose one of its uploaded source files.</p>
                 </div>
                 <button onClick={() => setOpenSubjectId(null)} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
               </div>
@@ -338,9 +354,9 @@ export function AiPracticeHub({ subjects, chaptersBySubject }: AiPracticeHubProp
               <div className="grid md:grid-cols-[1fr_260px] gap-5">
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">Chapter</p>
-                  <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                     {chapters.map((chapter) => (
-                      <button key={chapter.id} onClick={() => setChapterId(chapter.id)}
+                      <button key={chapter.id} onClick={() => { setChapterId(chapter.id); setResourceId(null); }}
                         className={cn('w-full text-left p-3 rounded-lg border text-sm transition-colors',
                           chapterId === chapter.id ? 'border-violet-500 bg-violet-500/10 text-violet-300' : 'border-border hover:border-violet-500/40')}>
                         {chapter.name}
@@ -350,36 +366,42 @@ export function AiPracticeHub({ subjects, chaptersBySubject }: AiPracticeHubProp
                       <EmptyState
                         icon={ListChecks}
                         title="No chapters for this subject yet"
-                        description="Sirf tumhari selected board/class ke chapters show hote hain. Chapter names add hote hi AI MCQs, short aur long tests yahan ban jayenge."
+                        description="Only chapters for your selected board and class are shown. Once chapters are added, MCQ, short-answer, and long-answer tests will be available here."
                         className="py-8"
                       />
                     )}
                   </div>
+                  {chapterId && (
+                    <div className="mt-4">
+                      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Uploaded chapter file</p>
+                      <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                        {chapterResources.map((resource) => (
+                          <button
+                            key={resource.id}
+                            type="button"
+                            onClick={() => setResourceId(resource.id)}
+                            className={cn('w-full rounded-lg border p-3 text-left text-sm transition-colors', resourceId === resource.id ? 'border-emerald-500 bg-emerald-500/10 text-emerald-300' : 'border-border hover:border-emerald-500/40')}
+                          >
+                            <span className="block truncate font-medium">{resource.title}</span>
+                            <span className="mt-1 block text-xs text-muted-foreground">Saved source text and chapter MCQs</span>
+                          </button>
+                        ))}
+                        {chapterResources.length === 0 && <p className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">No uploaded file is ready for this chapter yet.</p>}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">Mode</p>
-                    <div className="grid gap-2">
-                      {[
-                        { id: 'mcq' as const, label: 'MCQs', icon: ListChecks },
-                        { id: 'short' as const, label: 'Short Q/A', icon: FileQuestion },
-                        { id: 'long' as const, label: 'Long Q/A', icon: PenLine },
-                      ].map((item) => {
-                        const Icon = item.icon;
-                        return (
-                          <button key={item.id} type="button" onClick={() => { setMode(item.id); setCount(item.id === 'long' ? 2 : item.id === 'short' ? 5 : 10); }}
-                            className={cn('flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors',
-                              mode === item.id ? 'border-violet-500 bg-violet-500/10 text-violet-300' : 'border-border text-muted-foreground hover:text-foreground')}>
-                            <Icon className="w-4 h-4" /> {item.label}
-                          </button>
-                        );
-                      })}
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">Test source</p>
+                    <div className="flex items-center gap-2 rounded-lg border border-emerald-500/25 bg-emerald-500/5 px-3 py-3 text-sm text-emerald-300">
+                      <FileQuestion className="h-4 w-4 shrink-0" /> Only saved MCQs from the selected file
                     </div>
                   </div>
 
                   <div>
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">Kitne questions?</p>
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">Number of questions</p>
                     <div className="grid grid-cols-4 gap-2">
                       {countOptions.map((option) => (
                         <button key={option} type="button" onClick={() => setCount(option)}
@@ -391,9 +413,9 @@ export function AiPracticeHub({ subjects, chaptersBySubject }: AiPracticeHubProp
                     </div>
                   </div>
 
-                  <Button variant="gradient" size="lg" className="w-full" disabled={!chapterId || loading} onClick={startPractice}>
+                  <Button variant="gradient" size="lg" className="w-full" disabled={!resourceId || loading} onClick={startPractice}>
                     {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-                    {loading ? 'AI test bana raha hai...' : 'Test Shuru Karo'}
+                    {loading ? 'Preparing saved MCQs...' : 'Start random test'}
                   </Button>
                 </div>
               </div>

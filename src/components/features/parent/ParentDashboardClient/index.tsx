@@ -92,7 +92,7 @@ export function ParentDashboardClient({
         return;
       }
       setInviteCode(json.data.code);
-      toast.success('Parent code ban gaya');
+      toast.success('Parent code generated.');
     } catch {
       toast.error('The code could not be generated.');
     } finally {
@@ -102,13 +102,13 @@ export function ParentDashboardClient({
 
   const copyCode = async () => {
     await navigator.clipboard.writeText(inviteCode);
-    toast.success('Code copy ho gaya');
+    toast.success('Code copied.');
   };
 
   const copyLink = async () => {
     if (!inviteUrl) return;
     await navigator.clipboard.writeText(inviteUrl);
-    toast.success('QR link copy ho gaya');
+    toast.success('QR link copied.');
   };
 
   const getStudentSnapshots = (studentId: string) =>

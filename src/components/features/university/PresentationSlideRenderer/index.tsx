@@ -270,7 +270,7 @@ export function PresentationSlideRenderer({ deck, exportId = 'presentation-expor
   }, [goNext, goPrev]);
 
   if (!slide) {
-    return <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">Presentation data nahi mili.</div>;
+    return <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">Presentation data is unavailable.</div>;
   }
 
   return (

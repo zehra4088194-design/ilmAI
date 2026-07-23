@@ -63,27 +63,27 @@ export function CookieConsent() {
                 )}
               </div>
               <p className="mt-1 text-sm leading-5 text-muted-foreground">
-                Necessary cookies login aur preferences ke liye required hain. Analytics, ads aur daily study emails sirf aapki permission se use honge.
+                Necessary cookies support login and preferences. Analytics, ads, and daily study emails are used only with your permission.
               </p>
 
               {customizing && (
                 <div className="mt-4 space-y-3 rounded-lg border border-border bg-muted/20 p-3">
-                  <PreferenceRow label="Necessary" description="Login, security, language aur core app state." checked disabled />
+                  <PreferenceRow label="Necessary" description="Login, security, language, and core app state." checked disabled />
                   <PreferenceRow
                     label="Analytics"
-                    description="Product usage samajhne ke liye optional analytics."
+                    description="Optional analytics that help us understand product usage."
                     checked={prefs.analytics}
                     onChange={(checked) => setPrefs((current) => ({ ...current, analytics: checked }))}
                   />
                   <PreferenceRow
                     label="Marketing ads"
-                    description="Free plan par AdSense ads dikhane ke liye."
+                    description="AdSense advertising for free-plan users."
                     checked={prefs.marketing}
                     onChange={(checked) => setPrefs((current) => ({ ...current, marketing: checked }))}
                   />
                   <PreferenceRow
                     label="Daily study emails"
-                    description="AI se personalized daily study tips, reminders aur motivation email karne ke liye."
+                    description="Personalized study tips, reminders, and motivation by email."
                     checked={prefs.studyEmails}
                     onChange={(checked) => setPrefs((current) => ({ ...current, studyEmails: checked }))}
                   />

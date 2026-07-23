@@ -8,18 +8,18 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const db = supabase as any;
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ status: 'error', error: 'Login required hai' }, { status: 401 });
+  if (!user) return NextResponse.json({ status: 'error', error: 'Authentication is required' }, { status: 401 });
   const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
   const tier = ((profile as any)?.subscription_tier as SubscriptionTier) || 'FREE';
   const settings = await getPlatformSettings();
   const plan = getPlanFromSettings(settings, tier);
   if (!plan.access.downloadPDF) {
-    return NextResponse.json({ status: 'error', error: 'Downloads is plan mein locked hain. In-app reader use karo.' }, { status: 403 });
+    return NextResponse.json({ status: 'error', error: 'Downloads are locked on this plan. Use the in-app reader instead.' }, { status: 403 });
   }
   const body = await req.json();
   const resourceType = String(body.resource_type || 'note');
   const resourceId = String(body.resource_id || '').trim();
-  if (!resourceId) return NextResponse.json({ status: 'error', error: 'Resource id required hai.' }, { status: 400 });
+  if (!resourceId) return NextResponse.json({ status: 'error', error: 'A resource ID is required.' }, { status: 400 });
   const { error } = await db.from('offline_download_log').insert({
     student_id: user.id,
     resource_type: resourceType,

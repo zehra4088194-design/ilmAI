@@ -57,11 +57,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: 'success', message: 'The session was too short to create notes.' });
     }
 
-    const prompt = `Yeh ek student aur AI Teacher ke beech hue voice lesson ki transcript hai${subjectName ? ` (subject: ${subjectName})` : ''}.
+    const prompt = `This is a voice-lesson transcript between a student and an AI teacher${subjectName ? ` (subject: ${subjectName})` : ''}.
 
-Ismein se:
-1. Ek chota, clear "Short Notes" summary banao — markdown mein, headings/bullets ke sath, Roman Urdu + English mix (jaisi baaki app mein tone hai)
-2. 5-8 high-value spaced-repetition flashcards banao jo is lesson ke key concepts test karein
+From this transcript:
+1. Create concise "Short Notes" in professional English using clear Markdown headings and bullets.
+2. Create 5-8 high-value spaced-repetition flashcards that test the lesson's key concepts.
 
 Transcript:
 """

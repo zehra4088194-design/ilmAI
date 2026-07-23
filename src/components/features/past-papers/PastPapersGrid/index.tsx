@@ -100,7 +100,7 @@ export function PastPapersGrid({
           })}
         </div>
       ) : (
-        <EmptyState icon={FileText} title={query ? 'No matching papers found' : 'No past papers for your class yet'} description="Admin class, subject aur chapter tagged papers add kare to yahan show honge." primaryHref="/ai-tutor" primaryLabel="Ask AI Tutor" secondaryHref="/practice" secondaryLabel="AI Testing" />
+        <EmptyState icon={FileText} title={query ? 'No matching papers found' : 'No past papers for your class yet'} description="Class-, subject-, and chapter-tagged papers will appear here after an admin adds them." primaryHref="/ai-tutor" primaryLabel="Ask AI Tutor" secondaryHref="/practice" secondaryLabel="AI Testing" />
       )}
     </div>
   );

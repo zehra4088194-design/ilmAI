@@ -87,11 +87,11 @@ export async function POST(req: NextRequest) {
     const styles = Array.from(new Set<CitationStyle>(requestedStyles));
     if (!input)
       return NextResponse.json(
-        { status: 'error', error: 'Article URL, DOI, book title, ya author name enter karo.' },
+        { status: 'error', error: 'Enter an article URL, DOI, book title, or author name.' },
         { status: 400 }
       );
     if (styles.length === 0 && !STYLES.includes(style as CitationStyle))
-      return NextResponse.json({ status: 'error', error: 'Valid citation style select karo.' }, { status: 400 });
+      return NextResponse.json({ status: 'error', error: 'Select a valid citation style.' }, { status: 400 });
 
     const citationStyles = styles.length > 0 ? styles : [style as CitationStyle];
 
@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     return NextResponse.json(
-      { status: 'error', error: error instanceof Error ? error.message : 'Citation generate nahi ho saki.' },
+      { status: 'error', error: error instanceof Error ? error.message : 'The citation could not be generated.' },
       { status: 500 }
     );
   }

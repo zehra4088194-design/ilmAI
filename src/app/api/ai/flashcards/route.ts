@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     if (!limit.success) return NextResponse.json({ status: 'error', error: await getConfiguredLimitExceededMessage(tier, 'Flashcards AI') }, { status: 429 });
 
     const { topic, subjectId, count = 10 } = await req.json();
-    if (!topic) return NextResponse.json({ status: 'error', error: 'Topic required hai' }, { status: 400 });
+    if (!topic) return NextResponse.json({ status: 'error', error: 'A topic is required' }, { status: 400 });
 
     const aiResult = await generateFlashcardsViaGateway(topic, subjectId || 'General', count, 'groq', 'mini');
     const cleaned = aiResult.replace(/```json|```/g, '').trim();
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
       user_id: user.id, name: topic, subject_id: subjectId || null,
       cover_color: '#7c3aed', is_public: false, total_cards: cards.length,
     }).select('id').single();
-    if (deckError || !deck) throw deckError || new Error('Deck create nahi hua');
+    if (deckError || !deck) throw deckError || new Error('The deck could not be created.');
 
     const deckId = deck.id;
     const cardRows = cards.map((c: { front: string; back: string; hint?: string }) => ({
@@ -46,6 +46,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ status: 'success', data: { deckId, cardCount: cards.length } });
   } catch (error) {
     console.error('Flashcard generation error:', error);
-    return NextResponse.json({ status: 'error', error: 'Flashcards generate nahi ho sake' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: 'Flashcards could not be generated.' }, { status: 500 });
   }
 }

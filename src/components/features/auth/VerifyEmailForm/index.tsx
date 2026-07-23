@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { THEME_COOKIE_NAME } from '@/lib/constants/themes';
 import { LOCALE_COOKIE_NAME } from '@/lib/i18n/config';
+import { getBrowserSiteUrl } from '@/lib/utils/siteUrl';
 
 const PENDING_EMAIL_KEY = 'ilm-ai-pending-verification-email';
 
@@ -87,7 +88,7 @@ export function VerifyEmailForm() {
     }
 
     setResending(true);
-    const callbackUrl = new URL('/api/auth/callback', window.location.origin);
+    const callbackUrl = new URL('/api/auth/callback', getBrowserSiteUrl());
     callbackUrl.searchParams.set('redirect', '/dashboard');
     const { error } = await supabase.auth.resend({
       type: 'signup',

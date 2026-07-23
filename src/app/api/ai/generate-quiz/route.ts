@@ -1,22 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { gatewayChat } from '@/lib/ai/gateway';
-import { checkQuizLimit, getConfiguredLimitExceededMessage } from '@/lib/rate-limit';
-import { parseAiJson } from '@/lib/utils/json-extract';
-import type { SubscriptionTier } from '@/types';
 import { nanoid } from 'nanoid';
+import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
+import { getProtectedResource } from '@/lib/resources/server';
+import { checkQuizLimit, getConfiguredLimitExceededMessage } from '@/lib/rate-limit';
+import type { SubscriptionTier } from '@/types';
 
-export const runtime = 'nodejs';
-export const maxDuration = 30;
-
-interface AiMcq {
-  text: string;
-  options: { id: string; text: string }[];
-  correctAnswer: string;
-  explanation: string;
-  difficulty?: string;
-  marks?: number;
-}
+type StoredMcq = {
+  q?: string;
+  opts?: string[];
+  correct?: number;
+  exp?: string;
+};
 
 function cleanCount(value: unknown) {
   const parsed = Number(value);
@@ -24,109 +19,106 @@ function cleanCount(value: unknown) {
   return Math.min(Math.max(Math.floor(parsed), 1), 30);
 }
 
+function shuffle<T>(items: T[]) {
+  return [...items].sort(() => Math.random() - 0.5);
+}
+
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ status: 'error', error: 'Login required' }, { status: 401 });
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ status: 'error', error: 'Login required.' }, { status: 401 });
 
-    const { data: profile } = await supabase.from('profiles').select('subscription_tier, board, grade_level').eq('id', user.id).single();
-    const tier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
+    const { resourceId, count = 10 } = await req.json();
+    if (typeof resourceId !== 'string' || !resourceId) {
+      return NextResponse.json({ status: 'error', error: 'Select an uploaded chapter file first.' }, { status: 400 });
+    }
 
+    const resource = await getProtectedResource(user.id, 'library', resourceId, 'light');
+    if (!resource) return NextResponse.json({ status: 'error', error: 'This chapter file is not available for your class.' }, { status: 404 });
+
+    const tier = resource.tier as SubscriptionTier;
     const limitCheck = await checkQuizLimit(user.id, tier);
     if (!limitCheck.success) {
-      return NextResponse.json({ status: 'error', error: await getConfiguredLimitExceededMessage(tier, 'AI Testing') }, { status: 429 });
+      return NextResponse.json(
+        { status: 'error', error: await getConfiguredLimitExceededMessage(tier, 'Chapter testing') },
+        { status: 429 }
+      );
     }
 
-    const { subjectId, chapterIds, count = 10, difficulty = 'MEDIUM' } = await req.json();
-    if (!subjectId || !chapterIds?.length) {
-      return NextResponse.json({ status: 'error', error: 'Subject aur chapters required hain' }, { status: 400 });
-    }
-
-    const finalCount = cleanCount(count);
-    const [{ data: subject }, { data: chapters }] = await Promise.all([
-      supabase.from('subjects').select('id, name, boards, grade_levels').eq('id', subjectId).single(),
-      supabase.from('chapters').select('id, name, boards, grade_levels').in('id', chapterIds),
+    const db = createServiceClient() as any;
+    const [{ data: mcqSet, error: mcqError }, { data: libraryResource }] = await Promise.all([
+      db
+        .from('resource_mcq_sets')
+        .select('questions, status, error_message')
+        .eq('resource_kind', 'library')
+        .eq('resource_id', resourceId)
+        .maybeSingle(),
+      db.from('library_resources').select('subject_id, chapter_id').eq('id', resourceId).maybeSingle(),
     ]);
 
-    if (!subject || !chapters?.length) {
-      return NextResponse.json({ status: 'error', error: 'Subject ya chapter nahi mila' }, { status: 404 });
-    }
-    const board = profile?.board;
-    const grade = profile?.grade_level;
-    const subjectVisible =
-      (!board || !subject.boards?.length || subject.boards.includes(board)) &&
-      (!grade || !subject.grade_levels?.length || subject.grade_levels.includes(grade));
-    const subjectHasMultipleGrades = (subject.grade_levels || []).length > 1;
-    const visibleChapters = chapters.filter((chapter) => {
-      const boardVisible = !board || !chapter.boards?.length || chapter.boards.includes(board);
-      const gradeVisible = !grade || (chapter.grade_levels?.length ? chapter.grade_levels.includes(grade) : !subjectHasMultipleGrades);
-      return boardVisible && gradeVisible;
-    });
-    if (!subjectVisible || visibleChapters.length === 0) {
-      return NextResponse.json({ status: 'error', error: 'Yeh subject/chapter aapki class ke liye available nahi hai' }, { status: 403 });
+    if (mcqError) return NextResponse.json({ status: 'error', error: 'Saved chapter MCQs could not be loaded.' }, { status: 500 });
+    if (!mcqSet || mcqSet.status !== 'ready') {
+      return NextResponse.json(
+        { status: 'error', error: mcqSet?.error_message || 'This file is still being processed. Try again once its chapter MCQs are ready.' },
+        { status: 409 }
+      );
     }
 
-    const visibleChapterIds = visibleChapters.map((chapter) => chapter.id);
-    const chapterNames = visibleChapters.map((chapter) => chapter.name).join(', ');
-    const result = await gatewayChat({
-      provider: 'groq',
-      tier: tier === 'FREE' ? 'mini' : 'medium',
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are an expert Pakistani curriculum MCQ generator. Generate fresh, syllabus-plausible MCQs from chapter names. Return only valid JSON.',
-        },
-        {
-          role: 'user',
-          content: `Generate exactly ${finalCount} MCQs for Pakistan board practice.
-Board: ${profile?.board || 'Pakistan board'}
-Grade/Class: ${profile?.grade_level || 'GRADE_10'}
-Subject: ${subject.name}
-Chapter(s): ${chapterNames}
-Difficulty: ${difficulty}
+    const available = (Array.isArray(mcqSet.questions) ? mcqSet.questions : []).filter((question: StoredMcq) =>
+      question.q && Array.isArray(question.opts) && question.opts.length >= 2 && Number.isInteger(question.correct)
+    ) as StoredMcq[];
+    const selected = shuffle(available).slice(0, cleanCount(count));
+    if (!selected.length) {
+      return NextResponse.json({ status: 'error', error: 'This file does not have ready MCQs yet.' }, { status: 409 });
+    }
 
-Return ONLY valid JSON array, no markdown:
-[{"text":"question text","options":[{"id":"a","text":"..."},{"id":"b","text":"..."},{"id":"c","text":"..."},{"id":"d","text":"..."}],"correctAnswer":"a","explanation":"short explanation","difficulty":"MEDIUM","marks":1}]`,
-        },
-      ],
-      maxTokens: 4096,
-      temperature: 0.35,
+    const questions = selected.map((question, index) => {
+      const options = (question.opts || []).map((text, optionIndex) => ({ id: String.fromCharCode(97 + optionIndex), text }));
+      return {
+        id: nanoid(),
+        topicId: undefined,
+        chapterId: libraryResource?.chapter_id || undefined,
+        subjectId: libraryResource?.subject_id || undefined,
+        type: 'MCQ' as const,
+        difficulty: 'MEDIUM' as const,
+        text: question.q || `Question ${index + 1}`,
+        options,
+        correctAnswer: options[Number(question.correct)]?.id || options[0]?.id || 'a',
+        explanation: question.exp || `Answer taken from ${resource.title}.`,
+        marks: 1,
+        isVerified: true,
+        timesAttempted: 0,
+        correctRate: 0,
+        createdAt: new Date().toISOString(),
+      };
     });
 
-    const questions = parseAiJson<AiMcq[]>(result.text, []).map((q) => ({
-      id: nanoid(),
-      topicId: undefined,
-      chapterId: visibleChapterIds[0],
-      subjectId,
-      type: 'MCQ',
-      difficulty: q.difficulty || difficulty,
-      text: q.text,
-      options: Array.isArray(q.options) ? q.options : [],
-      correctAnswer: q.correctAnswer,
-      explanation: q.explanation,
-      marks: q.marks || 1,
-      isVerified: false,
-      timesAttempted: 0,
-      correctRate: 0,
-      createdAt: new Date().toISOString(),
-    })).filter((q) => q.text && q.options.length >= 2 && q.correctAnswer);
-
-    if (questions.length === 0) {
-      return NextResponse.json({ status: 'error', error: 'Quiz generate nahi ho saka. Dobara try karo.' }, { status: 500 });
-    }
-
-    const session = {
-      id: nanoid(), userId: user.id, subjectId, chapterIds: visibleChapterIds, questions: questions.slice(0, finalCount),
-      currentIndex: 0, answers: {}, startedAt: new Date().toISOString(), timeSpent: 0, status: 'IN_PROGRESS',
-      totalMarks: questions.slice(0, finalCount).reduce((sum: number, q: { marks: number }) => sum + (q.marks || 1), 0),
-      correctCount: 0, incorrectCount: 0, skippedCount: 0, mode: 'PRACTICE',
-    };
-
-    return NextResponse.json({ status: 'success', data: session });
+    return NextResponse.json({
+      status: 'success',
+      data: {
+        id: nanoid(),
+        userId: user.id,
+        subjectId: libraryResource?.subject_id || undefined,
+        chapterIds: libraryResource?.chapter_id ? [libraryResource.chapter_id] : [],
+        sourceTitle: resource.title,
+        questions,
+        currentIndex: 0,
+        answers: {},
+        startedAt: new Date().toISOString(),
+        timeSpent: 0,
+        status: 'IN_PROGRESS',
+        totalMarks: questions.length,
+        correctCount: 0,
+        incorrectCount: 0,
+        skippedCount: 0,
+        mode: 'PRACTICE',
+      },
+    });
   } catch (error) {
-    console.error('Quiz generation error:', error);
-    return NextResponse.json({ status: 'error', error: 'Quiz generate nahi ho saka' }, { status: 500 });
+    console.error('Source quiz creation failed:', error);
+    return NextResponse.json({ status: 'error', error: 'The saved chapter quiz could not be started.' }, { status: 500 });
   }
 }

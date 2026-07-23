@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({ status: 'error', error: 'Login required hai' }, { status: 401 });
+      return NextResponse.json({ status: 'error', error: 'Authentication is required' }, { status: 401 });
     }
 
     const { data: profile } = await supabase
@@ -28,14 +28,20 @@ export async function POST(req: NextRequest) {
 
     if (!limit.success) {
       return NextResponse.json(
-        { status: 'error', error: userTier === 'FREE' ? 'Aaj ke AI messages khatam ho gaye. Pro plan lo zyada messages ke liye!' : 'Aaj ki limit khatam ho gayi. Kal phir try karo.' },
+        {
+          status: 'error',
+          error:
+            userTier === 'FREE'
+              ? "You have used today's AI messages. Upgrade to Pro for a higher limit."
+              : "You have reached today's limit. Please try again tomorrow.",
+        },
         { status: 429 }
       );
     }
 
     const { text, tone = 'natural', language = 'English', preserveMeaning = true } = await req.json();
     if (!text || typeof text !== 'string' || text.trim().length < 20) {
-      return NextResponse.json({ status: 'error', error: 'Humanize karne ke liye thora text paste karo.' }, { status: 400 });
+      return NextResponse.json({ status: 'error', error: 'Paste some text to humanize.' }, { status: 400 });
     }
 
     const result = await gatewayChat({
@@ -74,6 +80,6 @@ ${text}`,
     if (error instanceof GatewayError) {
       return NextResponse.json({ status: 'error', error: error.message }, { status: 500 });
     }
-    return NextResponse.json({ status: 'error', error: 'Humanized text generate nahi ho saka.' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: 'The humanized text could not be generated.' }, { status: 500 });
   }
 }

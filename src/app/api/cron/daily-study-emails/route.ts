@@ -56,7 +56,7 @@ async function generateStudyEmail(profile: EmailProfile) {
       },
       {
         role: 'user',
-        content: `Create today's study email using this profile:\n${context}\n\nRequirements:\n- Subject under 70 chars.\n- Preview under 120 chars.\n- HTML with 3 short sections: Today's focus, 25-minute task, Motivation.\n- Roman Urdu + simple English mix.\n- Mention ilm AI lightly.\n- Include note: "You received this because you allowed daily study emails in cookie preferences."`,
+        content: `Create today's study email using this profile:\n${context}\n\nRequirements:\n- Subject under 70 chars.\n- Preview under 120 chars.\n- HTML with 3 short sections: Today's focus, 25-minute task, Motivation.\n- Use professional, student-friendly English.\n- Mention ilm AI lightly.\n- Include note: "You received this because you allowed daily study emails in cookie preferences."`,
       },
     ],
     maxTokens: 900,
@@ -77,8 +77,8 @@ async function generateStudyEmail(profile: EmailProfile) {
   const name = htmlEscape(profile.full_name || 'Student');
   return {
     subject: 'Aaj ka study focus - ilm AI',
-    preview: 'Ek chhota focused task aur motivation for today.',
-    html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827"><h2>Assalam o Alaikum ${name}</h2><p><strong>Today's focus:</strong> 25 minutes ek weak topic revise karo.</p><p><strong>Task:</strong> 5 MCQs solve karo, phir ek mistake note banao.</p><p><strong>Motivation:</strong> Chhoti daily consistency marks mein bari improvement laati hai.</p><p style="font-size:12px;color:#6b7280">You received this because you allowed daily study emails in cookie preferences.</p></div>`,
+    preview: 'A focused study task and motivation for today.',
+    html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827"><h2>Hello ${name}</h2><p><strong>Today's focus:</strong> Revise one weak topic for 25 minutes.</p><p><strong>Task:</strong> Solve five MCQs, then record one mistake and its correction.</p><p><strong>Motivation:</strong> Small, consistent study sessions lead to meaningful improvement.</p><p style="font-size:12px;color:#6b7280">You received this because you allowed daily study emails in cookie preferences.</p></div>`,
   };
 }
 
@@ -109,7 +109,7 @@ export async function GET(req: NextRequest) {
     .or(`study_email_last_sent_at.is.null,study_email_last_sent_at.lt.${todayStart}`)
     .limit(50);
 
-  if (error) return NextResponse.json({ status: 'error', error: 'Profiles load nahi hue' }, { status: 500 });
+  if (error) return NextResponse.json({ status: 'error', error: 'Profiles could not be loaded.' }, { status: 500 });
 
   let sent = 0;
   const failures: Array<{ id: string; error: string }> = [];

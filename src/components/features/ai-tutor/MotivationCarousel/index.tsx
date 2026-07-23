@@ -5,10 +5,10 @@ import { Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
 const FALLBACK_QUOTES = [
-  'Chhota sa consistent step bhi kal ke confidence ko strong bana deta hai.',
-  'Aaj ka focused 25 minutes kal ke exam hall mein sukoon ban kar aata hai.',
-  'Galti answer ka end nahi hoti, concept clear hone ka shortcut hoti hai.',
-  'Tumhara pace tumhara hai. Bas rukna nahi, revise karte rehna.',
+  'A small, consistent step today builds confidence for tomorrow.',
+  'A focused 25 minutes today can make tomorrow’s exam feel much calmer.',
+  'A wrong answer is not the end; it is a shortcut to understanding the concept.',
+  'Work at your own pace. Keep moving and keep revising.',
   'Difficult topic ko tod do: definition, formula, example, practice.',
 ];
 

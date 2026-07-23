@@ -20,7 +20,7 @@ async function generateFeedback(correct: number, total: number, subjectName?: st
       provider: 'groq',
       tier: 'mini',
       messages: [
-        { role: 'system', content: 'Write short encouraging feedback for a student quiz result. 2 sentences max. Roman Urdu + English mix. No markdown.' },
+        { role: 'system', content: 'Write short, encouraging feedback in professional English for a student quiz result. Use no more than two sentences and no Markdown.' },
         { role: 'user', content: `Subject: ${subjectName || 'Demo'}\nScore: ${correct}/${total}\nNudge them to sign up free to save progress and practice more.` },
       ],
       maxTokens: 120,
@@ -35,7 +35,7 @@ async function generateFeedback(correct: number, total: number, subjectName?: st
 export async function POST(req: NextRequest) {
   try {
     const sessionToken = req.cookies.get(DEMO_COOKIE)?.value;
-    if (!sessionToken) return NextResponse.json({ status: 'error', error: 'Demo session expire ho gaya. Dobara start karo.' }, { status: 401 });
+    if (!sessionToken) return NextResponse.json({ status: 'error', error: 'The demo session expired. Start it again.' }, { status: 401 });
 
     const body = await req.json().catch(() => ({}));
     const answers = body.answers && typeof body.answers === 'object' ? body.answers as Record<string, unknown> : {};
@@ -50,8 +50,8 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     if (attemptError) throw attemptError;
-    if (!attempt) return NextResponse.json({ status: 'error', error: 'Demo attempt nahi mila. Dobara start karo.' }, { status: 404 });
-    if (attempt.completed_at) return NextResponse.json({ status: 'error', error: 'Ye demo already submit ho chuka hai.' }, { status: 409 });
+    if (!attempt) return NextResponse.json({ status: 'error', error: 'The demo attempt was not found. Start it again.' }, { status: 404 });
+    if (attempt.completed_at) return NextResponse.json({ status: 'error', error: 'This demo has already been submitted.' }, { status: 409 });
 
     const questionIds = attempt.question_ids || [];
     const { data: questions, error: questionError } = await supabase
@@ -110,6 +110,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error('demo submit error:', error);
-    return NextResponse.json({ status: 'error', error: 'Demo submit nahi ho saka. Dobara try karo.' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: 'The demo could not be submitted. Please try again.' }, { status: 500 });
   }
 }

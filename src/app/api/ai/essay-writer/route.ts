@@ -20,16 +20,16 @@ export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ status: 'error', error: 'Login required hai' }, { status: 401 });
+    if (!user) return NextResponse.json({ status: 'error', error: 'Authentication is required' }, { status: 401 });
 
     const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
     const tier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
     const limitCheck = await checkAiMessageLimit(user.id, tier, 'essay_writer');
-    if (!limitCheck.success) return NextResponse.json({ status: 'error', error: 'Daily AI limit khatam ho gayi' }, { status: 429 });
+    if (!limitCheck.success) return NextResponse.json({ status: 'error', error: 'The daily AI limit has been reached.' }, { status: 429 });
 
     const body = await req.json();
     const { topic, wordCount, essayType, language, provider, aiTier } = body;
-    if (!topic) return NextResponse.json({ status: 'error', error: 'Essay topic zaroori hai' }, { status: 400 });
+    if (!topic) return NextResponse.json({ status: 'error', error: 'An essay topic is required' }, { status: 400 });
 
     const { gradeLevel: profileGradeLevel } = await getUserGradeLevel(supabase, user.id);
     const gradeLevel: GradeLevel = isGradeLevel(body.gradeLevel)
@@ -64,6 +64,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ status: 'success', data });
   } catch (error) {
     console.error('Essay writer error:', error);
-    return NextResponse.json({ status: 'error', error: 'Essay generate nahi hui' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: 'The essay could not be generated' }, { status: 500 });
   }
 }

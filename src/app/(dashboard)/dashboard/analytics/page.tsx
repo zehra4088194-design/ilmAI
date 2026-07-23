@@ -34,7 +34,7 @@ export default async function StudentAnalyticsPage() {
   return (
     <RoleAnalyticsClient
       title="My Analytics"
-      subtitle="Study trend, XP progress, streak aur subject performance ka quick view."
+      subtitle="A quick view of study trends, XP progress, streaks, and subject performance."
       cards={[
         { label: 'XP', value: p?.xp || 0, detail: 'Total learning points' },
         { label: 'Streak', value: p?.streak || 0, detail: 'Active study days' },

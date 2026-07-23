@@ -83,9 +83,9 @@ export function ChapterManager({ subjectId, subjectBoards, subjectGradeLevels, i
       setNewName('');
       setNewBoards([]);
       setNewGradeLevels([]);
-      toast.success('Chapter add ho gaya!');
+      toast.success('Chapter added.');
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Kuch ghalat ho gaya');
+      toast.error(err instanceof Error ? err.message : 'Something went wrong.');
     } finally {
       setIsAdding(false);
     }
@@ -97,7 +97,7 @@ export function ChapterManager({ subjectId, subjectBoards, subjectGradeLevels, i
       const res = await fetch(`/api/admin/chapters/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error((await res.json()).error);
       setChapters((prev) => prev.filter((c) => c.id !== id));
-      toast.success('Chapter delete ho gaya');
+      toast.success('Chapter deleted.');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Delete failed.');
     }
@@ -125,7 +125,7 @@ export function ChapterManager({ subjectId, subjectBoards, subjectGradeLevels, i
       if (!res.ok) throw new Error(json.error);
       setChapters((prev) => prev.map((c) => (c.id === id ? json.chapter : c)));
       setEditingId(null);
-      toast.success('Update ho gaya!');
+      toast.success('Update completed.');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Update failed.');
     }
@@ -217,7 +217,7 @@ export function ChapterManager({ subjectId, subjectBoards, subjectGradeLevels, i
       if (!res.ok) throw new Error(json.error);
       setTopicsByChapter((prev) => ({ ...prev, [chapterId]: [...(prev[chapterId] || []), json.topic] }));
       setNewTopicName('');
-      toast.success('Topic add ho gaya');
+      toast.success('Topic added.');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Topic could not be added.');
     }
@@ -238,7 +238,7 @@ export function ChapterManager({ subjectId, subjectBoards, subjectGradeLevels, i
         [chapterId]: (prev[chapterId] || []).map((topic) => (topic.id === topicId ? json.topic : topic)),
       }));
       setEditingTopicId(null);
-      toast.success('Topic update ho gaya');
+      toast.success('Topic updated.');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Topic could not be updated.');
     }
@@ -251,7 +251,7 @@ export function ChapterManager({ subjectId, subjectBoards, subjectGradeLevels, i
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
       setTopicsByChapter((prev) => ({ ...prev, [chapterId]: (prev[chapterId] || []).filter((topic) => topic.id !== topicId) }));
-      toast.success('Topic delete ho gaya');
+      toast.success('Topic deleted.');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Topic could not be deleted.');
     }

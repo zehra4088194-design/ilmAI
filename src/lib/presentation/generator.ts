@@ -26,6 +26,10 @@ function asTheme(value: unknown): PresentationTheme {
   return PRESENTATION_THEMES.includes(value as PresentationTheme) ? (value as PresentationTheme) : DEFAULT_THEME;
 }
 
+function requestedTheme(input: PresentationGenerateInput): PresentationTheme {
+  return asTheme(input.theme);
+}
+
 function asSlideType(value: unknown): PresentationSlideType {
   return PRESENTATION_SLIDE_TYPES.includes(value as PresentationSlideType)
     ? (value as PresentationSlideType)
@@ -78,8 +82,10 @@ Audience level: ${cleanString(input.audienceLevel, 'University students')}
 Tone: ${cleanString(input.tone, 'Professional')}
 Language: ${cleanString(input.language, 'English')}
 Output style: ${cleanString(input.outputStyle, 'professional')}
+Color theme: ${requestedTheme(input)}
 
 Create a polished, colorful, university-grade presentation deck that feels like a complete PowerPoint presentation, not short notes.
+Use the requested color theme. Do not choose a different theme.
 Bulk output must stay compact enough to return reliably in one response while still teaching one clear idea per slide.`;
 }
 
@@ -185,6 +191,10 @@ export function normalizePresentationDeck(raw: unknown, fallbackTopic: string): 
   };
 }
 
+function applyRequestedTheme(deck: PresentationDeck, input: PresentationGenerateInput): PresentationDeck {
+  return { ...deck, theme: requestedTheme(input) };
+}
+
 async function askForDeck(input: PresentationGenerateInput, tier: ModelTier) {
   const result = await gatewayChat({
     provider: 'gemini',
@@ -196,7 +206,7 @@ async function askForDeck(input: PresentationGenerateInput, tier: ModelTier) {
     maxTokens: 7600,
     temperature: 0.45,
   });
-  return normalizePresentationDeck(parseAiJson(result.text, {}), input.topic);
+  return applyRequestedTheme(normalizePresentationDeck(parseAiJson(result.text, {}), input.topic), input);
 }
 
 type OutlineSlide = {
@@ -220,10 +230,11 @@ Subject/course: ${cleanString(input.subject, 'General')}
 Audience: ${cleanString(input.audienceLevel, 'University students')}
 Tone: ${cleanString(input.tone, 'Professional')}
 Language: ${cleanString(input.language, 'English')}
+Color theme: ${requestedTheme(input)}
 
 Return JSON:
 {"topic":"...","theme":"modern-blue | warm-academic | dark-tech | nature-green | vibrant-purple | minimal-mono","slides":[{"type":"title","title":"...","focus":"..."},{"type":"bullets","title":"...","focus":"..."}]}
-Use exactly ${slideCount} slides. First type title, last type closing, include mixed slide types and a logical PowerPoint-style story arc.`,
+Use exactly ${slideCount} slides. Use the requested color theme. First type title, last type closing, include mixed slide types and a logical PowerPoint-style story arc.`,
       },
     ],
     maxTokens: 2400,
@@ -233,7 +244,7 @@ Use exactly ${slideCount} slides. First type title, last type closing, include m
   const rawSlides = Array.isArray(parsed.slides) ? parsed.slides : [];
   return {
     topic: cleanString(parsed.topic, input.topic, 140),
-    theme: asTheme(parsed.theme),
+    theme: requestedTheme(input),
     slides: rawSlides
       .map((slide, index) => {
         const item = slide && typeof slide === 'object' ? (slide as Record<string, unknown>) : {};
@@ -325,7 +336,7 @@ function fallbackOutline(input: PresentationGenerateInput): {
         ? `Introduce ${topic} and set the learning goal.`
         : `Explain ${titles[index] || `key point ${index}`} with a useful example.`,
   }));
-  return { topic, theme: DEFAULT_THEME, slides };
+  return { topic, theme: requestedTheme(input), slides };
 }
 
 async function askForDeckPerSlide(input: PresentationGenerateInput, tier: ModelTier) {
@@ -378,9 +389,12 @@ async function askForDeckPerSlide(input: PresentationGenerateInput, tier: ModelT
     }
   });
 
-  return normalizePresentationDeck(
-    { topic: outline.topic || fallback.topic, theme: outline.theme || fallback.theme, slides: rawSlides },
-    input.topic
+  return applyRequestedTheme(
+    normalizePresentationDeck(
+      { topic: outline.topic || fallback.topic, theme: requestedTheme(input), slides: rawSlides },
+      input.topic
+    ),
+    input
   );
 }
 
@@ -393,6 +407,6 @@ export async function generatePresentationDeck(
   // only when explicitly selected for a quick, compact draft.
   const mode = input.mode === 'bulk' && slideCount <= 12 ? 'bulk' : 'per-slide';
   const deck = mode === 'per-slide' ? await askForDeckPerSlide(input, tier) : await askForDeck(input, tier);
-  if (!deck.slides.length) throw new Error('Presentation slides generate nahi ho sake.');
-  return deck;
+  if (!deck.slides.length) throw new Error('Presentation slides could not be generated.');
+  return applyRequestedTheme(deck, input);
 }

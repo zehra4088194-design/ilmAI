@@ -35,7 +35,7 @@ export function ConversationSidebar({ onNavigate }: { onNavigate?: () => void } 
             </button>
           </div>
         ))}
-        {conversations.length === 0 && <p className="text-xs text-muted-foreground text-center py-8">Koi conversation nahi hai abhi</p>}
+        {conversations.length === 0 && <p className="text-xs text-muted-foreground text-center py-8">No conversations yet</p>}
       </div>
     </div>
   );

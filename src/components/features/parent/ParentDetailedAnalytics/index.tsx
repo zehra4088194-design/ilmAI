@@ -194,7 +194,7 @@ export function ParentDetailedAnalytics({
                 {(reports[0].suggested_actions || []).map((action: string) => <div key={action} className="bg-muted/35 rounded-xl p-3 text-sm">{action}</div>)}
               </div>
             </div>
-          ) : <Empty label="Weekly report cron ke baad yahan report nazar aayegi." />}
+          ) : <Empty label="The report will appear here after the weekly report job runs." />}
         </CardContent>
       </Card>
 

@@ -19,7 +19,7 @@ export default async function PastPapersPage() {
   const { data: papers } = await papersQuery;
   return (
     <div className="mx-auto max-w-6xl space-y-6">
-      <div><h1 className="text-2xl font-bold sm:text-3xl">Past Papers</h1><p className="text-muted-foreground mt-1">Subject, chapter aur phir exact paper select karein.</p></div>
+      <div><h1 className="text-2xl font-bold sm:text-3xl">Past Papers</h1><p className="text-muted-foreground mt-1">Select a subject, chapter, and then the exact paper.</p></div>
       <AdSenseBanner slot="inline" className="mx-auto max-w-5xl" />
       <PastPapersGrid papers={(papers || []) as any} board={profile?.board || undefined} gradeLevel={profile?.grade_level || undefined} />
     </div>

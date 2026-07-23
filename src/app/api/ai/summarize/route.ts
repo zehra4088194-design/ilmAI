@@ -14,10 +14,10 @@ export async function POST(req: NextRequest) {
     const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
     const tier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
     if (tier === 'FREE') {
-      return NextResponse.json({ status: 'error', error: 'AI Summary Pro mein unlock hoti hai.' }, { status: 403 });
+      return NextResponse.json({ status: 'error', error: 'AI Summary is available on Pro.' }, { status: 403 });
     }
     const limitCheck = await checkAiMessageLimit(user.id, tier, 'summarize');
-    if (!limitCheck.success) return NextResponse.json({ status: 'error', error: 'Daily AI limit khatam ho gayi' }, { status: 429 });
+    if (!limitCheck.success) return NextResponse.json({ status: 'error', error: 'The daily AI limit has been reached.' }, { status: 429 });
 
     const { text } = await req.json();
     if (!text || text.length < 50) return NextResponse.json({ status: 'error', error: 'Kam se kam 50 characters ka text do' }, { status: 400 });
@@ -33,6 +33,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ status: 'success', data: { summary: result.text, provider: result.provider, routeReason: result.routeReason } });
   } catch (error) {
     console.error('Summarize API error:', error);
-    return NextResponse.json({ status: 'error', error: 'Summary generate nahi ho saka' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: 'The summary could not be generated.' }, { status: 500 });
   }
 }

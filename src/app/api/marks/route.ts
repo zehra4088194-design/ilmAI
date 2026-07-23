@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ status: 'error', error: 'Login required hai' }, { status: 401 });
+    if (!user) return NextResponse.json({ status: 'error', error: 'Authentication is required' }, { status: 401 });
 
     const body = await req.json().catch(() => ({}));
     const marks: MarkInput[] = Array.isArray(body?.marks) ? body.marks : [];
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
 
     if (rows.length === 0) {
       // Nothing entered — this is a fully valid, expected case (marks are optional).
-      return NextResponse.json({ status: 'success', message: 'Koi marks nahi diye' });
+      return NextResponse.json({ status: 'success', message: 'No marks were provided.' });
     }
 
     const { error: insertError } = await supabase
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
             user_id: user.id,
             type: 'REMINDER',
             title: 'Focus Area Mili!',
-            message: `${subject.name} mein thora weak ho — is week extra practice try karo!`,
+            message: `Your performance in ${subject.name} needs attention. Add extra practice this week.`,
             link: linkUrl,
           });
         }
@@ -93,6 +93,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ status: 'success' });
   } catch (error) {
     console.error('Save marks error:', error);
-    return NextResponse.json({ status: 'error', error: 'Marks save nahi hue' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: 'Marks could not be saved.' }, { status: 500 });
   }
 }

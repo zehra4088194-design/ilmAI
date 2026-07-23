@@ -49,6 +49,9 @@ export default function PrivacyPage() {
           bullets: [
             'User records are stored in secure backend services.',
             'Private attachments and parent-linked files use protected storage access rules.',
+            'Recent parent and student chats remain in live storage for 2 days, then move to compressed private archive storage.',
+            'Archived conversations and shared files remain accessible only to their authenticated participants.',
+            'Temporary scans and processing files are deleted after 2 days.',
             'We use technical safeguards to limit unauthorized access, misuse, and accidental disclosure.',
           ],
         },

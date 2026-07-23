@@ -206,7 +206,7 @@ export function LiveVoiceCall({ subject, hasAccess, userTier = 'FREE', onSession
 
   const startCall = async () => {
     if (!hasAccess) {
-      toast.error('Live Voice Call is plan mein locked hai. Upgrade karo!');
+      toast.error('Live Voice Call is locked on your current plan. Upgrade to continue.');
       return;
     }
 
@@ -276,7 +276,7 @@ export function LiveVoiceCall({ subject, hasAccess, userTier = 'FREE', onSession
       ws.onmessage = handleServerMessage;
 
       ws.onerror = () => {
-        toast.error('Voice call mein connection issue aa gaya');
+        toast.error('The voice call encountered a connection issue.');
         cleanup();
         setCallState('idle');
       };
@@ -287,9 +287,9 @@ export function LiveVoiceCall({ subject, hasAccess, userTier = 'FREE', onSession
       };
     } catch (error) {
       if (error instanceof DOMException && error.name === 'NotAllowedError') {
-        toast.error('Microphone access allow karo call shuru karne ke liye');
+        toast.error('Allow microphone access to start the call.');
       } else {
-        toast.error('Call start nahi ho saka. Dobara try karo.');
+        toast.error('The call could not be started. Please try again.');
       }
       cleanup();
       setCallState('idle');
@@ -324,7 +324,7 @@ export function LiveVoiceCall({ subject, hasAccess, userTier = 'FREE', onSession
 
   if (!hasAccess) {
     return (
-      <Button variant="outline" size="sm" disabled className="opacity-60" title="Live Voice Call is plan mein locked hai">
+      <Button variant="outline" size="sm" disabled className="opacity-60" title="Live Voice Call is locked on your current plan">
         <Lock className="w-3.5 h-3.5" /> Voice Call
       </Button>
     );

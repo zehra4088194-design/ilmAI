@@ -23,7 +23,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (body.isActive !== undefined) update.is_active = body.isActive;
 
   if (Object.keys(update).length === 0) {
-    return NextResponse.json({ error: 'Koi field update ke liye nahi diya' }, { status: 400 });
+    return NextResponse.json({ error: 'No fields were provided for update' }, { status: 400 });
   }
 
   const adminClient = await createAdminClient();
@@ -31,7 +31,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   if (error) {
     console.error('chapter update error:', error);
-    return NextResponse.json({ error: 'Chapter update nahi hua' }, { status: 500 });
+    return NextResponse.json({ error: 'The chapter could not be updated' }, { status: 500 });
   }
 
   return NextResponse.json({ chapter: data });
@@ -50,7 +50,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
   if (error) {
     console.error('chapter delete error:', error);
-    return NextResponse.json({ error: 'Chapter delete nahi hua' }, { status: 500 });
+    return NextResponse.json({ error: 'The chapter could not be deleted' }, { status: 500 });
   }
 
   try { await adminClient.rpc('refresh_subject_counts'); } catch {}

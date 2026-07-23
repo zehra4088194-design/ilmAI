@@ -11,25 +11,25 @@ export const LIBRARY_SECTIONS: Array<{
     value: 'reading',
     slug: 'reading',
     title: 'Chapter Reading',
-    description: 'Text book pages, notes aur concept files',
+    description: 'Textbook pages, solved exercises, notes, and concept files',
   },
   {
     value: 'mcq',
     slug: 'mcqs',
     title: 'MCQs',
-    description: 'Sirf objective aur multiple-choice files',
+    description: 'Objective and multiple-choice files only',
   },
   {
     value: 'short',
     slug: 'short-questions',
     title: 'Short Questions',
-    description: 'Sirf short-question files',
+    description: 'Short-question files only',
   },
   {
     value: 'long',
     slug: 'long-questions',
     title: 'Long Questions',
-    description: 'Sirf detailed aur long-question files',
+    description: 'Detailed and long-question files only',
   },
 ];
 
@@ -57,4 +57,21 @@ export function buildCatalogSearch(type: LibraryResourceType, bookTitle?: string
   const params = new URLSearchParams({ type });
   if (bookTitle) params.set('book', bookTitle);
   return params.toString();
+}
+
+export function inferLibraryContentSection(title: string): LibraryContentSection {
+  if (/\bmcqs?\b/i.test(title)) return 'mcq';
+  if (/\bshort questions?\b/i.test(title)) return 'short';
+  if (/\blong questions?\b/i.test(title)) return 'long';
+  return 'reading';
+}
+
+export function normalizeLegacyCatalogResource(resource: any) {
+  return {
+    ...resource,
+    book_title: `${resource.subjects?.name || 'General'} ${resource.resource_type === 'notes' ? 'Notes' : 'Text Book'}`,
+    content_section: inferLibraryContentSection(resource.title || ''),
+    has_context_text: Boolean(resource.context_text_url),
+    context_text_url: undefined,
+  };
 }

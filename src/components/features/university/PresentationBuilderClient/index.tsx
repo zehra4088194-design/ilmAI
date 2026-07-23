@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BrandLoader } from '@/components/ui/BrandLoader';
 import { PresentationSlideRenderer } from '@/components/features/university/PresentationSlideRenderer';
 import { printElementById } from '@/lib/utils/printElement';
-import type { PresentationDeck, PresentationGenerateMode } from '@/lib/presentation/types';
+import type { PresentationDeck, PresentationGenerateMode, PresentationTheme } from '@/lib/presentation/types';
 
 type Props = {
   defaultSubject?: string;
@@ -23,6 +23,15 @@ const progressCopy = [
   'Preparing colorful PowerPoint preview...',
 ];
 
+const colorThemeOptions: PresentationTheme[] = [
+  'modern-blue',
+  'warm-academic',
+  'dark-tech',
+  'nature-green',
+  'vibrant-purple',
+  'minimal-mono',
+];
+
 export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 'professional' }: Props) {
   const [topic, setTopic] = useState('');
   const [subject, setSubject] = useState(defaultSubject);
@@ -31,6 +40,7 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
   const [audienceLevel, setAudienceLevel] = useState('University students');
   const [language, setLanguage] = useState('English');
   const [outputStyle, setOutputStyle] = useState(defaultStyle);
+  const [theme, setTheme] = useState<PresentationTheme>('modern-blue');
   const [mode, setMode] = useState<PresentationGenerateMode>('per-slide');
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -65,18 +75,19 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
           audienceLevel,
           language,
           outputStyle,
+          theme,
           mode,
         }),
       });
       const json = await res.json();
       if (json.status === 'error') {
-        toast.error(json.error || 'Presentation generate nahi ho saki.');
+        toast.error(json.error || 'The presentation could not be generated.');
         return;
       }
       setDeck(json.data.deck);
-      toast.success('Presentation ready hai.');
+      toast.success('The presentation is ready.');
     } catch {
-      toast.error('Presentation generate nahi ho saki.');
+      toast.error('The presentation could not be generated.');
     } finally {
       window.clearInterval(timer);
       setLoading(false);
@@ -94,7 +105,7 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
       });
       if (!res.ok) {
         const json = await res.json().catch(() => null);
-        toast.error(json?.error || 'PPTX export nahi ho saka.');
+        toast.error(json?.error || 'The PPTX export could not be completed.');
         return;
       }
       const blob = await res.blob();
@@ -114,7 +125,7 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
       URL.revokeObjectURL(url);
       toast.success('PPTX download ready.');
     } catch {
-      toast.error('PPTX export nahi ho saka.');
+      toast.error('The PPTX export could not be completed.');
     } finally {
       setExporting(false);
     }
@@ -131,7 +142,7 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
       });
       if (!res.ok) {
         const json = await res.json().catch(() => null);
-        toast.error(json?.error || 'DOCX export nahi ho saka.');
+        toast.error(json?.error || 'The DOCX export could not be completed.');
         return;
       }
       const blob = await res.blob();
@@ -151,7 +162,7 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
       URL.revokeObjectURL(url);
       toast.success('DOCX download ready.');
     } catch {
-      toast.error('DOCX export nahi ho saka.');
+      toast.error('The DOCX export could not be completed.');
     } finally {
       setExporting(false);
     }
@@ -225,14 +236,19 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
               />
             </div>
             <SelectField
+              label="Color theme"
+              value={theme}
+              onChange={(value) => setTheme(value as PresentationTheme)}
+              options={colorThemeOptions}
+            />
+            <SelectField
               label="Generation mode"
               value={mode}
               onChange={(value) => setMode(value as PresentationGenerateMode)}
               options={['bulk', 'per-slide']}
             />
             <div className="bg-muted/25 text-muted-foreground rounded-xl border p-3 text-xs leading-5">
-              Per-slide mode har slide ko alag Gemini request se polish karta hai. Bulk mode compact quick draft ke liye
-              hai.
+              Per-slide mode polishes each slide with a separate Gemini request. Bulk mode creates a compact draft quickly.
             </div>
             <Button variant="gradient" className="w-full" disabled={!formReady || loading} onClick={generate}>
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
@@ -248,7 +264,7 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
                 <FileText className="mb-4 h-11 w-11 text-violet-400" />
                 <h2 className="font-semibold">Your slide deck will appear here</h2>
                 <p className="text-muted-foreground mt-2 max-w-md text-sm">
-                  Topic do, AI content likhega, phir colorful slide preview aur PPTX download dono milenge.
+                  Enter a topic to generate AI content, a colorful slide preview, and a downloadable PPTX.
                 </p>
               </CardContent>
             </Card>
@@ -282,7 +298,7 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
                   size="sm"
                   onClick={() => {
                     const ok = printElementById('presentation-export-all', deck.topic);
-                    if (!ok) toast.error('Presentation export content nahi mila.');
+                    if (!ok) toast.error('Presentation export content is unavailable.');
                   }}
                 >
                   <Download className="h-3.5 w-3.5" />

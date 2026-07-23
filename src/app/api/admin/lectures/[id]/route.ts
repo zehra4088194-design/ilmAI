@@ -27,7 +27,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (body.order_index !== undefined) update.order_index = body.order_index;
 
   if (Object.keys(update).length === 0) {
-    return NextResponse.json({ error: 'Koi field update ke liye nahi diya' }, { status: 400 });
+    return NextResponse.json({ error: 'No fields were provided for update' }, { status: 400 });
   }
 
   let adminClient;
@@ -41,9 +41,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   if (error) {
     console.error('lecture update error:', error);
-    return NextResponse.json({ error: `Lecture update nahi hua: ${error.message}` }, { status: 500 });
+    return NextResponse.json({ error: `Lecture could not be updated: ${error.message}` }, { status: 500 });
   }
-  if (!data) return NextResponse.json({ error: 'Lecture nahi mila' }, { status: 404 });
+  if (!data) return NextResponse.json({ error: 'Lecture was not found' }, { status: 404 });
 
   return NextResponse.json({ lecture: data });
 }
@@ -64,7 +64,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
   if (error) {
     console.error('lecture delete error:', error);
-    return NextResponse.json({ error: `Lecture delete nahi hua: ${error.message}` }, { status: 500 });
+    return NextResponse.json({ error: `Lecture could not be deleted: ${error.message}` }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });

@@ -201,7 +201,7 @@ export function StudentChatClient() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'The request could not be sent.');
       setIdentifier('');
-      toast.success('Study buddy request send ho gayi');
+      toast.success('Study buddy request sent.');
       await loadRequests();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'The request could not be sent.');

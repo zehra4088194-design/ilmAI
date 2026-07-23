@@ -19,7 +19,12 @@ export default async function LectureChapterPage({
   } = await supabase.auth.getUser();
   if (!user) notFound();
   const { data: profile } = await supabase.from('profiles').select('board, grade_level').eq('id', user.id).single();
-  const { data: subject } = await supabase.from('subjects').select('id, name, slug, boards, grade_levels').eq('slug', subjectSlug).maybeSingle();
+  const { data: subject } = await supabase
+    .from('subjects')
+    .select('id, name, slug, boards, grade_levels')
+    .eq('slug', subjectSlug)
+    .eq('is_active', true)
+    .maybeSingle();
   if (!subject) notFound();
   if (
     (subject.boards?.length && profile?.board && !subject.boards.includes(profile.board)) ||
@@ -32,6 +37,7 @@ export default async function LectureChapterPage({
     .select('id, name, slug, description, boards, grade_levels')
     .eq('subject_id', subject.id)
     .eq('slug', chapterSlug)
+    .eq('is_active', true)
     .maybeSingle();
   if (!chapter) notFound();
   if (
@@ -49,11 +55,25 @@ export default async function LectureChapterPage({
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
-      <Link href={`/lectures/${subject.slug}`} className="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 text-sm font-medium"><ArrowLeft className="h-4 w-4" />Back to {subject.name} chapters</Link>
+      <Link
+        href={`/lectures/${subject.slug}`}
+        className="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 text-sm font-medium"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back to {subject.name} chapters
+      </Link>
       <section className="border-border/70 bg-card/80 rounded-3xl border p-5 sm:p-7">
-        <div className="flex flex-wrap gap-2"><Badge>{subject.name}</Badge><Badge variant="outline" className="gap-1"><Video className="h-3.5 w-3.5" />{lectures?.length || 0} lectures</Badge></div>
+        <div className="flex flex-wrap gap-2">
+          <Badge>{subject.name}</Badge>
+          <Badge variant="outline" className="gap-1">
+            <Video className="h-3.5 w-3.5" />
+            {lectures?.length || 0} lectures
+          </Badge>
+        </div>
         <h1 className="mt-4 text-2xl font-bold sm:text-3xl">{chapter.name}</h1>
-        <p className="text-muted-foreground mt-2">{chapter.description || 'Only lectures for this chapter are shown below.'}</p>
+        <p className="text-muted-foreground mt-2">
+          {chapter.description || 'Only lectures for this chapter are shown below.'}
+        </p>
       </section>
       <LectureGrid lectures={(lectures || []) as StudyLecture[]} autoOpenId={queryParams.lecture} />
     </div>

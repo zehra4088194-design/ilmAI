@@ -11,7 +11,7 @@ export async function GET() {
     .select('*')
     .order('created_at', { ascending: false })
     .limit(100);
-  if (error) return NextResponse.json({ error: `Inquiries load nahi hui: ${error.message}` }, { status: 500 });
+  if (error) return NextResponse.json({ error: `Inquiries could not be loaded: ${error.message}` }, { status: 500 });
   return NextResponse.json({ inquiries: data || [] });
 }
 
@@ -20,7 +20,7 @@ export async function PATCH(req: NextRequest) {
   if (!adminUser) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const { id, status } = (await req.json()) as { id?: string; status?: string };
   if (!id || !['new', 'contacted', 'closed'].includes(status || '')) {
-    return NextResponse.json({ error: 'Valid inquiry id/status required hai' }, { status: 400 });
+    return NextResponse.json({ error: 'A valid inquiry ID and status are required' }, { status: 400 });
   }
   const db = (await createAdminClient()) as any;
   const { data, error } = await db
@@ -29,6 +29,6 @@ export async function PATCH(req: NextRequest) {
     .eq('id', id)
     .select('*')
     .single();
-  if (error) return NextResponse.json({ error: `Status update nahi hui: ${error.message}` }, { status: 500 });
+  if (error) return NextResponse.json({ error: `Status could not be updated: ${error.message}` }, { status: 500 });
   return NextResponse.json({ inquiry: data });
 }

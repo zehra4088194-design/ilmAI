@@ -13,6 +13,8 @@ import { CreditBalancePill } from '@/components/features/ai-selector/CreditBalan
 type DashboardNavbarProps = {
   mobileMenuOpen?: boolean;
   onToggleMobileMenu?: () => void;
+  desktopSidebarOpen?: boolean;
+  onToggleDesktopSidebar?: () => void;
 };
 
 type SearchResult = {
@@ -26,6 +28,8 @@ type SearchResult = {
 export function DashboardNavbar({
   mobileMenuOpen: controlledMobileMenuOpen,
   onToggleMobileMenu,
+  desktopSidebarOpen = true,
+  onToggleDesktopSidebar,
 }: DashboardNavbarProps = {}) {
   const { user } = useAuth();
   const [uncontrolledMobileMenuOpen, setUncontrolledMobileMenuOpen] = useState(false);
@@ -70,7 +74,9 @@ export function DashboardNavbar({
   };
 
   return (
-    <header className="border-border bg-background/95 pointer-events-auto fixed top-0 right-0 left-0 z-[80] flex h-16 min-w-0 items-center gap-2 border-b px-2 backdrop-blur-[1px] sm:gap-3 sm:px-4 md:px-6 lg:left-64 lg:z-30">
+    <header
+      className={`border-border bg-background/95 pointer-events-auto fixed top-0 right-0 left-0 z-[80] flex h-16 min-w-0 items-center gap-2 border-b px-2 backdrop-blur-[1px] transition-[left] duration-300 sm:gap-3 sm:px-4 md:px-6 lg:z-30 ${desktopSidebarOpen ? 'lg:left-64' : 'lg:left-0'}`}
+    >
       <button
         type="button"
         className="relative z-[120] inline-flex h-10 w-10 shrink-0 touch-manipulation items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 text-white shadow-lg shadow-violet-500/20 lg:hidden"
@@ -80,8 +86,18 @@ export function DashboardNavbar({
       >
         {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
       </button>
+      <button
+        type="button"
+        className="border-border bg-muted/50 text-foreground hover:bg-muted hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl border lg:inline-flex"
+        onClick={onToggleDesktopSidebar}
+        aria-label={desktopSidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
+        aria-expanded={desktopSidebarOpen}
+        title={desktopSidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
+      >
+        {desktopSidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+      </button>
       {/* Search */}
-      <div className="relative min-w-0 max-w-md flex-1">
+      <div className="relative max-w-md min-w-0 flex-1">
         <div className="relative">
           <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
           <input
@@ -120,7 +136,7 @@ export function DashboardNavbar({
         )}
       </div>
       <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-        <CreditBalancePill className="hidden sm:inline-flex" />
+        <CreditBalancePill />
         {/* XP Display */}
         {user && (
           <Badge

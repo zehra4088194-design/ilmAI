@@ -52,7 +52,15 @@ export default async function DashboardPage() {
   const today = new Date();
   const nextWeek = new Date(today);
   nextWeek.setDate(today.getDate() + 7);
-  const [{ data: subjects }, { data: quizSessions }, { data: bossQuiz }, { data: opportunityDeadlines }] =
+  const [
+    { data: subjects },
+    { data: quizSessions },
+    { data: bossQuiz },
+    { data: opportunityDeadlines },
+    { data: latestDiagnostic },
+    { data: weakMastery },
+    { count: revisionDueCount },
+  ] =
     await Promise.all([
       subjectsQuery,
       supabase
@@ -76,6 +84,26 @@ export default async function DashboardPage() {
         .lte('reminder_date', nextWeek.toISOString().slice(0, 10))
         .order('reminder_date', { ascending: true })
         .limit(3),
+      supabase
+        .from('diagnostic_attempts' as any)
+        .select('id')
+        .eq('student_id', user!.id)
+        .order('completed_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from('chapter_mastery' as any)
+        .select('chapter_id, mastery, status, chapters(name)')
+        .eq('student_id', user!.id)
+        .order('mastery', { ascending: true })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from('student_revision_items' as any)
+        .select('id', { count: 'exact', head: true })
+        .eq('student_id', user!.id)
+        .eq('status', 'due')
+        .lte('due_at', new Date().toISOString()),
     ]);
 
   const subjectNames = new Map((subjects || []).map((subject) => [subject.id, subject.name]));
@@ -124,7 +152,25 @@ export default async function DashboardPage() {
         streak={profile?.streak || 0}
         studyTime={profile?.total_study_time || 0}
       />
-      <StudyCommandCenter streak={profile?.streak || 0} subjects={subjects || []} scores={subjectScores} />
+      <StudyCommandCenter
+        streak={profile?.streak || 0}
+        subjects={subjects || []}
+        scores={subjectScores}
+        mission={{
+          diagnosticDone: Boolean(latestDiagnostic),
+          weakChapter: weakMastery
+            ? {
+                id: (weakMastery as any).chapter_id,
+                name: Array.isArray((weakMastery as any).chapters)
+                  ? (weakMastery as any).chapters[0]?.name || 'Weak chapter'
+                  : (weakMastery as any).chapters?.name || 'Weak chapter',
+                mastery: Number((weakMastery as any).mastery || 0),
+                status: (weakMastery as any).status,
+              }
+            : null,
+          revisionDue: revisionDueCount || 0,
+        }}
+      />
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
           <WeaknessRadar scores={subjectScores} />

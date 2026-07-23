@@ -33,6 +33,6 @@ export async function POST() {
     });
   } catch (error) {
     console.error('Generate invite error:', error);
-    return NextResponse.json({ status: 'error', error: 'Invite generate nahi hua' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: 'The invite could not be generated.' }, { status: 500 });
   }
 }

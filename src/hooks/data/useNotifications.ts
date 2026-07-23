@@ -68,7 +68,7 @@ export function useNotifications() {
     },
     onError: (_error, _id, context) => {
       if (context?.previous) queryClient.setQueryData(['notifications'], context.previous);
-      toast.error('Notification dismiss nahi hui');
+      toast.error('The notification could not be dismissed.');
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
   });

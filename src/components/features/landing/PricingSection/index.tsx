@@ -54,7 +54,7 @@ export function PricingSection({ currency }: { currency: Currency }) {
 
   const submitInstitutionInquiry = async () => {
     if (!institutionName.trim() || institutionCount < 1) {
-      toast.error('School/college ka naam aur students ki valid tadaad likhein');
+      toast.error('Enter the institution name and a valid number of students');
       return;
     }
     if (contactEmail && !/^\S+@\S+\.\S+$/.test(contactEmail)) {

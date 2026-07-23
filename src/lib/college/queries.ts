@@ -159,7 +159,7 @@ export async function getCollegeResourceMetadata(
   const { data, error } = await db
     .from('college_resources')
     .select(
-      'id, college_id, title, resource_type, stream, degree_name, course_name, semester, chapter_title, created_at'
+      'id, college_id, title, resource_type, stream, degree_name, course_name, semester, chapter_title, file_url, light_file_url, dark_file_url, created_at'
     )
     .eq('college_id', collegeId)
     .order('created_at', { ascending: false });

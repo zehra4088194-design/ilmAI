@@ -11,7 +11,7 @@ import type { QuizQuestion } from '@/types';
 import { AiAnswerRenderer } from '@/components/features/ai/AiAnswerRenderer';
 
 const AUTO_ADVANCE_CORRECT_MS = 1350;
-const AUTO_ADVANCE_WRONG_MS = 1000;
+const AUTO_ADVANCE_WRONG_MS = 2000;
 
 type RewardPath = { startX: number; startY: number; endX: number; endY: number };
 

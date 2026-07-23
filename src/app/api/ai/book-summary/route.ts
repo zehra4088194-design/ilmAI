@@ -11,18 +11,18 @@ export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ status: 'error', error: 'Login required hai' }, { status: 401 });
+    if (!user) return NextResponse.json({ status: 'error', error: 'Authentication is required' }, { status: 401 });
 
     const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
     const tier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
     if (tier === 'FREE') {
-      return NextResponse.json({ status: 'error', error: 'AI Summary Pro mein unlock hoti hai.' }, { status: 403 });
+      return NextResponse.json({ status: 'error', error: 'AI Summary is available on Pro.' }, { status: 403 });
     }
     const limitCheck = await checkAiMessageLimit(user.id, tier, 'book_summary');
-    if (!limitCheck.success) return NextResponse.json({ status: 'error', error: 'Daily AI limit khatam ho gayi' }, { status: 429 });
+    if (!limitCheck.success) return NextResponse.json({ status: 'error', error: 'The daily AI limit has been reached.' }, { status: 429 });
 
     const { title, description, subjectName, fileType, extractedText } = await req.json();
-    if (!title) return NextResponse.json({ status: 'error', error: 'Book title zaroori hai' }, { status: 400 });
+    if (!title) return NextResponse.json({ status: 'error', error: 'Book title is required' }, { status: 400 });
 
     const sourceText = [
       `Title: ${title}`,
@@ -40,11 +40,11 @@ export async function POST(req: NextRequest) {
 ${content}
 
 Structure your Markdown response with:
-## Kis Baare Mein Hai
+## What This Book Is About
 (2-3 sentences on what this resource covers)
 ## Key Topics
 (bullet list of 4-6 important topics/chapters)
-## Kis Ke Liye Faidmand Hai
+## Who Will Benefit From This Book
 (1-2 sentences on which students should read this)
 
 If no extracted text is available, reason from the title/subject/description sensibly and do not invent specific page numbers or exact contents you cannot know.`,
@@ -58,6 +58,6 @@ If no extracted text is available, reason from the title/subject/description sen
     });
   } catch (error) {
     console.error('Book summary error:', error);
-    return NextResponse.json({ status: 'error', error: 'Summary generate nahi hui' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: 'The summary could not be generated' }, { status: 500 });
   }
 }

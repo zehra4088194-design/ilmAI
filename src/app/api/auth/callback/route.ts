@@ -5,6 +5,7 @@ import { BOARDS, GRADE_LEVELS } from '@/lib/constants';
 import { needsProfileCompletion } from '@/lib/utils/checkProfileComplete';
 import { nanoid } from 'nanoid';
 import { LOCALE_COOKIE_NAME } from '@/lib/i18n/config';
+import { getRequestSiteUrl } from '@/lib/utils/siteUrl';
 
 type BoardType = Database['public']['Enums']['board_type'];
 type GradeLevel = Database['public']['Enums']['grade_level'];
@@ -64,7 +65,9 @@ async function ensureParentInvite(parentId: string) {
 }
 
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url);
+  const requestUrl = new URL(request.url);
+  const { searchParams } = requestUrl;
+  const origin = getRequestSiteUrl(request);
   const code = searchParams.get('code');
   const requestedRedirect = searchParams.get('redirect') || '/dashboard';
   const redirectTo =

@@ -79,7 +79,7 @@ export function RestLibraryAdmin() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Playlist could not be saved.');
       setPlaylistForm({ name: '', description: '', cover_image_url: '', order_index: 0 });
-      toast.success('Playlist add ho gayi');
+      toast.success('Playlist added.');
       await load();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Playlist could not be saved.');
@@ -90,7 +90,7 @@ export function RestLibraryAdmin() {
 
   const addSong = async () => {
     if (!songForm.playlist_id || !songForm.title.trim() || !songForm.youtube_url.trim()) {
-      return toast.error('Playlist, title aur YouTube URL required hain');
+      return toast.error('Playlist, title, and YouTube URL are required');
     }
     setSaving(true);
     try {
@@ -116,7 +116,7 @@ export function RestLibraryAdmin() {
     const res = await fetch(`/api/admin/music-playlists?id=${id}`, { method: 'DELETE' });
     const json = await res.json();
     if (!res.ok) return toast.error(json.error || 'Delete fail');
-    toast.success('Playlist delete ho gayi');
+    toast.success('Playlist deleted.');
     await load();
   };
 
@@ -124,7 +124,7 @@ export function RestLibraryAdmin() {
     const res = await fetch(`/api/admin/music-songs?id=${id}`, { method: 'DELETE' });
     const json = await res.json();
     if (!res.ok) return toast.error(json.error || 'Delete fail');
-    toast.success('Song delete ho gaya');
+    toast.success('Song deleted.');
     await load();
   };
 

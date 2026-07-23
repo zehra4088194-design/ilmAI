@@ -14,7 +14,7 @@ export default async function DoubtsPage() {
   const { data: subjects } = await subjectsQuery;
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <div><h1 className="text-2xl font-bold">Ask a Teacher 🎓</h1><p className="text-muted-foreground">Koi bhi sawaal pucho — teachers jawab denge</p></div>
+      <div><h1 className="text-2xl font-bold">Ask a Teacher</h1><p className="text-muted-foreground">Ask an academic question and a teacher will respond.</p></div>
       <DoubtBoardClient doubts={doubts || []} subjects={subjects || []} userId={user!.id} />
     </div>
   );

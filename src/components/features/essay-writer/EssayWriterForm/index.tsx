@@ -70,7 +70,7 @@ export function EssayWriterForm({ userTier, gradeLevel: initialGradeLevel }: Ess
       setGradeLevel(profileGradeLevel);
       setShowOverride(false);
     } catch {
-      toast.error('Essay generate nahi hui, dobara koshish karo');
+      toast.error('The essay could not be generated. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -79,7 +79,7 @@ export function EssayWriterForm({ userTier, gradeLevel: initialGradeLevel }: Ess
   const copyEssay = () => {
     if (!essay) return;
     navigator.clipboard.writeText(essay);
-    toast.success('Copy ho gaya!');
+    toast.success('Copied.');
   };
 
   return (
@@ -131,7 +131,7 @@ export function EssayWriterForm({ userTier, gradeLevel: initialGradeLevel }: Ess
             <AIProviderSelector provider={provider} tier={aiTier} onChange={(p, t) => { setProvider(p); setAiTier(t); }} isFreeTier={isFreeTier} />
             <Button variant="gradient" size="lg" onClick={generate} disabled={loading}>
               {loading ? <RotateCcw className="w-5 h-5 animate-spin" /> : <PenLine className="w-5 h-5" />}
-              {loading ? 'Likh raha hai...' : 'Essay Likho'}
+              {loading ? 'Writing...' : 'Write Essay'}
             </Button>
           </div>
         </CardContent>
@@ -140,15 +140,15 @@ export function EssayWriterForm({ userTier, gradeLevel: initialGradeLevel }: Ess
       <AnimatePresence>
         {loading && (
           <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-16">
-            <BrandLoader label="AI essay likh raha hai..." />
+            <BrandLoader label="AI is writing your essay..." />
           </motion.div>
         )}
 
         {essay && !loading && (
           <motion.div key="essay" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-violet-400" />Tumhari Essay</p>
-              <Button variant="outline" size="sm" onClick={copyEssay}><Copy className="w-3.5 h-3.5" />Copy Karo</Button>
+              <p className="text-sm font-semibold flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-violet-400" />Your Essay</p>
+              <Button variant="outline" size="sm" onClick={copyEssay}><Copy className="w-3.5 h-3.5" />Copy</Button>
             </div>
             {essayGradeLevel && (
               <EssayClassBanner

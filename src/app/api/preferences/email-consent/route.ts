@@ -17,6 +17,6 @@ export async function POST(req: NextRequest) {
     })
     .eq('id', user.id);
 
-  if (error) return NextResponse.json({ error: 'Email preference save nahi hui' }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'The email preference could not be saved.' }, { status: 500 });
   return NextResponse.json({ status: 'success', studyEmails });
 }

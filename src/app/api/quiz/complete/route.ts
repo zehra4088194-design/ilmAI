@@ -4,6 +4,7 @@ import { recomputeDigitalTwin, shouldRecomputeDigitalTwin } from '@/lib/digital-
 import { awardCoins } from '@/lib/gamification/coins';
 import { COINS_PER_QUIZ_COMPLETION, XP_PER_CORRECT_QUIZ_ANSWER } from '@/lib/gamification/constants';
 import { awardXp } from '@/lib/gamification/xp';
+import { recordMistakeWithRevision, updateChapterMastery } from '@/lib/learning/mastery';
 import type { QuizSession } from '@/types';
 
 export const runtime = 'nodejs';
@@ -41,6 +42,44 @@ function scheduleTwinRecompute(studentId: string) {
       console.error('Digital twin recompute failed:', error);
     }
   });
+}
+
+async function updateLearningSignals(db: any, studentId: string, session: QuizSession) {
+  const byChapter = new Map<string, { subjectId: string | null; correct: number; incorrect: number }>();
+  for (const question of session.questions) {
+    const chapterId = question.chapterId || session.chapterIds?.[0];
+    const subjectId = question.subjectId || session.subjectId;
+    if (chapterId) {
+      const current = byChapter.get(chapterId) || { subjectId, correct: 0, incorrect: 0 };
+      if (question.isCorrect === true) current.correct += 1;
+      else current.incorrect += 1;
+      byChapter.set(chapterId, current);
+    }
+    if (question.isCorrect === true) continue;
+    await recordMistakeWithRevision(db, {
+      studentId,
+      questionId: question.id || null,
+      subjectId,
+      chapterId,
+      conceptId: (question as any).conceptId || null,
+      source: session.mode || 'quiz',
+      questionText: question.text || (question as any).question || 'Question',
+      selectedAnswer: session.answers?.[question.id] == null ? null : String(session.answers[question.id]),
+      correctAnswer: question.correctAnswer == null ? null : String(question.correctAnswer),
+      explanation: question.explanation || null,
+    });
+  }
+
+  for (const [chapterId, signal] of byChapter) {
+    await updateChapterMastery(db, {
+      studentId,
+      subjectId: signal.subjectId,
+      chapterId,
+      correct: signal.correct,
+      incorrect: signal.incorrect,
+      source: session.mode || 'quiz',
+    });
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -90,7 +129,7 @@ export async function POST(req: NextRequest) {
 
     if (error) {
       console.error('Quiz completion insert failed:', error);
-      return NextResponse.json({ status: 'error', error: 'Quiz result save nahi ho saka' }, { status: 500 });
+      return NextResponse.json({ status: 'error', error: 'The quiz result could not be saved.' }, { status: 500 });
     }
 
     const xpEarned = Math.max(0, Math.min(100, session.correctCount * XP_PER_CORRECT_QUIZ_ANSWER));
@@ -111,6 +150,7 @@ export async function POST(req: NextRequest) {
       .update({ total_study_time: (profile?.total_study_time || 0) + timeSpent })
       .eq('id', user.id);
     await supabase.rpc('update_streak', { p_user_id: user.id });
+    await updateLearningSignals(supabase as any, user.id, session);
 
     scheduleTwinRecompute(user.id);
 
@@ -120,6 +160,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error('Quiz completion error:', error);
-    return NextResponse.json({ status: 'error', error: 'Quiz result save nahi ho saka' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: 'The quiz result could not be saved.' }, { status: 500 });
   }
 }

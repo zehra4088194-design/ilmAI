@@ -35,7 +35,7 @@ export function ClassSelectStep() {
       const result = await completeOnboarding(gradeLevel, inferredLevel);
 
       if (!result.success) {
-        setError(result.error ?? 'Kuch masla ho gaya. Please try again.');
+        setError(result.error ?? 'Something went wrong. Please try again.');
         setSelected(null);
         return;
       }

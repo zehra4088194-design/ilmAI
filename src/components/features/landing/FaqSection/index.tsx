@@ -10,7 +10,7 @@ const FAQS = [
   { q: 'Which languages does the AI Tutor support?', a: 'The AI Tutor can respond in English and Urdu. You can write in the language you prefer.' },
   { q: 'How do I cancel a subscription?', a: 'You can cancel your subscription from Settings at any time. Pro access remains active until the current billing period ends.' },
   { q: 'Is offline study available?', a: 'Offline mode is available on the Elite plan. You can download notes, flashcards, and eligible content for offline use.' },
-  { q: 'MCQ questions kaun verify karta hai?', a: 'Sab MCQs subject expert teachers ne verify kiye hain. Agar koi mistake mile to report karein, hum fix kar denge.' },
+  { q: 'Who verifies the MCQ questions?', a: 'Subject-specialist teachers verify all MCQs. Report any issue and our team will review it.' },
 ];
 
 export function FaqSection() {
@@ -19,7 +19,7 @@ export function FaqSection() {
     <section className="py-24">
       <div className="container mx-auto px-4 max-w-3xl">
         <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Aksar Puche Jaane Wale <span className="gradient-text">Sawaal</span></h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">Frequently Asked <span className="gradient-text">Questions</span></h2>
         </motion.div>
         <div className="space-y-4">
           {FAQS.map((faq, i) => (

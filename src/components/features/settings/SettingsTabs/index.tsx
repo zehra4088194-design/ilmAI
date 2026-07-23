@@ -177,7 +177,7 @@ export function SettingsTabs({
         education_level: educationLevel,
         updated_at: new Date().toISOString(),
       }));
-      toast.success('Profile update ho gaya!');
+      toast.success('Profile updated.');
     }
     setSaving(false);
   };
@@ -193,7 +193,7 @@ export function SettingsTabs({
       });
       const json = await res.json();
       if (!res.ok || json.status === 'error') {
-        toast.error(json.error || 'Gender update nahi ho saka');
+        toast.error(json.error || 'Gender could not be updated.');
         return;
       }
       setGender(nextGender);
@@ -207,9 +207,9 @@ export function SettingsTabs({
       if (!window.localStorage.getItem('ilm-ai-theme-explicit')) {
         setTheme(nextGender === 'girl' ? 'theme-pink-light' : 'theme-midnight-dark');
       }
-      toast.success('Gender setting update ho gayi. Agli change 7 din baad hogi.');
+      toast.success('Gender setting updated. You can change it again after 7 days.');
     } catch {
-      toast.error('Gender update nahi ho saka');
+      toast.error('Gender could not be updated.');
     } finally {
       setGenderSaving(false);
     }
@@ -261,7 +261,7 @@ export function SettingsTabs({
         preferred_output_style: preferredOutputStyle,
         updated_at: new Date().toISOString(),
       }));
-      toast.success('University settings save ho gayi!');
+      toast.success('University settings saved.');
     }
     setSaving(false);
   };
@@ -305,7 +305,7 @@ export function SettingsTabs({
         toast.success('Notification preferences saved.');
       }
     } catch {
-      toast.error('Notification preferences save nahi hui');
+      toast.error('Notification preferences could not be saved.');
     } finally {
       setNotificationSaving(false);
     }
@@ -320,11 +320,11 @@ export function SettingsTabs({
       .eq('id', localProfile.id);
     if (error) {
       setLocale(previousLocale);
-      toast.error('Language save nahi hui. Database migration check karein.');
+      toast.error('Language preference could not be saved. Check the database migration.');
       return;
     }
     setLocalProfile((current: any) => ({ ...current, preferred_language: nextLocale }));
-    toast.success(nextLocale === 'en' ? 'Language changed to English.' : 'Language Roman Urdu mein update ho gayi!');
+    toast.success(nextLocale === 'en' ? 'Language changed to English.' : 'Language changed to Roman Urdu.');
   };
 
   const handleLinkParent = async () => {
@@ -355,7 +355,7 @@ export function SettingsTabs({
         .maybeSingle();
       setApprovedLink(data);
     } catch {
-      toast.error('Kuch ghalat ho gaya');
+      toast.error('Something went wrong.');
     } finally {
       setLinking(false);
     }
@@ -411,8 +411,8 @@ export function SettingsTabs({
                     ))}
                   </div>
                   <p className="text-muted-foreground mt-1.5 text-xs">
-                    Privacy ke liye Study Buddies same-gender hain. Ye setting har 7 din mein sirf ek baar change hoti
-                    hai.
+                    For privacy, Study Buddies matches students of the same gender. This setting can be changed only
+                    once every 7 days.
                     {genderChangedAt
                       ? ` Next change: ${new Date(new Date(genderChangedAt).getTime() + 7 * 24 * 60 * 60 * 1000).toLocaleString()}.`
                       : ''}
@@ -450,8 +450,8 @@ export function SettingsTabs({
                   Education Level
                 </h3>
                 <p className="text-muted-foreground text-sm">
-                  University Mode select karne se dashboard assignment, essay, presentation, viva aur semester tools
-                  show karega.
+                  Selecting University Mode adds assignment, essay, presentation, viva, and semester tools to your
+                  dashboard.
                 </p>
               </div>
               <div className="grid gap-3 sm:grid-cols-3">
@@ -558,10 +558,10 @@ export function SettingsTabs({
               <div>
                 <h3 className="mb-1 flex items-center gap-2 font-semibold">
                   <Users className="h-4 w-4 text-violet-400" />
-                  Parent Se Link Karo
+                  Link a Parent
                 </h3>
                 <p className="text-muted-foreground mb-4 text-sm">
-                  Apne parent se invite code lo aur yahan enter karo — wo tumhari progress dekh sakenge.
+                  Ask your parent for an invite code and enter it here so they can view your progress.
                 </p>
               </div>
               {loadingLink ? (
@@ -569,7 +569,7 @@ export function SettingsTabs({
               ) : approvedLink ? (
                 <div className="space-y-4">
                   <div className="rounded-lg bg-green-500/10 px-3 py-2 text-sm text-green-500">
-                    ✅ Aap apne parent se linked ho — wo aapki progress dekh sakte hain.
+                    You are linked to your parent, who can now view your progress.
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <ParentMessageThread
@@ -595,7 +595,7 @@ export function SettingsTabs({
                       className="font-mono"
                     />
                     <Button variant="gradient" onClick={handleLinkParent} loading={linking}>
-                      Link Karo
+                      Link Parent
                     </Button>
                   </div>
                   <div className="flex items-center gap-2">
@@ -607,7 +607,7 @@ export function SettingsTabs({
                   </div>
                   <ParentQrScanner />
                   <p className="text-muted-foreground text-xs">
-                    Parent apne dashboard se &ldquo;Generate Invite Code&rdquo; pe click kar ke ye code bana sakte hain.
+                    Your parent can create this code by selecting &ldquo;Generate Invite Code&rdquo; on their dashboard.
                   </p>
                 </>
               )}

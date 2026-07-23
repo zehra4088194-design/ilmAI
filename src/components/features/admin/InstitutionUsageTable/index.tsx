@@ -46,7 +46,7 @@ export function InstitutionUsageTable() {
           <Activity className="text-primary h-5 w-5" /> Institution-wise usage
         </CardTitle>
         <p className="text-muted-foreground text-sm">
-          Har sponsored school/college ka alag student count, active usage, study time, quiz performance aur plans.
+          Separate student counts, active usage, study time, quiz performance, and plan data for every sponsored institution.
         </p>
       </CardHeader>
       <CardContent className="overflow-x-auto p-0">

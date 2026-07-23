@@ -72,12 +72,15 @@ export async function POST(req: NextRequest) {
   const tier = (profile.subscription_tier || 'FREE') as SubscriptionTier;
   const { canPlay, limitSeconds } = await getLimit(tier);
   if (!canPlay || limitSeconds <= 0) {
-    return NextResponse.json({ error: 'Live games Pro/Elite feature hain.' }, { status: 402 });
+    return NextResponse.json({ error: 'Live games are available on Pro and Elite.' }, { status: 402 });
   }
 
   const usedSeconds = await getTodayUsage(supabase, user.id);
   if (usedSeconds >= limitSeconds) {
-    return NextResponse.json({ error: 'Aaj ka 45 minute game/rest limit complete ho gaya. Ab study par wapas aa jao.' }, { status: 429 });
+    return NextResponse.json(
+      { error: "Today's 45-minute game and rest limit has been reached. Return to your study plan." },
+      { status: 429 }
+    );
   }
 
   const body = await req.json().catch(() => ({}));

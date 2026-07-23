@@ -107,7 +107,7 @@ export default async function LecturesPage({ searchParams }: { searchParams: Pro
               {grade && <Badge variant="outline">{GRADE_LEVELS.find((item) => item.value === grade)?.label || grade}</Badge>}
             </div>
             <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Video Lectures</h1>
-            <p className="text-muted-foreground mt-2 max-w-2xl">Pehle subject, phir chapter select karein. Final page par sirf us chapter ke lectures load honge.</p>
+            <p className="text-muted-foreground mt-2 max-w-2xl">Select a subject and then a chapter. The final page will show only that chapter’s lectures.</p>
           </div>
           <form className="relative w-full md:w-72">
             <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />

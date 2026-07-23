@@ -61,6 +61,7 @@ type FormData = z.infer<typeof schema>;
 type AccountType = 'student' | 'parent';
 type Gender = 'girl' | 'boy';
 type SignupStepId =
+  | 'account'
   | 'language'
   | 'name'
   | 'email'
@@ -79,6 +80,11 @@ type SignupStep = {
 };
 
 const BASE_STEPS: SignupStep[] = [
+  {
+    id: 'account',
+    title: 'How will you use ilm AI?',
+    description: 'Choose your account type once to personalise signup.',
+  },
   { id: 'language', title: 'Choose your language', description: 'Choose English or Roman Urdu for the interface.' },
   { id: 'name', title: 'Your name', description: 'Enter the name that will appear in the app.' },
   { id: 'email', title: 'Email address', description: 'Used for login and account recovery.' },
@@ -87,7 +93,11 @@ const BASE_STEPS: SignupStep[] = [
     title: 'Secure password',
     description: 'You can also use the strong password suggested by your browser.',
   },
-  { id: 'username', title: 'Unique username', description: 'People can find you by this @username in search and Study Buddies.' },
+  {
+    id: 'username',
+    title: 'Unique username',
+    description: 'People can find you by this @username in search and Study Buddies.',
+  },
 ];
 
 const STUDENT_STEPS: SignupStep[] = [
@@ -106,7 +116,11 @@ const STUDENT_STEPS: SignupStep[] = [
 
 const SCHOOL_STEPS: SignupStep[] = [
   { id: 'grade', title: 'Your class', description: 'Lectures, notes, and papers for this class will be shown.' },
-  { id: 'board', title: 'Your board', description: 'The final step. Board-specific content will be filtered using this choice.' },
+  {
+    id: 'board',
+    title: 'Your board',
+    description: 'The final step. Board-specific content will be filtered using this choice.',
+  },
 ];
 
 export function getSignupSteps(accountType: AccountType, educationLevel: EducationLevel) {
@@ -274,7 +288,6 @@ export function RegisterForm() {
 
   const changeAccountType = (nextType: AccountType) => {
     setAccountType(nextType);
-    setStepIndex(0);
     if (nextType === 'parent') setGender(null);
   };
 
@@ -381,38 +394,9 @@ export function RegisterForm() {
           ))}
         </div>
         <p className="text-muted-foreground mt-3 text-[11px] leading-4">
-          Privacy: AI chats, scans, voice files, parent attachments, and in-app messages are retained for up to 2 days
-          and then automatically deleted. Library resources and academic progress are not affected.
+          Privacy: recent chats stay live for 2 days, then move to secure archive storage. Temporary scans are deleted
+          after 2 days.
         </p>
-      </div>
-
-      <div className="mb-5 grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          onClick={() => changeAccountType('student')}
-          aria-pressed={accountType === 'student'}
-          className={cn(
-            'flex items-center justify-center gap-2 rounded-xl border-2 p-3 text-sm font-semibold transition-all',
-            accountType === 'student'
-              ? 'border-primary bg-primary/15 text-primary'
-              : 'border-border bg-card/80 text-muted-foreground hover:border-primary/40'
-          )}
-        >
-          <GraduationCap className="h-4 w-4" /> {t('auth.register.student')}
-        </button>
-        <button
-          type="button"
-          onClick={() => changeAccountType('parent')}
-          aria-pressed={accountType === 'parent'}
-          className={cn(
-            'flex items-center justify-center gap-2 rounded-xl border-2 p-3 text-sm font-semibold transition-all',
-            accountType === 'parent'
-              ? 'border-primary bg-primary/15 text-primary'
-              : 'border-border bg-card/80 text-muted-foreground hover:border-primary/40'
-          )}
-        >
-          <Users className="h-4 w-4" /> {t('auth.register.parent')}
-        </button>
       </div>
 
       {currentStep.id === 'name' && (
@@ -440,16 +424,49 @@ export function RegisterForm() {
         <div className="min-h-36">
           <h2 className="mb-4 text-xl font-bold">{currentStep.title}</h2>
 
+          {currentStep.id === 'account' && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => changeAccountType('student')}
+                aria-pressed={accountType === 'student'}
+                className={cn(
+                  'flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border-2 p-4 text-center text-sm font-semibold transition-all',
+                  accountType === 'student'
+                    ? 'border-primary bg-primary/15 text-primary'
+                    : 'border-border bg-card/80 text-muted-foreground hover:border-primary/40'
+                )}
+              >
+                <GraduationCap className="h-6 w-6" /> {t('auth.register.student')}
+                <span className="text-muted-foreground text-xs font-normal">Classes, board and practice setup</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => changeAccountType('parent')}
+                aria-pressed={accountType === 'parent'}
+                className={cn(
+                  'flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border-2 p-4 text-center text-sm font-semibold transition-all',
+                  accountType === 'parent'
+                    ? 'border-primary bg-primary/15 text-primary'
+                    : 'border-border bg-card/80 text-muted-foreground hover:border-primary/40'
+                )}
+              >
+                <Users className="h-6 w-6" /> {t('auth.register.parent')}
+                <span className="text-muted-foreground text-xs font-normal">Link and support your student</span>
+              </button>
+            </div>
+          )}
+
           {currentStep.id === 'language' && (
             <div className="grid gap-3 sm:grid-cols-2">
-              {([
+              {[
                 { value: 'en' as const, label: 'English', description: 'Load the interface in English.' },
                 {
                   value: 'roman-ur' as const,
                   label: 'Roman Urdu',
                   description: 'Read Urdu using English letters.',
                 },
-              ]).map((option) => (
+              ].map((option) => (
                 <button
                   key={option.value}
                   type="button"
@@ -468,7 +485,9 @@ export function RegisterForm() {
                   <Languages className="text-primary mb-4 h-6 w-6" />
                   <span className="block font-bold">{option.label}</span>
                   <span className="text-muted-foreground mt-1 block text-xs leading-5">{option.description}</span>
-                  {preferredLanguage === option.value && <Check className="text-primary absolute top-4 right-4 h-4 w-4" />}
+                  {preferredLanguage === option.value && (
+                    <Check className="text-primary absolute top-4 right-4 h-4 w-4" />
+                  )}
                 </button>
               ))}
             </div>

@@ -25,7 +25,7 @@ export async function GET() {
     .not('sponsored_institution_name', 'is', null)
     .order('created_at', { ascending: false });
   if (profileError)
-    return NextResponse.json({ error: `Institution users load nahi hue: ${profileError.message}` }, { status: 500 });
+    return NextResponse.json({ error: `Institution users could not be loaded: ${profileError.message}` }, { status: 500 });
 
   const rows = (profiles || []) as UsageRow[];
   const userIds = rows.map((row) => row.id);

@@ -3,6 +3,7 @@ import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { createNotificationIfEnabled } from '@/lib/notifications/preferences';
 import { getParentLinkAccess } from '@/lib/parent/access';
 import { checkParentAttachmentLimits } from '@/lib/rate-limit';
+import { deleteR2Object, getR2Uri, isR2Configured, parseR2Uri, putR2Object } from '@/lib/storage/r2';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -33,13 +34,17 @@ export async function GET(req: NextRequest) {
     if (!user) return NextResponse.json({ status: 'error', error: 'Login required' }, { status: 401 });
 
     const linkId = req.nextUrl.searchParams.get('linkId');
-    if (!linkId) return NextResponse.json({ status: 'error', error: 'linkId required hai' }, { status: 400 });
+    if (!linkId) return NextResponse.json({ status: 'error', error: 'A link ID is required' }, { status: 400 });
 
     const access = await getParentLinkAccess(linkId, user.id);
-    if (!access) return NextResponse.json({ status: 'error', error: 'Ye link aapka nahi hai' }, { status: 403 });
+    if (!access)
+      return NextResponse.json(
+        { status: 'error', error: 'This link does not belong to your account.' },
+        { status: 403 }
+      );
     if (!access.plan.access.parentDashboard || access.plan.limits.parentAttachmentFilesMonthly <= 0) {
       return NextResponse.json(
-        { status: 'error', error: 'Parent shared files linked student ke Pro/Elite plan mein available hain.' },
+        { status: 'error', error: "Parent-shared files are available with the linked student's Pro or Elite plan." },
         { status: 403 }
       );
     }
@@ -53,11 +58,14 @@ export async function GET(req: NextRequest) {
 
     if (error) {
       console.error('Attachments list error:', error);
-      return NextResponse.json({ status: 'error', error: 'Files load nahi hui' }, { status: 500 });
+      return NextResponse.json({ status: 'error', error: 'Files could not be loaded' }, { status: 500 });
     }
 
     const withUrls = await Promise.all(
       (data || []).map(async (att) => {
+        if (parseR2Uri(att.file_url)) {
+          return { ...att, signed_url: `/api/parent/attachments/file?id=${encodeURIComponent(att.id)}` };
+        }
         const { data: signed } = await admin.storage.from(BUCKET).createSignedUrl(att.file_url, SIGNED_URL_TTL);
         return { ...att, signed_url: signed?.signedUrl || null };
       })
@@ -66,7 +74,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ status: 'success', data: withUrls });
   } catch (error) {
     console.error('Attachments GET error:', error);
-    return NextResponse.json({ status: 'error', error: 'Kuch ghalat ho gaya' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: 'Something went wrong.' }, { status: 500 });
   }
 }
 
@@ -85,49 +93,62 @@ export async function POST(req: NextRequest) {
     const caption = (formData.get('caption') as string | null)?.trim() || null;
 
     if (!linkId || !file) {
-      return NextResponse.json({ status: 'error', error: 'linkId aur file required hain' }, { status: 400 });
+      return NextResponse.json({ status: 'error', error: 'A link ID and file are required' }, { status: 400 });
     }
     if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json({ status: 'error', error: 'File 4MB se bari nahi honi chahiye' }, { status: 400 });
+      return NextResponse.json({ status: 'error', error: 'The file must not exceed 4 MB' }, { status: 400 });
     }
     if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json({ status: 'error', error: 'Sirf images ya PDF allowed hain' }, { status: 400 });
+      return NextResponse.json({ status: 'error', error: 'Only images and PDF files are allowed' }, { status: 400 });
     }
 
     // Validate the authenticated sender before using the service-role client.
     const access = await getParentLinkAccess(linkId, user.id);
     if (!access) {
-      return NextResponse.json({ status: 'error', error: 'Ye link aapka nahi hai' }, { status: 403 });
+      return NextResponse.json(
+        { status: 'error', error: 'This link does not belong to your account.' },
+        { status: 403 }
+      );
     }
     if (!access.plan.access.parentDashboard || access.plan.limits.parentAttachmentFilesMonthly <= 0) {
       return NextResponse.json(
-        { status: 'error', error: 'Parent file sharing linked student ke Pro/Elite plan mein available hai.' },
+        { status: 'error', error: "Parent file sharing is available with the linked student's Pro or Elite plan." },
         { status: 403 }
       );
     }
     const { admin, link } = access;
-    await ensureBucket(admin);
-
     const ext = file.name.includes('.') ? file.name.split('.').pop() : 'bin';
     const path = `${linkId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
     const buffer = Buffer.from(await file.arrayBuffer());
-
-    const { error: uploadError } = await admin.storage
-      .from(BUCKET)
-      .upload(path, buffer, { contentType: file.type, upsert: false });
-
-    if (uploadError) {
-      console.error('Attachment upload error:', uploadError);
-      return NextResponse.json({ status: 'error', error: 'File upload nahi hui' }, { status: 500 });
+    const useR2 = isR2Configured();
+    let r2Key: string | null = null;
+    let storedPath = path;
+    if (useR2) {
+      r2Key = `parent-attachments/${path}`;
+      await putR2Object(r2Key, buffer, {
+        contentType: file.type,
+        cacheControl: 'private, max-age=0, no-store',
+      });
+      storedPath = getR2Uri(r2Key);
+    } else {
+      await ensureBucket(admin);
+      const { error: uploadError } = await admin.storage
+        .from(BUCKET)
+        .upload(path, buffer, { contentType: file.type, upsert: false });
+      if (uploadError) {
+        console.error('Attachment upload error:', uploadError);
+        return NextResponse.json({ status: 'error', error: 'The file could not be uploaded' }, { status: 500 });
+      }
     }
 
     const quota = await checkParentAttachmentLimits(link.student_id!, access.tier, file.size);
     if (!quota.success) {
-      await admin.storage.from(BUCKET).remove([path]);
+      if (r2Key) await deleteR2Object(r2Key);
+      else await admin.storage.from(BUCKET).remove([path]);
       return NextResponse.json(
         {
           status: 'error',
-          error: `Is month ki parent file limit complete ho gayi (${access.plan.limits.parentAttachmentFilesMonthly} files / ${access.plan.limits.parentAttachmentMegabytesMonthly}MB).`,
+          error: `This month's parent file limit has been reached (${access.plan.limits.parentAttachmentFilesMonthly} files / ${access.plan.limits.parentAttachmentMegabytesMonthly} MB).`,
         },
         { status: 429 }
       );
@@ -138,7 +159,7 @@ export async function POST(req: NextRequest) {
       .insert({
         link_id: linkId,
         sender_id: user.id,
-        file_url: path,
+        file_url: storedPath,
         file_name: file.name,
         file_type: file.type,
         file_size_kb: Math.max(1, Math.round(file.size / 1024)),
@@ -149,20 +170,20 @@ export async function POST(req: NextRequest) {
 
     if (insertError) {
       console.error('Attachment insert error:', insertError);
-      // Best-effort cleanup so we don't leave an orphaned file in storage
-      await admin.storage.from(BUCKET).remove([path]);
-      return NextResponse.json({ status: 'error', error: 'Attachment save nahi hui' }, { status: 500 });
+      if (r2Key) await deleteR2Object(r2Key);
+      else await admin.storage.from(BUCKET).remove([path]);
+      return NextResponse.json({ status: 'error', error: 'The attachment could not be saved' }, { status: 500 });
     }
 
     const recipientId = user.id === link.parent_id ? link.student_id : link.parent_id;
     if (!recipientId) {
-      return NextResponse.json({ status: 'error', error: 'Linked student nahi mila' }, { status: 409 });
+      return NextResponse.json({ status: 'error', error: 'The linked student was not found' }, { status: 409 });
     }
     await createNotificationIfEnabled(admin, 'parentMessages', {
       user_id: recipientId,
       type: 'SOCIAL',
       title: 'New parent file',
-      message: `${file.name} share ki gayi hai.`,
+      message: `${file.name} was shared.`,
       link:
         user.id === link.parent_id
           ? `/settings?tab=parent-link&linkId=${encodeURIComponent(linkId)}&view=files`
@@ -170,11 +191,13 @@ export async function POST(req: NextRequest) {
       is_read: false,
     });
 
-    const { data: signed } = await admin.storage.from(BUCKET).createSignedUrl(path, SIGNED_URL_TTL);
+    const signedUrl = useR2
+      ? `/api/parent/attachments/file?id=${encodeURIComponent(record.id)}`
+      : (await admin.storage.from(BUCKET).createSignedUrl(path, SIGNED_URL_TTL)).data?.signedUrl || null;
 
-    return NextResponse.json({ status: 'success', data: { ...record, signed_url: signed?.signedUrl || null } });
+    return NextResponse.json({ status: 'success', data: { ...record, signed_url: signedUrl } });
   } catch (error) {
     console.error('Attachment POST error:', error);
-    return NextResponse.json({ status: 'error', error: 'Kuch ghalat ho gaya' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: 'Something went wrong.' }, { status: 500 });
   }
 }

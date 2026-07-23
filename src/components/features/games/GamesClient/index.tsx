@@ -39,10 +39,10 @@ export function GamesClient({ games, tier, canPlay, remainingSeconds, limitSecon
       <section className="dashboard-surface rounded-2xl border border-border/70 p-5">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <Badge className="mb-3 bg-violet-600">Pro wellness break</Badge>
+            <Badge className="mb-3 bg-violet-600">Cognitive break room</Badge>
             <h1 className="text-2xl font-bold">Games Zone</h1>
             <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-              Live games sirf relaxation ke liye hain. Daily {minutes(limitSeconds)} minutes max, phir app tumhein study par wapas nudge karegi.
+              Short, timed games for memory, logic, and focused breaks. Daily limit: {minutes(limitSeconds)} minutes.
             </p>
           </div>
           <div className="rounded-xl border border-border/70 bg-muted/35 px-4 py-3 text-sm">
@@ -56,8 +56,8 @@ export function GamesClient({ games, tier, canPlay, remainingSeconds, limitSecon
         <Card className="border-violet-500/30 bg-violet-500/10">
           <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="font-semibold">Live games Pro/Elite feature hain</p>
-              <p className="text-sm text-muted-foreground">Free users study tools preview kar sakte hain; games unlock ke liye Pro lo.</p>
+              <p className="font-semibold">Live games are available on Pro and Elite</p>
+              <p className="text-sm text-muted-foreground">Free users can preview the games catalog. Upgrade to unlock playable rooms.</p>
             </div>
             <Button asChild variant="gradient"><Link href="/subscription"><Crown className="h-4 w-4" /> Upgrade Pro</Link></Button>
           </CardContent>
@@ -99,7 +99,7 @@ export function GamesClient({ games, tier, canPlay, remainingSeconds, limitSecon
                 <Badge variant="outline">{game.category}</Badge>
               </div>
               <Button asChild variant={canPlay ? 'gradient' : 'outline'} className="w-full">
-                <Link href={canPlay ? `/games/${game.slug}` : '/subscription'}>{canPlay ? 'Play live' : 'Pro to unlock'}</Link>
+                <Link href={canPlay ? `/games/${game.slug}` : '/subscription'}>{canPlay ? 'Start game' : 'Upgrade to unlock'}</Link>
               </Button>
             </CardContent>
           </Card>

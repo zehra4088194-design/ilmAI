@@ -28,11 +28,11 @@ export async function POST(req: NextRequest) {
 
     const limitCheck = await checkAiMessageLimit(user.id, tier, 'guess_paper');
     if (!limitCheck.success) {
-      return NextResponse.json({ status: 'error', error: 'Daily AI limit khatam ho gayi. Kal phir try karo ya Pro plan lo.' }, { status: 429 });
+      return NextResponse.json({ status: 'error', error: 'The daily AI limit has been reached. Try again tomorrow or upgrade to Pro.' }, { status: 429 });
     }
 
     const { subjectId, chapterIds = [], board = 'FBISE', gradeLevel = 'GRADE_10', provider = 'groq', aiTier = 'mini' } = await req.json();
-    if (!subjectId) return NextResponse.json({ status: 'error', error: 'Subject required hai' }, { status: 400 });
+    if (!subjectId) return NextResponse.json({ status: 'error', error: 'A subject is required' }, { status: 400 });
 
     // Get chapter names for context
     let chapterContext = 'All chapters';
@@ -56,7 +56,7 @@ Return ONLY valid JSON, no markdown, no extra text:
   "shortQuestions": [{"q":"question","marks":2,"likelihood":"high"}],
   "longQuestions": [{"q":"question","marks":5,"likelihood":"high"}],
   "examTips": ["board-specific tip (3-4 items)"],
-  "disclaimer": "Ye AI predictions hain, actual paper mein change ho sakta hai."
+  "disclaimer": "These are AI-generated predictions; the actual paper may differ."
 }
 Include: 8 MCQs, 5 short questions, 3 long questions. Mark each as high or medium likelihood.`;
 
@@ -73,12 +73,12 @@ Include: 8 MCQs, 5 short questions, 3 long questions. Mark each as high or mediu
 
     const parsed = parseAiJson<GuessPaperResult>(result.text, {
       hotTopics: [], mcqs: [], shortQuestions: [], longQuestions: [], examTips: [],
-      disclaimer: 'Ye AI predictions hain, actual paper mein change ho sakta hai.',
+      disclaimer: 'These are AI-generated predictions; the actual paper may differ.',
     });
 
     return NextResponse.json({ status: 'success', data: parsed, providerUsed: result.providerUsed });
   } catch (error) {
     console.error('Guess paper error:', error);
-    return NextResponse.json({ status: 'error', error: 'Guess paper generate nahi ho saka. Dobara try karo.' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: 'The guess paper could not be generated. Please try again.' }, { status: 500 });
   }
 }

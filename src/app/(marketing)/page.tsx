@@ -14,7 +14,7 @@ import { LandingFooter } from '@/components/features/landing/Footer';
 import { getCurrencyForCountry } from '@/lib/constants';
 
 export const metadata: Metadata = {
-  title: 'ilm AI - Pakistan aur India ka #1 AI Study Platform',
+  title: 'ilm AI - AI-Powered Learning for Pakistan and India',
   description: 'AI-powered MCQ practice, tutoring, and past papers for Pakistani and Indian students. Start for free!',
 };
 

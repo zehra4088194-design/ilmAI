@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -9,6 +9,7 @@ import { Eye, EyeOff, Mail, MailCheck, Lock, RotateCw, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { createClient } from '@/lib/supabase/client';
+import { getBrowserSiteUrl } from '@/lib/utils/siteUrl';
 import { OAuthButtons } from '@/components/features/auth/OAuthButtons';
 import { toast } from 'sonner';
 import { useTranslations } from '@/providers/I18nProvider';
@@ -25,7 +26,6 @@ export function LoginForm() {
   const [magicLinkLoading, setMagicLinkLoading] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
-  const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect') || '/dashboard';
   const supabase = createClient();
@@ -34,8 +34,8 @@ export function LoginForm() {
 
   const finishLogin = () => {
     toast.success('Welcome back!');
-    router.push(redirect);
-    router.refresh();
+    const destination = redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/dashboard';
+    window.location.assign(new URL(destination, getBrowserSiteUrl()).toString());
   };
 
   const onSubmit = async (data: FormData) => {
@@ -54,7 +54,7 @@ export function LoginForm() {
 
     setMagicLinkLoading(true);
     setOtpError(null);
-    const callbackUrl = new URL('/api/auth/callback', window.location.origin);
+    const callbackUrl = new URL('/api/auth/callback', getBrowserSiteUrl());
     callbackUrl.searchParams.set('redirect', redirect);
     const { error } = await supabase.auth.signInWithOtp({
       email,

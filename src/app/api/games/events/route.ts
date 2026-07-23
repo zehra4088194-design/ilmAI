@@ -13,7 +13,7 @@ async function requireGameAccess() {
   const tier = (profile?.subscription_tier || 'FREE') as SubscriptionTier;
   const settings = await getPlatformSettings();
   const allowed = getPlanFromSettings(settings, tier).access.games;
-  return { supabase, user, allowed, error: allowed ? null : 'Live games Pro/Elite feature hain.', status: allowed ? 200 : 402 };
+  return { supabase, user, allowed, error: allowed ? null : 'Live games are available on Pro and Elite.', status: allowed ? 200 : 402 };
 }
 
 export async function GET(req: NextRequest) {

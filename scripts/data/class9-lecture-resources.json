@@ -1,0 +1,80 @@
+[
+  {
+    "subject_slug": "physics",
+    "chapter_order": 1,
+    "chapter_name": "Chapter 1: Physical Quantities and Measurement",
+    "title": "Class 9 Physics: Physical Quantities and Measurement",
+    "youtube_url": "https://www.youtube.com/watch?v=iqgipIKmEOA",
+    "provider": "YouTube",
+    "order_index": 1
+  },
+  {
+    "subject_slug": "physics",
+    "chapter_order": 2,
+    "chapter_name": "Chapter 2: Kinematics",
+    "title": "Class 9 Physics: Kinematics",
+    "youtube_url": "https://www.youtube.com/watch?v=MyMPFZLfH7Y",
+    "provider": "YouTube",
+    "order_index": 1
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_order": 4,
+    "chapter_name": "Chapter 4: Cell Cycle",
+    "title": "Biology: Cell Cycle and Mitosis",
+    "youtube_url": "https://www.youtube.com/watch?v=kz8_XFjFVHA",
+    "legacy_youtube_urls": ["https://www.youtube.com/watch?v=zrKdzS0SBpw"],
+    "provider": "ilmkidunya",
+    "order_index": 1
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_order": 8,
+    "chapter_name": "Chapter 8: Bioenergetics",
+    "title": "Biology: Photosynthesis and Bioenergetics",
+    "youtube_url": "https://www.youtube.com/watch?v=tf766tXyTgE",
+    "legacy_youtube_urls": ["https://www.youtube.com/watch?v=JPfGd7GSpsY"],
+    "provider": "ilmkidunya",
+    "order_index": 1
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_order": 10,
+    "chapter_name": "Chapter 10: Reproduction in Plants",
+    "title": "Biology: Plant Reproduction",
+    "youtube_url": "https://www.youtube.com/watch?v=Z4CjDBZcaGM",
+    "legacy_youtube_urls": ["https://www.youtube.com/watch?v=1-LQvzE4l2I"],
+    "provider": "ilmkidunya",
+    "order_index": 1
+  },
+  {
+    "subject_slug": "chemistry",
+    "chapter_order": 11,
+    "chapter_name": "Chapter 11: Hydrocarbons",
+    "title": "Chemistry: Hydrocarbons",
+    "youtube_url": "https://www.youtube.com/watch?v=7eBL3YL4bKY",
+    "legacy_youtube_urls": ["https://www.youtube.com/watch?v=ekVMPkLBUyA"],
+    "provider": "ilmkidunya",
+    "order_index": 1
+  },
+  {
+    "subject_slug": "chemistry",
+    "chapter_order": 13,
+    "chapter_name": "Chapter 13: Laboratory and Practical Skills",
+    "title": "Chemistry: Laboratory Safety and Chemical Hazards",
+    "youtube_url": "https://www.youtube.com/watch?v=8llpccWcYSQ",
+    "legacy_youtube_urls": ["https://www.youtube.com/watch?v=bgM3uL8exsY"],
+    "provider": "ilmkidunya",
+    "order_index": 1
+  },
+  {
+    "subject_slug": "chemistry",
+    "chapter_order": 13,
+    "chapter_name": "Chapter 13: Laboratory and Practical Skills",
+    "title": "Chemistry: Laboratory and Practical Skills - Part 2",
+    "youtube_url": "https://www.youtube.com/watch?v=E77R00eW0qM",
+    "legacy_youtube_urls": ["https://www.youtube.com/watch?v=ZrOIHzDWh9s"],
+    "provider": "Maam Saddaf",
+    "order_index": 2
+  }
+]

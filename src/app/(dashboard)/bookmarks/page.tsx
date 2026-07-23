@@ -5,7 +5,7 @@ export const metadata: Metadata = { title: 'Bookmarks' };
 export default function BookmarksPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <div><h1 className="text-2xl font-bold">Bookmarks</h1><p className="text-muted-foreground">Saved questions aur notes ek jagah</p></div>
+      <div><h1 className="text-2xl font-bold">Bookmarks</h1><p className="text-muted-foreground">Saved questions and notes in one place</p></div>
       <EmptyState
         icon={Bookmark}
         title="No bookmarks yet"

@@ -58,9 +58,7 @@ function consumeMemoryWindows(windows: RedisQuotaWindow[], amount: number): Quot
     }
     return current;
   });
-  const blockedIndex = windows.findIndex(
-    (window, index) => (entries[index]?.count ?? 0) + amount > window.limit
-  );
+  const blockedIndex = windows.findIndex((window, index) => (entries[index]?.count ?? 0) + amount > window.limit);
   if (blockedIndex >= 0) {
     return { success: false, remaining: 0, reset: windows[blockedIndex]?.resetAt ?? 0 };
   }
@@ -72,9 +70,7 @@ function consumeMemoryWindows(windows: RedisQuotaWindow[], amount: number): Quot
       resetAt: window.resetAt,
     });
   });
-  const remaining = Math.min(
-    ...windows.map((window, index) => window.limit - (entries[index]?.count ?? 0) - amount)
-  );
+  const remaining = Math.min(...windows.map((window, index) => window.limit - (entries[index]?.count ?? 0) - amount));
   const positiveResets = windows.map((window) => window.resetAt).filter((reset) => reset > 0);
   return {
     success: true,
@@ -133,11 +129,7 @@ function consumeMemoryWeightedWindows(windows: WeightedRedisQuotaWindow[]): Quot
   });
   return {
     success: true,
-    remaining: Math.min(
-      ...windows.map(
-        (window, index) => window.limit - (entries[index]?.count ?? 0) - window.amount
-      )
-    ),
+    remaining: Math.min(...windows.map((window, index) => window.limit - (entries[index]?.count ?? 0) - window.amount)),
     reset: Math.min(...windows.map((window) => window.resetAt).filter((reset) => reset > 0)),
   };
 }
@@ -159,9 +151,7 @@ async function consumeStoredWeightedWindows(windows: WeightedRedisQuotaWindow[])
       }
       return {
         success: true,
-        remaining: Math.min(
-          ...namespaced.map((window, index) => window.limit - (result.counts[index] || 0))
-        ),
+        remaining: Math.min(...namespaced.map((window, index) => window.limit - (result.counts[index] || 0))),
         reset: Math.min(...namespaced.map((window) => window.resetAt).filter((reset) => reset > 0)),
       };
     }
@@ -261,9 +251,11 @@ export async function getAudiencePlanLimits(
 }
 
 export function getLimitExceededMessage(tier: SubscriptionTier, featureLabel = 'AI tool') {
-  if (tier === 'FREE') return `${featureLabel} ke free weekly credits use ho gaye. Pro se monthly credits unlock karein.`;
-  if (tier === 'PRO') return `${featureLabel} ki Pro shared limit complete ho gayi. Elite mein 600/month milte hain.`;
-  return `${featureLabel} ki Elite shared limit complete ho gayi. Current quota window reset hone par try karein.`;
+  if (tier === 'FREE')
+    return `You have used all free weekly credits for ${featureLabel}. Upgrade to Pro for monthly credits.`;
+  if (tier === 'PRO')
+    return `The shared Pro limit for ${featureLabel} has been reached. Elite includes 600 credits per month.`;
+  return `The shared Elite limit for ${featureLabel} has been reached. Try again when the current quota window resets.`;
 }
 
 export async function getConfiguredLimitExceededMessage(tier: SubscriptionTier, featureLabel = 'AI tool') {
@@ -271,19 +263,15 @@ export async function getConfiguredLimitExceededMessage(tier: SubscriptionTier, 
   const pro = getPlanFromSettings(settings, 'PRO');
   const elite = getPlanFromSettings(settings, 'ELITE');
   if (tier === 'FREE') {
-    return `${featureLabel} ke free weekly credits complete ho gaye. Pro mein ${pro.limits.aiCreditsMonthly}/month, max ${pro.limits.aiCreditsDaily}/day milte hain.`;
+    return `You have used all free weekly credits for ${featureLabel}. Pro includes ${pro.limits.aiCreditsMonthly} per month, up to ${pro.limits.aiCreditsDaily} per day.`;
   }
   if (tier === 'PRO') {
-    return `${featureLabel} ka shared Pro quota complete ho gaya. Elite mein ${elite.limits.aiCreditsMonthly}/month, max ${elite.limits.aiCreditsDaily}/day milte hain.`;
+    return `The shared Pro quota for ${featureLabel} has been reached. Elite includes ${elite.limits.aiCreditsMonthly} per month, up to ${elite.limits.aiCreditsDaily} per day.`;
   }
-  return `${featureLabel} ka Elite shared quota complete ho gaya. Daily ya monthly window reset hone par try karein.`;
+  return `The shared Elite quota for ${featureLabel} has been reached. Try again after the daily or monthly window resets.`;
 }
 
-export async function checkDailyLimit(
-  userId: string,
-  feature: DailyLimitFeature,
-  limit: number
-): Promise<QuotaResult> {
+export async function checkDailyLimit(userId: string, feature: DailyLimitFeature, limit: number): Promise<QuotaResult> {
   const window = dayWindow();
   return consumeStoredWindows([
     { key: `ratelimit:${feature}:${userId}:day:${window.key}`, limit, resetAt: window.reset },
@@ -358,6 +346,32 @@ export async function checkAiMessageLimit(userId: string, tier: SubscriptionTier
   return checkAiToolLimit(userId, tier, featureKey);
 }
 
+export function summarizeAiCreditWindows(tier: SubscriptionTier, windows: RedisQuotaWindow[], counts: number[]) {
+  const primaryWindowIndex = tier === 'FREE' ? 0 : 1;
+  const primaryWindow = windows[primaryWindowIndex] || windows[0];
+  const primaryUsed = counts[primaryWindowIndex] ?? counts[0] ?? 0;
+  const dailyWindow = tier === 'FREE' ? null : windows[0] || null;
+  const dailyUsed = tier === 'FREE' ? null : (counts[0] ?? 0);
+
+  return {
+    tier,
+    period: tier === 'FREE' ? ('week' as const) : ('month' as const),
+    used: primaryUsed,
+    remaining: Math.max(0, (primaryWindow?.limit ?? 0) - primaryUsed),
+    limit: primaryWindow?.limit ?? 0,
+    reset: primaryWindow?.resetAt ?? 0,
+    daily:
+      dailyWindow && dailyUsed !== null
+        ? {
+            used: dailyUsed,
+            remaining: Math.max(0, dailyWindow.limit - dailyUsed),
+            limit: dailyWindow.limit,
+            reset: dailyWindow.resetAt,
+          }
+        : null,
+  };
+}
+
 export async function getAiCreditStatus(userId: string, tier: SubscriptionTier) {
   const plan = await getConfiguredPlan(tier);
   const windows = buildSharedAiWindows(userId, tier, plan);
@@ -368,15 +382,9 @@ export async function getAiCreditStatus(userId: string, tier: SubscriptionTier) 
       return redisCount ?? memory?.count ?? 0;
     })
   );
-  const limit = Math.min(...windows.map((window) => window.limit));
-  const used = Math.max(...counts, 0);
-  const remaining = Math.max(0, limit - used);
+
   return {
-    tier,
-    used,
-    remaining,
-    limit,
-    reset: Math.min(...windows.map((window) => window.resetAt).filter((value) => value > 0)),
+    ...summarizeAiCreditWindows(tier, windows, counts),
     costs: AI_CREDIT_COSTS,
   };
 }
@@ -398,18 +406,13 @@ export async function checkOcrLimit(
 ) {
   const entitlement = await getAudiencePlanLimits(userId, tier);
   const limit =
-    mode === 'handwritten'
-      ? entitlement.limits.ocrHandwrittenMonthly
-      : entitlement.plan.limits.ocrPrintedMonthly;
+    mode === 'handwritten' ? entitlement.limits.ocrHandwrittenMonthly : entitlement.plan.limits.ocrPrintedMonthly;
   return checkMonthlyLimit(userId, `ocr_scan:${mode}`, limit);
 }
 
 export async function checkPresentationLimit(userId: string, tier: SubscriptionTier, slideCount: number) {
   const entitlement = await getAudiencePlanLimits(userId, tier);
-  if (
-    entitlement.limits.presentationsMonthly <= 0 ||
-    slideCount > entitlement.limits.presentationSlidesMax
-  ) {
+  if (entitlement.limits.presentationsMonthly <= 0 || slideCount > entitlement.limits.presentationSlidesMax) {
     return {
       success: false,
       remaining: 0,
@@ -418,11 +421,7 @@ export async function checkPresentationLimit(userId: string, tier: SubscriptionT
       audience: entitlement.audience,
     };
   }
-  const result = await checkMonthlyLimit(
-    userId,
-    'presentation',
-    entitlement.limits.presentationsMonthly
-  );
+  const result = await checkMonthlyLimit(userId, 'presentation', entitlement.limits.presentationsMonthly);
   return {
     ...result,
     maxSlides: entitlement.limits.presentationSlidesMax,
@@ -430,16 +429,10 @@ export async function checkPresentationLimit(userId: string, tier: SubscriptionT
   };
 }
 
-async function checkAudienceFileLimit(
-  userId: string,
-  tier: SubscriptionTier,
-  feature: 'file_summary' | 'file_test'
-) {
+async function checkAudienceFileLimit(userId: string, tier: SubscriptionTier, feature: 'file_summary' | 'file_test') {
   const entitlement = await getAudiencePlanLimits(userId, tier);
   const limit =
-    feature === 'file_summary'
-      ? entitlement.limits.fileSummariesMonthly
-      : entitlement.limits.fileTestsMonthly;
+    feature === 'file_summary' ? entitlement.limits.fileSummariesMonthly : entitlement.limits.fileTestsMonthly;
   return checkMonthlyLimit(userId, feature, limit);
 }
 
@@ -475,7 +468,7 @@ export async function getUniversityLimitExceededMessage(
 ) {
   if (scope === 'daily') return getConfiguredLimitExceededMessage(tier, featureLabel);
   const plan = await getConfiguredPlan(tier);
-  return `${featureLabel} ki University Hub weekly limit (${plan.limits.universityHubWeekly}) complete ho gayi. Agle Monday reset hogi.`;
+  return `The weekly University Hub limit for ${featureLabel} (${plan.limits.universityHubWeekly}) has been reached. It resets next Monday.`;
 }
 
 export async function checkModelTierLimit(

@@ -18,8 +18,16 @@ export function QuizEngine() {
   useEffect(() => {
     const stored = sessionStorage.getItem('current-quiz');
     if (stored) {
-      const parsed: QuizSession = JSON.parse(stored);
-      initSession(parsed);
+      try {
+        const parsed: QuizSession = JSON.parse(stored);
+        if (Array.isArray(parsed.questions) && parsed.questions.length > 0) {
+          initSession(parsed);
+        } else {
+          sessionStorage.removeItem('current-quiz');
+        }
+      } catch {
+        sessionStorage.removeItem('current-quiz');
+      }
     }
     setLoaded(true);
   }, [initSession]);
@@ -37,9 +45,26 @@ export function QuizEngine() {
   }
 
   const currentQuestion = session.questions[session.currentIndex];
+  if (!currentQuestion) {
+    return (
+      <div className="py-12 text-center">
+        <p className="mb-4 text-muted-foreground">This quiz session has expired. Start a fresh practice quiz.</p>
+        <Button
+          variant="gradient"
+          onClick={() => {
+            sessionStorage.removeItem('current-quiz');
+            resetQuiz();
+            router.push('/practice');
+          }}
+        >
+          Start practice
+        </Button>
+      </div>
+    );
+  }
   const progress = ((session.currentIndex + 1) / session.questions.length) * 100;
   const isLast = session.currentIndex === session.questions.length - 1;
-  const hasAnswered = currentQuestion?.userAnswer !== undefined;
+  const hasAnswered = currentQuestion.userAnswer !== undefined;
 
   const handleExpire = () => {
     // Time's up: if unanswered, count it as skipped, then auto-advance (or submit if last)
@@ -74,7 +99,7 @@ export function QuizEngine() {
         </Button>
         {!hasAnswered && (
           <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-            <Zap className="w-3.5 h-3.5 text-violet-400" />Answer select karo — agla sawaal khud aa jayega
+            <Zap className="w-3.5 h-3.5 text-violet-400" />Select an answer to move automatically to the next question
           </p>
         )}
       </div>

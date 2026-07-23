@@ -120,7 +120,7 @@ export function ScanUpload({ onTextExtracted, trigger }: ScanUploadProps) {
               </div>
 
               <p className="text-muted-foreground mb-4 rounded-lg bg-violet-500/10 px-3 py-2 text-xs text-violet-300">
-                {plan.name}: {limitLabel(printedLimit)} printed aur {limitLabel(handwrittenLimit)} handwritten
+                {plan.name}: {limitLabel(printedLimit)} printed and {limitLabel(handwrittenLimit)} handwritten
                 scans/month.
               </p>
 
@@ -240,7 +240,7 @@ export function ScanUpload({ onTextExtracted, trigger }: ScanUploadProps) {
               {state === 'error' && (
                 <div className="py-6 text-center">
                   <AlertCircle className="text-destructive mx-auto mb-3 h-8 w-8" />
-                  <p className="mb-1 text-sm font-medium">Scan Fail Ho Gaya</p>
+                  <p className="mb-1 text-sm font-medium">Scan Failed</p>
                   <p className="text-muted-foreground mb-4 text-xs">{errorMsg}</p>
                   <Button
                     variant="outline"

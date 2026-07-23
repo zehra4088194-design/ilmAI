@@ -17,30 +17,38 @@ function isStandaloneMode() {
   return window.matchMedia('(display-mode: standalone)').matches || navigatorWithStandalone.standalone === true;
 }
 
+function canShowInstallButton() {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia('(max-width: 767px)').matches && !isStandaloneMode();
+}
+
 export function InstallAppButton() {
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
   const [showButton, setShowButton] = useState(false);
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
-    setShowButton(!isStandaloneMode());
+    const syncVisibility = () => setShowButton(canShowInstallButton());
+    syncVisibility();
 
     const handleInstallPrompt = (event: Event) => {
       event.preventDefault();
       setInstallPrompt(event as InstallPromptEvent);
-      setShowButton(true);
+      syncVisibility();
     };
     const handleInstalled = () => {
       setInstallPrompt(null);
       setShowButton(false);
-      toast.success('ilm AI home screen par install ho gaya.');
+      toast.success('ilm AI has been installed on your home screen.');
     };
 
     window.addEventListener('beforeinstallprompt', handleInstallPrompt);
     window.addEventListener('appinstalled', handleInstalled);
+    window.addEventListener('resize', syncVisibility);
     return () => {
       window.removeEventListener('beforeinstallprompt', handleInstallPrompt);
       window.removeEventListener('appinstalled', handleInstalled);
+      window.removeEventListener('resize', syncVisibility);
     };
   }, []);
 
@@ -56,8 +64,8 @@ export function InstallAppButton() {
     const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
     toast.info(
       isIos
-        ? 'Tap the Share button in Safari, then select “Add to Home Screen”.'
-        : 'Open the browser menu and select “Install app” or “Add to Home screen”.',
+        ? 'Tap the Share button in Safari, then select Add to Home Screen.'
+        : 'Open the browser menu and select Install app or Add to Home screen.',
       { duration: 6500 }
     );
   };
@@ -65,7 +73,7 @@ export function InstallAppButton() {
   if (!showButton) return null;
 
   return (
-    <div className="flex justify-end">
+    <div className="flex justify-end md:hidden">
       <motion.button
         type="button"
         onClick={installApp}
@@ -82,7 +90,7 @@ export function InstallAppButton() {
         </span>
         <span className="pr-0.5">
           <span className="block text-xs leading-tight font-bold">Install ilm AI</span>
-          <span className="text-muted-foreground block text-[10px] leading-tight">Home screen par app</span>
+          <span className="text-muted-foreground block text-[10px] leading-tight">Add to home screen</span>
         </span>
         <Download className="text-primary h-4 w-4 shrink-0" aria-hidden="true" />
       </motion.button>

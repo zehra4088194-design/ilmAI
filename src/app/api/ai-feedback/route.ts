@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ status: 'error', error: 'Login required hai' }, { status: 401 });
+    if (!user) return NextResponse.json({ status: 'error', error: 'Authentication is required' }, { status: 401 });
 
     const { sourceType, sourceId, isHelpful } = await req.json();
     if (!VALID_SOURCE_TYPES.includes(sourceType) || !sourceId || typeof isHelpful !== 'boolean') {
@@ -37,6 +37,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ status: 'success' });
   } catch (error) {
     console.error('AI feedback error:', error);
-    return NextResponse.json({ status: 'error', error: 'Kuch ghalat ho gaya' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: 'Something went wrong.' }, { status: 500 });
   }
 }

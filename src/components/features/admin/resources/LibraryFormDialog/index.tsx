@@ -125,11 +125,11 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
       return;
     }
     if (darkFileUrl && !isAcceptableResourceUrl(darkFileUrl)) {
-      setError('Dark mode ke liye valid Google Drive/Docs ya direct PDF URL paste karein.');
+      setError('Paste a valid Google Drive, Google Docs, or direct PDF URL for dark mode.');
       return;
     }
     if (contextTextUrl && !/^https:\/\//i.test(contextTextUrl)) {
-      setError('Companion .txt ke liye HTTPS ya Google Drive link paste karein.');
+      setError('Paste an HTTPS or Google Drive link for the companion .txt file.');
       return;
     }
 
@@ -168,7 +168,7 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
       await onSaved();
       onOpenChange(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Kuch ghalat ho gaya');
+      setError(err instanceof Error ? err.message : 'Something went wrong.');
     } finally {
       setSaving(false);
     }
@@ -202,7 +202,7 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
               placeholder="Class 9 Physics Text Book"
               required
             />
-            <p className="text-muted-foreground text-xs">Isi naam wali chapter files ek book ke andar group hongi.</p>
+            <p className="text-muted-foreground text-xs">Chapter files with the same book name will be grouped together.</p>
           </div>
 
           <div className="flex flex-col gap-1.5">

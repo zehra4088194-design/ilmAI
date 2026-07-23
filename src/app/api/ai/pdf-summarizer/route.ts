@@ -63,12 +63,12 @@ ${clippedText}`,
   return {
     summary: {
       methodology: String(
-        parsed?.summary?.methodology || 'Methodology extract nahi ho saki. PDF text clear hai to dobara try karo.'
+        parsed?.summary?.methodology || 'The methodology could not be extracted. Try again with a clearer PDF.'
       ),
       key_findings: String(
-        parsed?.summary?.key_findings || parsed?.summary?.keyFindings || 'Key findings extract nahi ho sake.'
+        parsed?.summary?.key_findings || parsed?.summary?.keyFindings || 'The key findings could not be extracted.'
       ),
-      conclusion: String(parsed?.summary?.conclusion || 'Conclusion extract nahi ho saka.'),
+      conclusion: String(parsed?.summary?.conclusion || 'The conclusion could not be extracted.'),
     },
     mermaid_code: String(
       parsed?.mermaid_code ||
@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
     const pdfText = clean(body.pdfText);
     if (pdfText.length < 20)
       return NextResponse.json(
-        { status: 'error', error: 'PDF text extract nahi ho saka. Clear text wala PDF upload karo.' },
+        { status: 'error', error: 'The PDF text could not be extracted. Upload a PDF with clearer text.' },
         { status: 400 }
       );
 
@@ -111,6 +111,6 @@ export async function POST(req: NextRequest) {
     const result = await summarizeAndMap(pdfText);
     return NextResponse.json({ status: 'success', data: result });
   } catch {
-    return NextResponse.json({ status: 'error', error: 'PDF summarize nahi ho saka.' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: 'The PDF could not be summarized.' }, { status: 500 });
   }
 }

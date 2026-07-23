@@ -64,7 +64,7 @@ export function CareerDocsBuilder() {
   const downloadPdf = () => {
     if (!activeOutput) return;
     const ok = printElementById('career-doc-preview', view === 'resume' ? 'ilm AI Resume' : 'ilm AI Cover Letter');
-    if (ok) toast.success('Sirf preview document ka print dialog open ho gaya.');
+    if (ok) toast.success('The print dialog opened for the preview document.');
     else toast.error('No preview content was found.');
   };
 

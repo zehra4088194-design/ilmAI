@@ -19,6 +19,9 @@ export type LibraryCatalogResource = {
   book_title?: string | null;
   content_section?: 'reading' | 'mcq' | 'short' | 'long';
   has_context_text?: boolean;
+  drive_url?: string | null;
+  light_file_url?: string | null;
+  dark_file_url?: string | null;
   subjects?: { id: string; name: string; slug: string; color: string } | null;
   chapters?: { id: string; name: string; slug: string; order_index: number } | null;
 };
@@ -61,9 +64,7 @@ export function LibraryGrid({ resources }: { resources: LibraryCatalogResource[]
       const subjectId = resource.subjects?.id || 'general';
       const subjectName = resource.subjects?.name || 'General';
       const subjectSlug = resource.subjects?.slug || 'general';
-      const title =
-        resource.book_title ||
-        (tab === 'text_book' ? `${subjectName} Text Book` : `${subjectName} Notes`);
+      const title = resource.book_title || (tab === 'text_book' ? `${subjectName} Text Book` : `${subjectName} Notes`);
       const key = `${subjectId}:${title.toLowerCase()}`;
       const group = groups.get(key) || {
         key,
@@ -142,14 +143,18 @@ export function LibraryGrid({ resources }: { resources: LibraryCatalogResource[]
                       </span>
                       <Badge variant="outline">{book.resources.length} files</Badge>
                     </div>
-                    <Badge variant="secondary" className="mb-2 w-fit">{book.subjectName}</Badge>
-                    <h2 className="text-lg font-bold leading-snug">{book.title}</h2>
+                    <Badge variant="secondary" className="mb-2 w-fit">
+                      {book.subjectName}
+                    </Badge>
+                    <h2 className="text-lg leading-snug font-bold">{book.title}</h2>
                     <p className="text-muted-foreground mt-2 text-sm">
                       {chapters.length} chapter{chapters.length === 1 ? '' : 's'} organized by file type
                     </p>
                     <div className="text-muted-foreground mt-4 flex-1 space-y-1.5 text-xs">
                       {chapters.slice(0, 3).map((chapter) => (
-                        <p key={chapter} className="truncate">• {chapter}</p>
+                        <p key={chapter} className="truncate">
+                          - {chapter}
+                        </p>
                       ))}
                       {chapters.length > 3 && <p>+ {chapters.length - 3} more chapters</p>}
                     </div>
@@ -169,8 +174,8 @@ export function LibraryGrid({ resources }: { resources: LibraryCatalogResource[]
           title={query ? 'No matching books found' : tab === 'text_book' ? 'No text books yet' : 'No notes yet'}
           description={
             query
-              ? 'Search ko thora broad karein.'
-              : 'Admin se subject, book aur chapter tagged files add hote hi yahan show hongi.'
+              ? 'Try a broader book, subject, or chapter search.'
+              : 'Subject, book, and chapter-tagged files will appear here as soon as they are added.'
           }
           primaryHref="/ai-tutor"
           primaryLabel="Ask AI Tutor"

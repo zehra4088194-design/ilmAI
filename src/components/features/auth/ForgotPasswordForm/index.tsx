@@ -140,7 +140,7 @@ export function ForgotPasswordForm() {
           />
         </div>
         <Button type="submit" variant="gradient" className="w-full" size="lg" loading={loading}>
-          Link Aur Code Bhejo
+          Send Link and Code
         </Button>
       </form>
       <div className="mt-6 text-center">

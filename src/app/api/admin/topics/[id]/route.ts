@@ -15,14 +15,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (body.isActive !== undefined) update.is_active = body.isActive;
 
   if (Object.keys(update).length === 0) {
-    return NextResponse.json({ error: 'Koi field update ke liye nahi diya' }, { status: 400 });
+    return NextResponse.json({ error: 'No fields were provided for update' }, { status: 400 });
   }
 
   const adminClient = await createAdminClient();
   const { data, error } = await (adminClient.from('topics') as any).update(update).eq('id', id).select().single();
   if (error) {
     console.error('topic update error:', error);
-    return NextResponse.json({ error: 'Topic update nahi hua' }, { status: 500 });
+    return NextResponse.json({ error: 'The topic could not be updated' }, { status: 500 });
   }
 
   return NextResponse.json({ topic: data });
@@ -37,7 +37,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const { error } = await adminClient.from('topics').delete().eq('id', id);
   if (error) {
     console.error('topic delete error:', error);
-    return NextResponse.json({ error: 'Topic delete nahi hua' }, { status: 500 });
+    return NextResponse.json({ error: 'The topic could not be deleted' }, { status: 500 });
   }
 
   try { await adminClient.rpc('refresh_subject_counts'); } catch {}

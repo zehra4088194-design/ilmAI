@@ -10,7 +10,9 @@
  * - Holds up to 20 keys per AI provider (Assistant, Grok, Claude, GPT, Gemini)
  * - Accepts one JSON key-pool secret per provider, avoiding the Workers Free
  *   limit of 64 environment variables
- * - Rotates the starting key and retries a bounded subset when a key is unavailable
+ * - Uses keys in strict round-robin order for each provider. Every new request
+ *   reserves the next key before its network request starts, then wraps around.
+ *   Retry attempts use following keys without resetting that request sequence.
  * - If all keys fail, it can fall back to Assistant unless strict provider mode is requested
  *   so an empty provider response is never sent to the student
  * - Routes handwritten/messy OCR to Gemini Vision. Printed OCR runs in the
@@ -163,8 +165,8 @@ function getKeys(env, prefix) {
 }
 
 /**
- * Tries each key in order. Stops and returns on first success.
- * Rotates to next key on auth/rate-limit/server errors.
+ * Reserves the next provider key before its network request starts.
+ * Retries following keys only for auth, rate-limit, or server errors.
  * Does NOT rotate on 400 (bad request) — rotating won't fix a malformed request.
  */
 async function withKeyRotation(keys, callFn, label, maxAttempts = DEFAULT_KEY_ATTEMPTS, cursorKey = label) {
@@ -172,6 +174,9 @@ async function withKeyRotation(keys, callFn, label, maxAttempts = DEFAULT_KEY_AT
   let lastError = null;
   const start = keyCursors.get(cursorKey) || 0;
   const attemptCount = Math.min(keys.length, Math.max(1, maxAttempts));
+  // Claim this request's first key before the first await. Do not update the
+  // cursor after a provider response: a later request may already have claimed
+  // its key while this request was in flight.
   keyCursors.set(cursorKey, (start + 1) % keys.length);
 
   for (let i = 0; i < attemptCount; i++) {
@@ -183,7 +188,6 @@ async function withKeyRotation(keys, callFn, label, maxAttempts = DEFAULT_KEY_AT
           lastError = `${label} key #${keyIndex + 1} returned an empty response`;
           continue;
         }
-        keyCursors.set(cursorKey, (keyIndex + 1) % keys.length);
         return { ok: true, data: result.data, keyIndexUsed: keyIndex + 1 };
       }
       if (!RETRYABLE_STATUS.has(result.status)) {
@@ -579,7 +583,7 @@ async function handleOcr(req, env) {
     'gemini'
   );
   if (!result.ok) return json({ error: result.error || 'Gemini Vision OCR failed' }, 502);
-  return json({ text: result.data, providerUsed: 'gemini-vision' });
+  return json({ text: result.data, providerUsed: 'gemini-vision', keyIndexUsed: result.keyIndexUsed });
 }
 
 async function handleOcrSpace(req, env) {
@@ -623,6 +627,7 @@ async function handleLiveToken(req, env) {
     expireTime: result.data.expireTime,
     newSessionExpireTime: result.data.newSessionExpireTime,
     model,
+    keyIndexUsed: result.keyIndexUsed,
     // v1alpha + *Constrained variant is required when connecting with an ephemeral token
     wsUrl:
       'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained',

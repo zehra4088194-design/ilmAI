@@ -25,7 +25,7 @@ export interface OptionalSubjectFields {
 export type PaperCheckInputType = 'text' | 'image';
 
 export interface PaperCheckMissingElement {
-  label: string; // e.g. "Heading missing hai"
+  label: string; // e.g. "Heading is missing"
 }
 
 export interface PaperCheckResult {

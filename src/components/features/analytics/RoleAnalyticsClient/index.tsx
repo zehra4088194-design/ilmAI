@@ -82,7 +82,7 @@ export function RoleAnalyticsClient({
         <Card>
           <CardHeader><CardTitle className="text-base">Gracefully omitted</CardTitle></CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">Missing source tables/config ke wajah se ye sections hide kiye gaye: {omitted.join(', ')}.</p>
+            <p className="text-sm text-muted-foreground">These sections are hidden because their source tables or configuration are unavailable: {omitted.join(', ')}.</p>
           </CardContent>
         </Card>
       )}

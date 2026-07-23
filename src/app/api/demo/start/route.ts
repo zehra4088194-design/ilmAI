@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!subjectId) {
-      return NextResponse.json({ status: 'error', error: 'Demo questions abhi curate nahi hue. Please signup karke full practice try karo.' }, { status: 404 });
+      return NextResponse.json({ status: 'error', error: 'Demo questions are not available yet. Sign up to use the full practice experience.' }, { status: 404 });
     }
 
     const { data: questions, error } = await supabase
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     if (error) throw error;
     const selected = shuffle((questions || []).filter((question: any) => Array.isArray(question.options) && question.options.length >= 2)).slice(0, DEMO_QUESTION_COUNT);
     if (selected.length < DEMO_QUESTION_COUNT) {
-      return NextResponse.json({ status: 'error', error: 'Is subject ke liye abhi 5 demo MCQs curate nahi hue.' }, { status: 404 });
+      return NextResponse.json({ status: 'error', error: 'This subject does not yet have five curated demo MCQs.' }, { status: 404 });
     }
 
     const sessionToken = createDemoSessionToken();
@@ -84,6 +84,6 @@ export async function POST(req: NextRequest) {
     return response;
   } catch (error) {
     console.error('demo start error:', error);
-    return NextResponse.json({ status: 'error', error: 'Demo start nahi ho saka. Thori der baad try karo.' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: 'The demo could not be started. Please try again shortly.' }, { status: 500 });
   }
 }

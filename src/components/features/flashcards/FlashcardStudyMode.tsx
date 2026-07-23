@@ -18,8 +18,8 @@ interface Flashcard {
 }
 
 const RATINGS = [
-  { key: 'again', label: 'Dobara', sub: '<1 din', color: 'bg-rose-500 hover:bg-rose-400', ease: -0.2 },
-  { key: 'hard', label: 'Mushkil', sub: '1 din', color: 'bg-amber-500 hover:bg-amber-400', ease: -0.05 },
+  { key: 'again', label: 'Again', sub: '<1 day', color: 'bg-rose-500 hover:bg-rose-400', ease: -0.2 },
+  { key: 'hard', label: 'Hard', sub: '1 day', color: 'bg-amber-500 hover:bg-amber-400', ease: -0.05 },
   { key: 'good', label: 'Theek', sub: '3 din', color: 'bg-emerald-500 hover:bg-emerald-400', ease: 0 },
   { key: 'easy', label: 'Asaan', sub: '7 din', color: 'bg-sky-500 hover:bg-sky-400', ease: 0.15 },
 ] as const;

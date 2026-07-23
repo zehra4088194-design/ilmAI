@@ -36,7 +36,7 @@ export async function GET() {
     .select('*, subjects(name), chapters(name)')
     .order('created_at', { ascending: false });
 
-  if (error) return NextResponse.json({ error: `Library resources load nahi hue: ${error.message}` }, { status: 500 });
+  if (error) return NextResponse.json({ error: `Library resources could not be loaded: ${error.message}` }, { status: 500 });
 
   const resources = (data ?? []).map((resource) => {
     const subjects = resource.subjects as SubjectJoin;
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
   const darkFileUrl = body.dark_file_url?.trim() || null;
   const contextTextUrl = body.context_text_url?.trim() || null;
   if (!body.title?.trim() || !lightFileUrl) {
-    return NextResponse.json({ error: 'Title aur PDF URL zaroori hain' }, { status: 400 });
+    return NextResponse.json({ error: 'Title and PDF URL are required' }, { status: 400 });
   }
   const driveUrl = lightFileUrl;
   const driveFileId = body.drive_file_id ?? extractGoogleDriveFileId(driveUrl);
@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
 
   if (error) {
     console.error('library resource create error:', error);
-    return NextResponse.json({ error: `Resource add nahi hua: ${error.message}` }, { status: 500 });
+    return NextResponse.json({ error: `Resource could not be added: ${error.message}` }, { status: 500 });
   }
 
   let processingWarning: string | null = null;
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
       await queueResourceContextProcessing('library', data.id);
     } catch (queueError) {
       processingWarning =
-        queueError instanceof Error ? queueError.message : 'Automatic OCR queue start nahi ho saki.';
+        queueError instanceof Error ? queueError.message : 'The automatic OCR queue could not be started.';
       console.error('library context queue error:', queueError);
     }
   }

@@ -104,6 +104,10 @@ function slugify(value) {
 }
 
 function getChapterDefinition(note) {
+  if (Number.isInteger(note.chapter_order) && note.chapter_order > 0 && note.chapter_label) {
+    return { order: note.chapter_order, name: asciiTitle(note.chapter_label) };
+  }
+
   const normalizedTitle = asciiTitle(note.title);
   if (note.subject_slug === 'english') {
     const section = ENGLISH_SECTIONS[normalizedTitle];
@@ -112,7 +116,7 @@ function getChapterDefinition(note) {
   }
 
   const label = asciiTitle(note.chapter_label || '');
-  const match = label.match(/^Chapter\s+(\d+)\s*[:-]\s*(.+)$/i);
+  const match = label.match(/^(?:Chapter|Unit)\s+(\d+)\s*[:-]\s*(.+)$/i);
   if (!match) throw new Error(`Invalid Drive chapter label: ${note.chapter_label || note.title}`);
   return {
     order: Number(match[1]),
@@ -125,8 +129,8 @@ function getChapterSlug(subjectSlug, definition) {
 }
 
 async function syncClass9DriveChapters(client, notes) {
-  if (!Array.isArray(notes) || notes.length !== 139) {
-    throw new Error(`Expected 139 Drive notes, received ${Array.isArray(notes) ? notes.length : 'invalid data'}.`);
+  if (!Array.isArray(notes) || !notes.length) {
+    throw new Error('Drive note catalog is empty or invalid.');
   }
 
   const subjectSlugs = [...new Set(notes.map((note) => note.subject_slug))];
@@ -150,7 +154,7 @@ async function syncClass9DriveChapters(client, notes) {
     subject_id: subjectIds.get(chapter.subjectSlug),
     name: chapter.name,
     slug: chapter.slug,
-    description: 'Class 9 chapter verified from the uploaded ilm AI Drive notes.',
+    description: 'Class 9 chapter verified from the uploaded ilm AI Drive folder structure.',
     order_index: chapter.order,
     grade_levels: ['GRADE_9'],
     boards: [],
@@ -175,7 +179,7 @@ async function syncClass9DriveChapters(client, notes) {
 
   for (const chapter of chapterRows) {
     const existing = existingChapterBySlug.get(chapter.slug);
-    if (!existing || (existing.name === chapter.name && existing.order_index === chapter.order_index)) continue;
+    if (!existing) continue;
     const { error } = await client.from('chapters').update(chapter).eq('id', existing.id);
     if (error) throw error;
   }
@@ -232,7 +236,36 @@ async function syncClass9DriveChapters(client, notes) {
     throw new Error(`Chapter verification failed: ${verifiedResources}/${notes.length} notes linked.`);
   }
 
-  return { chapters: chapterRows.length, linkedResources, verifiedResources };
+  const canonicalSlugs = new Set(chapterSlugs);
+  const { data: gradeNineChapters, error: gradeNineChapterError } = await client
+    .from('chapters')
+    .select('id, slug, grade_levels, is_active')
+    .in('subject_id', [...subjectIds.values()]);
+  if (gradeNineChapterError) throw gradeNineChapterError;
+
+  const legacyChapterIds = (gradeNineChapters || [])
+    .filter(
+      (chapter) => chapter.is_active && chapter.grade_levels?.includes('GRADE_9') && !canonicalSlugs.has(chapter.slug)
+    )
+    .map((chapter) => chapter.id);
+
+  let archivedLegacyChapters = 0;
+  for (let index = 0; index < legacyChapterIds.length; index += 40) {
+    const { data, error } = await client
+      .from('chapters')
+      .update({ is_active: false })
+      .in('id', legacyChapterIds.slice(index, index + 40))
+      .select('id');
+    if (error) throw error;
+    archivedLegacyChapters += data?.length || 0;
+  }
+
+  return {
+    chapters: chapterRows.length,
+    linkedResources,
+    verifiedResources,
+    archivedLegacyChapters,
+  };
 }
 
 async function main() {
@@ -241,7 +274,10 @@ async function main() {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
   if (!supabaseUrl || !serviceKey) throw new Error('Supabase service credentials are missing.');
 
-  const notes = JSON.parse(fs.readFileSync(path.join(__dirname, 'data', 'class9-drive-notes.json'), 'utf8'));
+  const notes = [
+    ...JSON.parse(fs.readFileSync(path.join(__dirname, 'data', 'class9-drive-notes.json'), 'utf8')),
+    ...JSON.parse(fs.readFileSync(path.join(__dirname, 'data', 'class9-math-drive-notes.json'), 'utf8')),
+  ];
   const client = createClient(supabaseUrl, serviceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
@@ -249,7 +285,7 @@ async function main() {
   console.log(JSON.stringify(result, null, 2));
 }
 
-module.exports = { getChapterDefinition, syncClass9DriveChapters };
+module.exports = { getChapterDefinition, getChapterSlug, syncClass9DriveChapters };
 
 if (require.main === module) {
   main().catch((error) => {

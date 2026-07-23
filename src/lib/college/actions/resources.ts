@@ -29,9 +29,9 @@ export async function createResource(formData: FormData): Promise<ActionResult> 
 
   if (!title) return { success: false, error: 'Title is required.' };
   if (!VALID_TYPES.includes(resourceType)) return { success: false, error: 'Choose a valid resource type.' };
-  if (!isHttpsUrl(lightFileUrl)) return { success: false, error: 'Valid light PDF/Drive HTTPS link required hai.' };
+  if (!isHttpsUrl(lightFileUrl)) return { success: false, error: 'A valid HTTPS link for the light PDF or Drive file is required.' };
   if (darkFileUrl && !isHttpsUrl(darkFileUrl)) return { success: false, error: 'Dark file ka valid HTTPS link do.' };
-  if (!isHttpsUrl(contextTextUrl)) return { success: false, error: 'Companion .txt ka valid HTTPS link required hai.' };
+  if (!isHttpsUrl(contextTextUrl)) return { success: false, error: 'A valid HTTPS link for the companion .txt file is required.' };
 
   const supabase = await createClient();
   const {
@@ -77,9 +77,9 @@ export async function updateResource(resourceId: string, formData: FormData): Pr
 
   if (!title) return { success: false, error: 'Title is required.' };
   if (!VALID_TYPES.includes(resourceType)) return { success: false, error: 'Choose a valid resource type.' };
-  if (!isHttpsUrl(lightFileUrl)) return { success: false, error: 'Valid light PDF/Drive HTTPS link required hai.' };
+  if (!isHttpsUrl(lightFileUrl)) return { success: false, error: 'A valid HTTPS link for the light PDF or Drive file is required.' };
   if (darkFileUrl && !isHttpsUrl(darkFileUrl)) return { success: false, error: 'Dark file ka valid HTTPS link do.' };
-  if (!isHttpsUrl(contextTextUrl)) return { success: false, error: 'Companion .txt ka valid HTTPS link required hai.' };
+  if (!isHttpsUrl(contextTextUrl)) return { success: false, error: 'A valid HTTPS link for the companion .txt file is required.' };
 
   const supabase = await createClient();
   const db = supabase as any;

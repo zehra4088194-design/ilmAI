@@ -116,7 +116,7 @@ export function ProtectedPdfViewer({
           {error ? (
             <div className="mx-auto flex min-h-64 max-w-md flex-col items-center justify-center rounded-2xl bg-white p-6 text-center shadow-sm">
               <FileWarning className="mb-3 h-9 w-9 text-amber-600" />
-              <p className="font-semibold">PDF load nahi ho saki</p>
+              <p className="font-semibold">The PDF could not be loaded</p>
               <p className="mt-2 text-sm text-slate-600">{error}</p>
             </div>
           ) : containerWidth > 0 ? (
@@ -125,7 +125,7 @@ export function ProtectedPdfViewer({
               loading={
                 <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-slate-600">
                   <Loader2 className="text-primary h-8 w-8 animate-spin" />
-                  <p className="text-sm font-medium">Protected PDF load ho rahi hai...</p>
+                  <p className="text-sm font-medium">Loading the protected PDF...</p>
                 </div>
               }
               onLoadSuccess={({ numPages }) => {
@@ -134,7 +134,7 @@ export function ProtectedPdfViewer({
               }}
               onLoadError={(loadError) => {
                 console.error('Protected PDF render failed:', loadError);
-                setError('File response valid PDF nahi hai ya connection interrupt ho gaya. Dobara open karke try karein.');
+                setError('The response is not a valid PDF, or the connection was interrupted. Reopen the file and try again.');
               }}
               className="flex min-w-full justify-center"
             >

@@ -37,7 +37,7 @@ export async function SubjectHeatmap({ userId }: { userId: string }) {
             <div key={subject.id}>
               <div className="flex items-center justify-between text-sm mb-1.5">
                 <span className="font-medium">{subject.name}</span>
-                <span className="text-muted-foreground">{hasData ? `${avg}%` : 'Abhi tak koi quiz nahi'}</span>
+                <span className="text-muted-foreground">{hasData ? `${avg}%` : 'No quizzes yet'}</span>
               </div>
               <Progress value={avg} indicatorClassName="bg-current" style={{ color: subject.color }} />
             </div>

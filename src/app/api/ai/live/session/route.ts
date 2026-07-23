@@ -7,7 +7,7 @@ export async function POST() {
   return NextResponse.json(
     {
       status: 'error',
-      error: 'Live Voice Call abhi coming soon hai. Jab stable production flow ready hoga to yahin unlock hoga.',
+      error: 'Live Voice Call is coming soon and will unlock here when the production flow is ready.',
     },
     { status: 503 },
   );

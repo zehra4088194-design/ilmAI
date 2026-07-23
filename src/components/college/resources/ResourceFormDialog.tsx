@@ -153,7 +153,7 @@ export function ResourceFormDialog({ open, onOpenChange, collegeId, resource, on
                 defaultValue={resource?.dark_file_url || ''}
                 placeholder="https://drive.google.com/..."
               />
-              <p className="text-muted-foreground text-xs">Optional. Dark mode mein ye file prefer hogi.</p>
+              <p className="text-muted-foreground text-xs">Optional. This file is preferred in dark mode.</p>
             </div>
             <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="resource-context-file">Companion AI context (.txt) link</Label>
@@ -166,8 +166,8 @@ export function ResourceFormDialog({ open, onOpenChange, collegeId, resource, on
                 placeholder="https://drive.google.com/..."
               />
               <p className="text-muted-foreground text-xs">
-                Google Drive par PDF ka complete readable .txt upload karke share link do. AI summary aur file-test isi
-                private backend fetch se banenge.
+                Upload a complete, readable .txt companion for the PDF to Google Drive and provide its share link. AI
+                summaries and file-based tests will use this private backend source.
               </p>
             </div>
           </div>

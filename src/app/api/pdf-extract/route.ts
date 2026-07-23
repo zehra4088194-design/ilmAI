@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { checkOcrLimit } from '@/lib/rate-limit';
-import { performSelfHostedOcr } from '@/lib/ocr';
+import { performPdfOcr } from '@/lib/ocr';
 import type { SubscriptionTier } from '@/types';
 
 export const runtime = 'nodejs';
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({ status: 'error', error: 'Login required hai' }, { status: 401 });
+      return NextResponse.json({ status: 'error', error: 'Authentication is required' }, { status: 401 });
     }
 
     const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
@@ -27,13 +27,13 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
 
-    if (!file) return NextResponse.json({ status: 'error', error: 'PDF file required hai' }, { status: 400 });
+    if (!file) return NextResponse.json({ status: 'error', error: 'A PDF file is required' }, { status: 400 });
     if (!isPdfFile(file)) {
-      return NextResponse.json({ status: 'error', error: 'Sirf PDF file upload karo.' }, { status: 400 });
+      return NextResponse.json({ status: 'error', error: 'Upload a PDF file.' }, { status: 400 });
     }
     if (file.size > 25 * 1024 * 1024) {
       return NextResponse.json(
-        { status: 'error', error: 'PDF 25MB se choti aur maximum 30 pages ki honi chahiye.' },
+        { status: 'error', error: 'The PDF must be smaller than 25 MB and contain no more than 30 pages.' },
         { status: 400 }
       );
     }
@@ -43,14 +43,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           status: 'error',
-          error: `Printed/PDF scans ki weekly limit complete ho gayi. ${new Date(limitCheck.reset).toLocaleDateString('en-PK')} ko reset hogi.`,
+          error: `The weekly printed/PDF scan limit has been reached. It resets on ${new Date(limitCheck.reset).toLocaleDateString('en-PK')}.`,
         },
         { status: 429 }
       );
     }
 
     const pdfBuffer = Buffer.from(await file.arrayBuffer());
-    const result = await performSelfHostedOcr({
+    const result = await performPdfOcr({
       fileBuffer: pdfBuffer,
       mimeType: 'application/pdf',
       filename: file.name,
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
         pageCount: result.pages || 1,
         usedOcr: result.provider !== 'native-pdf',
         provider: result.provider,
-        fallbackTriggered: false,
+        fallbackTriggered: result.fallbackTriggered || false,
         remaining: limitCheck.remaining,
         reset: limitCheck.reset,
       },
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         status: 'error',
-        error: message.includes('pages') ? message : 'PDF extract nahi ho saka. Clear ya supported PDF ke saath dobara try karo.',
+        error: message.includes('pages') ? message : 'The PDF could not be extracted. Try again with a clear, supported PDF.',
       },
       { status: 500 }
     );

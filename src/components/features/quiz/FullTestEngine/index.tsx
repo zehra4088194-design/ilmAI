@@ -71,7 +71,7 @@ export function FullTestSetup({
   }, []);
 
   const generate = async () => {
-    if (!subject) { toast.error('Subject select karo'); return; }
+    if (!subject) { toast.error('Select a subject.'); return; }
     setState('loading');
     try {
       const res = await fetch('/api/ai/full-test', {
@@ -97,7 +97,7 @@ export function FullTestSetup({
       setPaper(p);
       setAnswers({});
       setState('paper');
-    } catch { toast.error('Test generate nahi hua'); setState('setup'); }
+    } catch { toast.error('The test could not be generated.'); setState('setup'); }
   };
 
   const handleScanWholeTest = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -107,7 +107,7 @@ export function FullTestSetup({
     const writeQuestions = [...(paper.shortQs || []), ...(paper.longQs || [])];
     const emptyQuestions = writeQuestions.filter((q: any) => !(answers[q.id] || '').trim());
     if (emptyQuestions.length === 0) {
-      toast.error('Saare written answers already bhare hue hain');
+      toast.error('All written answers are already filled.');
       if (wholeTestFileRef.current) wholeTestFileRef.current.value = '';
       return;
     }
@@ -126,7 +126,7 @@ export function FullTestSetup({
         if (res.status === 429) {
           hitLimit = true;
           const json = await res.json().catch(() => null);
-          toast.error(`${json?.error || 'Daily scan limit khatam ho gayi'} — ${recognizedTexts.length} page(s) scan ho chuke the.`);
+          toast.error(`${json?.error || 'The daily scan limit has been reached'} — ${recognizedTexts.length} page(s) were scanned.`);
           break;
         }
         const json = await res.json();
@@ -147,7 +147,7 @@ export function FullTestSetup({
         }
         return updated;
       });
-      if (!hitLimit) toast.success('Scan ho gaya — jawabaat check kar lo, zaroorat ho to edit karo.');
+      if (!hitLimit) toast.success('Scan complete. Review the answers and edit them if needed.');
     } else if (!hitLimit) {
       toast.error('No text could be scanned.');
     }
@@ -185,7 +185,7 @@ export function FullTestSetup({
       const writeEvals = json.data || writeQuestions.map(() => ({ score: 0, grade: '?', feedback: 'Grading pending' }));
       setGradeResults([...mcqResults.map((r: any) => ({ type: 'mcq', ...r })), ...writeEvals.map((e: any, i: number) => ({ type: writeQuestions[i]?.section, ...e }))]);
       setState('result');
-    } catch { toast.error('Grading fail ho gayi'); setState('paper'); }
+    } catch { toast.error('Grading failed.'); setState('paper'); }
   };
 
   return (
@@ -264,7 +264,7 @@ export function FullTestSetup({
           <div className="flex items-center justify-between flex-wrap gap-3">
             <AIProviderSelector provider={provider} tier={aiTier} onChange={(p, t) => { setProvider(p); setAiTier(t); }} isFreeTier={isFreeTier} />
             <Button variant="gradient" size="lg" onClick={generate}>
-              <Sparkles className="w-5 h-5" />Test Generate Karo
+              <Sparkles className="w-5 h-5" />Generate Test
             </Button>
           </div>
         </motion.div>
@@ -278,7 +278,7 @@ export function FullTestSetup({
 
       {state === 'grading' && (
         <motion.div key="grading" className="text-center py-20">
-          <BrandLoader label="AI jawabaat check kar raha hai..." />
+          <BrandLoader label="AI is checking your answers..." />
         </motion.div>
       )}
 
@@ -337,7 +337,7 @@ export function FullTestSetup({
           )}
 
           <Button variant="gradient" size="xl" className="w-full" onClick={submitTest}>
-            <FileCheck className="w-5 h-5" />Test Submit Karo
+            <FileCheck className="w-5 h-5" />Submit Test
           </Button>
         </motion.div>
       )}
@@ -462,7 +462,7 @@ function TestResult({ paper, gradeResults, answers, onRetry }: { paper: any; gra
               return (
                 <div key={i} className={cn('p-3 rounded-lg border text-xs', r?.correct ? 'border-green-500/30 bg-green-500/5' : 'border-red-500/30 bg-red-500/5')}>
                   <p className="font-medium mb-1">{r?.correct ? '✅' : '❌'} Q{i+1}. {q.q}</p>
-                  <p>Tumhara: <strong>{r?.userAns !== undefined ? L[r.userAns] : '—'}</strong> · Sahi: <strong className="text-green-400">{L[q.correct]}</strong></p>
+                  <p>Your answer: <strong>{r?.userAns !== undefined ? L[r.userAns] : '—'}</strong> · Correct answer: <strong className="text-green-400">{L[q.correct]}</strong></p>
                   {!r?.correct && q.exp && <p className="text-muted-foreground mt-1">💡 {q.exp}</p>}
                 </div>
               );

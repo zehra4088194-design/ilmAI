@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     if (!user) return NextResponse.json({ status: 'error', error: 'Login required' }, { status: 401 });
 
     const { inviteCode } = await req.json();
-    if (!inviteCode) return NextResponse.json({ status: 'error', error: 'Code required hai' }, { status: 400 });
+    if (!inviteCode) return NextResponse.json({ status: 'error', error: 'An invite code is required' }, { status: 400 });
 
     const code = String(inviteCode).trim().toUpperCase();
     const admin = await createAdminClient();
@@ -26,9 +26,9 @@ export async function POST(req: NextRequest) {
 
     if (!invite) return NextResponse.json({ status: 'error', error: 'Invalid invite code' }, { status: 404 });
     if (invite.parent_id === user.id)
-      return NextResponse.json({ status: 'error', error: 'Apna khud ka code use nahi kar sakte' }, { status: 400 });
+      return NextResponse.json({ status: 'error', error: 'You cannot use your own invite code' }, { status: 400 });
     if (invite.invite_expires_at && new Date(invite.invite_expires_at).getTime() < Date.now()) {
-      return NextResponse.json({ status: 'error', error: 'Invite code expire ho gaya' }, { status: 410 });
+      return NextResponse.json({ status: 'error', error: 'The invite code has expired' }, { status: 410 });
     }
 
     const { data: profile } = await admin
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       .single();
     if (profile?.role && profile.role !== 'student') {
       return NextResponse.json(
-        { status: 'error', error: 'Parent link sirf student account se accept ho sakta hai.' },
+        { status: 'error', error: 'A parent link can only be accepted from a student account.' },
         { status: 400 }
       );
     }
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
       await (admin.from('parent_student_links') as any).delete().eq('id', invite.id);
       return NextResponse.json({
         status: 'success',
-        message: 'Aap already is parent account se linked ho.',
+        message: 'You are already linked to this parent account.',
         data: { linkId: existingLink.id },
       });
     }
@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           status: 'error',
-          error: `${plan.name} plan mein maximum ${plan.limits.parentGuardiansMax} guardian link allowed ${plan.limits.parentGuardiansMax === 1 ? 'hai' : 'hain'}.`,
+          error: `The ${plan.name} plan allows up to ${plan.limits.parentGuardiansMax} guardian ${plan.limits.parentGuardiansMax === 1 ? 'link' : 'links'}.`,
         },
         { status: 403 }
       );
@@ -101,11 +101,11 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       status: 'success',
-      message: 'Parent account se successfully link ho gaya!',
+      message: 'Successfully linked to the parent account.',
       data: { linkId: invite.id },
     });
   } catch (error) {
     console.error('Accept invite error:', error);
-    return NextResponse.json({ status: 'error', error: 'Invite accept nahi ho saka' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: 'The invite could not be accepted' }, { status: 500 });
   }
 }

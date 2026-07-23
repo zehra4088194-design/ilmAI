@@ -5,10 +5,10 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const db = supabase as any;
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ status: 'error', error: 'Login required hai' }, { status: 401 });
+  if (!user) return NextResponse.json({ status: 'error', error: 'Authentication is required' }, { status: 401 });
   const body = await req.json();
   const projectId = String(body.project_id || '').trim();
-  if (!projectId) return NextResponse.json({ status: 'error', error: 'Project required hai.' }, { status: 400 });
+  if (!projectId) return NextResponse.json({ status: 'error', error: 'A project is required.' }, { status: 400 });
   const payload = {
     project_id: projectId,
     title: body.title || null,

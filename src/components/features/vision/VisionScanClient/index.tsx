@@ -43,7 +43,7 @@ export function VisionScanClient() {
       return;
     }
     if (next.size > 4 * 1024 * 1024) {
-      toast.error('Image 4MB se choti honi chahiye.');
+      toast.error('The image must be smaller than 4 MB.');
       return;
     }
     setFile(next);
@@ -153,7 +153,7 @@ export function VisionScanClient() {
                 <p className="font-semibold">Your result will appear here</p>
                 <p className="text-muted-foreground mt-1 text-sm">
                   {plan.name}: {plan.limits.ocrPrintedMonthly < 0 ? 'Unlimited' : plan.limits.ocrPrintedMonthly} printed
-                  aur{' '}
+                  {' and '}
                   {plan.audienceLimits[audience].ocrHandwrittenMonthly < 0
                     ? 'Unlimited'
                     : plan.audienceLimits[audience].ocrHandwrittenMonthly}{' '}

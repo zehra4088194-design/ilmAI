@@ -165,6 +165,6 @@ Return JSON:
     return NextResponse.json({ status: 'success', data: { tier, cached: false, insight: content } });
   } catch (error) {
     console.error('Roadmap insight error:', error);
-    return NextResponse.json({ status: 'error', error: 'Roadmap generate nahi ho saka' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: 'The roadmap could not be generated.' }, { status: 500 });
   }
 }

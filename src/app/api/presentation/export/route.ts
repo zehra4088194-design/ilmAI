@@ -30,6 +30,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error('Presentation export route error:', error);
-    return NextResponse.json({ status: 'error', error: 'PPTX export nahi ho saka.' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: 'The PPTX export could not be completed.' }, { status: 500 });
   }
 }

@@ -17,7 +17,7 @@ export function TestimonialsSection() {
       <div className="container mx-auto px-4">
         <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">Students Ka <span className="gradient-text">Feedback</span></h2>
-          <p className="text-muted-foreground">50,000+ students jo already ilm AI use kar rahe hain</p>
+          <p className="text-muted-foreground">Join students already learning with ilm AI</p>
         </motion.div>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {TESTIMONIALS.map((t, i) => (

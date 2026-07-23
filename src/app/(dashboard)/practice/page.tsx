@@ -53,13 +53,30 @@ export default async function PracticePage() {
     chaptersBySubject[c.subject_id]!.push({ id: c.id, name: c.name });
   });
 
+  const { data: sourceFiles } = await supabase
+    .from('library_resources')
+    .select('id, title, chapter_id, subject_id, board, grade_level')
+    .eq('resource_type', 'notes')
+    .in('subject_id', Array.from(visibleSubjectIds))
+    .not('chapter_id', 'is', null)
+    .order('title');
+
+  const resourcesByChapter: Record<string, { id: string; title: string }[]> = {};
+  (sourceFiles || []).forEach((resource) => {
+    if (!resource.chapter_id || !resource.subject_id || !visibleSubjectIds.has(resource.subject_id)) return;
+    if (resource.board && resource.board !== board) return;
+    if (resource.grade_level && resource.grade_level !== grade) return;
+    if (!resourcesByChapter[resource.chapter_id]) resourcesByChapter[resource.chapter_id] = [];
+    resourcesByChapter[resource.chapter_id]!.push({ id: resource.id, title: resource.title });
+  });
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">AI Testing</h1>
-        <p className="text-muted-foreground">AI will generate MCQ, short-question, and long-question tests from your selected board and class chapters.</p>
+        <h1 className="text-2xl font-bold">Chapter Testing</h1>
+        <p className="text-muted-foreground">Choose an uploaded chapter file. Every test uses only its saved source MCQs, in a new random order.</p>
       </div>
-      <AiPracticeHub subjects={subjects || []} chaptersBySubject={chaptersBySubject} />
+      <AiPracticeHub subjects={subjects || []} chaptersBySubject={chaptersBySubject} resourcesByChapter={resourcesByChapter} />
     </div>
   );
 }

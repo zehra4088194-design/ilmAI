@@ -31,7 +31,7 @@ export default function TermsPage() {
         {
           title: 'AI-generated content',
           bullets: [
-            'AI responses guidance ke liye hoti hain; unhein final academic or professional advice ka exact substitute na samjhein.',
+            'AI responses provide guidance and are not a substitute for final academic or professional advice.',
             'Students must review their work and use AI responsibly according to their academic policy.',
             'We continuously improve response quality, but cannot guarantee absolute correctness for every output.',
           ],

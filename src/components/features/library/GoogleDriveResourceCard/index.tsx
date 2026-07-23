@@ -17,6 +17,7 @@ import {
   fetchProtectedResourceResponse,
 } from '@/components/features/resources/ProtectedResourceReader';
 import { ResourceAiTools } from '@/components/features/resources/ResourceAiTools';
+import { getGoogleDriveThumbnailUrl } from '@/lib/utils/filePreview';
 
 export interface DriveResourceData {
   id: string;
@@ -28,9 +29,18 @@ export interface DriveResourceData {
   chapterName?: string | null;
   bookTitle?: string | null;
   hasContextText?: boolean;
+  driveUrl?: string | null;
+  lightFileUrl?: string | null;
+  darkFileUrl?: string | null;
 }
 
-export function GoogleDriveResourceCard({ resource, autoOpen = false }: { resource: DriveResourceData; autoOpen?: boolean }) {
+export function GoogleDriveResourceCard({
+  resource,
+  autoOpen = false,
+}: {
+  resource: DriveResourceData;
+  autoOpen?: boolean;
+}) {
   const { theme } = useTheme();
   const mode = isDarkThemeId(theme) ? 'dark' : 'light';
   const { user } = useAuth();
@@ -39,6 +49,11 @@ export function GoogleDriveResourceCard({ resource, autoOpen = false }: { resour
   const canDownload = settings.subscriptionPlans[tier].access.downloadPDF;
   const [readerOpen, setReaderOpen] = useState(autoOpen);
   const [downloading, setDownloading] = useState(false);
+  const readerSourceUrl =
+    mode === 'dark'
+      ? resource.darkFileUrl || resource.lightFileUrl || resource.driveUrl || null
+      : resource.lightFileUrl || resource.driveUrl || resource.darkFileUrl || null;
+  const thumbnailUrl = getGoogleDriveThumbnailUrl(readerSourceUrl);
 
   useEffect(() => {
     if (autoOpen) setReaderOpen(true);
@@ -68,9 +83,9 @@ export function GoogleDriveResourceCard({ resource, autoOpen = false }: { resour
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ resource_type: 'textbook', resource_id: resource.id, device_hint: navigator.userAgent }),
       }).catch(() => undefined);
-      toast.success('App Downloads mein offline save ho gaya.');
+      toast.success('Saved for offline use in Downloads.');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Offline save nahi ho saka.');
+      toast.error(error instanceof Error ? error.message : 'Offline save failed.');
     } finally {
       setDownloading(false);
     }
@@ -78,10 +93,14 @@ export function GoogleDriveResourceCard({ resource, autoOpen = false }: { resour
 
   return (
     <Card className="group border-border/70 bg-card/85 hover:border-primary/35 overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-xl">
-      <div className="from-primary/10 via-background to-cyan-500/10 flex aspect-[4/3] items-center justify-center border-b bg-gradient-to-br">
-        <div className="border-primary/20 bg-background/75 flex h-20 w-20 items-center justify-center rounded-3xl border shadow-lg">
-          <BookOpen className="text-primary h-9 w-9" />
-        </div>
+      <div className="from-primary/10 via-background relative flex aspect-[4/3] items-center justify-center overflow-hidden border-b bg-gradient-to-br to-cyan-500/10">
+        {thumbnailUrl ? (
+          <img src={thumbnailUrl} alt={`${resource.title} preview`} className="h-full w-full object-cover object-top" />
+        ) : (
+          <div className="border-primary/20 bg-background/75 flex h-20 w-20 items-center justify-center rounded-3xl border shadow-lg">
+            <BookOpen className="text-primary h-9 w-9" />
+          </div>
+        )}
       </div>
       <CardContent className="space-y-3 p-4">
         <div className="flex flex-wrap items-center gap-2">
@@ -104,7 +123,9 @@ export function GoogleDriveResourceCard({ resource, autoOpen = false }: { resour
           )}
         </div>
         <div>
-          {resource.bookTitle && <p className="text-primary mb-1 truncate text-xs font-semibold">{resource.bookTitle}</p>}
+          {resource.bookTitle && (
+            <p className="text-primary mb-1 truncate text-xs font-semibold">{resource.bookTitle}</p>
+          )}
           <h3 className="line-clamp-1 text-sm font-semibold">{resource.title}</h3>
           {resource.description && (
             <p className="text-muted-foreground mt-1 line-clamp-2 text-xs">{resource.description}</p>
@@ -112,11 +133,15 @@ export function GoogleDriveResourceCard({ resource, autoOpen = false }: { resour
         </div>
         <Button variant="gradient" size="sm" className="w-full" onClick={() => setReaderOpen(true)}>
           <Maximize2 className="h-3.5 w-3.5" />
-          Read full screen
+          Open PDF
         </Button>
-        {user ? <ResourceAiTools kind="library" resourceId={resource.id} /> : (
+        {user ? (
+          <ResourceAiTools kind="library" resourceId={resource.id} />
+        ) : (
           <Button asChild variant="outline" size="sm" className="w-full">
-            <Link href={`/login?redirect=${encodeURIComponent(typeof window === 'undefined' ? '/library' : window.location.pathname + window.location.search)}`}>
+            <Link
+              href={`/login?redirect=${encodeURIComponent(typeof window === 'undefined' ? '/library' : window.location.pathname + window.location.search)}`}
+            >
               Sign in for AI tools
             </Link>
           </Button>
@@ -142,6 +167,7 @@ export function GoogleDriveResourceCard({ resource, autoOpen = false }: { resour
         resourceId={resource.id}
         mode={mode}
         title={resource.title}
+        sourceUrl={readerSourceUrl}
       />
     </Card>
   );

@@ -28,14 +28,14 @@ export function ServerPdfOcrUploader({ onTextExtracted }: ServerPdfOcrUploaderPr
       const json = await res.json();
 
       if (json.status === 'error') {
-        toast.error(json.error || 'PDF OCR fail ho gaya');
+        toast.error(json.error || 'PDF OCR failed.');
         return;
       }
 
       const extracted = String(json.data?.text || '').trim();
       setText(extracted);
       onTextExtracted?.(extracted);
-      toast.success(json.data?.usedOcr ? 'PDF OCR complete ho gaya' : 'PDF text extract ho gaya');
+      toast.success(json.data?.usedOcr ? 'PDF OCR completed.' : 'PDF text extracted.');
     } catch {
       toast.error('The PDF could not be processed.');
     } finally {
@@ -46,7 +46,7 @@ export function ServerPdfOcrUploader({ onTextExtracted }: ServerPdfOcrUploaderPr
   async function copyText() {
     if (!text) return;
     await navigator.clipboard.writeText(text);
-    toast.success('Extracted text copy ho gaya');
+    toast.success('Extracted text copied.');
   }
 
   return (
@@ -62,7 +62,7 @@ export function ServerPdfOcrUploader({ onTextExtracted }: ServerPdfOcrUploaderPr
           <UploadCloud className="mb-3 h-9 w-9 text-violet-400" />
           <p className="font-semibold">Upload PDF for Server OCR</p>
           <p className="text-muted-foreground mt-2 text-sm">
-            {file ? file.name : 'Free OCR: select a PDF up to 900 KB and 3 pages.'}
+            {file ? file.name : 'Select a PDF up to 20 MB and 30 pages.'}
           </p>
         </label>
 

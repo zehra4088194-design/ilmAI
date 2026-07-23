@@ -108,7 +108,7 @@ export function PastPaperFormDialog({ open, onOpenChange, paper, onSaved }: Prop
       return;
     }
     if (form.context_text_url.trim() && !/^https:\/\//i.test(form.context_text_url.trim())) {
-      setError('Companion .txt ke liye HTTPS ya Google Drive link paste karein.');
+      setError('Paste an HTTPS or Google Drive link for the companion .txt file.');
       return;
     }
 
@@ -140,7 +140,7 @@ export function PastPaperFormDialog({ open, onOpenChange, paper, onSaved }: Prop
       await onSaved();
       onOpenChange(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Kuch ghalat ho gaya');
+      setError(err instanceof Error ? err.message : 'Something went wrong.');
     } finally {
       setSaving(false);
     }

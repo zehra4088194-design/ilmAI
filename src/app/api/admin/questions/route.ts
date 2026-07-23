@@ -15,7 +15,7 @@ export async function GET() {
 
   if (error) {
     console.error('questions load error:', error);
-    return NextResponse.json({ error: 'Questions load nahi hue' }, { status: 500 });
+    return NextResponse.json({ error: 'Questions could not be loaded' }, { status: 500 });
   }
 
   const questions = (data || []).map((question) => ({
@@ -49,12 +49,12 @@ export async function POST(req: NextRequest) {
   };
 
   if (!body.subject_id || !body.chapter_id || !body.text?.trim()) {
-    return NextResponse.json({ error: 'Subject, chapter aur question text zaroori hain' }, { status: 400 });
+    return NextResponse.json({ error: 'Subject, chapter, and question text are required' }, { status: 400 });
   }
 
   const type = body.type || 'MCQ';
   if (type === 'MCQ' && (!body.options?.length || !body.correct_answer)) {
-    return NextResponse.json({ error: 'MCQ ke liye options aur correct answer zaroori hain' }, { status: 400 });
+    return NextResponse.json({ error: 'Options and a correct answer are required for an MCQ' }, { status: 400 });
   }
 
   const adminClient = await createAdminClient();
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
 
   if (error) {
     console.error('question create error:', error);
-    return NextResponse.json({ error: 'Question add nahi hua' }, { status: 500 });
+    return NextResponse.json({ error: 'The question could not be added' }, { status: 500 });
   }
 
   try { await adminClient.rpc('refresh_subject_counts'); } catch {}

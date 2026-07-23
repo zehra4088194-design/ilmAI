@@ -40,7 +40,7 @@ export function LeaderboardTable({ users, currentUserId }: { users: LeaderUser[]
             <span className="text-sm font-semibold text-violet-400">{formatXP(user.xp)}</span>
           </div>
         ))}
-        {users.length === 0 && <p className="text-center py-8 text-muted-foreground">Koi data nahi hai abhi</p>}
+        {users.length === 0 && <p className="text-center py-8 text-muted-foreground">No data available yet</p>}
       </div>
     </div>
   );

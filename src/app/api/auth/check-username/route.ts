@@ -6,7 +6,7 @@ const USERNAME_REGEX = /^[a-z0-9._]{3,30}$/i;
 export async function GET(req: NextRequest) {
   const username = req.nextUrl.searchParams.get('username')?.trim().toLowerCase() || '';
   if (!USERNAME_REGEX.test(username)) {
-    return NextResponse.json({ available: false, error: 'Username 3-30 chars aur sirf letters, numbers, dot, underscore ho.' }, { status: 400 });
+    return NextResponse.json({ available: false, error: 'Usernames must be 3-30 characters and contain only letters, numbers, dots, or underscores.' }, { status: 400 });
   }
 
   const admin = await createAdminClient();

@@ -96,7 +96,7 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Settings could not be saved.');
       setSettings(normalizePlatformSettings(json.settings));
-      toast.success('Platform settings save ho gayi');
+      toast.success('Platform settings saved.');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Settings could not be saved.');
     } finally {

@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     const { type, subjectId, chapterId, count } = await req.json();
     const questionType: PracticeType = type === 'long' ? 'long' : 'short';
     if (!subjectId || !chapterId) {
-      return NextResponse.json({ status: 'error', error: 'Subject aur chapter required hain' }, { status: 400 });
+      return NextResponse.json({ status: 'error', error: 'A subject and chapter are required' }, { status: 400 });
     }
 
     const { data: profile } = await supabase
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
 
     const limitCheck = await checkAiMessageLimit(user.id, tier, 'practice_questions');
     if (!limitCheck.success) {
-      return NextResponse.json({ status: 'error', error: 'Daily AI limit khatam ho gayi' }, { status: 429 });
+      return NextResponse.json({ status: 'error', error: 'The daily AI limit has been reached.' }, { status: 429 });
     }
 
     const [{ data: subject }, { data: chapter }] = await Promise.all([
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
     ]);
 
     if (!subject || !chapter) {
-      return NextResponse.json({ status: 'error', error: 'Subject ya chapter nahi mila' }, { status: 404 });
+      return NextResponse.json({ status: 'error', error: 'The subject or chapter was not found.' }, { status: 404 });
     }
     const board = profile?.board;
     const grade = profile?.grade_level;
@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
       (!board || !chapter.boards?.length || chapter.boards.includes(board)) &&
       (!grade || (chapter.grade_levels?.length ? chapter.grade_levels.includes(grade) : !subjectHasMultipleGrades));
     if (!subjectVisible || !chapterVisible) {
-      return NextResponse.json({ status: 'error', error: 'Yeh chapter aapki class ke liye available nahi hai' }, { status: 403 });
+      return NextResponse.json({ status: 'error', error: 'This chapter is not available for your class.' }, { status: 403 });
     }
 
     const finalCount = cleanCount(count, questionType);
@@ -123,7 +123,7 @@ Return ONLY valid JSON array, no markdown:
     })).filter((question) => question.q);
 
     if (questions.length === 0) {
-      return NextResponse.json({ status: 'error', error: 'Questions generate nahi ho sake. Dobara try karo.' }, { status: 500 });
+      return NextResponse.json({ status: 'error', error: 'Questions could not be generated. Please try again.' }, { status: 500 });
     }
 
     return NextResponse.json({
@@ -137,6 +137,6 @@ Return ONLY valid JSON array, no markdown:
     });
   } catch (error) {
     console.error('Practice questions error:', error);
-    return NextResponse.json({ status: 'error', error: 'Questions generate nahi ho sake' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: 'Questions could not be generated.' }, { status: 500 });
   }
 }

@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
         user_id: g.userId,
         type: 'REMINDER',
         title: 'Focus Area Mili!',
-        message: `${subject.name} mein thora weak ho — is week extra practice try karo!`,
+        message: `Your performance in ${subject.name} needs attention. Add extra practice this week.`,
         link: linkUrl,
       });
       created++;

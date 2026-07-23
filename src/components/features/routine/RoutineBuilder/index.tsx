@@ -84,8 +84,8 @@ export function RoutineBuilder({ existingRoutine, userId, userTier }: {
   };
 
   const generate = async () => {
-    if (prefs.subjects.length === 0) { toast.error('Kam se kam 1 subject select karo'); return; }
-    if (prefs.availableDays.length === 0) { toast.error('Kam se kam 1 din select karo'); return; }
+    if (prefs.subjects.length === 0) { toast.error('Select at least one subject.'); return; }
+    if (prefs.availableDays.length === 0) { toast.error('Select at least one available day.'); return; }
     setStep('loading');
     try {
       const res = await fetch('/api/ai/routine', {
@@ -96,7 +96,7 @@ export function RoutineBuilder({ existingRoutine, userId, userTier }: {
       if (json.status === 'error') { toast.error(json.error); setStep('form'); return; }
       setSchedule(json.data);
       setStep('result');
-    } catch { toast.error('Kuch ghalat ho gaya'); setStep('form'); }
+    } catch { toast.error('Something went wrong.'); setStep('form'); }
   };
 
   return (
@@ -107,7 +107,7 @@ export function RoutineBuilder({ existingRoutine, userId, userTier }: {
             {/* Available Days */}
             <Card>
               <CardContent className="p-6">
-                <p className="text-sm font-bold mb-3 flex items-center gap-2"><Calendar className="w-4 h-4 text-violet-400" />Kaunse din study kar sakte ho?</p>
+                <p className="text-sm font-bold mb-3 flex items-center gap-2"><Calendar className="w-4 h-4 text-violet-400" />Which days can you study?</p>
                 <div className="flex flex-wrap gap-2">
                   {DAYS.map(day => (
                     <button key={day} onClick={() => toggleDay(day)}
@@ -122,7 +122,7 @@ export function RoutineBuilder({ existingRoutine, userId, userTier }: {
             {/* Hours per day */}
             <Card>
               <CardContent className="p-6">
-                <p className="text-sm font-bold mb-3 flex items-center gap-2"><Clock className="w-4 h-4 text-blue-400" />Roz kitne ghante study kar sakte ho?</p>
+                <p className="text-sm font-bold mb-3 flex items-center gap-2"><Clock className="w-4 h-4 text-blue-400" />How many hours can you study each day?</p>
                 <div className="flex gap-2 flex-wrap">
                   {HOUR_OPTIONS.map(h => (
                     <button key={h} onClick={() => setPrefs(p => ({ ...p, hoursPerDay: h }))}
@@ -152,7 +152,7 @@ export function RoutineBuilder({ existingRoutine, userId, userTier }: {
             {/* Subjects — dynamic, board-scoped */}
             <Card>
               <CardContent className="p-6">
-                <p className="text-sm font-bold mb-3 flex items-center gap-2"><Brain className="w-4 h-4 text-green-400" />Kaunse subjects padhne hain?</p>
+                <p className="text-sm font-bold mb-3 flex items-center gap-2"><Brain className="w-4 h-4 text-green-400" />Which subjects do you want to study?</p>
                 <div className="flex flex-wrap gap-2">
                   {subjectNames.map(sub => (
                     <button key={sub} onClick={() => toggleSubject(sub)}
@@ -168,7 +168,7 @@ export function RoutineBuilder({ existingRoutine, userId, userTier }: {
             {prefs.subjects.length > 0 && (
               <Card>
                 <CardContent className="p-6">
-                  <p className="text-sm font-bold mb-3">Kaunsa subject weak hai? <span className="font-normal text-muted-foreground">(optional)</span></p>
+                  <p className="text-sm font-bold mb-3">Which subject needs the most improvement? <span className="font-normal text-muted-foreground">(optional)</span></p>
                   <div className="flex flex-wrap gap-2">
                     {prefs.subjects.map(sub => (
                       <button key={sub} onClick={() => toggleWeak(sub)}
@@ -185,13 +185,13 @@ export function RoutineBuilder({ existingRoutine, userId, userTier }: {
             <Card>
               <CardContent className="p-6 space-y-4">
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Board exam kab hai? <span className="text-muted-foreground text-xs">(optional)</span></label>
+                  <label className="text-sm font-medium mb-2 block">When is your board exam? <span className="text-muted-foreground text-xs">(optional)</span></label>
                   <input type="date" value={prefs.examDate} onChange={e => setPrefs(p => ({ ...p, examDate: e.target.value }))}
                     className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm" />
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-2 block">Koi khaas goal? <span className="text-muted-foreground text-xs">(optional)</span></label>
-                  <input placeholder="e.g. 90%+ marks chahiye, engineering entry test ki tayari..." value={prefs.goals}
+                  <input placeholder="e.g. Score 90%+, prepare for an engineering entry test..." value={prefs.goals}
                     onChange={e => setPrefs(p => ({ ...p, goals: e.target.value }))}
                     className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm" />
                 </div>
@@ -207,8 +207,8 @@ export function RoutineBuilder({ existingRoutine, userId, userTier }: {
         {step === 'loading' && (
           <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-16">
             <div className="w-14 h-14 mx-auto mb-4 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
-            <p className="font-semibold">AI schedule bana raha hai...</p>
-            <p className="text-sm text-muted-foreground mt-2">Tumhare saare jawabaat consider kar ke personalised routine banai ja rahi hai</p>
+            <p className="font-semibold">AI is building your schedule...</p>
+            <p className="text-sm text-muted-foreground mt-2">We are building a personalized routine from your answers.</p>
           </motion.div>
         )}
 
@@ -268,7 +268,7 @@ export function RoutineBuilder({ existingRoutine, userId, userTier }: {
             </div>
 
             <Button variant="outline" className="w-full" onClick={() => setStep('form')}>
-              <Sparkles className="w-4 h-4" />Dobara Banao (Settings Change Karo)
+              <Sparkles className="w-4 h-4" />Regenerate with New Settings
             </Button>
           </motion.div>
         )}

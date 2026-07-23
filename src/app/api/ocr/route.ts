@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) {
-      return NextResponse.json({ status: 'error', error: 'Login required hai' }, { status: 401 });
+      return NextResponse.json({ status: 'error', error: 'Authentication is required' }, { status: 401 });
     }
 
     const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     const modeValue = formData.get('mode');
     const mode = modeValue === 'handwritten' ? 'handwritten' : 'printed';
     if (!file) {
-      return NextResponse.json({ status: 'error', error: 'File required hai' }, { status: 400 });
+      return NextResponse.json({ status: 'error', error: 'A file is required' }, { status: 400 });
     }
 
     const validation = validateOcrFile(file.type, file.size);
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           status: 'error',
-          error: `${mode === 'handwritten' ? 'Handwritten' : 'Printed'} scans ki monthly limit complete ho gayi. ${new Date(limitCheck.reset).toLocaleDateString('en-PK')} ko reset hogi.`,
+          error: `The monthly limit for ${mode === 'handwritten' ? 'handwritten' : 'printed'} scans has been reached. It resets on ${new Date(limitCheck.reset).toLocaleDateString('en-PK')}.`,
         },
         { status: 429 }
       );
@@ -59,6 +59,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error('OCR error:', error);
-    return NextResponse.json({ status: 'error', error: 'Scan fail ho gaya. Dobara try karo.' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: 'The scan failed. Please try again.' }, { status: 500 });
   }
 }

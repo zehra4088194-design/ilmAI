@@ -66,7 +66,7 @@ export default function ResetPasswordPage() {
           Use the link or code from your email again to set a new password.
         </p>
         <Button asChild variant="gradient" className="w-full">
-          <Link href="/forgot-password">Naya Link Aur Code Lo</Link>
+          <Link href="/forgot-password">Request a New Link and Code</Link>
         </Button>
       </div>
     );

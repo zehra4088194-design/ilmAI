@@ -46,7 +46,7 @@ export async function GET() {
 
   if (error) {
     return NextResponse.json(
-      { error: 'Student chat table setup nahi hui. Migration 011 run karein.' },
+      { error: 'Student chat is not configured. Run migration 011.' },
       { status: 500 }
     );
   }
@@ -69,15 +69,15 @@ export async function POST(req: NextRequest) {
       : typeof recipientEmail === 'string'
         ? recipientEmail.trim().toLowerCase()
         : '';
-  if (!identifier) return NextResponse.json({ error: 'Student username ya email required hai' }, { status: 400 });
+  if (!identifier) return NextResponse.json({ error: 'A student username or email is required' }, { status: 400 });
 
   const admin = (await createAdminClient()) as any;
   const { data: me } = await admin.from('profiles').select('id, role, gender').eq('id', user.id).maybeSingle();
   if (me?.role && me.role !== 'student') {
-    return NextResponse.json({ error: 'Student chat sirf student accounts ke liye hai.' }, { status: 403 });
+    return NextResponse.json({ error: 'Student chat is available only to student accounts.' }, { status: 403 });
   }
   if (me?.gender !== 'girl' && me?.gender !== 'boy') {
-    return NextResponse.json({ error: 'Pehle Settings mein girl ya boy select karo.' }, { status: 403 });
+    return NextResponse.json({ error: 'Select your gender in Settings first.' }, { status: 403 });
   }
 
   const username = identifier.replace(/^@/, '');
@@ -95,14 +95,14 @@ export async function POST(req: NextRequest) {
         .maybeSingle();
   const recipient = emailRecipient || usernameRecipient;
   if (!recipient || recipient.role !== 'student') {
-    return NextResponse.json({ error: 'Is username/email se student account nahi mila.' }, { status: 404 });
+    return NextResponse.json({ error: 'No student account was found for this username or email.' }, { status: 404 });
   }
   if (recipient.id === user.id) {
-    return NextResponse.json({ error: 'Apne aap ko request nahi bhej sakte.' }, { status: 400 });
+    return NextResponse.json({ error: 'You cannot send a request to yourself.' }, { status: 400 });
   }
   if (recipient.gender !== me.gender) {
     return NextResponse.json(
-      { error: 'Study Buddies privacy ke mutabiq sirf same-gender students connect kar sakte hain.' },
+      { error: 'Study Buddies privacy settings allow connections only between students of the same gender.' },
       { status: 403 }
     );
   }
@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
 
   if (existing) {
     return NextResponse.json(
-      { error: existing.status === 'approved' ? 'Chat already approved hai.' : 'Request already pending hai.' },
+      { error: existing.status === 'approved' ? 'The chat is already approved.' : 'The request is already pending.' },
       { status: 409 }
     );
   }
@@ -129,13 +129,13 @@ export async function POST(req: NextRequest) {
     .select('*')
     .single();
 
-  if (error) return NextResponse.json({ error: 'Request send nahi hui. Migration 011 check karein.' }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'The request could not be sent. Check migration 011.' }, { status: 500 });
 
   await createNotificationIfEnabled(admin, 'studentChat', {
     user_id: recipient.id,
     type: 'SOCIAL',
     title: 'New study buddy request',
-    message: 'Ek student ne aapko chat request bheji hai.',
+    message: 'A student sent you a chat request.',
     link: `/student-chat?requestId=${data.id}`,
     is_read: false,
   });
@@ -149,7 +149,7 @@ export async function PATCH(req: NextRequest) {
 
   const { requestId, status } = await req.json();
   if (!requestId || (status !== 'approved' && status !== 'declined')) {
-    return NextResponse.json({ error: 'Valid requestId/status required hai' }, { status: 400 });
+    return NextResponse.json({ error: 'A valid request ID and status are required' }, { status: 400 });
   }
 
   const admin = (await createAdminClient()) as any;
@@ -161,14 +161,14 @@ export async function PATCH(req: NextRequest) {
     .eq('status', 'pending')
     .maybeSingle();
 
-  if (!existing) return NextResponse.json({ error: 'Pending request nahi mili.' }, { status: 404 });
+  if (!existing) return NextResponse.json({ error: 'The pending request was not found.' }, { status: 404 });
 
   const { data: participants } = await admin
     .from('profiles')
     .select('id, gender')
     .in('id', [existing.requester_id, existing.recipient_id]);
   if (!participants || participants.length !== 2 || participants[0]?.gender !== participants[1]?.gender) {
-    return NextResponse.json({ error: 'Ye request same-gender privacy rule ke mutabiq approve nahi ho sakti.' }, { status: 403 });
+    return NextResponse.json({ error: 'This request cannot be approved under the same-gender privacy rule.' }, { status: 403 });
   }
 
   const { data, error } = await admin
@@ -178,7 +178,7 @@ export async function PATCH(req: NextRequest) {
     .select('*')
     .single();
 
-  if (error) return NextResponse.json({ error: 'Request update nahi hui.' }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'The request could not be updated.' }, { status: 500 });
 
   await createNotificationIfEnabled(admin, 'studentChat', {
     user_id: existing.requester_id,
@@ -186,8 +186,8 @@ export async function PATCH(req: NextRequest) {
     title: status === 'approved' ? 'Study buddy request approved' : 'Study buddy request declined',
     message:
       status === 'approved'
-        ? 'Ab aap dono chat kar sakte hain. Messaging Pro/Elite par unlock hoti hai.'
-        : 'Aapki request decline ho gayi.',
+        ? 'You can now connect. Messaging is available on Pro and Elite.'
+        : 'Your request was declined.',
     link: `/student-chat?requestId=${data.id}`,
     is_read: false,
   });

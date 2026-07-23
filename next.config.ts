@@ -78,6 +78,7 @@ const nextConfig: NextConfig = {
   experimental: {
     ppr: false,
     reactCompiler: false,
+    optimizePackageImports: ['lucide-react', 'recharts'],
   },
   images: {
     remotePatterns: [

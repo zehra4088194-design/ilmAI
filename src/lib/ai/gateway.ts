@@ -70,7 +70,7 @@ async function gatewayFetch(path: string, body: unknown) {
       typeof data === 'string' ? data : (data as { error?: string })?.error || `Gateway request failed (${res.status})`;
     const message =
       res.status === 401 || res.status === 403
-        ? 'AI gateway authorization failed. Gateway ka GATEWAY_SECRET missing hai ya app ke AI_GATEWAY_SECRET se mismatch kar raha hai.'
+        ? 'AI gateway authorization failed. GATEWAY_SECRET is missing or does not match the app AI_GATEWAY_SECRET.'
         : rawMessage;
     throw new GatewayError(message, res.status, data);
   }

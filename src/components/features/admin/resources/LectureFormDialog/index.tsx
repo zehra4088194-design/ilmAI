@@ -146,7 +146,7 @@ export function LectureFormDialog({ open, onOpenChange, lecture, onSaved }: Prop
       await onSaved();
       onOpenChange(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Kuch ghalat ho gaya');
+      setError(err instanceof Error ? err.message : 'Something went wrong.');
     } finally {
       setSaving(false);
     }

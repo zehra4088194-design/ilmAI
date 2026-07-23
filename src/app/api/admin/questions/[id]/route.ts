@@ -11,7 +11,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const { error } = await adminClient.from('questions').delete().eq('id', id);
   if (error) {
     console.error('question delete error:', error);
-    return NextResponse.json({ error: 'Question delete nahi hua' }, { status: 500 });
+    return NextResponse.json({ error: 'The question could not be deleted' }, { status: 500 });
   }
 
   try { await adminClient.rpc('refresh_subject_counts'); } catch {}
@@ -33,7 +33,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { data, error } = await adminClient.from('questions').update(updates as any).eq('id', id).select('*').single();
   if (error) {
     console.error('question update error:', error);
-    return NextResponse.json({ error: 'Question update nahi hua' }, { status: 500 });
+    return NextResponse.json({ error: 'The question could not be updated' }, { status: 500 });
   }
 
   return NextResponse.json({ question: data });

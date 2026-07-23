@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ status: 'error', error: 'Login required hai' }, { status: 401 });
+    if (!user) return NextResponse.json({ status: 'error', error: 'Authentication is required' }, { status: 401 });
 
     const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
     const tier = ((profile as any)?.subscription_tier || 'FREE') as SubscriptionTier;
@@ -71,10 +71,10 @@ export async function POST(req: NextRequest) {
     const language = normalizeLanguage(formData.get('language'));
     const audio = formData.get('audio') as File | null;
     if (!promptText || !transcript) {
-      return NextResponse.json({ status: 'error', error: 'Prompt aur transcript required hain.' }, { status: 400 });
+      return NextResponse.json({ status: 'error', error: 'A prompt and transcript are required.' }, { status: 400 });
     }
     if (audio && audio.size > MAX_AUDIO_SIZE) {
-      return NextResponse.json({ status: 'error', error: 'Audio 4MB se choti honi chahiye.' }, { status: 400 });
+      return NextResponse.json({ status: 'error', error: 'The audio file must be smaller than 4 MB.' }, { status: 400 });
     }
 
     let audioPath: string | null = null;
@@ -136,6 +136,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ status: 'success', data: { id: data?.id, score: parsed.score, feedback } });
   } catch (error) {
     console.error('Speaking practice error:', error);
-    return NextResponse.json({ status: 'error', error: 'Speaking practice save nahi ho saki.' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: 'Speaking practice could not be saved.' }, { status: 500 });
   }
 }

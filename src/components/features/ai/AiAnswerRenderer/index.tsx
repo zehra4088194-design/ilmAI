@@ -50,7 +50,7 @@ export function AiAnswerRenderer({ content, className, card = true, label, feedb
       });
       const json = await res.json();
       if (json.status === 'error') throw new Error(json.error);
-      toast.success(isHelpful ? 'Shukriya! Khushi hui madad kar ke 🎉' : 'Feedback mil gaya, hum behtar karenge');
+      toast.success(isHelpful ? 'Thank you. We are glad this helped.' : 'Feedback received. We will use it to improve.');
     } catch {
       // Non-fatal — feedback is a nice-to-have, don't block the reading experience
     }

@@ -124,12 +124,12 @@ export function QuestionBankManager() {
 
   async function addQuestion() {
     if (!subjectId || !chapterId || !text.trim()) {
-      toast.error('Subject, chapter aur question text zaroori hain');
+      toast.error('Subject, chapter, and question text are required');
       return;
     }
     const options = parseOptions();
     if (type === 'MCQ' && (options.length < 2 || !correctAnswer.trim())) {
-      toast.error('MCQ ke liye options aur correct answer zaroori hain');
+      toast.error('Options and a correct answer are required for an MCQ');
       return;
     }
     setSaving(true);
@@ -152,7 +152,7 @@ export function QuestionBankManager() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
-      toast.success('Question add ho gaya');
+      toast.success('Question added.');
       setText('');
       setCorrectAnswer('');
       setExplanation('');
@@ -189,7 +189,7 @@ export function QuestionBankManager() {
       return;
     }
     setQuestions((current) => current.filter((question) => question.id !== id));
-    toast.success('Question delete ho gaya');
+    toast.success('Question deleted.');
   }
 
   return (

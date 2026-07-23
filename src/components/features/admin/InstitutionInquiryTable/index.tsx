@@ -57,7 +57,7 @@ export function InstitutionInquiryTable() {
       return;
     }
     setInquiries((items) => items.map((item) => (item.id === id ? { ...item, ...json.inquiry } : item)));
-    toast.success('Inquiry status update ho gaya');
+    toast.success('Inquiry status updated.');
   };
 
   return (

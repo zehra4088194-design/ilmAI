@@ -48,7 +48,7 @@ export function DemoTestClient() {
         setSubjects(nextSubjects);
         setSubjectId(nextSubjects[0]?.id || '');
       })
-      .catch(() => toast.error('Demo subjects load nahi hue'))
+      .catch(() => toast.error('Demo subjects could not be loaded.'))
       .finally(() => setLoadingSubjects(false));
   }, []);
 
@@ -62,11 +62,11 @@ export function DemoTestClient() {
         body: JSON.stringify({ answers: finalAnswers }),
       });
       const json = await res.json();
-      if (!res.ok || json.status === 'error') throw new Error(json.error || 'Demo submit nahi hua');
+      if (!res.ok || json.status === 'error') throw new Error(json.error || 'The demo could not be submitted.');
       setResult(json.result);
       try { localStorage.setItem('ilm-ai-demo-completed', '1'); } catch {}
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Demo submit nahi hua');
+      toast.error(error instanceof Error ? error.message : 'The demo could not be submitted.');
     } finally {
       setSubmitting(false);
     }
@@ -90,10 +90,10 @@ export function DemoTestClient() {
         setQuestions([]);
         return;
       }
-      if (!res.ok || json.status === 'error') throw new Error(json.error || 'Demo start nahi hua');
+      if (!res.ok || json.status === 'error') throw new Error(json.error || 'The demo could not be started.');
       setQuestions(json.questions || []);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Demo start nahi hua');
+      toast.error(error instanceof Error ? error.message : 'The demo could not be started.');
     } finally {
       setStarting(false);
     }
@@ -134,7 +134,7 @@ export function DemoTestClient() {
           <div>
             <h1 className="text-3xl font-bold md:text-4xl">Try a Free Demo Test</h1>
             <p className="mt-3 max-w-2xl text-muted-foreground">
-              5 real MCQs, 10 seconds each, real score and AI-style feedback. Progress save karne ke liye baad mein signup kar sakte ho.
+              Five real MCQs, 10 seconds each, a real score, and AI-assisted feedback. Sign up afterward to save your progress.
             </p>
           </div>
           <Button asChild variant="outline">
@@ -159,7 +159,7 @@ export function DemoTestClient() {
           <CardContent className="space-y-5 p-6">
             {subjects.length === 0 ? (
               <div className="text-center">
-                <p className="text-lg font-semibold">Demo questions abhi curate nahi hue</p>
+                <p className="text-lg font-semibold">Demo questions are not available yet</p>
                 <p className="mt-2 text-sm text-muted-foreground">Admin ko pehle questions par Demo toggle enable karna hoga.</p>
                 <Button asChild variant="gradient" className="mt-5"><Link href="/register">Sign up free</Link></Button>
               </div>
@@ -167,7 +167,7 @@ export function DemoTestClient() {
               <>
                 <div>
                   <h2 className="text-xl font-bold">Choose a subject</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">Sirf woh subjects show ho rahe hain jinke at least 5 curated demo MCQs ready hain.</p>
+                  <p className="mt-1 text-sm text-muted-foreground">Only subjects with at least five curated demo MCQs are shown.</p>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {subjects.map((subject) => (

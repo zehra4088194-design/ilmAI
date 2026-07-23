@@ -12,8 +12,8 @@ export function DataRetentionNotice() {
       <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
       <p>
         {isRomanUrdu
-          ? 'Privacy notice: AI chats, scans, voice files, parent attachments aur in-app messages zyada se zyada 2 din rakhe jate hain, phir automatically delete ho jate hain. Library resources aur academic progress mutasir nahi honge.'
-          : 'Privacy notice: AI chats, scans, voice files, parent attachments, and in-app messages are retained for up to 2 days and then automatically deleted. Library resources and academic progress are not affected.'}
+          ? 'Privacy: recent chats 2 din live rehti hain; purani chats aur shared files securely archive ho jati hain. Temporary scans 2 din baad delete hoti hain.'
+          : 'Privacy: recent chats stay live for 2 days; older chats and shared files are securely archived. Temporary scans are deleted after 2 days.'}
       </p>
     </div>
   );

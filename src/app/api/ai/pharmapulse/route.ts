@@ -145,7 +145,7 @@ export async function POST(req: NextRequest) {
     const action = cleanString(body.action, 'drug');
     const query = cleanString(body.query);
     const mode = cleanString(body.mode, 'student');
-    if (!query) return NextResponse.json({ status: 'error', error: 'Medicine name required hai' }, { status: 400 });
+    if (!query) return NextResponse.json({ status: 'error', error: 'A medicine name is required' }, { status: 400 });
 
     if (action === 'suggestions') {
       const { data: suggestionProfile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
@@ -213,7 +213,7 @@ export async function POST(req: NextRequest) {
 
     if (Array.isArray(parsed) ? parsed.length === 0 : !Object.keys(parsed).length) {
       return NextResponse.json(
-        { status: 'error', error: 'PharmaPulse response parse nahi ho saka. Dobara try karo.' },
+        { status: 'error', error: 'The PharmaPulse response could not be parsed. Please try again.' },
         { status: 500 }
       );
     }
@@ -221,6 +221,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ status: 'success', data: { action, result: parsed } });
   } catch (error) {
     console.error('PharmaPulse route error:', error);
-    return NextResponse.json({ status: 'error', error: 'PharmaPulse response generate nahi ho saka' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: 'The PharmaPulse response could not be generated.' }, { status: 500 });
   }
 }

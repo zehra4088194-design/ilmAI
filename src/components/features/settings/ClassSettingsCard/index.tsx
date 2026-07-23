@@ -49,7 +49,7 @@ export function ClassSettingsCard({ currentGradeLevel, onClassChange }: ClassSet
       const result = await setGradeLevel(pendingGrade);
 
       if (!result.success) {
-        setError(result.error ?? 'Update nahi ho saka. Please try again.');
+        setError(result.error ?? 'The update could not be completed. Please try again.');
         setDialogOpen(false);
         return;
       }

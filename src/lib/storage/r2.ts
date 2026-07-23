@@ -1,4 +1,4 @@
-import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 
 type R2Config = {
   accountId: string;
@@ -50,7 +50,7 @@ export function parseR2Uri(uri: string) {
 export async function putR2Object(
   key: string,
   body: Uint8Array | Buffer | string,
-  options: { contentType: string; cacheControl?: string }
+  options: { contentType: string; cacheControl?: string; contentEncoding?: string }
 ) {
   const config = getConfig();
   if (!config) throw new Error('R2 is not configured.');
@@ -61,6 +61,7 @@ export async function putR2Object(
       Body: body,
       ContentType: options.contentType,
       CacheControl: options.cacheControl,
+      ContentEncoding: options.contentEncoding,
     })
   );
 }
@@ -75,6 +76,7 @@ export async function getR2Object(key: string) {
     return {
       body: Uint8Array.from(bytes).buffer,
       contentType: result.ContentType || 'application/octet-stream',
+      contentEncoding: result.ContentEncoding || null,
     };
   } catch (error: any) {
     const status = error?.$metadata?.httpStatusCode;
@@ -86,4 +88,10 @@ export async function getR2Object(key: string) {
 export async function getR2Text(key: string) {
   const object = await getR2Object(key);
   return object ? new TextDecoder().decode(object.body) : null;
+}
+
+export async function deleteR2Object(key: string) {
+  const config = getConfig();
+  if (!config) return;
+  await getClient(config).send(new DeleteObjectCommand({ Bucket: config.bucket, Key: key }));
 }
