@@ -34,6 +34,7 @@ import { useRouter } from 'next/navigation';
 interface ParentDashboardClientProps {
   links: any[];
   snapshots: any[];
+  insights?: Record<string, Array<{ type: string; title: string; body: string; action: string }>>;
   parentId: string;
   initialLinkId?: string;
   initialView?: 'chat' | 'files';
@@ -42,6 +43,7 @@ interface ParentDashboardClientProps {
 export function ParentDashboardClient({
   links,
   snapshots,
+  insights = {},
   parentId,
   initialLinkId,
   initialView,
@@ -248,6 +250,7 @@ export function ParentDashboardClient({
           const lastWeek = studentSnaps[0];
           const weekBefore = studentSnaps[1];
           const xpTrend = lastWeek && weekBefore ? lastWeek.xp_earned - weekBefore.xp_earned : 0;
+          const studentInsights = insights[student.id] || [];
           const chartData = [...studentSnaps].reverse().map((snapshot) => ({
             week: new Date(`${snapshot.week_start}T00:00:00`).toLocaleDateString(undefined, {
               month: 'short',
@@ -346,6 +349,26 @@ export function ParentDashboardClient({
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {studentInsights.length > 0 && (
+                    <div className="grid gap-2">
+                      {studentInsights.map((insight) => (
+                        <div
+                          key={`${student.id}-${insight.type}-${insight.title}`}
+                          className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-3"
+                        >
+                          <div className="flex items-start gap-2">
+                            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-violet-400" />
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold">{insight.title}</p>
+                              <p className="text-muted-foreground mt-1 text-xs">{insight.body}</p>
+                              <p className="mt-2 text-xs font-medium text-violet-300">{insight.action}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                     <MiniStat label="XP" value={formatXP(student.xp)} tone="text-violet-400" />
                     <MiniStat label="Level" value={`Level ${student.level}`} tone="text-blue-400" />
