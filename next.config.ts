@@ -4,6 +4,7 @@ import { withSentryConfig } from '@sentry/nextjs';
 const adsenseClientId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID || 'ca-pub-4877865173601332';
 const hasAdsense = Boolean(adsenseClientId);
 const hasPaddle = Boolean(process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN);
+const sentryBuildEnabled = Boolean(process.env.SENTRY_AUTH_TOKEN && process.env.SENTRY_ORG && process.env.SENTRY_PROJECT);
 
 function csp() {
   const scriptSrc = ["'self'", "'unsafe-eval'", "'unsafe-inline'"];
@@ -110,15 +111,17 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSentryConfig(nextConfig, {
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
-  authToken: process.env.SENTRY_AUTH_TOKEN,
-  silent: true,
-  webpack: {
-    treeshake: { removeDebugLogging: true },
-  },
-  sourcemaps: {
-    disable: !process.env.SENTRY_AUTH_TOKEN,
-  },
-});
+export default sentryBuildEnabled
+  ? withSentryConfig(nextConfig, {
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      silent: true,
+      webpack: {
+        treeshake: { removeDebugLogging: true },
+      },
+      sourcemaps: {
+        disable: false,
+      },
+    })
+  : nextConfig;
