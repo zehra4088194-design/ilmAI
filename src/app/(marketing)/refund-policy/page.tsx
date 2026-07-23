@@ -20,42 +20,43 @@ export default function RefundPolicyPage() {
       ]}
       sections={[
         {
-          title: 'General refund rule',
+          title: '14-day refund policy',
           paragraphs: [
-            'ilm AI is a digital subscription service, so refunds are not automatic after successful activation.',
-            'Every refund request is decided after a manual review of payment status, service activation, and the nature of the issue.',
+            'For eligible paid subscriptions purchased through Paddle, ilm AI provides a minimum 14-day refund window from the date of purchase or renewal.',
+            'If you are not satisfied with your purchase, contact us within 14 days with your account email and transaction details so we can review and process the request according to Paddle Buyer Terms.',
           ],
         },
         {
-          title: 'Cases where a refund may be reviewed',
+          title: 'Refunds we support',
           bullets: [
-            'Duplicate charge lag gaya ho.',
-            'Payment capture ho gayi ho lekin subscription activate na hui ho.',
-            'Incorrect billing amount deduct hui ho.',
-            'Technical failure ki wajah se paid access intended tarah deliver na hui ho.',
+            'You request a refund within 14 days of the original purchase or renewal.',
+            'A duplicate charge was made.',
+            'Payment was captured but the subscription was not activated.',
+            'An incorrect billing amount was charged.',
+            'A technical failure prevented access to the paid service.',
           ],
         },
         {
-          title: 'Cases where a refund may be rejected',
+          title: 'Cases that may require additional review',
           bullets: [
-            'Paid features were successfully unlocked and normal use was available.',
-            'The user requests a refund only because they changed their mind after using the active plan.',
-            'Policy violation, abuse, ya fraudulent activity detect hui ho.',
+            'Refund requests made after the 14-day refund window.',
+            'Requests connected to misuse, fraud, policy violations, or chargeback abuse.',
+            'Manual institutional payments, local-wallet payments, or bank-transfer payments that were not processed by Paddle.',
           ],
         },
         {
           title: 'How to request a refund',
           bullets: [
-            'Message the support team using your account email.',
-            'Share the Paddle receipt/transaction ID for card payments or transaction proof for a local wallet.',
-            'Plan, billing cycle, charged currency aur issue ka short summary mention karein.',
+            'Contact billing support from the email address used on your ilm AI account.',
+            'Include your Paddle receipt, transaction ID, plan name, billing cycle, charged currency, and a short reason for the request.',
+            'For local wallet or bank-transfer payments, include the payment screenshot or transaction reference so we can verify it manually.',
           ],
         },
         {
           title: 'Resolution timeline',
           paragraphs: [
-            'Refund requests are reviewed as early as possible, but timing depends on payment verification.',
-            'The final settlement of an approved refund follows internal review and the transfer trail.',
+            'We aim to review refund requests as quickly as possible. Processing time can depend on Paddle, the payment method, the customer bank, or local payment provider timelines.',
+            'Approved Paddle refunds are processed through Paddle. Approved manual local-payment refunds are handled through the original or mutually agreed payment channel where possible.',
           ],
         },
       ]}
