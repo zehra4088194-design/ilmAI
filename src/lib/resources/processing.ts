@@ -7,14 +7,16 @@ import {
 import { buildResourceSourceTest } from '@/lib/resources/source-fallback';
 
 async function persistResourceMcqs(admin: any, kind: ProtectedResourceKind, resourceId: string, title: string, context: string) {
-  const paper = buildResourceSourceTest(title, context, { mcq: 30, short: 0, long: 0 });
+  const paper = buildResourceSourceTest(title, context, { mcq: 30, short: 15, long: 8 });
   const questions = paper.mcqs.slice(0, 30);
-  if (questions.length < 30) throw new Error('The source did not contain enough material to prepare 30 MCQs.');
+  if (!questions.length) throw new Error('The source did not contain enough material to prepare a question bank.');
   const { error } = await admin.from('resource_mcq_sets').upsert(
     {
       resource_kind: kind,
       resource_id: resourceId,
       questions,
+      short_questions: paper.shortQs.slice(0, 15),
+      long_questions: paper.longQs.slice(0, 8),
       status: 'ready',
       error_message: null,
       generated_at: new Date().toISOString(),
@@ -146,13 +148,13 @@ export async function processQueuedResourceContexts(maxJobs = 1) {
 
     try {
       const kind = job.resource_kind as ProtectedResourceKind;
-      await markImporterStatus(admin, kind, job.resource_id, 'processing', 'Extracting readable text, MCQs, and source chunks.');
+      await markImporterStatus(admin, kind, job.resource_id, 'processing', 'Extracting readable text and building the chapter question bank.');
       const resource = await getResourceForProcessing(kind, job.resource_id);
       if (!resource) throw new Error('Resource no longer exists.');
       const context = await fetchResourceContext(resource);
       const chunkCount = await persistResourceChunks(admin, kind, job.resource_id, context);
       await persistResourceMcqs(admin, kind, job.resource_id, resource.title, context);
-      await markImporterStatus(admin, kind, job.resource_id, 'ready', 'OCR, source chunks, and MCQs are ready.', chunkCount);
+      await markImporterStatus(admin, kind, job.resource_id, 'ready', 'OCR, source chunks, MCQs, short questions, and long questions are ready.', chunkCount);
       await admin
         .from('resource_processing_jobs')
         .update({

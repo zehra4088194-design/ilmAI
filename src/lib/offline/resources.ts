@@ -14,6 +14,7 @@ export type OfflineResource = {
   mode: ResourceMode;
   title: string;
   mimeType: string;
+  sourceUrl?: string;
   blob?: Blob;
   savedAt: string;
 };
@@ -63,6 +64,13 @@ export async function saveOfflineResource(item: Omit<OfflineResource, 'key'>) {
   const value: OfflineResource = { ...item, key: offlineResourceKey(item.kind, item.resourceId, item.mode) };
   await transact('readwrite', (store) => store.put(value));
   return value;
+}
+
+export async function saveOfflineResourceLink(
+  item: Omit<OfflineResource, 'key' | 'blob' | 'mimeType'> & { sourceUrl: string }
+) {
+  if (!item.sourceUrl) throw new Error('This file does not have a usable link.');
+  return saveOfflineResource({ ...item, mimeType: 'application/pdf' });
 }
 
 function cacheRequest(key: string) {

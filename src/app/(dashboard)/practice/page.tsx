@@ -74,7 +74,7 @@ export default async function PracticePage() {
     <div className="max-w-6xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Chapter Testing</h1>
-        <p className="text-muted-foreground">Choose an uploaded chapter file. Every test uses only its saved source MCQs, in a new random order.</p>
+        <p className="text-muted-foreground">Choose a chapter and question type. Every attempt is rebuilt in a fresh random order from all of its uploaded source text.</p>
       </div>
       <AiPracticeHub subjects={subjects || []} chaptersBySubject={chaptersBySubject} resourcesByChapter={resourcesByChapter} />
     </div>

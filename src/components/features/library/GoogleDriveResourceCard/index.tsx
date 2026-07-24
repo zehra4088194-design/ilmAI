@@ -11,11 +11,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 import { isDarkThemeId } from '@/lib/constants/themes';
-import { saveOfflineResourceResponse } from '@/lib/offline/resources';
-import {
-  ProtectedResourceReader,
-  fetchProtectedResourceResponse,
-} from '@/components/features/resources/ProtectedResourceReader';
+import { saveOfflineResourceLink } from '@/lib/offline/resources';
+import { ProtectedResourceReader } from '@/components/features/resources/ProtectedResourceReader';
 import { ResourceAiTools } from '@/components/features/resources/ResourceAiTools';
 import { getGoogleDriveThumbnailUrl } from '@/lib/utils/filePreview';
 
@@ -62,28 +59,21 @@ export function GoogleDriveResourceCard({
   const saveForOffline = async () => {
     setDownloading(true);
     try {
-      const response = await fetchProtectedResourceResponse({
+      if (!readerSourceUrl) throw new Error('This PDF does not have a usable Drive link.');
+      await saveOfflineResourceLink({
+        resourceId: resource.id,
         kind: 'library',
-        id: resource.id,
         mode,
-        purpose: 'offline',
+        title: resource.title,
+        sourceUrl: readerSourceUrl,
+        savedAt: new Date().toISOString(),
       });
-      await saveOfflineResourceResponse(
-        {
-          resourceId: resource.id,
-          kind: 'library',
-          mode,
-          title: resource.title,
-          savedAt: new Date().toISOString(),
-        },
-        response
-      );
       await fetch('/api/offline/download-log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ resource_type: 'textbook', resource_id: resource.id, device_hint: navigator.userAgent }),
       }).catch(() => undefined);
-      toast.success('Saved for offline use in Downloads.');
+      toast.success('Saved in your Ilm AI Downloads.');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Offline save failed.');
     } finally {
@@ -149,13 +139,13 @@ export function GoogleDriveResourceCard({
         {user && canDownload ? (
           <Button variant="outline" size="sm" className="w-full" onClick={saveForOffline} disabled={downloading}>
             {downloading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <DownloadCloud className="h-3.5 w-3.5" />}
-            Save in app for offline
+            Save in app
           </Button>
         ) : user ? (
           <Button asChild variant="outline" size="sm" className="w-full">
             <Link href="/subscription">
               <DownloadCloud className="h-3.5 w-3.5" />
-              Offline save <Badge className="ml-1 text-[10px]">Pro</Badge>
+              Save in app <Badge className="ml-1 text-[10px]">Pro</Badge>
             </Link>
           </Button>
         ) : null}

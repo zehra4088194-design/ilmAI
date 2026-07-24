@@ -25,7 +25,7 @@ export default async function TeacherPage() {
   const attendanceMissing = Math.max(0, classIds.length - attendanceMarkedClasses);
   return (
     <div className="mx-auto max-w-6xl space-y-6">
-      <div className="flex justify-between gap-3"><div><p className="text-sm font-semibold text-violet-400">Teacher</p><h1 className="text-2xl font-bold">Classes</h1></div><Button asChild variant="gradient"><Link href="/teacher/classes/new">New class</Link></Button></div>
+      <div className="flex flex-wrap justify-between gap-3"><div><p className="text-sm font-semibold text-violet-400">Teacher</p><h1 className="text-2xl font-bold">Classes</h1></div><div className="flex gap-2"><Button asChild variant="outline"><Link href="/teacher/tests">Test Paper Studio</Link></Button><Button asChild variant="gradient"><Link href="/teacher/classes/new">New class</Link></Button></div></div>
       <div className="grid gap-4 md:grid-cols-3">
         <Stat label="Total students" value={studentCount || 0} />
         <Stat label="Pending grading" value={pendingGrading || 0} />

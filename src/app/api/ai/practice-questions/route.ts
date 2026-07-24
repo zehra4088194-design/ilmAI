@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { gatewayChat } from '@/lib/ai/gateway';
 import { checkAiMessageLimit } from '@/lib/rate-limit';
-import { parseAiJson } from '@/lib/utils/json-extract';
+import { generateChapterQuestionPaper } from '@/lib/tests/chapter-question-bank';
 import type { SubscriptionTier } from '@/types';
 
 export const runtime = 'nodejs';
@@ -10,18 +9,9 @@ export const maxDuration = 60;
 
 type PracticeType = 'short' | 'long';
 
-interface PracticeQuestion {
-  id: string;
-  q: string;
-  marks: number;
-  keyPoints: string[];
-  modelAnswer: string;
-  guide?: string;
-}
-
 function cleanCount(value: unknown, type: PracticeType) {
   const fallback = type === 'short' ? 5 : 3;
-  const max = type === 'short' ? 10 : 5;
+  const max = type === 'short' ? 15 : 8;
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return fallback;
   return Math.min(Math.max(Math.floor(parsed), 1), max);
@@ -33,110 +23,58 @@ export async function POST(req: NextRequest) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ status: 'error', error: 'Login required' }, { status: 401 });
-    }
+    if (!user) return NextResponse.json({ status: 'error', error: 'Login required.' }, { status: 401 });
 
     const { type, subjectId, chapterId, count } = await req.json();
     const questionType: PracticeType = type === 'long' ? 'long' : 'short';
     if (!subjectId || !chapterId) {
-      return NextResponse.json({ status: 'error', error: 'A subject and chapter are required' }, { status: 400 });
+      return NextResponse.json({ status: 'error', error: 'A subject and chapter are required.' }, { status: 400 });
     }
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('subscription_tier, board, grade_level')
+      .select('subscription_tier')
       .eq('id', user.id)
-      .single();
-    const tier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
-
+      .maybeSingle();
+    const tier = ((profile as any)?.subscription_tier || 'FREE') as SubscriptionTier;
     const limitCheck = await checkAiMessageLimit(user.id, tier, 'practice_questions');
     if (!limitCheck.success) {
-      return NextResponse.json({ status: 'error', error: 'The daily AI limit has been reached.' }, { status: 429 });
-    }
-
-    const [{ data: subject }, { data: chapter }] = await Promise.all([
-      supabase.from('subjects').select('id, name, boards, grade_levels').eq('id', subjectId).single(),
-      supabase.from('chapters').select('id, name, boards, grade_levels').eq('id', chapterId).single(),
-    ]);
-
-    if (!subject || !chapter) {
-      return NextResponse.json({ status: 'error', error: 'The subject or chapter was not found.' }, { status: 404 });
-    }
-    const board = profile?.board;
-    const grade = profile?.grade_level;
-    const subjectVisible =
-      (!board || !subject.boards?.length || subject.boards.includes(board)) &&
-      (!grade || !subject.grade_levels?.length || subject.grade_levels.includes(grade));
-    const subjectHasMultipleGrades = (subject.grade_levels || []).length > 1;
-    const chapterVisible =
-      (!board || !chapter.boards?.length || chapter.boards.includes(board)) &&
-      (!grade || (chapter.grade_levels?.length ? chapter.grade_levels.includes(grade) : !subjectHasMultipleGrades));
-    if (!subjectVisible || !chapterVisible) {
-      return NextResponse.json({ status: 'error', error: 'This chapter is not available for your class.' }, { status: 403 });
+      return NextResponse.json({ status: 'error', error: 'The daily practice limit has been reached.' }, { status: 429 });
     }
 
     const finalCount = cleanCount(count, questionType);
-    const marks = questionType === 'short' ? 3 : 8;
-    const prompt =
-      questionType === 'short'
-        ? `Generate ${finalCount} important SHORT questions for Pakistani curriculum.
-Board: ${profile?.board || 'Pakistan board'}
-Grade/Class: ${profile?.grade_level || 'GRADE_10'}
-Subject: ${subject.name}
-Chapter: ${chapter.name}
-
-Return ONLY valid JSON array, no markdown:
-[{"q":"question text","marks":3,"keyPoints":["point 1","point 2","point 3"],"modelAnswer":"ideal 3-5 sentence answer"}]`
-        : `Generate ${finalCount} important LONG questions for Pakistani curriculum.
-Board: ${profile?.board || 'Pakistan board'}
-Grade/Class: ${profile?.grade_level || 'GRADE_10'}
-Subject: ${subject.name}
-Chapter: ${chapter.name}
-
-Return ONLY valid JSON array, no markdown:
-[{"q":"question text","marks":8,"keyPoints":["point 1","point 2","point 3","point 4","point 5"],"modelAnswer":"ideal detailed answer","guide":"~150-200 words"}]`;
-
-    const result = await gatewayChat({
-      provider: 'groq',
-      tier: tier === 'FREE' ? 'mini' : 'medium',
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are an expert Pakistani board paper setter. Generate syllabus-plausible questions from the chapter name. Return only valid JSON.',
-        },
-        { role: 'user', content: prompt },
-      ],
-      maxTokens: questionType === 'short' ? 1800 : 2600,
-      temperature: 0.35,
+    const paper = await generateChapterQuestionPaper({
+      subjectId,
+      chapterId,
+      mcqCount: 0,
+      shortCount: questionType === 'short' ? finalCount : 0,
+      longCount: questionType === 'long' ? finalCount : 0,
     });
-
-    const questions = parseAiJson<PracticeQuestion[]>(result.text, []).map((question, index) => ({
-      id: `${Date.now()}-${index}`,
-      q: String(question.q || ''),
-      marks: Number(question.marks) || marks,
-      keyPoints: Array.isArray(question.keyPoints) ? question.keyPoints.map(String) : [],
-      modelAnswer: String(question.modelAnswer || ''),
-      guide: question.guide ? String(question.guide) : undefined,
-    })).filter((question) => question.q);
-
-    if (questions.length === 0) {
-      return NextResponse.json({ status: 'error', error: 'Questions could not be generated. Please try again.' }, { status: 500 });
+    const questions = questionType === 'short' ? paper.shortQuestions : paper.longQuestions;
+    if (!questions.length) {
+      return NextResponse.json(
+        { status: 'error', error: `No source-based ${questionType} questions are available for this chapter yet.` },
+        { status: 409 }
+      );
     }
 
     return NextResponse.json({
       status: 'success',
       data: {
         type: questionType,
-        subject,
-        chapter,
-        questions: questions.slice(0, finalCount),
+        subject: paper.subject,
+        chapter: paper.chapter,
+        questions: questions.map((question, index) => ({
+          ...question,
+          id: `${Date.now()}-${index}`,
+        })),
       },
     });
   } catch (error) {
     console.error('Practice questions error:', error);
-    return NextResponse.json({ status: 'error', error: 'Questions could not be generated.' }, { status: 500 });
+    return NextResponse.json(
+      { status: 'error', error: error instanceof Error ? error.message : 'Questions could not be generated.' },
+      { status: 500 }
+    );
   }
 }

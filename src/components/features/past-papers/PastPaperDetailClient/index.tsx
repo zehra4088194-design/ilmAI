@@ -10,12 +10,9 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 import { isDarkThemeId } from '@/lib/constants/themes';
-import { saveOfflineResourceResponse } from '@/lib/offline/resources';
+import { saveOfflineResourceLink } from '@/lib/offline/resources';
 import { ResourceAiTools } from '@/components/features/resources/ResourceAiTools';
-import {
-  fetchProtectedResourceResponse,
-  ProtectedResourceReader,
-} from '@/components/features/resources/ProtectedResourceReader';
+import { ProtectedResourceReader } from '@/components/features/resources/ProtectedResourceReader';
 import { ResourcePreviewFrame } from '@/components/features/resources/ResourcePreviewFrame';
 
 export function PastPaperDetailClient({
@@ -35,16 +32,14 @@ export function PastPaperDetailClient({
   const saveOffline = async () => {
     setDownloading(true);
     try {
-      const response = await fetchProtectedResourceResponse({
+      await saveOfflineResourceLink({
+        resourceId: paper.id,
         kind: 'past-paper',
-        id: paper.id,
         mode,
-        purpose: 'offline',
+        title: paper.title,
+        sourceUrl: paper.fileUrl,
+        savedAt: new Date().toISOString(),
       });
-      await saveOfflineResourceResponse(
-        { resourceId: paper.id, kind: 'past-paper', mode, title: paper.title, savedAt: new Date().toISOString() },
-        response
-      );
       toast.success('Past paper saved to in-app Downloads.');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'The file could not be saved offline.');
@@ -65,13 +60,13 @@ export function PastPaperDetailClient({
           {user && canDownload ? (
             <Button variant="outline" size="sm" onClick={() => void saveOffline()} disabled={downloading}>
               {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <DownloadCloud className="h-4 w-4" />}Save
-              offline
+              in app
             </Button>
           ) : user ? (
             <Button asChild variant="outline" size="sm">
               <Link href="/subscription">
                 <DownloadCloud className="h-4 w-4" />
-                Offline save <Badge className="ml-1 text-[10px]">Pro</Badge>
+                Save in app <Badge className="ml-1 text-[10px]">Pro</Badge>
               </Link>
             </Button>
           ) : null}

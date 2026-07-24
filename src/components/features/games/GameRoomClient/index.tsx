@@ -73,6 +73,31 @@ function emptyLudoState(): LudoState {
   return { players: [], currentPlayer: 0, dice: null, winnerIds: [] };
 }
 
+const DIE_DOTS: Record<number, number[]> = {
+  1: [4],
+  2: [0, 8],
+  3: [0, 4, 8],
+  4: [0, 2, 6, 8],
+  5: [0, 2, 4, 6, 8],
+  6: [0, 2, 3, 5, 6, 8],
+};
+
+function DiceFace({ value, rolling = false, compact = false }: { value: number; rolling?: boolean; compact?: boolean }) {
+  return (
+    <div
+      className={`${compact ? 'h-12 w-12 rounded-xl p-2' : 'h-20 w-20 rounded-2xl p-3'} grid grid-cols-3 grid-rows-3 border-2 border-white/70 bg-gradient-to-br from-white to-slate-200 shadow-[0_12px_30px_rgba(0,0,0,0.45)] ${rolling ? 'animate-[spin_0.18s_linear_infinite]' : ''}`}
+      aria-label={`Dice showing ${value}`}
+    >
+      {Array.from({ length: 9 }, (_, index) => (
+        <span
+          key={index}
+          className={`${DIE_DOTS[value]?.includes(index) ? 'scale-100 bg-slate-900' : 'scale-0 bg-transparent'} m-auto h-2.5 w-2.5 rounded-full transition-transform ${compact ? 'h-1.5 w-1.5' : ''}`}
+        />
+      ))}
+    </div>
+  );
+}
+
 function canMoveToken(token: LudoToken, dice: number) {
   return token.position === -1 ? dice === 6 : token.position + dice <= 56;
 }
@@ -250,10 +275,6 @@ function LudoBoard({ state, currentUserId, onMove }: { state: LudoState; current
           </button>
         );
       }))}
-      <div className="pointer-events-none absolute right-3 top-3 z-30 flex h-12 w-12 flex-col items-center justify-center rounded-xl border-2 border-slate-300 bg-white text-center shadow-lg">
-        <Dice5 className="h-4 w-4 text-slate-700" />
-        <span className="text-base font-black text-slate-900">{state.dice || '-'}</span>
-      </div>
     </div>
   );
 }
@@ -448,6 +469,8 @@ export function GameRoomClient({
   const [events, setEvents] = useState<GameEvent[]>([]);
   const [message, setMessage] = useState('');
   const [joining, setJoining] = useState(false);
+  const [isRolling, setIsRolling] = useState(false);
+  const [rollingFace, setRollingFace] = useState(1);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserName, setCurrentUserName] = useState('Student');
   const supabase = useMemo(() => createClient(), []);
@@ -548,8 +571,20 @@ export function GameRoomClient({
   };
 
   const rollDice = async () => {
-    if (!joinedRoom || remaining <= 0) return;
-    await sendEvent(game.game_type === 'live_ludo' ? 'ludo_roll' : 'dice_roll', { value: Math.floor(Math.random() * 6) + 1 });
+    if (!joinedRoom || remaining <= 0 || isRolling) return;
+    setIsRolling(true);
+    const animation = window.setInterval(() => setRollingFace(Math.floor(Math.random() * 6) + 1), 70);
+    try {
+      await new Promise((resolve) => window.setTimeout(resolve, 560));
+      const value = Math.floor(Math.random() * 6) + 1;
+      setRollingFace(value);
+      await sendEvent(game.game_type === 'live_ludo' ? 'ludo_roll' : 'dice_roll', { value });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'The dice could not be rolled.');
+    } finally {
+      window.clearInterval(animation);
+      setIsRolling(false);
+    }
   };
 
   const moveLudoToken = async (tokenIndex: number) => {
@@ -574,6 +609,7 @@ export function GameRoomClient({
   };
 
   const lastDice = [...events].reverse().find((event) => event.event_type === 'dice_roll')?.payload?.value;
+  const lastLudoDice = [...events].reverse().find((event) => event.event_type === 'ludo_roll')?.payload?.value;
   const ludoState = useMemo(() => ludoStateFromEvents(events), [events]);
   const activeLudoPlayer = ludoState.players[ludoState.currentPlayer];
   const isMyLudoTurn = game.game_type === 'live_ludo' && activeLudoPlayer?.id === currentUserId && ludoState.dice === null;
@@ -633,7 +669,7 @@ export function GameRoomClient({
                   )}
                 </span>
                 {game.game_type !== 'memory_match' && (
-                  <Button onClick={rollDice} disabled={remaining <= 0 || (game.game_type === 'live_ludo' && !isMyLudoTurn)} variant="gradient" className={game.game_type === 'live_ludo' ? 'min-w-28 shadow-lg shadow-violet-900/40' : undefined}><Dice5 className="h-4 w-4" /> Roll</Button>
+                  <Button onClick={rollDice} disabled={isRolling || remaining <= 0 || (game.game_type === 'live_ludo' && !isMyLudoTurn)} variant="gradient" className={game.game_type === 'live_ludo' ? 'min-w-28 shadow-lg shadow-violet-900/40' : undefined}><Dice5 className={`h-4 w-4 ${isRolling ? 'animate-spin' : ''}`} /> {isRolling ? 'Rolling...' : 'Roll'}</Button>
                 )}
               </CardTitle>
             </CardHeader>
@@ -648,6 +684,21 @@ export function GameRoomClient({
                     <div className="mb-3 flex flex-wrap items-center justify-between gap-2 px-1 text-xs">
                       <span className="rounded-full border border-slate-600 bg-slate-800 px-3 py-1.5 font-mono font-semibold tracking-[0.16em] text-slate-200">ROOM {joinedRoom}</span>
                       <span className="rounded-full bg-emerald-500/15 px-3 py-1.5 font-semibold text-emerald-300">{ludoState.players.length}/4 playing</span>
+                    </div>
+                    <div className="mb-4 flex flex-col items-center justify-center rounded-2xl border border-violet-400/25 bg-gradient-to-b from-violet-500/15 to-slate-950/20 p-4">
+                      <DiceFace
+                        value={isRolling ? rollingFace : Number(ludoState.dice || lastLudoDice || 1)}
+                        rolling={isRolling}
+                      />
+                      <p className="mt-3 text-xs font-bold uppercase tracking-[0.18em] text-violet-200">
+                        {isRolling
+                          ? 'Rolling'
+                          : ludoState.dice
+                            ? `${activeLudoPlayer?.name || 'Player'} rolled ${ludoState.dice}`
+                            : lastLudoDice
+                              ? `Last roll: ${lastLudoDice}`
+                              : 'Roll the dice'}
+                      </p>
                     </div>
                     <LudoBoard state={ludoState} currentUserId={currentUserId} onMove={moveLudoToken} />
                   </div>

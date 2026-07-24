@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { BookOpen, Camera, CheckCircle2, FileQuestion, ListChecks, Loader2, PenLine, Sparkles, X, Zap } from 'lucide-react';
+import { BookOpen, Camera, CheckCircle2, FileQuestion, ListChecks, Loader2, X, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -65,7 +65,6 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
   const updateUser = useAuthStore((state) => state.updateUser);
   const [openSubjectId, setOpenSubjectId] = useState<string | null>(null);
   const [chapterId, setChapterId] = useState<string | null>(null);
-  const [resourceId, setResourceId] = useState<string | null>(null);
   const [mode, setMode] = useState<PracticeMode>('mcq');
   const [count, setCount] = useState(10);
   const [loading, setLoading] = useState(false);
@@ -105,7 +104,6 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
   function openChapters(subjectId: string) {
     setOpenSubjectId(subjectId);
     setChapterId(null);
-    setResourceId(null);
     setMode('mcq');
     setCount(10);
   }
@@ -129,13 +127,13 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
   }
 
   async function startMcq() {
-    if (!resourceId) return;
+    if (!openSubjectId || !chapterId) return;
     setLoading(true);
     try {
       const res = await fetch('/api/ai/generate-quiz', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resourceId, count }),
+        body: JSON.stringify({ subjectId: openSubjectId, chapterId, count }),
       });
       const json = await res.json();
       if (json.status === 'error') {
@@ -182,7 +180,8 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
   }
 
   async function startPractice() {
-    await startMcq();
+    if (mode === 'mcq') await startMcq();
+    else await startSubjective(mode);
   }
 
   async function checkAnswer() {
@@ -315,7 +314,7 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
                   <h3 className="font-semibold mb-1">{subject.name}</h3>
                   <p className="text-xs text-muted-foreground mb-4">{chaptersBySubject[subject.id]?.length || 0} class chapters</p>
                   <Button variant="gradient" size="sm" className="w-full" onClick={(e) => { e.stopPropagation(); openChapters(subject.id); }}>
-                    <FileQuestion className="w-3.5 h-3.5" />Choose chapter file
+                    <FileQuestion className="w-3.5 h-3.5" />Choose chapter
                   </Button>
                 </CardContent>
               </Card>
@@ -346,7 +345,7 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
               <div className="flex items-center justify-between mb-5">
                 <div>
                   <h3 className="font-semibold">{selectedSubject.name} Chapter Test</h3>
-                  <p className="text-xs text-muted-foreground">Select a chapter, then choose one of its uploaded source files.</p>
+                  <p className="text-xs text-muted-foreground">Every attempt is shuffled from all uploaded files for the chapter.</p>
                 </div>
                 <button onClick={() => setOpenSubjectId(null)} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
               </div>
@@ -356,7 +355,7 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
                   <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">Chapter</p>
                   <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                     {chapters.map((chapter) => (
-                      <button key={chapter.id} onClick={() => { setChapterId(chapter.id); setResourceId(null); }}
+                      <button key={chapter.id} onClick={() => setChapterId(chapter.id)}
                         className={cn('w-full text-left p-3 rounded-lg border text-sm transition-colors',
                           chapterId === chapter.id ? 'border-violet-500 bg-violet-500/10 text-violet-300' : 'border-border hover:border-violet-500/40')}>
                         {chapter.name}
@@ -372,31 +371,39 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
                     )}
                   </div>
                   {chapterId && (
-                    <div className="mt-4">
-                      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Uploaded chapter file</p>
-                      <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
-                        {chapterResources.map((resource) => (
-                          <button
-                            key={resource.id}
-                            type="button"
-                            onClick={() => setResourceId(resource.id)}
-                            className={cn('w-full rounded-lg border p-3 text-left text-sm transition-colors', resourceId === resource.id ? 'border-emerald-500 bg-emerald-500/10 text-emerald-300' : 'border-border hover:border-emerald-500/40')}
-                          >
-                            <span className="block truncate font-medium">{resource.title}</span>
-                            <span className="mt-1 block text-xs text-muted-foreground">Saved source text and chapter MCQs</span>
-                          </button>
-                        ))}
-                        {chapterResources.length === 0 && <p className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">No uploaded file is ready for this chapter yet.</p>}
-                      </div>
+                    <div className="mt-4 rounded-xl border border-emerald-500/25 bg-emerald-500/5 p-3 text-sm">
+                      <p className="font-medium text-emerald-300">
+                        {chapterResources.length} source file{chapterResources.length === 1 ? '' : 's'} connected
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        MCQs, short questions, and long questions are combined automatically.
+                      </p>
                     </div>
                   )}
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">Test source</p>
-                    <div className="flex items-center gap-2 rounded-lg border border-emerald-500/25 bg-emerald-500/5 px-3 py-3 text-sm text-emerald-300">
-                      <FileQuestion className="h-4 w-4 shrink-0" /> Only saved MCQs from the selected file
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">Question type</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(['mcq', 'short', 'long'] as PracticeMode[]).map((option) => (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() => {
+                            setMode(option);
+                            setCount(option === 'long' ? 3 : option === 'short' ? 5 : 10);
+                          }}
+                          className={cn(
+                            'rounded-lg border px-2 py-2 text-xs font-semibold capitalize transition-colors',
+                            mode === option
+                              ? 'border-violet-500 bg-violet-500/10 text-violet-300'
+                              : 'border-border text-muted-foreground hover:text-foreground'
+                          )}
+                        >
+                          {option}
+                        </button>
+                      ))}
                     </div>
                   </div>
 
@@ -413,9 +420,9 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
                     </div>
                   </div>
 
-                  <Button variant="gradient" size="lg" className="w-full" disabled={!resourceId || loading} onClick={startPractice}>
+                  <Button variant="gradient" size="lg" className="w-full" disabled={!chapterId || loading} onClick={startPractice}>
                     {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-                    {loading ? 'Preparing saved MCQs...' : 'Start random test'}
+                    {loading ? 'Building from chapter sources...' : `Start random ${mode} test`}
                   </Button>
                 </div>
               </div>

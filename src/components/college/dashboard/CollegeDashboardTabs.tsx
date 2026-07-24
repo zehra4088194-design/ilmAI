@@ -13,12 +13,9 @@ import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 import { isDarkThemeId } from '@/lib/constants/themes';
 import { getGoogleDriveThumbnailUrl } from '@/lib/utils/filePreview';
 import type { CollegeLecture, CollegeResource, CollegeResourceMetadata } from '@/lib/college/types';
-import {
-  ProtectedResourceReader,
-  fetchProtectedResourceResponse,
-} from '@/components/features/resources/ProtectedResourceReader';
+import { ProtectedResourceReader } from '@/components/features/resources/ProtectedResourceReader';
 import { ResourceAiTools } from '@/components/features/resources/ResourceAiTools';
-import { saveOfflineResourceResponse } from '@/lib/offline/resources';
+import { saveOfflineResourceLink } from '@/lib/offline/resources';
 import { toast } from 'sonner';
 
 const TYPE_LABELS: Record<CollegeResource['resource_type'], string> = {
@@ -102,22 +99,19 @@ export function CollegeDashboardTabs({
   const saveForOffline = async (resource: CollegeResourceMetadata) => {
     setDownloadingId(resource.id);
     try {
-      const response = await fetchProtectedResourceResponse({
+      const sourceUrl =
+        mode === 'dark'
+          ? resource.dark_file_url || resource.light_file_url || resource.file_url
+          : resource.light_file_url || resource.file_url || resource.dark_file_url;
+      if (!sourceUrl) throw new Error('This file does not have a usable link.');
+      await saveOfflineResourceLink({
+        resourceId: resource.id,
         kind: 'college-resource',
-        id: resource.id,
         mode,
-        purpose: 'offline',
+        title: resource.title,
+        sourceUrl,
+        savedAt: new Date().toISOString(),
       });
-      await saveOfflineResourceResponse(
-        {
-          resourceId: resource.id,
-          kind: 'college-resource',
-          mode,
-          title: resource.title,
-          savedAt: new Date().toISOString(),
-        },
-        response
-      );
       toast.success('The college file was saved to Downloads.');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Offline save failed.');
