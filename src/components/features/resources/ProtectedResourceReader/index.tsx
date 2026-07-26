@@ -93,7 +93,7 @@ export function ProtectedResourceReader({
       <div className="border-border flex min-h-14 items-center justify-between gap-3 border-b px-3 sm:px-5">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold sm:text-base">{title}</p>
-          <p className="text-muted-foreground text-xs">{mode === 'dark' ? 'Dark' : 'Light'} PDF</p>
+          <p className="text-muted-foreground text-xs">PDF reader</p>
         </div>
         <div className="flex shrink-0 items-center gap-1">
           {canFullscreen && (

@@ -3,14 +3,12 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { BookOpen, CheckCircle2, DownloadCloud, FileType2, Loader2, Maximize2 } from 'lucide-react';
-import { useTheme } from 'next-themes';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
-import { isDarkThemeId } from '@/lib/constants/themes';
 import { saveOfflineResourceLink } from '@/lib/offline/resources';
 import { ProtectedResourceReader } from '@/components/features/resources/ProtectedResourceReader';
 import { ResourceAiTools } from '@/components/features/resources/ResourceAiTools';
@@ -38,18 +36,16 @@ export function GoogleDriveResourceCard({
   resource: DriveResourceData;
   autoOpen?: boolean;
 }) {
-  const { theme } = useTheme();
-  const mode = isDarkThemeId(theme) ? 'dark' : 'light';
+  const mode = 'dark' as const;
   const { user } = useAuth();
   const settings = usePlatformSettings();
   const tier = user?.subscriptionTier || 'FREE';
   const canDownload = settings.subscriptionPlans[tier].access.downloadPDF;
   const [readerOpen, setReaderOpen] = useState(autoOpen);
   const [downloading, setDownloading] = useState(false);
-  const readerSourceUrl =
-    mode === 'dark'
-      ? resource.darkFileUrl || resource.lightFileUrl || resource.driveUrl || null
-      : resource.lightFileUrl || resource.driveUrl || resource.darkFileUrl || null;
+  // Notes use their dark PDF. Original Drive is retained only for books that
+  // do not have a dark edition yet, so no resource disappears from the catalog.
+  const readerSourceUrl = resource.darkFileUrl || resource.driveUrl || resource.lightFileUrl || null;
   const thumbnailUrl = getGoogleDriveThumbnailUrl(readerSourceUrl);
 
   useEffect(() => {

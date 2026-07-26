@@ -98,7 +98,7 @@ export async function getProtectedResource(
   userId: string,
   kind: ProtectedResourceKind,
   resourceId: string,
-  mode: ResourceMode
+  _mode: ResourceMode
 ): Promise<ProtectedResource | null> {
   const admin = (await createAdminClient()) as any;
   const { data: profile } = await admin
@@ -117,10 +117,7 @@ export async function getProtectedResource(
       .eq('id', resourceId)
       .maybeSingle();
     if (!resource || !isVisibleForProfile(resource, profile)) return null;
-    const sourceUrl =
-      mode === 'dark'
-        ? resource.dark_file_url || resource.light_file_url || resource.drive_url
-        : resource.light_file_url || resource.drive_url || resource.dark_file_url;
+    const sourceUrl = resource.dark_file_url || resource.drive_url || resource.light_file_url;
     if (!sourceUrl) return null;
     return {
       id: resource.id,
@@ -173,10 +170,7 @@ export async function getProtectedResource(
   ) {
     return null;
   }
-  const sourceUrl =
-    mode === 'dark'
-      ? resource.dark_file_url || resource.light_file_url || resource.file_url
-      : resource.light_file_url || resource.file_url || resource.dark_file_url;
+  const sourceUrl = resource.dark_file_url || resource.file_url || resource.light_file_url;
   if (!sourceUrl) return null;
   return {
     id: resource.id,
@@ -193,7 +187,7 @@ export async function getProtectedResource(
 export async function getPublicResource(
   kind: Extract<ProtectedResourceKind, 'library' | 'past-paper'>,
   resourceId: string,
-  mode: ResourceMode
+  _mode: ResourceMode
 ): Promise<ProtectedResource | null> {
   const admin = (await createAdminClient()) as any;
   if (kind === 'library') {
@@ -203,9 +197,7 @@ export async function getPublicResource(
       .eq('id', resourceId)
       .maybeSingle();
     if (!resource) return null;
-    const sourceUrl = mode === 'dark'
-      ? resource.dark_file_url || resource.light_file_url || resource.drive_url
-      : resource.light_file_url || resource.drive_url || resource.dark_file_url;
+    const sourceUrl = resource.dark_file_url || resource.drive_url || resource.light_file_url;
     if (!sourceUrl) return null;
     return {
       id: resource.id,
@@ -254,7 +246,9 @@ export async function fetchProtectedFile(resource: ProtectedResource) {
   }
 
   if (response.headers.get('content-type')?.toLowerCase().includes('text/html')) {
-    throw new Error('Drive returned an HTML page instead of the file. Make the file public with "Anyone with the link".');
+    throw new Error(
+      'Drive returned an HTML page instead of the file. Make the file public with "Anyone with the link".'
+    );
   }
   const contentLength = Number(response.headers.get('content-length') || 0);
   if (contentLength > MAX_PROTECTED_RESOURCE_BYTES) {
@@ -303,7 +297,9 @@ async function fetchCompanionContext(resource: ProtectedResource) {
 
   const contentType = response.headers.get('content-type')?.toLowerCase() || '';
   if (contentType.includes('text/html')) {
-    throw new Error('The context URL returned an HTML page instead of a .txt file. Set Drive sharing to Anyone with the link.');
+    throw new Error(
+      'The context URL returned an HTML page instead of a .txt file. Set Drive sharing to Anyone with the link.'
+    );
   }
   const contentLength = Number(response.headers.get('content-length') || 0);
   if (contentLength > MAX_RESOURCE_CONTEXT_BYTES) {
@@ -447,7 +443,7 @@ export async function getResourceForProcessing(
       .eq('id', resourceId)
       .maybeSingle();
     if (!data) return null;
-    const sourceUrl = data.light_file_url || data.drive_url || data.dark_file_url;
+    const sourceUrl = data.dark_file_url || data.drive_url || data.light_file_url;
     if (!sourceUrl) return null;
     return {
       id: data.id,
@@ -482,7 +478,7 @@ export async function getResourceForProcessing(
     .eq('id', resourceId)
     .maybeSingle();
   if (!data) return null;
-  const sourceUrl = data.light_file_url || data.file_url || data.dark_file_url;
+  const sourceUrl = data.dark_file_url || data.file_url || data.light_file_url;
   if (!sourceUrl) return null;
   return {
     id: data.id,
