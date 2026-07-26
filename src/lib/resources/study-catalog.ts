@@ -11,6 +11,7 @@ export type StudyCatalogResource = {
   book_title: string;
   content_section: LibraryContentSection;
   has_context_text: boolean;
+  resource_type: 'notes' | 'text_book';
   board: string | null;
   grade_level: string | null;
 };
@@ -50,6 +51,7 @@ export async function loadStudyCatalogResources(
       book_title: resource.book_title || `${subjectName} Notes`,
       content_section: resource.content_section || inferLibraryContentSection(resource.title || ''),
       has_context_text: Boolean(resource.has_context_text),
+      resource_type: 'notes',
       board: resource.board,
       grade_level: resource.grade_level,
     }));
@@ -71,12 +73,45 @@ export async function loadStudyCatalogResources(
       book_title: `${subjectName} Notes`,
       content_section: inferLibraryContentSection(resource.title || ''),
       has_context_text: Boolean(resource.context_text_url),
+      resource_type: 'notes',
       board: resource.board,
       grade_level: resource.grade_level,
     }));
   }
 
   return resources.filter((resource) => isCatalogResourceVisible(resource, profile));
+}
+
+export async function loadStudySubjectResources(
+  supabase: any,
+  { subjectId, subjectName, profile }: Omit<LoadStudyCatalogOptions, 'chapterId'>
+): Promise<StudyCatalogResource[]> {
+  const result = await supabase
+    .from('library_resources')
+    .select('id, title, chapter_id, book_title, content_section, has_context_text, resource_type, board, grade_level')
+    .eq('subject_id', subjectId)
+    .is('chapter_id', null)
+    .in('resource_type', ['notes', 'text_book'])
+    .order('title');
+
+  if (result.error) {
+    console.warn('Subject-wide study resources could not be loaded.', result.error.message);
+    return [];
+  }
+
+  return (result.data || [])
+    .map((resource: any) => ({
+      id: resource.id,
+      title: resource.title,
+      chapter_id: null,
+      book_title: resource.book_title || `${subjectName} ${resource.resource_type === 'notes' ? 'Notes' : 'Text Book'}`,
+      content_section: resource.content_section || inferLibraryContentSection(resource.title || ''),
+      has_context_text: Boolean(resource.has_context_text),
+      resource_type: resource.resource_type === 'notes' ? 'notes' : 'text_book',
+      board: resource.board,
+      grade_level: resource.grade_level,
+    }))
+    .filter((resource: StudyCatalogResource) => isCatalogResourceVisible(resource, profile));
 }
 
 export function countStudyResourceSections(resources: StudyCatalogResource[]) {

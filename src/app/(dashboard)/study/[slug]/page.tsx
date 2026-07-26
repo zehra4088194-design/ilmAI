@@ -6,8 +6,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import {
   countStudyResourceSections,
   loadStudyCatalogResources,
+  loadStudySubjectResources,
   type StudyCatalogResource,
 } from '@/lib/resources/study-catalog';
+import { LIBRARY_SECTIONS } from '@/lib/resources/catalog';
 import type { Board, GradeLevel } from '@/types';
 
 export default async function SubjectDetailPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -59,11 +61,19 @@ export default async function SubjectDetailPage({ params }: { params: Promise<{ 
     return boardVisible && gradeVisible;
   });
 
-  const studyResources = await loadStudyCatalogResources(supabase, {
-    subjectId: subject.id,
-    subjectName: subject.name,
-    profile: { board: activeBoard, grade_level: activeGrade },
-  });
+  const profileScope = { board: activeBoard, grade_level: activeGrade };
+  const [studyResources, subjectResources] = await Promise.all([
+    loadStudyCatalogResources(supabase, {
+      subjectId: subject.id,
+      subjectName: subject.name,
+      profile: profileScope,
+    }),
+    loadStudySubjectResources(supabase, {
+      subjectId: subject.id,
+      subjectName: subject.name,
+      profile: profileScope,
+    }),
+  ]);
   const resourcesByChapter = new Map<string, StudyCatalogResource[]>();
   for (const resource of studyResources) {
     if (!resource.chapter_id) continue;
@@ -87,6 +97,38 @@ export default async function SubjectDetailPage({ params }: { params: Promise<{ 
         <h1 className="mt-1 text-3xl font-bold tracking-tight">{subject.name}</h1>
         <p className="text-muted-foreground mt-2 text-sm">Choose a chapter to start studying.</p>
       </header>
+
+      {subjectResources.length > 0 && (
+        <section className="space-y-3">
+          <div>
+            <h2 className="text-lg font-bold">Subject resources</h2>
+            <p className="text-muted-foreground text-sm">Full books and files that apply to the whole subject.</p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {subjectResources.map((resource) => {
+              const sectionSlug =
+                LIBRARY_SECTIONS.find((section) => section.value === resource.content_section)?.slug || 'reading';
+              const href = `/library/${subject.slug}/general/${sectionSlug}?type=${resource.resource_type}&book=${encodeURIComponent(resource.book_title)}&resource=${resource.id}`;
+              return (
+                <Link key={resource.id} href={href} className="group block">
+                  <Card className="border-border/60 bg-card/80 h-full transition-colors hover:border-violet-500/40">
+                    <CardContent className="flex items-center gap-3 p-4">
+                      <BookOpen className="h-5 w-5 shrink-0 text-violet-300" />
+                      <div className="min-w-0 flex-1">
+                        <h3 className="truncate font-semibold">{resource.title}</h3>
+                        <p className="text-muted-foreground text-xs">
+                          {resource.resource_type === 'text_book' ? 'Text book' : 'Notes'}
+                        </p>
+                      </div>
+                      <ArrowRight className="h-4 w-4 shrink-0 text-violet-300 transition-transform group-hover:translate-x-1" />
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       <div className="space-y-3">
         {chapters.map((chapter, index) => {
@@ -122,7 +164,10 @@ export default async function SubjectDetailPage({ params }: { params: Promise<{ 
                           <FileText className="h-3.5 w-3.5" /> Long
                         </span>
                       )}
-                      {resources.length === 0 && <span>Resources coming soon</span>}
+                      {resources.length === 0 && subjectResources.length > 0 && (
+                        <span>Subject resources available</span>
+                      )}
+                      {resources.length === 0 && subjectResources.length === 0 && <span>Resources coming soon</span>}
                     </div>
                   </div>
                   <ArrowRight className="h-4 w-4 shrink-0 text-violet-300 transition-transform group-hover:translate-x-1" />

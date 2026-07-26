@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { Card, CardContent } from '@/components/ui/card';
 import { LectureGrid, type StudyLecture } from '@/components/features/study/LectureGrid';
 import { LIBRARY_SECTIONS } from '@/lib/resources/catalog';
-import { loadStudyCatalogResources } from '@/lib/resources/study-catalog';
+import { loadStudyCatalogResources, loadStudySubjectResources } from '@/lib/resources/study-catalog';
 import type { Board, GradeLevel } from '@/types';
 
 const SECTION_ICONS = {
@@ -63,7 +63,8 @@ export default async function ChapterDetailPage({
   const previousChapter = chapterIndex > 0 ? chapters[chapterIndex - 1] : null;
   const nextChapter = chapterIndex < chapters.length - 1 ? chapters[chapterIndex + 1] : null;
 
-  const [{ data: lectures }, studyResources] = await Promise.all([
+  const profileScope = { board: activeBoard, grade_level: activeGrade };
+  const [{ data: lectures }, studyResources, subjectResources] = await Promise.all([
     supabase
       .from('lectures')
       .select('id, title, youtube_url, thumbnail_url, kind, exercise_number, duration_seconds')
@@ -74,7 +75,12 @@ export default async function ChapterDetailPage({
       subjectId: subject.id,
       subjectName: subject.name,
       chapterId: chapter.id,
-      profile: { board: activeBoard, grade_level: activeGrade },
+      profile: profileScope,
+    }),
+    loadStudySubjectResources(supabase, {
+      subjectId: subject.id,
+      subjectName: subject.name,
+      profile: profileScope,
     }),
   ]);
 
@@ -95,6 +101,40 @@ export default async function ChapterDetailPage({
         <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">{chapter.name}</h1>
         <p className="text-muted-foreground mt-2 text-sm">What would you like to study?</p>
       </header>
+
+      {subjectResources.length > 0 && (
+        <section className="space-y-3">
+          <div>
+            <h2 className="text-lg font-bold">Subject resources</h2>
+            <p className="text-muted-foreground text-sm">
+              These full books and notes cover the subject rather than only this chapter.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {subjectResources.map((resource) => {
+              const sectionSlug =
+                LIBRARY_SECTIONS.find((section) => section.value === resource.content_section)?.slug || 'reading';
+              const href = `/library/${subject.slug}/general/${sectionSlug}?type=${resource.resource_type}&book=${encodeURIComponent(resource.book_title)}&resource=${resource.id}`;
+              return (
+                <Link key={resource.id} href={href} className="group block">
+                  <Card className="border-border/60 bg-card/80 h-full transition-colors hover:border-violet-500/40">
+                    <CardContent className="flex items-center gap-3 p-4">
+                      <BookMarked className="h-5 w-5 shrink-0 text-violet-300" />
+                      <div className="min-w-0 flex-1">
+                        <h3 className="truncate font-semibold">{resource.title}</h3>
+                        <p className="text-muted-foreground text-xs">
+                          {resource.resource_type === 'text_book' ? 'Text book' : 'Notes'}
+                        </p>
+                      </div>
+                      <ArrowRight className="h-4 w-4 shrink-0 text-violet-300 transition-transform group-hover:translate-x-1" />
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       <div className="grid grid-cols-2 gap-3">
         {LIBRARY_SECTIONS.map((section) => {

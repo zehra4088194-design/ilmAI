@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { LibraryGrid } from '@/components/features/library/LibraryGrid';
 import { AdSenseBanner } from '@/components/features/ads/AdSenseBanner';
-import { normalizeLegacyCatalogResource } from '@/lib/resources/catalog';
+import { isCatalogResourceVisible, normalizeLegacyCatalogResource } from '@/lib/resources/catalog';
 
 export const metadata: Metadata = { title: 'Library' };
 
@@ -30,11 +30,7 @@ export default async function LibraryPage() {
     resources = (fallbackResult.data || []).map(normalizeLegacyCatalogResource);
   }
 
-  const visibleResources = (resources || []).filter((resource: any) => {
-    const boardVisible = !resource.board || resource.board === profile?.board;
-    const gradeVisible = !profile?.grade_level || !resource.grade_level || resource.grade_level === profile.grade_level;
-    return boardVisible && gradeVisible;
-  });
+  const visibleResources = (resources || []).filter((resource: any) => isCatalogResourceVisible(resource, profile));
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
