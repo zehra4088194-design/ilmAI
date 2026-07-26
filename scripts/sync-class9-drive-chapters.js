@@ -128,6 +128,152 @@ function getChapterSlug(subjectSlug, definition) {
   return slugify(`${subjectSlug}-class-9-${definition.order}-${definition.name}`);
 }
 
+const CHAPTER_REFERENCE_TABLES = [
+  'lectures',
+  'library_resources',
+  'notes',
+  'past_papers',
+  'questions',
+  'topics',
+  'flashcard_decks',
+  'class_lectures',
+  'study_plan_sessions',
+  'vision_scans',
+  'past_paper_questions',
+  'student_mistakes',
+  'student_revision_items',
+];
+
+function isMissingTableError(error) {
+  return ['42P01', 'PGRST205'].includes(error?.code);
+}
+
+async function relinkChapterReferences(client, legacyChapterId, canonicalChapterId) {
+  const results = await Promise.all(
+    CHAPTER_REFERENCE_TABLES.map(async (table) => {
+      const { data, error } = await client
+        .from(table)
+        .update({ chapter_id: canonicalChapterId })
+        .eq('chapter_id', legacyChapterId)
+        .select('id');
+      if (error && !isMissingTableError(error)) throw error;
+      return data?.length || 0;
+    })
+  );
+  return results.reduce((total, count) => total + count, 0);
+}
+
+async function syncClass9ChapterCatalog(client, catalog) {
+  if (!Array.isArray(catalog) || !catalog.length) {
+    throw new Error('Class 9 chapter catalog is empty or invalid.');
+  }
+
+  const subjectSlugs = [...new Set(catalog.map((chapter) => chapter.subject_slug))];
+  const { data: subjects, error: subjectError } = await client
+    .from('subjects')
+    .select('id, slug')
+    .in('slug', subjectSlugs);
+  if (subjectError) throw subjectError;
+  const subjectIds = new Map((subjects || []).map((subject) => [subject.slug, subject.id]));
+  const missingSubjects = subjectSlugs.filter((slug) => !subjectIds.has(slug));
+  if (missingSubjects.length) throw new Error(`Missing subjects: ${missingSubjects.join(', ')}`);
+
+  const { data: loadedChapters, error: chapterError } = await client
+    .from('chapters')
+    .select('id, subject_id, name, slug, order_index, grade_levels, is_active')
+    .in('subject_id', [...subjectIds.values()]);
+  if (chapterError) throw chapterError;
+  const allChapters = loadedChapters || [];
+
+  let inserted = 0;
+  let renamed = 0;
+  for (const item of catalog) {
+    const subjectId = subjectIds.get(item.subject_slug);
+    const definition = { order: item.chapter_order, name: item.chapter_name };
+    const slug = getChapterSlug(item.subject_slug, definition);
+    const canonical = allChapters.find((chapter) => chapter.subject_id === subjectId && chapter.slug === slug);
+    const row = {
+      subject_id: subjectId,
+      name: item.chapter_name,
+      slug,
+      description: 'Class 9 chapter verified from the current uploaded textbook.',
+      order_index: item.chapter_order,
+      grade_levels: ['GRADE_9'],
+      boards: [],
+      is_active: true,
+    };
+
+    if (canonical) {
+      const { error } = await client.from('chapters').update(row).eq('id', canonical.id);
+      if (error) throw error;
+      continue;
+    }
+
+    const reusable = allChapters.find(
+      (chapter) =>
+        chapter.subject_id === subjectId &&
+        chapter.order_index === item.chapter_order &&
+        chapter.grade_levels?.includes('GRADE_9') &&
+        chapter.is_active
+    );
+    if (reusable) {
+      const { error } = await client.from('chapters').update(row).eq('id', reusable.id);
+      if (error) throw error;
+      reusable.name = row.name;
+      reusable.slug = row.slug;
+      reusable.is_active = true;
+      renamed += 1;
+    } else {
+      const { data, error } = await client.from('chapters').insert(row).select('id').single();
+      if (error) throw error;
+      allChapters.push({
+        id: data.id,
+        subject_id: subjectId,
+        name: row.name,
+        slug: row.slug,
+        order_index: row.order_index,
+        grade_levels: row.grade_levels,
+        is_active: true,
+      });
+      inserted += 1;
+    }
+  }
+
+  const { data: refreshedChapters, error: refreshError } = await client
+    .from('chapters')
+    .select('id, subject_id, slug, order_index, grade_levels, is_active')
+    .in('subject_id', [...subjectIds.values()]);
+  if (refreshError) throw refreshError;
+
+  const canonicalByScope = new Map();
+  for (const item of catalog) {
+    const subjectId = subjectIds.get(item.subject_slug);
+    const slug = getChapterSlug(item.subject_slug, {
+      order: item.chapter_order,
+      name: item.chapter_name,
+    });
+    const chapter = (refreshedChapters || []).find(
+      (candidate) => candidate.subject_id === subjectId && candidate.slug === slug
+    );
+    if (!chapter) throw new Error(`Canonical chapter was not created: ${slug}`);
+    canonicalByScope.set(`${subjectId}:${item.chapter_order}`, chapter);
+  }
+
+  let relinkedReferences = 0;
+  let archivedDuplicates = 0;
+  for (const chapter of refreshedChapters || []) {
+    if (!chapter.grade_levels?.includes('GRADE_9')) continue;
+    const canonical = canonicalByScope.get(`${chapter.subject_id}:${chapter.order_index}`);
+    if (!canonical || canonical.id === chapter.id || chapter.slug === canonical.slug) continue;
+    relinkedReferences += await relinkChapterReferences(client, chapter.id, canonical.id);
+    const { error } = await client.from('chapters').update({ is_active: false }).eq('id', chapter.id);
+    if (error) throw error;
+    archivedDuplicates += 1;
+  }
+
+  return { inserted, renamed, relinkedReferences, archivedDuplicates };
+}
+
 async function syncClass9DriveChapters(client, notes) {
   if (!Array.isArray(notes) || !notes.length) {
     throw new Error('Drive note catalog is empty or invalid.');
@@ -239,7 +385,7 @@ async function syncClass9DriveChapters(client, notes) {
   const canonicalSlugs = new Set(chapterSlugs);
   const { data: gradeNineChapters, error: gradeNineChapterError } = await client
     .from('chapters')
-    .select('id, slug, grade_levels, is_active')
+    .select('id, subject_id, slug, order_index, grade_levels, is_active')
     .in('subject_id', [...subjectIds.values()]);
   if (gradeNineChapterError) throw gradeNineChapterError;
 
@@ -248,6 +394,18 @@ async function syncClass9DriveChapters(client, notes) {
       (chapter) => chapter.is_active && chapter.grade_levels?.includes('GRADE_9') && !canonicalSlugs.has(chapter.slug)
     )
     .map((chapter) => chapter.id);
+
+  const canonicalByScope = new Map(
+    chapterRows.map((chapter) => [`${chapter.subject_id}:${chapter.order_index}`, chapterIdBySlug.get(chapter.slug)])
+  );
+  let relinkedReferences = 0;
+  for (const chapter of gradeNineChapters || []) {
+    if (!legacyChapterIds.includes(chapter.id)) continue;
+    const canonicalId = canonicalByScope.get(`${chapter.subject_id}:${chapter.order_index}`);
+    if (canonicalId && canonicalId !== chapter.id) {
+      relinkedReferences += await relinkChapterReferences(client, chapter.id, canonicalId);
+    }
+  }
 
   let archivedLegacyChapters = 0;
   for (let index = 0; index < legacyChapterIds.length; index += 40) {
@@ -264,6 +422,7 @@ async function syncClass9DriveChapters(client, notes) {
     chapters: chapterRows.length,
     linkedResources,
     verifiedResources,
+    relinkedReferences,
     archivedLegacyChapters,
   };
 }
@@ -285,7 +444,12 @@ async function main() {
   console.log(JSON.stringify(result, null, 2));
 }
 
-module.exports = { getChapterDefinition, getChapterSlug, syncClass9DriveChapters };
+module.exports = {
+  getChapterDefinition,
+  getChapterSlug,
+  syncClass9ChapterCatalog,
+  syncClass9DriveChapters,
+};
 
 if (require.main === module) {
   main().catch((error) => {

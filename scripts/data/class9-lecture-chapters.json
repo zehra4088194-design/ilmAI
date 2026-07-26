@@ -1,0 +1,47 @@
+[
+  {
+    "subject_slug": "physics",
+    "chapter_order": 1,
+    "chapter_name": "Chapter 1: Physical Quantities and Measurements"
+  },
+  {
+    "subject_slug": "physics",
+    "chapter_order": 2,
+    "chapter_name": "Chapter 2: Kinematics"
+  },
+  {
+    "subject_slug": "physics",
+    "chapter_order": 3,
+    "chapter_name": "Chapter 3: Dynamics"
+  },
+  {
+    "subject_slug": "physics",
+    "chapter_order": 4,
+    "chapter_name": "Chapter 4: Turning Effects of Force"
+  },
+  {
+    "subject_slug": "physics",
+    "chapter_order": 5,
+    "chapter_name": "Chapter 5: Work, Energy and Power"
+  },
+  {
+    "subject_slug": "physics",
+    "chapter_order": 6,
+    "chapter_name": "Chapter 6: Mechanical Properties of Matter"
+  },
+  {
+    "subject_slug": "physics",
+    "chapter_order": 7,
+    "chapter_name": "Chapter 7: Thermal Properties of Matter"
+  },
+  {
+    "subject_slug": "physics",
+    "chapter_order": 8,
+    "chapter_name": "Chapter 8: Magnetism"
+  },
+  {
+    "subject_slug": "physics",
+    "chapter_order": 9,
+    "chapter_name": "Chapter 9: Nature of Science"
+  }
+]

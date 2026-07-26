@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
-const { getChapterSlug, syncClass9DriveChapters } = require('./sync-class9-drive-chapters');
+const { getChapterSlug, syncClass9ChapterCatalog, syncClass9DriveChapters } = require('./sync-class9-drive-chapters');
 
 function loadLocalEnv() {
   const envPath = path.join(process.cwd(), '.env.local');
@@ -68,6 +68,9 @@ async function main() {
   if (!supabaseUrl || !serviceKey) throw new Error('Supabase service credentials are missing.');
 
   const lectures = JSON.parse(fs.readFileSync(path.join(__dirname, 'data', 'class9-lecture-resources.json'), 'utf8'));
+  const lectureChapters = JSON.parse(
+    fs.readFileSync(path.join(__dirname, 'data', 'class9-lecture-chapters.json'), 'utf8')
+  );
   const driveNotes = [
     ...JSON.parse(fs.readFileSync(path.join(__dirname, 'data', 'class9-drive-notes.json'), 'utf8')),
     ...JSON.parse(fs.readFileSync(path.join(__dirname, 'data', 'class9-math-drive-notes.json'), 'utf8')),
@@ -76,6 +79,7 @@ async function main() {
     auth: { autoRefreshToken: false, persistSession: false },
   });
   await syncClass9DriveChapters(client, driveNotes);
+  const chapterSync = await syncClass9ChapterCatalog(client, lectureChapters);
 
   const subjectSlugs = [...new Set(lectures.map((lecture) => lecture.subject_slug))];
   const { data: subjects, error: subjectError } = await client
@@ -130,7 +134,7 @@ async function main() {
     if (error) throw error;
   }
 
-  console.log(JSON.stringify({ inserted: rows.length, updated }, null, 2));
+  console.log(JSON.stringify({ inserted: rows.length, updated, chapterSync }, null, 2));
 }
 
 if (require.main === module) {
