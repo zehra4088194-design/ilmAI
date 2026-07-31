@@ -10,13 +10,14 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
-import { isDarkThemeId } from '@/lib/constants/themes';
 import { getGoogleDriveThumbnailUrl } from '@/lib/utils/filePreview';
 import type { CollegeLecture, CollegeResource, CollegeResourceMetadata } from '@/lib/college/types';
 import { ProtectedResourceReader } from '@/components/features/resources/ProtectedResourceReader';
 import { ResourceAiTools } from '@/components/features/resources/ResourceAiTools';
 import { saveOfflineResourceLink } from '@/lib/offline/resources';
 import { toast } from 'sonner';
+import { isDarkThemeId } from '@/lib/constants/themes';
+import { resolvePdfThemeMode } from '@/lib/platform-settings/shared';
 
 const TYPE_LABELS: Record<CollegeResource['resource_type'], string> = {
   notes: 'Notes',
@@ -65,8 +66,7 @@ export function CollegeDashboardTabs({
   const canDownload = settings.subscriptionPlans[userTier].access.downloadPDF;
   const [readerResource, setReaderResource] = useState<CollegeResourceMetadata | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
-  const isDarkMode = isDarkThemeId(theme);
-  const mode = isDarkMode ? 'dark' : 'light';
+  const mode = resolvePdfThemeMode(settings.pdfThemeMode, isDarkThemeId(theme));
 
   const matchesProfileScope = (item: {
     stream: string | null;

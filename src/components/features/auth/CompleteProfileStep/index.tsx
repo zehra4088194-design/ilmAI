@@ -18,6 +18,7 @@ import {
 import { completeProfile, completeUniversityProfile } from '@/app/onboarding/complete-profile/actions';
 import { ThemePicker } from '@/components/common/ThemePicker';
 import { cn } from '@/lib/utils/cn';
+import type { ScienceGroup } from '@/types';
 
 export function CompleteProfileStep({ initialGender }: { initialGender: 'girl' | 'boy' | null }) {
   const router = useRouter();
@@ -28,6 +29,7 @@ export function CompleteProfileStep({ initialGender }: { initialGender: 'girl' |
   const [gender, setGender] = useState<'girl' | 'boy' | null>(initialGender);
   const [board, setBoard] = useState('');
   const [gradeLevel, setGradeLevel] = useState('');
+  const [scienceGroup, setScienceGroup] = useState<ScienceGroup | null>(null);
   const [stream, setStream] = useState<UniversityStream>('engineering');
   const [program, setProgram] = useState('');
   const [semester, setSemester] = useState('');
@@ -39,7 +41,12 @@ export function CompleteProfileStep({ initialGender }: { initialGender: 'girl' |
   const canSubmit =
     educationLevel === 'university'
       ? username.trim() !== '' && gender !== null && program.trim() !== '' && semester.trim() !== '' && !isPending
-      : username.trim() !== '' && gender !== null && board !== '' && gradeLevel !== '' && !isPending;
+      : username.trim() !== '' &&
+        gender !== null &&
+        board !== '' &&
+        gradeLevel !== '' &&
+        scienceGroup !== null &&
+        !isPending;
 
   function handleSubmit() {
     setError(null);
@@ -57,7 +64,7 @@ export function CompleteProfileStep({ initialGender }: { initialGender: 'girl' |
               preferredOutputStyle,
               gender: gender!,
             })
-          : await completeProfile(board, gradeLevel, username, gender!);
+          : await completeProfile(board, gradeLevel, username, gender!, scienceGroup!);
       if (!result.success) {
         setError(result.error ?? 'Could not save your profile. Please try again.');
         return;
@@ -102,7 +109,9 @@ export function CompleteProfileStep({ initialGender }: { initialGender: 'girl' |
               </button>
             ))}
           </div>
-          <p className="text-muted-foreground text-xs">Only students of the same gender can connect in Study Buddies.</p>
+          <p className="text-muted-foreground text-xs">
+            Only students of the same gender can connect in Study Buddies.
+          </p>
         </div>
         <div className="grid gap-2">
           {EDUCATION_LEVELS.map((level) => (
@@ -239,6 +248,36 @@ export function CompleteProfileStep({ initialGender }: { initialGender: 'girl' |
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Science subject</label>
+              <div className="grid grid-cols-2 gap-2">
+                {(
+                  [
+                    ['biology', 'Biology'],
+                    ['computer', 'Computer Science'],
+                  ] as const
+                ).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={scienceGroup === value}
+                    onClick={() => setScienceGroup(value)}
+                    className={cn(
+                      'rounded-lg border-2 px-3 py-3 text-sm font-semibold transition-colors',
+                      scienceGroup === value
+                        ? 'border-primary bg-primary/10 text-foreground'
+                        : 'border-border text-muted-foreground hover:border-primary/40'
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-muted-foreground text-xs">
+                Saved once and used across books, quizzes, games, and study tools.
+              </p>
             </div>
           </>
         )}

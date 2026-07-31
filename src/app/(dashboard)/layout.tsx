@@ -18,7 +18,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, board, grade_level, is_profile_complete, ai_onboarding_complete')
+    .select('role, board, grade_level, is_profile_complete, ai_onboarding_complete, science_group, optional_subject_ids')
     .eq('id', user.id)
     .single();
 
@@ -34,17 +34,26 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (shouldShowPersonalization) {
     const { data } = await supabase
       .from('subjects')
-      .select('id, name, is_optional')
+      .select('id, name, slug, stream, is_optional')
       .eq('is_active', true)
       .contains('boards', [profile.board])
       .contains('grade_levels', [profile.grade_level])
       .order('name');
 
-    personalizationSubjects = (data ?? []).map((subject) => ({
-      id: subject.id,
-      name: subject.name,
-      isOptional: subject.is_optional,
-    }));
+    personalizationSubjects = (data ?? [])
+      .filter((subject) => {
+        if (!subject.is_optional || !profile.science_group) return true;
+        if ((profile.optional_subject_ids || []).includes(subject.id)) return true;
+        const identity = `${subject.name} ${subject.slug} ${subject.stream || ''}`.toLowerCase();
+        return profile.science_group === 'biology'
+          ? identity.includes('biology') || identity.includes('pre-medical')
+          : identity.includes('computer');
+      })
+      .map((subject) => ({
+        id: subject.id,
+        name: subject.name,
+        isOptional: profile.science_group ? false : subject.is_optional,
+      }));
   }
 
   return (

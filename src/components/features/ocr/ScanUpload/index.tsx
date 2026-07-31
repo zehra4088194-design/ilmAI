@@ -1,12 +1,11 @@
 'use client';
 import { useState, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Upload, Loader2, X, Check, AlertCircle, Sparkles, FileText, PenLine } from 'lucide-react';
+import { Camera, Upload, Loader2, X, Check, AlertCircle, Sparkles, FileText, PenLine, ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/hooks/auth/useAuth';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils/cn';
-import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 
 interface ScanUploadProps {
   onTextExtracted: (text: string) => void;
@@ -23,16 +22,9 @@ export function ScanUpload({ onTextExtracted, trigger }: ScanUploadProps) {
   const [extractedText, setExtractedText] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [remaining, setRemaining] = useState<number | null>(null);
-  const [scanMode, setScanMode] = useState<'printed' | 'handwritten'>('printed');
+  const [scanKind, setScanKind] = useState<'diagram' | 'handwritten' | 'printed'>('printed');
+  const [language, setLanguage] = useState<'en' | 'ur' | 'other'>('en');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { user } = useAuth();
-  const settings = usePlatformSettings();
-  const tier = user?.subscriptionTier || 'FREE';
-  const plan = settings.subscriptionPlans[tier];
-  const audience = user?.educationLevel || 'school';
-  const printedLimit = plan.limits.ocrPrintedMonthly;
-  const handwrittenLimit = plan.audienceLimits[audience].ocrHandwrittenMonthly;
-  const limitLabel = (value: number) => (value < 0 ? 'Unlimited' : String(value));
 
   const handleFileSelect = useCallback((file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -52,7 +44,8 @@ export function ScanUpload({ onTextExtracted, trigger }: ScanUploadProps) {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('mode', scanMode);
+      formData.append('kind', scanKind);
+      formData.append('language', language);
       const res = await fetch('/api/ocr', { method: 'POST', body: formData });
       const json = await res.json();
       if (json.status === 'error') {
@@ -93,183 +86,190 @@ export function ScanUpload({ onTextExtracted, trigger }: ScanUploadProps) {
         )}
       </div>
 
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-            onClick={handleClose}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="glass border-border w-full max-w-md rounded-2xl border p-6"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="flex items-center gap-2 font-semibold">
-                  <Sparkles className="h-4 w-4 text-violet-400" />
-                  Scan & Extract Text
-                </h3>
-                <button onClick={handleClose} className="text-muted-foreground hover:text-foreground">
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-
-              <p className="text-muted-foreground mb-4 rounded-lg bg-violet-500/10 px-3 py-2 text-xs text-violet-300">
-                {plan.name}: {limitLabel(printedLimit)} printed and {limitLabel(handwrittenLimit)} handwritten
-                scans/month.
-              </p>
-
-              <div className="mb-4 grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setScanMode('printed')}
-                  className={cn(
-                    'flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition-colors',
-                    scanMode === 'printed'
-                      ? 'border-violet-500 bg-violet-500/10 text-violet-300'
-                      : 'border-border text-muted-foreground hover:text-foreground'
-                  )}
+      {typeof document !== 'undefined' &&
+        createPortal(
+          <AnimatePresence>
+            {isOpen && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[250] flex items-center justify-center bg-black/70 p-3 sm:p-4"
+                onClick={handleClose}
+              >
+                <motion.div
+                  initial={{ scale: 0.95, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.95, opacity: 0 }}
+                  className="glass border-border max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-xl border p-4 sm:max-h-[calc(100dvh-2rem)] sm:p-6"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  <FileText className="h-3.5 w-3.5" /> Printed
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setScanMode('handwritten')}
-                  className={cn(
-                    'flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition-colors',
-                    scanMode === 'handwritten'
-                      ? 'border-violet-500 bg-violet-500/10 text-violet-300'
-                      : 'border-border text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  <PenLine className="h-3.5 w-3.5" /> Handwritten
-                </button>
-              </div>
-
-              {state === 'idle' && (
-                <div
-                  className="border-border cursor-pointer rounded-xl border-2 border-dashed p-8 text-center transition-colors hover:border-violet-500/50"
-                  onClick={() => fileInputRef.current?.click()}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    const file = e.dataTransfer.files[0];
-                    if (file) handleFileSelect(file);
-                  }}
-                  onDragOver={(e) => e.preventDefault()}
-                >
-                  <Upload className="text-muted-foreground mx-auto mb-3 h-8 w-8" />
-                  <p className="mb-1 text-sm font-medium">Upload a photo or drag it here</p>
-                  <p className="text-muted-foreground text-xs">Question, notes, ya textbook page ki clear image</p>
-                </div>
-              )}
-
-              {state === 'preview' && selectedFile && (
-                <div>
-                  {previewUrl && (
-                    <img
-                      src={previewUrl}
-                      alt="Preview"
-                      className="bg-muted mb-4 max-h-64 w-full rounded-lg object-contain"
-                    />
-                  )}
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => {
-                        setState('idle');
-                        setPreviewUrl(null);
-                        setSelectedFile(null);
-                      }}
-                    >
-                      Change
-                    </Button>
-                    <Button variant="gradient" className="flex-1" onClick={handleScan}>
-                      <Sparkles className="h-4 w-4" />
-                      Extract Text
-                    </Button>
+                  <div className="mb-4 flex items-center justify-between">
+                    <h3 className="flex items-center gap-2 font-semibold">
+                      <Sparkles className="h-4 w-4 text-violet-400" />
+                      Scan & Extract Text
+                    </h3>
+                    <button onClick={handleClose} className="text-muted-foreground hover:text-foreground">
+                      <X className="h-4 w-4" />
+                    </button>
                   </div>
-                </div>
-              )}
 
-              {state === 'scanning' && (
-                <div className="py-12 text-center">
-                  <Loader2 className="mx-auto mb-3 h-8 w-8 animate-spin text-violet-400" />
-                  <p className="text-sm font-medium">Extracting text...</p>
-                  <p className="text-muted-foreground mt-1 text-xs">
-                    {scanMode === 'printed'
-                      ? 'Processing with printed OCR'
-                      : 'Processing with Gemini Vision AI'}
+                  <p className="text-muted-foreground mb-4 rounded-lg bg-violet-500/10 px-3 py-2 text-xs text-violet-300">
+                    Printed scan uses 1 credit. Handwritten scan uses 3 credits.
                   </p>
-                </div>
-              )}
 
-              {state === 'done' && (
-                <div>
-                  <div className="bg-muted/50 mb-4 max-h-48 overflow-y-auto rounded-lg p-3">
-                    <p className="text-sm whitespace-pre-wrap">{extractedText}</p>
+                  <div className="mb-4 grid grid-cols-3 gap-2">
+                    {[
+                      { value: 'diagram' as const, label: 'Diagram', icon: ImageIcon },
+                      { value: 'handwritten' as const, label: 'Handwritten', icon: PenLine },
+                      { value: 'printed' as const, label: 'Printed', icon: FileText },
+                    ].map(({ value, label, icon: Icon }) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setScanKind(value)}
+                        className={cn(
+                          'flex min-h-16 flex-col items-center justify-center gap-1 rounded-lg border px-2 py-2 text-xs font-medium transition-colors',
+                          scanKind === value
+                            ? 'border-violet-500 bg-violet-500/10 text-violet-300'
+                            : 'border-border text-muted-foreground hover:text-foreground'
+                        )}
+                      >
+                        <Icon className="h-4 w-4" /> {label}
+                      </button>
+                    ))}
                   </div>
-                  {remaining !== null && remaining >= 0 && (
-                    <p className="text-muted-foreground mb-3 text-xs">{remaining} scans remaining this month</p>
-                  )}
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => {
-                        setState('idle');
-                        setPreviewUrl(null);
-                        setSelectedFile(null);
-                      }}
+
+                  <label className="mb-4 block">
+                    <span className="text-muted-foreground mb-1.5 block text-xs font-medium">Text language</span>
+                    <select
+                      value={language}
+                      onChange={(event) => setLanguage(event.target.value as 'en' | 'ur' | 'other')}
+                      className="bg-background h-10 w-full rounded-lg border px-3 text-sm"
                     >
-                      Scan again
-                    </Button>
-                    <Button variant="gradient" className="flex-1" onClick={handleUseText}>
-                      <Check className="h-4 w-4" />
-                      Use This Text
-                    </Button>
-                  </div>
-                </div>
-              )}
+                      <option value="en">English / non-Urdu</option>
+                      <option value="ur">Urdu</option>
+                      <option value="other">Other language</option>
+                    </select>
+                  </label>
 
-              {state === 'error' && (
-                <div className="py-6 text-center">
-                  <AlertCircle className="text-destructive mx-auto mb-3 h-8 w-8" />
-                  <p className="mb-1 text-sm font-medium">Scan Failed</p>
-                  <p className="text-muted-foreground mb-4 text-xs">{errorMsg}</p>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setState('idle');
-                      setPreviewUrl(null);
-                      setSelectedFile(null);
+                  {state === 'idle' && (
+                    <div
+                      className="border-border cursor-pointer rounded-xl border-2 border-dashed p-8 text-center transition-colors hover:border-violet-500/50"
+                      onClick={() => fileInputRef.current?.click()}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const file = e.dataTransfer.files[0];
+                        if (file) handleFileSelect(file);
+                      }}
+                      onDragOver={(e) => e.preventDefault()}
+                    >
+                      <Upload className="text-muted-foreground mx-auto mb-3 h-8 w-8" />
+                      <p className="mb-1 text-sm font-medium">Upload a photo or drag it here</p>
+                      <p className="text-muted-foreground text-xs">Question, notes, ya textbook page ki clear image</p>
+                    </div>
+                  )}
+
+                  {state === 'preview' && selectedFile && (
+                    <div>
+                      {previewUrl && (
+                        <img
+                          src={previewUrl}
+                          alt="Preview"
+                          className="bg-muted mb-4 max-h-64 w-full rounded-lg object-contain"
+                        />
+                      )}
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => {
+                            setState('idle');
+                            setPreviewUrl(null);
+                            setSelectedFile(null);
+                          }}
+                        >
+                          Change
+                        </Button>
+                        <Button variant="gradient" className="flex-1" onClick={handleScan}>
+                          <Sparkles className="h-4 w-4" />
+                          Extract Text
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {state === 'scanning' && (
+                    <div className="py-12 text-center">
+                      <Loader2 className="mx-auto mb-3 h-8 w-8 animate-spin text-violet-400" />
+                      <p className="text-sm font-medium">Extracting text...</p>
+                      <p className="text-muted-foreground mt-1 text-xs">Processing {scanKind} scan</p>
+                    </div>
+                  )}
+
+                  {state === 'done' && (
+                    <div>
+                      <div className="bg-muted/50 mb-4 max-h-40 overflow-y-auto rounded-lg p-3 sm:max-h-48">
+                        <p className="text-sm whitespace-pre-wrap">{extractedText}</p>
+                      </div>
+                      {remaining !== null && remaining >= 0 && (
+                        <p className="text-muted-foreground mb-3 text-xs">{remaining} credits remaining</p>
+                      )}
+                      <div className="bg-background/95 sticky bottom-0 flex gap-2 pt-2">
+                        <Button
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => {
+                            setState('idle');
+                            setPreviewUrl(null);
+                            setSelectedFile(null);
+                          }}
+                        >
+                          Scan again
+                        </Button>
+                        <Button variant="gradient" className="flex-1" onClick={handleUseText}>
+                          <Check className="h-4 w-4" />
+                          Use Extracted Text
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {state === 'error' && (
+                    <div className="py-6 text-center">
+                      <AlertCircle className="text-destructive mx-auto mb-3 h-8 w-8" />
+                      <p className="mb-1 text-sm font-medium">Scan Failed</p>
+                      <p className="text-muted-foreground mb-4 text-xs">{errorMsg}</p>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setState('idle');
+                          setPreviewUrl(null);
+                          setSelectedFile(null);
+                        }}
+                      >
+                        Try Again
+                      </Button>
+                    </div>
+                  )}
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleFileSelect(file);
                     }}
-                  >
-                    Try Again
-                  </Button>
-                </div>
-              )}
-
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleFileSelect(file);
-                }}
-              />
-            </motion.div>
-          </motion.div>
+                  />
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body
         )}
-      </AnimatePresence>
     </>
   );
 }

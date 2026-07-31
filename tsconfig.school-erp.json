@@ -1,0 +1,28 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "incremental": false,
+    "plugins": []
+  },
+  "include": [
+    "next-env.d.ts",
+    "src/lib/school-erp/**/*.ts",
+    "src/components/features/school-erp/**/*.tsx",
+    "src/app/school/**/*.ts",
+    "src/app/school/**/*.tsx",
+    "src/app/school-admin/**/*.ts",
+    "src/app/school-admin/**/*.tsx",
+    "src/app/schools/**/*.ts",
+    "src/app/schools/**/*.tsx",
+    "src/app/api/school/**/*.ts",
+    "src/app/api/school-admin/**/*.ts",
+    "src/app/api/cron/school-notifications/**/*.ts",
+    "src/app/(admin)/admin/schools/**/*.ts",
+    "src/app/(admin)/admin/schools/**/*.tsx",
+    "src/components/layout/AdminSidebar/index.tsx",
+    "src/components/layout/DashboardSidebar/index.tsx",
+    "src/lib/rate-limit/index.ts",
+    "src/middleware.ts"
+  ],
+  "exclude": ["node_modules", ".next"]
+}

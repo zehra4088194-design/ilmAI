@@ -55,7 +55,8 @@ export function ResourceAiTools({ kind, resourceId }: { kind: ProtectedResourceK
       setSummaryLabel(
         json.data.fallbackUsed ? 'Source Summary' : `${String(json.data.provider || 'AI').toUpperCase()} Summary`
       );
-      if (json.data.fallbackUsed) toast.info('The AI gateway was unavailable; the summary was created from the uploaded TXT source.');
+      if (json.data.fallbackUsed)
+        toast.info('The AI gateway was unavailable; the summary was created from the uploaded TXT source.');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'The summary could not be generated.');
     } finally {
@@ -79,7 +80,8 @@ export function ResourceAiTools({ kind, resourceId }: { kind: ProtectedResourceK
       if (!response.ok || json.status === 'error') throw new Error(json.error || 'The file could not be analyzed.');
       setAnalysis(json.data);
       setAnalysisLabel(json.fallbackUsed ? 'Source file analysis' : `${String(json.provider || 'Grok')} file analysis`);
-      if (json.fallbackUsed) toast.info('The AI gateway was unavailable, so the uploaded TXT file was analyzed locally.');
+      if (json.fallbackUsed)
+        toast.info('The AI gateway was unavailable, so the uploaded TXT file was analyzed locally.');
       setCounts({
         mcq: Math.min(30, json.data.available.mcq),
         short: Math.min(5, json.data.available.short),
@@ -107,7 +109,8 @@ export function ResourceAiTools({ kind, resourceId }: { kind: ProtectedResourceK
       const json = await response.json();
       if (!response.ok || json.status === 'error') throw new Error(json.error || 'The test could not be generated.');
       window.sessionStorage.setItem('ilm-ai-resource-test', JSON.stringify(json.data));
-      if (json.data.fallbackUsed) toast.info('The AI gateway was unavailable; a source-grounded fallback test was created.');
+      if (json.data.fallbackUsed)
+        toast.info('The AI gateway was unavailable; a source-grounded fallback test was created.');
       router.push('/full-test?source=resource');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'The test could not be generated.');
@@ -121,18 +124,18 @@ export function ResourceAiTools({ kind, resourceId }: { kind: ProtectedResourceK
       <div className="space-y-3">
         <ResourceMcqSet kind={kind} resourceId={resourceId} />
         <div className="grid gap-2">
-        <Button asChild variant="outline" size="sm">
-          <Link href="/subscription">
-            <Sparkles className="h-3.5 w-3.5" />
-            AI Summary <Badge className="ml-1 text-[10px]">Pro</Badge>
-          </Link>
-        </Button>
-        <Button asChild variant="outline" size="sm">
-          <Link href="/subscription">
-            <FileQuestion className="h-3.5 w-3.5" />
-            Test from this file <Badge className="ml-1 text-[10px]">Pro</Badge>
-          </Link>
-        </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/subscription">
+              <Sparkles className="h-3.5 w-3.5" />
+              AI Summary <Badge className="ml-1 text-[10px]">Pro</Badge>
+            </Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/subscription">
+              <FileQuestion className="h-3.5 w-3.5" />
+              Test from this file <Badge className="ml-1 text-[10px]">Pro</Badge>
+            </Link>
+          </Button>
         </div>
       </div>
     );
@@ -155,8 +158,12 @@ export function ResourceAiTools({ kind, resourceId }: { kind: ProtectedResourceK
       {summary && summarySource && (
         <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/5 p-3 text-xs">
           <div className="flex items-center justify-between gap-3">
-            <p className="font-semibold text-emerald-700 dark:text-emerald-300">Verified against: {summarySource.title}</p>
-            <span className="rounded-full bg-emerald-500/15 px-2 py-1 font-semibold text-emerald-700 dark:text-emerald-300">{summarySource.confidence}% source confidence</span>
+            <p className="font-semibold text-emerald-700 dark:text-emerald-300">
+              Verified against: {summarySource.title}
+            </p>
+            <span className="rounded-full bg-emerald-500/15 px-2 py-1 font-semibold text-emerald-700 dark:text-emerald-300">
+              {summarySource.confidence}% source confidence
+            </span>
           </div>
           <p className="text-muted-foreground mt-2 leading-5">&quot;{summarySource.excerpt}&quot;</p>
           <p className="text-muted-foreground mt-2">
@@ -222,7 +229,10 @@ function ResourceMcqSet({ kind, resourceId }: { kind: ProtectedResourceKind; res
     }
     setLoading(true);
     try {
-      const response = await fetch(`/api/resources/questions?kind=${encodeURIComponent(kind)}&id=${encodeURIComponent(resourceId)}`, { cache: 'no-store' });
+      const response = await fetch(
+        `/api/resources/questions?kind=${encodeURIComponent(kind)}&id=${encodeURIComponent(resourceId)}`,
+        { cache: 'no-store' }
+      );
       const json = await response.json();
       if (response.status === 202) {
         setStatus('processing');
@@ -244,31 +254,68 @@ function ResourceMcqSet({ kind, resourceId }: { kind: ProtectedResourceKind; res
 
   const current = questions[index];
   return (
-    <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 p-3">
-      <Button variant="outline" size="sm" className="w-full justify-between" onClick={() => void loadQuestions()} disabled={loading}>
-        <span className="flex items-center gap-2"><FileQuestion className="h-3.5 w-3.5 text-amber-500" />Chapter ke 30 MCQs</span>
-        <span className="text-xs text-muted-foreground">{loading ? 'Loading...' : open ? 'Hide' : 'Open'}</span>
+    <div className="min-w-0 rounded-lg border border-amber-500/25 bg-amber-500/5 p-3">
+      <Button
+        variant="outline"
+        size="sm"
+        className="w-full min-w-0 justify-between gap-2"
+        onClick={() => void loadQuestions()}
+        disabled={loading}
+      >
+        <span className="flex min-w-0 items-center gap-2">
+          <FileQuestion className="h-3.5 w-3.5 flex-none text-amber-500" />
+          <span className="truncate">Chapter ke 30 MCQs</span>
+        </span>
+        <span className="text-muted-foreground text-xs">{loading ? 'Loading...' : open ? 'Hide' : 'Open'}</span>
       </Button>
-      {status === 'processing' && <p className="mt-2 text-xs text-muted-foreground">Source-grounded MCQs will appear here when OCR and context processing is complete.</p>}
+      {status === 'processing' && (
+        <p className="text-muted-foreground mt-2 text-xs">
+          Source-grounded MCQs will appear here when OCR and context processing is complete.
+        </p>
+      )}
       {open && current && (
         <div className="mt-3 space-y-3">
-          <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground">
-            <span>MCQ {index + 1} / {questions.length}</span>
+          <div className="text-muted-foreground flex items-center justify-between text-xs font-semibold">
+            <span>
+              MCQ {index + 1} / {questions.length}
+            </span>
             <span>1 mark</span>
           </div>
-          <p className="text-sm font-semibold leading-6">{current.q || 'Question unavailable'}</p>
+          <p className="text-sm leading-6 font-semibold break-words">{current.q || 'Question unavailable'}</p>
           <div className="grid gap-2">
             {(current.opts || []).map((option, optionIndex) => (
-              <div key={`${index}-${optionIndex}`} className="rounded-lg border bg-background/70 px-3 py-2 text-sm">
-                <span className="mr-2 font-bold text-amber-600">{String.fromCharCode(65 + optionIndex)}.</span>{option}
+              <div
+                key={`${index}-${optionIndex}`}
+                className="bg-background/70 flex min-w-0 items-start gap-2 rounded-lg border px-3 py-2 text-sm"
+              >
+                <span className="flex-none font-bold text-amber-600">{String.fromCharCode(65 + optionIndex)}.</span>
+                <span className="min-w-0 break-words">{option}</span>
               </div>
             ))}
           </div>
           <div className="flex items-center justify-between gap-2">
-            <Button variant="ghost" size="sm" disabled={index === 0} onClick={() => setIndex((value) => Math.max(0, value - 1))}>Previous</Button>
-            <Button variant="outline" size="sm" disabled={index >= questions.length - 1} onClick={() => setIndex((value) => Math.min(questions.length - 1, value + 1))}>Next</Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={index === 0}
+              onClick={() => setIndex((value) => Math.max(0, value - 1))}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={index >= questions.length - 1}
+              onClick={() => setIndex((value) => Math.min(questions.length - 1, value + 1))}
+            >
+              Next
+            </Button>
           </div>
-          {current.exp && <p className="rounded-lg bg-amber-500/10 p-2 text-xs leading-5 text-muted-foreground">Explanation: {current.exp}</p>}
+          {current.exp && (
+            <p className="text-muted-foreground rounded-lg bg-amber-500/10 p-2 text-xs leading-5">
+              Explanation: {current.exp}
+            </p>
+          )}
         </div>
       )}
     </div>

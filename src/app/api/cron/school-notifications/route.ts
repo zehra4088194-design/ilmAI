@@ -1,0 +1,159 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { isEmailConfigured, sendEmail } from '@/lib/email/send';
+import { sendPushNotification } from '@/lib/push/server';
+import { createAdminClient } from '@/lib/supabase/server';
+
+export const runtime = 'nodejs';
+export const maxDuration = 60;
+
+type Delivery = {
+  id: string;
+  recipient_id: string | null;
+  recipient_address: string | null;
+  channel: 'in_app' | 'email' | 'sms' | 'whatsapp' | 'push';
+  attempts: number;
+  school_announcements: { title: string; body: string; priority: string } | null;
+  profiles: { email: string | null; phone: string | null } | null;
+};
+
+function related<T>(value: T | T[] | null): T | null {
+  return Array.isArray(value) ? value[0] || null : value;
+}
+
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (character) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[character]!
+  ));
+}
+
+async function sendWebhook(channel: 'sms' | 'whatsapp', delivery: Delivery, title: string, body: string) {
+  const prefix = channel === 'sms' ? 'SCHOOL_SMS' : 'SCHOOL_WHATSAPP';
+  const url = process.env[`${prefix}_WEBHOOK_URL`];
+  const token = process.env[`${prefix}_WEBHOOK_TOKEN`];
+  const address = delivery.recipient_address || related(delivery.profiles)?.phone;
+  if (!url || !address) {
+    return { skipped: true as const, reason: `${channel} provider or recipient address is not configured` };
+  }
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ to: address, title, message: body, channel }),
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!response.ok) throw new Error(`${channel} provider returned ${response.status}`);
+  const result = await response.json().catch(() => ({}));
+  return { providerReference: String(result.id || result.messageId || '') || null };
+}
+
+async function deliver(db: any, delivery: Delivery) {
+  const announcement = related(delivery.school_announcements);
+  if (!announcement) throw new Error('Announcement no longer exists');
+  const { title, body } = announcement;
+
+  if (delivery.channel === 'in_app') {
+    if (!delivery.recipient_id) return { skipped: true as const, reason: 'Recipient is missing' };
+    const { error } = await db.from('notifications').insert({
+      user_id: delivery.recipient_id,
+      type: 'SYSTEM',
+      title,
+      message: body,
+      link: '/school',
+    });
+    if (error) throw new Error(error.message);
+    return {};
+  }
+  if (delivery.channel === 'push') {
+    if (!delivery.recipient_id) return { skipped: true as const, reason: 'Recipient is missing' };
+    const result = await sendPushNotification({
+      userId: delivery.recipient_id,
+      title,
+      message: body,
+      link: '/school',
+    });
+    if ('skipped' in result) {
+      return { skipped: true as const, reason: 'Firebase or push subscription is unavailable' };
+    }
+    if (!result.sent) throw new Error('Push provider did not accept the notification');
+    return { providerReference: `${result.sent} device(s)` };
+  }
+  if (delivery.channel === 'email') {
+    const address = delivery.recipient_address || related(delivery.profiles)?.email;
+    if (!isEmailConfigured() || !address) {
+      return { skipped: true as const, reason: 'SMTP or recipient email is not configured' };
+    }
+    const result = await sendEmail({
+      to: address,
+      subject: title,
+      text: body,
+      html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827"><h2>${escapeHtml(title)}</h2><p>${escapeHtml(body).replace(/\n/g, '<br>')}</p><p style="font-size:12px;color:#6b7280">School notification sent through ilm AI.</p></div>`,
+    });
+    return { providerReference: result.messageId };
+  }
+  return sendWebhook(delivery.channel, delivery, title, body);
+}
+
+export async function GET(request: NextRequest) {
+  if (request.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const db = (await createAdminClient()) as any;
+  await db
+    .from('school_fee_invoices')
+    .update({ status: 'overdue', updated_at: new Date().toISOString() })
+    .in('status', ['issued', 'partial'])
+    .lt('due_date', new Date().toISOString().slice(0, 10));
+  const staleProcessing = new Date(Date.now() - 15 * 60_000).toISOString();
+  await db
+    .from('school_notification_deliveries')
+    .update({ status: 'failed', last_error: 'Recovered after an interrupted delivery attempt' })
+    .eq('status', 'processing')
+    .lt('scheduled_for', staleProcessing);
+
+  const { data, error } = await db
+    .from('school_notification_deliveries')
+    .select('id, recipient_id, recipient_address, channel, attempts, school_announcements(title, body, priority), profiles!school_notification_deliveries_recipient_id_fkey(email, phone)')
+    .in('status', ['queued', 'failed'])
+    .lte('scheduled_for', new Date().toISOString())
+    .lt('attempts', 3)
+    .order('scheduled_for')
+    .limit(100);
+  if (error) return NextResponse.json({ status: 'error', error: error.message }, { status: 500 });
+
+  const stats = { sent: 0, skipped: 0, failed: 0 };
+  for (const row of (data || []) as Delivery[]) {
+    const attempts = Number(row.attempts || 0) + 1;
+    const { data: claimed } = await db
+      .from('school_notification_deliveries')
+      .update({ status: 'processing', attempts, last_error: null })
+      .eq('id', row.id)
+      .in('status', ['queued', 'failed'])
+      .select('id')
+      .maybeSingle();
+    if (!claimed) continue;
+
+    try {
+      const result = await deliver(db, row);
+      const skipped = 'skipped' in result && result.skipped;
+      await db.from('school_notification_deliveries').update({
+        status: skipped ? 'skipped' : 'sent',
+        provider_reference: 'providerReference' in result ? result.providerReference : null,
+        last_error: skipped && 'reason' in result ? result.reason : null,
+        sent_at: skipped ? null : new Date().toISOString(),
+      }).eq('id', row.id);
+      skipped ? stats.skipped++ : stats.sent++;
+    } catch (deliveryError) {
+      const message = deliveryError instanceof Error ? deliveryError.message.slice(0, 500) : 'Delivery failed';
+      await db.from('school_notification_deliveries').update({
+        status: 'failed',
+        last_error: message,
+        scheduled_for: new Date(Date.now() + Math.min(60, attempts * 10) * 60_000).toISOString(),
+      }).eq('id', row.id);
+      stats.failed++;
+    }
+  }
+  return NextResponse.json({ status: 'ok', processed: (data || []).length, ...stats });
+}

@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { BookOpen, LogIn } from 'lucide-react';
+import { BookOpen, House, LibraryBig, LogIn } from 'lucide-react';
 import { SideChatWidget } from '@/components/features/ai-selector/SideChatWidget';
 import { Button } from '@/components/ui/button';
+import { LandingFooter } from '@/components/features/landing/Footer';
 
 export function PublicResourceShell({ children }: { children: React.ReactNode }) {
   return (
@@ -14,14 +15,33 @@ export function PublicResourceShell({ children }: { children: React.ReactNode })
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600">
               <BookOpen className="h-5 w-5 text-white" />
             </span>
-            <span>ilm <span className="text-violet-400">AI</span></span>
+            <span>
+              ilm <span className="text-violet-400">AI</span>
+            </span>
           </Link>
-          <Button asChild size="sm" variant="gradient">
-            <Link href="/login?redirect=/library"><LogIn className="h-4 w-4" /> Sign in</Link>
-          </Button>
+          <div className="flex items-center gap-1 sm:gap-2">
+            <Button asChild size="sm" variant="ghost">
+              <Link href="/">
+                <House className="h-4 w-4" />
+                <span className="hidden sm:inline">Home</span>
+              </Link>
+            </Button>
+            <Button asChild size="sm" variant="secondary">
+              <Link href="/library">
+                <LibraryBig className="h-4 w-4" />
+                <span className="hidden sm:inline">Library</span>
+              </Link>
+            </Button>
+            <Button asChild size="sm" variant="gradient">
+              <Link href="/login?redirect=/library">
+                <LogIn className="h-4 w-4" /> Sign in
+              </Link>
+            </Button>
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-7xl px-3 py-6 sm:px-6 sm:py-8">{children}</main>
+      <LandingFooter />
       <SideChatWidget />
     </div>
   );

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { checkAiMessageLimit, checkPresentationLimit } from '@/lib/rate-limit';
+import { checkAiMessageLimit, checkPresentationLimit, consumeAiCredits } from '@/lib/rate-limit';
 import { generatePresentationDeck } from '@/lib/presentation/generator';
 import { PRESENTATION_THEMES, type PresentationGenerateInput, type PresentationTheme } from '@/lib/presentation/types';
 import type { SubscriptionTier } from '@/types';
@@ -61,7 +61,10 @@ export async function POST(req: NextRequest) {
     }
     const aiLimit = await checkAiMessageLimit(user.id, tier, 'university_presentation');
     if (!aiLimit.success) {
-      return NextResponse.json({ status: 'error', error: 'The shared AI credit balance has been used.' }, { status: 429 });
+      return NextResponse.json(
+        { status: 'error', error: 'The shared AI credit balance has been used.' },
+        { status: 429 }
+      );
     }
 
     const input: PresentationGenerateInput = {
@@ -81,6 +84,7 @@ export async function POST(req: NextRequest) {
     };
 
     const deck = await generatePresentationDeck(input, tier === 'ELITE' ? 'medium' : 'mini');
+    await consumeAiCredits(user.id, tier, 'university_presentation');
     return NextResponse.json({ status: 'success', data: { deck, mode: input.mode } });
   } catch (error) {
     console.error('Presentation generate route error:', error);

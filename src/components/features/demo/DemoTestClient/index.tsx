@@ -160,7 +160,7 @@ export function DemoTestClient() {
             {subjects.length === 0 ? (
               <div className="text-center">
                 <p className="text-lg font-semibold">Demo questions are not available yet</p>
-                <p className="mt-2 text-sm text-muted-foreground">Admin ko pehle questions par Demo toggle enable karna hoga.</p>
+                <p className="mt-2 text-sm text-muted-foreground">Admins must enable the demo toggle for these questions first.</p>
                 <Button asChild variant="gradient" className="mt-5"><Link href="/register">Sign up free</Link></Button>
               </div>
             ) : (

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { gatewayChat } from '@/lib/ai/gateway';
-import { checkAiMessageLimit } from '@/lib/rate-limit';
+import { checkAiMessageLimit, consumeAiCredits } from '@/lib/rate-limit';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import type { SubscriptionTier } from '@/types';
 import type { AiProviderId, ModelTier } from '@/lib/ai/gateway';
@@ -12,13 +12,16 @@ export const maxDuration = 60;
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ status: 'error', error: 'Login required' }, { status: 401 });
 
     const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
     const tier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
     const limitCheck = await checkAiMessageLimit(user.id, tier, 'grade_test');
-    if (!limitCheck.success) return NextResponse.json({ status: 'error', error: 'The daily AI limit has been reached.' }, { status: 429 });
+    if (!limitCheck.success)
+      return NextResponse.json({ status: 'error', error: 'The daily AI limit has been reached.' }, { status: 429 });
 
     const { questions, answers, subjectName, className, provider, aiTier } = await req.json();
     const gradeProvider: AiProviderId = provider || 'groq';
@@ -29,7 +32,8 @@ export async function POST(req: NextRequest) {
       const userAns = answers[qa.id] || '(No answer provided)';
       const maxMarks = Number(qa.marks) || 0;
       const result = await gatewayChat({
-        provider: gradeProvider, tier: gradeTier,
+        provider: gradeProvider,
+        tier: gradeTier,
         messages: [
           {
             role: 'system',
@@ -43,13 +47,15 @@ The "feedback" value should be a short Markdown-formatted mini-document: a one-l
             content: `Evaluate: Class ${className} ${subjectName}. Q: ${qa.q}. KeyPoints: ${qa.keyPoints?.join('; ')}. Marks: ${maxMarks}. Answer: "${userAns}". Return ONLY JSON with score as a number from 0 to ${maxMarks}.`,
           },
         ],
-        maxTokens: 500, temperature: 0.2,
+        maxTokens: 500,
+        temperature: 0.2,
       });
       const ev = parseAiJson(result.text, { score: 0, grade: '?', feedback: 'Evaluation pending' });
       ev.score = Math.max(0, Math.min(Number(ev.score) || 0, maxMarks));
       evals.push(ev);
     }
 
+    await consumeAiCredits(user.id, tier, 'grade_test');
     return NextResponse.json({ status: 'success', data: evals });
   } catch (error) {
     console.error('Grade test error:', error);

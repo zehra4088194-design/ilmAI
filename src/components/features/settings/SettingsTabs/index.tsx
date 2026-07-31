@@ -8,7 +8,19 @@ import { cn } from '@/lib/utils/cn';
 import { createClient } from '@/lib/supabase/client';
 import { BOARDS } from '@/lib/constants';
 import { toast } from 'sonner';
-import { User, Bell, Shield, Palette, Users, Languages, GraduationCap, HardDriveDownload } from 'lucide-react';
+import {
+  User,
+  Bell,
+  Shield,
+  Palette,
+  Users,
+  Languages,
+  GraduationCap,
+  HardDriveDownload,
+  KeyRound,
+  Smartphone,
+  Trash2,
+} from 'lucide-react';
 import { ParentMessageThread } from '@/components/ui/ParentMessageThread';
 import { ParentAttachments } from '@/components/ui/ParentAttachments';
 import { RoutineTestsWidget } from '@/components/ui/RoutineTestsWidget';
@@ -47,6 +59,12 @@ const DEFAULT_NOTIFICATION_PREFERENCES = {
 };
 
 type NotificationPreferenceKey = keyof typeof DEFAULT_NOTIFICATION_PREFERENCES;
+type MfaFactor = {
+  id: string;
+  status: string;
+  friendly_name?: string | null;
+  factor_type?: string;
+};
 
 function normalizeNotificationPreferences(source: unknown) {
   const value = source && typeof source === 'object' ? (source as Record<string, unknown>) : {};
@@ -104,6 +122,13 @@ export function SettingsTabs({
       dailyStudyEmails: profile?.study_email_consent === true,
     })
   );
+  const [mfaFactors, setMfaFactors] = useState<MfaFactor[]>([]);
+  const [mfaLoading, setMfaLoading] = useState(false);
+  const [mfaSaving, setMfaSaving] = useState(false);
+  const [mfaEnrollment, setMfaEnrollment] = useState<{ factorId: string; qrCode: string; secret?: string } | null>(
+    null
+  );
+  const [mfaCode, setMfaCode] = useState('');
   const supabase = createClient();
   const { setTheme } = useTheme();
   const updateAuthUser = useAuthStore((state) => state.updateUser);
@@ -156,6 +181,24 @@ export function SettingsTabs({
   useEffect(() => {
     if (initialTab) setActiveTab(initialTab);
   }, [initialTab]);
+
+  const loadMfaFactors = async () => {
+    setMfaLoading(true);
+    const { data, error } = await supabase.auth.mfa.listFactors();
+    if (error) {
+      toast.error(error.message);
+    } else {
+      setMfaFactors(
+        ((data?.totp || []) as MfaFactor[]).filter((factor) => factor.factor_type === 'totp' || !factor.factor_type)
+      );
+    }
+    setMfaLoading(false);
+  };
+
+  useEffect(() => {
+    if (activeTab === 'security') void loadMfaFactors();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -325,6 +368,67 @@ export function SettingsTabs({
     }
     setLocalProfile((current: any) => ({ ...current, preferred_language: nextLocale }));
     toast.success(nextLocale === 'en' ? 'Language changed to English.' : 'Language changed to Roman Urdu.');
+  };
+
+  const startMfaEnrollment = async () => {
+    setMfaSaving(true);
+    setMfaEnrollment(null);
+    setMfaCode('');
+    const { data, error } = await supabase.auth.mfa.enroll({
+      factorType: 'totp',
+      friendlyName: 'ilm AI Authenticator',
+    });
+    if (error) {
+      toast.error(error.message);
+    } else {
+      const enrollment = data as unknown as { id: string; totp?: { qr_code?: string; secret?: string } };
+      setMfaEnrollment({
+        factorId: enrollment.id,
+        qrCode: enrollment.totp?.qr_code || '',
+        secret: enrollment.totp?.secret,
+      });
+    }
+    setMfaSaving(false);
+  };
+
+  const verifyMfaEnrollment = async () => {
+    if (!mfaEnrollment || mfaCode.trim().length < 6) {
+      toast.error('Authenticator app ka 6-digit code enter karo.');
+      return;
+    }
+    setMfaSaving(true);
+    const challenge = await supabase.auth.mfa.challenge({ factorId: mfaEnrollment.factorId });
+    if (challenge.error) {
+      toast.error(challenge.error.message);
+      setMfaSaving(false);
+      return;
+    }
+    const { error } = await supabase.auth.mfa.verify({
+      factorId: mfaEnrollment.factorId,
+      challengeId: challenge.data.id,
+      code: mfaCode.trim(),
+    });
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success('Two-step verification enabled.');
+      setMfaEnrollment(null);
+      setMfaCode('');
+      await loadMfaFactors();
+    }
+    setMfaSaving(false);
+  };
+
+  const disableMfa = async (factorId: string) => {
+    setMfaSaving(true);
+    const { error } = await supabase.auth.mfa.unenroll({ factorId });
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success('Two-step verification disabled.');
+      await loadMfaFactors();
+    }
+    setMfaSaving(false);
   };
 
   const handleLinkParent = async () => {
@@ -680,7 +784,17 @@ export function SettingsTabs({
             </div>
           )}
           {activeTab === 'security' && (
-            <p className="text-muted-foreground text-sm">Password change and 2FA settings are coming soon.</p>
+            <SecuritySettings
+              loading={mfaLoading}
+              saving={mfaSaving}
+              factors={mfaFactors}
+              enrollment={mfaEnrollment}
+              code={mfaCode}
+              onCodeChange={setMfaCode}
+              onStartEnrollment={startMfaEnrollment}
+              onVerifyEnrollment={verifyMfaEnrollment}
+              onDisable={disableMfa}
+            />
           )}
           {activeTab === 'appearance' && (
             <div className="space-y-4">
@@ -690,7 +804,8 @@ export function SettingsTabs({
                   Theme
                 </h3>
                 <p className="text-muted-foreground text-sm">
-                  Choose your study style. The server loads only this theme&apos;s light/dark pair on the next page load.
+                  Choose your study style. The server loads only this theme&apos;s light/dark pair on the next page
+                  load.
                 </p>
               </div>
               <ThemePicker />
@@ -739,6 +854,111 @@ export function SettingsTabs({
           )}
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function SecuritySettings({
+  loading,
+  saving,
+  factors,
+  enrollment,
+  code,
+  onCodeChange,
+  onStartEnrollment,
+  onVerifyEnrollment,
+  onDisable,
+}: {
+  loading: boolean;
+  saving: boolean;
+  factors: MfaFactor[];
+  enrollment: { factorId: string; qrCode: string; secret?: string } | null;
+  code: string;
+  onCodeChange: (value: string) => void;
+  onStartEnrollment: () => void;
+  onVerifyEnrollment: () => void;
+  onDisable: (factorId: string) => void;
+}) {
+  const verifiedFactor = factors.find((factor) => factor.status === 'verified');
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h3 className="mb-1 flex items-center gap-2 font-semibold">
+          <Shield className="h-4 w-4 text-violet-400" />
+          Security
+        </h3>
+        <p className="text-muted-foreground text-sm">
+          Two-step verification uses an authenticator app like Google Authenticator, Microsoft Authenticator, or
+          1Password.
+        </p>
+      </div>
+
+      <div className="border-border bg-card rounded-xl border p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-violet-500/10">
+              <Smartphone className="h-5 w-5 text-violet-400" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold">Authenticator app</p>
+              <p className="text-muted-foreground mt-1 text-xs leading-5">
+                {loading
+                  ? 'Checking status...'
+                  : verifiedFactor
+                    ? 'Enabled. A 6-digit code from your authenticator app is required.'
+                    : 'Not enabled. Scan the QR code to secure your account.'}
+              </p>
+            </div>
+          </div>
+          {verifiedFactor ? (
+            <Button variant="outline" size="sm" loading={saving} onClick={() => onDisable(verifiedFactor.id)}>
+              <Trash2 className="h-3.5 w-3.5" /> Disable
+            </Button>
+          ) : (
+            <Button variant="gradient" size="sm" loading={saving || loading} onClick={onStartEnrollment}>
+              <KeyRound className="h-3.5 w-3.5" /> Enable 2FA
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {enrollment && (
+        <div className="space-y-4 rounded-xl border border-violet-500/25 bg-violet-500/10 p-4">
+          <div>
+            <p className="text-sm font-semibold">Scan QR code</p>
+            <p className="text-muted-foreground mt-1 text-xs leading-5">
+              Authenticator app mein QR scan karo, phir generated 6-digit code yahan verify karo.
+            </p>
+          </div>
+          {enrollment.qrCode ? (
+            <div className="inline-flex rounded-lg bg-white p-3">
+              {/* Supabase returns a data URI SVG for this QR code. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={enrollment.qrCode} alt="Two-step verification QR code" className="h-44 w-44" />
+            </div>
+          ) : null}
+          {enrollment.secret ? (
+            <div className="border-border bg-background/60 rounded-lg border p-3">
+              <p className="text-muted-foreground text-xs">Manual setup key</p>
+              <p className="mt-1 font-mono text-xs break-all">{enrollment.secret}</p>
+            </div>
+          ) : null}
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input
+              value={code}
+              onChange={(event) => onCodeChange(event.target.value.replace(/\D/g, '').slice(0, 6))}
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              placeholder="6-digit code"
+              className="font-mono tracking-widest"
+            />
+            <Button variant="gradient" loading={saving} onClick={onVerifyEnrollment}>
+              Verify
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Save, ShieldCheck } from 'lucide-react';
+import { BookOpenCheck, Moon, Save, ShieldCheck, Sun, UserRoundCog } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -35,7 +35,6 @@ const LIMIT_LABELS: Array<[keyof PlatformSettings['subscriptionPlans']['FREE']['
   ['aiCreditsMonthly', 'Shared AI/month'],
   ['premiumAiMonthly', 'Premium AI/month'],
   ['quizDaily', 'Testing/day'],
-  ['ocrPrintedMonthly', 'Printed scans/month'],
   ['universityHubWeekly', 'University Hub/week'],
   ['liveVoiceDaily', 'Live voice/day'],
   ['flashcardsTotal', 'Flashcards total'],
@@ -48,7 +47,6 @@ const LIMIT_LABELS: Array<[keyof PlatformSettings['subscriptionPlans']['FREE']['
 const AUDIENCE_LIMIT_LABELS: Array<
   [keyof PlatformSettings['subscriptionPlans']['FREE']['audienceLimits']['school'], string]
 > = [
-  ['ocrHandwrittenMonthly', 'Handwritten OCR/month'],
   ['presentationsMonthly', 'Presentations/month'],
   ['presentationSlidesMax', 'Slides/presentation'],
   ['fileSummariesMonthly', 'File summaries/month'],
@@ -127,8 +125,8 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-muted-foreground text-sm">
-              These are shared platform-wide daily caps, not per-user limits. 0 disables a provider. Provider
-            dashboard ki actual quota dekh kar hi barhao.
+            These are shared platform-wide daily caps, not per-user limits. 0 disables a provider. Provider dashboard ki
+            actual quota dekh kar hi barhao.
           </p>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {PROVIDER_BUDGET_LABELS.map(([key, label]) => (
@@ -149,9 +147,68 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
             ))}
           </div>
           <p className="text-muted-foreground text-xs">
-            Defaults are conservative beta caps. Claude/GPT do not have dependable permanent free API tiers, so both are 0.
-            The Grok cap is for available promotional credits only.
+            Defaults are conservative beta caps. Claude/GPT do not have dependable permanent free API tiers, so both are
+            0. The Grok cap is for available promotional credits only.
           </p>
+        </CardContent>
+      </Card>
+
+      <Card className="border-cyan-500/25 bg-cyan-500/5">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BookOpenCheck className="h-5 w-5 text-cyan-400" />
+            PDF display theme
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-muted-foreground text-sm">
+            This changes only Library, Past Paper, and College PDF versions. It does not change the app theme selected
+            by the user.
+          </p>
+          <div className="grid gap-3 md:grid-cols-3">
+            {(
+              [
+                {
+                  value: 'follow-user',
+                  label: 'Follow user theme',
+                  description: 'Light app theme opens the light PDF; dark app theme opens the dark PDF.',
+                  icon: UserRoundCog,
+                },
+                {
+                  value: 'dark',
+                  label: 'Always dark PDF',
+                  description: 'Prefer the dark PDF for every user and app theme.',
+                  icon: Moon,
+                },
+                {
+                  value: 'light',
+                  label: 'Always light PDF',
+                  description: 'Prefer the light/default PDF for every user and app theme.',
+                  icon: Sun,
+                },
+              ] as const
+            ).map((option) => {
+              const Icon = option.icon;
+              const selected = settings.pdfThemeMode === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => setSettings((current) => ({ ...current, pdfThemeMode: option.value }))}
+                  className={
+                    selected
+                      ? 'border-primary bg-primary/10 ring-primary/20 rounded-xl border p-4 text-left ring-2'
+                      : 'border-border bg-card/60 hover:border-primary/40 rounded-xl border p-4 text-left transition-colors'
+                  }
+                >
+                  <Icon className={selected ? 'text-primary mb-3 h-5 w-5' : 'text-muted-foreground mb-3 h-5 w-5'} />
+                  <p className="text-sm font-semibold">{option.label}</p>
+                  <p className="text-muted-foreground mt-1 text-xs leading-5">{option.description}</p>
+                </button>
+              );
+            })}
+          </div>
         </CardContent>
       </Card>
 
@@ -244,7 +301,8 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
                     ))}
                   </div>
                   <p className="text-muted-foreground text-xs">
-                    In the Usage field, -1 means unlimited. AI credits use a shared pool rather than separate per-tool pools.
+                    In the Usage field, -1 means unlimited. AI credits use a shared pool rather than separate per-tool
+                    pools.
                   </p>
                 </div>
 
@@ -321,8 +379,8 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
         <CardContent className="text-muted-foreground flex items-start gap-3 p-5 text-sm">
           <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" />
           <p>
-            Settings save hote hi new requests par apply hongi. Redis daily/weekly counters current window ki count
-            rakhenge, lekin updated limit next call se use hogi.
+            Changes will apply to new requests as soon as settings are saved. Redis daily and weekly counters will use
+            the current window count until the next refresh.
           </p>
         </CardContent>
       </Card>

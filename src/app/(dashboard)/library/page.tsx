@@ -4,7 +4,11 @@ import { LibraryGrid } from '@/components/features/library/LibraryGrid';
 import { AdSenseBanner } from '@/components/features/ads/AdSenseBanner';
 import { isCatalogResourceVisible, normalizeLegacyCatalogResource } from '@/lib/resources/catalog';
 
-export const metadata: Metadata = { title: 'Library' };
+export const metadata: Metadata = {
+  title: 'Public Study Library',
+  description: 'Browse board- and grade-aligned study resources by subject, chapter, book, and section.',
+  alternates: { canonical: '/library' },
+};
 
 export default async function LibraryPage() {
   const supabase = await createClient();

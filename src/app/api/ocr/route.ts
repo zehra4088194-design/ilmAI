@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { performOcr, validateOcrFile } from '@/lib/ocr';
-import { checkOcrLimit } from '@/lib/rate-limit';
+import { checkOcrCredits, consumeOcrCredits } from '@/lib/rate-limit';
 import type { SubscriptionTier } from '@/types';
 
 export const runtime = 'nodejs';
@@ -22,8 +22,10 @@ export async function POST(req: NextRequest) {
 
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
-    const modeValue = formData.get('mode');
-    const mode = modeValue === 'handwritten' ? 'handwritten' : 'printed';
+    const kindValue = formData.get('kind');
+    const kind = kindValue === 'diagram' || kindValue === 'handwritten' ? kindValue : 'printed';
+    const language = String(formData.get('language') || 'en');
+    const mode = kind === 'handwritten' || kind === 'diagram' ? 'handwritten' : 'printed';
     if (!file) {
       return NextResponse.json({ status: 'error', error: 'A file is required' }, { status: 400 });
     }
@@ -33,19 +35,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: 'error', error: validation.error }, { status: 400 });
     }
 
-    const limitCheck = await checkOcrLimit(user.id, tier, mode);
+    const limitCheck = await checkOcrCredits(user.id, tier, mode);
     if (!limitCheck.success) {
       return NextResponse.json(
         {
           status: 'error',
-          error: `The monthly limit for ${mode === 'handwritten' ? 'handwritten' : 'printed'} scans has been reached. It resets on ${new Date(limitCheck.reset).toLocaleDateString('en-PK')}.`,
+          error: `Not enough credits for this ${mode} scan.`,
         },
         { status: 429 }
       );
     }
 
     const imageBuffer = Buffer.from(await file.arrayBuffer());
-    const result = await performOcr({ imageBuffer, mimeType: file.type, userTier: tier, mode });
+    const result = await performOcr({
+      imageBuffer,
+      mimeType: file.type,
+      userTier: tier,
+      mode,
+      preferGemini: kind !== 'printed' || language !== 'ur',
+    });
+    const charged = await consumeOcrCredits(user.id, tier, mode);
 
     return NextResponse.json({
       status: 'success',
@@ -53,8 +62,9 @@ export async function POST(req: NextRequest) {
         text: result.text,
         provider: result.provider,
         fallbackTriggered: result.fallbackTriggered,
-        remaining: limitCheck.remaining,
-        reset: limitCheck.reset,
+        remaining: charged.remaining,
+        creditCost: charged.creditCost,
+        reset: charged.reset,
       },
     });
   } catch (error) {

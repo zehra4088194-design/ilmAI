@@ -16,6 +16,7 @@ import { getCurrencyForCountry } from '@/lib/constants';
 export const metadata: Metadata = {
   title: 'ilm AI - AI-Powered Learning for Pakistan and India',
   description: 'AI-powered MCQ practice, tutoring, and past papers for Pakistani and Indian students. Start for free!',
+  alternates: { canonical: '/' },
 };
 
 export default async function HomePage() {
@@ -23,7 +24,9 @@ export default async function HomePage() {
   // the dashboard — a returning, authenticated visitor should never land
   // back on the landing page.
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (user) {
     redirect('/dashboard');
   }
@@ -32,7 +35,7 @@ export default async function HomePage() {
   const currency = getCurrencyForCountry(country);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background min-h-screen">
       <Navbar />
       <main>
         <HeroSection />

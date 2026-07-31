@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { gatewayChat } from '@/lib/ai/gateway';
 import { createClient } from '@/lib/supabase/server';
 import { parseAiJson } from '@/lib/utils/json-extract';
-import { checkUniversityFeatureLimit, getUniversityLimitExceededMessage } from '@/lib/rate-limit';
+import {
+  checkUniversityFeatureLimit,
+  consumeUniversityFeatureCredits,
+  getUniversityLimitExceededMessage,
+} from '@/lib/rate-limit';
 import type { SubscriptionTier } from '@/types';
 
 export const runtime = 'nodejs';
@@ -122,6 +126,7 @@ Do not add markdown fences.`,
       console.warn('Project generated but could not be saved:', saveError);
     }
 
+    await consumeUniversityFeatureCredits(user.id, tier, 'project_builder');
     return NextResponse.json({ status: 'success', data: { id: projectId, content: generated, saved } });
   } catch (error) {
     console.error('Project builder error:', error);

@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Activity, LayoutDashboard, Users, BookOpen, BarChart3, FileQuestion, Settings, Shield, Library, GraduationCap, Menu, X, MessageCircleWarning, Music2 } from 'lucide-react';
+import { Activity, LayoutDashboard, Users, BookOpen, BarChart3, FileQuestion, Settings, Shield, Library, GraduationCap, Menu, X, MessageCircleWarning, Music2, School } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils/cn';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ const ADMIN_NAV = [
   { icon: LayoutDashboard, label: 'Overview', href: '/admin' },
   { icon: Users, label: 'Users', href: '/admin/users' },
   { icon: GraduationCap, label: 'Colleges', href: '/admin/colleges' },
+  { icon: School, label: 'Schools', href: '/admin/schools' },
   { icon: BookOpen, label: 'Content', href: '/admin/content' },
   { icon: Library, label: 'Resources', href: '/admin/resources' },
   { icon: Music2, label: 'Rest Library', href: '/admin/library' },

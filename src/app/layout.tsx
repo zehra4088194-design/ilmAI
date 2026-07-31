@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, Geist_Mono } from 'next/font/google';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import '@/styles/globals.css';
 import 'katex/dist/katex.min.css';
 import { Providers } from '@/providers';
@@ -12,6 +12,8 @@ import { createClient } from '@/lib/supabase/server';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
 const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono', display: 'swap' });
 const siteUrl = getSiteUrl();
+const adsenseClientId =
+  process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID?.match(/^ca-pub-\d{16}$/)?.[0] || 'ca-pub-4877865173601332';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -32,7 +34,11 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: 'ilm AI Team' }],
   creator: 'ilm AI',
-  alternates: { canonical: '/' },
+  publisher: 'ilm AI',
+  category: 'education',
+  other: {
+    'google-adsense-account': adsenseClientId,
+  },
   openGraph: {
     type: 'website',
     locale: 'en_PK',
@@ -40,9 +46,8 @@ export const metadata: Metadata = {
     siteName: 'ilm AI',
     title: 'ilm AI - AI Study Platform for School, College & University',
     description: 'AI-powered tutoring, MCQ practice, assignments, presentations, viva prep, and past papers.',
-    images: [{ url: '/images/og/og-default.png', width: 1200, height: 630 }],
   },
-  twitter: { card: 'summary_large_image', site: '@ilm_ai' },
+  twitter: { card: 'summary_large_image' },
   robots: { index: true, follow: true },
   icons: { icon: '/favicon.ico', apple: '/icons/apple-touch-icon.png' },
   manifest: '/manifest.json',
@@ -58,7 +63,8 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const cookieStore = await cookies();
+  const [cookieStore, requestHeaders] = await Promise.all([cookies(), headers()]);
+  const nonce = requestHeaders.get('x-nonce') || undefined;
   const initialTheme = parseAppTheme(cookieStore.get(THEME_COOKIE_NAME)?.value);
   const savedLocale = cookieStore.get(LOCALE_COOKIE_NAME)?.value;
   let initialLocale: Locale = isValidLocale(savedLocale) ? savedLocale : DEFAULT_LOCALE;
@@ -94,7 +100,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
       </head>
       <body className={`${inter.variable} ${geistMono.variable} font-sans antialiased`}>
-        <Providers locale={initialLocale} initialTheme={initialTheme.className}>
+        <Providers locale={initialLocale} initialTheme={initialTheme.className} nonce={nonce}>
           {children}
         </Providers>
       </body>

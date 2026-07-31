@@ -167,7 +167,7 @@ export function LecturesTab() {
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Lecture delete karein?</AlertDialogTitle>
+            <AlertDialogTitle>Delete lecture?</AlertDialogTitle>
             <AlertDialogDescription>
               &quot;{deleteTarget?.title}&quot; will be permanently deleted. This action cannot be undone.
             </AlertDialogDescription>

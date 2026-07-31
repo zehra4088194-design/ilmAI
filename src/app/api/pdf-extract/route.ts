@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { checkOcrLimit } from '@/lib/rate-limit';
+import { checkOcrCredits, consumeOcrCredits } from '@/lib/rate-limit';
 import { performPdfOcr } from '@/lib/ocr';
 import type { SubscriptionTier } from '@/types';
 
@@ -38,12 +38,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const limitCheck = await checkOcrLimit(user.id, tier, 'printed');
+    const limitCheck = await checkOcrCredits(user.id, tier, 'printed');
     if (!limitCheck.success) {
       return NextResponse.json(
         {
           status: 'error',
-          error: `The weekly printed/PDF scan limit has been reached. It resets on ${new Date(limitCheck.reset).toLocaleDateString('en-PK')}.`,
+          error: 'Not enough credits for this PDF scan.',
         },
         { status: 429 }
       );
@@ -56,6 +56,7 @@ export async function POST(req: NextRequest) {
       filename: file.name,
       timeoutMs: 180_000,
     });
+    const charged = await consumeOcrCredits(user.id, tier, 'printed');
 
     return NextResponse.json({
       status: 'success',
@@ -68,8 +69,8 @@ export async function POST(req: NextRequest) {
         usedOcr: result.provider !== 'native-pdf',
         provider: result.provider,
         fallbackTriggered: result.fallbackTriggered || false,
-        remaining: limitCheck.remaining,
-        reset: limitCheck.reset,
+        remaining: charged.remaining,
+        reset: charged.reset,
       },
     });
   } catch (error) {
@@ -78,7 +79,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         status: 'error',
-        error: message.includes('pages') ? message : 'The PDF could not be extracted. Try again with a clear, supported PDF.',
+        error: message.includes('pages')
+          ? message
+          : 'The PDF could not be extracted. Try again with a clear, supported PDF.',
       },
       { status: 500 }
     );

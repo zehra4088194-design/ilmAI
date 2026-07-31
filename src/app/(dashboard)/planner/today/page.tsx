@@ -3,17 +3,19 @@ import Link from 'next/link';
 import { CalendarPlus } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { Button } from '@/components/ui/button';
+import { pakistanDateIso } from '@/lib/dates/pakistan';
 import { TodayPlannerClient, type PlannerSessionItem } from './TodayPlannerClient';
 
 export const metadata: Metadata = { title: 'Today Planner' };
 
-export default async function TodayPlannerPage() {
+export default async function TodayPlannerPage({ searchParams }: { searchParams: Promise<{ session?: string }> }) {
   const supabase = await createClient();
   const db = supabase as any;
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const today = new Date().toISOString().slice(0, 10);
+  const { session: highlightedSessionId } = await searchParams;
+  const today = pakistanDateIso();
   const { data: sessions } = await db
     .from('study_plan_sessions')
     .select('id, session_type, duration_minutes, is_completed, subjects(name), chapters(name)')
@@ -33,12 +35,15 @@ export default async function TodayPlannerPage() {
         </Button>
       </div>
       {sessions?.length ? (
-        <TodayPlannerClient sessions={sessions as unknown as PlannerSessionItem[]} />
+        <TodayPlannerClient
+          sessions={sessions as unknown as PlannerSessionItem[]}
+          highlightedSessionId={highlightedSessionId}
+        />
       ) : (
         <div className="glass rounded-xl p-6 text-center">
           <CalendarPlus className="mx-auto mb-3 h-8 w-8 text-violet-400" />
           <p className="font-semibold">No sessions planned for today</p>
-          <p className="mt-1 text-sm text-muted-foreground">Generate a plan to fill your checklist.</p>
+          <p className="text-muted-foreground mt-1 text-sm">Generate a plan to fill your checklist.</p>
           <Button asChild variant="gradient" className="mt-4">
             <Link href="/planner/setup">Create plan</Link>
           </Button>

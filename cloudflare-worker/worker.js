@@ -1,10 +1,10 @@
 /**
  * ============================================================
- * ILM AI — CLOUDFLARE WORKER (AI GATEWAY)
+ * ILM AI — PORTABLE AI GATEWAY HANDLER
  * ============================================================
- * This Worker is the ONLY place that holds AI/OCR API keys.
- * The Next.js backend never sees a raw provider key — it only
- * talks to this Worker over HTTPS with a shared secret.
+ * Coolify runs this handler through services/ai-gateway/server.mjs. It can
+ * also be deployed as a Cloudflare Worker when that optional topology is
+ * desired. The Next.js web container never sees a raw provider key.
  *
  * WHAT IT DOES
  * - Holds up to 20 keys per AI provider (Assistant, Grok, Claude, GPT, Gemini)
@@ -23,7 +23,8 @@
  *   (input + output) so the Next.js backend can turn a voice lesson into
  *   Short Notes + Flashcards when the call ends (see /api/voice/session-end).
  *
- * DEPLOY: use cloudflare-worker/wrangler.toml and set the secrets listed below.
+ * COOLIFY: docker-compose.oracle.yml injects the secrets into ai-gateway.
+ * CLOUDFLARE (optional): use wrangler.toml and set the same secrets.
  *
  * ------------------------------------------------------------
  * SECRETS REFERENCE (set under Settings → Variables and Secrets)
@@ -51,9 +52,9 @@
  */
 
 // ---------- MODEL MAP (edit anytime, no redeploy needed elsewhere) ----------
-// Gemini 3.5 Flash is the single default Gemini text/vision model so every
+// Gemini 3.6 Flash is the single default Gemini text/vision model so every
 // Gemini-backed tool gets the same current model instead of mixing versions.
-const GEMINI_FLASH_MODEL = 'gemini-3.5-flash';
+const GEMINI_FLASH_MODEL = 'gemini-3.6-flash';
 
 const MODEL_MAP = {
   groq: {
@@ -269,7 +270,7 @@ async function callClaude(key, model, messages, maxTokens) {
   return { ok: true, data: text };
 }
 
-async function callGemini(key, model, messages, maxTokens, temperature) {
+async function callGemini(key, model, messages, maxTokens) {
   const system = messages.find((m) => m.role === 'system')?.content || '';
   const turns = messages.filter((m) => m.role !== 'system');
   const contents = turns.map((m) => ({
@@ -283,7 +284,7 @@ async function callGemini(key, model, messages, maxTokens, temperature) {
     body: JSON.stringify({
       contents,
       systemInstruction: system ? { parts: [{ text: system }] } : undefined,
-      generationConfig: { maxOutputTokens: maxTokens, temperature },
+      generationConfig: { maxOutputTokens: maxTokens },
     }),
   });
   if (!res.ok) return { ok: false, status: res.status, error: await res.text() };
@@ -509,7 +510,7 @@ async function handleChat(req, env) {
   } else if (provider === 'gemini') {
     result = await withKeyRotation(
       getKeys(env, 'GEMINI_API_KEY'),
-      (k) => callGemini(k, model, messages, max_tokens, temperature),
+      (k) => callGemini(k, model, messages, max_tokens),
       'Gemini',
       DEFAULT_KEY_ATTEMPTS,
       'gemini'
@@ -520,16 +521,23 @@ async function handleChat(req, env) {
     return json({ error: `Unknown provider: ${provider}` }, 400);
   }
 
-  // Silent cross-provider fallback: first try OpenRouter's model chain, then
-  // drop to the default Assistant model so the student never sees a blank reply.
-  if (!strict_provider && !result.ok && provider !== 'openrouter') {
-    const openRouterFallback = await withOpenRouterFallback(env, messages, max_tokens, temperature);
-    if (openRouterFallback.ok) {
+  // Missing or exhausted paid-provider keys fall directly back to Groq. This
+  // keeps optional providers optional and avoids spending through another paid
+  // provider merely because the selected provider has not been configured.
+  if (!strict_provider && !result.ok && provider !== 'groq') {
+    const groqFallback = await withKeyRotation(
+      getKeys(env, 'GROQ_API_KEY'),
+      (k) => callGroq(k, MODEL_MAP.groq.mini, messages, max_tokens, temperature),
+      'Assistant (fallback)',
+      DEFAULT_KEY_ATTEMPTS,
+      'groq'
+    );
+    if (groqFallback.ok) {
       return json({
-        text: openRouterFallback.data,
-        providerUsed: 'openrouter',
-        modelUsed: openRouterFallback.modelUsed,
-        keyIndexUsed: openRouterFallback.keyIndexUsed,
+        text: groqFallback.data,
+        providerUsed: 'groq',
+        modelUsed: MODEL_MAP.groq.mini,
+        keyIndexUsed: groqFallback.keyIndexUsed,
         fallbackTriggered: true,
         originalProvider: provider,
         dailyLimit: TIER_DAILY_LIMITS[tier],
@@ -537,20 +545,16 @@ async function handleChat(req, env) {
     }
   }
 
-  if (!strict_provider && !result.ok && provider !== 'groq') {
-    const fallback = await withKeyRotation(
-      getKeys(env, 'GROQ_API_KEY'),
-      (k) => callGroq(k, MODEL_MAP.groq.mini, messages, max_tokens, temperature),
-      'Assistant (fallback)',
-      DEFAULT_KEY_ATTEMPTS,
-      'groq'
-    );
-    if (fallback.ok) {
+  // OpenRouter remains the final non-strict fallback only when Groq itself was
+  // requested and unavailable. Normal paid-provider failures never route here.
+  if (!strict_provider && !result.ok && provider === 'groq') {
+    const openRouterFallback = await withOpenRouterFallback(env, messages, max_tokens, temperature);
+    if (openRouterFallback.ok) {
       return json({
-        text: fallback.data,
-        providerUsed: 'groq',
-        modelUsed: MODEL_MAP.groq.mini,
-        keyIndexUsed: fallback.keyIndexUsed,
+        text: openRouterFallback.data,
+        providerUsed: 'openrouter',
+        modelUsed: openRouterFallback.modelUsed,
+        keyIndexUsed: openRouterFallback.keyIndexUsed,
         fallbackTriggered: true,
         originalProvider: provider,
         dailyLimit: TIER_DAILY_LIMITS[tier],

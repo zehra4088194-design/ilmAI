@@ -9,7 +9,6 @@ export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
-  // Avoid hydration mismatch — next-themes only knows the real theme client-side
   useEffect(() => setMounted(true), []);
 
   if (!mounted) {

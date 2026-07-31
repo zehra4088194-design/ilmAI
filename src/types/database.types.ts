@@ -965,6 +965,7 @@ export type Database = {
           phone: string | null
           previous_roll_number: string | null
           role: Database["public"]["Enums"]["user_role"]
+          science_group: string | null
           streak: number
           subjects: string[] | null
           subscription_expires_at: string | null
@@ -1000,6 +1001,7 @@ export type Database = {
           phone?: string | null
           previous_roll_number?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          science_group?: string | null
           streak?: number
           subjects?: string[] | null
           subscription_expires_at?: string | null
@@ -1035,6 +1037,7 @@ export type Database = {
           phone?: string | null
           previous_roll_number?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          science_group?: string | null
           streak?: number
           subjects?: string[] | null
           subscription_expires_at?: string | null

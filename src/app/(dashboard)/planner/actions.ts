@@ -4,7 +4,11 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { generateStudyPlanSessions } from '@/lib/planner/generate';
 import { awardCoins } from '@/lib/gamification/coins';
-import { COINS_PER_STUDY_SESSION, XP_PER_PLANNER_COMPLETION_MAX, XP_PER_PLANNER_COMPLETION_MIN } from '@/lib/gamification/constants';
+import {
+  COINS_PER_STUDY_SESSION,
+  XP_PER_PLANNER_COMPLETION_MAX,
+  XP_PER_PLANNER_COMPLETION_MIN,
+} from '@/lib/gamification/constants';
 import { awardXp } from '@/lib/gamification/xp';
 import { createNotificationIfEnabled } from '@/lib/notifications/preferences';
 
@@ -46,7 +50,7 @@ export async function createStudyPlan(payload: SetupPayload) {
   }
 
   try {
-    await generateStudyPlanSessions(supabase as any, {
+    const sessions = await generateStudyPlanSessions(supabase as any, {
       planId: plan.id,
       studentId: user.id,
       examDate: payload.examDate,
@@ -54,9 +58,11 @@ export async function createStudyPlan(payload: SetupPayload) {
       focusSubjectIds: payload.focusSubjectIds,
       constraints,
     });
+    if (!sessions.length) throw new Error('No study sessions were generated.');
   } catch (generationError) {
     console.error('Plan session generation failed:', generationError);
-    return { status: 'error', error: 'The plan was created, but sessions could not be generated.' };
+    await db.from('study_plans').delete().eq('id', plan.id).eq('student_id', user.id);
+    return { status: 'error', error: 'Sessions could not be generated. Please try creating the plan again.' };
   }
 
   revalidatePath('/planner/today');
@@ -65,7 +71,7 @@ export async function createStudyPlan(payload: SetupPayload) {
     user_id: user.id,
     type: 'REMINDER',
     title: 'Smart study plan created',
-    message: 'Today\'s checklist is ready. Open Planner to start your first session.',
+    message: "Today's checklist is ready. Open Planner to start your first session.",
     link: '/planner/today',
     is_read: false,
   });

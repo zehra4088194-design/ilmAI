@@ -7,6 +7,7 @@ import { ArrowLeft, KeyRound, Mail, RotateCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { createClient } from '@/lib/supabase/client';
+import { getBrowserSiteUrl } from '@/lib/utils/siteUrl';
 import { toast } from 'sonner';
 
 export function ForgotPasswordForm() {
@@ -23,8 +24,9 @@ export function ForgotPasswordForm() {
     if (!normalizedEmail) return;
 
     setLoading(true);
+    const recoveryUrl = new URL('/api/auth/recovery', getBrowserSiteUrl());
     const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-      redirectTo: `${window.location.origin}/api/auth/recovery`,
+      redirectTo: recoveryUrl.toString(),
     });
     setLoading(false);
 

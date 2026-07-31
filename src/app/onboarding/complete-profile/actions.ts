@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import type { Database } from '@/lib/supabase/database.types';
 import { BOARDS, GRADE_LEVELS } from '@/lib/constants';
 import {
@@ -13,6 +14,7 @@ import {
 
 type BoardType = Database['public']['Enums']['board_type'];
 type GradeLevel = Database['public']['Enums']['grade_level'];
+type ScienceGroup = 'biology' | 'computer';
 const USERNAME_REGEX = /^[a-z0-9._]{3,30}$/i;
 
 export interface ActionResult {
@@ -52,6 +54,30 @@ function isValidGradeLevel(value: unknown): value is GradeLevel {
   return typeof value === 'string' && GRADE_LEVELS.some((grade) => grade.value === value);
 }
 
+function isValidScienceGroup(value: unknown): value is ScienceGroup {
+  return value === 'biology' || value === 'computer';
+}
+
+async function findScienceSubjectIds(board: BoardType, gradeLevel: GradeLevel, scienceGroup: ScienceGroup) {
+  const db = createServiceClient() as any;
+  const { data } = await db
+    .from('subjects')
+    .select('id, name, slug, stream, is_optional')
+    .eq('is_active', true)
+    .contains('boards', [board])
+    .contains('grade_levels', [gradeLevel]);
+
+  return (data || [])
+    .filter((subject: any) => {
+      if (!subject.is_optional) return false;
+      const identity = `${subject.name} ${subject.slug} ${subject.stream || ''}`.toLowerCase();
+      return scienceGroup === 'biology'
+        ? identity.includes('biology') || identity.includes('pre-medical')
+        : identity.includes('computer');
+    })
+    .map((subject: any) => subject.id);
+}
+
 function isValidOutputStyle(value: unknown): value is PreferredOutputStyle {
   return typeof value === 'string' && OUTPUT_STYLES.some((style) => style.value === value);
 }
@@ -60,9 +86,9 @@ function isValidUniversityStream(value: unknown): value is UniversityStream {
   return typeof value === 'string' && UNIVERSITY_STREAMS.some((stream) => stream.value === value);
 }
 
-export async function completeProfile(board: string, gradeLevel: string, username: string, gender: string): Promise<ActionResult> {
-  if (!isValidBoard(board) || !isValidGradeLevel(gradeLevel) || !USERNAME_REGEX.test(username.trim()) || (gender !== 'girl' && gender !== 'boy')) {
-    return { success: false, error: 'Username, board, and grade are required.' };
+export async function completeProfile(board: string, gradeLevel: string, username: string, gender: string, scienceGroup: string): Promise<ActionResult> {
+  if (!isValidBoard(board) || !isValidGradeLevel(gradeLevel) || !USERNAME_REGEX.test(username.trim()) || (gender !== 'girl' && gender !== 'boy') || !isValidScienceGroup(scienceGroup)) {
+    return { success: false, error: 'Username, board, grade, and science subject are required.' };
   }
 
   const normalizedUsername = username.trim().toLowerCase();
@@ -99,6 +125,7 @@ export async function completeProfile(board: string, gradeLevel: string, usernam
     return { success: false, error: 'Profile completion is only available for student accounts.' };
   }
 
+  const optionalSubjectIds = await findScienceSubjectIds(board, gradeLevel, scienceGroup);
   const { error } = await supabase
     .from('profiles')
     .update({
@@ -106,6 +133,8 @@ export async function completeProfile(board: string, gradeLevel: string, usernam
       gender,
       username: normalizedUsername,
       grade_level: gradeLevel,
+      science_group: scienceGroup,
+      optional_subject_ids: optionalSubjectIds,
       education_level: gradeLevel === 'GRADE_11' || gradeLevel === 'GRADE_12' ? 'college' : 'school',
       is_profile_complete: true,
       onboarding_completed: true,
@@ -184,6 +213,8 @@ export async function completeUniversityProfile(input: {
       preferred_output_style: style,
       board: null,
       grade_level: null,
+      science_group: null,
+      optional_subject_ids: [],
       is_profile_complete: true,
       onboarding_completed: true,
     })

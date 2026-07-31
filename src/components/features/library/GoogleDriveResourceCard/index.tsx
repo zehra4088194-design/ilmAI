@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { BookOpen, CheckCircle2, DownloadCloud, FileType2, Loader2, Maximize2 } from 'lucide-react';
+import { BookOpen, CheckCircle2, DownloadCloud, Eye, FileType2, Loader2, Maximize2 } from 'lucide-react';
+import { useTheme } from 'next-themes';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,8 @@ import { saveOfflineResourceLink } from '@/lib/offline/resources';
 import { ProtectedResourceReader } from '@/components/features/resources/ProtectedResourceReader';
 import { ResourceAiTools } from '@/components/features/resources/ResourceAiTools';
 import { getGoogleDriveThumbnailUrl } from '@/lib/utils/filePreview';
+import { isDarkThemeId } from '@/lib/constants/themes';
+import { resolvePdfThemeMode } from '@/lib/platform-settings/shared';
 
 export interface DriveResourceData {
   id: string;
@@ -36,21 +39,26 @@ export function GoogleDriveResourceCard({
   resource: DriveResourceData;
   autoOpen?: boolean;
 }) {
-  const mode = 'dark' as const;
+  const { theme } = useTheme();
   const { user } = useAuth();
   const settings = usePlatformSettings();
+  const mode = resolvePdfThemeMode(settings.pdfThemeMode, isDarkThemeId(theme));
   const tier = user?.subscriptionTier || 'FREE';
   const canDownload = settings.subscriptionPlans[tier].access.downloadPDF;
   const [readerOpen, setReaderOpen] = useState(autoOpen);
   const [downloading, setDownloading] = useState(false);
-  // Notes use their dark PDF. Original Drive is retained only for books that
-  // do not have a dark edition yet, so no resource disappears from the catalog.
-  const readerSourceUrl = resource.darkFileUrl || resource.driveUrl || resource.lightFileUrl || null;
+  const [thumbnailFailed, setThumbnailFailed] = useState(false);
+  const readerSourceUrl =
+    mode === 'dark'
+      ? resource.darkFileUrl || resource.lightFileUrl || resource.driveUrl || null
+      : resource.lightFileUrl || resource.driveUrl || resource.darkFileUrl || null;
   const thumbnailUrl = getGoogleDriveThumbnailUrl(readerSourceUrl);
 
   useEffect(() => {
     if (autoOpen) setReaderOpen(true);
   }, [autoOpen]);
+
+  useEffect(() => setThumbnailFailed(false), [thumbnailUrl]);
 
   const saveForOffline = async () => {
     setDownloading(true);
@@ -80,13 +88,26 @@ export function GoogleDriveResourceCard({
   return (
     <Card className="group border-border/70 bg-card/85 hover:border-primary/35 overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-xl">
       <div className="from-primary/10 via-background relative flex aspect-[4/3] items-center justify-center overflow-hidden border-b bg-gradient-to-br to-cyan-500/10">
-        {thumbnailUrl ? (
-          <img src={thumbnailUrl} alt={`${resource.title} preview`} className="h-full w-full object-cover object-top" />
+        {thumbnailUrl && !thumbnailFailed ? (
+          <img
+            src={thumbnailUrl}
+            alt={`${resource.title} PDF preview`}
+            className="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-[1.03]"
+            onError={() => setThumbnailFailed(true)}
+          />
         ) : (
           <div className="border-primary/20 bg-background/75 flex h-20 w-20 items-center justify-center rounded-3xl border shadow-lg">
             <BookOpen className="text-primary h-9 w-9" />
           </div>
         )}
+        <div className="absolute inset-x-0 bottom-0 flex items-end justify-between bg-gradient-to-t from-black/70 to-transparent p-3 pt-10 text-white">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-black/35 px-2.5 py-1 text-[11px] font-semibold backdrop-blur-sm">
+            <Eye className="h-3.5 w-3.5" /> PDF preview
+          </span>
+          <span className="rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-medium backdrop-blur-sm">
+            No sign-up needed
+          </span>
+        </div>
       </div>
       <CardContent className="space-y-3 p-4">
         <div className="flex flex-wrap items-center gap-2">
@@ -112,14 +133,14 @@ export function GoogleDriveResourceCard({
           {resource.bookTitle && (
             <p className="text-primary mb-1 truncate text-xs font-semibold">{resource.bookTitle}</p>
           )}
-          <h3 className="line-clamp-1 text-sm font-semibold">{resource.title}</h3>
+          <h3 className="line-clamp-2 min-h-10 text-sm font-semibold">{resource.title}</h3>
           {resource.description && (
             <p className="text-muted-foreground mt-1 line-clamp-2 text-xs">{resource.description}</p>
           )}
         </div>
         <Button variant="gradient" size="sm" className="w-full" onClick={() => setReaderOpen(true)}>
           <Maximize2 className="h-3.5 w-3.5" />
-          Open PDF
+          Read PDF
         </Button>
         {user ? (
           <ResourceAiTools kind="library" resourceId={resource.id} />

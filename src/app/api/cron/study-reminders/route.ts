@@ -1,14 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { createNotificationIfEnabled } from '@/lib/notifications/preferences';
+import { addDaysIso, pakistanDateIso } from '@/lib/dates/pakistan';
 
 export const runtime = 'nodejs';
-
-function localDate(offsetDays = 0) {
-  const date = new Date();
-  date.setDate(date.getDate() + offsetDays);
-  return date.toISOString().slice(0, 10);
-}
 
 async function recentlyNotified(admin: any, userId: string, link: string, title: string, sinceIso: string) {
   const { data } = await admin
@@ -28,15 +23,17 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const admin = await createAdminClient() as any;
-  const today = localDate();
-  const tomorrow = localDate(1);
+  const admin = (await createAdminClient()) as any;
+  const today = pakistanDateIso();
+  const tomorrow = addDaysIso(today, 1);
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   let created = 0;
 
   const { data: sessions } = await admin
     .from('study_plan_sessions')
-    .select('id, student_id, session_date, session_type, duration_minutes, is_completed, subjects(name), chapters(name)')
+    .select(
+      'id, student_id, session_date, session_type, duration_minutes, is_completed, subjects(name), chapters(name)'
+    )
     .in('session_date', [today, tomorrow])
     .eq('is_completed', false)
     .limit(500);
@@ -44,7 +41,7 @@ export async function GET(req: NextRequest) {
   for (const session of sessions || []) {
     const isToday = session.session_date === today;
     const title = isToday ? "Today's study plan is ready" : "Tomorrow's study plan is ready";
-    const link = `${isToday ? '/planner/today' : '/planner/week'}?session=${session.id}`;
+    const link = `${isToday ? '/planner/today' : '/planner/week'}?session=${session.id}#session-${session.id}`;
     if (await recentlyNotified(admin, session.student_id, link, title, oneDayAgo)) continue;
 
     const subject = session.subjects?.name || session.chapters?.name || 'Study block';

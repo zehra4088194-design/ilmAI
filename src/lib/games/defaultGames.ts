@@ -13,6 +13,18 @@ export type GameCardData = {
 
 export const DEFAULT_GAMES: GameCardData[] = [
   {
+    id: 'curriculum-quiz-room',
+    slug: 'curriculum-quiz-room',
+    title: 'Class MCQ Challenge',
+    description: 'Answer random questions from your class books and reveal the correct choice together.',
+    thumbnail_url: null,
+    category: 'Quiz',
+    game_type: 'curriculum_quiz',
+    difficulty: 'medium',
+    featured: true,
+    min_tier: 'PRO',
+  },
+  {
     id: 'live-ludo',
     slug: 'live-ludo',
     title: 'Ludo Dice Room',

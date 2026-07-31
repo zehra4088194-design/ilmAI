@@ -7,8 +7,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AiAnswerRenderer } from '@/components/features/ai/AiAnswerRenderer';
 import { toast } from 'sonner';
-import { useAuth } from '@/hooks/auth/useAuth';
-import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 
 const SCAN_TYPES = [
   { value: 'textbook_page', label: 'Textbook page' },
@@ -20,11 +18,6 @@ const SCAN_TYPES = [
 ];
 
 export function VisionScanClient() {
-  const { user } = useAuth();
-  const settings = usePlatformSettings();
-  const tier = user?.subscriptionTier || 'FREE';
-  const plan = settings.subscriptionPlans[tier];
-  const audience = user?.educationLevel || 'school';
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [scanType, setScanType] = useState('textbook_page');
@@ -33,7 +26,8 @@ export function VisionScanClient() {
   const [result, setResult] = useState<{
     ocr_text: string;
     ai_explanation: string;
-    remaining_scans?: number;
+    remaining_credits?: number;
+    credit_cost?: number;
   } | null>(null);
 
   const onFile = (next: File | null) => {
@@ -151,14 +145,7 @@ export function VisionScanClient() {
               <CardContent className="flex min-h-72 flex-col items-center justify-center p-8 text-center">
                 <FileImage className="text-muted-foreground/50 mb-3 h-10 w-10" />
                 <p className="font-semibold">Your result will appear here</p>
-                <p className="text-muted-foreground mt-1 text-sm">
-                  {plan.name}: {plan.limits.ocrPrintedMonthly < 0 ? 'Unlimited' : plan.limits.ocrPrintedMonthly} printed
-                  {' and '}
-                  {plan.audienceLimits[audience].ocrHandwrittenMonthly < 0
-                    ? 'Unlimited'
-                    : plan.audienceLimits[audience].ocrHandwrittenMonthly}{' '}
-                  handwritten scans/month.
-                </p>
+                <p className="text-muted-foreground mt-1 text-sm">Printed scan uses 1 credit. Handwritten, Math, and formula scans use 3 credits.</p>
               </CardContent>
             </Card>
           )}
@@ -172,9 +159,9 @@ export function VisionScanClient() {
                   <p className="text-muted-foreground text-sm leading-6 whitespace-pre-wrap">
                     {result.ocr_text || 'Text could not be extracted clearly.'}
                   </p>
-                  {typeof result.remaining_scans === 'number' && result.remaining_scans >= 0 && (
+                  {typeof result.remaining_credits === 'number' && result.remaining_credits >= 0 && (
                     <p className="text-muted-foreground mt-2 text-xs">
-                      {result.remaining_scans} scans remaining this month.
+                      {result.credit_cost || 1} credits used. {result.remaining_credits} credits remaining.
                     </p>
                   )}
                 </CardContent>

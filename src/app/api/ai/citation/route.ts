@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { checkUniversityFeatureLimit, getUniversityLimitExceededMessage } from '@/lib/rate-limit';
+import {
+  checkUniversityFeatureLimit,
+  consumeUniversityFeatureCredits,
+  getUniversityLimitExceededMessage,
+} from '@/lib/rate-limit';
 import { gatewayChat } from '@/lib/ai/gateway';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import type { SubscriptionTier } from '@/types';
@@ -107,6 +111,7 @@ export async function POST(req: NextRequest) {
     }
 
     const citations = await generateCitations(input, citationStyles);
+    await consumeUniversityFeatureCredits(user.id, tier, 'citation');
     return NextResponse.json({
       status: 'success',
       data: styles.length > 0 ? { citations } : citations[0],

@@ -141,7 +141,9 @@ export function SubscriptionPlans({
         <div className="text-muted-foreground mt-3 flex flex-wrap gap-2 text-xs">
           {[
             ['Tutor / side chat', 1],
-            ['Flashcards / practice', 2],
+            ['Printed scan', 1],
+            ['Handwritten scan', 3],
+            ['Roadmap / flashcards / practice', 2],
             ['Summary / PharmaPulse', 4],
             ['Full test / guess paper', 4],
             ['Presentation', 8],

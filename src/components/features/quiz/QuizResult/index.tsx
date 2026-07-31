@@ -36,20 +36,45 @@ export function QuizResult({ session, onRetry }: { session: QuizSession; onRetry
   }, [session.correctCount, updateUser]);
 
   return (
-    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-8">
-      <div className={`w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center ${isGood ? 'bg-green-500/10' : 'bg-amber-500/10'}`}>
-        <Trophy className={`w-10 h-10 ${isGood ? 'text-green-500' : 'text-amber-500'}`} />
+    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="py-8 text-center">
+      <div
+        className={`mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full ${isGood ? 'bg-green-500/10' : 'bg-amber-500/10'}`}
+      >
+        <Trophy className={`h-10 w-10 ${isGood ? 'text-green-500' : 'text-amber-500'}`} />
       </div>
-      <h2 className="text-3xl font-bold mb-2">{score}%</h2>
+      <h2 className="mb-2 text-3xl font-bold">{score}%</h2>
       <p className="text-muted-foreground mb-8">{isGood ? 'Excellent work!' : 'Good attempt. Keep practising.'}</p>
-      <div className="grid grid-cols-3 gap-4 max-w-md mx-auto mb-8">
-        <Card><CardContent className="p-4"><p className="text-2xl font-bold text-green-500">{session.correctCount}</p><p className="text-xs text-muted-foreground">Correct</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-2xl font-bold text-red-500">{session.incorrectCount}</p><p className="text-xs text-muted-foreground">Wrong</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-2xl font-bold">{total}</p><p className="text-xs text-muted-foreground">Total</p></CardContent></Card>
+      <div className="mx-auto mb-8 grid max-w-md grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-2xl font-bold text-green-500">{session.correctCount}</p>
+            <p className="text-muted-foreground text-xs">Correct</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-2xl font-bold text-red-500">{session.incorrectCount}</p>
+            <p className="text-muted-foreground text-xs">Wrong</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-2xl font-bold">{total}</p>
+            <p className="text-muted-foreground text-xs">Total</p>
+          </CardContent>
+        </Card>
       </div>
-      <div className="flex gap-3 justify-center">
-        <Button variant="outline" onClick={onRetry}><RotateCcw className="w-4 h-4" />Try Again</Button>
-        <Button asChild variant="gradient"><Link href="/dashboard"><Home className="w-4 h-4" />Dashboard</Link></Button>
+      <div className="flex justify-center gap-3">
+        <Button variant="outline" onClick={onRetry}>
+          <RotateCcw className="h-4 w-4" />
+          Try Again
+        </Button>
+        <Button asChild variant="gradient">
+          <Link href="/dashboard">
+            <Home className="h-4 w-4" />
+            Dashboard
+          </Link>
+        </Button>
       </div>
     </motion.div>
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Brain, CheckCircle2, Copy, Crown, Dice5, Gamepad2, Loader2, RotateCcw, Send, Timer, Trophy, Users } from 'lucide-react';
 import { toast } from 'sonner';
@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { createClient } from '@/lib/supabase/client';
 import type { GameCardData } from '@/lib/games/defaultGames';
 import type { SubscriptionTier } from '@/types';
+import { LiveQuizGame } from '@/components/features/games/LiveQuizGame';
 
 type LudoToken = { position: number };
 
@@ -33,7 +34,22 @@ type GameEvent = {
   room_code: string;
   user_id: string | null;
   event_type: string;
-  payload: { name?: string; value?: number; message?: string; tokenIndex?: number };
+  payload: {
+    name?: string;
+    value?: number;
+    message?: string;
+    tokenIndex?: number;
+    roundId?: string;
+    questionId?: string;
+    text?: string;
+    options?: string[];
+    correctIndex?: number;
+    subjectName?: string;
+    chapterName?: string;
+    expectedPlayers?: string[];
+    answerIndex?: number;
+    [key: string]: unknown;
+  };
   created_at: string;
 };
 
@@ -164,20 +180,54 @@ function ludoStateFromEvents(events: GameEvent[]): LudoState {
   return state;
 }
 
+const MEMORY_PAIR_COUNT = 6;
 const MEMORY_PAIRS = [
-  { id: 'formula', label: 'Formula', tone: 'border-sky-400/50 bg-sky-500/12 text-sky-200' },
-  { id: 'concept', label: 'Concept', tone: 'border-emerald-400/50 bg-emerald-500/12 text-emerald-200' },
-  { id: 'definition', label: 'Definition', tone: 'border-amber-400/50 bg-amber-500/12 text-amber-200' },
-  { id: 'diagram', label: 'Diagram', tone: 'border-rose-400/50 bg-rose-500/12 text-rose-200' },
-  { id: 'example', label: 'Example', tone: 'border-violet-400/50 bg-violet-500/12 text-violet-200' },
-  { id: 'review', label: 'Review', tone: 'border-cyan-400/50 bg-cyan-500/12 text-cyan-200' },
-];
+  { id: 'force', prompt: 'Force', answer: 'Mass x acceleration', tone: 'border-sky-400/50 bg-sky-500/12 text-sky-200' },
+  { id: 'speed', prompt: 'Speed', answer: 'Distance / time', tone: 'border-sky-400/50 bg-sky-500/12 text-sky-200' },
+  { id: 'density', prompt: 'Density', answer: 'Mass / volume', tone: 'border-sky-400/50 bg-sky-500/12 text-sky-200' },
+  { id: 'voltage', prompt: 'Voltage unit', answer: 'Volt', tone: 'border-sky-400/50 bg-sky-500/12 text-sky-200' },
+  { id: 'cell', prompt: 'Basic unit of life', answer: 'Cell', tone: 'border-emerald-400/50 bg-emerald-500/12 text-emerald-200' },
+  { id: 'mitochondria', prompt: 'Cell powerhouse', answer: 'Mitochondria', tone: 'border-emerald-400/50 bg-emerald-500/12 text-emerald-200' },
+  { id: 'photosynthesis', prompt: 'Makes glucose in plants', answer: 'Photosynthesis', tone: 'border-emerald-400/50 bg-emerald-500/12 text-emerald-200' },
+  { id: 'dna', prompt: 'Carries genetic information', answer: 'DNA', tone: 'border-emerald-400/50 bg-emerald-500/12 text-emerald-200' },
+  { id: 'water', prompt: 'H2O', answer: 'Water', tone: 'border-cyan-400/50 bg-cyan-500/12 text-cyan-200' },
+  { id: 'carbon-dioxide', prompt: 'CO2', answer: 'Carbon dioxide', tone: 'border-cyan-400/50 bg-cyan-500/12 text-cyan-200' },
+  { id: 'acid', prompt: 'pH below 7', answer: 'Acid', tone: 'border-cyan-400/50 bg-cyan-500/12 text-cyan-200' },
+  { id: 'atom', prompt: 'Smallest element particle', answer: 'Atom', tone: 'border-cyan-400/50 bg-cyan-500/12 text-cyan-200' },
+  { id: 'triangle', prompt: 'Triangle angle sum', answer: '180 degrees', tone: 'border-violet-400/50 bg-violet-500/12 text-violet-200' },
+  { id: 'circle', prompt: 'Circle area', answer: 'pi x radius squared', tone: 'border-violet-400/50 bg-violet-500/12 text-violet-200' },
+  { id: 'pythagoras', prompt: 'Right triangle rule', answer: 'a2 + b2 = c2', tone: 'border-violet-400/50 bg-violet-500/12 text-violet-200' },
+  { id: 'prime', prompt: 'Only two factors', answer: 'Prime number', tone: 'border-violet-400/50 bg-violet-500/12 text-violet-200' },
+  { id: 'noun', prompt: 'Names a person or thing', answer: 'Noun', tone: 'border-amber-400/50 bg-amber-500/12 text-amber-200' },
+  { id: 'verb', prompt: 'Shows an action', answer: 'Verb', tone: 'border-amber-400/50 bg-amber-500/12 text-amber-200' },
+  { id: 'synonym', prompt: 'Word with similar meaning', answer: 'Synonym', tone: 'border-amber-400/50 bg-amber-500/12 text-amber-200' },
+  { id: 'metaphor', prompt: 'Direct poetic comparison', answer: 'Metaphor', tone: 'border-amber-400/50 bg-amber-500/12 text-amber-200' },
+  { id: 'pakistan', prompt: 'Pakistan independence', answer: '14 August 1947', tone: 'border-rose-400/50 bg-rose-500/12 text-rose-200' },
+  { id: 'capital', prompt: 'Capital of Pakistan', answer: 'Islamabad', tone: 'border-rose-400/50 bg-rose-500/12 text-rose-200' },
+  { id: 'indus', prompt: 'Pakistan longest river', answer: 'Indus', tone: 'border-rose-400/50 bg-rose-500/12 text-rose-200' },
+  { id: 'equator', prompt: 'Zero-degree latitude', answer: 'Equator', tone: 'border-rose-400/50 bg-rose-500/12 text-rose-200' },
+] as const;
 
-function createMemoryDeck() {
-  return MEMORY_PAIRS.flatMap((item) => [
-    { ...item, cardId: `${item.id}-a` },
-    { ...item, cardId: `${item.id}-b` },
-  ]).sort(() => Math.random() - 0.5);
+function shuffleItems<T>(items: T[]) {
+  const shuffled = [...items];
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex]!, shuffled[index]!];
+  }
+  return shuffled;
+}
+
+function createMemoryDeck(previousPairIds: Set<string> = new Set()) {
+  const freshPairs = MEMORY_PAIRS.filter((pair) => !previousPairIds.has(pair.id));
+  const availablePairs = freshPairs.length >= MEMORY_PAIR_COUNT ? freshPairs : MEMORY_PAIRS;
+  const selectedPairs = shuffleItems([...availablePairs]).slice(0, MEMORY_PAIR_COUNT);
+
+  return shuffleItems(
+    selectedPairs.flatMap((item) => [
+      { id: item.id, label: item.prompt, tone: item.tone, cardId: `${item.id}-prompt` },
+      { id: item.id, label: item.answer, tone: item.tone, cardId: `${item.id}-answer` },
+    ]),
+  );
 }
 
 function pathIndexAt(row: number, col: number) {
@@ -302,7 +352,7 @@ function MemoryMatchGame() {
   }, [deck, selected]);
 
   const reset = () => {
-    setDeck(createMemoryDeck());
+    setDeck((currentDeck) => createMemoryDeck(new Set(currentDeck.map((card) => card.id))));
     setSelected([]);
     setMatched(new Set());
     setMoves(0);
@@ -322,7 +372,7 @@ function MemoryMatchGame() {
           <p className="text-xs text-muted-foreground">Match all concept pairs with the fewest moves.</p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="secondary">{matched.size}/{MEMORY_PAIRS.length} pairs</Badge>
+          <Badge variant="secondary">{matched.size}/{MEMORY_PAIR_COUNT} pairs</Badge>
           <Badge variant="outline">{moves} moves</Badge>
           <Button size="icon" variant="outline" onClick={reset} aria-label="Restart memory game">
             <RotateCcw className="h-4 w-4" />
@@ -350,7 +400,7 @@ function MemoryMatchGame() {
           );
         })}
       </div>
-      {matched.size === MEMORY_PAIRS.length && (
+      {matched.size === MEMORY_PAIR_COUNT && (
         <div className="flex items-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-200">
           <Trophy className="h-4 w-4" />
           Completed in {moves} moves. Take a short break, then return to study.
@@ -473,6 +523,7 @@ export function GameRoomClient({
   const [rollingFace, setRollingFace] = useState(1);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserName, setCurrentUserName] = useState('Student');
+  const autoMovedRollRef = useRef<string | null>(null);
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
@@ -591,6 +642,8 @@ export function GameRoomClient({
     if (!joinedRoom || remaining <= 0) return;
     await sendEvent('ludo_move', { tokenIndex });
   };
+  const moveLudoTokenRef = useRef(moveLudoToken);
+  moveLudoTokenRef.current = moveLudoToken;
 
   const sendChat = async () => {
     if (!message.trim() || !joinedRoom || remaining <= 0) return;
@@ -613,6 +666,34 @@ export function GameRoomClient({
   const ludoState = useMemo(() => ludoStateFromEvents(events), [events]);
   const activeLudoPlayer = ludoState.players[ludoState.currentPlayer];
   const isMyLudoTurn = game.game_type === 'live_ludo' && activeLudoPlayer?.id === currentUserId && ludoState.dice === null;
+  const latestLudoTurnEvent = useMemo(
+    () => [...events].reverse().find((event) => event.event_type === 'ludo_roll' || event.event_type === 'ludo_move'),
+    [events],
+  );
+  const legalLudoMoves =
+    ludoState.dice && activeLudoPlayer
+      ? activeLudoPlayer.tokens.flatMap((token, index) => (canMoveToken(token, ludoState.dice!) ? [index] : []))
+      : [];
+  const automaticTokenIndex =
+    latestLudoTurnEvent?.event_type === 'ludo_roll' &&
+    latestLudoTurnEvent.user_id === currentUserId &&
+    activeLudoPlayer?.id === currentUserId &&
+    legalLudoMoves.length === 1
+      ? legalLudoMoves[0]!
+      : null;
+
+  useEffect(() => {
+    if (automaticTokenIndex === null || !latestLudoTurnEvent || remaining <= 0 || autoMovedRollRef.current === latestLudoTurnEvent.id) return;
+    const rollEventId = latestLudoTurnEvent.id;
+    const timeout = window.setTimeout(() => {
+      autoMovedRollRef.current = rollEventId;
+      void moveLudoTokenRef.current(automaticTokenIndex).catch((error) => {
+        autoMovedRollRef.current = null;
+        toast.error(error instanceof Error ? error.message : 'The automatic move could not be completed.');
+      });
+    }, 450);
+    return () => window.clearTimeout(timeout);
+  }, [automaticTokenIndex, latestLudoTurnEvent, remaining]);
 
   if (!canPlay) {
     return (
@@ -668,7 +749,7 @@ export function GameRoomClient({
                     </button>
                   )}
                 </span>
-                {game.game_type !== 'memory_match' && (
+                {(game.game_type === 'live_ludo' || game.game_type === 'logic_dice') && (
                   <Button onClick={rollDice} disabled={isRolling || remaining <= 0 || (game.game_type === 'live_ludo' && !isMyLudoTurn)} variant="gradient" className={game.game_type === 'live_ludo' ? 'min-w-28 shadow-lg shadow-violet-900/40' : undefined}><Dice5 className={`h-4 w-4 ${isRolling ? 'animate-spin' : ''}`} /> {isRolling ? 'Rolling...' : 'Roll'}</Button>
                 )}
               </CardTitle>
@@ -676,6 +757,14 @@ export function GameRoomClient({
             <CardContent className={game.game_type === 'live_ludo' ? 'space-y-4 p-3 sm:p-5' : 'space-y-4'}>
               {game.game_type === 'memory_match' ? (
                 <MemoryMatchGame />
+              ) : game.game_type === 'curriculum_quiz' ? (
+                <LiveQuizGame
+                  events={events}
+                  currentUserId={currentUserId}
+                  currentUserName={currentUserName}
+                  remainingSeconds={remaining}
+                  sendEvent={sendEvent}
+                />
               ) : game.game_type === 'logic_dice' ? (
                 <LogicDiceGame onRoll={rollDice} />
               ) : (
@@ -709,7 +798,9 @@ export function GameRoomClient({
                       : ludoState.winnerIds.length > 0
                         ? `${ludoState.players.find((player) => player.id === ludoState.winnerIds[0])?.name || 'A player'} has finished the match.`
                         : ludoState.dice
-                          ? `${activeLudoPlayer?.name || 'Player'} rolled ${ludoState.dice}. Choose a glowing token.`
+                          ? automaticTokenIndex !== null
+                            ? `${activeLudoPlayer?.name || 'Player'} has one legal move. Moving automatically...`
+                            : `${activeLudoPlayer?.name || 'Player'} rolled ${ludoState.dice}. Choose a glowing token.`
                           : `${activeLudoPlayer?.name || 'Waiting for players'} is rolling now.`}
                   </div>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -737,7 +828,15 @@ export function GameRoomClient({
                 {events.length === 0 && <p className="text-sm text-muted-foreground">No activity yet.</p>}
                 {events.map((event) => (
                   <div key={event.id} className="rounded-lg bg-card p-2 text-sm">
-                    <p className="font-medium">{event.event_type === 'dice_roll' ? `Dice: ${event.payload?.value}` : event.payload?.message || event.event_type}</p>
+                    <p className="font-medium">
+                      {event.event_type === 'dice_roll'
+                        ? `Dice: ${event.payload?.value}`
+                        : event.event_type === 'quiz_answer'
+                          ? `${event.payload.name || 'Student'} selected ${String.fromCharCode(65 + Number(event.payload.answerIndex || 0))}`
+                          : event.event_type === 'quiz_round'
+                            ? 'New MCQ started'
+                            : event.payload?.message || event.event_type}
+                    </p>
                     <p className="text-[11px] text-muted-foreground">{new Date(event.created_at).toLocaleTimeString()}</p>
                   </div>
                 ))}

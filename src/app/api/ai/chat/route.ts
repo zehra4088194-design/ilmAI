@@ -1,7 +1,19 @@
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { gatewayChat, GatewayError, type AiProviderId, type ModelTier, MARKDOWN_ANSWER_FORMAT_INSTRUCTION } from '@/lib/ai/gateway';
-import { checkAiMessageLimit, checkAiSideChatLimit, checkModelTierLimit, getConfiguredLimitExceededMessage } from '@/lib/rate-limit';
+import {
+  gatewayChat,
+  GatewayError,
+  type AiProviderId,
+  type ModelTier,
+  MARKDOWN_ANSWER_FORMAT_INSTRUCTION,
+} from '@/lib/ai/gateway';
+import {
+  checkAiMessageLimit,
+  checkAiSideChatLimit,
+  checkModelTierLimit,
+  consumeAiCredits,
+  getConfiguredLimitExceededMessage,
+} from '@/lib/rate-limit';
 import type { SubscriptionTier } from '@/types';
 
 export const runtime = 'nodejs';
@@ -31,15 +43,16 @@ App navigation (use only these exact internal links when the student asks where 
 - Progress: /progress
 - University Hub: /university
 When a destination is relevant, end with a short Markdown link such as [Open AI Tutor](/ai-tutor). Never invent an app route.`;
-  const sideChatRules = source === 'side_chat'
-    ? `
+  const sideChatRules =
+    source === 'side_chat'
+      ? `
 Side chat mode:
 - Do not start with a generic welcome or self-introduction
 - Answer the student's exact question directly
 - Keep it compact unless the student asks for detail
 - If the message is just "hi/hello", greet warmly in one short line and ask what subject they need help with
 ${navigationCatalog}`
-    : '';
+      : '';
   return `You are ilm AI, an expert tutor for Pakistani students (Grades 9-12, O/A Levels, FBISE & provincial boards).${subject ? `\nThe student has chosen to focus this session on: ${subject}. Keep your answers scoped to that subject unless they explicitly ask about something else.` : ''}
 Rules:
 - Use a Socratic tutoring style. Do not dump the final answer first unless the student explicitly asks for "final answer only".
@@ -58,7 +71,9 @@ ${MARKDOWN_ANSWER_FORMAT_INSTRUCTION}`;
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       return new Response(JSON.stringify({ error: 'Login is required.' }), { status: 401 });
     }
@@ -66,7 +81,14 @@ export async function POST(req: NextRequest) {
     const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
     const userTier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
 
-    const { message, history = [], provider: requestedProvider, tier: requestedTier, subject, source } = await req.json();
+    const {
+      message,
+      history = [],
+      provider: requestedProvider,
+      tier: requestedTier,
+      subject,
+      source,
+    } = await req.json();
     if (!message || typeof message !== 'string') {
       return new Response(JSON.stringify({ error: 'A message is required.' }), { status: 400 });
     }
@@ -76,7 +98,12 @@ export async function POST(req: NextRequest) {
     const provider: AiProviderId = userTier === 'ELITE' ? requestedProvider || 'groq' : 'groq';
     const tier: ModelTier = userTier === 'ELITE' ? requestedTier || 'mini' : 'mini';
     if (tier === 'pro' && userTier !== 'ELITE') {
-      return new Response(JSON.stringify({ error: 'The Pro model tier is available only to Elite users. Upgrade to Elite or use the mini/medium tier.' }), { status: 403 });
+      return new Response(
+        JSON.stringify({
+          error: 'The Pro model tier is available only to Elite users. Upgrade to Elite or use the mini/medium tier.',
+        }),
+        { status: 403 }
+      );
     }
 
     const isSideChat = source === 'side_chat';
@@ -103,8 +130,13 @@ export async function POST(req: NextRequest) {
     }
 
     const messages = [
-      { role: 'system' as const, content: buildSystemPrompt(typeof subject === 'string' ? subject : undefined, source) },
-      ...history.filter((m: { role: string; content: string }) => m.content).map((m: { role: string; content: string }) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+      {
+        role: 'system' as const,
+        content: buildSystemPrompt(typeof subject === 'string' ? subject : undefined, source),
+      },
+      ...history
+        .filter((m: { role: string; content: string }) => m.content)
+        .map((m: { role: string; content: string }) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
       { role: 'user' as const, content: message },
     ];
 
@@ -129,6 +161,7 @@ export async function POST(req: NextRequest) {
           controller.enqueue(encoder.encode(text.slice(i, i + chunkSize)));
           await new Promise((r) => setTimeout(r, 8));
         }
+        await consumeAiCredits(user.id, userTier, isSideChat ? 'side_chat' : 'ai_tutor');
         controller.close();
       },
     });
@@ -143,8 +176,12 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('AI chat error:', error);
     if (error instanceof GatewayError) {
-      return new Response(JSON.stringify({ error: error.message }), { status: error.status === 401 || error.status === 403 ? 502 : 500 });
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: error.status === 401 || error.status === 403 ? 502 : 500,
+      });
     }
-    return new Response(JSON.stringify({ error: 'The AI response could not be generated. Please try again.' }), { status: 500 });
+    return new Response(JSON.stringify({ error: 'The AI response could not be generated. Please try again.' }), {
+      status: 500,
+    });
   }
 }

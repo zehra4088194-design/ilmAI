@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { gatewayChat } from '@/lib/ai/gateway';
-import { checkAiMessageLimit, checkUniversityFeatureLimit, getConfiguredLimitExceededMessage, getUniversityLimitExceededMessage } from '@/lib/rate-limit';
+import {
+  checkAiMessageLimit,
+  checkUniversityFeatureLimit,
+  consumeAiCredits,
+  consumeUniversityFeatureCredits,
+  getConfiguredLimitExceededMessage,
+  getUniversityLimitExceededMessage,
+} from '@/lib/rate-limit';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import type { SubscriptionTier } from '@/types';
 
@@ -148,11 +155,18 @@ export async function POST(req: NextRequest) {
     if (!query) return NextResponse.json({ status: 'error', error: 'A medicine name is required' }, { status: 400 });
 
     if (action === 'suggestions') {
-      const { data: suggestionProfile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
+      const { data: suggestionProfile } = await supabase
+        .from('profiles')
+        .select('subscription_tier')
+        .eq('id', user.id)
+        .single();
       const suggestionTier = (suggestionProfile?.subscription_tier as SubscriptionTier) || 'FREE';
       const suggestionLimit = await checkAiMessageLimit(user.id, suggestionTier, 'pharmapulse_drug');
       if (!suggestionLimit.success) {
-        return NextResponse.json({ status: 'error', error: await getConfiguredLimitExceededMessage(suggestionTier, 'PharmaPulse search') }, { status: 429 });
+        return NextResponse.json(
+          { status: 'error', error: await getConfiguredLimitExceededMessage(suggestionTier, 'PharmaPulse search') },
+          { status: 429 }
+        );
       }
       const result = await gatewayChat({
         provider: 'groq',
@@ -171,6 +185,7 @@ export async function POST(req: NextRequest) {
         .filter((item) => item?.name)
         .slice(0, 6)
         .map((item) => ({ name: cleanString(item.name), cls: cleanString(item.cls, 'Medicine') }));
+      if (suggestions.length) await consumeAiCredits(user.id, suggestionTier, 'pharmapulse_drug');
       return NextResponse.json({ status: 'success', data: { action, result: suggestions } });
     }
 
@@ -218,9 +233,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    await consumeUniversityFeatureCredits(user.id, tier, action === 'mcq' ? 'pharmapulse_mcq' : 'pharmapulse_drug');
     return NextResponse.json({ status: 'success', data: { action, result: parsed } });
   } catch (error) {
     console.error('PharmaPulse route error:', error);
-    return NextResponse.json({ status: 'error', error: 'The PharmaPulse response could not be generated.' }, { status: 500 });
+    return NextResponse.json(
+      { status: 'error', error: 'The PharmaPulse response could not be generated.' },
+      { status: 500 }
+    );
   }
 }

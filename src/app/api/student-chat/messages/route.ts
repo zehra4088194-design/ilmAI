@@ -5,7 +5,7 @@ import { getPlanFromSettings } from '@/lib/platform-settings/shared';
 import { gatewayChat } from '@/lib/ai/gateway';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import { createNotificationIfEnabled, createNotificationsIfEnabled } from '@/lib/notifications/preferences';
-import { checkAiMessageLimit, getConfiguredLimitExceededMessage } from '@/lib/rate-limit';
+import { checkAiMessageLimit, consumeAiCredits, getConfiguredLimitExceededMessage } from '@/lib/rate-limit';
 import { loadArchivedChatMessages, mergeChatMessages } from '@/lib/storage/chat-archive';
 import type { SubscriptionTier } from '@/types';
 
@@ -272,6 +272,7 @@ export async function POST(req: NextRequest) {
   });
 
   const moderation = await moderateIfNeeded(admin, request);
+  await consumeAiCredits(user.id, tier, 'student_chat_moderation');
 
   return NextResponse.json({ message: data, moderation });
 }

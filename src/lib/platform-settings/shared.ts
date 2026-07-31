@@ -1,6 +1,7 @@
 import type { SubscriptionTier } from '@/types';
 
 export type BillingCurrency = 'USD' | 'PKR';
+export type PdfThemeMode = 'follow-user' | 'dark' | 'light';
 
 export type ProviderBudgetKey =
   'groqFast' | 'groqLarge' | 'gemini' | 'ocrSpace' | 'openRouter' | 'grok' | 'claude' | 'gpt';
@@ -10,7 +11,6 @@ export type ProviderDailyBudgets = Record<ProviderBudgetKey, number>;
 export type PlanAudience = 'school' | 'college' | 'university';
 
 export type AudienceFeatureLimits = {
-  ocrHandwrittenMonthly: number;
   presentationsMonthly: number;
   presentationSlidesMax: number;
   fileSummariesMonthly: number;
@@ -29,7 +29,6 @@ export type PlatformSubscriptionPlan = {
     aiCreditsMonthly: number;
     premiumAiMonthly: number;
     quizDaily: number;
-    ocrPrintedMonthly: number;
     universityHubWeekly: number;
     liveVoiceDaily: number;
     flashcardsTotal: number;
@@ -56,6 +55,7 @@ export type PlatformSubscriptionPlan = {
 };
 
 export type PlatformSettings = {
+  pdfThemeMode: PdfThemeMode;
   subscriptionPlans: Record<SubscriptionTier, PlatformSubscriptionPlan>;
   providerDailyBudgets: ProviderDailyBudgets;
 };
@@ -63,6 +63,7 @@ export type PlatformSettings = {
 export const SUBSCRIPTION_SETTINGS_KEY = 'subscription_plans';
 
 export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
+  pdfThemeMode: 'dark',
   providerDailyBudgets: {
     // Conservative platform-wide caps for a free-hosted beta. Admin can tune
     // these without a deploy as provider dashboards expose the real quotas.
@@ -91,7 +92,6 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
         aiCreditsMonthly: 0,
         premiumAiMonthly: 0,
         quizDaily: 3,
-        ocrPrintedMonthly: 5,
         universityHubWeekly: 3,
         liveVoiceDaily: 0,
         flashcardsTotal: 50,
@@ -102,21 +102,18 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
       },
       audienceLimits: {
         school: {
-          ocrHandwrittenMonthly: 0,
           presentationsMonthly: 0,
           presentationSlidesMax: 0,
           fileSummariesMonthly: 0,
           fileTestsMonthly: 0,
         },
         college: {
-          ocrHandwrittenMonthly: 0,
           presentationsMonthly: 0,
           presentationSlidesMax: 0,
           fileSummariesMonthly: 0,
           fileTestsMonthly: 0,
         },
         university: {
-          ocrHandwrittenMonthly: 0,
           presentationsMonthly: 0,
           presentationSlidesMax: 0,
           fileSummariesMonthly: 0,
@@ -138,7 +135,8 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
       },
       features: [
         '20 shared AI credits every week',
-        '5 printed OCR scans/month',
+        'Printed scan: 1 shared AI credit',
+        'Handwritten scan: 3 shared AI credits',
         '3 University Hub uses/week',
         'Online notes/books reading with ads',
         'Parent Link/QR setup only',
@@ -160,7 +158,6 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
         aiCreditsMonthly: 300,
         premiumAiMonthly: 0,
         quizDaily: 10,
-        ocrPrintedMonthly: 100,
         universityHubWeekly: 10,
         liveVoiceDaily: 0,
         flashcardsTotal: 1000,
@@ -171,21 +168,18 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
       },
       audienceLimits: {
         school: {
-          ocrHandwrittenMonthly: 20,
           presentationsMonthly: 1,
           presentationSlidesMax: 8,
           fileSummariesMonthly: 8,
           fileTestsMonthly: 8,
         },
         college: {
-          ocrHandwrittenMonthly: 15,
           presentationsMonthly: 2,
           presentationSlidesMax: 8,
           fileSummariesMonthly: 10,
           fileTestsMonthly: 6,
         },
         university: {
-          ocrHandwrittenMonthly: 10,
           presentationsMonthly: 4,
           presentationSlidesMax: 8,
           fileSummariesMonthly: 15,
@@ -208,8 +202,9 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
       features: [
         '300 shared AI credits/month, max 15/day',
         'Groq/DeepSeek budget AI routing',
-        '100 printed OCR scans/month',
-        'School: 20 handwritten scans and 8 file tests/month',
+        'Printed scan: 1 shared AI credit',
+        'Handwritten scan: 3 shared AI credits',
+        'School: 8 file tests/month',
         'University: 4 presentations and 15 file summaries/month',
         'Downloads, offline reading, and ad-free access',
         '1 guardian with cached weekly report',
@@ -231,7 +226,6 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
         aiCreditsMonthly: 600,
         premiumAiMonthly: 10,
         quizDaily: 25,
-        ocrPrintedMonthly: 300,
         universityHubWeekly: 25,
         liveVoiceDaily: 0,
         flashcardsTotal: 5000,
@@ -242,21 +236,18 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
       },
       audienceLimits: {
         school: {
-          ocrHandwrittenMonthly: 50,
           presentationsMonthly: 2,
           presentationSlidesMax: 12,
           fileSummariesMonthly: 20,
           fileTestsMonthly: 16,
         },
         college: {
-          ocrHandwrittenMonthly: 35,
           presentationsMonthly: 4,
           presentationSlidesMax: 12,
           fileSummariesMonthly: 25,
           fileTestsMonthly: 12,
         },
         university: {
-          ocrHandwrittenMonthly: 25,
           presentationsMonthly: 8,
           presentationSlidesMax: 12,
           fileSummariesMonthly: 35,
@@ -279,8 +270,9 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
       features: [
         '600 shared AI credits/month, max 30/day',
         '10 premium AI calls/month, budget model by default',
-        '300 printed OCR scans/month',
-        'School: 50 handwritten scans and 16 file tests/month',
+        'Printed scan: 1 shared AI credit',
+        'Handwritten scan: 3 shared AI credits',
+        'School: 16 file tests/month',
         'University: 8 presentations and 35 file summaries/month',
         'Downloads, offline reading, and ad-free access',
         '2 guardians with detailed weekly insights',
@@ -315,10 +307,6 @@ function normalizeAudienceLimits(
       const incoming = value?.[audience] || {};
       const defaults = fallback[audience];
       result[audience] = {
-        ocrHandwrittenMonthly: numberOrFallback(
-          incoming.ocrHandwrittenMonthly,
-          defaults.ocrHandwrittenMonthly
-        ),
         presentationsMonthly: numberOrFallback(incoming.presentationsMonthly, defaults.presentationsMonthly),
         presentationSlidesMax: numberOrFallback(incoming.presentationSlidesMax, defaults.presentationSlidesMax),
         fileSummariesMonthly: numberOrFallback(incoming.fileSummariesMonthly, defaults.fileSummariesMonthly),
@@ -373,10 +361,6 @@ export function normalizePlatformSettings(input: unknown): PlatformSettings {
           aiCreditsMonthly: numberOrFallback(incomingLimits.aiCreditsMonthly, fallback.limits.aiCreditsMonthly),
           premiumAiMonthly: numberOrFallback(incomingLimits.premiumAiMonthly, fallback.limits.premiumAiMonthly),
           quizDaily: numberOrFallback(incomingLimits.quizDaily, fallback.limits.quizDaily),
-          ocrPrintedMonthly: numberOrFallback(
-            incomingLimits.ocrPrintedMonthly,
-            fallback.limits.ocrPrintedMonthly
-          ),
           universityHubWeekly: numberOrFallback(
             incomingLimits.universityHubWeekly,
             fallback.limits.universityHubWeekly
@@ -384,10 +368,7 @@ export function normalizePlatformSettings(input: unknown): PlatformSettings {
           liveVoiceDaily: numberOrFallback(incomingLimits.liveVoiceDaily, fallback.limits.liveVoiceDaily),
           flashcardsTotal: numberOrFallback(incomingLimits.flashcardsTotal, fallback.limits.flashcardsTotal),
           gameMinutesDaily: numberOrFallback(incomingLimits.gameMinutesDaily, fallback.limits.gameMinutesDaily),
-          parentGuardiansMax: numberOrFallback(
-            incomingLimits.parentGuardiansMax,
-            fallback.limits.parentGuardiansMax
-          ),
+          parentGuardiansMax: numberOrFallback(incomingLimits.parentGuardiansMax, fallback.limits.parentGuardiansMax),
           parentAttachmentFilesMonthly: numberOrFallback(
             incomingLimits.parentAttachmentFilesMonthly,
             fallback.limits.parentAttachmentFilesMonthly
@@ -422,6 +403,10 @@ export function normalizePlatformSettings(input: unknown): PlatformSettings {
   );
 
   return {
+    pdfThemeMode:
+      source.pdfThemeMode === 'follow-user' || source.pdfThemeMode === 'light' || source.pdfThemeMode === 'dark'
+        ? source.pdfThemeMode
+        : DEFAULT_PLATFORM_SETTINGS.pdfThemeMode,
     subscriptionPlans,
     providerDailyBudgets: {
       groqFast: Math.max(
@@ -455,6 +440,10 @@ export function normalizePlatformSettings(input: unknown): PlatformSettings {
       gpt: Math.max(0, numberOrFallback(sourceProviderBudgets.gpt, DEFAULT_PLATFORM_SETTINGS.providerDailyBudgets.gpt)),
     },
   };
+}
+
+export function resolvePdfThemeMode(preference: PdfThemeMode, userUsesDarkTheme: boolean): 'light' | 'dark' {
+  return preference === 'follow-user' ? (userUsesDarkTheme ? 'dark' : 'light') : preference;
 }
 
 export function getPlanFromSettings(settings: PlatformSettings, tier: SubscriptionTier) {

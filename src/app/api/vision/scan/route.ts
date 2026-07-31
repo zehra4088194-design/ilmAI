@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { gatewayChat, MARKDOWN_ANSWER_FORMAT_INSTRUCTION } from '@/lib/ai/gateway';
 import { performOcr, validateOcrFile } from '@/lib/ocr';
 import { createClient } from '@/lib/supabase/server';
-import { checkAiMessageLimit, checkOcrLimit, getConfiguredLimitExceededMessage } from '@/lib/rate-limit';
+import { checkOcrCredits, consumeOcrCredits, getConfiguredLimitExceededMessage } from '@/lib/rate-limit';
 import type { SubscriptionTier } from '@/types';
 
 export const runtime = 'nodejs';
@@ -48,16 +48,15 @@ export async function POST(req: NextRequest) {
     if (!validation.valid) return NextResponse.json({ status: 'error', error: validation.error }, { status: 400 });
 
     const mode = scanType === 'handwritten' || scanType === 'math' ? 'handwritten' : 'printed';
-    const aiLimit = await checkAiMessageLimit(user.id, tier, 'vision_scan');
-    if (!aiLimit.success) {
-      return NextResponse.json({ status: 'error', error: await getConfiguredLimitExceededMessage(tier, 'Vision explanation') }, { status: 429 });
-    }
-    const scanLimit = await checkOcrLimit(user.id, tier, mode);
+    const scanLimit = await checkOcrCredits(user.id, tier, mode);
     if (!scanLimit.success) {
       return NextResponse.json(
         {
           status: 'error',
-          error: `The weekly limit for ${mode === 'handwritten' ? 'handwritten' : 'printed'} scans has been reached. It resets on ${new Date(scanLimit.reset).toLocaleDateString('en-PK')}.`,
+          error: await getConfiguredLimitExceededMessage(
+            tier,
+            `${mode === 'handwritten' ? 'Handwritten' : 'Printed'} scan`
+          ),
         },
         { status: 429 }
       );
@@ -83,7 +82,13 @@ export async function POST(req: NextRequest) {
       chapter_id: chapterId,
     });
 
-    const ocr = await performOcr({ imageBuffer, mimeType: file.type, userTier: tier, mode });
+    const ocr = await performOcr({
+      imageBuffer,
+      mimeType: file.type,
+      userTier: tier,
+      mode,
+      preferGemini: scanType !== 'textbook_page' || language !== 'ur',
+    });
 
     const result = await gatewayChat({
       provider: 'gemini',
@@ -103,6 +108,7 @@ export async function POST(req: NextRequest) {
     });
 
     await db.from('vision_scans').update({ ocr_text: ocr.text, ai_explanation: result.text }).eq('id', scanId);
+    const charged = await consumeOcrCredits(user.id, tier, mode);
 
     return NextResponse.json({
       status: 'success',
@@ -114,8 +120,9 @@ export async function POST(req: NextRequest) {
         ocr_text: ocr.text,
         ai_explanation: result.text,
         ocr_provider: ocr.provider,
-        remaining_scans: scanLimit.remaining,
-        scans_reset_at: scanLimit.reset,
+        remaining_credits: charged.remaining,
+        credit_cost: charged.creditCost,
+        credits_reset_at: charged.reset,
       },
     });
   } catch (error) {

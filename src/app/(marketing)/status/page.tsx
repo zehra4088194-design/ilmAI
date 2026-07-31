@@ -4,6 +4,7 @@ import { StaticContentPage } from '@/components/features/marketing/StaticContent
 export const metadata: Metadata = {
   title: 'System Status - ilm AI',
   description: 'Current operational status of ilm AI app, payments, AI gateway, and support systems.',
+  alternates: { canonical: '/status' },
 };
 
 export default function StatusPage() {

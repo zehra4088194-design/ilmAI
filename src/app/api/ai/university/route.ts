@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { gatewayChat } from '@/lib/ai/gateway';
-import { checkUniversityFeatureLimit, getUniversityLimitExceededMessage } from '@/lib/rate-limit';
+import {
+  checkUniversityFeatureLimit,
+  consumeUniversityFeatureCredits,
+  getUniversityLimitExceededMessage,
+} from '@/lib/rate-limit';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import type { SubscriptionTier } from '@/types';
 
@@ -181,6 +185,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    await consumeUniversityFeatureCredits(user.id, tier, `university_${tool}`);
     return NextResponse.json({ status: 'success', data: { tool, label: TOOL_LABELS[tool], result: data } });
   } catch (error) {
     console.error('University AI route error:', error);

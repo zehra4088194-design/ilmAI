@@ -11,11 +11,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { EDUCATION_LEVELS, OUTPUT_STYLES, type EducationLevel, type PreferredOutputStyle } from '@/lib/constants/university';
+import type { ScienceGroup } from '@/types';
 
 export function ClassSelectStep() {
   const router = useRouter();
   const [educationLevel, setEducationLevel] = useState<EducationLevel>('school');
   const [selected, setSelected] = useState<GradeLevel | null>(null);
+  const [scienceGroup, setScienceGroup] = useState<ScienceGroup | null>(null);
   const [program, setProgram] = useState('');
   const [semester, setSemester] = useState('');
   const [courses, setCourses] = useState('');
@@ -26,13 +28,17 @@ export function ClassSelectStep() {
 
   function handleSelect(gradeLevel: GradeLevel) {
     if (isPending) return;
+    if (!scienceGroup) {
+      setError('Select Biology or Computer Science first.');
+      return;
+    }
 
     setSelected(gradeLevel);
     setError(null);
 
     startTransition(async () => {
       const inferredLevel: EducationLevel = gradeLevel === 'GRADE_11' || gradeLevel === 'GRADE_12' ? 'college' : educationLevel;
-      const result = await completeOnboarding(gradeLevel, inferredLevel);
+      const result = await completeOnboarding(gradeLevel, inferredLevel, scienceGroup);
 
       if (!result.success) {
         setError(result.error ?? 'Something went wrong. Please try again.');
@@ -115,44 +121,70 @@ export function ClassSelectStep() {
             </Button>
           </div>
         ) : (
-          <div
-            className="grid grid-cols-2 gap-4"
-            role="radiogroup"
-            aria-label="Select your class"
-          >
-            {CLASS_SELECTION_OPTIONS.map((option) => {
-              const isSelected = selected === option.value;
-              const isDisabled = isPending && !isSelected;
+          <div className="space-y-4">
+            <div>
+              <p className="mb-2 text-sm font-medium">Which science subject do you study?</p>
+              <div className="grid grid-cols-2 gap-2">
+                {([
+                  ['biology', 'Biology'],
+                  ['computer', 'Computer Science'],
+                ] as const).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={scienceGroup === value}
+                    onClick={() => {
+                      setScienceGroup(value);
+                      setError(null);
+                    }}
+                    className={`rounded-lg border-2 px-3 py-3 text-sm font-semibold transition-colors ${
+                      scienceGroup === value ? 'border-primary bg-primary/10' : 'border-border text-muted-foreground'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div
+              className="grid grid-cols-2 gap-4"
+              role="radiogroup"
+              aria-label="Select your class"
+            >
+              {CLASS_SELECTION_OPTIONS.map((option) => {
+                const isSelected = selected === option.value;
+                const isDisabled = isPending && !isSelected;
 
-              return (
-                <Card
-                  key={option.value}
-                  role="radio"
-                  aria-checked={isSelected}
-                  tabIndex={isDisabled ? -1 : 0}
-                  onClick={() => !isDisabled && handleSelect(option.value)}
-                  onKeyDown={(event) => {
-                    if ((event.key === 'Enter' || event.key === ' ') && !isDisabled) {
-                      event.preventDefault();
-                      handleSelect(option.value);
-                    }
-                  }}
-                  className={[
-                    'cursor-pointer select-none border-2 py-8 text-center transition-all',
-                    'hover:border-primary hover:shadow-md',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-                    isSelected ? 'border-primary bg-primary/20 shadow-md' : 'border-border bg-card/80',
-                    isDisabled ? 'pointer-events-none opacity-50' : '',
-                  ].join(' ')}
-                >
-                  <CardContent className="flex flex-col items-center gap-1 p-0">
-                    <span className="text-3xl font-bold text-foreground">{option.label}</span>
-                    <span className="text-xs text-muted-foreground">{option.sublabel}</span>
-                    {isSelected && isPending && <span className="mt-2 text-xs font-medium text-primary">Saving...</span>}
-                  </CardContent>
-                </Card>
-              );
-            })}
+                return (
+                  <Card
+                    key={option.value}
+                    role="radio"
+                    aria-checked={isSelected}
+                    tabIndex={isDisabled ? -1 : 0}
+                    onClick={() => !isDisabled && handleSelect(option.value)}
+                    onKeyDown={(event) => {
+                      if ((event.key === 'Enter' || event.key === ' ') && !isDisabled) {
+                        event.preventDefault();
+                        handleSelect(option.value);
+                      }
+                    }}
+                    className={[
+                      'cursor-pointer select-none border-2 py-8 text-center transition-all',
+                      'hover:border-primary hover:shadow-md',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                      isSelected ? 'border-primary bg-primary/20 shadow-md' : 'border-border bg-card/80',
+                      isDisabled ? 'pointer-events-none opacity-50' : '',
+                    ].join(' ')}
+                  >
+                    <CardContent className="flex flex-col items-center gap-1 p-0">
+                      <span className="text-3xl font-bold text-foreground">{option.label}</span>
+                      <span className="text-xs text-muted-foreground">{option.sublabel}</span>
+                      {isSelected && isPending && <span className="mt-2 text-xs font-medium text-primary">Saving...</span>}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
           </div>
         )}
 

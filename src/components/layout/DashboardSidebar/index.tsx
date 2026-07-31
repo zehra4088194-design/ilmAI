@@ -6,7 +6,7 @@ import {
   Zap, StickyNote, Bookmark, Star, CreditCard, ChevronRight, X, Menu,
   Library, CalendarClock, HelpCircle, Target, LogOut, Users, PenLine, Cake,
   GraduationCap, Presentation, Mic2, FlaskConical, Quote, BriefcaseBusiness, Network, Video,
-  Camera, MessageCircle, Sparkles, WandSparkles, Gamepad2, Music2, Pill, HardDriveDownload
+  Camera, MessageCircle, Sparkles, WandSparkles, Gamepad2, Music2, Pill, HardDriveDownload, School
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useAuth } from '@/hooks/auth/useAuth';
@@ -89,6 +89,7 @@ const NAV_GROUPS = [
   {
     label: 'Account',
     items: [
+      { icon: School, label: 'School Portal', href: '/school' },
       { icon: CreditCard, label: 'Subscription', href: '/subscription' },
       { icon: Settings, label: 'Settings', href: '/settings' },
     ],
@@ -153,6 +154,9 @@ export function DashboardSidebar({ mobileOpen: controlledMobileOpen, onMobileOpe
             <X className="h-4 w-4" />
           </button>
         )}
+        <button type="button" onClick={() => setMobileOpen(false)} className="rounded-lg p-1.5 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground lg:hidden" aria-label="Close menu" title="Close menu">
+          <X className="h-5 w-5" />
+        </button>
       </div>
 
       {/* Nav groups */}

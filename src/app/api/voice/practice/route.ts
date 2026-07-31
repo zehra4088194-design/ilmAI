@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { gatewayChat } from '@/lib/ai/gateway';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import { createClient } from '@/lib/supabase/server';
-import { checkAiMessageLimit, getConfiguredLimitExceededMessage } from '@/lib/rate-limit';
+import { checkAiMessageLimit, consumeAiCredits, getConfiguredLimitExceededMessage } from '@/lib/rate-limit';
 import type { SubscriptionTier } from '@/types';
 
 export const runtime = 'nodejs';
@@ -74,7 +74,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: 'error', error: 'A prompt and transcript are required.' }, { status: 400 });
     }
     if (audio && audio.size > MAX_AUDIO_SIZE) {
-      return NextResponse.json({ status: 'error', error: 'The audio file must be smaller than 4 MB.' }, { status: 400 });
+      return NextResponse.json(
+        { status: 'error', error: 'The audio file must be smaller than 4 MB.' },
+        { status: 400 }
+      );
     }
 
     let audioPath: string | null = null;
@@ -133,6 +136,7 @@ export async function POST(req: NextRequest) {
       .select('id')
       .single();
 
+    await consumeAiCredits(user.id, tier, 'speaking_practice');
     return NextResponse.json({ status: 'success', data: { id: data?.id, score: parsed.score, feedback } });
   } catch (error) {
     console.error('Speaking practice error:', error);

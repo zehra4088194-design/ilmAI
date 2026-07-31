@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { summarizeAiCreditWindows } from './index';
+import { getAiCreditCost, summarizeAiCreditWindows } from './index';
 
 describe('summarizeAiCreditWindows', () => {
   it('reports the Free weekly pool', () => {
@@ -52,5 +52,15 @@ describe('summarizeAiCreditWindows', () => {
       limit: 600,
       daily: { used: 8, remaining: 22, limit: 30 },
     });
+  });
+});
+
+describe('getAiCreditCost', () => {
+  it('charges two credits for the complete PDF summarizer flow', () => {
+    expect(getAiCreditCost('university_pdf_summarizer')).toBe(2);
+  });
+
+  it('charges five credits for Research Helper', () => {
+    expect(getAiCreditCost('university_research')).toBe(5);
   });
 });

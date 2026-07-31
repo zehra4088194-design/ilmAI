@@ -98,7 +98,7 @@ export async function getProtectedResource(
   userId: string,
   kind: ProtectedResourceKind,
   resourceId: string,
-  _mode: ResourceMode
+  mode: ResourceMode
 ): Promise<ProtectedResource | null> {
   const admin = (await createAdminClient()) as any;
   const { data: profile } = await admin
@@ -117,7 +117,10 @@ export async function getProtectedResource(
       .eq('id', resourceId)
       .maybeSingle();
     if (!resource || !isVisibleForProfile(resource, profile)) return null;
-    const sourceUrl = resource.dark_file_url || resource.drive_url || resource.light_file_url;
+    const sourceUrl =
+      mode === 'dark'
+        ? resource.dark_file_url || resource.light_file_url || resource.drive_url
+        : resource.light_file_url || resource.drive_url || resource.dark_file_url;
     if (!sourceUrl) return null;
     return {
       id: resource.id,
@@ -170,7 +173,10 @@ export async function getProtectedResource(
   ) {
     return null;
   }
-  const sourceUrl = resource.dark_file_url || resource.file_url || resource.light_file_url;
+  const sourceUrl =
+    mode === 'dark'
+      ? resource.dark_file_url || resource.light_file_url || resource.file_url
+      : resource.light_file_url || resource.file_url || resource.dark_file_url;
   if (!sourceUrl) return null;
   return {
     id: resource.id,
@@ -187,7 +193,7 @@ export async function getProtectedResource(
 export async function getPublicResource(
   kind: Extract<ProtectedResourceKind, 'library' | 'past-paper'>,
   resourceId: string,
-  _mode: ResourceMode
+  mode: ResourceMode
 ): Promise<ProtectedResource | null> {
   const admin = (await createAdminClient()) as any;
   if (kind === 'library') {
@@ -197,7 +203,10 @@ export async function getPublicResource(
       .eq('id', resourceId)
       .maybeSingle();
     if (!resource) return null;
-    const sourceUrl = resource.dark_file_url || resource.drive_url || resource.light_file_url;
+    const sourceUrl =
+      mode === 'dark'
+        ? resource.dark_file_url || resource.light_file_url || resource.drive_url
+        : resource.light_file_url || resource.drive_url || resource.dark_file_url;
     if (!sourceUrl) return null;
     return {
       id: resource.id,

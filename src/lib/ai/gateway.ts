@@ -1,8 +1,8 @@
 // ============================================
 // AI GATEWAY CLIENT
-// Talks to the private Oracle AI gateway instead of calling provider APIs
-// directly. The gateway holds all API keys
-// (up to 20 per provider) and handles rotation + automatic provider fallback.
+// Talks to the private AI gateway instead of calling provider APIs directly.
+// In production, Coolify runs that service on its private Docker network and
+// keeps all provider keys outside the public web container.
 //
 // IMPORTANT: this file must only ever run on the SERVER (API routes,
 // Server Components). Never import it in a 'use client' file — that would
@@ -90,7 +90,6 @@ export async function gatewayChat({
     ? [{ provider, tier, messages, maxTokens, temperature, strictProvider: true }]
     : [
         { provider, tier, messages, maxTokens, temperature },
-        { provider: 'advanced', tier, messages, maxTokens, temperature },
         { provider: 'groq', tier: 'mini', messages, maxTokens, temperature },
       ];
   const seen = new Set<string>();

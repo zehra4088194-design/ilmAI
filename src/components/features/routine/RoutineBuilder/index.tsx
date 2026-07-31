@@ -36,19 +36,35 @@ export function RoutineBuilder({ existingRoutine, userId, userTier }: {
 }) {
   const [step, setStep] = useState<'form' | 'loading' | 'result'>(existingRoutine ? 'result' : 'form');
   const [board, setBoard] = useState<string | undefined>(undefined);
+  const [gradeLevel, setGradeLevel] = useState<string | undefined>(undefined);
+  const [scienceGroup, setScienceGroup] = useState<string | undefined>(undefined);
+  const [optionalSubjectIds, setOptionalSubjectIds] = useState<string[]>([]);
   const supabase = createClient();
 
   // Subjects are board-scoped (a Pakistani board shows Urdu/Islamiat/Pakistan
   // Studies, an Indian board shows Hindi/Social Science) — never hardcoded,
   // so this automatically stays correct as more boards/subjects are added.
   useEffect(() => {
-    supabase.from('profiles').select('board').eq('id', userId).single()
-      .then(({ data }) => setBoard(data?.board || undefined));
+    supabase.from('profiles').select('board, grade_level, science_group, optional_subject_ids').eq('id', userId).single()
+      .then(({ data }) => {
+        setBoard(data?.board || undefined);
+        setGradeLevel(data?.grade_level || undefined);
+        setScienceGroup(data?.science_group || undefined);
+        setOptionalSubjectIds(data?.optional_subject_ids || []);
+      });
   }, [userId, supabase]);
 
-  const { data: availableSubjects = [] } = useSubjects(board);
-  const subjectNames = availableSubjects.length > 0
-    ? availableSubjects.map(s => s.name)
+  const { data: availableSubjects = [] } = useSubjects(board, gradeLevel);
+  const visibleSubjects = availableSubjects.filter((subject) => {
+    if (!subject.isOptional || optionalSubjectIds.includes(subject.id)) return true;
+    if (!scienceGroup) return false;
+    const identity = `${subject.name} ${subject.slug} ${subject.stream || ''}`.toLowerCase();
+    return scienceGroup === 'biology'
+      ? identity.includes('biology') || identity.includes('pre-medical')
+      : identity.includes('computer');
+  });
+  const subjectNames = visibleSubjects.length > 0
+    ? visibleSubjects.map(s => s.name)
     : ['Physics', 'Chemistry', 'Biology', 'Mathematics', 'English']; // fallback while board loads
 
   const [prefs, setPrefs] = useState<Prefs>({
@@ -137,7 +153,7 @@ export function RoutineBuilder({ existingRoutine, userId, userTier }: {
             {/* Preferred time */}
             <Card>
               <CardContent className="p-6">
-                <p className="text-sm font-bold mb-3">Kab study karna prefer karte ho?</p>
+                <p className="text-sm font-bold mb-3">When do you prefer to study?</p>
                 <div className="flex gap-2 flex-wrap">
                   {TIME_OPTIONS.map(t => (
                     <button key={t} onClick={() => setPrefs(p => ({ ...p, preferredTime: t }))}

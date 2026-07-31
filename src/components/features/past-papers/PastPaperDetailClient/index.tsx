@@ -9,11 +9,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
-import { isDarkThemeId } from '@/lib/constants/themes';
 import { saveOfflineResourceLink } from '@/lib/offline/resources';
 import { ResourceAiTools } from '@/components/features/resources/ResourceAiTools';
 import { ProtectedResourceReader } from '@/components/features/resources/ProtectedResourceReader';
 import { ResourcePreviewFrame } from '@/components/features/resources/ResourcePreviewFrame';
+import { isDarkThemeId } from '@/lib/constants/themes';
+import { resolvePdfThemeMode } from '@/lib/platform-settings/shared';
 
 export function PastPaperDetailClient({
   paper,
@@ -21,9 +22,9 @@ export function PastPaperDetailClient({
   paper: { id: string; title: string; isVerified: boolean; fileUrl: string };
 }) {
   const { theme } = useTheme();
-  const mode = isDarkThemeId(theme) ? 'dark' : 'light';
   const { user } = useAuth();
   const settings = usePlatformSettings();
+  const mode = resolvePdfThemeMode(settings.pdfThemeMode, isDarkThemeId(theme));
   const tier = user?.subscriptionTier || 'FREE';
   const canDownload = settings.subscriptionPlans[tier].access.downloadPDF;
   const [readerOpen, setReaderOpen] = useState(false);

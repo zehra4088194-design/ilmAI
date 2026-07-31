@@ -4,6 +4,7 @@ import { StaticContentPage } from '@/components/features/marketing/StaticContent
 export const metadata: Metadata = {
   title: 'Terms of Service - ilm AI',
   description: 'Terms governing access to ilm AI products, subscriptions, AI tools, and user responsibilities.',
+  alternates: { canonical: '/terms' },
 };
 
 export default function TermsPage() {
@@ -24,7 +25,7 @@ export default function TermsPage() {
           bullets: [
             'ilm AI is designed to provide educational support.',
             'You will use your account lawfully and honestly.',
-            'You will not attempt to access another user\'s account or data without authorization.',
+            "You will not attempt to access another user's account or data without authorization.",
             'You will not use the platform for spam, abuse, cheating automation, or harmful activity.',
           ],
         },

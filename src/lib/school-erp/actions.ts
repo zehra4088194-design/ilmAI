@@ -1,0 +1,1021 @@
+'use server';
+
+import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
+import { createClient } from '@/lib/supabase/server';
+import { checkDailyLimit } from '@/lib/rate-limit';
+import { getActiveSchoolOrganizationId, getSchoolContext, hasSchoolPermission } from './access';
+import type { SchoolActionState, SchoolContext, SchoolPermission } from './types';
+
+const SUCCESS: SchoolActionState = { success: true, message: 'Saved successfully.' };
+
+function text(formData: FormData, key: string) {
+  return String(formData.get(key) || '').trim();
+}
+
+function optionalText(formData: FormData, key: string) {
+  return text(formData, key) || null;
+}
+
+function numberValue(formData: FormData, key: string, fallback = 0) {
+  const value = Number(formData.get(key));
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function dateValue(formData: FormData, key: string) {
+  const value = text(formData, key);
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : '';
+}
+
+async function mutationContext(permission: SchoolPermission, action: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error('You must be signed in.');
+  const organizationId = await getActiveSchoolOrganizationId();
+  const context =
+    (organizationId ? await getSchoolContext(supabase, user.id, organizationId) : null) ||
+    (await getSchoolContext(supabase, user.id));
+  if (!context || !hasSchoolPermission(context, permission)) throw new Error('You do not have permission for this action.');
+
+  // Operational abuse protection only. It is intentionally independent of
+  // the student's FREE/PRO/ELITE learning quotas and does not consume AI credits.
+  const limit = await checkDailyLimit(user.id, `erp_mutation:${action}`, 500);
+  if (!limit.success) throw new Error('Too many school updates today. Try again after the daily security window resets.');
+  return { supabase, user, context, db: supabase as any };
+}
+
+async function audit(
+  db: any,
+  context: SchoolContext,
+  action: string,
+  entityType: string,
+  entityId?: string | null,
+  metadata: Record<string, unknown> = {},
+) {
+  await db.from('school_audit_logs').insert({
+    organization_id: context.organization.id,
+    actor_user_id: context.userId,
+    action,
+    entity_type: entityType,
+    entity_id: entityId || null,
+    metadata,
+  });
+}
+
+function done(path: string, message: string): SchoolActionState {
+  revalidatePath('/school-admin', 'layout');
+  revalidatePath(path);
+  revalidatePath('/school');
+  return { success: true, message };
+}
+
+function failure(error: unknown): SchoolActionState {
+  return { success: false, message: error instanceof Error ? error.message : 'The update could not be completed.' };
+}
+
+export async function updateSchoolOrganization(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
+  try {
+    const name = text(formData, 'name');
+    const timezone = text(formData, 'timezone') || 'Asia/Karachi';
+    const currency = text(formData, 'currency').toUpperCase();
+    if (name.length < 2 || name.length > 120) throw new Error('School name must be between 2 and 120 characters.');
+    if (!/^[A-Z]{3}$/.test(currency)) throw new Error('Currency must be a three-letter code such as PKR.');
+    try {
+      Intl.DateTimeFormat('en', { timeZone: timezone });
+    } catch {
+      throw new Error('Enter a valid IANA timezone such as Asia/Karachi.');
+    }
+    const { db, context } = await mutationContext('organization.manage', 'organization-profile');
+    const { error } = await db.rpc('school_update_organization_profile', {
+      p_organization_id: context.organization.id,
+      p_name: name,
+      p_timezone: timezone,
+      p_currency: currency,
+      p_email: text(formData, 'email'),
+      p_phone: text(formData, 'phone'),
+      p_address: text(formData, 'address'),
+    });
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'update', 'school_organization', context.organization.id);
+    return done('/school-admin/settings', 'Organization profile updated.');
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function createCampus(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
+  try {
+    const parsed = z.object({ name: z.string().min(2).max(100), code: z.string().min(1).max(20) }).parse({
+      name: text(formData, 'name'),
+      code: text(formData, 'code').toUpperCase(),
+    });
+    const { db, context } = await mutationContext('organization.manage', 'campus');
+    const { data, error } = await db.from('school_campuses').insert({
+      organization_id: context.organization.id,
+      name: parsed.name,
+      code: parsed.code,
+      address: optionalText(formData, 'address'),
+      phone: optionalText(formData, 'phone'),
+      is_main: formData.get('is_main') === 'on',
+    }).select('id').single();
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'create', 'campus', data.id);
+    return done('/school-admin/academics', 'Campus added.');
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function createAcademicYear(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
+  try {
+    const name = text(formData, 'name');
+    const startsOn = dateValue(formData, 'starts_on');
+    const endsOn = dateValue(formData, 'ends_on');
+    if (!name || !startsOn || !endsOn) throw new Error('Academic year name and dates are required.');
+    const { db, context } = await mutationContext('organization.manage', 'academic-year');
+    if (formData.get('is_current') === 'on') {
+      await db.from('school_academic_years').update({ is_current: false }).eq('organization_id', context.organization.id);
+    }
+    const { data, error } = await db.from('school_academic_years').insert({
+      organization_id: context.organization.id,
+      name,
+      starts_on: startsOn,
+      ends_on: endsOn,
+      is_current: formData.get('is_current') === 'on',
+      status: formData.get('is_current') === 'on' ? 'active' : 'planning',
+    }).select('id').single();
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'create', 'academic_year', data.id);
+    return done('/school-admin/academics', 'Academic year added.');
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function createSchoolClass(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
+  try {
+    const name = text(formData, 'name');
+    const campusId = text(formData, 'campus_id');
+    const academicYearId = text(formData, 'academic_year_id');
+    if (!name || !campusId || !academicYearId) throw new Error('Class, campus, and academic year are required.');
+    const { db, context } = await mutationContext('organization.manage', 'class');
+    const { data, error } = await db.from('school_classes').insert({
+      organization_id: context.organization.id,
+      campus_id: campusId,
+      academic_year_id: academicYearId,
+      name,
+      grade_level: optionalText(formData, 'grade_level'),
+      display_order: numberValue(formData, 'display_order'),
+    }).select('id').single();
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'create', 'class', data.id);
+    return done('/school-admin/academics', 'Class added.');
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function createSection(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
+  try {
+    const classId = text(formData, 'class_id');
+    const name = text(formData, 'name');
+    if (!classId || !name) throw new Error('Class and section name are required.');
+    const { db, context } = await mutationContext('organization.manage', 'section');
+    const { data, error } = await db.from('school_sections').insert({
+      organization_id: context.organization.id,
+      class_id: classId,
+      name,
+      room: optionalText(formData, 'room'),
+      capacity: Math.max(1, numberValue(formData, 'capacity', 40)),
+      homeroom_teacher_id: optionalText(formData, 'homeroom_teacher_id'),
+    }).select('id').single();
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'create', 'section', data.id);
+    return done('/school-admin/academics', 'Section added.');
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function createSubjectOffering(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
+  try {
+    const sectionId = text(formData, 'section_id');
+    const subjectName = text(formData, 'subject_name');
+    if (!sectionId || !subjectName) throw new Error('Section and subject are required.');
+    const { db, context } = await mutationContext('academics.manage', 'subject-offering');
+    const { data, error } = await db.from('school_subject_offerings').insert({
+      organization_id: context.organization.id,
+      section_id: sectionId,
+      subject_id: optionalText(formData, 'subject_id'),
+      subject_name: subjectName,
+      teacher_id: optionalText(formData, 'teacher_id'),
+      weekly_periods: Math.max(1, numberValue(formData, 'weekly_periods', 1)),
+    }).select('id').single();
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'create', 'subject_offering', data.id);
+    return done('/school-admin/academics', 'Subject offering added.');
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function addSchoolMember(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
+  try {
+    const email = text(formData, 'email').toLowerCase();
+    const role = text(formData, 'member_role');
+    const allowedRoles = ['admin', 'admissions', 'teacher', 'staff', 'accountant', 'parent', 'student'];
+    if (!z.string().email().safeParse(email).success || !allowedRoles.includes(role)) {
+      throw new Error('A valid registered email and role are required.');
+    }
+    const { db, context } = await mutationContext('people.manage', 'member');
+    const { data: profile } = await db.from('profiles').select('id').eq('email', email).maybeSingle();
+    if (!profile) throw new Error('This email must register an ilm AI account first.');
+    const { data, error } = await db.from('school_memberships').upsert({
+      organization_id: context.organization.id,
+      campus_id: optionalText(formData, 'campus_id'),
+      profile_id: profile.id,
+      member_role: role,
+      employee_code: optionalText(formData, 'employee_code'),
+      designation: optionalText(formData, 'designation'),
+      status: 'active',
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'organization_id,profile_id,member_role' }).select('id').single();
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'upsert', 'membership', data.id, { role });
+    return done('/school-admin/people', 'School member added.');
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function enrollStudent(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
+  try {
+    const studentEmail = text(formData, 'student_email').toLowerCase();
+    const sectionId = text(formData, 'section_id');
+    const academicYearId = text(formData, 'academic_year_id');
+    const admissionNumber = text(formData, 'admission_number');
+    if (!studentEmail || !sectionId || !academicYearId || !admissionNumber) {
+      throw new Error('Student email, section, academic year, and admission number are required.');
+    }
+    const { db, context } = await mutationContext('admissions.manage', 'enrollment');
+    const { data: profile } = await db.from('profiles').select('id').eq('email', studentEmail).maybeSingle();
+    if (!profile) throw new Error('The student must register an ilm AI account first.');
+    await db.from('school_memberships').upsert({
+      organization_id: context.organization.id,
+      profile_id: profile.id,
+      member_role: 'student',
+      status: 'active',
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'organization_id,profile_id,member_role' });
+    const { data, error } = await db.from('school_enrollments').upsert({
+      organization_id: context.organization.id,
+      academic_year_id: academicYearId,
+      section_id: sectionId,
+      student_id: profile.id,
+      admission_number: admissionNumber,
+      roll_number: optionalText(formData, 'roll_number'),
+      status: 'active',
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'organization_id,academic_year_id,student_id' }).select('id').single();
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'upsert', 'enrollment', data.id, { studentId: profile.id });
+    return done('/school-admin/people', 'Student enrolled.');
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function linkGuardian(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
+  try {
+    const studentId = text(formData, 'student_id');
+    const guardianEmail = text(formData, 'guardian_email').toLowerCase();
+    if (!studentId || !z.string().email().safeParse(guardianEmail).success) throw new Error('Student and guardian email are required.');
+    const { db, context } = await mutationContext('people.manage', 'guardian');
+    const { data: profile } = await db.from('profiles').select('id').eq('email', guardianEmail).maybeSingle();
+    if (!profile) throw new Error('The guardian must register an ilm AI account first.');
+    await db.from('school_memberships').upsert({
+      organization_id: context.organization.id,
+      profile_id: profile.id,
+      member_role: 'parent',
+      status: 'active',
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'organization_id,profile_id,member_role' });
+    const { data, error } = await db.from('school_guardians').upsert({
+      organization_id: context.organization.id,
+      student_id: studentId,
+      guardian_id: profile.id,
+      relationship: text(formData, 'relationship') || 'guardian',
+      is_primary: formData.get('is_primary') === 'on',
+      receives_alerts: true,
+    }, { onConflict: 'organization_id,student_id,guardian_id' }).select('id').single();
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'upsert', 'guardian_link', data.id);
+    return done('/school-admin/people', 'Guardian linked.');
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function createAdmission(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
+  try {
+    const applicantName = text(formData, 'applicant_name');
+    const applyingForClass = text(formData, 'applying_for_class');
+    const guardianName = text(formData, 'guardian_name');
+    const guardianPhone = text(formData, 'guardian_phone');
+    if (!applicantName || !applyingForClass || !guardianName || !guardianPhone) {
+      throw new Error('Applicant, class, guardian, and phone are required.');
+    }
+    const { db, context } = await mutationContext('admissions.manage', 'admission');
+    const applicationNumber = text(formData, 'application_number') || `APP-${Date.now().toString(36).toUpperCase()}`;
+    const { data, error } = await db.from('school_admissions').insert({
+      organization_id: context.organization.id,
+      campus_id: optionalText(formData, 'campus_id'),
+      academic_year_id: optionalText(formData, 'academic_year_id'),
+      application_number: applicationNumber,
+      applicant_name: applicantName,
+      date_of_birth: dateValue(formData, 'date_of_birth') || null,
+      gender: optionalText(formData, 'gender'),
+      applying_for_class: applyingForClass,
+      guardian_name: guardianName,
+      guardian_email: optionalText(formData, 'guardian_email'),
+      guardian_phone: guardianPhone,
+      previous_school: optionalText(formData, 'previous_school'),
+      notes: optionalText(formData, 'notes'),
+      status: 'submitted',
+    }).select('id').single();
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'create', 'admission', data.id, { applicationNumber });
+    return done('/school-admin/admissions', `Application ${applicationNumber} created.`);
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function updateAdmissionStatus(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
+  try {
+    const id = text(formData, 'id');
+    const status = text(formData, 'status');
+    const statuses = ['submitted', 'under_review', 'waitlisted', 'approved', 'rejected', 'enrolled', 'withdrawn'];
+    if (!id || !statuses.includes(status)) throw new Error('Application and valid status are required.');
+    const { db, context, user } = await mutationContext('admissions.manage', 'admission-status');
+    const { error } = await db.from('school_admissions').update({
+      status,
+      reviewed_by: user.id,
+      reviewed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }).eq('id', id).eq('organization_id', context.organization.id);
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'status_change', 'admission', id, { status });
+    return done('/school-admin/admissions', 'Admission status updated.');
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+type AttendanceInput = { studentId: string; status: string; remarks?: string };
+
+export async function saveAttendance(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
+  try {
+    const sectionId = text(formData, 'section_id');
+    const attendanceDate = dateValue(formData, 'attendance_date');
+    const entries = JSON.parse(text(formData, 'entries') || '[]') as AttendanceInput[];
+    if (!sectionId || !attendanceDate || !entries.length) throw new Error('Section, date, and at least one attendance entry are required.');
+    const { db, context, user } = await mutationContext('attendance.manage', 'attendance');
+    const allowed = new Set(['present', 'absent', 'late', 'excused', 'leave']);
+    const records = entries
+      .filter((entry) => entry.studentId && allowed.has(entry.status))
+      .map((entry) => ({
+        organization_id: context.organization.id,
+        section_id: sectionId,
+        student_id: entry.studentId,
+        attendance_date: attendanceDate,
+        status: entry.status,
+        remarks: entry.remarks?.slice(0, 300) || null,
+        marked_by: user.id,
+        marked_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }));
+    if (!records.length) throw new Error('No valid attendance entries were provided.');
+    const { error } = await db.from('school_attendance_records').upsert(records, {
+      onConflict: 'section_id,student_id,attendance_date',
+    });
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'bulk_upsert', 'attendance', sectionId, { attendanceDate, count: records.length });
+    return done('/school-admin/attendance', `${records.length} attendance records saved.`);
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+type StaffAttendanceInput = { membershipId: string; status: string };
+
+export async function saveStaffAttendance(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
+  try {
+    const attendanceDate = dateValue(formData, 'attendance_date');
+    const entries = JSON.parse(text(formData, 'entries') || '[]') as StaffAttendanceInput[];
+    if (!attendanceDate || !entries.length) throw new Error('Date and staff attendance entries are required.');
+    const { db, context, user } = await mutationContext('attendance.manage', 'staff-attendance');
+    if (!['owner', 'admin'].includes(context.membership.member_role)) {
+      throw new Error('Only school owners and administrators can mark staff attendance.');
+    }
+    const allowed = new Set(['present', 'absent', 'late', 'remote', 'leave']);
+    const records = entries
+      .filter((entry) => entry.membershipId && allowed.has(entry.status))
+      .map((entry) => ({
+        organization_id: context.organization.id,
+        membership_id: entry.membershipId,
+        attendance_date: attendanceDate,
+        status: entry.status,
+        marked_by: user.id,
+      }));
+    const { error } = await db.from('school_staff_attendance').upsert(records, {
+      onConflict: 'membership_id,attendance_date',
+    });
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'bulk_upsert', 'staff_attendance', null, { attendanceDate, count: records.length });
+    return done('/school-admin/attendance', `${records.length} staff attendance records saved.`);
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function createLeaveRequest(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
+  try {
+    const startsOn = dateValue(formData, 'starts_on');
+    const endsOn = dateValue(formData, 'ends_on');
+    const reason = text(formData, 'reason');
+    if (!startsOn || !endsOn || !reason) throw new Error('Leave dates and reason are required.');
+    const { db, context, user } = await mutationContext('attendance.read', 'leave-request');
+    const role = context.membership.member_role;
+    let requesterId = user.id;
+    let requesterType = role === 'teacher' ? 'teacher' : role === 'staff' ? 'staff' : 'student';
+    if (role === 'parent') {
+      requesterId = text(formData, 'student_id');
+      if (!requesterId) throw new Error('Select a student.');
+      const { data: relationship } = await db
+        .from('school_guardians')
+        .select('id')
+        .eq('organization_id', context.organization.id)
+        .eq('guardian_id', user.id)
+        .eq('student_id', requesterId)
+        .maybeSingle();
+      if (!relationship) throw new Error('You can only request leave for a linked student.');
+      requesterType = 'student';
+    }
+    if (!['student', 'parent', 'teacher', 'staff'].includes(role)) {
+      throw new Error('Leave requests are available to students and staff.');
+    }
+    const { data, error } = await db.from('school_leave_requests').insert({
+      organization_id: context.organization.id,
+      requester_id: requesterId,
+      requester_type: requesterType,
+      starts_on: startsOn,
+      ends_on: endsOn,
+      reason: reason.slice(0, 1000),
+      status: 'pending',
+    }).select('id').single();
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'create', 'leave_request', data.id, { requesterId });
+    return done('/school', 'Leave request submitted.');
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function reviewLeaveRequest(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
+  try {
+    const id = text(formData, 'id');
+    const status = text(formData, 'status');
+    if (!id || !['approved', 'rejected'].includes(status)) throw new Error('Leave request and decision are required.');
+    const { db, context, user } = await mutationContext('attendance.manage', 'leave-review');
+    const { error } = await db.from('school_leave_requests').update({
+      status,
+      reviewed_by: user.id,
+      reviewed_at: new Date().toISOString(),
+    }).eq('id', id).eq('organization_id', context.organization.id);
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'review', 'leave_request', id, { status });
+    return done('/school-admin/attendance', 'Leave request updated.');
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function createExam(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
+  try {
+    const name = text(formData, 'name');
+    const academicYearId = text(formData, 'academic_year_id');
+    const startsOn = dateValue(formData, 'starts_on');
+    const endsOn = dateValue(formData, 'ends_on');
+    if (!name || !academicYearId || !startsOn || !endsOn) throw new Error('Exam name, year, and dates are required.');
+    const { db, context, user } = await mutationContext('exams.manage', 'exam');
+    const { data, error } = await db.from('school_exams').insert({
+      organization_id: context.organization.id,
+      academic_year_id: academicYearId,
+      name,
+      term: optionalText(formData, 'term'),
+      starts_on: startsOn,
+      ends_on: endsOn,
+      status: 'draft',
+      created_by: user.id,
+    }).select('id').single();
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'create', 'exam', data.id);
+    return done('/school-admin/exams', 'Exam created.');
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function createExamSchedule(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
+  try {
+    const examId = text(formData, 'exam_id');
+    const sectionId = text(formData, 'section_id');
+    const subjectName = text(formData, 'subject_name');
+    const examDate = dateValue(formData, 'exam_date');
+    if (!examId || !sectionId || !subjectName || !examDate) throw new Error('Exam, section, subject, and date are required.');
+    const { db, context } = await mutationContext('exams.manage', 'exam-schedule');
+    const { data, error } = await db.from('school_exam_schedules').insert({
+      organization_id: context.organization.id,
+      exam_id: examId,
+      section_id: sectionId,
+      subject_offering_id: optionalText(formData, 'subject_offering_id'),
+      subject_name: subjectName,
+      exam_date: examDate,
+      starts_at: optionalText(formData, 'starts_at'),
+      ends_at: optionalText(formData, 'ends_at'),
+      room: optionalText(formData, 'room'),
+      max_marks: Math.max(1, numberValue(formData, 'max_marks', 100)),
+      passing_marks: Math.max(0, numberValue(formData, 'passing_marks', 40)),
+    }).select('id').single();
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'create', 'exam_schedule', data.id);
+    return done('/school-admin/exams', 'Date-sheet entry added.');
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+type MarkInput = { studentId: string; marks: number | null; absent?: boolean; remarks?: string };
+
+export async function saveExamMarks(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
+  try {
+    const scheduleId = text(formData, 'schedule_id');
+    const entries = JSON.parse(text(formData, 'entries') || '[]') as MarkInput[];
+    if (!scheduleId || !entries.length) throw new Error('Exam schedule and marks are required.');
+    const { db, context, user } = await mutationContext('exams.manage', 'exam-marks');
+    const { data: schedule } = await db.from('school_exam_schedules').select('max_marks').eq('id', scheduleId).maybeSingle();
+    if (!schedule) throw new Error('Exam schedule was not found.');
+    const records = entries.map((entry) => {
+      const marks = Number(entry.marks);
+      if (!entry.absent && (!Number.isFinite(marks) || marks < 0 || marks > Number(schedule.max_marks))) {
+        throw new Error(`Marks must be between 0 and ${schedule.max_marks}.`);
+      }
+      return {
+        organization_id: context.organization.id,
+        schedule_id: scheduleId,
+        student_id: entry.studentId,
+        marks_obtained: entry.absent ? null : marks,
+        is_absent: Boolean(entry.absent),
+        remarks: entry.remarks?.slice(0, 300) || null,
+        entered_by: user.id,
+        entered_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+    });
+    const { error } = await db.from('school_exam_marks').upsert(records, { onConflict: 'schedule_id,student_id' });
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'bulk_upsert', 'exam_marks', scheduleId, { count: records.length });
+    return done('/school-admin/exams', `${records.length} marks saved.`);
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+function gradeFor(percentage: number) {
+  if (percentage >= 90) return { grade: 'A+', gpa: 4 };
+  if (percentage >= 80) return { grade: 'A', gpa: 3.7 };
+  if (percentage >= 70) return { grade: 'B', gpa: 3 };
+  if (percentage >= 60) return { grade: 'C', gpa: 2 };
+  if (percentage >= 50) return { grade: 'D', gpa: 1 };
+  return { grade: 'F', gpa: 0 };
+}
+
+export async function publishExamResults(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
+  try {
+    const examId = text(formData, 'exam_id');
+    if (!examId) throw new Error('Exam is required.');
+    const { db, context } = await mutationContext('exams.manage', 'publish-results');
+    const { data: schedules } = await db.from('school_exam_schedules').select('id, max_marks, subject_name').eq('exam_id', examId).eq('organization_id', context.organization.id);
+    if (!schedules?.length) throw new Error('Add date-sheet subjects before publishing results.');
+    const scheduleIds = schedules.map((item: any) => item.id);
+    const { data: marks } = await db.from('school_exam_marks').select('student_id, schedule_id, marks_obtained, is_absent').in('schedule_id', scheduleIds);
+    if (!marks?.length) throw new Error('Enter marks before publishing results.');
+
+    const scheduleMap = new Map<string, any>(schedules.map((item: any) => [item.id, item]));
+    const summaries = new Map<string, { total: number; obtained: number; subjects: any[] }>();
+    for (const mark of marks) {
+      const schedule = scheduleMap.get(mark.schedule_id);
+      if (!schedule) continue;
+      const current = summaries.get(mark.student_id) || { total: 0, obtained: 0, subjects: [] };
+      current.total += Number(schedule.max_marks);
+      current.obtained += Number(mark.marks_obtained || 0);
+      current.subjects.push({
+        subject: schedule.subject_name,
+        maxMarks: Number(schedule.max_marks),
+        marks: mark.is_absent ? null : Number(mark.marks_obtained || 0),
+        absent: mark.is_absent,
+      });
+      summaries.set(mark.student_id, current);
+    }
+    const ranked = [...summaries.entries()]
+      .map(([studentId, value]) => ({
+        studentId,
+        ...value,
+        percentage: value.total ? Math.round((value.obtained / value.total) * 10000) / 100 : 0,
+      }))
+      .sort((a, b) => b.percentage - a.percentage);
+    const publishedAt = new Date().toISOString();
+    const reportCards = ranked.map((item, index) => {
+      const rating = gradeFor(item.percentage);
+      return {
+        organization_id: context.organization.id,
+        exam_id: examId,
+        student_id: item.studentId,
+        summary: { subjects: item.subjects },
+        total_marks: item.total,
+        obtained_marks: item.obtained,
+        percentage: item.percentage,
+        gpa: rating.gpa,
+        grade: rating.grade,
+        class_position: index + 1,
+        published_at: publishedAt,
+        generated_at: publishedAt,
+      };
+    });
+    const { error } = await db.from('school_report_cards').upsert(reportCards, { onConflict: 'exam_id,student_id' });
+    if (error) throw new Error(error.message);
+    await db.from('school_exams').update({ status: 'published', published_at: publishedAt }).eq('id', examId);
+    await audit(db, context, 'publish', 'exam_results', examId, { students: reportCards.length });
+    return done('/school-admin/exams', `${reportCards.length} report cards published.`);
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function createFeeStructure(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
+  try {
+    const name = text(formData, 'name');
+    const academicYearId = text(formData, 'academic_year_id');
+    const amount = numberValue(formData, 'amount', -1);
+    if (!name || !academicYearId || amount < 0) throw new Error('Name, academic year, and valid amount are required.');
+    const { db, context } = await mutationContext('fees.manage', 'fee-structure');
+    const { data, error } = await db.from('school_fee_structures').insert({
+      organization_id: context.organization.id,
+      academic_year_id: academicYearId,
+      class_id: optionalText(formData, 'class_id'),
+      name,
+      fee_type: text(formData, 'fee_type') || 'tuition',
+      frequency: text(formData, 'frequency') || 'monthly',
+      amount,
+      due_day: numberValue(formData, 'due_day', 10),
+      late_fee_type: text(formData, 'late_fee_type') || 'fixed',
+      late_fee_amount: Math.max(0, numberValue(formData, 'late_fee_amount')),
+    }).select('id').single();
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'create', 'fee_structure', data.id);
+    return done('/school-admin/fees', 'Fee structure added.');
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function createFeeInvoice(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
+  try {
+    const studentId = text(formData, 'student_id');
+    const academicYearId = text(formData, 'academic_year_id');
+    const dueDate = dateValue(formData, 'due_date');
+    const subtotal = numberValue(formData, 'subtotal', -1);
+    if (!studentId || !academicYearId || !dueDate || subtotal < 0) throw new Error('Student, year, due date, and amount are required.');
+    const { db, context, user } = await mutationContext('fees.manage', 'fee-invoice');
+    const voucherNumber = text(formData, 'voucher_number') || `V-${Date.now().toString(36).toUpperCase()}`;
+    const { data, error } = await db.from('school_fee_invoices').insert({
+      organization_id: context.organization.id,
+      academic_year_id: academicYearId,
+      student_id: studentId,
+      fee_structure_id: optionalText(formData, 'fee_structure_id'),
+      voucher_number: voucherNumber,
+      billing_period: optionalText(formData, 'billing_period'),
+      issue_date: new Date().toISOString().slice(0, 10),
+      due_date: dueDate,
+      subtotal,
+      discount_amount: Math.max(0, numberValue(formData, 'discount_amount')),
+      scholarship_amount: Math.max(0, numberValue(formData, 'scholarship_amount')),
+      fine_amount: Math.max(0, numberValue(formData, 'fine_amount')),
+      status: 'issued',
+      notes: optionalText(formData, 'notes'),
+      created_by: user.id,
+    }).select('id').single();
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'create', 'fee_invoice', data.id, { voucherNumber });
+    return done('/school-admin/fees', `Voucher ${voucherNumber} issued.`);
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function recordFeePayment(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
+  try {
+    const invoiceId = text(formData, 'invoice_id');
+    const amount = numberValue(formData, 'amount', -1);
+    if (!invoiceId || amount <= 0) throw new Error('Invoice and payment amount are required.');
+    const { db, context, user } = await mutationContext('fees.manage', 'fee-payment');
+    const receiptNumber = text(formData, 'receipt_number') || `R-${Date.now().toString(36).toUpperCase()}`;
+    const { data, error } = await db.from('school_fee_payments').insert({
+      organization_id: context.organization.id,
+      invoice_id: invoiceId,
+      amount,
+      payment_method: text(formData, 'payment_method') || 'cash',
+      provider: optionalText(formData, 'provider'),
+      provider_reference: optionalText(formData, 'provider_reference'),
+      receipt_number: receiptNumber,
+      received_by: user.id,
+      notes: optionalText(formData, 'notes'),
+    }).select('id').single();
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'create', 'fee_payment', data.id, { receiptNumber, amount });
+    return done('/school-admin/fees', `Payment recorded as ${receiptNumber}.`);
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function createHomework(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
+  try {
+    const sectionId = text(formData, 'section_id');
+    const title = text(formData, 'title');
+    if (!sectionId || !title) throw new Error('Section and title are required.');
+    const { db, context, user } = await mutationContext('academics.manage', 'homework');
+    const { data, error } = await db.from('school_homework').insert({
+      organization_id: context.organization.id,
+      section_id: sectionId,
+      subject_offering_id: optionalText(formData, 'subject_offering_id'),
+      title,
+      instructions: optionalText(formData, 'instructions'),
+      attachment_url: optionalText(formData, 'attachment_url'),
+      due_at: optionalText(formData, 'due_at'),
+      max_marks: numberValue(formData, 'max_marks') || null,
+      created_by: user.id,
+    }).select('id').single();
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'create', 'homework', data.id);
+    return done('/school-admin/academics', 'Homework assigned.');
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function createLessonPlan(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
+  try {
+    const subjectOfferingId = text(formData, 'subject_offering_id');
+    const title = text(formData, 'title');
+    const lessonDate = dateValue(formData, 'lesson_date');
+    const status = text(formData, 'status') || 'draft';
+    if (!subjectOfferingId || !title || !lessonDate) {
+      throw new Error('Subject, lesson title, and date are required.');
+    }
+    if (!['draft', 'ready', 'delivered', 'reviewed'].includes(status)) throw new Error('Invalid lesson status.');
+    const { db, context, user } = await mutationContext('academics.manage', 'lesson-plan');
+    const resources = text(formData, 'resources')
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .slice(0, 20);
+    const { data, error } = await db.from('school_lesson_plans').insert({
+      organization_id: context.organization.id,
+      subject_offering_id: subjectOfferingId,
+      title,
+      objectives: optionalText(formData, 'objectives'),
+      lesson_date: lessonDate,
+      content: optionalText(formData, 'content'),
+      resources,
+      status,
+      created_by: user.id,
+    }).select('id').single();
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'create', 'lesson_plan', data.id);
+    return done('/school-admin/academics', 'Lesson plan added.');
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function createTimetableEntry(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
+  try {
+    const sectionId = text(formData, 'section_id');
+    const subjectName = text(formData, 'subject_name');
+    const startsAt = text(formData, 'starts_at');
+    const endsAt = text(formData, 'ends_at');
+    if (!sectionId || !subjectName || !startsAt || !endsAt) throw new Error('Section, subject, and times are required.');
+    const { db, context } = await mutationContext('academics.manage', 'timetable');
+    const { data, error } = await db.from('school_timetable_entries').insert({
+      organization_id: context.organization.id,
+      section_id: sectionId,
+      subject_offering_id: optionalText(formData, 'subject_offering_id'),
+      subject_name: subjectName,
+      teacher_id: optionalText(formData, 'teacher_id'),
+      day_of_week: Math.min(7, Math.max(1, numberValue(formData, 'day_of_week', 1))),
+      starts_at: startsAt,
+      ends_at: endsAt,
+      room: optionalText(formData, 'room'),
+    }).select('id').single();
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'create', 'timetable_entry', data.id);
+    return done('/school-admin/academics', 'Timetable entry added.');
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function createCalendarEvent(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
+  try {
+    const title = text(formData, 'title');
+    const startsAt = text(formData, 'starts_at');
+    if (!title || !startsAt) throw new Error('Event title and start time are required.');
+    const { db, context, user } = await mutationContext('academics.manage', 'calendar-event');
+    const { data, error } = await db.from('school_calendar_events').insert({
+      organization_id: context.organization.id,
+      campus_id: optionalText(formData, 'campus_id'),
+      title,
+      description: optionalText(formData, 'description'),
+      event_type: text(formData, 'event_type') || 'academic',
+      starts_at: startsAt,
+      ends_at: optionalText(formData, 'ends_at'),
+      created_by: user.id,
+    }).select('id').single();
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'create', 'calendar_event', data.id);
+    return done('/school-admin/academics', 'Calendar event added.');
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function createAnnouncement(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
+  try {
+    const title = text(formData, 'title');
+    const body = text(formData, 'body');
+    if (!title || !body) throw new Error('Announcement title and message are required.');
+    const roles = formData.getAll('audience_roles').map(String);
+    const channels = formData.getAll('delivery_channels').map(String);
+    const { db, context, user } = await mutationContext('communication.manage', 'announcement');
+    const publishedAt = formData.get('publish_now') === 'on' ? new Date().toISOString() : null;
+    const { data, error } = await db.from('school_announcements').insert({
+      organization_id: context.organization.id,
+      campus_id: optionalText(formData, 'campus_id'),
+      title,
+      body,
+      priority: text(formData, 'priority') || 'normal',
+      audience_roles: roles.length ? roles : ['student', 'parent', 'teacher', 'staff'],
+      delivery_channels: channels.length ? channels : ['in_app'],
+      published_at: publishedAt,
+      expires_at: optionalText(formData, 'expires_at'),
+      created_by: user.id,
+    }).select('id').single();
+    if (error) throw new Error(error.message);
+
+    if (publishedAt) {
+      const { data: recipients } = await db
+        .from('school_memberships')
+        .select('profile_id, member_role, profiles(email, phone)')
+        .eq('organization_id', context.organization.id)
+        .eq('status', 'active')
+        .in('member_role', roles.length ? roles : ['student', 'parent', 'teacher', 'staff']);
+      const deliveries = (recipients || []).flatMap((recipient: any) =>
+        (channels.length ? channels : ['in_app']).map((channel) => {
+          const profile = Array.isArray(recipient.profiles) ? recipient.profiles[0] : recipient.profiles;
+          return {
+            organization_id: context.organization.id,
+            announcement_id: data.id,
+            recipient_id: recipient.profile_id,
+            recipient_address:
+              channel === 'email'
+                ? profile?.email || null
+                : channel === 'sms' || channel === 'whatsapp'
+                  ? profile?.phone || null
+                  : null,
+            channel,
+            status: 'queued',
+          };
+        }),
+      );
+      if (deliveries.length) await db.from('school_notification_deliveries').insert(deliveries);
+    }
+    await audit(db, context, 'create', 'announcement', data.id, { published: Boolean(publishedAt) });
+    return done('/school-admin/communication', publishedAt ? 'Announcement published and delivery queued.' : 'Announcement saved as draft.');
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function publishAnnouncement(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
+  try {
+    const id = text(formData, 'id');
+    if (!id) throw new Error('Announcement is required.');
+    const { db, context } = await mutationContext('communication.manage', 'announcement-publish');
+    const { data: announcement, error } = await db
+      .from('school_announcements')
+      .select('id, audience_roles, delivery_channels, published_at')
+      .eq('id', id)
+      .eq('organization_id', context.organization.id)
+      .maybeSingle();
+    if (error || !announcement) throw new Error(error?.message || 'Announcement not found.');
+    if (announcement.published_at) return done('/school-admin/communication', 'Announcement is already published.');
+    const publishedAt = new Date().toISOString();
+    const { error: publishError } = await db.from('school_announcements').update({
+      published_at: publishedAt,
+    }).eq('id', id).eq('organization_id', context.organization.id);
+    if (publishError) throw new Error(publishError.message);
+
+    const { data: recipients } = await db
+      .from('school_memberships')
+      .select('profile_id, profiles(email, phone)')
+      .eq('organization_id', context.organization.id)
+      .eq('status', 'active')
+      .in('member_role', announcement.audience_roles);
+    const deliveries = (recipients || []).flatMap((recipient: any) => {
+      const profile = Array.isArray(recipient.profiles) ? recipient.profiles[0] : recipient.profiles;
+      return (announcement.delivery_channels || ['in_app']).map((channel: string) => ({
+        organization_id: context.organization.id,
+        announcement_id: id,
+        recipient_id: recipient.profile_id,
+        recipient_address:
+          channel === 'email'
+            ? profile?.email || null
+            : channel === 'sms' || channel === 'whatsapp'
+              ? profile?.phone || null
+              : null,
+        channel,
+        status: 'queued',
+      }));
+    });
+    if (deliveries.length) {
+      const { error: deliveryError } = await db.from('school_notification_deliveries').insert(deliveries);
+      if (deliveryError) throw new Error(deliveryError.message);
+    }
+    await audit(db, context, 'publish', 'announcement', id, { deliveries: deliveries.length });
+    return done('/school-admin/communication', 'Announcement published and delivery queued.');
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function createSchoolContactMessage(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
+  try {
+    const subject = text(formData, 'subject');
+    const body = text(formData, 'body');
+    const recipientRole = text(formData, 'recipient_role') || 'admin';
+    if (!subject || !body) throw new Error('Subject and message are required.');
+    if (!['admin', 'admissions', 'teacher', 'accountant'].includes(recipientRole)) {
+      throw new Error('Invalid recipient team.');
+    }
+    const { db, context, user } = await mutationContext('communication.read', 'contact-message');
+    const { data, error } = await db.from('school_contact_messages').insert({
+      organization_id: context.organization.id,
+      sender_id: user.id,
+      recipient_role: recipientRole,
+      subject: subject.slice(0, 160),
+      body: body.slice(0, 3000),
+    }).select('id').single();
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'create', 'contact_message', data.id, { recipientRole });
+    return done('/school', 'Message sent to the school.');
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function respondSchoolContactMessage(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
+  try {
+    const id = text(formData, 'id');
+    const response = text(formData, 'response');
+    const status = text(formData, 'status') || 'replied';
+    if (!id || !response) throw new Error('Message and response are required.');
+    if (!['replied', 'closed'].includes(status)) throw new Error('Invalid response status.');
+    const { db, context, user } = await mutationContext('communication.read', 'contact-response');
+    const { error } = await db.from('school_contact_messages').update({
+      response: response.slice(0, 3000),
+      status,
+      responded_by: user.id,
+      responded_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }).eq('id', id).eq('organization_id', context.organization.id);
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'respond', 'contact_message', id, { status });
+    return done('/school-admin/communication', 'Response saved.');
+  } catch (error) {
+    return failure(error);
+  }
+}

@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { checkUniversityFeatureLimit, getUniversityLimitExceededMessage } from '@/lib/rate-limit';
+import {
+  checkUniversityFeatureLimit,
+  consumeUniversityFeatureCredits,
+  getUniversityLimitExceededMessage,
+} from '@/lib/rate-limit';
 import { gatewayChat } from '@/lib/ai/gateway';
+import { performPdfOcr } from '@/lib/ocr';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import type { SubscriptionTier } from '@/types';
 
 export const runtime = 'nodejs';
+export const maxDuration = 180;
 
 function clean(value: unknown) {
   return typeof value === 'string' ? value.trim().slice(0, 50000) : '';
@@ -89,15 +95,37 @@ export async function POST(req: NextRequest) {
     if (!user) return NextResponse.json({ status: 'error', error: 'Login required' }, { status: 401 });
     const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
     const tier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
-    const body = await req.json();
-    const pdfText = clean(body.pdfText);
-    if (pdfText.length < 20)
-      return NextResponse.json(
-        { status: 'error', error: 'The PDF text could not be extracted. Upload a PDF with clearer text.' },
-        { status: 400 }
-      );
 
-    const limit = await checkUniversityFeatureLimit(user.id, tier, 'pdf_summarizer');
+    let pdfText = '';
+    let uploadedFile: File | null = null;
+    if (req.headers.get('content-type')?.includes('multipart/form-data')) {
+      const formData = await req.formData();
+      const file = formData.get('file');
+      if (!(file instanceof File)) {
+        return NextResponse.json({ status: 'error', error: 'A PDF file is required.' }, { status: 400 });
+      }
+      if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+        return NextResponse.json({ status: 'error', error: 'Upload a PDF file.' }, { status: 400 });
+      }
+      if (file.size > 20 * 1024 * 1024) {
+        return NextResponse.json(
+          { status: 'error', error: 'The PDF must be smaller than 20 MB and contain no more than 30 pages.' },
+          { status: 400 }
+        );
+      }
+      uploadedFile = file;
+    } else {
+      const body = await req.json();
+      pdfText = clean(body.pdfText);
+      if (pdfText.length < 20) {
+        return NextResponse.json(
+          { status: 'error', error: 'The PDF text could not be extracted. Upload a PDF with clearer text.' },
+          { status: 400 }
+        );
+      }
+    }
+
+    const limit = await checkUniversityFeatureLimit(user.id, tier, 'university_pdf_summarizer');
     if (!limit.success) {
       return NextResponse.json(
         {
@@ -108,8 +136,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (uploadedFile) {
+      const extracted = await performPdfOcr({
+        fileBuffer: Buffer.from(await uploadedFile.arrayBuffer()),
+        mimeType: 'application/pdf',
+        filename: uploadedFile.name,
+        timeoutMs: 180_000,
+      });
+      pdfText = clean(extracted.text);
+    }
+
+    if (pdfText.length < 20) {
+      return NextResponse.json(
+        { status: 'error', error: 'The PDF text could not be extracted. Upload a PDF with clearer text.' },
+        { status: 400 }
+      );
+    }
+
     const result = await summarizeAndMap(pdfText);
-    return NextResponse.json({ status: 'success', data: result });
+    const charged = await consumeUniversityFeatureCredits(user.id, tier, 'university_pdf_summarizer');
+    return NextResponse.json({
+      status: 'success',
+      data: { ...result, extracted_text: pdfText, credit_cost: 2, remaining_credits: charged.remaining },
+    });
   } catch {
     return NextResponse.json({ status: 'error', error: 'The PDF could not be summarized.' }, { status: 500 });
   }

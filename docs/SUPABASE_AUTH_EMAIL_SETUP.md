@@ -49,6 +49,8 @@ Body:
 
 Open `Authentication > Email Templates > Reset password`.
 
+The 6-digit reset code only appears if the template includes `{{ .Token }}`. If the email only has a link, paste the body below again and save the template.
+
 Subject:
 
 ```text
@@ -80,5 +82,7 @@ Open `Authentication > URL Configuration` and confirm:
 - `https://YOUR-DOMAIN/api/auth/callback` is allowed.
 - `https://YOUR-DOMAIN/api/auth/recovery` is allowed.
 - Add the matching localhost URLs for local testing.
+
+In the deployed app environment, set both `NEXT_PUBLIC_SITE_URL` and `NEXT_PUBLIC_APP_URL` to the real public domain, for example `https://YOUR-DOMAIN`. Do not use `0.0.0.0`, `localhost`, or an internal container URL for these values in production.
 
 After saving, test signup once with the code and once with the link. Repeat both tests for password recovery.

@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { gatewayChat, MARKDOWN_ANSWER_FORMAT_INSTRUCTION } from '@/lib/ai/gateway';
-import { checkAiMessageLimit, checkFileSummaryLimit } from '@/lib/rate-limit';
+import { checkAiMessageLimit, checkFileSummaryLimit, consumeAiCredits } from '@/lib/rate-limit';
 import { fetchResourceContext, getProtectedResource, type ProtectedResourceKind } from '@/lib/resources/server';
-import { buildResourceEvidence, buildResourceEvidenceFromChunk, verifiedSourceInstruction } from '@/lib/resources/evidence';
+import {
+  buildResourceEvidence,
+  buildResourceEvidenceFromChunk,
+  verifiedSourceInstruction,
+} from '@/lib/resources/evidence';
 import { buildResourceSourceSummary } from '@/lib/resources/source-fallback';
 import type { SubscriptionTier } from '@/types';
 
@@ -82,6 +86,7 @@ export async function POST(req: NextRequest) {
       .limit(1)
       .maybeSingle();
 
+    await consumeAiCredits(user.id, resource.tier as SubscriptionTier, 'resource_summary');
     return NextResponse.json({
       status: 'success',
       data: {

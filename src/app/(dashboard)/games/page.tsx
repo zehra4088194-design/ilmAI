@@ -38,10 +38,15 @@ export default async function GamesPage() {
     (sum, session) => sum + Math.max(Number(session.duration_seconds || 0), secondsBetween(session.started_at, session.ended_at)),
     0,
   );
+  const rows = (gameRows || []) as GameCardData[];
+  const games = [
+    ...rows,
+    ...DEFAULT_GAMES.filter((fallback) => !rows.some((row) => row.slug === fallback.slug)),
+  ];
 
   return (
     <GamesClient
-      games={((gameRows?.length ? gameRows : DEFAULT_GAMES) as GameCardData[])}
+      games={games}
       tier={tier}
       canPlay={plan.access.games}
       limitSeconds={limitSeconds}

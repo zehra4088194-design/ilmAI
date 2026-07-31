@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { gatewayChat } from '@/lib/ai/gateway';
-import { checkAiMessageLimit } from '@/lib/rate-limit';
+import { checkAiMessageLimit, consumeAiCredits } from '@/lib/rate-limit';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import { fetchResourceContext, getProtectedResource, type ProtectedResourceKind } from '@/lib/resources/server';
 import { analyzeResourceSource, type ResourceAnalysis } from '@/lib/resources/source-fallback';
@@ -68,6 +68,7 @@ export async function POST(req: NextRequest) {
       short: Math.max(0, Math.min(15, Number(parsed.available?.short) || 0)),
       long: Math.max(0, Math.min(8, Number(parsed.available?.long) || 0)),
     };
+    await consumeAiCredits(user.id, resource.tier, 'resource_test_analyze');
     return NextResponse.json({ status: 'success', data: parsed, provider, fallbackUsed });
   } catch (error) {
     console.error('Grok resource analysis failed:', error);

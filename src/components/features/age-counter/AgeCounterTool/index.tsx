@@ -75,13 +75,13 @@ export function AgeCounterTool() {
                 className="w-full h-11 rounded-lg border border-input bg-background px-3 text-sm" />
             </div>
             <div>
-              <label className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-2 block">As Of Date (optional)</label>
-              <input type="date" value={asOfDate} onChange={(e) => setAsOfDate(e.target.value)} placeholder="Aaj ki tareekh"
+              <label className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-2 block">As of date (optional)</label>
+              <input type="date" value={asOfDate} onChange={(e) => setAsOfDate(e.target.value)} placeholder="Select date"
                 className="w-full h-11 rounded-lg border border-input bg-background px-3 text-sm" />
             </div>
           </div>
           <Button variant="gradient" size="lg" className="w-full sm:w-auto" onClick={handleCalculate}>
-            <Cake className="w-4 h-4" />Age Nikalo
+            <Cake className="w-4 h-4" />Calculate age
           </Button>
         </CardContent>
       </Card>
@@ -91,7 +91,7 @@ export function AgeCounterTool() {
           <motion.div key="result" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
             <div className="text-center glass rounded-2xl p-8 border border-border/50">
               <p className="text-5xl sm:text-6xl font-bold gradient-text">{result.years}</p>
-              <p className="text-muted-foreground mt-2">saal, {result.months} mahine, {result.days} din</p>
+              <p className="text-muted-foreground mt-2">years, {result.months} months, {result.days} days</p>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

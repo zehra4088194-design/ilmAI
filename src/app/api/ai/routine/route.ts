@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { gatewayChat } from '@/lib/ai/gateway';
-import { checkAiMessageLimit } from '@/lib/rate-limit';
+import { checkAiMessageLimit, consumeAiCredits } from '@/lib/rate-limit';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import { createNotificationIfEnabled } from '@/lib/notifications/preferences';
 import type { SubscriptionTier } from '@/types';
@@ -12,13 +12,16 @@ export const maxDuration = 30;
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ status: 'error', error: 'Login required' }, { status: 401 });
 
     const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
     const tier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
     const limitCheck = await checkAiMessageLimit(user.id, tier, 'routine');
-    if (!limitCheck.success) return NextResponse.json({ status: 'error', error: 'The daily AI limit has been reached.' }, { status: 429 });
+    if (!limitCheck.success)
+      return NextResponse.json({ status: 'error', error: 'The daily AI limit has been reached.' }, { status: 429 });
 
     const { preferences } = await req.json();
     const { availableDays, hoursPerDay, preferredTime, subjects, examDate, weakSubjects, goals } = preferences;
@@ -49,11 +52,25 @@ Return ONLY valid JSON, no extra text:
   "examStrategy": "brief strategy based on exam date"
 }`;
 
-    const result = await gatewayChat({ provider: 'groq', tier: 'medium', messages: [{ role: 'user', content: prompt }], maxTokens: 2048, temperature: 0.4 });
-    const parsed = parseAiJson(result.text, { weeklySchedule: [], studyTips: [], weeklyGoals: [], totalHours: 0, examStrategy: '' });
+    const result = await gatewayChat({
+      provider: 'groq',
+      tier: 'medium',
+      messages: [{ role: 'user', content: prompt }],
+      maxTokens: 2048,
+      temperature: 0.4,
+    });
+    const parsed = parseAiJson(result.text, {
+      weeklySchedule: [],
+      studyTips: [],
+      weeklyGoals: [],
+      totalHours: 0,
+      examStrategy: '',
+    });
 
     // Save routine to database
-    await supabase.from('study_routines').upsert({ user_id: user.id, preferences, schedule: parsed, generated_by_provider: result.providerUsed });
+    await supabase
+      .from('study_routines')
+      .upsert({ user_id: user.id, preferences, schedule: parsed, generated_by_provider: result.providerUsed });
     await createNotificationIfEnabled(supabase, 'studyReminders', {
       user_id: user.id,
       type: 'REMINDER',
@@ -63,6 +80,7 @@ Return ONLY valid JSON, no extra text:
       is_read: false,
     });
 
+    await consumeAiCredits(user.id, tier, 'routine');
     return NextResponse.json({ status: 'success', data: parsed });
   } catch (error) {
     console.error('Routine generation error:', error);

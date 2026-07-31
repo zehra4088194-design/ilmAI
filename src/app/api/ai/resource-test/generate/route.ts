@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { gatewayChat } from '@/lib/ai/gateway';
-import { checkAiMessageLimit, checkFileTestLimit } from '@/lib/rate-limit';
+import { checkAiMessageLimit, checkFileTestLimit, consumeAiCredits } from '@/lib/rate-limit';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import { fetchResourceContext, getProtectedResource, type ProtectedResourceKind } from '@/lib/resources/server';
-import { buildResourceEvidence, buildResourceEvidenceFromChunk, verifiedSourceInstruction } from '@/lib/resources/evidence';
+import {
+  buildResourceEvidence,
+  buildResourceEvidenceFromChunk,
+  verifiedSourceInstruction,
+} from '@/lib/resources/evidence';
 import type { FullTestPaper } from '@/app/api/ai/full-test/route';
 import { buildResourceSourceTest } from '@/lib/resources/source-fallback';
 
@@ -78,8 +82,7 @@ export async function POST(req: NextRequest) {
         messages: [
           {
             role: 'system',
-            content:
-              `You are an expert exam setter. ${verifiedSourceInstruction()} Return valid JSON only, with no markdown fences.`,
+            content: `You are an expert exam setter. ${verifiedSourceInstruction()} Return valid JSON only, with no markdown fences.`,
           },
           {
             role: 'user',
@@ -110,6 +113,7 @@ export async function POST(req: NextRequest) {
       .limit(1)
       .maybeSingle();
 
+    await consumeAiCredits(user.id, resource.tier, 'resource_test_generate');
     return NextResponse.json({
       status: 'success',
       data: {

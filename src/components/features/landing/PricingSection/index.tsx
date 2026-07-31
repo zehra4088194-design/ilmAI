@@ -281,20 +281,19 @@ export function PricingSection({ currency }: { currency: Currency }) {
               </Badge>
               <h3 className="text-3xl font-bold">One plan for your whole campus</h3>
               <p className="text-muted-foreground mt-4 leading-7">
-                Students ki tadaad select karein, discounted total foran dekhein, phir request seedha ilm AI admin team
-                ko bhejein.
+                Select the number of students, see the discounted total instantly, and send the request directly to the ilm AI
+                admin team.
               </p>
               <div className="mt-8 space-y-4 text-sm">
                 <p className="flex items-start gap-3">
-                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" /> Har selected student ko Pro ya Elite
+                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" /> Each selected student gets Pro or Elite
                   access
                 </p>
                 <p className="flex items-start gap-3">
                   <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" /> Dedicated institution usage reporting
                 </p>
                 <p className="flex items-start gap-3">
-                  <MessageCircle className="text-primary mt-0.5 h-4 w-4 shrink-0" /> Request ke baad direct admin
-                  follow-up
+                  <MessageCircle className="text-primary mt-0.5 h-4 w-4 shrink-0" /> Direct admin follow-up after your request
                 </p>
               </div>
             </div>
@@ -432,7 +431,7 @@ export function PricingSection({ currency }: { currency: Currency }) {
                 <MessageCircle className="h-4 w-4" /> Send request to admin
               </Button>
               <p className="text-muted-foreground mt-3 text-center text-xs">
-                Login na ho to form safely preserve karke login par le jayega.
+                If you are not logged in, the form will be preserved safely and you can continue after login.
               </p>
             </div>
           </motion.div>

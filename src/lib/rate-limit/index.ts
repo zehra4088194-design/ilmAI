@@ -107,6 +107,37 @@ async function consumeStoredWindows(windows: RedisQuotaWindow[], amount = 1): Pr
   return consumeMemoryWindows(namespaced, amount);
 }
 
+async function inspectStoredWindows(windows: RedisQuotaWindow[], amount = 1): Promise<QuotaResult> {
+  const limitedWindows = windows.filter((window) => window.limit >= 0);
+  if (!limitedWindows.length) return { success: true, remaining: -1, reset: 0 };
+  const immediatelyBlocked = limitedWindows.find((window) => window.limit < amount);
+  if (immediatelyBlocked) return { success: false, remaining: 0, reset: immediatelyBlocked.resetAt };
+
+  const namespaced = limitedWindows.map((window) => ({ ...window, key: `ilm-ai:${window.key}` }));
+  const counts = await Promise.all(
+    namespaced.map(async (window) => {
+      try {
+        const redisCount = await getRedisCounter(window.key);
+        if (redisCount !== null) return redisCount;
+      } catch (error) {
+        console.error('Redis quota inspection failed:', error);
+      }
+      const current = memoryStore.get(window.key);
+      return current && (current.resetAt <= 0 || current.resetAt > Date.now()) ? current.count : 0;
+    })
+  );
+  const blockedIndex = namespaced.findIndex((window, index) => (counts[index] || 0) + amount > window.limit);
+  if (blockedIndex >= 0) {
+    return { success: false, remaining: 0, reset: namespaced[blockedIndex]?.resetAt || 0 };
+  }
+  const positiveResets = namespaced.map((window) => window.resetAt).filter((reset) => reset > 0);
+  return {
+    success: true,
+    remaining: Math.min(...namespaced.map((window, index) => window.limit - (counts[index] || 0) - amount)),
+    reset: positiveResets.length ? Math.min(...positiveResets) : 0,
+  };
+}
+
 function consumeMemoryWeightedWindows(windows: WeightedRedisQuotaWindow[]): QuotaResult {
   const now = Date.now();
   const entries = windows.map((window) => {
@@ -164,7 +195,6 @@ async function consumeStoredWeightedWindows(windows: WeightedRedisQuotaWindow[])
 export type DailyLimitFeature =
   | 'ai_credit'
   | 'quiz'
-  | `ocr_scan:${'printed' | 'handwritten'}`
   | 'university_hub'
   | 'live_voice_call'
   | 'presentation'
@@ -173,6 +203,7 @@ export type DailyLimitFeature =
   | 'premium_ai'
   | 'parent_attachment_file'
   | 'parent_attachment_bytes'
+  | `erp_mutation:${string}`
   | `provider:${ProviderBudgetKey}`
   | `ai_tool:${string}`;
 
@@ -208,14 +239,19 @@ const AI_CREDIT_COSTS: Record<string, number> = {
   university_presentation: 8,
   pharmapulse_drug: 4,
   pharmapulse_mcq: 2,
-  university_pdf_summarizer: 4,
+  university_pdf_summarizer: 2,
+  university_research: 5,
   project_builder: 3,
   career_docs: 3,
   citation: 2,
-  vision_scan: 3,
+  ocr_printed: 1,
+  ocr_handwritten: 3,
+  insights_roadmap: 2,
 };
 
 export function getAiCreditCost(featureKey = 'general') {
+  if (featureKey === 'university_pdf_summarizer') return AI_CREDIT_COSTS.university_pdf_summarizer;
+  if (featureKey === 'university_research') return AI_CREDIT_COSTS.university_research;
   if (featureKey.startsWith('university_') && featureKey !== 'university_presentation') return 3;
   return AI_CREDIT_COSTS[featureKey] ?? 1;
 }
@@ -331,6 +367,11 @@ function buildSharedAiWindows(userId: string, tier: SubscriptionTier, plan: Plat
 
 async function checkSharedAiLimit(userId: string, tier: SubscriptionTier, featureKey = 'general') {
   const plan = await getConfiguredPlan(tier);
+  return inspectStoredWindows(buildSharedAiWindows(userId, tier, plan), getAiCreditCost(featureKey));
+}
+
+async function consumeSharedAiCredits(userId: string, tier: SubscriptionTier, featureKey = 'general') {
+  const plan = await getConfiguredPlan(tier);
   return consumeStoredWindows(buildSharedAiWindows(userId, tier, plan), getAiCreditCost(featureKey));
 }
 
@@ -344,6 +385,10 @@ export async function checkAiToolLimit(userId: string, tier: SubscriptionTier, f
 
 export async function checkAiMessageLimit(userId: string, tier: SubscriptionTier, featureKey = 'general') {
   return checkAiToolLimit(userId, tier, featureKey);
+}
+
+export async function consumeAiCredits(userId: string, tier: SubscriptionTier, featureKey = 'general') {
+  return consumeSharedAiCredits(userId, tier, featureKey);
 }
 
 export function summarizeAiCreditWindows(tier: SubscriptionTier, windows: RedisQuotaWindow[], counts: number[]) {
@@ -399,15 +444,24 @@ export async function checkQuizLimit(userId: string, tier: SubscriptionTier) {
   return checkDailyLimit(userId, 'quiz', plan.limits.quizDaily);
 }
 
-export async function checkOcrLimit(
+export async function checkOcrCredits(
   userId: string,
   tier: SubscriptionTier,
   mode: 'printed' | 'handwritten' = 'printed'
 ) {
-  const entitlement = await getAudiencePlanLimits(userId, tier);
-  const limit =
-    mode === 'handwritten' ? entitlement.limits.ocrHandwrittenMonthly : entitlement.plan.limits.ocrPrintedMonthly;
-  return checkMonthlyLimit(userId, `ocr_scan:${mode}`, limit);
+  const featureKey = mode === 'handwritten' ? 'ocr_handwritten' : 'ocr_printed';
+  const result = await checkAiToolLimit(userId, tier, featureKey);
+  return { ...result, creditCost: getAiCreditCost(featureKey) };
+}
+
+export async function consumeOcrCredits(
+  userId: string,
+  tier: SubscriptionTier,
+  mode: 'printed' | 'handwritten' = 'printed'
+) {
+  const featureKey = mode === 'handwritten' ? 'ocr_handwritten' : 'ocr_printed';
+  const result = await consumeSharedAiCredits(userId, tier, featureKey);
+  return { ...result, creditCost: getAiCreditCost(featureKey) };
 }
 
 export async function checkPresentationLimit(userId: string, tier: SubscriptionTier, slideCount: number) {
@@ -450,9 +504,29 @@ export async function checkUniversityHubLimit(userId: string, tier: Subscription
 }
 
 export async function checkUniversityFeatureLimit(userId: string, tier: SubscriptionTier, featureKey: string) {
-  const weekly = await checkUniversityHubLimit(userId, tier);
+  const plan = await getConfiguredPlan(tier);
+  const week = weekWindow();
+  const weekly = await inspectStoredWindows([
+    {
+      key: `ratelimit:university_hub:${userId}:week:${week.key}`,
+      limit: plan.limits.universityHubWeekly,
+      resetAt: week.reset,
+    },
+  ]);
   if (!weekly.success) return { ...weekly, scope: 'weekly' as const };
   const credits = await checkSharedAiLimit(userId, tier, featureKey);
+  return {
+    success: credits.success,
+    remaining: Math.min(weekly.remaining, credits.remaining),
+    reset: Math.min(weekly.reset || Number.MAX_SAFE_INTEGER, credits.reset || Number.MAX_SAFE_INTEGER),
+    scope: credits.success ? ('weekly' as const) : ('daily' as const),
+  };
+}
+
+export async function consumeUniversityFeatureCredits(userId: string, tier: SubscriptionTier, featureKey: string) {
+  const weekly = await checkUniversityHubLimit(userId, tier);
+  if (!weekly.success) return { ...weekly, scope: 'weekly' as const };
+  const credits = await consumeSharedAiCredits(userId, tier, featureKey);
   return {
     success: credits.success,
     remaining: Math.min(weekly.remaining, credits.remaining),

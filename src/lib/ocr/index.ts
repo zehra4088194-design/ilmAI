@@ -12,12 +12,7 @@ const OCRSPACE_FREE_PDF_BYTES = 5 * 1024 * 1024;
 let pdfProviderCursor = 0;
 
 export type OcrProvider =
-  | 'self-hosted-tesseract'
-  | 'self-hosted-ocrmypdf'
-  | 'native-pdf'
-  | 'gemini-vision'
-  | 'ocr-space'
-  | 'easyocr';
+  'self-hosted-tesseract' | 'self-hosted-ocrmypdf' | 'native-pdf' | 'gemini-vision' | 'ocr-space' | 'easyocr';
 
 export interface OcrResult {
   text: string;
@@ -32,6 +27,7 @@ export interface OcrRequest {
   mimeType: string;
   userTier: SubscriptionTier;
   mode?: 'printed' | 'handwritten';
+  preferGemini?: boolean;
   timeoutMs?: number;
 }
 
@@ -158,7 +154,8 @@ async function performOcrSpace(imageBuffer: Buffer, mimeType: string, timeoutMs:
   const budget = await checkProviderDailyLimit('ocrSpace');
   if (!budget.success) throw new Error('The platform daily OCR.space budget has been reached.');
 
-  const optimized = mimeType === 'application/pdf' ? { imageBuffer, mimeType } : await optimizeImageForGemini(imageBuffer, mimeType);
+  const optimized =
+    mimeType === 'application/pdf' ? { imageBuffer, mimeType } : await optimizeImageForGemini(imageBuffer, mimeType);
   const res = await fetch(`${GATEWAY_URL}/ocr-space`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GATEWAY_SECRET}` },
@@ -181,13 +178,19 @@ async function performEasyOcr(imageBuffer: Buffer, mimeType: string, timeoutMs: 
   const keys = parseKeyList(process.env.EASYOCR_API_KEYS_JSON, process.env.EASYOCR_API_KEY);
   if (!keys.length) throw new Error('EasyOCR API key is not configured');
 
-  const optimized = mimeType === 'application/pdf' ? { imageBuffer, mimeType } : await optimizeImageForGemini(imageBuffer, mimeType);
+  const optimized =
+    mimeType === 'application/pdf' ? { imageBuffer, mimeType } : await optimizeImageForGemini(imageBuffer, mimeType);
   let lastError: unknown;
   for (const key of keys) {
     try {
       const form = new FormData();
-      const extension = optimized.mimeType === 'application/pdf' ? 'pdf' : optimized.mimeType.includes('png') ? 'png' : 'jpg';
-      form.append('file', new Blob([new Uint8Array(optimized.imageBuffer)], { type: optimized.mimeType }), `scan.${extension}`);
+      const extension =
+        optimized.mimeType === 'application/pdf' ? 'pdf' : optimized.mimeType.includes('png') ? 'png' : 'jpg';
+      form.append(
+        'file',
+        new Blob([new Uint8Array(optimized.imageBuffer)], { type: optimized.mimeType }),
+        `scan.${extension}`
+      );
       form.append('language', 'eng');
 
       const res = await fetch(EASYOCR_API_URL, {
@@ -219,11 +222,12 @@ export async function performOcr({
   imageBuffer,
   mimeType,
   mode: requestedMode,
+  preferGemini = false,
   timeoutMs = 60_000,
 }: OcrRequest): Promise<OcrResult> {
   const mode = requestedMode || 'printed';
   const attempts =
-    mode === 'handwritten'
+    mode === 'handwritten' || preferGemini
       ? [
           () => performGeminiOcr(imageBuffer, mimeType, timeoutMs),
           () => performEasyOcr(imageBuffer, mimeType, timeoutMs),

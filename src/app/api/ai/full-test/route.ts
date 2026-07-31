@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { gatewayChat, type AiProviderId, type ModelTier } from '@/lib/ai/gateway';
-import { checkAiMessageLimit } from '@/lib/rate-limit';
+import { checkAiMessageLimit, consumeAiCredits } from '@/lib/rate-limit';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import type { SubscriptionTier } from '@/types';
 
@@ -20,19 +20,34 @@ export interface FullTestPaper {
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ status: 'error', error: 'Login required' }, { status: 401 });
 
     const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
     const tier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
     const limitCheck = await checkAiMessageLimit(user.id, tier, 'full_test');
-    if (!limitCheck.success) return NextResponse.json({ status: 'error', error: 'The daily AI limit has been reached.' }, { status: 429 });
+    if (!limitCheck.success)
+      return NextResponse.json({ status: 'error', error: 'The daily AI limit has been reached.' }, { status: 429 });
 
-    const { subjectName, chapterName, className, boardName, mcqCount = 15, shortCount = 6, longCount = 3, provider = 'groq', aiTier = 'medium' } = await req.json();
+    const {
+      subjectName,
+      chapterName,
+      className,
+      boardName,
+      mcqCount = 15,
+      shortCount = 6,
+      longCount = 3,
+      provider = 'groq',
+      aiTier = 'medium',
+    } = await req.json();
 
     const BOARD_PATTERNS: Record<string, { totalMarks: number; time: number }> = {
-      '9': { totalMarks: 75, time: 180 }, '10': { totalMarks: 75, time: 180 },
-      '11': { totalMarks: 100, time: 195 }, '12': { totalMarks: 100, time: 195 },
+      '9': { totalMarks: 75, time: 180 },
+      '10': { totalMarks: 75, time: 180 },
+      '11': { totalMarks: 100, time: 195 },
+      '12': { totalMarks: 100, time: 195 },
     };
     const classNum = className?.replace(/\D/g, '') || '10';
     const pattern = BOARD_PATTERNS[classNum] || BOARD_PATTERNS['10']!;
@@ -62,7 +77,11 @@ Return ONLY valid JSON, no markdown, no extra text:
       provider: provider as AiProviderId,
       tier: aiTier as ModelTier,
       messages: [
-        { role: 'system', content: 'You are an expert Pakistani board exam paper setter. Return only valid JSON, no markdown fences, no extra text.' },
+        {
+          role: 'system',
+          content:
+            'You are an expert Pakistani board exam paper setter. Return only valid JSON, no markdown fences, no extra text.',
+        },
         { role: 'user', content: prompt },
       ],
       maxTokens: 4096,
@@ -73,12 +92,18 @@ Return ONLY valid JSON, no markdown, no extra text:
       title: `${subjectName} Paper`,
       totalMarks: pattern.totalMarks,
       timeAllowed: pattern.time,
-      mcqs: [], shortQs: [], longQs: [],
+      mcqs: [],
+      shortQs: [],
+      longQs: [],
     });
 
+    await consumeAiCredits(user.id, tier, 'full_test');
     return NextResponse.json({ status: 'success', data: parsed, providerUsed: result.providerUsed });
   } catch (error) {
     console.error('Full test error:', error);
-    return NextResponse.json({ status: 'error', error: 'The test paper could not be generated. Please try again.' }, { status: 500 });
+    return NextResponse.json(
+      { status: 'error', error: 'The test paper could not be generated. Please try again.' },
+      { status: 500 }
+    );
   }
 }

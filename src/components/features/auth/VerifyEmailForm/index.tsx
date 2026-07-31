@@ -148,7 +148,7 @@ export function VerifyEmailForm() {
         </Button>
       </form>
 
-        <Button type="button" variant="outline" className="mt-3 w-full" onClick={resendCode} loading={resending}>
+      <Button type="button" variant="outline" className="mt-3 w-full" onClick={resendCode} loading={resending}>
         <RotateCw className="h-4 w-4" /> Resend link and code
       </Button>
       <p className="text-muted-foreground mt-6 text-center text-sm">

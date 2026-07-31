@@ -188,7 +188,7 @@ export function PastPapersTab() {
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Past paper delete karein?</AlertDialogTitle>
+            <AlertDialogTitle>Delete past paper?</AlertDialogTitle>
             <AlertDialogDescription>
               {deleteTarget?.subject_name ?? 'This paper'} ({deleteTarget?.year}) will be permanently deleted. This action cannot be undone.
             </AlertDialogDescription>

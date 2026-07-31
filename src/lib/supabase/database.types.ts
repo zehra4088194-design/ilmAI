@@ -2154,6 +2154,7 @@ export type Database = {
           preferred_output_style: string;
           previous_roll_number: string | null;
           role: Database['public']['Enums']['user_role'];
+          science_group: string | null;
           sponsored_institution_name: string | null;
           sponsored_institution_type: string | null;
           streak: number;
@@ -2210,6 +2211,7 @@ export type Database = {
           preferred_output_style?: string;
           previous_roll_number?: string | null;
           role?: Database['public']['Enums']['user_role'];
+          science_group?: string | null;
           sponsored_institution_name?: string | null;
           sponsored_institution_type?: string | null;
           streak?: number;
@@ -2266,6 +2268,7 @@ export type Database = {
           preferred_output_style?: string;
           previous_roll_number?: string | null;
           role?: Database['public']['Enums']['user_role'];
+          science_group?: string | null;
           sponsored_institution_name?: string | null;
           sponsored_institution_type?: string | null;
           streak?: number;

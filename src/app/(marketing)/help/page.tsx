@@ -4,6 +4,7 @@ import { StaticContentPage } from '@/components/features/marketing/StaticContent
 export const metadata: Metadata = {
   title: 'Help Center - ilm AI',
   description: 'Account, billing, AI tools, parent dashboard, and technical support for ilm AI.',
+  alternates: { canonical: '/help' },
 };
 
 export default async function HelpPage() {
@@ -51,7 +52,7 @@ export default async function HelpPage() {
           title: 'Parent dashboard',
           bullets: [
             'The student should generate a parent invite or link code first.',
-            'A linked Free account can see locked progress indicators; live dashboards, reports, and communication unlock on the student\'s Pro or Elite plan.',
+            "A linked Free account can see locked progress indicators; live dashboards, reports, and communication unlock on the student's Pro or Elite plan.",
             'Attachments are private and accessible only to linked users.',
           ],
         },

@@ -32,23 +32,34 @@ export function QuizEngine() {
     setLoaded(true);
   }, [initSession]);
 
-  if (!loaded) return <div className="text-center py-12 text-muted-foreground">Loading...</div>;
-  if (!session) return (
-    <div className="text-center py-12">
-      <p className="text-muted-foreground mb-4">There is no active quiz.</p>
-      <Button variant="gradient" onClick={() => router.push('/practice')}>Start practice</Button>
-    </div>
-  );
+  if (!loaded) return <div className="text-muted-foreground py-12 text-center">Loading...</div>;
+  if (!session)
+    return (
+      <div className="py-12 text-center">
+        <p className="text-muted-foreground mb-4">There is no active quiz.</p>
+        <Button variant="gradient" onClick={() => router.push('/practice')}>
+          Start practice
+        </Button>
+      </div>
+    );
 
   if (session.status === 'COMPLETED') {
-    return <QuizResult session={session} onRetry={() => { resetQuiz(); router.push('/practice'); }} />;
+    return (
+      <QuizResult
+        session={session}
+        onRetry={() => {
+          resetQuiz();
+          router.push('/practice');
+        }}
+      />
+    );
   }
 
   const currentQuestion = session.questions[session.currentIndex];
   if (!currentQuestion) {
     return (
       <div className="py-12 text-center">
-        <p className="mb-4 text-muted-foreground">This quiz session has expired. Start a fresh practice quiz.</p>
+        <p className="text-muted-foreground mb-4">This quiz session has expired. Start a fresh practice quiz.</p>
         <Button
           variant="gradient"
           onClick={() => {
@@ -78,28 +89,30 @@ export function QuizEngine() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <div className="flex items-center justify-between text-sm mb-2">
-            <span className="font-medium">Question {session.currentIndex + 1} of {session.questions.length}</span>
+    <div className="min-w-0 space-y-5 sm:space-y-6">
+      <div className="flex min-w-0 items-center justify-between">
+        <div className="min-w-0 flex-1">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-sm">
+            <span className="font-medium">
+              Question {session.currentIndex + 1} of {session.questions.length}
+            </span>
             <QuizTimer duration={10} isPaused={hasAnswered} onExpire={handleExpire} resetKey={session.currentIndex} />
           </div>
           <Progress value={progress} />
         </div>
       </div>
 
-      {/* Auto-advances on its own once answered — correct is quick, wrong
-          pauses 2s so the student reads the right answer. No button needed. */}
       {currentQuestion && <QuizCard question={currentQuestion} isLast={isLast} />}
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <Button variant="outline" onClick={previousQuestion} disabled={session.currentIndex === 0}>
-          <ChevronLeft className="w-4 h-4" />Previous
+          <ChevronLeft className="h-4 w-4" />
+          Previous
         </Button>
         {!hasAnswered && (
-          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-            <Zap className="w-3.5 h-3.5 text-violet-400" />Select an answer to move automatically to the next question
+          <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
+            <Zap className="h-3.5 w-3.5 text-violet-400" />
+            Select an answer to see its explanation
           </p>
         )}
       </div>

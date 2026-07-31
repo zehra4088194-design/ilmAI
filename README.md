@@ -65,7 +65,7 @@ src/components/      Feature and UI components
 src/lib/             AI, OCR, Supabase, payments, limits, and utilities
 services/ocr/        Private printed OCR service
 services/cron/       Optional local/container maintenance scheduler
-cloudflare-worker/   AI gateway source and Wrangler configuration
+cloudflare-worker/   Shared AI gateway handler and optional Wrangler configuration
 supabase/migrations/ Database migrations and policies
 scripts/             Validation, seeding, and maintenance scripts
 ```

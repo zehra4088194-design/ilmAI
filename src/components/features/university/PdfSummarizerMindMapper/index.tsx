@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Clipboard, FileUp, Loader2, Network, UploadCloud } from 'lucide-react';
+import { CheckCircle2, Clipboard, FileUp, FlaskConical, Lightbulb, Loader2, Network, UploadCloud } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -27,42 +27,23 @@ export function PdfSummarizerMindMapper() {
       return;
     }
     setLoading(true);
-    setProcessingStep('The PDF is being scanned by the available OCR service...');
+    setProcessingStep('Extracting the PDF and preparing your summary...');
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const ocrRes = await fetch('/api/pdf-extract', { method: 'POST', body: formData });
-      const ocrText = await ocrRes.text();
-      let ocrJson: { status?: string; error?: string; text?: string; data?: { text?: string } };
-      try {
-        ocrJson = JSON.parse(ocrText);
-      } catch {
-      toast.error('The PDF extractor returned an invalid response. Try a smaller, clearer file.');
-        return;
-      }
-      if (!ocrRes.ok || ocrJson.status === 'error') {
-      toast.error(ocrJson.error || 'Text could not be extracted from the PDF.');
-        return;
-      }
-      const pdfText = String(ocrJson.text || ocrJson.data?.text || '').trim();
-      if (pdfText.length < 20) {
-      toast.error('No readable text was found in this PDF. Upload a clear scan or text-based PDF.');
-        return;
-      }
-      setExtractedText(pdfText);
-      setProcessingStep('Groq is preparing a detailed summary and mind map...');
       const res = await fetch('/api/ai/pdf-summarizer', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pdfText, fileName: file.name }),
+        body: formData,
       });
       const json = await res.json();
-      if (json.status === 'error') {
-        toast.error(json.error);
+      if (!res.ok || json.status === 'error') {
+        toast.error(json.error || 'The PDF could not be processed.');
         return;
       }
       setResult(json.data);
+      setExtractedText(String(json.data?.extracted_text || ''));
       setActiveTab('summary');
+      window.dispatchEvent(new Event('ilm-ai-credits-changed'));
     } catch {
       toast.error('The PDF could not be processed.');
     } finally {
@@ -198,22 +179,43 @@ export function PdfSummarizerMindMapper() {
 }
 
 function SummaryView({ summary }: { summary: Summary }) {
+  const groups = [
+    { title: 'Methodology', text: summary.methodology, icon: FlaskConical, color: 'text-sky-500 bg-sky-500/10' },
+    { title: 'Key Findings', text: summary.key_findings, icon: Lightbulb, color: 'text-amber-500 bg-amber-500/10' },
+    { title: 'Conclusion', text: summary.conclusion, icon: CheckCircle2, color: 'text-emerald-500 bg-emerald-500/10' },
+  ];
+
   return (
-    <div className="grid gap-4 md:grid-cols-3">
-      <SummaryCard title="Methodology" text={summary.methodology} />
-      <SummaryCard title="Key Findings" text={summary.key_findings} />
-      <SummaryCard title="Conclusion" text={summary.conclusion} />
+    <div className="space-y-6">
+      {groups.map(({ title, text, icon: Icon, color }) => (
+        <section key={title}>
+          <div className="mb-3 flex items-center gap-2">
+            <span className={`flex h-7 w-7 items-center justify-center rounded-full ${color}`}>
+              <Icon className="h-4 w-4" />
+            </span>
+            <h2 className="text-sm font-semibold">{title}</h2>
+          </div>
+          <ul className="space-y-2 pl-2">
+            {toSummaryPoints(text).map((point, index) => (
+              <li key={`${title}-${index}`} className="flex gap-3 text-sm leading-6">
+                <span className="mt-2.5 h-1.5 w-1.5 flex-none rounded-full bg-violet-500" />
+                <span className="text-muted-foreground">{point}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
     </div>
   );
 }
 
-function SummaryCard({ title, text }: { title: string; text: string }) {
-  return (
-    <div className="bg-muted/20 rounded-xl border p-4">
-      <h2 className="font-semibold">{title}</h2>
-      <p className="text-muted-foreground mt-2 text-sm leading-6">{text}</p>
-    </div>
-  );
+function toSummaryPoints(text: string) {
+  const normalized = text
+    .split(/\r?\n/)
+    .map((line) => line.replace(/^\s*(?:[-*\u2022]|\d+[.)])\s*/, '').trim())
+    .filter(Boolean);
+  const points = normalized.length > 1 ? normalized : text.split(/(?<=[.!?])\s+(?=[A-Z0-9])/);
+  return points.map((point) => point.trim()).filter(Boolean);
 }
 
 function MindMapView({ code }: { code: string }) {

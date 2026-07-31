@@ -250,7 +250,9 @@ export function PharmaPulseClient() {
   function speakSummary() {
     if (!result) return;
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(`${currentName}. ${result.drug_class || ''}. ${result.overview?.summary || ''}`);
+    const utterance = new SpeechSynthesisUtterance(
+      `${currentName}. ${result.drug_class || ''}. ${result.overview?.summary || ''}`
+    );
     utterance.rate = 0.88;
     utterance.lang = 'en-US';
     window.speechSynthesis.speak(utterance);
@@ -265,7 +267,11 @@ export function PharmaPulseClient() {
       result.overview?.summary || '',
       '',
       `Uses: ${(result.therapeutic_uses || []).slice(0, 5).join(', ')}`,
-      `Pakistan brands: ${(result.pakistan_brand_names || []).slice(0, 5).map((brand) => brand.brand).filter(Boolean).join(', ')}`,
+      `Pakistan brands: ${(result.pakistan_brand_names || [])
+        .slice(0, 5)
+        .map((brand) => brand.brand)
+        .filter(Boolean)
+        .join(', ')}`,
       '',
       result.safety_disclaimer || 'Educational use only. Verify clinically.',
     ].join('\n');
@@ -280,30 +286,36 @@ export function PharmaPulseClient() {
         bright && 'rounded-lg bg-slate-50 p-3 text-slate-950 dark:bg-slate-50 dark:text-slate-950'
       )}
     >
-      <section className="overflow-hidden rounded-lg border bg-card/90">
+      <section className="bg-card/90 overflow-hidden rounded-lg border">
         <div className="grid gap-0 lg:grid-cols-[280px_1fr]">
-          <aside className="border-b bg-muted/20 p-4 lg:border-b-0 lg:border-r">
+          <aside className="bg-muted/20 border-b p-4 lg:border-r lg:border-b-0">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-cyan-500/15 text-cyan-500">
                 <Pill className="h-5 w-5" />
               </div>
               <div>
                 <p className="font-bold">PharmaPulse</p>
-                <p className="text-xs text-muted-foreground">Pakistan drug intelligence</p>
+                <p className="text-muted-foreground text-xs">Pakistan drug intelligence</p>
               </div>
             </div>
 
             <div className="mt-5 grid grid-cols-2 gap-2">
               <button
                 type="button"
-                className={cn('rounded-md border px-3 py-2 text-xs font-semibold', mode === 'student' && 'border-cyan-500 bg-cyan-500/15 text-cyan-600 dark:text-cyan-300')}
+                className={cn(
+                  'rounded-md border px-3 py-2 text-xs font-semibold',
+                  mode === 'student' && 'border-cyan-500 bg-cyan-500/15 text-cyan-600 dark:text-cyan-300'
+                )}
                 onClick={() => setMode('student')}
               >
                 Student
               </button>
               <button
                 type="button"
-                className={cn('rounded-md border px-3 py-2 text-xs font-semibold', mode === 'patient' && 'border-cyan-500 bg-cyan-500/15 text-cyan-600 dark:text-cyan-300')}
+                className={cn(
+                  'rounded-md border px-3 py-2 text-xs font-semibold',
+                  mode === 'patient' && 'border-cyan-500 bg-cyan-500/15 text-cyan-600 dark:text-cyan-300'
+                )}
                 onClick={() => setMode('patient')}
               >
                 Patient
@@ -312,22 +324,27 @@ export function PharmaPulseClient() {
 
             <button
               type="button"
-              className="mt-3 flex w-full items-center justify-between rounded-md border px-3 py-2 text-xs font-semibold text-muted-foreground"
+              className="text-muted-foreground mt-3 flex w-full items-center justify-between rounded-md border px-3 py-2 text-xs font-semibold"
               onClick={() => setBright((value) => !value)}
             >
               Bright reading mode
               <span className={cn('h-4 w-8 rounded-full border p-0.5', bright && 'bg-cyan-500')}>
-                <span className={cn('block h-2.5 w-2.5 rounded-full bg-current transition-transform', bright && 'translate-x-3.5 text-white')} />
+                <span
+                  className={cn(
+                    'block h-2.5 w-2.5 rounded-full bg-current transition-transform',
+                    bright && 'translate-x-3.5 text-white'
+                  )}
+                />
               </span>
             </button>
 
             <div className="mt-5">
               <div className="mb-2 flex items-center justify-between">
-                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">History</p>
+                <p className="text-muted-foreground text-xs font-bold tracking-wide uppercase">History</p>
                 {history.length > 0 && (
                   <button
                     type="button"
-                    className="text-xs text-muted-foreground hover:text-destructive"
+                    className="text-muted-foreground hover:text-destructive text-xs"
                     onClick={() => {
                       setHistory([]);
                       localStorage.removeItem('pharmapulse_history');
@@ -338,18 +355,22 @@ export function PharmaPulseClient() {
                 )}
               </div>
               <div className="space-y-1">
-                {history.length ? history.map((item) => (
-                  <button
-                    key={item}
-                    type="button"
-                    className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm text-muted-foreground hover:bg-cyan-500/10 hover:text-foreground"
-                    onClick={() => searchDrug(item)}
-                  >
-                    <FileText className="h-3.5 w-3.5" />
-                    <span className="truncate">{item}</span>
-                  </button>
-                )) : (
-                  <p className="rounded-md border border-dashed p-3 text-xs leading-5 text-muted-foreground">Your search history will appear here.</p>
+                {history.length ? (
+                  history.map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      className="text-muted-foreground hover:text-foreground flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-cyan-500/10"
+                      onClick={() => searchDrug(item)}
+                    >
+                      <FileText className="h-3.5 w-3.5" />
+                      <span className="truncate">{item}</span>
+                    </button>
+                  ))
+                ) : (
+                  <p className="text-muted-foreground rounded-md border border-dashed p-3 text-xs leading-5">
+                    Your search history will appear here.
+                  </p>
                 )}
               </div>
             </div>
@@ -358,20 +379,24 @@ export function PharmaPulseClient() {
           <div className="p-4 md:p-6">
             <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
               <div>
-                <Badge variant="secondary" className="mb-3 gap-1"><Stethoscope className="h-3 w-3" /> Medical Students</Badge>
+                <Badge variant="secondary" className="mb-3 gap-1">
+                  <Stethoscope className="h-3 w-3" /> Medical Students
+                </Badge>
                 <h1 className="text-2xl font-bold md:text-3xl">PharmaPulse Drug Intelligence</h1>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                  Pharmacology monographs, Pakistan brand names, dosing, interactions, counseling, clinical cases and practice MCQs.
+                <p className="text-muted-foreground mt-2 max-w-2xl text-sm leading-6">
+                  Pharmacology monographs, Pakistan brand names, dosing, interactions, counseling, clinical cases and
+                  practice MCQs.
                 </p>
               </div>
               <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs leading-5 text-amber-700 dark:text-amber-300">
-                Educational support only. Prescribing, dispensing and emergency decisions must be verified by licensed clinicians.
+                Educational support only. Prescribing, dispensing and emergency decisions must be verified by licensed
+                clinicians.
               </div>
             </div>
 
             <div className="relative mt-5">
-              <div className="flex flex-col gap-2 rounded-lg border bg-background p-2 shadow-sm sm:flex-row sm:items-center">
-                <Search className="ml-2 mt-2.5 hidden h-4 w-4 shrink-0 text-cyan-500 sm:block" />
+              <div className="bg-background flex flex-col gap-2 rounded-lg border p-2 shadow-sm sm:flex-row sm:items-center">
+                <Search className="mt-2.5 ml-2 hidden h-4 w-4 shrink-0 text-cyan-500 sm:block" />
                 <input
                   value={query}
                   onChange={(event) => {
@@ -391,9 +416,11 @@ export function PharmaPulseClient() {
                 </Button>
               </div>
               {showSuggestions && (suggestionLoading || suggestions.length > 0) && (
-                <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 overflow-hidden rounded-lg border bg-popover shadow-xl">
+                <div className="bg-popover absolute top-[calc(100%+6px)] right-0 left-0 z-30 overflow-hidden rounded-lg border shadow-xl">
                   {suggestionLoading && (
-                    <div className="border-b px-4 py-2.5 text-center text-xs text-muted-foreground">Finding medicines...</div>
+                    <div className="text-muted-foreground border-b px-4 py-2.5 text-center text-xs">
+                      Finding medicines...
+                    </div>
                   )}
                   {suggestions.map((item) => (
                     <button
@@ -405,7 +432,7 @@ export function PharmaPulseClient() {
                     >
                       <span className="min-w-0">
                         <span className="block truncate font-medium">{item.name}</span>
-                        <span className="block truncate text-xs text-muted-foreground">{item.cls}</span>
+                        <span className="text-muted-foreground block truncate text-xs">{item.cls}</span>
                       </span>
                       <span className="ml-3 shrink-0 text-xs text-cyan-600 dark:text-cyan-300">Open</span>
                     </button>
@@ -428,10 +455,14 @@ export function PharmaPulseClient() {
                   onExport={() => exportPharmaPulsePdf(result, mode)}
                 />
 
-                <div className="sticky top-16 z-20 -mx-4 overflow-x-auto border-y bg-background/95 px-4 py-2 backdrop-blur md:-mx-6 md:px-6">
+                <div className="bg-background/95 sticky top-16 z-20 -mx-4 overflow-x-auto border-y px-4 py-2 backdrop-blur md:-mx-6 md:px-6">
                   <div className="flex gap-2">
                     {NAV_SECTIONS.map(([id, label]) => (
-                      <a key={id} href={`#pharma-${id}`} className="rounded-md px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-cyan-500/10 hover:text-cyan-500">
+                      <a
+                        key={id}
+                        href={`#pharma-${id}`}
+                        className="text-muted-foreground rounded-md px-3 py-1.5 text-xs font-semibold hover:bg-cyan-500/10 hover:text-cyan-500"
+                      >
                         {label}
                       </a>
                     ))}
@@ -441,11 +472,15 @@ export function PharmaPulseClient() {
                 <div id="pharmapulse-export" className="space-y-4">
                   <section id="pharma-overview" className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
                     <InfoSection title="Overview" icon={BookOpen} accent="cyan">
-                      <p className="text-sm leading-6 text-muted-foreground">{result.overview?.summary || 'No overview generated.'}</p>
+                      <p className="text-muted-foreground text-sm leading-6">
+                        {result.overview?.summary || 'No overview generated.'}
+                      </p>
                       <List items={result.overview?.key_points} />
                     </InfoSection>
                     <InfoSection title="Mechanism of Action" icon={FlaskConical} accent="violet">
-                      <p className="text-sm leading-6 text-muted-foreground">{result.mechanism_of_action || 'No mechanism generated.'}</p>
+                      <p className="text-muted-foreground text-sm leading-6">
+                        {result.mechanism_of_action || 'No mechanism generated.'}
+                      </p>
                     </InfoSection>
                   </section>
 
@@ -462,7 +497,11 @@ export function PharmaPulseClient() {
                     <InfoSection title="Adverse Reactions" icon={AlertTriangle} accent="amber">
                       <SubList label="Common" items={result.adverse_reactions?.common} />
                       <SubList label="Serious" items={result.adverse_reactions?.serious} tone="danger" />
-                      <SubList label="Seek help when" items={result.adverse_reactions?.seek_medical_help_when} tone="danger" />
+                      <SubList
+                        label="Seek help when"
+                        items={result.adverse_reactions?.seek_medical_help_when}
+                        tone="danger"
+                      />
                     </InfoSection>
                     <InfoSection title="Contraindications" icon={ShieldAlert} accent="rose">
                       <SubList label="Absolute" items={result.contraindications?.absolute} tone="danger" />
@@ -521,9 +560,13 @@ export function PharmaPulseClient() {
                               onClick={() => setOpenFaqs((items) => ({ ...items, [index]: !items[index] }))}
                             >
                               <span>{faq.question}</span>
-                              <ChevronDown className={cn('h-4 w-4 shrink-0 transition-transform', openFaqs[index] && 'rotate-180')} />
+                              <ChevronDown
+                                className={cn('h-4 w-4 shrink-0 transition-transform', openFaqs[index] && 'rotate-180')}
+                              />
                             </button>
-                            {openFaqs[index] && <p className="mt-2 text-sm leading-6 text-muted-foreground">{faq.answer}</p>}
+                            {openFaqs[index] && (
+                              <p className="text-muted-foreground mt-2 text-sm leading-6">{faq.answer}</p>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -533,9 +576,15 @@ export function PharmaPulseClient() {
                   <section id="pharma-mcqs">
                     <InfoSection title="Pharmacology MCQs" icon={Sparkles} accent="violet">
                       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-sm text-muted-foreground">Practice questions generated from this monograph.</p>
+                        <p className="text-muted-foreground text-sm">
+                          Practice questions generated from this monograph.
+                        </p>
                         <Button variant="outline" size="sm" onClick={generateMcqs} disabled={mcqLoading}>
-                          {mcqLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                          {mcqLoading ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Sparkles className="h-3.5 w-3.5" />
+                          )}
                           Generate MCQs
                         </Button>
                       </div>
@@ -562,7 +611,8 @@ export function PharmaPulseClient() {
                     <InfoSection title="References & Disclaimer" icon={BookOpen} accent="slate">
                       <List items={result.references} />
                       <div className="mt-4 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm leading-6 text-amber-700 dark:text-amber-300">
-                        {result.safety_disclaimer || 'This tool is for educational support only. Verify clinically before use.'}
+                        {result.safety_disclaimer ||
+                          'This tool is for educational support only. Verify clinically before use.'}
                       </div>
                     </InfoSection>
                   </section>
@@ -573,9 +623,7 @@ export function PharmaPulseClient() {
         </div>
       </section>
 
-      {structureOpen && result && (
-        <StructureModal drug={result} onClose={() => setStructureOpen(false)} />
-      )}
+      {structureOpen && result && <StructureModal drug={result} onClose={() => setStructureOpen(false)} />}
     </div>
   );
 }
@@ -587,8 +635,9 @@ function EmptyPharmaState({ onPick }: { onPick: (value: string) => void }) {
         <CardContent className="flex min-h-[280px] flex-col items-center justify-center p-8 text-center">
           <Pill className="mb-4 h-10 w-10 text-cyan-500" />
           <h2 className="font-semibold">Search a medicine to build a full drug card</h2>
-          <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
-            Start with a generic or Pakistani brand name. The result opens as a student-ready monograph with safety, dosing, Pakistan brands and MCQ practice.
+          <p className="text-muted-foreground mt-2 max-w-md text-sm leading-6">
+            Start with a generic or Pakistani brand name. The result opens as a student-ready monograph with safety,
+            dosing, Pakistan brands and MCQ practice.
           </p>
         </CardContent>
       </Card>
@@ -597,11 +646,11 @@ function EmptyPharmaState({ onPick }: { onPick: (value: string) => void }) {
           <button
             key={item}
             type="button"
-            className="flex items-center justify-between rounded-md border bg-card/80 px-4 py-3 text-left text-sm font-medium hover:border-cyan-500/50 hover:bg-cyan-500/10"
+            className="bg-card/80 flex items-center justify-between rounded-md border px-4 py-3 text-left text-sm font-medium hover:border-cyan-500/50 hover:bg-cyan-500/10"
             onClick={() => onPick(item)}
           >
             {item}
-            <Search className="h-4 w-4 text-muted-foreground" />
+            <Search className="text-muted-foreground h-4 w-4" />
           </button>
         ))}
       </div>
@@ -611,11 +660,11 @@ function EmptyPharmaState({ onPick }: { onPick: (value: string) => void }) {
 
 function PharmaLoading({ query }: { query: string }) {
   return (
-    <div className="mt-6 rounded-lg border bg-card/80 p-8">
+    <div className="bg-card/80 mt-6 rounded-lg border p-8">
       <PharmaMiniLoader label={`Building clinical monograph for ${query || 'medicine'}...`} />
       <div className="mx-auto mt-8 grid max-w-3xl gap-3">
         {[0, 1, 2].map((item) => (
-          <div key={item} className="h-16 animate-pulse rounded-md bg-muted" />
+          <div key={item} className="bg-muted h-16 animate-pulse rounded-md" />
         ))}
       </div>
     </div>
@@ -627,12 +676,16 @@ function PharmaMiniLoader({ label }: { label: string }) {
     <div className="flex flex-col items-center justify-center gap-3 text-center">
       <div className="relative flex h-12 w-12 items-center justify-center rounded-lg bg-cyan-500/15 text-cyan-500">
         <Pill className="h-6 w-6 animate-pulse" />
-        <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-emerald-400" />
+        <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-emerald-400" />
       </div>
       <p className="text-sm font-semibold">{label}</p>
       <div className="flex h-5 items-end gap-1">
         {[0, 1, 2, 3].map((item) => (
-          <span key={item} className="h-4 w-1 rounded-full bg-cyan-500/70 [animation:equalizer_.55s_ease-in-out_infinite_alternate]" style={{ animationDelay: `${item * 0.08}s` }} />
+          <span
+            key={item}
+            className="h-4 w-1 [animation:equalizer_.55s_ease-in-out_infinite_alternate] rounded-full bg-cyan-500/70"
+            style={{ animationDelay: `${item * 0.08}s` }}
+          />
         ))}
       </div>
     </div>
@@ -657,16 +710,22 @@ function DrugHero({
   onExport: () => void;
 }) {
   return (
-    <div className="rounded-lg border bg-gradient-to-br from-cyan-500/12 via-card to-emerald-500/10 p-5">
+    <div className="via-card rounded-lg border bg-gradient-to-br from-cyan-500/12 to-emerald-500/10 p-5">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-        <button type="button" onClick={onStructure} className="group mx-auto flex h-36 w-full max-w-56 shrink-0 items-center justify-center rounded-lg border border-cyan-500/40 bg-cyan-500/10 transition-transform hover:scale-[1.03] sm:mx-0 sm:h-32 sm:w-32">
+        <button
+          type="button"
+          onClick={onStructure}
+          className="group mx-auto flex h-36 w-full max-w-56 shrink-0 items-center justify-center rounded-lg border border-cyan-500/40 bg-cyan-500/10 transition-transform hover:scale-[1.03] sm:mx-0 sm:h-32 sm:w-32"
+        >
           <MoleculeShape drugClass={result.drug_class || ''} />
         </button>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-bold uppercase tracking-wide text-cyan-500">Drug monograph</p>
+          <p className="text-xs font-bold tracking-wide text-cyan-500 uppercase">Drug monograph</p>
           <h2 className="mt-1 text-3xl font-bold md:text-4xl">{result.medicine_name || 'Medicine'}</h2>
-          {result.aliases?.length ? <p className="mt-2 text-sm text-cyan-600 dark:text-cyan-300">Also known as: {result.aliases.join(', ')}</p> : null}
-          <p className="mt-1 text-sm text-muted-foreground">{result.drug_class || 'Drug class not specified'}</p>
+          {result.aliases?.length ? (
+            <p className="mt-2 text-sm text-cyan-600 dark:text-cyan-300">Also known as: {result.aliases.join(', ')}</p>
+          ) : null}
+          <p className="text-muted-foreground mt-1 text-sm">{result.drug_class || 'Drug class not specified'}</p>
           <div className="mt-3 flex flex-wrap gap-2">
             <Badge variant="info">PK brands</Badge>
             <Badge variant="warning">Safety caveats</Badge>
@@ -675,12 +734,24 @@ function DrugHero({
         </div>
       </div>
       <div className="mt-5 grid grid-cols-2 gap-2 border-t pt-4 sm:flex sm:flex-wrap">
-        <Button variant="outline" size="sm" className="justify-center" onClick={onStructure}><FlaskConical className="h-3.5 w-3.5" /> Structure</Button>
-        <Button variant="outline" size="sm" className="justify-center" onClick={onMcq}><Sparkles className="h-3.5 w-3.5" /> MCQs</Button>
-        <Button variant="outline" size="sm" className="justify-center" onClick={onSpeak}><Volume2 className="h-3.5 w-3.5" /> Speak</Button>
-        <Button variant="outline" size="sm" className="justify-center" onClick={onCopy}><Clipboard className="h-3.5 w-3.5" /> Copy</Button>
-        <Button variant="outline" size="sm" className="justify-center" onClick={onPrint}><Printer className="h-3.5 w-3.5" /> Print</Button>
-        <Button variant="outline" size="sm" className="justify-center" onClick={onExport}><Download className="h-3.5 w-3.5" /> Export PDF</Button>
+        <Button variant="outline" size="sm" className="justify-center" onClick={onStructure}>
+          <FlaskConical className="h-3.5 w-3.5" /> Structure
+        </Button>
+        <Button variant="outline" size="sm" className="justify-center" onClick={onMcq}>
+          <Sparkles className="h-3.5 w-3.5" /> MCQs
+        </Button>
+        <Button variant="outline" size="sm" className="justify-center" onClick={onSpeak}>
+          <Volume2 className="h-3.5 w-3.5" /> Speak
+        </Button>
+        <Button variant="outline" size="sm" className="justify-center" onClick={onCopy}>
+          <Clipboard className="h-3.5 w-3.5" /> Copy
+        </Button>
+        <Button variant="outline" size="sm" className="justify-center" onClick={onPrint}>
+          <Printer className="h-3.5 w-3.5" /> Print
+        </Button>
+        <Button variant="outline" size="sm" className="justify-center" onClick={onExport}>
+          <Download className="h-3.5 w-3.5" /> Export PDF
+        </Button>
       </div>
     </div>
   );
@@ -695,11 +766,13 @@ function exportPharmaPulsePdf(drug: DrugInfo, mode: PharmaMode) {
 
   const date = new Date().toLocaleDateString('en-PK', { day: 'numeric', month: 'long', year: 'numeric' });
   const name = cleanHtml(drug.medicine_name || 'Medicine');
-  const brands = (drug.pakistan_brand_names || []).map((brand) => {
-    const strength = (brand.strengths || []).filter(Boolean).join(' / ');
-    const forms = (brand.dosage_forms || []).filter(Boolean).join(', ');
-    return `<span class="brand"><strong>${cleanHtml(brand.brand || 'Brand')}</strong>${strength ? ` ${cleanHtml(strength)}` : ''}${brand.company ? ` - ${cleanHtml(brand.company)}` : ''}${forms ? `<small>${cleanHtml(forms)}</small>` : ''}</span>`;
-  }).join('');
+  const brands = (drug.pakistan_brand_names || [])
+    .map((brand) => {
+      const strength = (brand.strengths || []).filter(Boolean).join(' / ');
+      const forms = (brand.dosage_forms || []).filter(Boolean).join(', ');
+      return `<span class="brand"><strong>${cleanHtml(brand.brand || 'Brand')}</strong>${strength ? ` ${cleanHtml(strength)}` : ''}${brand.company ? ` - ${cleanHtml(brand.company)}` : ''}${forms ? `<small>${cleanHtml(forms)}</small>` : ''}</span>`;
+    })
+    .join('');
 
   win.document.write(`<!doctype html>
 <html>
@@ -797,10 +870,22 @@ function subListHtml(title: string, items?: string[]) {
 function keyValueHtml(value?: Record<string, string>) {
   const entries = Object.entries(value || {}).filter(([, item]) => Boolean(item));
   if (!entries.length) return '<p>No data listed.</p>';
-  return entries.map(([key, item]) => `<p><strong>${cleanHtml(key.replace(/_/g, ' '))}:</strong> ${cleanHtml(item)}</p>`).join('');
+  return entries
+    .map(([key, item]) => `<p><strong>${cleanHtml(key.replace(/_/g, ' '))}:</strong> ${cleanHtml(item)}</p>`)
+    .join('');
 }
 
-function InfoSection({ title, icon: Icon, accent, children }: { title: string; icon: React.ElementType; accent: string; children: React.ReactNode }) {
+function InfoSection({
+  title,
+  icon: Icon,
+  accent,
+  children,
+}: {
+  title: string;
+  icon: React.ElementType;
+  accent: string;
+  children: React.ReactNode;
+}) {
   const accentClass: Record<string, string> = {
     cyan: 'bg-cyan-500',
     violet: 'bg-violet-500',
@@ -817,7 +902,7 @@ function InfoSection({ title, icon: Icon, accent, children }: { title: string; i
       <CardContent className="p-0">
         <div className="flex items-center gap-3 border-b p-4">
           <span className={cn('h-6 w-1 rounded-full', accentClass[accent] || 'bg-cyan-500')} />
-          <Icon className="h-4 w-4 text-muted-foreground" />
+          <Icon className="text-muted-foreground h-4 w-4" />
           <h3 className="font-semibold">{title}</h3>
         </div>
         <div className="p-4">{children}</div>
@@ -827,11 +912,11 @@ function InfoSection({ title, icon: Icon, accent, children }: { title: string; i
 }
 
 function List({ items }: { items?: string[] }) {
-  if (!items?.length) return <p className="text-sm text-muted-foreground">No data listed.</p>;
+  if (!items?.length) return <p className="text-muted-foreground text-sm">No data listed.</p>;
   return (
     <ul className="mt-3 space-y-2">
       {items.map((item, index) => (
-        <li key={`${item}-${index}`} className="flex gap-2 text-sm leading-6 text-muted-foreground">
+        <li key={`${item}-${index}`} className="text-muted-foreground flex gap-2 text-sm leading-6">
           <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-500" />
           <span>{item}</span>
         </li>
@@ -844,7 +929,14 @@ function SubList({ label, items, tone }: { label: string; items?: string[]; tone
   if (!items?.length) return null;
   return (
     <div className="mb-4 last:mb-0">
-      <p className={cn('mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground', tone === 'danger' && 'text-rose-500')}>{label}</p>
+      <p
+        className={cn(
+          'text-muted-foreground mb-2 text-xs font-bold tracking-wide uppercase',
+          tone === 'danger' && 'text-rose-500'
+        )}
+      >
+        {label}
+      </p>
       <List items={items} />
     </div>
   );
@@ -853,22 +945,22 @@ function SubList({ label, items, tone }: { label: string; items?: string[]; tone
 function SubBlock({ label, text }: { label: string; text?: string }) {
   if (!text) return null;
   return (
-    <div className="mb-4 rounded-md border bg-muted/20 p-3 last:mb-0">
-      <p className="mb-1 text-xs font-bold uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="text-sm leading-6 text-muted-foreground">{text}</p>
+    <div className="bg-muted/20 mb-4 rounded-md border p-3 last:mb-0">
+      <p className="text-muted-foreground mb-1 text-xs font-bold tracking-wide uppercase">{label}</p>
+      <p className="text-muted-foreground text-sm leading-6">{text}</p>
     </div>
   );
 }
 
 function KeyValueGrid({ value }: { value?: Record<string, string> }) {
   const entries = Object.entries(value || {}).filter(([, item]) => Boolean(item));
-  if (!entries.length) return <p className="text-sm text-muted-foreground">No data listed.</p>;
+  if (!entries.length) return <p className="text-muted-foreground text-sm">No data listed.</p>;
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       {entries.map(([key, item]) => (
-        <div key={key} className="rounded-md border bg-muted/20 p-3">
-          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{key.replace(/_/g, ' ')}</p>
-          <p className="mt-1 text-sm leading-6 text-muted-foreground">{item}</p>
+        <div key={key} className="bg-muted/20 rounded-md border p-3">
+          <p className="text-muted-foreground text-xs font-bold tracking-wide uppercase">{key.replace(/_/g, ' ')}</p>
+          <p className="text-muted-foreground mt-1 text-sm leading-6">{item}</p>
         </div>
       ))}
     </div>
@@ -876,16 +968,24 @@ function KeyValueGrid({ value }: { value?: Record<string, string> }) {
 }
 
 function BrandGrid({ brands }: { brands?: DrugInfo['pakistan_brand_names'] }) {
-  if (!brands?.length) return <p className="text-sm text-muted-foreground">No Pakistan brand data generated.</p>;
+  if (!brands?.length) return <p className="text-muted-foreground text-sm">No Pakistan brand data generated.</p>;
   return (
     <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
       {brands.map((brand, index) => (
-        <div key={`${brand.brand}-${index}`} className="rounded-md border bg-muted/20 p-4">
+        <div key={`${brand.brand}-${index}`} className="bg-muted/20 rounded-md border p-4">
           <p className="font-semibold text-cyan-600 dark:text-cyan-300">{brand.brand || 'Brand'}</p>
-          <p className="mt-1 text-sm text-muted-foreground">{brand.company || 'Company not listed'}</p>
+          <p className="text-muted-foreground mt-1 text-sm">{brand.company || 'Company not listed'}</p>
           <div className="mt-3 flex flex-wrap gap-1.5">
-            {(brand.strengths || []).map((item) => <Badge key={item} variant="secondary">{item}</Badge>)}
-            {(brand.dosage_forms || []).map((item) => <Badge key={item} variant="outline">{item}</Badge>)}
+            {(brand.strengths || []).map((item) => (
+              <Badge key={item} variant="secondary">
+                {item}
+              </Badge>
+            ))}
+            {(brand.dosage_forms || []).map((item) => (
+              <Badge key={item} variant="outline">
+                {item}
+              </Badge>
+            ))}
           </div>
         </div>
       ))}
@@ -912,8 +1012,10 @@ function McqCard({
   const choices = Object.entries(mcq.options || {}) as [string, string][];
 
   return (
-    <div className="rounded-md border bg-muted/15 p-4">
-      <p className="font-semibold">{index + 1}. {mcq.question}</p>
+    <div className="bg-muted/15 min-w-0 rounded-md border p-3 sm:p-4">
+      <p className="font-semibold break-words">
+        {index + 1}. {mcq.question}
+      </p>
       <div className="mt-3 grid gap-2 md:grid-cols-2">
         {choices.map(([key, value]) => {
           const picked = selected === key;
@@ -925,7 +1027,7 @@ function McqCard({
               type="button"
               disabled={Boolean(selected)}
               className={cn(
-                'rounded-md border px-3 py-2 text-left text-sm transition-colors',
+                'min-h-12 min-w-0 rounded-md border px-3 py-2 text-left text-sm break-words transition-colors',
                 !reveal && 'hover:border-cyan-500 hover:bg-cyan-500/10',
                 reveal && isCorrect && 'border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
                 reveal && picked && !isCorrect && 'border-rose-500 bg-rose-500/10 text-rose-700 dark:text-rose-300'
@@ -937,11 +1039,15 @@ function McqCard({
           );
         })}
       </div>
-      <button type="button" className="mt-3 text-sm font-semibold text-cyan-600 dark:text-cyan-300" onClick={onToggleAnswer}>
+      <button
+        type="button"
+        className="mt-3 text-sm font-semibold text-cyan-600 dark:text-cyan-300"
+        onClick={onToggleAnswer}
+      >
         {showAnswer ? 'Hide answer' : 'Show answer & explanation'}
       </button>
       {showAnswer && (
-        <div className="mt-3 rounded-md border border-cyan-500/25 bg-cyan-500/10 p-3 text-sm leading-6 text-muted-foreground">
+        <div className="text-muted-foreground mt-3 rounded-md border border-cyan-500/25 bg-cyan-500/10 p-3 text-sm leading-6">
           Correct: <strong>{correct || '-'}</strong>
           {mcq.explanation ? <p className="mt-1">{mcq.explanation}</p> : null}
         </div>
@@ -962,35 +1068,49 @@ function StructureModal({ drug, onClose }: { drug: DrugInfo; onClose: () => void
   }, [view, drugName]);
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-end justify-center bg-black/70 p-0 sm:items-center sm:p-4" onClick={onClose}>
-      <div className="max-h-[92vh] w-full overflow-y-auto rounded-t-xl border bg-card p-4 shadow-2xl sm:max-w-2xl sm:rounded-lg sm:p-6" onClick={(event) => event.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-[120] flex items-end justify-center bg-black/70 p-0 sm:items-center sm:p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-card max-h-[92vh] w-full overflow-y-auto rounded-t-xl border p-4 shadow-2xl sm:max-w-2xl sm:rounded-lg sm:p-6"
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-bold uppercase tracking-wide text-cyan-500">PubChem molecular structure</p>
+            <p className="text-xs font-bold tracking-wide text-cyan-500 uppercase">PubChem molecular structure</p>
             <h2 className="mt-1 text-2xl font-bold">{drugName}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{drug.drug_class || 'General therapeutic agent'}</p>
+            <p className="text-muted-foreground mt-1 text-sm">{drug.drug_class || 'General therapeutic agent'}</p>
           </div>
-          <Button variant="ghost" size="icon-sm" onClick={onClose}><X className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon-sm" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
         </div>
 
-        <div className="mt-5 grid grid-cols-2 rounded-md border bg-muted/20 p-1">
+        <div className="bg-muted/20 mt-5 grid grid-cols-2 rounded-md border p-1">
           <button
             type="button"
-            className={cn('rounded px-3 py-2 text-sm font-semibold transition-colors', view === '2d' ? 'bg-background text-cyan-600 shadow-sm dark:text-cyan-300' : 'text-muted-foreground')}
+            className={cn(
+              'rounded px-3 py-2 text-sm font-semibold transition-colors',
+              view === '2d' ? 'bg-background text-cyan-600 shadow-sm dark:text-cyan-300' : 'text-muted-foreground'
+            )}
             onClick={() => setView('2d')}
           >
             2D PubChem
           </button>
           <button
             type="button"
-            className={cn('rounded px-3 py-2 text-sm font-semibold transition-colors', view === '3d' ? 'bg-background text-cyan-600 shadow-sm dark:text-cyan-300' : 'text-muted-foreground')}
+            className={cn(
+              'rounded px-3 py-2 text-sm font-semibold transition-colors',
+              view === '3d' ? 'bg-background text-cyan-600 shadow-sm dark:text-cyan-300' : 'text-muted-foreground'
+            )}
             onClick={() => setView('3d')}
           >
             3D PubChem
           </button>
         </div>
 
-        <div className="my-5 flex justify-center rounded-lg border bg-white p-3 shadow-inner dark:bg-slate-950 sm:p-6">
+        <div className="my-5 flex justify-center rounded-lg border bg-white p-3 shadow-inner sm:p-6 dark:bg-slate-950">
           <div className="flex aspect-square w-full max-w-[18rem] items-center justify-center sm:max-w-sm">
             {!imageError ? (
               <img
@@ -1002,26 +1122,28 @@ function StructureModal({ drug, onClose }: { drug: DrugInfo; onClose: () => void
                 onError={() => setImageError(true)}
               />
             ) : (
-              <div className="flex h-full w-full flex-col items-center justify-center rounded-md border border-dashed bg-muted/30 p-5 text-center">
+              <div className="bg-muted/30 flex h-full w-full flex-col items-center justify-center rounded-md border border-dashed p-5 text-center">
                 <FlaskConical className="h-10 w-10 text-cyan-500" />
                 <p className="mt-3 text-sm font-semibold">Structure image is not available for this exact name.</p>
-                <p className="mt-2 text-xs leading-5 text-muted-foreground">Try searching the official generic name or a simpler salt name.</p>
+                <p className="text-muted-foreground mt-2 text-xs leading-5">
+                  Try searching the official generic name or a simpler salt name.
+                </p>
               </div>
             )}
           </div>
         </div>
         <div className="mb-3 grid gap-2 text-sm sm:grid-cols-3">
-          <div className="rounded-md border bg-muted/20 p-3">
-            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Source</p>
+          <div className="bg-muted/20 rounded-md border p-3">
+            <p className="text-muted-foreground text-xs font-bold tracking-wide uppercase">Source</p>
             <p className="mt-1 font-semibold">PubChem</p>
           </div>
-          <div className="rounded-md border bg-muted/20 p-3">
-            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">View</p>
+          <div className="bg-muted/20 rounded-md border p-3">
+            <p className="text-muted-foreground text-xs font-bold tracking-wide uppercase">View</p>
             <p className="mt-1 font-semibold">{view === '2d' ? '2D structure' : '3D conformer / 2D fallback'}</p>
           </div>
-          <div className="rounded-md border bg-muted/20 p-3">
-            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Compound</p>
-            <p className="mt-1 break-words font-semibold">{drugName}</p>
+          <div className="bg-muted/20 rounded-md border p-3">
+            <p className="text-muted-foreground text-xs font-bold tracking-wide uppercase">Compound</p>
+            <p className="mt-1 font-semibold break-words">{drugName}</p>
           </div>
         </div>
         <div className="grid gap-2 sm:grid-cols-2">
@@ -1038,8 +1160,9 @@ function StructureModal({ drug, onClose }: { drug: DrugInfo; onClose: () => void
             </a>
           </Button>
         </div>
-        <p className="mt-3 rounded-md border border-cyan-500/25 bg-cyan-500/10 p-3 text-sm leading-6 text-muted-foreground">
-          Structures are resolved through PubChem CID using the medicine name and aliases, then loaded inside ilm AI. Brand or combination products may still need the generic name.
+        <p className="text-muted-foreground mt-3 rounded-md border border-cyan-500/25 bg-cyan-500/10 p-3 text-sm leading-6">
+          Structures are resolved through PubChem CID using the medicine name and aliases, then loaded inside ilm AI.
+          Brand or combination products may still need the generic name.
         </p>
       </div>
     </div>
@@ -1051,7 +1174,10 @@ function getPubChemImageUrl(drugName: string, view: '2d' | '3d', aliases: string
     name: drugName.trim() || 'medicine',
     view,
   });
-  const cleanAliases = aliases.map((item) => item.trim()).filter(Boolean).slice(0, 8);
+  const cleanAliases = aliases
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, 8);
   if (cleanAliases.length) params.set('aliases', cleanAliases.join('|'));
   return `/api/pubchem/structure?${params.toString()}`;
 }
@@ -1062,9 +1188,12 @@ function getPubChemSearchUrl(drugName: string) {
 
 function getMoleculeStyle(drugClass: string) {
   const cls = drugClass.toLowerCase();
-  if (cls.includes('antibiotic') || cls.includes('antibacterial')) return { kind: 'antibiotic' as const, color: '#f59e0b', label: 'Antibiotic ring scaffold' };
-  if (/arb|ace|antihypertensive|calcium channel|beta/.test(cls)) return { kind: 'cardio' as const, color: '#8b5cf6', label: 'Cardiovascular aromatic scaffold' };
-  if (/antidiabetic|insulin|biguanide|sulfonylurea/.test(cls)) return { kind: 'metabolic' as const, color: '#10b981', label: 'Metabolic agent scaffold' };
+  if (cls.includes('antibiotic') || cls.includes('antibacterial'))
+    return { kind: 'antibiotic' as const, color: '#f59e0b', label: 'Antibiotic ring scaffold' };
+  if (/arb|ace|antihypertensive|calcium channel|beta/.test(cls))
+    return { kind: 'cardio' as const, color: '#8b5cf6', label: 'Cardiovascular aromatic scaffold' };
+  if (/antidiabetic|insulin|biguanide|sulfonylurea/.test(cls))
+    return { kind: 'metabolic' as const, color: '#10b981', label: 'Metabolic agent scaffold' };
   return { kind: 'general' as const, color: '#06b6d4', label: 'General pharmacophore scaffold' };
 }
 
@@ -1082,9 +1211,18 @@ function MoleculeShape({ drugClass, large = false }: { drugClass: string; large?
           <path d="M47 50 70 38 96 54M44 82 70 102 96 84" strokeWidth="1.6" opacity="0.5" />
         </g>
         <g fill={color} fontWeight="700">
-          <circle cx="70" cy="40" r="4" /><text x="66" y="37" fontSize="10">N</text>
-          <circle cx="100" cy="70" r="4" /><text x="97" y="74" fontSize="10">S</text>
-          <circle cx="45" cy="20" r="3" opacity="0.7" /><text x="61" y="110" fontSize="9">COOH</text>
+          <circle cx="70" cy="40" r="4" />
+          <text x="66" y="37" fontSize="10">
+            N
+          </text>
+          <circle cx="100" cy="70" r="4" />
+          <text x="97" y="74" fontSize="10">
+            S
+          </text>
+          <circle cx="45" cy="20" r="3" opacity="0.7" />
+          <text x="61" y="110" fontSize="9">
+            COOH
+          </text>
         </g>
       </svg>
     );
@@ -1099,9 +1237,18 @@ function MoleculeShape({ drugClass, large = false }: { drugClass: string; large?
           <circle cx="70" cy="60" r="8" strokeWidth="1.8" opacity="0.45" />
         </g>
         <g fill={color} fontWeight="700">
-          <circle cx="35" cy="60" r="3" /><text x="18" y="65" fontSize="9">R</text>
-          <circle cx="105" cy="60" r="3" /><text x="116" y="65" fontSize="9">OH</text>
-          <circle cx="70" cy="112" r="3" /><text x="63" y="124" fontSize="9">NH</text>
+          <circle cx="35" cy="60" r="3" />
+          <text x="18" y="65" fontSize="9">
+            R
+          </text>
+          <circle cx="105" cy="60" r="3" />
+          <text x="116" y="65" fontSize="9">
+            OH
+          </text>
+          <circle cx="70" cy="112" r="3" />
+          <text x="63" y="124" fontSize="9">
+            NH
+          </text>
         </g>
       </svg>
     );
@@ -1112,11 +1259,18 @@ function MoleculeShape({ drugClass, large = false }: { drugClass: string; large?
       <svg viewBox="0 0 140 140" className={cn('h-full w-full', !large && 'p-3')} aria-hidden="true">
         <g fill="none" stroke={color} strokeLinecap="round" strokeLinejoin="round">
           <polygon points="70,25 110,45 110,85 70,105 30,85 30,45" strokeWidth="2.7" />
-          <path d="M110 45 130 35M110 85 130 95M30 45 15 40M30 85 15 90M48 55h44M48 78h44" strokeWidth="2" opacity="0.72" />
+          <path
+            d="M110 45 130 35M110 85 130 95M30 45 15 40M30 85 15 90M48 55h44M48 78h44"
+            strokeWidth="2"
+            opacity="0.72"
+          />
           <circle cx="70" cy="65" r="10" strokeWidth="1.8" opacity="0.42" />
         </g>
         <g fill={color} fontWeight="700">
-          <circle cx="70" cy="65" r="4" /><text x="66" y="69" fontSize="10">O</text>
+          <circle cx="70" cy="65" r="4" />
+          <text x="66" y="69" fontSize="10">
+            O
+          </text>
           <circle cx="130" cy="35" r="3" opacity="0.75" />
           <circle cx="130" cy="95" r="3" opacity="0.75" />
         </g>
@@ -1138,7 +1292,9 @@ function MoleculeShape({ drugClass, large = false }: { drugClass: string; large?
         <circle cx="123" cy="70" r="4" opacity="0.65" />
         <circle cx="70" cy="123" r="4" opacity="0.65" />
         <circle cx="17" cy="70" r="4" opacity="0.65" />
-        <text x="64" y="75" fontSize="14" fontWeight="700">Rx</text>
+        <text x="64" y="75" fontSize="14" fontWeight="700">
+          Rx
+        </text>
       </g>
     </svg>
   );

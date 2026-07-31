@@ -5,13 +5,11 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Check, Star, X } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useQuizStore } from '@/store/quiz.store';
 import { cn } from '@/lib/utils/cn';
 import type { QuizQuestion } from '@/types';
 import { AiAnswerRenderer } from '@/components/features/ai/AiAnswerRenderer';
-
-const AUTO_ADVANCE_CORRECT_MS = 1350;
-const AUTO_ADVANCE_WRONG_MS = 2000;
 
 type RewardPath = { startX: number; startY: number; endX: number; endY: number };
 
@@ -45,7 +43,7 @@ function playCorrectChime() {
 export function QuizCard({ question, isLast }: { question: QuizQuestion; isLast: boolean }) {
   const { answerQuestion, nextQuestion, submitQuiz } = useQuizStore();
   const hasAnswered = question.userAnswer !== undefined;
-  const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const explanationRef = useRef<HTMLDivElement>(null);
   const [rewardPath, setRewardPath] = useState<RewardPath | null>(null);
 
   const handleSelect = (optionId: string, event: MouseEvent<HTMLButtonElement>) => {
@@ -66,20 +64,11 @@ export function QuizCard({ question, isLast }: { question: QuizQuestion; isLast:
 
   useEffect(() => {
     if (!hasAnswered) return;
-    const isCorrect = question.userAnswer === question.correctAnswer;
-    advanceTimer.current = setTimeout(
-      () => {
-        if (isLast) submitQuiz();
-        else nextQuestion();
-      },
-      isCorrect ? AUTO_ADVANCE_CORRECT_MS : AUTO_ADVANCE_WRONG_MS
+    const timer = window.setTimeout(
+      () => explanationRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }),
+      120
     );
-
-    return () => {
-      if (advanceTimer.current) clearTimeout(advanceTimer.current);
-    };
-    // Store actions are stable, and answer state is intentionally the trigger.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => window.clearTimeout(timer);
   }, [hasAnswered, question.id]);
 
   const difficultyColors = {
@@ -91,8 +80,8 @@ export function QuizCard({ question, isLast }: { question: QuizQuestion; isLast:
 
   return (
     <Card>
-      <CardContent className="p-6">
-        <div className="mb-4 flex items-center gap-2">
+      <CardContent className="p-4 sm:p-6">
+        <div className="mb-4 flex flex-wrap items-center gap-2">
           <Badge variant={difficultyColors[question.difficulty]}>{question.difficulty}</Badge>
           <Badge variant="outline">
             {question.marks} mark{question.marks > 1 ? 's' : ''}
@@ -112,14 +101,14 @@ export function QuizCard({ question, isLast }: { question: QuizQuestion; isLast:
                 onClick={(event) => handleSelect(option.id, event)}
                 disabled={hasAnswered}
                 className={cn(
-                  'group flex w-full items-center justify-between gap-3 rounded-xl border-2 p-4 text-left transition-all',
+                  'group flex min-h-14 w-full items-start justify-between gap-2 rounded-lg border-2 p-3 text-left transition-all sm:items-center sm:gap-3 sm:p-4',
                   !hasAnswered && 'border-border hover:bg-muted/30 hover:border-violet-500/50',
                   hasAnswered && isCorrectOption && 'border-green-500 bg-green-500/10',
                   hasAnswered && isSelected && !isCorrectOption && 'border-red-500 bg-red-500/10',
                   hasAnswered && !isSelected && !isCorrectOption && 'border-border opacity-50'
                 )}
               >
-                <span className="flex min-w-0 flex-1 items-center gap-3">
+                <span className="flex min-w-0 flex-1 items-start gap-2.5 sm:items-center sm:gap-3">
                   <span
                     className={cn(
                       'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-xs font-bold',
@@ -130,7 +119,7 @@ export function QuizCard({ question, isLast }: { question: QuizQuestion; isLast:
                   >
                     {String.fromCharCode(65 + optionIndex)}
                   </span>
-                  <span className="min-w-0 flex-1 text-sm">
+                  <span className="min-w-0 flex-1 text-sm break-words">
                     <AiAnswerRenderer content={option.text} card={false} />
                   </span>
                 </span>
@@ -140,13 +129,25 @@ export function QuizCard({ question, isLast }: { question: QuizQuestion; isLast:
             );
           })}
         </div>
-        {hasAnswered && question.explanation && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-4">
+        {hasAnswered && (
+          <motion.div
+            ref={explanationRef}
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            className="mt-4 space-y-3"
+          >
             <AiAnswerRenderer
-              content={question.explanation}
+              content={question.explanation || 'The correct option is highlighted above.'}
               label="Explanation"
               feedback={{ sourceType: 'quiz_explanation', sourceId: question.id }}
             />
+            <Button
+              variant="gradient"
+              className="w-full sm:w-auto"
+              onClick={() => (isLast ? submitQuiz() : nextQuestion())}
+            >
+              {isLast ? 'See results' : 'Next question'}
+            </Button>
           </motion.div>
         )}
       </CardContent>

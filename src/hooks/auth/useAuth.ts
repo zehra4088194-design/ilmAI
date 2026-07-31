@@ -41,6 +41,7 @@ export function useAuth() {
       totalMarksPercentage: data.total_marks_percentage ?? undefined,
       previousRollNumber: data.previous_roll_number ?? undefined,
       optionalSubjectIds: data.optional_subject_ids ?? [],
+      scienceGroup: (data.science_group as UserProfile['scienceGroup']) ?? undefined,
       educationLevel: (data.education_level as UserProfile['educationLevel']) ?? 'school',
       universityProgram: data.university_program ?? undefined,
       universitySemester: data.university_semester ?? undefined,

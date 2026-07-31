@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { gatewayChat, GatewayError, MARKDOWN_ANSWER_FORMAT_INSTRUCTION } from '@/lib/ai/gateway';
-import { checkAiMessageLimit } from '@/lib/rate-limit';
+import { checkAiMessageLimit, consumeAiCredits } from '@/lib/rate-limit';
 import type { SubscriptionTier } from '@/types';
 
 export const runtime = 'nodejs';
@@ -18,11 +18,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: 'error', error: 'Authentication is required' }, { status: 401 });
     }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('subscription_tier')
-      .eq('id', user.id)
-      .single();
+    const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
     const userTier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
     const limit = await checkAiMessageLimit(user.id, userTier, 'humanizer');
 
@@ -74,6 +70,7 @@ ${text}`,
       ],
     });
 
+    await consumeAiCredits(user.id, userTier, 'humanizer');
     return NextResponse.json({ status: 'success', data: { text: result.text } });
   } catch (error) {
     console.error('AI humanizer error:', error);

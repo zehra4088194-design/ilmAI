@@ -25,15 +25,24 @@ export async function GET() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('board, grade_level, education_level')
+    .select('board, grade_level, education_level, science_group, optional_subject_ids')
     .eq('id', user.id)
     .single();
   const db = createServiceClient() as any;
-  let subjectQuery = db.from('subjects').select('id, name').eq('is_active', true);
+  let subjectQuery = db.from('subjects').select('id, name, slug, stream, is_optional').eq('is_active', true);
   if (profile?.board) subjectQuery = subjectQuery.contains('boards', [profile.board]);
   if (profile?.grade_level) subjectQuery = subjectQuery.contains('grade_levels', [profile.grade_level]);
   const { data: subjects } = await subjectQuery;
-  const subjectIds = (subjects || []).map((subject: { id: string }) => subject.id);
+  const scopedSubjects = profile?.science_group
+    ? (subjects || []).filter((subject: any) => {
+        if (!subject.is_optional || (profile.optional_subject_ids || []).includes(subject.id)) return true;
+        const identity = `${subject.name} ${subject.slug || ''} ${subject.stream || ''}`.toLowerCase();
+        return profile.science_group === 'biology'
+          ? identity.includes('biology') || identity.includes('pre-medical')
+          : identity.includes('computer');
+      })
+    : subjects || [];
+  const subjectIds = scopedSubjects.map((subject: { id: string }) => subject.id);
   if (!subjectIds.length)
     return NextResponse.json(
       { status: 'error', error: 'Diagnostic questions are not ready for your selected grade and board yet.' },
@@ -115,12 +124,22 @@ export async function POST(req: NextRequest) {
     );
   const answerMap = new Map(answers.map((item: any) => [String(item.questionId), item.answer]));
   const chapterScores = new Map<string, { correct: number; total: number }>();
+  const reviews: Array<Record<string, unknown>> = [];
   let correct = 0;
   for (const question of questions) {
     const selected = answerMap.get(question.id);
     const expected = getCorrectOptionIndex(question.options, question.correct_answer);
     const isCorrect = expected !== null && Number(selected) === expected;
     if (isCorrect) correct += 1;
+    reviews.push({
+      questionId: question.id,
+      text: question.text,
+      options: normalizeQuestionOptions(question.options),
+      selected: selected == null ? null : Number(selected),
+      correct: expected,
+      isCorrect,
+      explanation: question.explanation || '',
+    });
     if (question.chapter_id) {
       const current = chapterScores.get(question.chapter_id) || { correct: 0, total: 0 };
       current.total += 1;
@@ -165,6 +184,7 @@ export async function POST(req: NextRequest) {
         chapterId,
         mastery: Math.round((result.correct / result.total) * 100),
       })),
+      reviews,
     },
   });
 }

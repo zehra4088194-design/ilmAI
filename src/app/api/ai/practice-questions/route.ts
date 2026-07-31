@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { checkAiMessageLimit } from '@/lib/rate-limit';
+import { checkAiMessageLimit, consumeAiCredits } from '@/lib/rate-limit';
 import { generateChapterQuestionPaper } from '@/lib/tests/chapter-question-bank';
 import type { SubscriptionTier } from '@/types';
 
@@ -39,7 +39,10 @@ export async function POST(req: NextRequest) {
     const tier = ((profile as any)?.subscription_tier || 'FREE') as SubscriptionTier;
     const limitCheck = await checkAiMessageLimit(user.id, tier, 'practice_questions');
     if (!limitCheck.success) {
-      return NextResponse.json({ status: 'error', error: 'The daily practice limit has been reached.' }, { status: 429 });
+      return NextResponse.json(
+        { status: 'error', error: 'The daily practice limit has been reached.' },
+        { status: 429 }
+      );
     }
 
     const finalCount = cleanCount(count, questionType);
@@ -58,6 +61,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    await consumeAiCredits(user.id, tier, 'practice_questions');
     return NextResponse.json({
       status: 'success',
       data: {

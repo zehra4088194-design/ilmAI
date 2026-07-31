@@ -16,6 +16,7 @@ export type UserRole = 'student' | 'parent' | 'teacher' | 'admin';
 export type Gender = 'girl' | 'boy';
 export type EducationLevel = 'school' | 'college' | 'university';
 export type PreferredOutputStyle = 'simple' | 'academic' | 'professional' | 'detailed';
+export type ScienceGroup = 'biology' | 'computer';
 
 // User & Profile
 export interface UserProfile {
@@ -54,6 +55,7 @@ export interface UserProfile {
   totalMarksPercentage?: number;
   previousRollNumber?: string;
   optionalSubjectIds: string[];
+  scienceGroup?: ScienceGroup;
   educationLevel: EducationLevel;
   universityProgram?: string;
   universitySemester?: string;

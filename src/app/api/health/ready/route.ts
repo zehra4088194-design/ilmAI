@@ -7,7 +7,7 @@ export async function GET() {
   const checks: Record<string, 'ok' | 'missing' | 'failed'> = {
     supabase_url: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'ok' : 'missing',
     supabase_service_key: process.env.SUPABASE_SERVICE_ROLE_KEY ? 'ok' : 'missing',
-    ai_gateway: process.env.AI_GATEWAY_URL || process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY ? 'ok' : 'missing',
+    ai_gateway: process.env.AI_GATEWAY_URL && process.env.AI_GATEWAY_SECRET ? 'ok' : 'missing',
   };
   try {
     const db = createServiceClient() as any;
@@ -24,9 +24,9 @@ export async function GET() {
     firebase_push: Boolean(process.env.FIREBASE_PROJECT_ID && process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID),
     r2: Boolean(
       process.env.R2_ACCOUNT_ID &&
-        process.env.R2_ACCESS_KEY_ID &&
-        process.env.R2_SECRET_ACCESS_KEY &&
-        process.env.R2_BUCKET
+      process.env.R2_ACCESS_KEY_ID &&
+      process.env.R2_SECRET_ACCESS_KEY &&
+      process.env.R2_BUCKET
     ),
     algolia: process.env.ALGOLIA_ENABLED === 'true' && Boolean(process.env.ALGOLIA_APP_ID),
   };

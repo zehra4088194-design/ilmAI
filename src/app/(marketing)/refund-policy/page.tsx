@@ -4,6 +4,7 @@ import { StaticContentPage } from '@/components/features/marketing/StaticContent
 export const metadata: Metadata = {
   title: 'Refund Policy - ilm AI',
   description: 'Refund policy for ilm AI subscriptions, billing disputes, duplicate charges, and payment review.',
+  alternates: { canonical: '/refund-policy' },
 };
 
 export default function RefundPolicyPage() {

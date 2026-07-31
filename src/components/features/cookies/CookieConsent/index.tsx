@@ -1,11 +1,17 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Cookie, Settings2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { DEFAULT_COOKIE_CONSENT, readCookieConsent, saveCookieConsent, type CookieConsentPreferences } from '@/lib/utils/cookieConsent';
+import {
+  DEFAULT_COOKIE_CONSENT,
+  readCookieConsent,
+  saveCookieConsent,
+  type CookieConsentPreferences,
+} from '@/lib/utils/cookieConsent';
 
 export function CookieConsent() {
   const [mounted, setMounted] = useState(false);
@@ -47,7 +53,7 @@ export function CookieConsent() {
 
   return (
     <div className="fixed inset-x-3 bottom-3 z-[80] sm:inset-x-auto sm:right-4 sm:max-w-md">
-      <Card className="border-violet-500/30 bg-background/95 shadow-2xl shadow-black/20 backdrop-blur">
+      <Card className="bg-background/95 border-violet-500/30 shadow-2xl shadow-black/20 backdrop-blur">
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/15 text-violet-300">
@@ -57,18 +63,39 @@ export function CookieConsent() {
               <div className="flex items-center justify-between gap-2">
                 <h2 className="font-semibold">Cookie preferences</h2>
                 {customizing && (
-                  <button className="rounded-md p-1 text-muted-foreground hover:bg-muted" onClick={() => setCustomizing(false)} aria-label="Close cookie settings">
+                  <button
+                    className="text-muted-foreground hover:bg-muted rounded-md p-1"
+                    onClick={() => setCustomizing(false)}
+                    aria-label="Close cookie settings"
+                  >
                     <X className="h-4 w-4" />
                   </button>
                 )}
               </div>
-              <p className="mt-1 text-sm leading-5 text-muted-foreground">
-                Necessary cookies support login and preferences. Analytics, ads, and daily study emails are used only with your permission.
+              <p className="text-muted-foreground mt-1 text-sm leading-5">
+                Necessary cookies support login and preferences. Analytics, ads, and daily study emails are used only
+                with your permission.
+              </p>
+              <p className="text-muted-foreground mt-2 text-xs">
+                Read our{' '}
+                <Link href="/cookies" className="text-violet-300 underline underline-offset-2">
+                  Cookie Policy
+                </Link>{' '}
+                and{' '}
+                <Link href="/privacy" className="text-violet-300 underline underline-offset-2">
+                  Privacy Policy
+                </Link>
+                .
               </p>
 
               {customizing && (
-                <div className="mt-4 space-y-3 rounded-lg border border-border bg-muted/20 p-3">
-                  <PreferenceRow label="Necessary" description="Login, security, language, and core app state." checked disabled />
+                <div className="border-border bg-muted/20 mt-4 space-y-3 rounded-lg border p-3">
+                  <PreferenceRow
+                    label="Necessary"
+                    description="Login, security, language, and core app state."
+                    checked
+                    disabled
+                  />
                   <PreferenceRow
                     label="Analytics"
                     description="Optional analytics that help us understand product usage."
@@ -93,16 +120,28 @@ export function CookieConsent() {
               <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
                 {customizing ? (
                   <>
-                    <Button variant="outline" size="sm" onClick={() => persist(DEFAULT_COOKIE_CONSENT)}>Necessary only</Button>
-                    <Button size="sm" variant="gradient" onClick={() => persist(prefs)}>Save choices</Button>
+                    <Button variant="outline" size="sm" onClick={() => persist(DEFAULT_COOKIE_CONSENT)}>
+                      Necessary only
+                    </Button>
+                    <Button size="sm" variant="gradient" onClick={() => persist(prefs)}>
+                      Save choices
+                    </Button>
                   </>
                 ) : (
                   <>
                     <Button variant="ghost" size="sm" onClick={() => setCustomizing(true)}>
                       <Settings2 className="h-4 w-4" /> Options
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => persist(DEFAULT_COOKIE_CONSENT)}>Reject optional</Button>
-                    <Button size="sm" variant="gradient" onClick={() => persist({ necessary: true, analytics: true, marketing: true, studyEmails: true })}>Accept all</Button>
+                    <Button variant="outline" size="sm" onClick={() => persist(DEFAULT_COOKIE_CONSENT)}>
+                      Reject optional
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="gradient"
+                      onClick={() => persist({ necessary: true, analytics: true, marketing: true, studyEmails: true })}
+                    >
+                      Accept all
+                    </Button>
                   </>
                 )}
               </div>
@@ -132,7 +171,7 @@ function PreferenceRow({
       <Checkbox checked={checked} disabled={disabled} onCheckedChange={(value) => onChange?.(value === true)} />
       <span>
         <span className="block font-medium">{label}</span>
-        <span className="block text-xs leading-5 text-muted-foreground">{description}</span>
+        <span className="text-muted-foreground block text-xs leading-5">{description}</span>
       </span>
     </label>
   );

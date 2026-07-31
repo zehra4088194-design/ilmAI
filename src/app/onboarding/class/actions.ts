@@ -7,6 +7,7 @@ import {
   type GradeLevel,
 } from '@/lib/supabase/getUserGradeLevel';
 import { EDUCATION_LEVELS, OUTPUT_STYLES, type EducationLevel, type PreferredOutputStyle } from '@/lib/constants/university';
+import type { ScienceGroup } from '@/types';
 
 export interface ActionResult {
   success: boolean;
@@ -28,6 +29,10 @@ function isValidGradeLevel(value: unknown): value is (typeof CLASS_SELECTION_GRA
 
 function isValidEducationLevel(value: unknown): value is EducationLevel {
   return typeof value === 'string' && EDUCATION_LEVELS.some((level) => level.value === value);
+}
+
+function isValidScienceGroup(value: unknown): value is ScienceGroup {
+  return value === 'biology' || value === 'computer';
 }
 
 function isValidOutputStyle(value: unknown): value is PreferredOutputStyle {
@@ -65,13 +70,17 @@ async function requireStudentProfile() {
 
 export async function completeOnboarding(
   gradeLevel: GradeLevel,
-  educationLevel: EducationLevel = 'school'
+  educationLevel: EducationLevel = 'school',
+  scienceGroup?: ScienceGroup,
 ): Promise<ActionResult> {
   if (!isValidGradeLevel(gradeLevel)) {
     return { success: false, error: 'Invalid grade level provided.' };
   }
   if (!isValidEducationLevel(educationLevel) || educationLevel === 'university') {
     return { success: false, error: 'Invalid education level provided.' };
+  }
+  if (!isValidScienceGroup(scienceGroup)) {
+    return { success: false, error: 'Select Biology or Computer Science.' };
   }
 
   const { supabase, user, error } = await requireStudentProfile();
@@ -84,6 +93,7 @@ export async function completeOnboarding(
     .update({
       grade_level: gradeLevel,
       education_level: educationLevel,
+      science_group: scienceGroup,
       onboarding_completed: true,
       is_profile_complete: true,
     })

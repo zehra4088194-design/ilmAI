@@ -26,31 +26,26 @@ const PostHogClient = dynamic(
   { ssr: false }
 );
 const ServiceWorkerRegister = dynamic(
-  () =>
-    import('@/components/features/offline/ServiceWorkerRegister').then(
-      (module) => module.ServiceWorkerRegister
-    ),
+  () => import('@/components/features/offline/ServiceWorkerRegister').then((module) => module.ServiceWorkerRegister),
   { ssr: false }
 );
 const ReactQueryDevtools =
   process.env.NODE_ENV === 'development'
-    ? dynamic(
-        () =>
-          import('@tanstack/react-query-devtools').then(
-            (module) => module.ReactQueryDevtools
-          ),
-        { ssr: false }
-      )
+    ? dynamic(() => import('@tanstack/react-query-devtools').then((module) => module.ReactQueryDevtools), {
+        ssr: false,
+      })
     : null;
 
 export function Providers({
   children,
   locale,
   initialTheme = DEFAULT_THEME_ID,
+  nonce,
 }: {
   children: ReactNode;
   locale: Locale;
   initialTheme?: AppThemeId;
+  nonce?: string;
 }) {
   const [queryClient] = useState(
     () =>
@@ -74,7 +69,7 @@ export function Providers({
         >
           <ThemeRuntime />
           {children}
-          <AdSenseScript />
+          <AdSenseScript nonce={nonce} />
           <PostHogClient />
           <ServiceWorkerRegister />
           <GlobalSpeechControls />

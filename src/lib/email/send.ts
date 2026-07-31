@@ -5,12 +5,7 @@ const globalMailer = globalThis as typeof globalThis & {
 };
 
 export function isEmailConfigured() {
-  return Boolean(
-    process.env.SMTP_HOST &&
-      process.env.SMTP_USER &&
-      process.env.SMTP_PASSWORD &&
-      process.env.EMAIL_FROM
-  );
+  return Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD && process.env.EMAIL_FROM);
 }
 
 function getTransporter() {
@@ -36,6 +31,7 @@ export async function sendEmail(params: {
   subject: string;
   html: string;
   text?: string;
+  replyTo?: string;
 }) {
   const from = process.env.EMAIL_FROM;
   if (!from) throw new Error('EMAIL_FROM is not configured');

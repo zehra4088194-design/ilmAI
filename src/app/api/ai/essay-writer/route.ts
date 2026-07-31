@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { gatewayChat } from '@/lib/ai/gateway';
-import { checkAiMessageLimit } from '@/lib/rate-limit';
+import { checkAiMessageLimit, consumeAiCredits } from '@/lib/rate-limit';
 import { getUserGradeLevel } from '@/lib/supabase/getUserGradeLevel';
 import {
   buildGradeContext,
@@ -19,13 +19,16 @@ export const maxDuration = 60;
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ status: 'error', error: 'Authentication is required' }, { status: 401 });
 
     const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
     const tier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
     const limitCheck = await checkAiMessageLimit(user.id, tier, 'essay_writer');
-    if (!limitCheck.success) return NextResponse.json({ status: 'error', error: 'The daily AI limit has been reached.' }, { status: 429 });
+    if (!limitCheck.success)
+      return NextResponse.json({ status: 'error', error: 'The daily AI limit has been reached.' }, { status: 429 });
 
     const body = await req.json();
     const { topic, wordCount, essayType, language, provider, aiTier } = body;
@@ -61,6 +64,7 @@ export async function POST(req: NextRequest) {
     });
 
     const data: EssayWriterResponseData = { essay: result.text, gradeLevel };
+    await consumeAiCredits(user.id, tier, 'essay_writer');
     return NextResponse.json({ status: 'success', data });
   } catch (error) {
     console.error('Essay writer error:', error);

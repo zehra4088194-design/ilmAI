@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { checkUniversityFeatureLimit, getUniversityLimitExceededMessage } from '@/lib/rate-limit';
+import {
+  checkUniversityFeatureLimit,
+  consumeUniversityFeatureCredits,
+  getUniversityLimitExceededMessage,
+} from '@/lib/rate-limit';
 import { gatewayChat } from '@/lib/ai/gateway';
 import { MARKDOWN_ANSWER_FORMAT_INSTRUCTION } from '@/lib/ai/gateway';
 import type { SubscriptionTier } from '@/types';
@@ -87,8 +91,12 @@ export async function POST(req: NextRequest) {
     }
 
     const result = await generateCareerDocs(userData, jobDescription, type);
+    await consumeUniversityFeatureCredits(user.id, tier, 'career_docs');
     return NextResponse.json({ status: 'success', data: result });
   } catch {
-    return NextResponse.json({ status: 'error', error: 'The career document could not be generated.' }, { status: 500 });
+    return NextResponse.json(
+      { status: 'error', error: 'The career document could not be generated.' },
+      { status: 500 }
+    );
   }
 }

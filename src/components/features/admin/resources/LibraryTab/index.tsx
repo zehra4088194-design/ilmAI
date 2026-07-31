@@ -236,7 +236,7 @@ export function LibraryTab() {
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Resource delete karein?</AlertDialogTitle>
+            <AlertDialogTitle>Delete resource?</AlertDialogTitle>
             <AlertDialogDescription>
               &quot;{deleteTarget?.title}&quot; will be permanently deleted. This action cannot be undone.
             </AlertDialogDescription>

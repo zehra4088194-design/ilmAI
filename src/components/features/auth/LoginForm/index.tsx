@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Eye, EyeOff, Mail, MailCheck, Lock, RotateCw, Zap } from 'lucide-react';
+import { Eye, EyeOff, Mail, MailCheck, Lock, RotateCw, Zap, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { createClient } from '@/lib/supabase/client';
@@ -26,6 +26,10 @@ export function LoginForm() {
   const [magicLinkLoading, setMagicLinkLoading] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
+  const [mfaChallenge, setMfaChallenge] = useState<{ factorId: string; challengeId: string } | null>(null);
+  const [mfaCode, setMfaCode] = useState('');
+  const [mfaLoading, setMfaLoading] = useState(false);
+  const [mfaError, setMfaError] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect') || '/dashboard';
   const supabase = createClient();
@@ -38,9 +42,30 @@ export function LoginForm() {
     window.location.assign(new URL(destination, getBrowserSiteUrl()).toString());
   };
 
+  const prepareMfaIfRequired = async () => {
+    const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (assurance.error || assurance.data.nextLevel !== 'aal2' || assurance.data.currentLevel === 'aal2') return false;
+
+    const factors = await supabase.auth.mfa.listFactors();
+    const factor = factors.data?.totp?.find((item) => item.status === 'verified');
+    if (factors.error || !factor) return false;
+
+    const challenge = await supabase.auth.mfa.challenge({ factorId: factor.id });
+    if (challenge.error) {
+      toast.error(challenge.error.message);
+      return true;
+    }
+
+    setMfaChallenge({ factorId: factor.id, challengeId: challenge.data.id });
+    setMfaCode('');
+    setMfaError(null);
+    return true;
+  };
+
   const onSubmit = async (data: FormData) => {
     const { error } = await supabase.auth.signInWithPassword({ email: data.email, password: data.password });
     if (error) { toast.error(error.message === 'Invalid login credentials' ? 'Incorrect email or password.' : error.message); return; }
+    if (await prepareMfaIfRequired()) return;
     finishLogin();
   };
 
@@ -93,6 +118,29 @@ export function LoginForm() {
       setOtpError(error?.message || 'This code is invalid or has expired. Request a new code and try again.');
       return;
     }
+    if (await prepareMfaIfRequired()) return;
+    finishLogin();
+  };
+
+  const verifyMfaCode = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!mfaChallenge || !/^\d{6}$/.test(mfaCode)) {
+      setMfaError('Enter the 6-digit code from your authenticator app.');
+      return;
+    }
+
+    setMfaLoading(true);
+    setMfaError(null);
+    const { error } = await supabase.auth.mfa.verify({
+      factorId: mfaChallenge.factorId,
+      challengeId: mfaChallenge.challengeId,
+      code: mfaCode,
+    });
+    setMfaLoading(false);
+    if (error) {
+      setMfaError(error.message);
+      return;
+    }
     finishLogin();
   };
 
@@ -102,7 +150,45 @@ export function LoginForm() {
         <h1 className="text-2xl font-bold mb-1">{t('auth.login.title')}</h1>
         <p className="text-muted-foreground">{t('auth.login.subtitle')}</p>
       </div>
-      {emailLinkSent ? (
+      {mfaChallenge ? (
+        <form onSubmit={verifyMfaCode} className="space-y-4">
+          <div className="bg-primary/10 mx-auto flex h-14 w-14 items-center justify-center rounded-2xl">
+            <ShieldCheck className="text-primary h-7 w-7" />
+          </div>
+          <div className="text-center">
+            <h2 className="text-lg font-semibold">Two-step verification</h2>
+            <p className="text-muted-foreground mt-1 text-sm">
+              Enter the 6-digit code from your authenticator app.
+            </p>
+          </div>
+          <Input
+            value={mfaCode}
+            onChange={(event) => setMfaCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={6}
+            placeholder="000000"
+            aria-label="Authenticator code"
+            className="h-14 text-center font-mono text-2xl tracking-[0.45em]"
+            error={mfaError || undefined}
+          />
+          <Button type="submit" variant="gradient" className="w-full" size="lg" loading={mfaLoading}>
+            Verify and continue
+          </Button>
+          <button
+            type="button"
+            onClick={() => {
+              setMfaChallenge(null);
+              setMfaCode('');
+              setMfaError(null);
+              void supabase.auth.signOut();
+            }}
+            className="text-muted-foreground hover:text-foreground block mx-auto text-xs hover:underline"
+          >
+            Use another account
+          </button>
+        </form>
+      ) : emailLinkSent ? (
         <div className="space-y-4">
           <div className="bg-primary/10 mx-auto flex h-14 w-14 items-center justify-center rounded-2xl">
             <MailCheck className="text-primary h-7 w-7" />

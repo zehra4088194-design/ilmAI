@@ -112,16 +112,8 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
     const lightFileUrl = form.light_file_url.trim();
     const darkFileUrl = form.dark_file_url.trim();
     const contextTextUrl = form.context_text_url.trim();
-    if (form.subject_id === ALL_VALUE || form.chapter_id === ALL_VALUE) {
-      setError('Subject and chapter are required for the organized library.');
-      return;
-    }
-    if (form.board === ALL_VALUE || form.grade_level === ALL_VALUE) {
-      setError('Board and grade/class are required for the correct student library.');
-      return;
-    }
     if (!isAcceptableResourceUrl(lightFileUrl)) {
-      setError('Light/default Google Drive/Docs share link ya direct PDF URL paste karein.');
+      setError('Paste a valid public Google Drive, Google Docs, or direct PDF link.');
       return;
     }
     if (darkFileUrl && !isAcceptableResourceUrl(darkFileUrl)) {
@@ -193,16 +185,32 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
             />
           </div>
 
+          <div className="border-primary/20 bg-primary/5 flex flex-col gap-1.5 rounded-2xl border p-3">
+            <Label htmlFor="light-drive-url">PDF / Google Drive link</Label>
+            <Input
+              id="light-drive-url"
+              value={form.light_file_url}
+              onChange={(event) => setForm((current) => ({ ...current, light_file_url: event.target.value }))}
+              placeholder="https://drive.google.com/file/d/.../view"
+              required
+            />
+            <p className="text-muted-foreground text-xs">
+              Bas public link paste karein. Drive sharing &quot;Anyone with the link can view&quot; honi chahiye; cover
+              preview automatically ban jayega.
+            </p>
+          </div>
+
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="resource-book-title">Book / Collection name</Label>
             <Input
               id="resource-book-title"
               value={form.book_title}
               onChange={(event) => setForm((current) => ({ ...current, book_title: event.target.value }))}
-              placeholder="Class 9 Physics Text Book"
-              required
+              placeholder="Optional — title will be used automatically"
             />
-            <p className="text-muted-foreground text-xs">Chapter files with the same book name will be grouped together.</p>
+            <p className="text-muted-foreground text-xs">
+              Chapter files with the same book name will be grouped together.
+            </p>
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -384,21 +392,7 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="light-drive-url">Light mode PDF / Drive link</Label>
-            <Input
-              id="light-drive-url"
-              value={form.light_file_url}
-              onChange={(event) => setForm((current) => ({ ...current, light_file_url: event.target.value }))}
-              placeholder="https://drive.google.com/file/d/.../view"
-              required
-            />
-            <p className="text-muted-foreground text-xs">
-              Light PDF default bhi rahegi. Drive sharing &quot;Anyone with the link can view&quot; rakhein.
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="dark-drive-url">Dark mode PDF / Drive link (optional)</Label>
+            <Label htmlFor="dark-drive-url">Separate dark-mode PDF link (optional)</Label>
             <Input
               id="dark-drive-url"
               value={form.dark_file_url}

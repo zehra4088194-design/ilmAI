@@ -66,7 +66,8 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
   const [openSubjectId, setOpenSubjectId] = useState<string | null>(null);
   const [chapterId, setChapterId] = useState<string | null>(null);
   const [mode, setMode] = useState<PracticeMode>('mcq');
-  const [count, setCount] = useState(10);
+  const [selectedModes, setSelectedModes] = useState<PracticeMode[]>(['mcq']);
+  const [counts, setCounts] = useState<Record<PracticeMode, number>>({ mcq: 10, short: 5, long: 3 });
   const [loading, setLoading] = useState(false);
   const [subjective, setSubjective] = useState<{
     type: 'short' | 'long';
@@ -84,6 +85,11 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
   const selectedChapter = chapters.find((chapter) => chapter.id === chapterId) ?? null;
   const chapterResources = chapterId ? resourcesByChapter[chapterId] || [] : [];
   const currentSubjectiveQuestion = subjective?.questions[questionIndex] ?? null;
+  const count = counts[mode];
+
+  function setCount(value: number) {
+    setCounts((current) => ({ ...current, [mode]: value }));
+  }
 
   useEffect(() => {
     const subjectId = searchParams.get('subject');
@@ -105,7 +111,8 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
     setOpenSubjectId(subjectId);
     setChapterId(null);
     setMode('mcq');
-    setCount(10);
+    setSelectedModes(['mcq']);
+    setCounts({ mcq: 10, short: 5, long: 3 });
   }
 
   function resetSubjectiveAnswer() {
@@ -133,14 +140,14 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
       const res = await fetch('/api/ai/generate-quiz', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subjectId: openSubjectId, chapterId, count }),
+        body: JSON.stringify({ subjectId: openSubjectId, chapterId, count: counts.mcq }),
       });
       const json = await res.json();
       if (json.status === 'error') {
         toast.error(json.error);
         return;
       }
-      sessionStorage.setItem('current-quiz', JSON.stringify(json.data));
+      sessionStorage.setItem('current-quiz', JSON.stringify(json.data.session));
       router.push('/mcq/session');
     } catch {
       toast.error('The saved file MCQs could not be loaded.');
@@ -156,7 +163,7 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
       const res = await fetch('/api/ai/practice-questions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: nextMode, subjectId: openSubjectId, chapterId, count }),
+        body: JSON.stringify({ type: nextMode, subjectId: openSubjectId, chapterId, count: counts[nextMode] }),
       });
       const json = await res.json();
       if (json.status === 'error') {
@@ -180,8 +187,41 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
   }
 
   async function startPractice() {
-    if (mode === 'mcq') await startMcq();
-    else await startSubjective(mode);
+    if (selectedModes.length === 1) {
+      const selectedMode = selectedModes[0]!;
+      if (selectedMode === 'mcq') await startMcq();
+      else await startSubjective(selectedMode);
+      return;
+    }
+    if (!openSubjectId || !chapterId) return;
+    setLoading(true);
+    try {
+      const res = await fetch('/api/ai/generate-quiz', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subjectId: openSubjectId,
+          chapterId,
+          mcqCount: selectedModes.includes('mcq') ? counts.mcq : 0,
+          shortCount: selectedModes.includes('short') ? counts.short : 0,
+          longCount: selectedModes.includes('long') ? counts.long : 0,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || json.status === 'error') {
+        toast.error(json.error || 'The chapter test could not be built.');
+        return;
+      }
+      sessionStorage.setItem(
+        'ilm-ai-resource-test',
+        JSON.stringify({ paper: json.data.paper, resourceTitle: json.data.sourceTitle })
+      );
+      router.push('/full-test');
+    } catch {
+      toast.error('The chapter test could not be built.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function checkAnswer() {
@@ -230,27 +270,33 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
   return (
     <>
       {subjective && currentSubjectiveQuestion ? (
-        <div className="max-w-3xl mx-auto space-y-5">
+        <div className="mx-auto max-w-3xl space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-violet-400">
+              <p className="text-xs font-medium tracking-wide text-violet-400 uppercase">
                 {subjective.type === 'short' ? 'Short Questions' : 'Long Questions'}
               </p>
-              <h2 className="text-xl font-bold">{subjective.subjectName} - {subjective.chapterName}</h2>
-              <p className="text-sm text-muted-foreground">
+              <h2 className="text-xl font-bold">
+                {subjective.subjectName} - {subjective.chapterName}
+              </h2>
+              <p className="text-muted-foreground text-sm">
                 Question {questionIndex + 1} of {subjective.questions.length}
               </p>
             </div>
-            <Button variant="outline" onClick={() => setSubjective(null)}>Back to Practice</Button>
+            <Button variant="outline" onClick={() => setSubjective(null)}>
+              Back to Practice
+            </Button>
           </div>
 
           <Card>
-            <CardContent className="p-5 space-y-4">
+            <CardContent className="space-y-4 p-5">
               <div className="flex items-center gap-2">
                 <Badge variant="outline">{currentSubjectiveQuestion.marks} marks</Badge>
-                {currentSubjectiveQuestion.guide && <Badge variant="secondary">{currentSubjectiveQuestion.guide}</Badge>}
+                {currentSubjectiveQuestion.guide && (
+                  <Badge variant="secondary">{currentSubjectiveQuestion.guide}</Badge>
+                )}
               </div>
-              <h3 className="text-lg font-semibold leading-relaxed">{currentSubjectiveQuestion.q}</h3>
+              <h3 className="text-lg leading-relaxed font-semibold">{currentSubjectiveQuestion.q}</h3>
               <div className="relative">
                 <Textarea
                   value={answer}
@@ -258,23 +304,23 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
                   placeholder="Write your answer here..."
                   className={cn('min-h-36 pr-12', subjective.type === 'long' && 'min-h-56')}
                 />
-                <div className="absolute right-2 top-2">
+                <div className="absolute top-2 right-2">
                   <ScanUpload
                     onTextExtracted={(text) => setAnswer((prev) => (prev ? `${prev}\n\n${text}` : text))}
                     trigger={
                       <Button variant="ghost" size="icon-sm" title="Scan answer">
-                        <Camera className="w-4 h-4" />
+                        <Camera className="h-4 w-4" />
                       </Button>
                     }
                   />
                 </div>
               </div>
               <div className="flex flex-wrap justify-between gap-3">
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   {answer.trim().split(/\s+/).filter(Boolean).length} words
                 </p>
                 <Button variant="gradient" disabled={checking || !answer.trim()} onClick={checkAnswer}>
-                  {checking ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                  {checking ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                   Check with AI
                 </Button>
               </div>
@@ -285,9 +331,9 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
             <div className="space-y-4">
               <Card>
                 <CardContent className="p-5">
-                  <div className="flex items-center justify-between gap-3 mb-4">
+                  <div className="mb-4 flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-sm text-muted-foreground">Score</p>
+                      <p className="text-muted-foreground text-sm">Score</p>
                       <p className="text-3xl font-bold text-violet-400">
                         {evaluation.score}/{evaluation.maxScore || currentSubjectiveQuestion.marks}
                       </p>
@@ -303,18 +349,40 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
           )}
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {subjects.map((subject, index) => (
-            <motion.div key={subject.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.03 }}>
-              <Card className="hover:border-violet-500/30 transition-colors cursor-pointer h-full" onClick={() => openChapters(subject.id)}>
+            <motion.div
+              key={subject.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.03 }}
+            >
+              <Card
+                className="h-full cursor-pointer transition-colors hover:border-violet-500/30"
+                onClick={() => openChapters(subject.id)}
+              >
                 <CardContent className="p-5">
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-3" style={{ backgroundColor: `${subject.color}20` }}>
-                    <BookOpen className="w-5 h-5" style={{ color: subject.color }} />
+                  <div
+                    className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg"
+                    style={{ backgroundColor: `${subject.color}20` }}
+                  >
+                    <BookOpen className="h-5 w-5" style={{ color: subject.color }} />
                   </div>
-                  <h3 className="font-semibold mb-1">{subject.name}</h3>
-                  <p className="text-xs text-muted-foreground mb-4">{chaptersBySubject[subject.id]?.length || 0} class chapters</p>
-                  <Button variant="gradient" size="sm" className="w-full" onClick={(e) => { e.stopPropagation(); openChapters(subject.id); }}>
-                    <FileQuestion className="w-3.5 h-3.5" />Choose chapter
+                  <h3 className="mb-1 font-semibold">{subject.name}</h3>
+                  <p className="text-muted-foreground mb-4 text-xs">
+                    {chaptersBySubject[subject.id]?.length || 0} class chapters
+                  </p>
+                  <Button
+                    variant="gradient"
+                    size="sm"
+                    className="w-full"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openChapters(subject.id);
+                    }}
+                  >
+                    <FileQuestion className="h-3.5 w-3.5" />
+                    Choose chapter
                   </Button>
                 </CardContent>
               </Card>
@@ -338,26 +406,47 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
 
       <AnimatePresence>
         {openSubjectId && selectedSubject && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4 backdrop-blur-[1px]" onClick={() => setOpenSubjectId(null)}>
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-2xl max-h-[86vh] overflow-y-auto rounded-2xl border border-border bg-background p-6 shadow-2xl shadow-black/70" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center justify-between mb-5">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-[1px]"
+            onClick={() => setOpenSubjectId(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="border-border bg-background max-h-[86vh] w-full max-w-2xl overflow-y-auto rounded-2xl border p-6 shadow-2xl shadow-black/70"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-5 flex items-center justify-between">
                 <div>
                   <h3 className="font-semibold">{selectedSubject.name} Chapter Test</h3>
-                  <p className="text-xs text-muted-foreground">Every attempt is shuffled from all uploaded files for the chapter.</p>
+                  <p className="text-muted-foreground text-xs">
+                    Every attempt is shuffled from all uploaded files for the chapter.
+                  </p>
                 </div>
-                <button onClick={() => setOpenSubjectId(null)} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
+                <button onClick={() => setOpenSubjectId(null)} className="text-muted-foreground hover:text-foreground">
+                  <X className="h-4 w-4" />
+                </button>
               </div>
 
-              <div className="grid md:grid-cols-[1fr_260px] gap-5">
+              <div className="grid gap-5 md:grid-cols-[1fr_260px]">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">Chapter</p>
-                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">Chapter</p>
+                  <div className="max-h-48 space-y-2 overflow-y-auto pr-1">
                     {chapters.map((chapter) => (
-                      <button key={chapter.id} onClick={() => setChapterId(chapter.id)}
-                        className={cn('w-full text-left p-3 rounded-lg border text-sm transition-colors',
-                          chapterId === chapter.id ? 'border-violet-500 bg-violet-500/10 text-violet-300' : 'border-border hover:border-violet-500/40')}>
+                      <button
+                        key={chapter.id}
+                        onClick={() => setChapterId(chapter.id)}
+                        className={cn(
+                          'w-full rounded-lg border p-3 text-left text-sm transition-colors',
+                          chapterId === chapter.id
+                            ? 'border-violet-500 bg-violet-500/10 text-violet-300'
+                            : 'border-border hover:border-violet-500/40'
+                        )}
+                      >
                         {chapter.name}
                       </button>
                     ))}
@@ -375,7 +464,7 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
                       <p className="font-medium text-emerald-300">
                         {chapterResources.length} source file{chapterResources.length === 1 ? '' : 's'} connected
                       </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
+                      <p className="text-muted-foreground mt-1 text-xs">
                         MCQs, short questions, and long questions are combined automatically.
                       </p>
                     </div>
@@ -384,7 +473,9 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
 
                 <div className="space-y-4">
                   <div>
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">Question type</p>
+                    <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
+                      Question types
+                    </p>
                     <div className="grid grid-cols-3 gap-2">
                       {(['mcq', 'short', 'long'] as PracticeMode[]).map((option) => (
                         <button
@@ -392,11 +483,41 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
                           type="button"
                           onClick={() => {
                             setMode(option);
-                            setCount(option === 'long' ? 3 : option === 'short' ? 5 : 10);
+                            setSelectedModes((current) =>
+                              current.includes(option)
+                                ? current.length === 1
+                                  ? current
+                                  : current.filter((item) => item !== option)
+                                : [...current, option]
+                            );
                           }}
                           className={cn(
-                            'rounded-lg border px-2 py-2 text-xs font-semibold capitalize transition-colors',
-                            mode === option
+                            'flex items-center justify-center gap-1.5 rounded-lg border px-2 py-2 text-xs font-semibold capitalize transition-colors',
+                            selectedModes.includes(option)
+                              ? 'border-violet-500 bg-violet-500/10 text-violet-300'
+                              : 'border-border text-muted-foreground hover:text-foreground'
+                          )}
+                        >
+                          {selectedModes.includes(option) && <CheckCircle2 className="h-3.5 w-3.5" />}
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
+                      Number of {mode === 'mcq' ? 'MCQs' : `${mode} questions`}
+                    </p>
+                    <div className="grid grid-cols-4 gap-2">
+                      {countOptions.map((option) => (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() => setCount(option)}
+                          className={cn(
+                            'rounded-lg border px-3 py-2 text-sm font-semibold transition-colors',
+                            count === option
                               ? 'border-violet-500 bg-violet-500/10 text-violet-300'
                               : 'border-border text-muted-foreground hover:text-foreground'
                           )}
@@ -407,22 +528,19 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
                     </div>
                   </div>
 
-                  <div>
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">Number of questions</p>
-                    <div className="grid grid-cols-4 gap-2">
-                      {countOptions.map((option) => (
-                        <button key={option} type="button" onClick={() => setCount(option)}
-                          className={cn('rounded-lg border px-3 py-2 text-sm font-semibold transition-colors',
-                            count === option ? 'border-violet-500 bg-violet-500/10 text-violet-300' : 'border-border text-muted-foreground hover:text-foreground')}>
-                          {option}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <Button variant="gradient" size="lg" className="w-full" disabled={!chapterId || loading} onClick={startPractice}>
-                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-                    {loading ? 'Building from chapter sources...' : `Start random ${mode} test`}
+                  <Button
+                    variant="gradient"
+                    size="lg"
+                    className="w-full"
+                    disabled={!chapterId || loading}
+                    onClick={startPractice}
+                  >
+                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+                    {loading
+                      ? 'Building from chapter sources...'
+                      : selectedModes.length > 1
+                        ? 'Start combined chapter test'
+                        : `Start random ${selectedModes[0]} test`}
                   </Button>
                 </div>
               </div>
