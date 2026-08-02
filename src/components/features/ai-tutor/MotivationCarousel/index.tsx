@@ -9,7 +9,7 @@ const FALLBACK_QUOTES = [
   'A focused 25 minutes today can make tomorrow’s exam feel much calmer.',
   'A wrong answer is not the end; it is a shortcut to understanding the concept.',
   'Work at your own pace. Keep moving and keep revising.',
-  'Difficult topic ko tod do: definition, formula, example, practice.',
+  'Break a difficult topic into four parts: definition, formula, example, and practice.',
 ];
 
 export function MotivationCarousel({ subjectName }: { subjectName?: string }) {

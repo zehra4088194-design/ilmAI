@@ -87,7 +87,7 @@ export function DoubtBoardClient({ doubts, subjects, userId }: { doubts: Doubt[]
               <textarea value={body} onChange={e => setBody(e.target.value)} placeholder="Describe your question in detail..." rows={4} className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm resize-none" />
             </div>
             <div className="flex gap-2 flex-wrap">
-              <ScanUpload onTextExtracted={(text) => setBody(b => b ? `${b}\n\n${text}` : text)} trigger={<Button variant="outline" size="sm">Photo se Scan</Button>} />
+              <ScanUpload onTextExtracted={(text) => setBody(b => b ? `${b}\n\n${text}` : text)} trigger={<Button variant="outline" size="sm">Scan Photo</Button>} />
               <Button asChild variant="outline" size="sm"><Link href="/scan">Scan & Solve</Link></Button>
             <Button variant="gradient" onClick={handleSubmit} loading={submitting} className="ml-auto"><Send className="w-3.5 h-3.5" />Post Question</Button>
               <Button variant="ghost" onClick={() => setShowForm(false)}>Cancel</Button>

@@ -76,7 +76,7 @@ async function generateStudyEmail(profile: EmailProfile) {
 
   const name = htmlEscape(profile.full_name || 'Student');
   return {
-    subject: 'Aaj ka study focus - ilm AI',
+    subject: "Today's study focus - ilm AI",
     preview: 'A focused study task and motivation for today.',
     html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827"><h2>Hello ${name}</h2><p><strong>Today's focus:</strong> Revise one weak topic for 25 minutes.</p><p><strong>Task:</strong> Solve five MCQs, then record one mistake and its correction.</p><p><strong>Motivation:</strong> Small, consistent study sessions lead to meaningful improvement.</p><p style="font-size:12px;color:#6b7280">You received this because you allowed daily study emails in cookie preferences.</p></div>`,
   };

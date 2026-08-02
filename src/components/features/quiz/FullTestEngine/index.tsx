@@ -301,7 +301,7 @@ export function FullTestSetup({
                   <input
                     value={chapter}
                     onChange={(e) => setChapter(e.target.value)}
-                    placeholder="e.g. Chapter 5 ya Full Book"
+                    placeholder="e.g. Chapter 5 or Full Book"
                     className="border-input bg-background h-10 w-full rounded-lg border px-3 text-sm"
                   />
                 </div>

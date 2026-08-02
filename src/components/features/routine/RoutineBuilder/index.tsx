@@ -215,7 +215,7 @@ export function RoutineBuilder({ existingRoutine, userId, userTier }: {
             </Card>
 
             <Button variant="gradient" size="xl" className="w-full" onClick={generate}>
-              <Sparkles className="w-5 h-5" />AI Se Schedule Banwao
+              <Sparkles className="w-5 h-5" />Generate Schedule with AI
             </Button>
           </motion.div>
         )}

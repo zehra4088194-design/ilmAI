@@ -393,7 +393,7 @@ export function SettingsTabs({
 
   const verifyMfaEnrollment = async () => {
     if (!mfaEnrollment || mfaCode.trim().length < 6) {
-      toast.error('Authenticator app ka 6-digit code enter karo.');
+      toast.error('Enter the 6-digit code from your authenticator app.');
       return;
     }
     setMfaSaving(true);
@@ -928,7 +928,7 @@ function SecuritySettings({
           <div>
             <p className="text-sm font-semibold">Scan QR code</p>
             <p className="text-muted-foreground mt-1 text-xs leading-5">
-              Authenticator app mein QR scan karo, phir generated 6-digit code yahan verify karo.
+              Scan the QR code with your authenticator app, then verify the generated 6-digit code here.
             </p>
           </div>
           {enrollment.qrCode ? (

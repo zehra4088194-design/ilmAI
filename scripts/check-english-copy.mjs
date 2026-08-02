@@ -4,13 +4,12 @@ import path from 'node:path';
 const SOURCE_ROOT = path.resolve('src');
 const ALLOWED_PATHS = [
   `${path.sep}lib${path.sep}i18n${path.sep}translations.ts`,
-  `${path.sep}lib${path.sep}constants${path.sep}subjectSuggestions.ts`,
   `${path.sep}lib${path.sep}navigation${path.sep}destinations.ts`,
   `${path.sep}features${path.sep}ai-selector${path.sep}SideChatWidget${path.sep}`,
   `${path.sep}features${path.sep}privacy${path.sep}DataRetentionNotice${path.sep}`,
 ];
 const ROMAN_URDU_COPY =
-  /\b(?:nahi|nahin|zaroori|yahan|yahaan|aap|abhi|sirf|baaki|parhai|padhai|sawal|sawaal|jawab|galat|ghalat|dobara|tum|tumhara|yeh|aur|hai|hain|karne|karo|gaye|wali|wala)\b/i;
+  /\b(?:nahi|nahin|zaroori|yahan|yahaan|aap|abhi|sirf|baaki|parhai|padhai|sawal|sawaal|jawab|galat|ghalat|dobara|tum|tumhara|yeh|aur|hai|hain|karne|karo|karein|gaye|wali|wala|samjhao|batao|banwao|asaan|theek|lafzon|alfaz|tashreeh|mazmoon|khulasa|ibarat|waqia|tafseel|tareeqa|chahiye|mujhe|thori)\b/i;
 
 const findings = [];
 

@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
       await createNotificationIfEnabled(supabase, 'weakSubjectAlerts', {
         user_id: g.userId,
         type: 'REMINDER',
-        title: 'Focus Area Mili!',
+        title: 'Focus Area Identified',
         message: `Your performance in ${subject.name} needs attention. Add extra practice this week.`,
         link: linkUrl,
       });

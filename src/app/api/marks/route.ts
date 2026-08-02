@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
           await createNotificationIfEnabled(admin, 'weakSubjectAlerts', {
             user_id: user.id,
             type: 'REMINDER',
-            title: 'Focus Area Mili!',
+            title: 'Focus Area Identified',
             message: `Your performance in ${subject.name} needs attention. Add extra practice this week.`,
             link: linkUrl,
           });

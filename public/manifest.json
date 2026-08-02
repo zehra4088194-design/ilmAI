@@ -2,7 +2,7 @@
   "id": "/",
   "name": "ilm AI",
   "short_name": "ilm AI",
-  "description": "Pakistan aur India ka #1 AI-Powered Study Platform",
+  "description": "AI-powered study platform for students in Pakistan and India",
   "start_url": "/dashboard?source=pwa",
   "scope": "/",
   "display": "standalone",

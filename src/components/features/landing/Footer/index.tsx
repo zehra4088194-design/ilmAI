@@ -39,7 +39,7 @@ export function LandingFooter() {
               <span className="font-bold">ilm AI</span>
             </Link>
             <p className="text-muted-foreground text-sm leading-relaxed">
-              Pakistan ka sabse advanced AI-powered study platform. Board exams ki perfect tayari.
+              An advanced AI-powered study platform for Pakistan. Prepare effectively for board exams.
             </p>
           </div>
           {Object.entries(LINKS).map(([heading, links]) => (

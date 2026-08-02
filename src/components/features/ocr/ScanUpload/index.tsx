@@ -166,7 +166,7 @@ export function ScanUpload({ onTextExtracted, trigger }: ScanUploadProps) {
                     >
                       <Upload className="text-muted-foreground mx-auto mb-3 h-8 w-8" />
                       <p className="mb-1 text-sm font-medium">Upload a photo or drag it here</p>
-                      <p className="text-muted-foreground text-xs">Question, notes, ya textbook page ki clear image</p>
+                      <p className="text-muted-foreground text-xs">A clear image of a question, notes, or textbook page</p>
                     </div>
                   )}
 

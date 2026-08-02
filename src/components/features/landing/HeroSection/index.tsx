@@ -78,7 +78,7 @@ export function HeroSection() {
               transition={{ delay: 0.4 }}
               className="text-muted-foreground mx-auto mb-7 max-w-xl text-base leading-7 sm:text-lg lg:mx-0 lg:mb-8"
             >
-              Board exams se semester assignments tak: AI Tutor, MCQs, Past Papers, Essays, Presentations, viva
+              From board exams to semester assignments: AI Tutor, MCQs, past papers, essays, presentations, viva
               preparation, and study plans. <strong className="text-foreground">Start for free!</strong>
             </motion.p>
 

@@ -263,7 +263,7 @@ export function ChapterManager({ subjectId, subjectBoards, subjectGradeLevels, i
         <CardContent className="p-5 space-y-3">
           <p className="text-sm font-semibold">Add a new chapter</p>
           <div className="flex gap-2">
-            <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Chapter ka naam (e.g. Kinematics)" onKeyDown={(e) => { if (e.key === 'Enter') handleAdd(); }} />
+            <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Chapter name (e.g. Kinematics)" onKeyDown={(e) => { if (e.key === 'Enter') handleAdd(); }} />
             <Button onClick={handleAdd} disabled={isAdding || !newName.trim()}><Plus className="w-4 h-4 mr-1" /> Add</Button>
           </div>
           <BoardCheckboxes selected={newBoards} onToggle={(v) => toggleValue(newBoards, v, setNewBoards)} />

@@ -284,7 +284,7 @@ export function StudentChatClient() {
               <Input
                 value={identifier}
                 onChange={(event) => setIdentifier(event.target.value)}
-                placeholder="@student_username ya email"
+                placeholder="@student_username or email"
               />
               <p className="text-muted-foreground text-xs">Usernames are unique; the @ symbol is optional.</p>
               <Button variant="gradient" onClick={sendRequest} loading={sending} className="w-full">

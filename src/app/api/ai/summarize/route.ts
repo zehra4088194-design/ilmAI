@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
 
     const { text } = await req.json();
     if (!text || text.length < 50)
-      return NextResponse.json({ status: 'error', error: 'Kam se kam 50 characters ka text do' }, { status: 400 });
+      return NextResponse.json({ status: 'error', error: 'Enter at least 50 characters of text.' }, { status: 400 });
 
     const result = await summarizeWithRoutedModel({
       text,

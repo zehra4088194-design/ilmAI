@@ -264,7 +264,7 @@ function ResourceMcqSet({ kind, resourceId }: { kind: ProtectedResourceKind; res
       >
         <span className="flex min-w-0 items-center gap-2">
           <FileQuestion className="h-3.5 w-3.5 flex-none text-amber-500" />
-          <span className="truncate">Chapter ke 30 MCQs</span>
+          <span className="truncate">30 Chapter MCQs</span>
         </span>
         <span className="text-muted-foreground text-xs">{loading ? 'Loading...' : open ? 'Hide' : 'Open'}</span>
       </Button>

@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const oneLiner = String(body.one_liner || '').trim();
     if (oneLiner.length < 8)
-      return NextResponse.json({ status: 'error', error: 'Project idea thori detail se likho.' }, { status: 400 });
+      return NextResponse.json({ status: 'error', error: 'Describe the project idea in a little more detail.' }, { status: 400 });
 
     const limit = await checkUniversityFeatureLimit(user.id, tier, 'project_builder');
     if (!limit.success) {

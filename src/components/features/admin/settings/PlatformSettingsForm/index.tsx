@@ -125,8 +125,8 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-muted-foreground text-sm">
-            These are shared platform-wide daily caps, not per-user limits. 0 disables a provider. Provider dashboard ki
-            actual quota dekh kar hi barhao.
+            These are shared platform-wide daily caps, not per-user limits. 0 disables a provider. Increase a limit only
+            after checking the provider dashboard&apos;s actual quota.
           </p>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {PROVIDER_BUDGET_LABELS.map(([key, label]) => (

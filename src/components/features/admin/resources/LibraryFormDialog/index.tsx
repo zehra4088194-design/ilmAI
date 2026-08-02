@@ -195,8 +195,8 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
               required
             />
             <p className="text-muted-foreground text-xs">
-              Bas public link paste karein. Drive sharing &quot;Anyone with the link can view&quot; honi chahiye; cover
-              preview automatically ban jayega.
+              Paste the public link. Drive sharing must be set to &quot;Anyone with the link can view&quot;; the cover
+              preview will be generated automatically.
             </p>
           </div>
 
