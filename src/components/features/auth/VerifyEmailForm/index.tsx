@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { THEME_COOKIE_NAME } from '@/lib/constants/themes';
 import { LOCALE_COOKIE_NAME } from '@/lib/i18n/config';
 import { getBrowserSiteUrl } from '@/lib/utils/siteUrl';
+import { verifyAuthRecaptcha } from '@/lib/security/recaptcha-client';
 
 const PENDING_EMAIL_KEY = 'ilm-ai-pending-verification-email';
 
@@ -88,6 +89,13 @@ export function VerifyEmailForm() {
     }
 
     setResending(true);
+    try {
+      await verifyAuthRecaptcha('auth_resend_verification');
+    } catch (error) {
+      setResending(false);
+      toast.error(error instanceof Error ? error.message : 'Security verification failed. Please try again.');
+      return;
+    }
     const callbackUrl = new URL('/api/auth/callback', getBrowserSiteUrl());
     callbackUrl.searchParams.set('redirect', '/dashboard');
     const { error } = await supabase.auth.resend({

@@ -8,6 +8,7 @@ import {
   safeAdmissionFileName,
 } from '@/lib/school-erp/admission-validation';
 import { createAdminClient } from '@/lib/supabase/server';
+import { logRecaptchaFailure, verifyRecaptchaToken } from '@/lib/security/recaptcha-server';
 
 export const runtime = 'nodejs';
 
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest) {
     const rateLimit = await checkDailyLimit(
       `public-admission:${clientAddress(request)}`,
       'erp_mutation:public-admission',
-      10,
+      10
     );
     if (!rateLimit.success) {
       return NextResponse.json({ error: 'Too many applications from this network today.' }, { status: 429 });
@@ -36,6 +37,14 @@ export async function POST(request: NextRequest) {
       formData = await request.formData();
     } catch {
       return NextResponse.json({ error: 'A valid multipart admission form is required.' }, { status: 400 });
+    }
+    const recaptcha = await verifyRecaptchaToken(
+      typeof formData.get('recaptcha_token') === 'string' ? String(formData.get('recaptcha_token')) : null,
+      'school_admission'
+    );
+    if (!recaptcha.success) {
+      logRecaptchaFailure('school_admission', recaptcha);
+      return NextResponse.json({ error: 'Security verification failed. Please try again.' }, { status: 403 });
     }
     const input = publicAdmissionSchema.parse({
       organizationId: formData.get('organization_id'),
@@ -64,7 +73,7 @@ export async function POST(request: NextRequest) {
       ) {
         return NextResponse.json(
           { error: 'Each document must be a PDF, JPG, or PNG file up to 5 MB.' },
-          { status: 400 },
+          { status: 400 }
         );
       }
     }

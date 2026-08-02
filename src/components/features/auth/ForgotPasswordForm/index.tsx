@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { createClient } from '@/lib/supabase/client';
 import { getBrowserSiteUrl } from '@/lib/utils/siteUrl';
 import { toast } from 'sonner';
+import { verifyAuthRecaptcha } from '@/lib/security/recaptcha-client';
 
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState('');
@@ -24,6 +25,13 @@ export function ForgotPasswordForm() {
     if (!normalizedEmail) return;
 
     setLoading(true);
+    try {
+      await verifyAuthRecaptcha('auth_password_reset');
+    } catch (error) {
+      setLoading(false);
+      toast.error(error instanceof Error ? error.message : 'Security verification failed. Please try again.');
+      return;
+    }
     const recoveryUrl = new URL('/api/auth/recovery', getBrowserSiteUrl());
     const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
       redirectTo: recoveryUrl.toString(),

@@ -51,6 +51,9 @@ const optional = [
   'NEXT_PUBLIC_POSTHOG_HOST',
   'NEXT_PUBLIC_SENTRY_DSN',
   'SENTRY_DSN',
+  'NEXT_PUBLIC_RECAPTCHA_SITE_KEY',
+  'RECAPTCHA_SECRET_KEY',
+  'RECAPTCHA_MIN_SCORE',
   'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
   'NEXT_PUBLIC_FIREBASE_VAPID_KEY',
   'FIREBASE_PROJECT_ID',
@@ -85,5 +88,9 @@ optional.forEach((key) => {
     console.log(`[ok] ${key}`);
   }
 });
+if (Boolean(env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY) !== Boolean(env.RECAPTCHA_SECRET_KEY)) {
+  console.error('[invalid] NEXT_PUBLIC_RECAPTCHA_SITE_KEY and RECAPTCHA_SECRET_KEY must be configured together.');
+  ok = false;
+}
 console.log(ok ? '\n[ok] All required env vars are set.\n' : '\n[failed] Set required vars before deploying.\n');
 process.exit(ok ? 0 : 1);

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { isEmailConfigured, sendEmail } from '@/lib/email/send';
 import { checkDailyLimit } from '@/lib/rate-limit';
+import { logRecaptchaFailure, verifyRecaptchaToken } from '@/lib/security/recaptcha-server';
 
 const contactSchema = z.object({
   name: z.string().trim().min(2).max(80),
@@ -10,6 +11,7 @@ const contactSchema = z.object({
   subject: z.string().trim().min(3).max(120),
   message: z.string().trim().min(20).max(4000),
   company: z.string().max(200).optional().default(''),
+  recaptchaToken: z.string().max(4096).nullable().optional(),
 });
 
 function escapeHtml(value: string) {
@@ -61,6 +63,12 @@ export async function POST(request: NextRequest) {
       { error: 'Too many messages were sent from this connection today. Please email support directly.' },
       { status: 429 }
     );
+  }
+
+  const recaptcha = await verifyRecaptchaToken(parsed.data.recaptchaToken, 'contact_submit');
+  if (!recaptcha.success) {
+    logRecaptchaFailure('contact_submit', recaptcha);
+    return NextResponse.json({ error: 'Security verification failed. Please try again.' }, { status: 403 });
   }
 
   if (!isEmailConfigured()) {

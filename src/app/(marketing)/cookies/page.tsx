@@ -13,7 +13,7 @@ export default function CookiesPage() {
     <StaticContentPage
       eyebrow="Legal"
       title="Cookie Policy"
-      description="Effective July 30, 2026. This Cookie Policy explains how ilm AI and approved service providers use cookies and similar browser storage for authentication, preferences, analytics, advertising, and product experience."
+      description="Effective August 2, 2026. This Cookie Policy explains how ilm AI and approved service providers use cookies and similar browser storage for authentication, preferences, analytics, advertising, security, and product experience."
       sideTitle="Cookie-related help"
       sideText="If you have an issue with language preferences, login sessions, or browser storage, use the support page."
       sideActions={[
@@ -27,7 +27,7 @@ export default function CookiesPage() {
             'They help maintain login sessions.',
             'They remember language and interface preferences.',
             'They improve security checks and session continuity.',
-            'Daily study email permission is optional. If allowed, consent is saved to your profile and study reminders may be sent through the configured email provider.',
+            'Daily study email permission is optional. If allowed, consent is saved to your profile and study reminders may be sent through the configured email service.',
           ],
         },
         {
@@ -37,6 +37,17 @@ export default function CookiesPage() {
             'Analytics: optional product-usage measurement used to understand and improve the platform.',
             'Marketing and advertising: optional Google AdSense tags, advertising cookies, ad delivery, and measurement on eligible pages.',
             'Study emails: an optional preference that allows learning reminders; it does not enable advertising cookies.',
+          ],
+        },
+        {
+          title: 'Google reCAPTCHA security signals',
+          paragraphs: [
+            'When configured, Google reCAPTCHA v3 runs in the background on public forms and sensitive account actions to reduce automated abuse. Google may use cookies and similar technical signals as part of that security assessment.',
+            "reCAPTCHA is treated as a necessary security control rather than advertising. Its use is subject to Google's Privacy Policy and Terms of Service.",
+          ],
+          links: [
+            { href: 'https://policies.google.com/privacy', label: 'Google Privacy Policy', external: true },
+            { href: 'https://policies.google.com/terms', label: 'Google Terms of Service', external: true },
           ],
         },
         {
@@ -61,8 +72,8 @@ export default function CookiesPage() {
         {
           title: 'What cookies do not contain',
           bullets: [
-            'Raw AI provider secrets are not stored in browser cookies.',
-            'Payment provider secret keys are not stored in browser cookies.',
+            'Private intelligent-service credentials are not stored in browser cookies.',
+            'Private payment credentials are not stored in browser cookies.',
             'Sensitive backend-only credentials are not exposed in client-side storage.',
           ],
         },

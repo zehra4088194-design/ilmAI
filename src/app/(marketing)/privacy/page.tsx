@@ -12,7 +12,7 @@ export default function PrivacyPage() {
     <StaticContentPage
       eyebrow="Legal"
       title="Privacy Policy"
-      description="Effective July 30, 2026. This Privacy Policy explains how ilm AI collects, uses, protects, and retains user data when you use the website, dashboard, AI features, payments, parent tools, and advertising-supported pages."
+      description="Effective August 2, 2026. This Privacy Policy explains how ilm AI collects, uses, protects, and retains user data when you use the website, dashboard, AI features, payments, parent tools, and advertising-supported pages."
       sideTitle="Questions about data?"
       sideText="If you have questions about data handling, account removal, or privacy, contact our support team directly."
       sideActions={[
@@ -36,6 +36,25 @@ export default function PrivacyPage() {
             'To give AI tools better context, such as board, grade, and selected subjects.',
             'For subscription activation, billing verification, and abuse prevention.',
             'To diagnose support issues and improve the platform.',
+          ],
+        },
+        {
+          title: 'Spam and abuse protection',
+          paragraphs: [
+            "Public forms and sensitive account actions may use Google reCAPTCHA v3 to assess whether a request is likely to be legitimate. It works in the background and may process technical signals such as the IP address, browser information, page context, and interaction data under Google's Privacy Policy and Terms of Service.",
+            'We use the resulting risk score for security and abuse prevention. The private reCAPTCHA secret is stored only on the server.',
+          ],
+          links: [
+            {
+              href: 'https://policies.google.com/privacy',
+              label: 'Google Privacy Policy',
+              external: true,
+            },
+            {
+              href: 'https://policies.google.com/terms',
+              label: 'Google Terms of Service',
+              external: true,
+            },
           ],
         },
         {
@@ -66,8 +85,8 @@ export default function PrivacyPage() {
         {
           title: 'Who processes sensitive AI data',
           paragraphs: [
-            'Raw AI and scan provider secrets are never exposed directly in the browser or public frontend.',
-            'AI and OCR requests are routed through a secure gateway. External providers may process a request only to generate its response.',
+            'Private service credentials are never exposed directly in the browser or public frontend.',
+            'Intelligent and document-processing requests use secure server-side services. Approved service providers may process a request only to generate its response.',
           ],
         },
         {

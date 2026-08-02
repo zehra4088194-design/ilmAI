@@ -5,6 +5,7 @@ import { Mail, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { getRecaptchaToken } from '@/lib/security/recaptcha-client';
 
 const INITIAL_FORM = {
   name: '',
@@ -31,10 +32,11 @@ export function ContactForm() {
 
     setLoading(true);
     try {
+      const recaptchaToken = await getRecaptchaToken('contact_submit');
       const response = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, recaptchaToken }),
       });
       const payload = (await response.json().catch(() => ({}))) as { error?: string };
       if (!response.ok) throw new Error(payload.error || 'The message could not be sent.');

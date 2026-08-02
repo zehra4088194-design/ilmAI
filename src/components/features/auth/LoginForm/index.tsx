@@ -13,8 +13,12 @@ import { getBrowserSiteUrl } from '@/lib/utils/siteUrl';
 import { OAuthButtons } from '@/components/features/auth/OAuthButtons';
 import { toast } from 'sonner';
 import { useTranslations } from '@/providers/I18nProvider';
+import { verifyAuthRecaptcha } from '@/lib/security/recaptcha-client';
 
-const schema = z.object({ email: z.string().email('Valid email required'), password: z.string().min(6, 'Min 6 characters') });
+const schema = z.object({
+  email: z.string().email('Valid email required'),
+  password: z.string().min(6, 'Min 6 characters'),
+});
 type FormData = z.infer<typeof schema>;
 
 export function LoginForm() {
@@ -34,7 +38,12 @@ export function LoginForm() {
   const redirect = searchParams.get('redirect') || '/dashboard';
   const supabase = createClient();
   const t = useTranslations();
-  const { register, handleSubmit, getValues, formState: { errors, isSubmitting } } = useForm<FormData>({ resolver: zodResolver(schema) });
+  const {
+    register,
+    handleSubmit,
+    getValues,
+    formState: { errors, isSubmitting },
+  } = useForm<FormData>({ resolver: zodResolver(schema) });
 
   const finishLogin = () => {
     toast.success('Welcome back!');
@@ -63,8 +72,17 @@ export function LoginForm() {
   };
 
   const onSubmit = async (data: FormData) => {
+    try {
+      await verifyAuthRecaptcha('auth_login');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Security verification failed. Please try again.');
+      return;
+    }
     const { error } = await supabase.auth.signInWithPassword({ email: data.email, password: data.password });
-    if (error) { toast.error(error.message === 'Invalid login credentials' ? 'Incorrect email or password.' : error.message); return; }
+    if (error) {
+      toast.error(error.message === 'Invalid login credentials' ? 'Incorrect email or password.' : error.message);
+      return;
+    }
     if (await prepareMfaIfRequired()) return;
     finishLogin();
   };
@@ -79,6 +97,13 @@ export function LoginForm() {
 
     setMagicLinkLoading(true);
     setOtpError(null);
+    try {
+      await verifyAuthRecaptcha('auth_magic_link');
+    } catch (error) {
+      setMagicLinkLoading(false);
+      toast.error(error instanceof Error ? error.message : 'Security verification failed. Please try again.');
+      return;
+    }
     const callbackUrl = new URL('/api/auth/callback', getBrowserSiteUrl());
     callbackUrl.searchParams.set('redirect', redirect);
     const { error } = await supabase.auth.signInWithOtp({
@@ -147,7 +172,7 @@ export function LoginForm() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-bold mb-1">{t('auth.login.title')}</h1>
+        <h1 className="mb-1 text-2xl font-bold">{t('auth.login.title')}</h1>
         <p className="text-muted-foreground">{t('auth.login.subtitle')}</p>
       </div>
       {mfaChallenge ? (
@@ -157,9 +182,7 @@ export function LoginForm() {
           </div>
           <div className="text-center">
             <h2 className="text-lg font-semibold">Two-step verification</h2>
-            <p className="text-muted-foreground mt-1 text-sm">
-              Enter the 6-digit code from your authenticator app.
-            </p>
+            <p className="text-muted-foreground mt-1 text-sm">Enter the 6-digit code from your authenticator app.</p>
           </div>
           <Input
             value={mfaCode}
@@ -183,7 +206,7 @@ export function LoginForm() {
               setMfaError(null);
               void supabase.auth.signOut();
             }}
-            className="text-muted-foreground hover:text-foreground block mx-auto text-xs hover:underline"
+            className="text-muted-foreground hover:text-foreground mx-auto block text-xs hover:underline"
           >
             Use another account
           </button>
@@ -205,7 +228,7 @@ export function LoginForm() {
             <button
               type="button"
               onClick={() => setShowOtp(true)}
-              className="text-primary block mx-auto text-sm font-medium hover:underline"
+              className="text-primary mx-auto block text-sm font-medium hover:underline"
             >
               Enter code instead
             </button>
@@ -231,7 +254,7 @@ export function LoginForm() {
                   setShowOtp(false);
                   setOtpError(null);
                 }}
-                className="text-muted-foreground hover:text-foreground block mx-auto text-xs hover:underline"
+                className="text-muted-foreground hover:text-foreground mx-auto block text-xs hover:underline"
               >
                 Use email link instead
               </button>
@@ -249,7 +272,7 @@ export function LoginForm() {
               setOtpCode('');
               setOtpError(null);
             }}
-            className="text-primary block mx-auto text-sm font-medium hover:underline"
+            className="text-primary mx-auto block text-sm font-medium hover:underline"
           >
             Use password instead
           </button>
@@ -258,26 +281,48 @@ export function LoginForm() {
         <>
           <OAuthButtons />
           <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border" /></div>
-            <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">{t('auth.login.orEmail')}</span></div>
+            <div className="absolute inset-0 flex items-center">
+              <span className="border-border w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background text-muted-foreground px-2">{t('auth.login.orEmail')}</span>
+            </div>
           </div>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input {...register('email')} type="email" placeholder={t('auth.login.emailPlaceholder')} className="pl-10" error={errors.email?.message} />
+              <Mail className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+              <Input
+                {...register('email')}
+                type="email"
+                placeholder={t('auth.login.emailPlaceholder')}
+                className="pl-10"
+                error={errors.email?.message}
+              />
             </div>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input {...register('password')} type={showPass ? 'text' : 'password'} placeholder={t('auth.login.passwordPlaceholder')} className="pl-10 pr-10" error={errors.password?.message} />
-              <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              <Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+              <Input
+                {...register('password')}
+                type={showPass ? 'text' : 'password'}
+                placeholder={t('auth.login.passwordPlaceholder')}
+                className="pr-10 pl-10"
+                error={errors.password?.message}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPass(!showPass)}
+                className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
+              >
+                {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
             <div className="flex justify-end">
-              <Link href="/forgot-password" className="text-sm text-primary hover:underline">{t('auth.login.forgotPassword')}</Link>
+              <Link href="/forgot-password" className="text-primary text-sm hover:underline">
+                {t('auth.login.forgotPassword')}
+              </Link>
             </div>
             <Button type="submit" variant="gradient" className="w-full" size="lg" loading={isSubmitting}>
-              <Zap className="w-4 h-4" /> {t('auth.login.submit')}
+              <Zap className="h-4 w-4" /> {t('auth.login.submit')}
             </Button>
           </form>
           <div className="my-4 flex items-center gap-3">
@@ -290,9 +335,14 @@ export function LoginForm() {
           </Button>
         </>
       )}
-      <p className="text-center text-sm text-muted-foreground mt-6">
+      <p className="text-muted-foreground mt-6 text-center text-sm">
         {t('auth.login.noAccount')}{' '}
-        <Link href={`/register?redirect=${encodeURIComponent(redirect)}`} className="text-primary font-medium hover:underline">{t('auth.login.registerLink')}</Link>
+        <Link
+          href={`/register?redirect=${encodeURIComponent(redirect)}`}
+          className="text-primary font-medium hover:underline"
+        >
+          {t('auth.login.registerLink')}
+        </Link>
       </p>
     </div>
   );
