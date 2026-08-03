@@ -3,7 +3,7 @@ import { StaticContentPage } from '@/components/features/marketing/StaticContent
 
 export const metadata: Metadata = {
   title: 'System Status - ilm AI',
-  description: 'Current operational status of ilm AI app, payments, AI gateway, and support systems.',
+  description: 'Current operational status of the ilm AI app, payments, intelligent services, and support systems.',
   alternates: { canonical: '/status' },
 };
 
@@ -26,7 +26,7 @@ export default function StatusPage() {
             'Website and dashboard: Operational',
             'Authentication and user accounts: Operational',
             'AI Tutor and content generation: Operational',
-            'OCR and scan processing: Operational',
+            'Document processing: Operational',
             'Parent dashboard and messaging: Operational',
             'Payments and subscription activation: Operational',
           ],
@@ -36,7 +36,7 @@ export default function StatusPage() {
           bullets: [
             'Slow responses are usually caused by heavy AI load or an unstable network.',
             'Voice session issues are often related to browser microphone permissions.',
-            'Payment confirmation delays can sometimes be caused by payment provider webhook synchronization.',
+            'Payment confirmation delays can sometimes be caused by payment-network synchronization.',
           ],
         },
         {

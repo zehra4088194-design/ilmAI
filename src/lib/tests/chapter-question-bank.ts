@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid';
 import { createServiceClient } from '@/lib/supabase/service';
-import { buildResourceSourceTest } from '@/lib/resources/source-fallback';
+import { buildResourceSourceTest, isHighQualitySourceMcq } from '@/lib/resources/source-fallback';
 import { fetchResourceContext, getResourceForProcessing } from '@/lib/resources/server';
 
 export type BankMcq = {
@@ -65,8 +65,8 @@ function normalizeMcq(value: any): BankMcq | null {
   if (!Number.isInteger(correct) && typeof rawCorrect === 'string') {
     correct = Math.max(0, rawCorrect.toLowerCase().charCodeAt(0) - 97);
   }
-  if (!q || opts.length < 2 || !Number.isInteger(correct) || correct < 0 || correct >= opts.length) return null;
-  return { q, opts, correct, exp: String(value?.exp || value?.explanation || '') };
+  const normalized = { q, opts, correct, exp: String(value?.exp || value?.explanation || '') };
+  return isHighQualitySourceMcq(normalized) ? normalized : null;
 }
 
 function normalizeSubjective(value: any, defaultMarks: number): BankSubjectiveQuestion | null {

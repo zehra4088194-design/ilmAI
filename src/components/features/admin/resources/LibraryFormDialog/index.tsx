@@ -284,6 +284,8 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
                 <SelectContent>
                   <SelectItem value="text_book">Text Book</SelectItem>
                   <SelectItem value="notes">Notes</SelectItem>
+                  <SelectItem value="pairing_scheme">Pairing Scheme</SelectItem>
+                  <SelectItem value="guess_paper">Guess Paper</SelectItem>
                   <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>

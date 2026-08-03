@@ -1,5 +1,5 @@
 import http from 'node:http';
-import worker from '../../cloudflare-worker/worker.js';
+import gateway from './handler.mjs';
 
 const port = Number(process.env.PORT || 8787);
 const maxBodyBytes = Number(process.env.GATEWAY_MAX_BODY_BYTES || 30 * 1024 * 1024);
@@ -33,7 +33,7 @@ const server = http.createServer(async (incoming, outgoing) => {
       headers: incoming.headers,
       body,
     });
-    const response = await worker.fetch(request, process.env);
+    const response = await gateway.fetch(request, process.env);
 
     outgoing.statusCode = response.status;
     response.headers.forEach((value, key) => outgoing.setHeader(key, value));

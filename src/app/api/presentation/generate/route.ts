@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('Presentation generate route error:', error);
     return NextResponse.json(
-      { status: 'error', error: 'The presentation could not be generated. Check AI gateway keys and rate limits.' },
+      { status: 'error', error: 'The presentation could not be generated right now. Please try again shortly.' },
       { status: 500 }
     );
   }

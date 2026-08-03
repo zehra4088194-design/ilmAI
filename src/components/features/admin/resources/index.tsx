@@ -17,7 +17,7 @@ export function ResourcesPage() {
       <div>
         <h1 className="text-2xl font-bold">Content Library</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Manage lectures, textbooks, notes, and past papers by class from here.
+          Manage lectures, textbooks, notes, pairing schemes, guess papers, and past papers by class from here.
         </p>
       </div>
 

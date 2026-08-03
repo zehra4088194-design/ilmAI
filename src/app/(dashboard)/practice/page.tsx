@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { AiPracticeHub } from '@/components/features/quiz/AiPracticeHub';
 import type { Board, GradeLevel } from '@/types';
 
-export const metadata: Metadata = { title: 'AI Testing' };
+export const metadata: Metadata = { title: 'Adaptive Practice' };
 
 export default async function PracticePage() {
   const supabase = await createClient();

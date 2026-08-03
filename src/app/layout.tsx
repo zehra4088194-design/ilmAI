@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: { default: 'ilm AI - AI Study Platform for School, College & University', template: '%s | ilm AI' },
   description:
-    'AI-powered study platform for school, college, and university students: AI Tutor, MCQs, past papers, essays, assignments, presentations, viva prep, and study plans.',
+    'Study notes, video lectures, a public library, AI Tutor, MCQs, past papers, and an AI Presentation Builder for school, college, and university students.',
   keywords: [
     'ilm-ai',
     'Pakistan study',

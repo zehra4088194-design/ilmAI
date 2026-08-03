@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { AdSenseBanner } from '@/components/features/ads/AdSenseBanner';
 import {
   buildCatalogSearch,
+  getLibraryResourceTypeLabel,
   isCatalogResourceVisible,
   LIBRARY_SECTIONS,
   normalizeLegacyCatalogResource,
@@ -87,7 +88,7 @@ export default async function LibraryChapterPage({
   const resolvedBookTitle =
     bookTitle ||
     visibleResources[0]?.book_title ||
-    `${subject?.name || 'General'} ${resourceType === 'notes' ? 'Notes' : 'Text Book'}`;
+    `${subject?.name || 'General'} ${getLibraryResourceTypeLabel(resourceType)}`;
   const catalogSearch = buildCatalogSearch(resourceType, resolvedBookTitle);
 
   return (
@@ -134,7 +135,7 @@ export default async function LibraryChapterPage({
                   <p className="text-muted-foreground mt-1 text-sm">{section.description}</p>
                   <div className="border-border/70 mt-5 flex items-center justify-between border-t pt-4 text-xs font-semibold">
                     <span className="inline-flex items-center gap-1.5">
-                      <CheckCircle2 className="h-3.5 w-3.5" /> {contextReady} AI text ready
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Study tools ready
                     </span>
                     <ArrowRight className="text-primary h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </div>

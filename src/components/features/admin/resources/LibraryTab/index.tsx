@@ -22,7 +22,7 @@ export type LibraryResource = {
   title: string;
   description: string | null;
   category: 'local' | 'international';
-  resource_type: 'text_book' | 'notes' | 'other';
+  resource_type: 'text_book' | 'notes' | 'pairing_scheme' | 'guess_paper' | 'other';
   book_title: string | null;
   content_section: 'reading' | 'mcq' | 'short' | 'long';
   has_context_text?: boolean;
@@ -140,6 +140,8 @@ export function LibraryTab() {
           <option value="ALL">All resource types</option>
           <option value="text_book">Text Books</option>
           <option value="notes">Notes</option>
+          <option value="pairing_scheme">Pairing Schemes</option>
+          <option value="guess_paper">Guess Papers</option>
           <option value="other">Other</option>
         </select>
       </div>
@@ -186,7 +188,13 @@ export function LibraryTab() {
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
                       <Badge variant="outline">
-                        {resource.resource_type === 'text_book' ? 'Text Book' : resource.resource_type}
+                        {resource.resource_type === 'text_book'
+                          ? 'Text Book'
+                          : resource.resource_type === 'pairing_scheme'
+                            ? 'Pairing Scheme'
+                            : resource.resource_type === 'guess_paper'
+                              ? 'Guess Paper'
+                              : resource.resource_type}
                       </Badge>
                       <Badge variant="secondary">{resource.file_type}</Badge>
                       <Badge variant="outline">{resource.content_section || 'reading'}</Badge>
@@ -198,7 +206,7 @@ export function LibraryTab() {
                     </Badge>
                     {(resource.light_file_url || resource.drive_url) && <Badge variant="outline">Light</Badge>}
                     {resource.dark_file_url && <Badge variant="secondary">Dark</Badge>}
-                    {resource.context_text_url && <Badge variant="success">AI TXT</Badge>}
+                    {resource.context_text_url && <Badge variant="success">Study context</Badge>}
                   </TableCell>
                   <TableCell>{new Date(resource.created_at).toLocaleDateString()}</TableCell>
                   <TableCell className="text-right">

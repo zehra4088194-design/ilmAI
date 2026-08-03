@@ -134,7 +134,7 @@ export function VisionScanClient() {
 
             <Button variant="gradient" className="w-full" onClick={scan} disabled={!file || loading}>
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ScanLine className="h-4 w-4" />}
-              Scan this
+              Process Document
             </Button>
           </CardContent>
         </Card>
@@ -154,7 +154,7 @@ export function VisionScanClient() {
               <Card>
                 <CardContent className="p-5">
                   <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
-                    <Sparkles className="h-4 w-4 text-violet-400" /> OCR Text
+                    <Sparkles className="h-4 w-4 text-violet-400" /> Extracted Text
                   </div>
                   <p className="text-muted-foreground text-sm leading-6 whitespace-pre-wrap">
                     {result.ocr_text || 'Text could not be extracted clearly.'}

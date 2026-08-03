@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils/cn';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { useTranslations } from '@/providers/I18nProvider';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
+import { PRIMARY_SITE_LINKS } from '@/lib/seo/study-tools';
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -15,13 +16,11 @@ export function Navbar() {
   const { user } = useAuth();
   const t = useTranslations();
 
-  const NAV_LINKS = [
-    { label: 'Library', href: '/library', icon: LibraryBig },
-    { label: t('navbar.features'), href: '/#features' },
-    { label: t('navbar.boards'), href: '/#boards' },
-    { label: t('navbar.pricing'), href: '/pricing' },
-    { label: t('navbar.blog'), href: '/blog' },
-  ];
+  const NAV_LINKS = PRIMARY_SITE_LINKS.map((link) => ({
+    label: link.name,
+    href: link.url,
+    icon: link.url === '/library' ? LibraryBig : undefined,
+  }));
 
   useEffect(() => {
     const handler = () => setIsScrolled(window.scrollY > 20);

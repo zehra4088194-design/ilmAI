@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getResourceForProcessing } from '@/lib/resources/server';
 import type { ProtectedResourceKind } from '@/lib/resources/server';
+import { filterHighQualitySourceMcqs } from '@/lib/resources/source-fallback';
+import { queueResourceContextProcessing } from '@/lib/resources/processing';
 
 const KINDS = new Set<ProtectedResourceKind>(['library', 'past-paper', 'college-resource']);
 
@@ -26,5 +28,13 @@ export async function GET(req: NextRequest) {
   if (!data || data.status !== 'ready') {
     return NextResponse.json({ status: 'processing', data: { questions: [], status: data?.status || 'queued' } }, { status: 202 });
   }
-  return NextResponse.json({ status: 'success', data: { questions: data.questions || [], generatedAt: data.generated_at } });
+  const questions = filterHighQualitySourceMcqs(data.questions);
+  if (!questions.length && Array.isArray(data.questions) && data.questions.length > 0) {
+    await queueResourceContextProcessing(kind, id);
+    return NextResponse.json(
+      { status: 'processing', data: { questions: [], status: 'queued' } },
+      { status: 202 }
+    );
+  }
+  return NextResponse.json({ status: 'success', data: { questions, generatedAt: data.generated_at } });
 }

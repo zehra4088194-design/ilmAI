@@ -141,7 +141,7 @@ export function TeacherTestStudio({ subjects, chapters }: { subjects: Subject[];
       {paper && (
         <>
           <div className="flex items-center justify-between gap-3 print:hidden">
-            <p className="text-sm text-muted-foreground">Built from {paper.sourceCount} uploaded chapter source file{paper.sourceCount === 1 ? '' : 's'}.</p>
+            <p className="text-sm text-muted-foreground">Built from approved chapter materials.</p>
             <Button onClick={() => window.print()}><FileDown className="h-4 w-4" />Print / Save PDF</Button>
           </div>
           <TestPaper paper={paper} />

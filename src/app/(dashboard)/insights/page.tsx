@@ -268,7 +268,7 @@ export default async function InsightsPage() {
             <div>
               <p className="font-semibold">No digital twin yet</p>
               <p className="text-muted-foreground text-sm">
-                Complete one AI Testing session to compute your first learning profile.
+                Complete one adaptive practice session to create your first learning profile.
               </p>
             </div>
             <Button asChild variant="gradient">

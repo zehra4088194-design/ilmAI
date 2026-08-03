@@ -10,7 +10,7 @@ import {
   verifiedSourceInstruction,
 } from '@/lib/resources/evidence';
 import type { FullTestPaper } from '@/app/api/ai/full-test/route';
-import { buildResourceSourceTest } from '@/lib/resources/source-fallback';
+import { buildResourceSourceTest, filterHighQualitySourceMcqs } from '@/lib/resources/source-fallback';
 
 export const runtime = 'nodejs';
 export const maxDuration = 180;
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
           },
           {
             role: 'user',
-            content: `Create a test strictly from this resource.\nExact counts: ${mcqCount} MCQs, ${shortCount} short questions, ${longCount} long questions.\nEvery MCQ needs four options, a zero-based correct option index, and a concise explanation. Written questions need marks and source-grounded key points.\n\nReturn exactly:\n{"title":"...","totalMarks":number,"timeAllowed":number,"mcqs":[{"q":"...","opts":["A","B","C","D"],"correct":0,"exp":"..."}],"shortQs":[{"q":"...","marks":3,"keyPoints":["..."]}],"longQs":[{"q":"...","marks":8,"keyPoints":["..."],"guide":"..."}]}\n\nRESOURCE: ${resource.title}\n\nSOURCE TEXT:\n${context}`,
+            content: `Create a high-quality test strictly from the facts and concepts in this resource.\nExact counts: ${mcqCount} MCQs, ${shortCount} short questions, ${longCount} long questions.\n\nMCQ QUALITY RULES:\n- Every question must be self-contained and directly test a named concept, fact, definition, formula, application, comparison, or worked example.\n- Never write meta questions such as "According to the file/source/document...", "Which option is supported by the text?", or "What does the uploaded material say?"\n- Never mention the file, source, document, passage, notes, or upload in any question or option.\n- Use four distinct, plausible subject-specific options with exactly one correct answer.\n- Avoid "all of the above", "none of the above", placeholder options, and repeated questions.\n- Explanations must state the relevant concept and why the answer is correct.\n- If the material cannot support the requested count without repetition or invention, return fewer questions rather than filler.\n\nWritten questions need marks and source-grounded key points.\n\nReturn exactly:\n{"title":"...","totalMarks":number,"timeAllowed":number,"mcqs":[{"q":"...","opts":["A","B","C","D"],"correct":0,"exp":"..."}],"shortQs":[{"q":"...","marks":3,"keyPoints":["..."]}],"longQs":[{"q":"...","marks":8,"keyPoints":["..."],"guide":"..."}]}\n\nRESOURCE: ${resource.title}\n\nSOURCE TEXT:\n${context}`,
           },
         ],
       });
@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
       console.warn('Gemini test generation unavailable; using source fallback:', gatewayError);
       paper = sourcePaper;
     }
-    paper.mcqs = [...(paper.mcqs || []), ...sourcePaper.mcqs].slice(0, mcqCount);
+    paper.mcqs = filterHighQualitySourceMcqs([...(paper.mcqs || []), ...sourcePaper.mcqs]).slice(0, mcqCount);
     paper.shortQs = [...(paper.shortQs || []), ...sourcePaper.shortQs].slice(0, shortCount);
     paper.longQs = [...(paper.longQs || []), ...sourcePaper.longQs].slice(0, longCount);
     paper.totalMarks =

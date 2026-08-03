@@ -30,7 +30,7 @@ export function ResourceAiTools({ kind, resourceId }: { kind: ProtectedResourceK
   const [summarySource, setSummarySource] = useState<SourceEvidence | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
-  const [analysisLabel, setAnalysisLabel] = useState('Grok file analysis');
+  const [analysisLabel, setAnalysisLabel] = useState('Content analysis');
   const [analyzing, setAnalyzing] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [counts, setCounts] = useState({ mcq: 0, short: 0, long: 0 });
@@ -52,11 +52,8 @@ export function ResourceAiTools({ kind, resourceId }: { kind: ProtectedResourceK
       if (!response.ok || json.status === 'error') throw new Error(json.error || 'The summary could not be generated.');
       setSummary(json.data.summary);
       setSummarySource(json.data.source || null);
-      setSummaryLabel(
-        json.data.fallbackUsed ? 'Source Summary' : `${String(json.data.provider || 'AI').toUpperCase()} Summary`
-      );
-      if (json.data.fallbackUsed)
-        toast.info('The AI gateway was unavailable; the summary was created from the uploaded TXT source.');
+      setSummaryLabel(json.data.fallbackUsed ? 'Source-grounded Summary' : 'AI Summary');
+      if (json.data.fallbackUsed) toast.info('Your summary was completed using the available source content.');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'The summary could not be generated.');
     } finally {
@@ -79,9 +76,8 @@ export function ResourceAiTools({ kind, resourceId }: { kind: ProtectedResourceK
       const json = await response.json();
       if (!response.ok || json.status === 'error') throw new Error(json.error || 'The file could not be analyzed.');
       setAnalysis(json.data);
-      setAnalysisLabel(json.fallbackUsed ? 'Source file analysis' : `${String(json.provider || 'Grok')} file analysis`);
-      if (json.fallbackUsed)
-        toast.info('The AI gateway was unavailable, so the uploaded TXT file was analyzed locally.');
+      setAnalysisLabel(json.fallbackUsed ? 'Source-grounded analysis' : 'Content analysis');
+      if (json.fallbackUsed) toast.info('The content analysis was completed using the available source material.');
       setCounts({
         mcq: Math.min(30, json.data.available.mcq),
         short: Math.min(5, json.data.available.short),
@@ -109,8 +105,7 @@ export function ResourceAiTools({ kind, resourceId }: { kind: ProtectedResourceK
       const json = await response.json();
       if (!response.ok || json.status === 'error') throw new Error(json.error || 'The test could not be generated.');
       window.sessionStorage.setItem('ilm-ai-resource-test', JSON.stringify(json.data));
-      if (json.data.fallbackUsed)
-        toast.info('The AI gateway was unavailable; a source-grounded fallback test was created.');
+      if (json.data.fallbackUsed) toast.info('Your test was completed using the available source content.');
       router.push('/full-test?source=resource');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'The test could not be generated.');
@@ -207,7 +202,7 @@ export function ResourceAiTools({ kind, resourceId }: { kind: ProtectedResourceK
           </div>
           <Button className="mt-3 w-full" variant="gradient" size="sm" onClick={generateTest} disabled={generating}>
             {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-            Generate a test with Gemini
+            Generate Test
           </Button>
         </div>
       )}
@@ -270,7 +265,7 @@ function ResourceMcqSet({ kind, resourceId }: { kind: ProtectedResourceKind; res
       </Button>
       {status === 'processing' && (
         <p className="text-muted-foreground mt-2 text-xs">
-          Source-grounded MCQs will appear here when OCR and context processing is complete.
+          Source-grounded questions will appear here when content preparation is complete.
         </p>
       )}
       {open && current && (

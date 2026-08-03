@@ -1,15 +1,13 @@
 /**
  * ============================================================
- * ILM AI — PORTABLE AI GATEWAY HANDLER
+ * ILM AI - COOLIFY AI GATEWAY HANDLER
  * ============================================================
- * Coolify runs this handler through services/ai-gateway/server.mjs. It can
- * also be deployed as a Cloudflare Worker when that optional topology is
- * desired. The Next.js web container never sees a raw provider key.
+ * Coolify runs this handler through services/ai-gateway/server.mjs. The
+ * Next.js web container never sees a raw provider key.
  *
  * WHAT IT DOES
  * - Holds up to 20 keys per AI provider (Assistant, Grok, Claude, GPT, Gemini)
- * - Accepts one JSON key-pool secret per provider, avoiding the Workers Free
- *   limit of 64 environment variables
+ * - Accepts Coolify JSON key-pool or single-key variables per provider
  * - Uses keys in strict round-robin order for each provider. Every new request
  *   reserves the next key before its network request starts, then wraps around.
  *   Retry attempts use following keys without resetting that request sequence.
@@ -23,8 +21,7 @@
  *   (input + output) so the Next.js backend can turn a voice lesson into
  *   Short Notes + Flashcards when the call ends (see /api/voice/session-end).
  *
- * COOLIFY: docker-compose.oracle.yml injects the secrets into ai-gateway.
- * CLOUDFLARE (optional): use wrangler.toml and set the same secrets.
+ * docker-compose.oracle.yml injects the secrets into ai-gateway.
  *
  * ------------------------------------------------------------
  * SECRETS REFERENCE (set under Settings → Variables and Secrets)
@@ -52,11 +49,12 @@
  */
 
 // ---------- MODEL MAP (edit anytime, no redeploy needed elsewhere) ----------
-// Gemini 3.6 Flash is the single default Gemini text/vision model so every
-// Gemini-backed tool gets the same current model instead of mixing versions.
+// General Gemini tools and document vision use separate models. Document
+// vision favors the lighter model because it is optimized for extraction.
 const GEMINI_FLASH_MODEL = 'gemini-3.6-flash';
+const GEMINI_DOCUMENT_MODEL = 'gemini-3.5-flash-lite';
 
-const MODEL_MAP = {
+const DEFAULT_MODEL_MAP = {
   groq: {
     mini: 'llama-3.1-8b-instant',
     medium: 'llama-3.3-70b-versatile',
@@ -89,6 +87,22 @@ const MODEL_MAP = {
   },
 };
 
+const MODEL_ENV_PREFIX = {
+  groq: 'GROQ',
+  grok: 'GROK',
+  claude: 'CLAUDE',
+  gpt: 'GPT',
+  gemini: 'GEMINI',
+  openrouter: 'OPENROUTER',
+};
+
+function getModel(env, provider, tier) {
+  if (provider === 'gemini' && env.GEMINI_FLASH_MODEL) return env.GEMINI_FLASH_MODEL;
+  const prefix = MODEL_ENV_PREFIX[provider];
+  const override = prefix ? env[`${prefix}_${String(tier).toUpperCase()}_MODEL`] : '';
+  return override || DEFAULT_MODEL_MAP[provider]?.[tier] || DEFAULT_MODEL_MAP.groq.mini;
+}
+
 const OPENROUTER_FALLBACK_MODELS = [
   'z-ai/glm-5.2',
   'nvidia/nemotron-3-ultra-550b-a55b',
@@ -103,7 +117,6 @@ const OPENROUTER_FALLBACK_MODELS = [
 
 // Default Live Voice Call model — see GEMINI_LIVE_MODEL override note above.
 const DEFAULT_LIVE_MODEL = 'gemini-3.1-flash-live-preview';
-const GEMINI_VISION_OCR_MODELS = [GEMINI_FLASH_MODEL];
 
 // The AI Teacher persona for Live Voice Call. Locked into the ephemeral
 // token server-side (via AuthToken.bidiGenerateContentSetup) so it can never be
@@ -152,12 +165,15 @@ function getKeys(env, prefix) {
   if (jsonSecret) {
     try {
       const parsed = JSON.parse(jsonSecret);
-      if (Array.isArray(parsed)) keys.push(...parsed);
+      if (Array.isArray(parsed)) {
+        keys.push(...parsed.map((item) => (item && typeof item === 'object' ? item.key : item)));
+      }
     } catch {
       // Also accept newline/comma separated values for easier dashboard setup.
       keys.push(...String(jsonSecret).split(/[\r\n,]+/));
     }
   }
+  if (env[prefix]) keys.push(env[prefix]);
   for (let i = 1; i <= KEY_COUNT; i++) {
     const k = env[`${prefix}_${i}`];
     if (k) keys.push(k);
@@ -313,9 +329,22 @@ async function withOpenRouterFallback(env, messages, maxTokens, temperature) {
   const keys = getKeys(env, 'OPENROUTER_API_KEY');
   if (!keys.length) return { ok: false, error: 'No keys configured for OpenRouter' };
 
+  let models = OPENROUTER_FALLBACK_MODELS;
+  if (env.OPENROUTER_MODELS_JSON) {
+    try {
+      const configured = JSON.parse(env.OPENROUTER_MODELS_JSON);
+      if (Array.isArray(configured) && configured.some(Boolean)) models = configured.filter(Boolean);
+    } catch {
+      models = String(env.OPENROUTER_MODELS_JSON)
+        .split(/[\r\n,]+/)
+        .map((model) => model.trim())
+        .filter(Boolean);
+    }
+  }
+
   let lastError = null;
   let attemptsRemaining = KEY_COUNT;
-  for (const model of OPENROUTER_FALLBACK_MODELS) {
+  for (const model of models) {
     if (attemptsRemaining <= 0) break;
     const attemptsForModel = Math.min(2, attemptsRemaining);
     const result = await withKeyRotation(
@@ -333,7 +362,25 @@ async function withOpenRouterFallback(env, messages, maxTokens, temperature) {
   return { ok: false, error: `All OpenRouter fallback models failed. Last error: ${lastError}` };
 }
 
-async function callGeminiVisionOcrWithModel(key, model, base64Image, mimeType) {
+function parseGeminiDocumentPayload(rawText, includeSummary) {
+  const cleaned = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+  if (!includeSummary) return { text: cleaned };
+
+  try {
+    const parsed = JSON.parse(cleaned);
+    return {
+      text: String(parsed.text || '').trim(),
+      summary: String(parsed.summary || '').trim(),
+    };
+  } catch {
+    return { text: '', summary: '' };
+  }
+}
+
+async function callGeminiDocumentWithModel(key, model, base64Image, mimeType, options = {}) {
+  const includeSummary = options.includeSummary === true;
+  const documentType = String(options.documentType || 'document').replace(/[^a-z_-]/gi, ' ');
+  const language = String(options.language || 'en').replace(/[^a-z-]/gi, '');
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
   const res = await fetch(url, {
     method: 'POST',
@@ -344,36 +391,38 @@ async function callGeminiVisionOcrWithModel(key, model, base64Image, mimeType) {
           role: 'user',
           parts: [
             {
-              text: 'Transcribe ALL visible text from this image exactly as written, including handwriting. Return ONLY the transcribed text, no commentary, no markdown formatting.',
+              text: includeSummary
+                ? `Analyze this ${documentType} image. Transcribe ALL visible text exactly as written, including handwriting, labels, equations, symbols, and diagram annotations. Then write a concise, student-friendly summary in language code "${language}". Do not invent unclear content. Return only valid JSON with exactly this shape: {"text":"complete transcription","summary":"concise summary"}.`
+                : 'Transcribe ALL visible text from this image exactly as written, including handwriting. Return ONLY the transcribed text, no commentary, no markdown formatting.',
             },
             { inline_data: { mime_type: mimeType, data: base64Image } },
           ],
         },
       ],
-      generationConfig: { maxOutputTokens: 2048, temperature: 0.1 },
+      generationConfig: {
+        maxOutputTokens: includeSummary ? 4096 : 2048,
+        temperature: 0.1,
+        ...(includeSummary ? { responseMimeType: 'application/json' } : {}),
+      },
     }),
   });
   if (!res.ok) return { ok: false, status: res.status, error: await res.text() };
   const json = await res.json();
-  const text =
+  const rawText =
     json.candidates?.[0]?.content?.parts
       ?.map((p) => p.text || '')
       .join('')
       .trim() || '';
-  return { ok: true, data: text };
+  const data = parseGeminiDocumentPayload(rawText, includeSummary);
+  if (!data.text) return { ok: false, status: 502, error: 'Gemini document scan returned no readable text' };
+  if (includeSummary && !data.summary) {
+    return { ok: false, status: 502, error: 'Gemini document scan returned no summary' };
+  }
+  return { ok: true, data };
 }
 
-async function callGeminiVisionOcr(key, base64Image, mimeType, env) {
-  const models = [env.GEMINI_VISION_MODEL, ...GEMINI_VISION_OCR_MODELS].filter(Boolean);
-  let lastError = null;
-
-  for (const model of [...new Set(models)]) {
-    const result = await callGeminiVisionOcrWithModel(key, model, base64Image, mimeType);
-    if (result.ok) return result;
-    lastError = `${model}: ${result.error || result.status}`;
-  }
-
-  return { ok: false, status: 502, error: lastError || 'Gemini Vision OCR failed' };
+async function callGeminiDocument(key, base64Image, mimeType, options) {
+  return callGeminiDocumentWithModel(key, GEMINI_DOCUMENT_MODEL, base64Image, mimeType, options);
 }
 
 async function callOcrSpace(key, base64Image, mimeType, language = 'eng') {
@@ -472,7 +521,7 @@ async function handleChat(req, env) {
 
   if (!messages || !Array.isArray(messages)) return json({ error: 'messages array required' }, 400);
 
-  const model = MODEL_MAP[provider]?.[tier] || MODEL_MAP.groq.mini;
+  const model = getModel(env, provider, tier);
   let result;
 
   if (provider === 'groq') {
@@ -527,7 +576,7 @@ async function handleChat(req, env) {
   if (!strict_provider && !result.ok && provider !== 'groq') {
     const groqFallback = await withKeyRotation(
       getKeys(env, 'GROQ_API_KEY'),
-      (k) => callGroq(k, MODEL_MAP.groq.mini, messages, max_tokens, temperature),
+      (k) => callGroq(k, getModel(env, 'groq', 'mini'), messages, max_tokens, temperature),
       'Assistant (fallback)',
       DEFAULT_KEY_ATTEMPTS,
       'groq'
@@ -536,7 +585,7 @@ async function handleChat(req, env) {
       return json({
         text: groqFallback.data,
         providerUsed: 'groq',
-        modelUsed: MODEL_MAP.groq.mini,
+        modelUsed: getModel(env, 'groq', 'mini'),
         keyIndexUsed: groqFallback.keyIndexUsed,
         fallbackTriggered: true,
         originalProvider: provider,
@@ -572,22 +621,34 @@ async function handleChat(req, env) {
   });
 }
 
-// ---------------- ROUTE: /ocr ----------------
-async function handleOcr(req, env) {
+// ---------------- ROUTE: /document-scan ----------------
+async function handleDocumentScan(req, env) {
   const body = await req.json();
-  const { imageBase64, mimeType = 'image/jpeg' } = body;
+  const {
+    imageBase64,
+    mimeType = 'image/jpeg',
+    includeSummary = false,
+    documentType = 'document',
+    language = 'en',
+  } = body;
   if (!imageBase64) return json({ error: 'imageBase64 required' }, 400);
 
   const geminiKeys = getKeys(env, 'GEMINI_API_KEY');
   const result = await withKeyRotation(
     geminiKeys,
-    (key) => callGeminiVisionOcr(key, imageBase64, mimeType, env),
-    'Gemini Vision OCR',
+    (key) => callGeminiDocument(key, imageBase64, mimeType, { includeSummary, documentType, language }),
+    'Gemini document scan',
     DEFAULT_KEY_ATTEMPTS,
     'gemini'
   );
-  if (!result.ok) return json({ error: result.error || 'Gemini Vision OCR failed' }, 502);
-  return json({ text: result.data, providerUsed: 'gemini-vision', keyIndexUsed: result.keyIndexUsed });
+  if (!result.ok) return json({ error: result.error || 'Gemini document scan failed' }, 502);
+  return json({
+    text: result.data.text,
+    summary: result.data.summary,
+    providerUsed: 'gemini-flash-lite',
+    modelUsed: GEMINI_DOCUMENT_MODEL,
+    keyIndexUsed: result.keyIndexUsed,
+  });
 }
 
 async function handleOcrSpace(req, env) {
@@ -646,6 +707,28 @@ export default {
     const url = new URL(req.url);
 
     if (url.pathname === '/health') return json({ status: 'ok', service: 'ilm-ai-gateway' });
+    if (url.pathname === '/ready') {
+      const providers = {
+        groq: getKeys(env, 'GROQ_API_KEY').length > 0,
+        grok: getKeys(env, 'GROK_API_KEY').length > 0,
+        claude: getKeys(env, 'CLAUDE_API_KEY').length > 0,
+        gpt: getKeys(env, 'GPT_API_KEY').length > 0,
+        gemini: getKeys(env, 'GEMINI_API_KEY').length > 0,
+        openrouter: getKeys(env, 'OPENROUTER_API_KEY').length > 0,
+        ocrSpace: getKeys(env, 'OCRSPACE_API_KEY').length > 0,
+      };
+      const ready = providers.groq;
+      return json(
+        {
+          status: ready ? 'ready' : 'not_ready',
+          service: 'ilm-ai-gateway',
+          fallbackProvider: 'groq',
+          providers,
+          error: ready ? undefined : 'Configure GROQ_API_KEY or GROQ_API_KEYS_JSON in Coolify.',
+        },
+        ready ? 200 : 503
+      );
+    }
 
     // Auth check (skip only for /health)
     const auth = req.headers.get('Authorization') || '';
@@ -655,10 +738,10 @@ export default {
 
     try {
       if (url.pathname === '/chat' && req.method === 'POST') return await handleChat(req, env);
-      if (url.pathname === '/ocr' && req.method === 'POST') return await handleOcr(req, env);
+      if (url.pathname === '/document-scan' && req.method === 'POST') return await handleDocumentScan(req, env);
       if (url.pathname === '/ocr-space' && req.method === 'POST') return await handleOcrSpace(req, env);
       if (url.pathname === '/live/token' && req.method === 'POST') return await handleLiveToken(req, env);
-      return json({ error: 'Not found. Use /chat, /ocr, /ocr-space, /live/token, or /health' }, 404);
+      return json({ error: 'Not found. Use /chat, /document-scan, /ocr-space, /live/token, /health, or /ready' }, 404);
     } catch (err) {
       return json({ error: `Gateway error: ${err.message}` }, 500);
     }

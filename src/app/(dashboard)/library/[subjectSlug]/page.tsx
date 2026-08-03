@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { AdSenseBanner } from '@/components/features/ads/AdSenseBanner';
 import {
   buildCatalogSearch,
+  getLibraryResourceTypeLabel,
   isCatalogResourceVisible,
   normalizeLegacyCatalogResource,
   parseLibraryResourceType,
@@ -68,7 +69,7 @@ export default async function LibraryBookPage({
   const bookTitle =
     requestedBook ||
     visibleResources[0]?.book_title ||
-    `${subject?.name || 'General'} ${resourceType === 'notes' ? 'Notes' : 'Text Book'}`;
+    `${subject?.name || 'General'} ${getLibraryResourceTypeLabel(resourceType)}`;
 
   const chapterGroups = new Map<
     string,
@@ -110,7 +111,7 @@ export default async function LibraryBookPage({
           <div className="min-w-0">
             <div className="mb-3 flex flex-wrap gap-2">
               <Badge>{subject?.name || 'General'}</Badge>
-              <Badge variant="outline">{resourceType === 'notes' ? 'Notes collection' : 'Text book'}</Badge>
+              <Badge variant="outline">{getLibraryResourceTypeLabel(resourceType, true)}</Badge>
             </div>
             <h1 className="text-2xl font-bold tracking-tight sm:text-4xl">{bookTitle}</h1>
             <p className="text-muted-foreground mt-2">Select a chapter to view its files organized by content type.</p>
@@ -158,7 +159,7 @@ export default async function LibraryBookPage({
                         </span>
                         <span className="inline-flex items-center gap-1">
                           <BookOpen className="h-3.5 w-3.5" />
-                          {contextCount} AI text
+                          {contextCount} study-ready
                         </span>
                       </div>
                     </div>

@@ -12,6 +12,66 @@ type QuestionCandidate = {
   block: string;
 };
 
+type SourceMcq = FullTestPaper['mcqs'][number];
+
+const META_QUESTION_PATTERNS = [
+  /\baccording to (?:the )?(?:uploaded |provided |attached )?(?:file|source|document|material|text|notes|passage)\b/i,
+  /\bbased on (?:the )?(?:uploaded |provided |attached )?(?:file|source|document|material|text|notes|passage)\b/i,
+  /\b(?:uploaded|provided|attached) (?:file|source|document|material|text|notes)\b/i,
+  /\b(?:this|the) (?:file|source|document|material|passage) (?:states|mentions|describes|contains|says)\b/i,
+  /\bwhich (?:option|statement) is (?:correct|supported) (?:by|according to)\b/i,
+];
+
+const VAGUE_QUESTION_PATTERNS = [
+  /^what is this\??$/i,
+  /^what does this mean\??$/i,
+  /^what is (?:mentioned|shown|given|described) (?:above|below|here)\??$/i,
+  /^which (?:option|statement|answer) is correct\??$/i,
+  /^which of the following is correct\??$/i,
+  /^select the correct (?:option|answer|statement)\.?$/i,
+];
+
+const GENERIC_OPTION_PATTERNS = [
+  /^this statement is not supported/i,
+  /^none of the (?:above|options)/i,
+  /^all of the above/i,
+  /^source point \d+$/i,
+];
+
+export function isHighQualitySourceMcq(value: unknown): value is SourceMcq {
+  const mcq = value as Partial<SourceMcq> | null;
+  const question = String(mcq?.q || '').replace(/\s+/g, ' ').trim();
+  const options = Array.isArray(mcq?.opts) ? mcq.opts.map((option) => String(option).replace(/\s+/g, ' ').trim()) : [];
+  const correct = Number(mcq?.correct);
+  const normalizedOptions = new Set(options.map((option) => option.toLowerCase()));
+
+  return Boolean(
+    question.length >= 12 &&
+      question.length <= 320 &&
+      !META_QUESTION_PATTERNS.some((pattern) => pattern.test(question)) &&
+      !VAGUE_QUESTION_PATTERNS.some((pattern) => pattern.test(question)) &&
+      options.length === 4 &&
+      options.every((option) => option.length >= 1 && option.length <= 240) &&
+      options.every((option) => !META_QUESTION_PATTERNS.some((pattern) => pattern.test(option))) &&
+      options.every((option) => !GENERIC_OPTION_PATTERNS.some((pattern) => pattern.test(option))) &&
+      normalizedOptions.size === 4 &&
+      Number.isInteger(correct) &&
+      correct >= 0 &&
+      correct < options.length
+  );
+}
+
+export function filterHighQualitySourceMcqs(values: unknown): SourceMcq[] {
+  if (!Array.isArray(values)) return [];
+  const seen = new Set<string>();
+  return values.filter(isHighQualitySourceMcq).filter((mcq) => {
+    const key = mcq.q.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 const STOP_WORDS = new Set([
   'about',
   'after',
@@ -142,10 +202,10 @@ function extractExistingMcqs(context: string) {
         q: candidate.question,
         opts: options.map((option) => option.text),
         correct,
-        exp: `The uploaded source marks option ${answerLetter} as the correct answer.`,
+        exp: `Option ${answerLetter} is correct: ${options[correct]!.text}.`,
       };
     })
-    .filter((item): item is NonNullable<typeof item> => Boolean(item));
+    .filter((item): item is NonNullable<typeof item> => Boolean(item) && isHighQualitySourceMcq(item));
 }
 
 function extractStudyPoints(context: string) {
@@ -279,34 +339,38 @@ function definitionCards(points: string[]) {
 function buildSyntheticMcqs(context: string, count: number) {
   const points = extractStudyPoints(context);
   const definitions = definitionCards(points);
-  const source = definitions.length
-    ? definitions
-    : points.slice(0, Math.max(4, count)).map((point, index) => ({
-        term: `source point ${index + 1}`,
-        verb: 'states',
-        definition: point,
-      }));
-  const safeSource = source.length
-    ? source
-    : [{ term: 'the uploaded chapter', verb: 'contains', definition: context.trim().slice(0, 240) }];
+  if (definitions.length < 4 || count <= 0) return [];
 
-  return Array.from({ length: count }, (_, index) => {
-    const card = safeSource[index % safeSource.length]!;
-    const distractors = Array.from(
-      { length: 3 },
-      (__, offset) => safeSource[(index + offset + 1) % safeSource.length]!.definition
-    );
-    while (distractors.length < 3) distractors.push('This statement is not supported by the uploaded source.');
-    const correct = index % 4;
-    const opts = [...distractors.slice(0, 3)];
-    opts.splice(correct, 0, card.definition);
-    return {
-      q: `According to the uploaded source, which option correctly describes ${card.term}?`,
-      opts,
-      correct,
+  const questions: SourceMcq[] = [];
+  for (let index = 0; index < definitions.length && questions.length < count; index += 1) {
+    const card = definitions[index]!;
+    const otherCards = definitions.filter((_, cardIndex) => cardIndex !== index);
+    const definitionOptions = [card, ...otherCards.slice(0, 3)];
+    const definitionCorrect = index % 4;
+    const shuffledDefinitions = [...definitionOptions];
+    const [correctDefinition] = shuffledDefinitions.splice(0, 1);
+    shuffledDefinitions.splice(definitionCorrect, 0, correctDefinition!);
+    questions.push({
+      q: `Which statement best defines ${card.term}?`,
+      opts: shuffledDefinitions.map((item) => item.definition),
+      correct: definitionCorrect,
       exp: `${card.term} ${card.verb} ${card.definition}`,
-    };
-  });
+    });
+
+    if (questions.length >= count) break;
+    const conceptCorrect = (index + 1) % 4;
+    const conceptOptions = [card.term, ...otherCards.slice(0, 3).map((item) => item.term)];
+    const [correctConcept] = conceptOptions.splice(0, 1);
+    conceptOptions.splice(conceptCorrect, 0, correctConcept!);
+    questions.push({
+      q: `Which concept is described as ${card.definition.replace(/[.]$/, '')}?`,
+      opts: conceptOptions,
+      correct: conceptCorrect,
+      exp: `${card.term} ${card.verb} ${card.definition}`,
+    });
+  }
+
+  return filterHighQualitySourceMcqs(questions).slice(0, count);
 }
 
 function keyPointsForTopic(topic: string, points: string[]) {
@@ -322,7 +386,7 @@ export function buildResourceSourceTest(
 ): FullTestPaper {
   const existingMcqs = extractExistingMcqs(context);
   const syntheticMcqs = buildSyntheticMcqs(context, counts.mcq);
-  const mcqs = [...existingMcqs, ...syntheticMcqs].slice(0, counts.mcq);
+  const mcqs = filterHighQualitySourceMcqs([...existingMcqs, ...syntheticMcqs]).slice(0, counts.mcq);
   const questions = extractQuestionCandidates(context)
     .filter((candidate) => !extractExistingMcqs(candidate.block).length)
     .map((candidate) => candidate.question);

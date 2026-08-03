@@ -6,7 +6,7 @@ import { isCatalogResourceVisible, normalizeLegacyCatalogResource } from '@/lib/
 
 export const metadata: Metadata = {
   title: 'Public Study Library',
-  description: 'Browse board- and grade-aligned study resources by subject, chapter, book, and section.',
+  description: 'Browse textbooks, notes, pairing schemes, and guess papers by board, grade, subject, and chapter.',
   alternates: { canonical: '/library' },
 };
 
@@ -40,7 +40,9 @@ export default async function LibraryPage() {
     <div className="mx-auto max-w-6xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold sm:text-3xl">Library</h1>
-        <p className="text-muted-foreground mt-1">Choose a book, then open its chapter and exact file section.</p>
+        <p className="text-muted-foreground mt-1">
+          Choose textbooks, notes, pairing schemes, or guess papers, then open the relevant subject and file.
+        </p>
       </div>
       <AdSenseBanner slot="inline" className="mx-auto max-w-5xl" />
       <LibraryGrid resources={visibleResources as any} />

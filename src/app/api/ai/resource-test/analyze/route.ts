@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('Grok resource analysis failed:', error);
     return NextResponse.json(
-      { status: 'error', error: error instanceof Error ? error.message : 'Grok could not analyze the file.' },
+      { status: 'error', error: error instanceof Error ? error.message : 'The document could not be analyzed.' },
       { status: 500 }
     );
   }

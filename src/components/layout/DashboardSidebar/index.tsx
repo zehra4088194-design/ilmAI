@@ -1,12 +1,12 @@
 'use client';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import {
   LayoutDashboard, BookOpen, Brain, FileText, TrendingUp, Trophy, Settings,
   Zap, StickyNote, Bookmark, Star, CreditCard, ChevronRight, X, Menu,
   Library, CalendarClock, HelpCircle, Target, LogOut, Users, PenLine, Cake,
   GraduationCap, Presentation, Mic2, FlaskConical, Quote, BriefcaseBusiness, Network, Video,
-  Camera, MessageCircle, Sparkles, WandSparkles, Gamepad2, Music2, Pill, HardDriveDownload, School
+  Camera, MessageCircle, Sparkles, WandSparkles, Gamepad2, Music2, Pill, HardDriveDownload, School, FileQuestion
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useAuth } from '@/hooks/auth/useAuth';
@@ -20,7 +20,7 @@ const NAV_GROUPS = [
       { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
       { icon: BookOpen, label: 'Study', href: '/study' },
       { icon: Target, label: 'Diagnostic Test', href: '/diagnostic', badge: 'Start' },
-      { icon: Zap, label: 'AI Testing', href: '/practice' },
+      { icon: Zap, label: 'Adaptive Practice', href: '/practice' },
       { icon: Brain, label: 'AI Tutor', href: '/ai-tutor', badge: 'AI' },
       { icon: Camera, label: 'Scan & Solve', href: '/scan', badge: 'AI' },
       { icon: Target, label: 'AI Insights', href: '/insights', badge: 'AI' },
@@ -35,6 +35,8 @@ const NAV_GROUPS = [
     items: [
       { icon: Video, label: 'Lectures', href: '/lectures' },
       { icon: FileText, label: 'Past Papers', href: '/past-papers' },
+      { icon: Network, label: 'Pairing Schemes', href: '/library?type=pairing_scheme' },
+      { icon: FileQuestion, label: 'Guess Papers', href: '/library?type=guess_paper' },
       { icon: Library, label: 'Library', href: '/library' },
       { icon: HardDriveDownload, label: 'Downloads', href: '/downloads', badge: 'Pro' },
       { icon: Star, label: 'Flashcards', href: '/flashcards' },
@@ -45,7 +47,7 @@ const NAV_GROUPS = [
   {
     label: 'AI Tools',
     items: [
-      { icon: Target, label: 'Guess Paper', href: '/guess-paper', badge: 'AI' },
+      { icon: Target, label: 'AI Guess Paper', href: '/guess-paper', badge: 'AI' },
       { icon: FileText, label: 'Full Test', href: '/full-test', badge: 'AI' },
       { icon: PenLine, label: 'Essay Writer', href: '/essay-writer', badge: 'AI' },
       { icon: HelpCircle, label: 'Ask a Teacher', href: '/doubts' },
@@ -105,6 +107,7 @@ type DashboardSidebarProps = {
 
 export function DashboardSidebar({ mobileOpen: controlledMobileOpen, onMobileOpenChange, desktopOpen = true, onDesktopOpenChange }: DashboardSidebarProps = {}) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user, signOut } = useAuth();
   const [uncontrolledMobileOpen, setUncontrolledMobileOpen] = useState(false);
   const navRef = useRef<HTMLElement | null>(null);
@@ -115,8 +118,20 @@ export function DashboardSidebar({ mobileOpen: controlledMobileOpen, onMobileOpe
     else setUncontrolledMobileOpen(next);
   };
 
-  const isActive = (href: string) =>
-    pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
+  const isActive = (href: string) => {
+    const [hrefPath, hrefQuery] = href.split('?');
+    if (hrefQuery) {
+      const expected = new URLSearchParams(hrefQuery);
+      return (
+        (pathname === hrefPath || pathname.startsWith(`${hrefPath}/`)) &&
+        [...expected.entries()].every(([key, value]) => searchParams.get(key) === value)
+      );
+    }
+    if (href === '/library' && ['pairing_scheme', 'guess_paper'].includes(searchParams.get('type') || '')) {
+      return false;
+    }
+    return pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
+  };
 
   const rememberSidebarScroll = () => {
     if (typeof window === 'undefined' || !navRef.current) return;

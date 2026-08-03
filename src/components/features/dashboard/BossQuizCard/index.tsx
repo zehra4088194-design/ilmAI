@@ -13,7 +13,7 @@ export function BossQuizCard({ bossQuiz }: { bossQuiz: { id: string; xp_reward: 
         <>
           <p className="text-sm text-muted-foreground">Win for {bossQuiz.xp_reward} XP and {bossQuiz.coin_reward} coins.</p>
           <Button asChild variant="gradient" className="mt-4 w-full">
-            <Link href="/practice">Start from AI Testing</Link>
+            <Link href="/practice">Start Adaptive Practice</Link>
           </Button>
         </>
       ) : (

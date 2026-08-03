@@ -12,10 +12,11 @@ const OCRSPACE_FREE_PDF_BYTES = 5 * 1024 * 1024;
 let pdfProviderCursor = 0;
 
 export type OcrProvider =
-  'self-hosted-tesseract' | 'self-hosted-ocrmypdf' | 'native-pdf' | 'gemini-vision' | 'ocr-space' | 'easyocr';
+  'self-hosted-tesseract' | 'self-hosted-ocrmypdf' | 'native-pdf' | 'gemini-flash-lite' | 'ocr-space' | 'easyocr';
 
 export interface OcrResult {
   text: string;
+  summary?: string;
   provider: OcrProvider;
   fallbackTriggered?: boolean;
   confidence?: number;
@@ -27,7 +28,10 @@ export interface OcrRequest {
   mimeType: string;
   userTier: SubscriptionTier;
   mode?: 'printed' | 'handwritten';
-  preferGemini?: boolean;
+  geminiOnly?: boolean;
+  includeSummary?: boolean;
+  documentType?: string;
+  language?: string;
   timeoutMs?: number;
 }
 
@@ -126,18 +130,26 @@ export async function performSelfHostedOcr({
   };
 }
 
-async function performGeminiOcr(imageBuffer: Buffer, mimeType: string, timeoutMs: number): Promise<OcrResult> {
+async function performGeminiOcr(
+  imageBuffer: Buffer,
+  mimeType: string,
+  timeoutMs: number,
+  options: { includeSummary?: boolean; documentType?: string; language?: string } = {}
+): Promise<OcrResult> {
   const budget = await checkProviderDailyLimit('gemini');
   if (!budget.success) throw new Error('The platform daily free Gemini budget has been reached.');
 
   const optimized = await optimizeImageForGemini(imageBuffer, mimeType);
-  const res = await fetch(`${GATEWAY_URL}/ocr`, {
+  const res = await fetch(`${GATEWAY_URL}/document-scan`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GATEWAY_SECRET}` },
     body: JSON.stringify({
       mode: 'handwritten',
       imageBase64: optimized.imageBuffer.toString('base64'),
       mimeType: optimized.mimeType,
+      includeSummary: options.includeSummary === true,
+      documentType: options.documentType,
+      language: options.language,
       strict_provider: true,
     }),
     signal: AbortSignal.timeout(timeoutMs),
@@ -147,7 +159,9 @@ async function performGeminiOcr(imageBuffer: Buffer, mimeType: string, timeoutMs
 
   const text = String(data.text || '').trim();
   if (!text) throw new Error('Gemini OCR returned empty text');
-  return { text, provider: 'gemini-vision', pages: 1 };
+  const summary = String(data.summary || '').trim();
+  if (options.includeSummary && !summary) throw new Error('Gemini OCR returned an empty summary');
+  return { text, summary: summary || undefined, provider: 'gemini-flash-lite', pages: 1 };
 }
 
 async function performOcrSpace(imageBuffer: Buffer, mimeType: string, timeoutMs: number): Promise<OcrResult> {
@@ -222,24 +236,22 @@ export async function performOcr({
   imageBuffer,
   mimeType,
   mode: requestedMode,
-  preferGemini = false,
+  geminiOnly = false,
+  includeSummary = false,
+  documentType,
+  language,
   timeoutMs = 60_000,
 }: OcrRequest): Promise<OcrResult> {
   const mode = requestedMode || 'printed';
-  const attempts =
-    mode === 'handwritten' || preferGemini
-      ? [
-          () => performGeminiOcr(imageBuffer, mimeType, timeoutMs),
-          () => performEasyOcr(imageBuffer, mimeType, timeoutMs),
-          () => performOcrSpace(imageBuffer, mimeType, timeoutMs),
-          () => performSelfHostedOcr({ fileBuffer: imageBuffer, mimeType, mode, timeoutMs }),
-        ]
-      : [
-          () => performSelfHostedOcr({ fileBuffer: imageBuffer, mimeType, mode, timeoutMs }),
-          () => performEasyOcr(imageBuffer, mimeType, timeoutMs),
-          () => performOcrSpace(imageBuffer, mimeType, timeoutMs),
-          () => performGeminiOcr(imageBuffer, mimeType, timeoutMs),
-        ];
+  const geminiAttempt = () =>
+    performGeminiOcr(imageBuffer, mimeType, timeoutMs, { includeSummary, documentType, language });
+  const attempts = geminiOnly
+    ? [geminiAttempt]
+    : [
+        () => performSelfHostedOcr({ fileBuffer: imageBuffer, mimeType, mode, timeoutMs }),
+        () => performEasyOcr(imageBuffer, mimeType, timeoutMs),
+        () => performOcrSpace(imageBuffer, mimeType, timeoutMs),
+      ];
   let lastError: unknown;
 
   for (let index = 0; index < attempts.length; index++) {

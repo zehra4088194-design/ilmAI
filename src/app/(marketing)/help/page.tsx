@@ -42,9 +42,9 @@ export default async function HelpPage() {
         {
           title: 'AI tools',
           bullets: [
-            'AI Tutor, Guess Paper, Full Test, OCR, and Essay Writer all run through the AI Gateway.',
+            'AI Tutor, Guess Paper, Full Test, document scanning, and Essay Writer use secure processing services.',
             'If a response is slow, wait a few seconds and try again.',
-            'For weak OCR results, use a clear image, good lighting, and a straight camera angle.',
+            'For unclear scan results, use a sharp image, good lighting, and a straight camera angle.',
             'For voice tutor issues, check microphone permission and use a stable internet connection.',
           ],
         },

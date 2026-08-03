@@ -203,7 +203,7 @@ export function ScanUpload({ onTextExtracted, trigger }: ScanUploadProps) {
                     <div className="py-12 text-center">
                       <Loader2 className="mx-auto mb-3 h-8 w-8 animate-spin text-violet-400" />
                       <p className="text-sm font-medium">Extracting text...</p>
-                      <p className="text-muted-foreground mt-1 text-xs">Processing {scanKind} scan</p>
+                      <p className="text-muted-foreground mt-1 text-xs">Preparing your document securely</p>
                     </div>
                   )}
 

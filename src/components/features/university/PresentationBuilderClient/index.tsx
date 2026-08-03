@@ -248,7 +248,7 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
               options={['bulk', 'per-slide']}
             />
             <div className="bg-muted/25 text-muted-foreground rounded-xl border p-3 text-xs leading-5">
-              Per-slide mode polishes each slide with a separate Gemini request. Bulk mode creates a compact draft quickly.
+              Per-slide mode gives each slide individual attention. Bulk mode creates a compact draft more quickly.
             </div>
             <Button variant="gradient" className="w-full" disabled={!formReady || loading} onClick={generate}>
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { analyzeResourceSource, buildResourceSourceSummary, buildResourceSourceTest } from './source-fallback';
+import {
+  analyzeResourceSource,
+  buildResourceSourceSummary,
+  buildResourceSourceTest,
+  isHighQualitySourceMcq,
+} from './source-fallback';
 
 const SOURCE = `
 Class 9 Physics - Unit 2 Exercise
@@ -56,9 +61,29 @@ describe('resource source fallback', () => {
     expect(paper.shortQs).toHaveLength(3);
     expect(paper.longQs).toHaveLength(2);
     for (const mcq of paper.mcqs) {
+      expect(mcq.q).not.toMatch(/according to|uploaded|file|source|document/i);
       expect(mcq.opts).toHaveLength(4);
       expect(mcq.correct).toBeGreaterThanOrEqual(0);
       expect(mcq.correct).toBeLessThan(4);
     }
+  });
+
+  it('rejects meta questions that test awareness of a file instead of subject knowledge', () => {
+    expect(
+      isHighQualitySourceMcq({
+        q: 'According to the uploaded file, which option is correct?',
+        opts: ['Force', 'Motion', 'Energy', 'Power'],
+        correct: 0,
+        exp: 'Force is correct.',
+      })
+    ).toBe(false);
+    expect(
+      isHighQualitySourceMcq({
+        q: 'What is this?',
+        opts: ['Force', 'Motion', 'Energy', 'Power'],
+        correct: 0,
+        exp: 'Force is correct.',
+      })
+    ).toBe(false);
   });
 });

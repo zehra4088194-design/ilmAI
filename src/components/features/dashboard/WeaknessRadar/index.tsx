@@ -21,7 +21,7 @@ export function WeaknessRadar({ scores }: { scores: SubjectScore[] }) {
         {scores.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border/70 bg-muted/30 p-5 text-center">
             <p className="font-medium">No performance data yet</p>
-            <p className="mt-1 text-sm text-muted-foreground">Complete one AI Testing session and insights will appear here.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Complete one adaptive practice session to unlock your learning insights.</p>
             <Link href="/practice" className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-violet-400">Start practice <ArrowRight className="h-3.5 w-3.5" /></Link>
           </div>
         ) : (

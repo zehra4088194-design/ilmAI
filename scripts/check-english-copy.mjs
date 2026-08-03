@@ -10,6 +10,21 @@ const ALLOWED_PATHS = [
 ];
 const ROMAN_URDU_COPY =
   /\b(?:nahi|nahin|zaroori|yahan|yahaan|aap|abhi|sirf|baaki|parhai|padhai|sawal|sawaal|jawab|galat|ghalat|dobara|tum|tumhara|yeh|aur|hai|hain|karne|karo|karein|gaye|wali|wala|samjhao|batao|banwao|asaan|theek|lafzon|alfaz|tashreeh|mazmoon|khulasa|ibarat|waqia|tafseel|tareeqa|chahiye|mujhe|thori)\b/i;
+const UNPROFESSIONAL_PRODUCT_COPY = [
+  /\bAI Testing\b/i,
+  /\bAI text attached\b/i,
+  /\bAI text ready\b/i,
+  /\b(?:Grok|Gemini|Groq|Claude|ChatGPT) file analysis\b/i,
+  /\bGenerate a test with (?:Grok|Gemini|Groq|Claude|ChatGPT)\b/i,
+  /\bAI gateway was unavailable\b/i,
+  /\banalyzed locally\b/i,
+  /\bsource files? connected\b/i,
+  /\bProcessing (?:diagram|handwritten|printed) scan\b/i,
+  /\bseparate (?:Grok|Gemini|Groq|Claude|ChatGPT) request\b/i,
+  /\buploaded chapter source files?\b/i,
+  /\b3D conformer\s*\/\s*2D fallback\b/i,
+  /\bOCR Text\b/i,
+];
 
 const findings = [];
 
@@ -27,13 +42,20 @@ function scanDirectory(directory) {
       scanDirectory(filePath);
       continue;
     }
-    if (!/\.[jt]sx?$/.test(entry.name) || isAllowed(filePath)) continue;
+    if (!/\.[jt]sx?$/.test(entry.name)) continue;
+
+    const romanUrduAllowed = isAllowed(filePath);
 
     fs.readFileSync(filePath, 'utf8')
       .split(/\r?\n/)
       .forEach((line, index) => {
-        if (ROMAN_URDU_COPY.test(line)) {
+        if (!romanUrduAllowed && ROMAN_URDU_COPY.test(line)) {
           findings.push(`${path.relative(process.cwd(), filePath)}:${index + 1}: ${line.trim()}`);
+        }
+        if (UNPROFESSIONAL_PRODUCT_COPY.some((pattern) => pattern.test(line))) {
+          findings.push(
+            `${path.relative(process.cwd(), filePath)}:${index + 1}: unprofessional product copy: ${line.trim()}`
+          );
         }
       });
   }

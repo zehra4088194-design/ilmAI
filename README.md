@@ -51,7 +51,7 @@ All of these products have usage-limited free tiers. R2 and some production Algo
 5. Keep `ai-gateway`, `ocr`, `valkey`, and `cron` private.
 6. Update Supabase Auth Site URL and redirect URLs to the production HTTPS domain.
 
-See [docs/ORACLE_COOLIFY_DEPLOYMENT.md](docs/ORACLE_COOLIFY_DEPLOYMENT.md) for exact setup, migration, and smoke-test steps.
+See [docs/ORACLE_COOLIFY_DEPLOYMENT.md](docs/ORACLE_COOLIFY_DEPLOYMENT.md) for deployment steps and [services/ai-gateway/README.md](services/ai-gateway/README.md) for provider variables.
 
 ## Data and file safety
 
@@ -64,8 +64,8 @@ src/app/             Next.js pages and API routes
 src/components/      Feature and UI components
 src/lib/             AI, OCR, Supabase, payments, limits, and utilities
 services/ocr/        Private printed OCR service
+services/ai-gateway/ Private Coolify AI provider gateway
 services/cron/       Optional local/container maintenance scheduler
-cloudflare-worker/   Shared AI gateway handler and optional Wrangler configuration
 supabase/migrations/ Database migrations and policies
 scripts/             Validation, seeding, and maintenance scripts
 ```

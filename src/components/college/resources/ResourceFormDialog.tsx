@@ -156,7 +156,7 @@ export function ResourceFormDialog({ open, onOpenChange, collegeId, resource, on
               <p className="text-muted-foreground text-xs">Optional. This file is preferred in dark mode.</p>
             </div>
             <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="resource-context-file">Companion AI context (.txt) link</Label>
+              <Label htmlFor="resource-context-file">Companion context file (.txt) link</Label>
               <Input
                 id="resource-context-file"
                 name="contextTextUrl"
@@ -166,8 +166,8 @@ export function ResourceFormDialog({ open, onOpenChange, collegeId, resource, on
                 placeholder="https://drive.google.com/..."
               />
               <p className="text-muted-foreground text-xs">
-                Upload a complete, readable .txt companion for the PDF to Google Drive and provide its share link. AI
-                summaries and file-based tests will use this private backend source.
+                Upload a complete, readable .txt companion for the PDF to Google Drive and provide its share link.
+                Summaries and file-based tests will use this secure source material.
               </p>
             </div>
           </div>

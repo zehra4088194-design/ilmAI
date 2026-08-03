@@ -119,7 +119,7 @@ export function GoogleDriveResourceCard({
           {resource.chapterName && <Badge variant="secondary">{resource.chapterName}</Badge>}
           {resource.hasContextText && (
             <Badge variant="success">
-              <CheckCircle2 className="mr-1 h-3 w-3" /> AI text attached
+              <CheckCircle2 className="mr-1 h-3 w-3" /> Study tools available
             </Badge>
           )}
           {resource.fileType && (

@@ -29,7 +29,7 @@ export function StudyCommandCenter({
     : mission?.revisionDue
       ? `${mission.revisionDue} revision item${mission.revisionDue === 1 ? '' : 's'} due from previous mistakes.`
       : weakSubject
-        ? 'Practice weak concepts with AI Testing.'
+        ? 'Strengthen weak concepts with adaptive practice.'
         : 'Start your first subject practice.';
   const missionSteps = [
     { label: 'Diagnostic', href: '/diagnostic', icon: ClipboardCheck, active: !mission?.diagnosticDone },
@@ -79,7 +79,7 @@ export function StudyCommandCenter({
         </div>
         <div className="mt-5 flex flex-wrap gap-2">
           <Button asChild size="sm" variant="gradient"><Link href="/ai-tutor"><Brain className="h-4 w-4" /> AI Tutor</Link></Button>
-          <Button asChild size="sm" variant="outline"><Link href="/practice"><Zap className="h-4 w-4" /> AI Testing</Link></Button>
+          <Button asChild size="sm" variant="outline"><Link href="/practice"><Zap className="h-4 w-4" /> Adaptive Practice</Link></Button>
           <Button asChild size="sm" variant="outline"><Link href="/flashcards">Flashcards</Link></Button>
           <Button asChild size="sm" variant="outline"><Link href="/guess-paper">Guess Paper</Link></Button>
           <Button asChild size="sm" variant="outline"><Link href="/rest"><Music2 className="h-4 w-4" /> Rest</Link></Button>

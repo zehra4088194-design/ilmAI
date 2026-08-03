@@ -1,4 +1,4 @@
-export type LibraryResourceType = 'text_book' | 'notes';
+export type LibraryResourceType = 'text_book' | 'notes' | 'pairing_scheme' | 'guess_paper';
 export type LibraryContentSection = 'reading' | 'mcq' | 'short' | 'long';
 
 export const LIBRARY_SECTIONS: Array<{
@@ -34,7 +34,14 @@ export const LIBRARY_SECTIONS: Array<{
 ];
 
 export function parseLibraryResourceType(value?: string): LibraryResourceType {
-  return value === 'notes' ? 'notes' : 'text_book';
+  return value === 'notes' || value === 'pairing_scheme' || value === 'guess_paper' ? value : 'text_book';
+}
+
+export function getLibraryResourceTypeLabel(type: LibraryResourceType, collection = false) {
+  if (type === 'notes') return collection ? 'Notes collection' : 'Notes';
+  if (type === 'pairing_scheme') return collection ? 'Pairing scheme collection' : 'Pairing Scheme';
+  if (type === 'guess_paper') return collection ? 'Guess paper collection' : 'Guess Papers';
+  return collection ? 'Text book' : 'Text Book';
 }
 
 export function getLibrarySection(slug: string) {
@@ -67,9 +74,11 @@ export function inferLibraryContentSection(title: string): LibraryContentSection
 }
 
 export function normalizeLegacyCatalogResource(resource: any) {
+  const resourceType = parseLibraryResourceType(resource.resource_type);
   return {
     ...resource,
-    book_title: `${resource.subjects?.name || 'General'} ${resource.resource_type === 'notes' ? 'Notes' : 'Text Book'}`,
+    resource_type: resourceType,
+    book_title: `${resource.subjects?.name || 'General'} ${getLibraryResourceTypeLabel(resourceType)}`,
     content_section: inferLibraryContentSection(resource.title || ''),
     has_context_text: Boolean(resource.context_text_url),
     context_text_url: undefined,

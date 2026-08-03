@@ -27,10 +27,12 @@ App navigation (use only these exact internal links when the student asks where 
 - Lectures: /lectures
 - Library books and notes: /library
 - Past papers: /past-papers
+- Pairing schemes: /library?type=pairing_scheme
+- Uploaded guess papers: /library?type=guess_paper
 - AI Tutor: /ai-tutor
-- AI Testing: /practice
+- Adaptive Practice: /practice
 - Full Test: /full-test
-- Guess Paper: /guess-paper
+- AI Guess Paper generator: /guess-paper
 - Scan and Solve: /scan
 - Study Buddies: /student-chat
 - Parent Link: /settings?tab=parent-link
@@ -95,8 +97,9 @@ export async function POST(req: NextRequest) {
 
     // Free and Pro always use the budget provider. Elite may explicitly spend
     // one of its capped premium calls on another provider.
-    const provider: AiProviderId = userTier === 'ELITE' ? requestedProvider || 'groq' : 'groq';
-    const tier: ModelTier = userTier === 'ELITE' ? requestedTier || 'mini' : 'mini';
+    let provider: AiProviderId = userTier === 'ELITE' ? requestedProvider || 'groq' : 'groq';
+    let tier: ModelTier = userTier === 'ELITE' ? requestedTier || 'mini' : 'mini';
+    let entitlementFallback = false;
     if (tier === 'pro' && userTier !== 'ELITE') {
       return new Response(
         JSON.stringify({
@@ -122,10 +125,9 @@ export async function POST(req: NextRequest) {
     if (provider !== 'groq') {
       const tierCheck = await checkModelTierLimit(user.id, provider, tier, userTier);
       if (!tierCheck.success) {
-        return new Response(
-          JSON.stringify({ error: 'Premium AI is available only on Elite and is limited to 10 calls per month.' }),
-          { status: userTier === 'ELITE' ? 429 : 403 }
-        );
+        provider = 'groq';
+        tier = 'mini';
+        entitlementFallback = true;
       }
     }
 
@@ -146,7 +148,6 @@ export async function POST(req: NextRequest) {
       messages,
       maxTokens: source === 'side_chat' ? 1100 : 2048,
       temperature: 0.7,
-      strictProvider: true,
     });
 
     // Simulate a stream so the existing chat UI (which reads response.body as a stream)
@@ -170,7 +171,7 @@ export async function POST(req: NextRequest) {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
         'X-Provider-Used': result.providerUsed,
-        'X-Fallback-Triggered': String(result.fallbackTriggered || false),
+        'X-Fallback-Triggered': String(result.fallbackTriggered || entitlementFallback),
       },
     });
   } catch (error) {

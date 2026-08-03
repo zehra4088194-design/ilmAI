@@ -47,7 +47,8 @@ export async function POST(req: NextRequest) {
     const validation = validateOcrFile(file.type, file.size);
     if (!validation.valid) return NextResponse.json({ status: 'error', error: validation.error }, { status: 400 });
 
-    const mode = scanType === 'handwritten' || scanType === 'math' ? 'handwritten' : 'printed';
+    const isGeminiDocumentScan = scanType === 'handwritten' || scanType === 'diagram';
+    const mode = isGeminiDocumentScan || scanType === 'math' ? 'handwritten' : 'printed';
     const scanLimit = await checkOcrCredits(user.id, tier, mode);
     if (!scanLimit.success) {
       return NextResponse.json(
@@ -87,25 +88,30 @@ export async function POST(req: NextRequest) {
       mimeType: file.type,
       userTier: tier,
       mode,
-      preferGemini: scanType !== 'textbook_page' || language !== 'ur',
+      geminiOnly: isGeminiDocumentScan,
+      includeSummary: isGeminiDocumentScan,
+      documentType: scanType,
+      language,
     });
 
-    const result = await gatewayChat({
-      provider: 'gemini',
-      tier: tier === 'ELITE' ? 'pro' : 'medium',
-      messages: [
-        {
-          role: 'system',
-          content: `You are ilm AI Vision Tutor. Explain scanned homework/textbook content step by step. Reply in ${language}. ${MARKDOWN_ANSWER_FORMAT_INSTRUCTION}`,
-        },
-        {
-          role: 'user',
-          content: `Scan type: ${scanType}\nOCR text:\n${ocr.text || '[No clear OCR text extracted]'}\n\nGive a student-friendly explanation, identify formulas/diagrams if relevant, and warn if OCR is unclear.`,
-        },
-      ],
-      maxTokens: 2200,
-      temperature: 0.35,
-    });
+    const result = isGeminiDocumentScan
+      ? { text: ocr.summary || 'No summary could be generated.' }
+      : await gatewayChat({
+          provider: 'gemini',
+          tier: tier === 'ELITE' ? 'pro' : 'medium',
+          messages: [
+            {
+              role: 'system',
+              content: `You are ilm AI Vision Tutor. Explain scanned homework/textbook content step by step. Reply in ${language}. ${MARKDOWN_ANSWER_FORMAT_INSTRUCTION}`,
+            },
+            {
+              role: 'user',
+              content: `Document type: ${scanType}\nExtracted text:\n${ocr.text || '[No clear text extracted]'}\n\nGive a student-friendly explanation, identify formulas or diagrams when relevant, and clearly note any uncertain text.`,
+            },
+          ],
+          maxTokens: 2200,
+          temperature: 0.35,
+        });
 
     await db.from('vision_scans').update({ ocr_text: ocr.text, ai_explanation: result.text }).eq('id', scanId);
     const charged = await consumeOcrCredits(user.id, tier, mode);
@@ -118,6 +124,7 @@ export async function POST(req: NextRequest) {
         language,
         image_path: storagePath,
         ocr_text: ocr.text,
+        summary: ocr.summary,
         ai_explanation: result.text,
         ocr_provider: ocr.provider,
         remaining_credits: charged.remaining,

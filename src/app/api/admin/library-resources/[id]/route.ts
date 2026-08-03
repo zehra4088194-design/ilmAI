@@ -6,7 +6,7 @@ import { queueResourceContextProcessing } from '@/lib/resources/processing';
 import type { Database } from '@/lib/supabase/database.types';
 
 type LibraryUpdate = Database['public']['Tables']['library_resources']['Update'] & {
-  resource_type?: 'text_book' | 'notes' | 'other';
+  resource_type?: 'text_book' | 'notes' | 'pairing_scheme' | 'guess_paper' | 'other';
   chapter_id?: string | null;
   light_file_url?: string | null;
   dark_file_url?: string | null;

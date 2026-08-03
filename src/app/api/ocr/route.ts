@@ -52,7 +52,10 @@ export async function POST(req: NextRequest) {
       mimeType: file.type,
       userTier: tier,
       mode,
-      preferGemini: kind !== 'printed' || language !== 'ur',
+      geminiOnly: kind === 'handwritten' || kind === 'diagram',
+      includeSummary: kind === 'handwritten' || kind === 'diagram',
+      documentType: kind,
+      language,
     });
     const charged = await consumeOcrCredits(user.id, tier, mode);
 
@@ -60,6 +63,7 @@ export async function POST(req: NextRequest) {
       status: 'success',
       data: {
         text: result.text,
+        summary: result.summary,
         provider: result.provider,
         fallbackTriggered: result.fallbackTriggered,
         remaining: charged.remaining,

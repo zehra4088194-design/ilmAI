@@ -12,6 +12,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest",
+    "test:gateway": "node --test services/ai-gateway/handler.test.mjs",
     "test:ui": "vitest --ui",
     "test:e2e": "playwright test",
     "test:coverage": "vitest --coverage",

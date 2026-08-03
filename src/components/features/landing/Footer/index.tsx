@@ -3,18 +3,15 @@ import Link from 'next/link';
 import { useMemo } from 'react';
 import { BookOpen, Heart } from 'lucide-react';
 import { openCookieSettings } from '@/lib/utils/cookieConsent';
+import { PRIMARY_SITE_LINKS } from '@/lib/seo/study-tools';
 
 const LINKS = {
-  Product: [
-    { label: 'Features', href: '/#features' },
-    { label: 'Pricing', href: '/pricing' },
-    { label: 'Study Guides', href: '/blog' },
-    { label: 'Public Library', href: '/library' },
-  ],
+  'Study Tools': PRIMARY_SITE_LINKS.map((link) => ({ label: link.name, href: link.url })),
   Support: [
     { label: 'Help Center', href: '/help' },
+    { label: 'Pricing', href: '/pricing' },
     { label: 'Contact', href: '/contact' },
-    { label: 'Status', href: '/status' },
+    { label: 'Study Guides', href: '/blog' },
   ],
   Legal: [
     { label: 'Privacy Policy', href: '/privacy' },

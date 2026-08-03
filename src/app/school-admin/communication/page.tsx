@@ -60,7 +60,7 @@ export default async function SchoolCommunicationPage() {
           <CardContent className="space-y-2">
             {Object.entries(deliveryCounts).map(([key, count]) => <div key={key} className="border-border flex items-center justify-between border-b py-2 text-sm last:border-0"><span>{key.replace(':', ' - ')}</span><Badge variant="outline">{count}</Badge></div>)}
             {!Object.keys(deliveryCounts).length && <p className="text-muted-foreground text-sm">No deliveries queued.</p>}
-            <p className="text-muted-foreground pt-3 text-xs">In-app alerts require no paid provider. Email, SMS, WhatsApp, and push use configured provider credentials; unavailable channels are marked skipped.</p>
+            <p className="text-muted-foreground pt-3 text-xs">In-app alerts are always available. Additional delivery channels require completed integration setup; unavailable channels are skipped safely.</p>
           </CardContent>
         </Card>
       </div>

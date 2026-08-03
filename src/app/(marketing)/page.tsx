@@ -12,10 +12,13 @@ import { TestimonialsSection } from '@/components/features/landing/TestimonialsS
 import { FaqSection } from '@/components/features/landing/FaqSection';
 import { LandingFooter } from '@/components/features/landing/Footer';
 import { getCurrencyForCountry } from '@/lib/constants';
+import { PRIMARY_SITE_LINKS } from '@/lib/seo/study-tools';
+import { getSiteUrl } from '@/lib/utils/siteUrl';
 
 export const metadata: Metadata = {
   title: 'ilm AI - AI-Powered Learning for Pakistan and India',
-  description: 'AI-powered MCQ practice, tutoring, and past papers for Pakistani and Indian students. Start for free!',
+  description:
+    'Study notes, video lectures, a public library, AI Tutor, MCQ practice, and an AI Presentation Builder for Pakistani and Indian students.',
   alternates: { canonical: '/' },
 };
 
@@ -31,8 +34,32 @@ export default async function HomePage() {
     redirect('/dashboard');
   }
   const requestHeaders = await headers();
+  const nonce = requestHeaders.get('x-nonce') || undefined;
   const country = requestHeaders.get('cf-ipcountry') || requestHeaders.get('x-country-code') || 'PK';
   const currency = getCurrencyForCountry(country);
+  const siteUrl = getSiteUrl();
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'WebSite',
+        '@id': `${siteUrl}/#website`,
+        name: 'ilm AI',
+        url: siteUrl,
+        description: metadata.description,
+      },
+      {
+        '@type': 'ItemList',
+        name: 'ilm AI Study Tools',
+        itemListElement: PRIMARY_SITE_LINKS.map((link, index) => ({
+          '@type': 'SiteNavigationElement',
+          position: index + 1,
+          name: link.name,
+          url: `${siteUrl}${link.url}`,
+        })),
+      },
+    ],
+  };
 
   return (
     <div className="bg-background min-h-screen">
@@ -47,6 +74,11 @@ export default async function HomePage() {
         <FaqSection />
       </main>
       <LandingFooter />
+      <script
+        nonce={nonce}
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, '\\u003c') }}
+      />
     </div>
   );
 }

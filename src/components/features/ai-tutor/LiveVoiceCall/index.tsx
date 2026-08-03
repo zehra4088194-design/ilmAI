@@ -11,7 +11,7 @@ import type { SubscriptionTier } from '@/types';
 // Flow:
 // 1. POST /api/ai/live/session -> { token, wsUrl, model } (server mints a
 //    short-lived, single-use Gemini ephemeral token; persona AND audio
-//    transcription are locked in server-side — see cloudflare-worker/worker.js)
+//    transcription are locked in server-side — see services/ai-gateway/handler.mjs)
 // 2. Browser opens its OWN WebSocket straight to Gemini Live using that
 //    token — audio never touches our servers.
 // 3. Mic audio is captured, downsampled to 16-bit PCM @ 16kHz, base64'd,
@@ -183,7 +183,7 @@ export function LiveVoiceCall({ subject, hasAccess, userTier = 'FREE', onSession
       }
 
       // Locked in server-side via the ephemeral token (inputAudioTranscription /
-      // outputAudioTranscription) — see cloudflare-worker/worker.js.
+      // outputAudioTranscription) — see services/ai-gateway/handler.mjs.
       const inputText = msg.serverContent?.inputTranscription?.text;
       if (inputText) appendTranscript('student', inputText);
 
@@ -229,25 +229,30 @@ export function LiveVoiceCall({ subject, hasAccess, userTier = 'FREE', onSession
 
       // Ask for mic permission BEFORE opening the socket so we fail fast
       // with a clear error if the student denies it.
-      const micStream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } });
+      const micStream = await navigator.mediaDevices.getUserMedia({
+        audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
+      });
       micStreamRef.current = micStream;
 
       const ws = new WebSocket(`${wsUrl}?access_token=${token}`);
       wsRef.current = ws;
 
       ws.onopen = () => {
-        ws.send(JSON.stringify({
-          setup: {
-            model: `models/${model}`,
-            generationConfig: { responseModalities: ['AUDIO'] },
-            // Persona, subject, AND audio transcription are already locked into
-            // the token server-side — we deliberately do NOT resend any of that
-            // from the browser.
-          },
-        }));
+        ws.send(
+          JSON.stringify({
+            setup: {
+              model: `models/${model}`,
+              generationConfig: { responseModalities: ['AUDIO'] },
+              // Persona, subject, AND audio transcription are already locked into
+              // the token server-side — we deliberately do NOT resend any of that
+              // from the browser.
+            },
+          })
+        );
 
         // Set up mic capture
-        const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        const AudioContextClass =
+          window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
         const micContext = new AudioContextClass();
         micContextRef.current = micContext;
         const source = micContext.createMediaStreamSource(micStream);
@@ -259,9 +264,13 @@ export function LiveVoiceCall({ subject, hasAccess, userTier = 'FREE', onSession
           const input = e.inputBuffer.getChannelData(0);
           const downsampled = downsampleBuffer(input, micContext.sampleRate, INPUT_SAMPLE_RATE);
           const pcm16 = floatTo16BitPCM(downsampled);
-          ws.send(JSON.stringify({
-            realtimeInput: { audio: { data: base64FromInt16(pcm16), mimeType: `audio/pcm;rate=${INPUT_SAMPLE_RATE}` } },
-          }));
+          ws.send(
+            JSON.stringify({
+              realtimeInput: {
+                audio: { data: base64FromInt16(pcm16), mimeType: `audio/pcm;rate=${INPUT_SAMPLE_RATE}` },
+              },
+            })
+          );
         };
 
         source.connect(processor);
@@ -316,16 +325,28 @@ export function LiveVoiceCall({ subject, hasAccess, userTier = 'FREE', onSession
 
   if (comingSoonTitle) {
     return (
-      <Button variant="outline" size="sm" disabled className="border-amber-400/40 bg-amber-400/10 text-amber-500" title={comingSoonTitle}>
-        <Mic className="w-3.5 h-3.5" /> Voice Call Coming Soon
+      <Button
+        variant="outline"
+        size="sm"
+        disabled
+        className="border-amber-400/40 bg-amber-400/10 text-amber-500"
+        title={comingSoonTitle}
+      >
+        <Mic className="h-3.5 w-3.5" /> Voice Call Coming Soon
       </Button>
     );
   }
 
   if (!hasAccess) {
     return (
-      <Button variant="outline" size="sm" disabled className="opacity-60" title="Live Voice Call is locked on your current plan">
-        <Lock className="w-3.5 h-3.5" /> Voice Call
+      <Button
+        variant="outline"
+        size="sm"
+        disabled
+        className="opacity-60"
+        title="Live Voice Call is locked on your current plan"
+      >
+        <Lock className="h-3.5 w-3.5" /> Voice Call
       </Button>
     );
   }
@@ -333,7 +354,7 @@ export function LiveVoiceCall({ subject, hasAccess, userTier = 'FREE', onSession
   if (callState === 'idle') {
     return (
       <Button variant="outline" size="sm" onClick={startCall}>
-        <Phone className="w-3.5 h-3.5" /> Voice Call
+        <Phone className="h-3.5 w-3.5" /> Voice Call
       </Button>
     );
   }
@@ -348,23 +369,23 @@ export function LiveVoiceCall({ subject, hasAccess, userTier = 'FREE', onSession
 
   return (
     <div className="flex items-center gap-2">
-      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-violet-500/10 text-xs font-medium text-violet-400">
+      <div className="flex items-center gap-1.5 rounded-lg bg-violet-500/10 px-2.5 py-1 text-xs font-medium text-violet-400">
         {aiSpeaking ? (
           <>
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-violet-500" />
             </span>
             AI is speaking...
           </>
         ) : (
           <>
-            <Mic className="w-3 h-3" /> Listening...
+            <Mic className="h-3 w-3" /> Listening...
           </>
         )}
       </div>
       <Button variant="destructive" size="sm" onClick={endCall}>
-        <PhoneOff className="w-3.5 h-3.5" /> End Call
+        <PhoneOff className="h-3.5 w-3.5" /> End Call
       </Button>
     </div>
   );

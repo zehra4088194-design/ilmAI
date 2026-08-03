@@ -424,7 +424,7 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
                 <div>
                   <h3 className="font-semibold">{selectedSubject.name} Chapter Test</h3>
                   <p className="text-muted-foreground text-xs">
-                    Every attempt is shuffled from all uploaded files for the chapter.
+                    Each attempt presents a fresh selection from this chapter's approved question bank.
                   </p>
                 </div>
                 <button onClick={() => setOpenSubjectId(null)} className="text-muted-foreground hover:text-foreground">
@@ -461,9 +461,7 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
                   </div>
                   {chapterId && (
                     <div className="mt-4 rounded-xl border border-emerald-500/25 bg-emerald-500/5 p-3 text-sm">
-                      <p className="font-medium text-emerald-300">
-                        {chapterResources.length} source file{chapterResources.length === 1 ? '' : 's'} connected
-                      </p>
+                      <p className="font-medium text-emerald-300">Chapter materials ready</p>
                       <p className="text-muted-foreground mt-1 text-xs">
                         MCQs, short questions, and long questions are combined automatically.
                       </p>

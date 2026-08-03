@@ -1139,7 +1139,7 @@ function StructureModal({ drug, onClose }: { drug: DrugInfo; onClose: () => void
           </div>
           <div className="bg-muted/20 rounded-md border p-3">
             <p className="text-muted-foreground text-xs font-bold tracking-wide uppercase">View</p>
-            <p className="mt-1 font-semibold">{view === '2d' ? '2D structure' : '3D conformer / 2D fallback'}</p>
+            <p className="mt-1 font-semibold">{view === '2d' ? '2D structure' : 'Molecular structure'}</p>
           </div>
           <div className="bg-muted/20 rounded-md border p-3">
             <p className="text-muted-foreground text-xs font-bold tracking-wide uppercase">Compound</p>

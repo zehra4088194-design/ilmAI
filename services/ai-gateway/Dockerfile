@@ -7,8 +7,7 @@ ENV NODE_ENV=production \
 RUN groupadd --system --gid 1001 gateway \
     && useradd --system --uid 1001 --gid gateway gateway
 
-COPY --chown=gateway:gateway cloudflare-worker/worker.js ./cloudflare-worker/worker.js
-COPY --chown=gateway:gateway cloudflare-worker/package.json ./cloudflare-worker/package.json
+COPY --chown=gateway:gateway services/ai-gateway/handler.mjs ./services/ai-gateway/handler.mjs
 COPY --chown=gateway:gateway services/ai-gateway/server.mjs ./services/ai-gateway/server.mjs
 
 USER gateway
