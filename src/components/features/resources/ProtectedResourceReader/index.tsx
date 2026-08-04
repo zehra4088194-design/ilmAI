@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Loader2, Maximize2, Minimize2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { ProtectedResourceKind, ResourceMode } from '@/lib/resources/server';
-import { ResourcePreviewFrame } from '@/components/features/resources/ResourcePreviewFrame';
+import { ProtectedPdfViewer } from '@/components/features/resources/ProtectedPdfViewer';
 
 export async function fetchProtectedResourceResponse(input: {
   kind: ProtectedResourceKind;
@@ -53,21 +53,49 @@ export function ProtectedResourceReader({
   sourceUrl?: string | null;
 }) {
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [resolvedBlob, setResolvedBlob] = useState<Blob | null>(offlineBlob || null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [canFullscreen, setCanFullscreen] = useState(false);
   const readerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!open || !offlineBlob) {
+    if (!open) {
+      setResolvedBlob(null);
+      setLoadError(null);
+      return;
+    }
+    if (offlineBlob) {
+      setResolvedBlob(offlineBlob);
+      setLoadError(null);
+      return;
+    }
+    let cancelled = false;
+    setResolvedBlob(null);
+    setLoadError(null);
+    void fetchProtectedResourceBlob({ kind, id: resourceId, mode, purpose: 'reader' })
+      .then((blob) => {
+        if (!cancelled) setResolvedBlob(blob);
+      })
+      .catch((error) => {
+        if (!cancelled) setLoadError(error instanceof Error ? error.message : 'The PDF could not be opened.');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [kind, mode, offlineBlob, open, resourceId]);
+
+  useEffect(() => {
+    if (!open || !resolvedBlob) {
       setBlobUrl(null);
       return;
     }
-    const objectUrl = URL.createObjectURL(offlineBlob);
+    const objectUrl = URL.createObjectURL(resolvedBlob);
     setBlobUrl(objectUrl);
     return () => {
       URL.revokeObjectURL(objectUrl);
     };
-  }, [offlineBlob, open]);
+  }, [resolvedBlob, open]);
 
   useEffect(() => {
     setCanFullscreen(typeof document !== 'undefined' && Boolean(document.documentElement.requestFullscreen));
@@ -114,34 +142,18 @@ export function ProtectedResourceReader({
       <div className="relative min-h-0 flex-1 bg-slate-950">
         <div className="grid h-full min-h-0 grid-cols-1">
           <div className="relative min-h-0 min-w-0">
-            {offlineBlob && !blobUrl && (
+            {!blobUrl && !loadError && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white/75">
                 <Loader2 className="text-primary h-8 w-8 animate-spin" />
                 <p className="text-sm">Loading offline file...</p>
               </div>
             )}
-            {blobUrl && (
-              <ResourcePreviewFrame
-                kind={kind}
-                resourceId={resourceId}
-                mode={mode}
-                title={title}
-                loading="eager"
-                sourceUrl={blobUrl}
-                className="h-full w-full"
-              />
+            {loadError && (
+              <div className="absolute inset-0 flex items-center justify-center p-6 text-center text-white/80">
+                <p className="max-w-lg text-sm">{loadError}</p>
+              </div>
             )}
-            {!offlineBlob && (
-              <ResourcePreviewFrame
-                kind={kind}
-                resourceId={resourceId}
-                mode={mode}
-                title={title}
-                loading="eager"
-                sourceUrl={sourceUrl || undefined}
-                className="h-full w-full"
-              />
-            )}
+            {blobUrl && <ProtectedPdfViewer url={blobUrl} title={title} className="h-full w-full" />}
           </div>
         </div>
       </div>

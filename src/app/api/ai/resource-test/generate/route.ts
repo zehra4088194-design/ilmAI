@@ -8,6 +8,8 @@ import { buildResourceEvidence, verifiedSourceInstruction } from '@/lib/resource
 import type { FullTestPaper } from '@/app/api/ai/full-test/route';
 import { buildResourceSourceTest, filterHighQualitySourceMcqs } from '@/lib/resources/source-fallback';
 import { buildRepresentativeTextContext } from '@/lib/resources/context-window';
+import { createArtifactKey, readAiArtifact, writeAiArtifact } from '@/lib/ai/artifact-cache';
+import { buildHybridResourceContext } from '@/lib/resources/semantic-context';
 
 export const runtime = 'nodejs';
 export const maxDuration = 180;
@@ -42,6 +44,35 @@ export async function POST(req: NextRequest) {
     if (mcqCount + shortCount + longCount === 0) {
       return NextResponse.json({ status: 'error', error: 'Select at least one question.' }, { status: 400 });
     }
+    const context = await fetchResourceContext(resource);
+    const artifactKey = createArtifactKey('resource-test', {
+      prompt: 2,
+      kind,
+      id: body.id,
+      title: resource.title,
+      context,
+      mcqCount,
+      shortCount,
+      longCount,
+    });
+    const cached = await readAiArtifact<{
+      paper: FullTestPaper;
+      provider: string;
+      fallbackUsed: boolean;
+    }>(artifactKey);
+    if (cached) {
+      return NextResponse.json({
+        status: 'success',
+        data: {
+          paper: cached.paper,
+          resourceTitle: resource.title,
+          fallbackUsed: cached.fallbackUsed,
+          cached: true,
+          source: buildResourceEvidence(resource.title, context, cached.fallbackUsed ? 100 : 88),
+        },
+        provider: cached.provider,
+      });
+    }
     const featureLimit = await checkFileTestLimit(user.id, resource.tier);
     if (!featureLimit.success) {
       return NextResponse.json(
@@ -53,8 +84,12 @@ export async function POST(req: NextRequest) {
     if (!limit.success) {
       return NextResponse.json({ status: 'error', error: "Today's AI limit has been reached." }, { status: 429 });
     }
-    const context = await fetchResourceContext(resource);
-    const modelContext = buildRepresentativeTextContext(context);
+    const modelContext = await buildHybridResourceContext({
+      resourceKey: `${kind}:${body.id}`,
+      source: context,
+      query:
+        'testable facts concepts definitions formulas applications comparisons examples MCQs short and long questions',
+    }).catch(() => buildRepresentativeTextContext(context));
     const fallback: FullTestPaper = {
       title: `${resource.title} - AI Test`,
       totalMarks: mcqCount + shortCount * 3 + longCount * 8,
@@ -102,6 +137,7 @@ export async function POST(req: NextRequest) {
       paper.mcqs.length +
       paper.shortQs.reduce((sum, item) => sum + item.marks, 0) +
       paper.longQs.reduce((sum, item) => sum + item.marks, 0);
+    await writeAiArtifact(artifactKey, { paper, provider, fallbackUsed });
     await consumeAiCredits(user.id, resource.tier, 'resource_test_generate');
     return NextResponse.json({
       status: 'success',
@@ -109,6 +145,7 @@ export async function POST(req: NextRequest) {
         paper,
         resourceTitle: resource.title,
         fallbackUsed,
+        cached: false,
         source: buildResourceEvidence(resource.title, context, fallbackUsed ? 100 : 88),
       },
       provider,

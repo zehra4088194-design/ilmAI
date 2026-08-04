@@ -5,7 +5,6 @@ import type { ProtectedResourceKind, ResourceMode } from '@/lib/resources/server
 const DB_NAME = 'ilm-ai-offline';
 const STORE_NAME = 'protected-resources';
 const DB_VERSION = 1;
-const CACHE_NAME = 'ilm-ai-offline-files-v2';
 
 export type OfflineResource = {
   key: string;
@@ -73,10 +72,6 @@ export async function saveOfflineResourceLink(
   return saveOfflineResource({ ...item, mimeType: 'application/pdf' });
 }
 
-function cacheRequest(key: string) {
-  return new Request(`/__ilm-ai-offline/${encodeURIComponent(key)}`, { method: 'GET' });
-}
-
 export async function saveOfflineResourceResponse(
   item: Omit<OfflineResource, 'key' | 'blob' | 'mimeType'>,
   response: Response
@@ -86,29 +81,36 @@ export async function saveOfflineResourceResponse(
   const blob = await response.blob();
   const value: OfflineResource = { ...item, key, mimeType, blob };
 
-  await transact('readwrite', (store) => store.put(value));
-  if (typeof caches === 'undefined') return value;
-
-  const cache = await caches.open(CACHE_NAME);
-  const request = cacheRequest(key);
   try {
-    await cache.put(request, new Response(blob, { headers: { 'Content-Type': mimeType } }));
+    await transact('readwrite', (store) => store.put(value));
   } catch (error) {
-    await cache.delete(request).catch(() => false);
     if (error instanceof DOMException && error.name === 'QuotaExceededError') {
       throw new Error('Device storage is low. Remove older Downloads and try again.');
     }
+    throw error;
   }
   return value;
 }
 
+/** Downloads through the authenticated same-origin proxy into app-private browser storage. */
+export async function saveProtectedResourceOffline(
+  item: Omit<OfflineResource, 'key' | 'blob' | 'mimeType' | 'sourceUrl'>
+) {
+  const response = await fetch('/api/resources/content', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ kind: item.kind, id: item.resourceId, mode: item.mode, purpose: 'offline' }),
+  });
+  if (!response.ok) {
+    const json = await response.json().catch(() => null);
+    throw new Error(json?.error || 'The file could not be saved inside the app.');
+  }
+  return saveOfflineResourceResponse(item, response);
+}
+
 export async function getOfflineResourceBlob(item: OfflineResource) {
   if (item.blob) return item.blob;
-  if (typeof caches === 'undefined') throw new Error('Offline file storage is not available in this browser.');
-  const cache = await caches.open(CACHE_NAME);
-  const response = await cache.match(cacheRequest(item.key));
-  if (!response) throw new Error('Offline file is missing. Save it again from Library.');
-  return response.blob();
+  throw new Error('Offline file is missing. Save it again from Library.');
 }
 
 export async function listOfflineResources() {
@@ -117,13 +119,8 @@ export async function listOfflineResources() {
 
 export async function deleteOfflineResource(key: string) {
   await transact('readwrite', (store) => store.delete(key));
-  if (typeof caches !== 'undefined') {
-    const cache = await caches.open(CACHE_NAME);
-    await cache.delete(cacheRequest(key));
-  }
 }
 
 export async function clearOfflineResources() {
   await transact('readwrite', (store) => store.clear());
-  if (typeof caches !== 'undefined') await caches.delete(CACHE_NAME);
 }

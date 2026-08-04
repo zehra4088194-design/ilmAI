@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
-import { saveOfflineResourceLink } from '@/lib/offline/resources';
+import { saveProtectedResourceOffline } from '@/lib/offline/resources';
 import { ResourceAiTools } from '@/components/features/resources/ResourceAiTools';
 import { ProtectedResourceReader } from '@/components/features/resources/ProtectedResourceReader';
 import { ResourcePreviewFrame } from '@/components/features/resources/ResourcePreviewFrame';
@@ -33,12 +33,11 @@ export function PastPaperDetailClient({
   const saveOffline = async () => {
     setDownloading(true);
     try {
-      await saveOfflineResourceLink({
+      await saveProtectedResourceOffline({
         resourceId: paper.id,
         kind: 'past-paper',
         mode,
         title: paper.title,
-        sourceUrl: paper.fileUrl,
         savedAt: new Date().toISOString(),
       });
       toast.success('Past paper saved to in-app Downloads.');

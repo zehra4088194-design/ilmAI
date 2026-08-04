@@ -14,7 +14,7 @@ import { getGoogleDriveThumbnailUrl } from '@/lib/utils/filePreview';
 import type { CollegeLecture, CollegeResource, CollegeResourceMetadata } from '@/lib/college/types';
 import { ProtectedResourceReader } from '@/components/features/resources/ProtectedResourceReader';
 import { ResourceAiTools } from '@/components/features/resources/ResourceAiTools';
-import { saveOfflineResourceLink } from '@/lib/offline/resources';
+import { saveProtectedResourceOffline } from '@/lib/offline/resources';
 import { toast } from 'sonner';
 import { isDarkThemeId } from '@/lib/constants/themes';
 import { resolvePdfThemeMode } from '@/lib/platform-settings/shared';
@@ -99,17 +99,11 @@ export function CollegeDashboardTabs({
   const saveForOffline = async (resource: CollegeResourceMetadata) => {
     setDownloadingId(resource.id);
     try {
-      const sourceUrl =
-        mode === 'dark'
-          ? resource.dark_file_url || resource.light_file_url || resource.file_url
-          : resource.light_file_url || resource.file_url || resource.dark_file_url;
-      if (!sourceUrl) throw new Error('This file does not have a usable link.');
-      await saveOfflineResourceLink({
+      await saveProtectedResourceOffline({
         resourceId: resource.id,
         kind: 'college-resource',
         mode,
         title: resource.title,
-        sourceUrl,
         savedAt: new Date().toISOString(),
       });
       toast.success('The college file was saved to Downloads.');

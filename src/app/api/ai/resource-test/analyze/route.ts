@@ -6,6 +6,8 @@ import { parseAiJson } from '@/lib/utils/json-extract';
 import { fetchResourceContext, getProtectedResource, type ProtectedResourceKind } from '@/lib/resources/server';
 import { analyzeResourceSource, type ResourceAnalysis } from '@/lib/resources/source-fallback';
 import { buildRepresentativeTextContext } from '@/lib/resources/context-window';
+import { createArtifactKey, readAiArtifact, writeAiArtifact } from '@/lib/ai/artifact-cache';
+import { buildHybridResourceContext } from '@/lib/resources/semantic-context';
 
 export const runtime = 'nodejs';
 export const maxDuration = 180;
@@ -32,7 +34,22 @@ export async function POST(req: NextRequest) {
       );
     }
     const context = await fetchResourceContext(resource);
-    const modelContext = buildRepresentativeTextContext(context);
+    const artifactKey = createArtifactKey('resource-analysis', { prompt: 2, kind, id, title: resource.title, context });
+    const cached = await readAiArtifact<{ parsed: Analysis; provider: string; fallbackUsed: boolean }>(artifactKey);
+    if (cached) {
+      return NextResponse.json({
+        status: 'success',
+        data: cached.parsed,
+        provider: cached.provider,
+        fallbackUsed: cached.fallbackUsed,
+        cached: true,
+      });
+    }
+    const modelContext = await buildHybridResourceContext({
+      resourceKey: `${kind}:${id}`,
+      source: context,
+      query: 'document structure topics concepts formulas examples and available exam question material',
+    }).catch(() => buildRepresentativeTextContext(context));
     const limit = await checkAiMessageLimit(user.id, resource.tier, 'resource_test_analyze');
     if (!limit.success) {
       return NextResponse.json({ status: 'error', error: "Today's AI limit has been reached." }, { status: 429 });
@@ -70,8 +87,9 @@ export async function POST(req: NextRequest) {
       short: Math.max(0, Math.min(15, Number(parsed.available?.short) || 0)),
       long: Math.max(0, Math.min(8, Number(parsed.available?.long) || 0)),
     };
+    await writeAiArtifact(artifactKey, { parsed, provider, fallbackUsed });
     await consumeAiCredits(user.id, resource.tier, 'resource_test_analyze');
-    return NextResponse.json({ status: 'success', data: parsed, provider, fallbackUsed });
+    return NextResponse.json({ status: 'success', data: parsed, provider, fallbackUsed, cached: false });
   } catch (error) {
     console.error('Grok resource analysis failed:', error);
     return NextResponse.json(

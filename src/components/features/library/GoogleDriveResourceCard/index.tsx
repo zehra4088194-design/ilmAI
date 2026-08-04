@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
-import { saveOfflineResourceLink } from '@/lib/offline/resources';
+import { saveProtectedResourceOffline } from '@/lib/offline/resources';
 import { ProtectedResourceReader } from '@/components/features/resources/ProtectedResourceReader';
 import { ResourceAiTools } from '@/components/features/resources/ResourceAiTools';
 import { getGoogleDriveThumbnailUrl } from '@/lib/utils/filePreview';
@@ -63,13 +63,11 @@ export function GoogleDriveResourceCard({
   const saveForOffline = async () => {
     setDownloading(true);
     try {
-      if (!readerSourceUrl) throw new Error('This PDF does not have a usable Drive link.');
-      await saveOfflineResourceLink({
+      await saveProtectedResourceOffline({
         resourceId: resource.id,
         kind: 'library',
         mode,
         title: resource.title,
-        sourceUrl: readerSourceUrl,
         savedAt: new Date().toISOString(),
       });
       await fetch('/api/offline/download-log', {

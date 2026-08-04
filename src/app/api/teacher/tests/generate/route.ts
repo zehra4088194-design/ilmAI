@@ -24,21 +24,25 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    if (!body.subjectId || !body.chapterId) {
-      return NextResponse.json({ error: 'Select a subject and chapter.' }, { status: 400 });
+    if (!body.gradeLevel || !body.subjectId || !body.chapterId) {
+      return NextResponse.json({ error: 'Select a class, subject, and chapter.' }, { status: 400 });
     }
-    const mcqCount = count(body.mcqCount, 10, 30);
-    const shortCount = count(body.shortCount, 5, 15);
-    const longCount = count(body.longCount, 2, 8);
+    const mcqCount = count(body.mcqCount, 10, 100);
+    const shortCount = count(body.shortCount, 5, 50);
+    const longCount = count(body.longCount, 2, 20);
     const paper = await generateChapterQuestionPaper({
       subjectId: body.subjectId,
       chapterId: body.chapterId,
+      gradeLevel: String(body.gradeLevel).slice(0, 30),
       mcqCount,
       shortCount,
       longCount,
     });
     if (!paper.mcqs.length && !paper.shortQuestions.length && !paper.longQuestions.length) {
-      return NextResponse.json({ error: 'No uploaded source questions are available for this chapter yet.' }, { status: 409 });
+      return NextResponse.json(
+        { error: 'No uploaded source questions are available for this chapter yet.' },
+        { status: 409 }
+      );
     }
 
     const totalMarks =
@@ -49,13 +53,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       data: {
         ...paper,
-        institutionName: String(body.institutionName || '').trim().slice(0, 100),
-        title: String(body.title || 'Chapter Assessment').trim().slice(0, 120),
+        institutionName: String(body.institutionName || '')
+          .trim()
+          .slice(0, 100),
+        title: String(body.title || 'Chapter Assessment')
+          .trim()
+          .slice(0, 120),
         timeAllowed: count(body.timeAllowed, 45, 240),
         totalMarks,
         includeAnswerKey: body.includeAnswerKey !== false,
         paperTheme: body.paperTheme === 'dark' ? 'dark' : 'light',
         generatedAt: new Date().toISOString(),
+        requestedCounts: { mcq: mcqCount, short: shortCount, long: longCount },
       },
     });
   } catch (error) {

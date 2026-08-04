@@ -51,8 +51,10 @@ export function DownloadsClient({ embedded = false }: { embedded?: boolean }) {
   const openOffline = async (item: OfflineResource) => {
     setOpeningKey(item.key);
     try {
-      if (item.sourceUrl) setActive({ item });
-      else setActive({ item, blob: await getOfflineResourceBlob(item) });
+      if (item.sourceUrl) {
+        throw new Error('This older saved link must be removed and saved again for real offline access.');
+      }
+      setActive({ item, blob: await getOfflineResourceBlob(item) });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'The saved file could not be opened.');
     } finally {
@@ -69,8 +71,8 @@ export function DownloadsClient({ embedded = false }: { embedded?: boolean }) {
           </Badge>
           <h1 className="text-2xl font-bold sm:text-3xl">Downloads</h1>
           <p className="text-muted-foreground max-w-2xl text-sm sm:text-base">
-            Save useful books, notes, and papers inside Ilm AI. Files reopen through their original reader link and are
-            never exported to the device.
+            Save useful books, notes, and papers in app-private storage. They stay inside Ilm AI and are not exported
+            to the device Downloads folder.
           </p>
         </div>
       )}

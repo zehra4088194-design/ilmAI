@@ -21,6 +21,7 @@ export type BankSubjectiveQuestion = {
 export type ChapterQuestionPaper = {
   subject: { id: string; name: string };
   chapter: { id: string; name: string };
+  gradeLevel: string;
   mcqs: BankMcq[];
   shortQuestions: BankSubjectiveQuestion[];
   longQuestions: BankSubjectiveQuestion[];
@@ -30,6 +31,7 @@ export type ChapterQuestionPaper = {
 type GenerateOptions = {
   subjectId: string;
   chapterId: string;
+  gradeLevel?: string;
   mcqCount: number;
   shortCount: number;
   longCount: number;
@@ -47,7 +49,10 @@ function shuffle<T>(items: T[]) {
 function uniqueByQuestion<T extends { q: string }>(items: T[]) {
   const seen = new Set<string>();
   return items.filter((item) => {
-    const key = item.q.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    const key = item.q
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
     if (!key || seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -58,7 +63,10 @@ function normalizeMcq(value: any): BankMcq | null {
   const q = String(value?.q || value?.text || '').trim();
   const rawOptions = value?.opts || value?.options;
   const opts = Array.isArray(rawOptions)
-    ? rawOptions.map((option: any) => String(option?.text ?? option)).filter(Boolean).slice(0, 4)
+    ? rawOptions
+        .map((option: any) => String(option?.text ?? option))
+        .filter(Boolean)
+        .slice(0, 4)
     : [];
   const rawCorrect = value?.correct ?? value?.correctAnswer ?? value?.correct_answer;
   let correct = Number(rawCorrect);
@@ -77,7 +85,9 @@ function normalizeSubjective(value: any, defaultMarks: number): BankSubjectiveQu
     : Array.isArray(value?.correct_answer)
       ? value.correct_answer.map(String).filter(Boolean)
       : [];
-  const modelAnswer = String(value?.modelAnswer || value?.model_answer || value?.explanation || keyPoints.join(' ')).trim();
+  const modelAnswer = String(
+    value?.modelAnswer || value?.model_answer || value?.explanation || keyPoints.join(' ')
+  ).trim();
   return {
     q,
     marks: Number(value?.marks) || defaultMarks,
@@ -100,16 +110,19 @@ async function sourcePaper(resourceId: string, title: string, counts: GenerateOp
 
 export async function generateChapterQuestionPaper(options: GenerateOptions): Promise<ChapterQuestionPaper> {
   const db = createServiceClient() as any;
+  let resourcesQuery = db
+    .from('library_resources')
+    .select('id, title')
+    .eq('subject_id', options.subjectId)
+    .eq('chapter_id', options.chapterId);
+  if (options.gradeLevel) {
+    resourcesQuery = resourcesQuery.or(`grade_level.eq.${options.gradeLevel},grade_level.is.null`);
+  }
+  resourcesQuery = resourcesQuery.order('created_at', { ascending: false }).limit(30);
   const [{ data: subject }, { data: chapter }, { data: resources }, { data: databaseQuestions }] = await Promise.all([
-    db.from('subjects').select('id, name').eq('id', options.subjectId).maybeSingle(),
+    db.from('subjects').select('id, name, grade_levels').eq('id', options.subjectId).maybeSingle(),
     db.from('chapters').select('id, name, subject_id').eq('id', options.chapterId).maybeSingle(),
-    db
-      .from('library_resources')
-      .select('id, title')
-      .eq('subject_id', options.subjectId)
-      .eq('chapter_id', options.chapterId)
-      .order('created_at', { ascending: false })
-      .limit(30),
+    resourcesQuery,
     db
       .from('questions')
       .select('id, type, text, options, correct_answer, explanation, marks, tags')
@@ -118,7 +131,16 @@ export async function generateChapterQuestionPaper(options: GenerateOptions): Pr
       .limit(500),
   ]);
 
-  if (!subject || !chapter || chapter.subject_id !== subject.id) throw new Error('The selected subject or chapter was not found.');
+  if (!subject || !chapter || chapter.subject_id !== subject.id)
+    throw new Error('The selected subject or chapter was not found.');
+  if (
+    options.gradeLevel &&
+    Array.isArray(subject.grade_levels) &&
+    subject.grade_levels.length &&
+    !subject.grade_levels.includes(options.gradeLevel)
+  ) {
+    throw new Error('The selected subject is not available for this class.');
+  }
   const resourceRows = resources || [];
   const resourceIds = resourceRows.map((resource: any) => resource.id);
   const { data: cachedBanks } = resourceIds.length
@@ -178,12 +200,12 @@ export async function generateChapterQuestionPaper(options: GenerateOptions): Pr
       try {
         const paper = await sourcePaper(resource.id, resource.title, options);
         if (!paper) continue;
-        mcqs.push(...paper.mcqs.map((item) => normalizeMcq(item)).filter(Boolean) as BankMcq[]);
+        mcqs.push(...(paper.mcqs.map((item) => normalizeMcq(item)).filter(Boolean) as BankMcq[]));
         shortQuestions.push(
-          ...paper.shortQs.map((item) => normalizeSubjective(item, 3)).filter(Boolean) as BankSubjectiveQuestion[]
+          ...(paper.shortQs.map((item) => normalizeSubjective(item, 3)).filter(Boolean) as BankSubjectiveQuestion[])
         );
         longQuestions.push(
-          ...paper.longQs.map((item) => normalizeSubjective(item, 8)).filter(Boolean) as BankSubjectiveQuestion[]
+          ...(paper.longQs.map((item) => normalizeSubjective(item, 8)).filter(Boolean) as BankSubjectiveQuestion[])
         );
       } catch (error) {
         console.warn(`Chapter bank skipped resource ${resource.id}:`, error);
@@ -192,13 +214,15 @@ export async function generateChapterQuestionPaper(options: GenerateOptions): Pr
         mcqs.length >= options.mcqCount * 2 &&
         shortQuestions.length >= options.shortCount * 2 &&
         longQuestions.length >= options.longCount * 2
-      ) break;
+      )
+        break;
     }
   }
 
   return {
     subject: { id: subject.id, name: subject.name },
     chapter: { id: chapter.id, name: chapter.name },
+    gradeLevel: options.gradeLevel || subject.grade_levels?.[0] || '',
     mcqs: shuffle(uniqueByQuestion(mcqs)).slice(0, options.mcqCount),
     shortQuestions: shuffle(uniqueByQuestion(shortQuestions)).slice(0, options.shortCount),
     longQuestions: shuffle(uniqueByQuestion(longQuestions)).slice(0, options.longCount),

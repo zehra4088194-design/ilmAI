@@ -56,6 +56,9 @@ services:
       NEXT_PUBLIC_APP_VERSION: ${NEXT_PUBLIC_APP_VERSION:-1.0.0}
       AI_GATEWAY_URL: http://ai-gateway:8787
       AI_GATEWAY_SECRET: ${AI_GATEWAY_SECRET:?}
+      EMBEDDING_URL: http://embedding:8080/v1
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-qwen3-embedding-0.6b-q8}
+      AI_ARTIFACTS_PATH: /app/data/ai-artifacts
       OCR_SERVICE_URL: http://ocr:8000
       OCR_SERVICE_SECRET: ${OCR_SERVICE_SECRET:?}
       EASYOCR_API_URL: ${EASYOCR_API_URL:-https://console.easyocr.org/api/ocr}
@@ -127,6 +130,10 @@ services:
         condition: service_healthy
       valkey:
         condition: service_healthy
+      embedding:
+        condition: service_started
+    volumes:
+      - ai-artifacts:/app/data/ai-artifacts
     healthcheck:
       test:
         [
@@ -230,6 +237,30 @@ services:
         limits:
           memory: 6G
 
+  embedding:
+    image: ghcr.io/ggml-org/llama.cpp:server
+    restart: unless-stopped
+    expose:
+      - '8080'
+    environment:
+      LLAMA_ARG_HF_REPO: ${EMBEDDING_HF_REPO:-Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0}
+      LLAMA_ARG_ALIAS: ${EMBEDDING_MODEL:-qwen3-embedding-0.6b-q8}
+      LLAMA_ARG_HOST: 0.0.0.0
+      LLAMA_ARG_PORT: 8080
+      LLAMA_ARG_CTX_SIZE: ${EMBEDDING_CONTEXT_SIZE:-4096}
+      LLAMA_ARG_THREADS: ${EMBEDDING_THREADS:-2}
+      LLAMA_ARG_BATCH: 2048
+      LLAMA_ARG_UBATCH: 512
+      LLAMA_ARG_EMBEDDINGS: 1
+      LLAMA_ARG_POOLING: last
+      LLAMA_ARG_NO_WEBUI: 1
+    volumes:
+      - embedding-cache:/root/.cache/huggingface
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
   ocr:
     build:
       context: services/ocr
@@ -311,3 +342,5 @@ services:
 volumes:
   valkey-data:
   llama-cache:
+  embedding-cache:
+  ai-artifacts:

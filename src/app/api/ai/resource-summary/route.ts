@@ -7,6 +7,8 @@ import { buildResourceEvidence, verifiedSourceInstruction } from '@/lib/resource
 import { buildResourceSourceSummary } from '@/lib/resources/source-fallback';
 import type { SubscriptionTier } from '@/types';
 import { buildRepresentativeTextContext } from '@/lib/resources/context-window';
+import { createArtifactKey, readAiArtifact, writeAiArtifact } from '@/lib/ai/artifact-cache';
+import { buildHybridResourceContext } from '@/lib/resources/semantic-context';
 
 export const runtime = 'nodejs';
 export const maxDuration = 180;
@@ -31,6 +33,27 @@ export async function POST(req: NextRequest) {
         { status: 403 }
       );
     }
+    const context = await fetchResourceContext(resource);
+    const artifactKey = createArtifactKey('resource-summary', {
+      prompt: 2,
+      kind,
+      id,
+      title: resource.title,
+      context,
+    });
+    const cached = await readAiArtifact<{ summary: string; provider: string; model: string; fallbackUsed: boolean }>(
+      artifactKey
+    );
+    if (cached) {
+      return NextResponse.json({
+        status: 'success',
+        data: {
+          ...cached,
+          cached: true,
+          source: buildResourceEvidence(resource.title, context, cached.fallbackUsed ? 100 : 88),
+        },
+      });
+    }
     const featureLimit = await checkFileSummaryLimit(user.id, resource.tier as SubscriptionTier);
     if (!featureLimit.success) {
       return NextResponse.json(
@@ -42,8 +65,11 @@ export async function POST(req: NextRequest) {
     if (!limit.success) {
       return NextResponse.json({ status: 'error', error: "Today's AI limit has been reached." }, { status: 429 });
     }
-    const context = await fetchResourceContext(resource);
-    const modelContext = buildRepresentativeTextContext(context);
+    const modelContext = await buildHybridResourceContext({
+      resourceKey: `${kind}:${id}`,
+      source: context,
+      query: 'main concepts definitions formulas important facts exam points and revision topics',
+    }).catch(() => buildRepresentativeTextContext(context));
 
     let summary: string;
     let provider = 'source-fallback';
@@ -75,6 +101,7 @@ export async function POST(req: NextRequest) {
       summary = buildResourceSourceSummary(resource.title, context);
     }
 
+    await writeAiArtifact(artifactKey, { summary, provider, model, fallbackUsed });
     await consumeAiCredits(user.id, resource.tier as SubscriptionTier, 'resource_summary');
     return NextResponse.json({
       status: 'success',
@@ -83,6 +110,7 @@ export async function POST(req: NextRequest) {
         provider,
         model,
         fallbackUsed,
+        cached: false,
         source: buildResourceEvidence(resource.title, context, fallbackUsed ? 100 : 88),
       },
     });
