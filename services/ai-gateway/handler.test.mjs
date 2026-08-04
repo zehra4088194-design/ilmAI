@@ -135,6 +135,7 @@ test('Groq requests rotate through ten configured keys and wrap to the first', a
     const keys = Array.from({ length: 10 }, (_, index) => `groq-key-${index + 1}`);
     const env = {
       GATEWAY_SECRET: 'test-secret',
+      GROQ_API_KEY: 'legacy-groq-key-must-not-enter-numbered-pool',
       ...Object.fromEntries(keys.map((key, index) => [`GROQ_API_KEY_${index + 1}`, key])),
     };
     for (let request = 0; request < 11; request += 1) {
@@ -159,6 +160,7 @@ test('Gemini requests rotate through ten configured keys and wrap to the first',
     const keys = Array.from({ length: 10 }, (_, index) => `gemini-key-${index + 1}`);
     const env = {
       GATEWAY_SECRET: 'test-secret',
+      GEMINI_API_KEY: 'legacy-gemini-key-must-not-enter-numbered-pool',
       ...Object.fromEntries(keys.map((key, index) => [`GEMINI_API_KEY_${index + 1}`, key])),
     };
     for (let request = 0; request < 11; request += 1) {

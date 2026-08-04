@@ -167,6 +167,17 @@ function json(data, status = 200) {
 
 function getKeys(env, prefix) {
   const keys = [];
+  const numberedKeys = [];
+  for (let i = 1; i <= KEY_COUNT; i++) {
+    const key = env[`${prefix}_${i}`];
+    if (key) numberedKeys.push(key);
+  }
+  // The production Groq/Gemini pools intentionally use ten explicit Coolify
+  // slots. When any numbered slots exist, ignore legacy JSON/single fields so
+  // an old secret cannot silently become an eleventh key or alter 1..10 order.
+  if ((prefix === 'GROQ_API_KEY' || prefix === 'GEMINI_API_KEY') && numberedKeys.length) {
+    return [...new Set(numberedKeys.map((key) => String(key).trim()).filter(Boolean))].slice(0, 10);
+  }
   const jsonSecretName = `${prefix.replace(/_KEY$/, '_KEYS')}_JSON`;
   const jsonSecret = env[jsonSecretName];
   if (jsonSecret) {
@@ -181,10 +192,7 @@ function getKeys(env, prefix) {
     }
   }
   if (env[prefix]) keys.push(env[prefix]);
-  for (let i = 1; i <= KEY_COUNT; i++) {
-    const k = env[`${prefix}_${i}`];
-    if (k) keys.push(k);
-  }
+  keys.push(...numberedKeys);
   return [...new Set(keys.map((key) => String(key).trim()).filter(Boolean))].slice(0, KEY_COUNT);
 }
 
