@@ -28,14 +28,14 @@
  * ------------------------------------------------------------
  * GATEWAY_SECRET -> any long random string YOU make up.
  *                   Next.js sends this back as proof it's really your app.
- * GROQ_API_KEYS_JSON -> JSON array with up to 20 keys
+ * GROQ_API_KEYS_JSON or GROQ_API_KEY_1..10 -> ten-key Groq pool
  * GROK_API_KEYS_JSON -> JSON array with up to 20 xAI keys
  * CLAUDE_API_KEYS_JSON -> JSON array with up to 20 Anthropic keys
  * GPT_API_KEYS_JSON -> JSON array with up to 20 OpenAI keys
- * GEMINI_API_KEYS_JSON -> JSON array with up to 20 Gemini keys
+ * GEMINI_API_KEYS_JSON or GEMINI_API_KEY_1..10 -> ten-key Gemini pool
  * OCRSPACE_API_KEYS_JSON -> JSON array with up to 20 OCR.space keys
  * OPENROUTER_API_KEYS_JSON -> JSON array with up to 20 OpenRouter keys
- * DEEPSEEK_API_KEYS_JSON -> JSON array with up to 20 direct DeepSeek keys
+ * DEEPSEEK_API_KEY -> one direct DeepSeek key
  * Numbered PREFIX_1 .. PREFIX_20 secrets remain backwards-compatible.
  *
  * OPTIONAL (Live Voice Call — has a safe built-in default, only set if you

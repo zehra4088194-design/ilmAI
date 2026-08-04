@@ -5,6 +5,7 @@ import { generatePresentationDeck } from '@/lib/presentation/generator';
 import { PRESENTATION_THEMES, type PresentationGenerateInput, type PresentationTheme } from '@/lib/presentation/types';
 import type { SubscriptionTier } from '@/types';
 import { listPresentationBackgrounds } from '@/lib/presentation/backgrounds';
+import { selectPresentationBackgrounds } from '@/lib/presentation/background-matching';
 
 export const runtime = 'nodejs';
 export const maxDuration = 180;
@@ -69,13 +70,15 @@ export async function POST(req: NextRequest) {
     }
 
     const presentationBackgrounds = await listPresentationBackgrounds();
+    const requestedSubject = cleanString(
+      body.subject,
+      Array.isArray(profile?.university_courses) ? profile?.university_courses?.[0] || 'General' : 'General',
+      160
+    );
+    const matchedBackgrounds = selectPresentationBackgrounds(presentationBackgrounds, topic, requestedSubject);
     const input: PresentationGenerateInput = {
       topic,
-      subject: cleanString(
-        body.subject,
-        Array.isArray(profile?.university_courses) ? profile?.university_courses?.[0] || 'General' : 'General',
-        160
-      ),
+      subject: requestedSubject,
       slideCount: requestedSlides,
       tone: cleanString(body.tone, 'Professional', 80),
       audienceLevel: cleanString(body.audienceLevel, 'University students', 120),
@@ -83,7 +86,7 @@ export async function POST(req: NextRequest) {
       outputStyle: cleanString(body.outputStyle, profile?.preferred_output_style || 'professional', 80),
       theme: cleanTheme(body.theme),
       mode: body.mode === 'bulk' ? 'bulk' : 'per-slide',
-      backgroundImageUrls: presentationBackgrounds.map((background) => background.url),
+      backgroundImageUrls: matchedBackgrounds.map((background) => background.url),
     };
 
     const deck = await generatePresentationDeck(input, tier === 'ELITE' ? 'medium' : 'mini');

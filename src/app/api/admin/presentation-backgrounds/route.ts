@@ -23,8 +23,17 @@ export async function POST(req: NextRequest) {
     const form = await req.formData();
     const files = form.getAll('images').filter((value): value is File => value instanceof File).slice(0, 20);
     if (!files.length) return NextResponse.json({ error: 'Choose at least one image.' }, { status: 400 });
+    const subject = String(form.get('subject') || '').trim();
+    const keywords = String(form.get('keywords') || '')
+      .split(',')
+      .map((keyword) => keyword.trim())
+      .filter(Boolean);
+    const isGlobal = form.get('isGlobal') === 'true';
+    if (!isGlobal && !subject && !keywords.length) {
+      return NextResponse.json({ error: 'Add a subject or keywords, or mark the images as general.' }, { status: 400 });
+    }
     const backgrounds = [];
-    for (const file of files) backgrounds.push(await savePresentationBackground(file));
+    for (const file of files) backgrounds.push(await savePresentationBackground(file, { subject, keywords, isGlobal }));
     return NextResponse.json({ backgrounds });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Upload failed.' }, { status: 400 });

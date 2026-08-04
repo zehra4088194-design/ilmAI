@@ -64,6 +64,9 @@ export type PresentationBackground = {
   name: string;
   url: string;
   size: number;
+  subject: string;
+  keywords: string[];
+  isGlobal: boolean;
 };
 
 export const PRESENTATION_THEMES: PresentationTheme[] = [

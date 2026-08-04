@@ -122,7 +122,7 @@ test('direct DeepSeek key serves text without OpenRouter', async () => {
   }
 });
 
-test('Groq requests rotate through every configured key and wrap to the first', async () => {
+test('Groq requests rotate through ten configured keys and wrap to the first', async () => {
   const originalFetch = globalThis.fetch;
   const authorizations = [];
   globalThis.fetch = async (url, options = {}) => {
@@ -132,26 +132,22 @@ test('Groq requests rotate through every configured key and wrap to the first', 
   };
 
   try {
+    const keys = Array.from({ length: 10 }, (_, index) => `groq-key-${index + 1}`);
     const env = {
       GATEWAY_SECRET: 'test-secret',
-      GROQ_API_KEYS_JSON: JSON.stringify(['groq-key-1', 'groq-key-2', 'groq-key-3']),
+      ...Object.fromEntries(keys.map((key, index) => [`GROQ_API_KEY_${index + 1}`, key])),
     };
-    for (let request = 0; request < 4; request += 1) {
+    for (let request = 0; request < 11; request += 1) {
       const response = await gateway.fetch(chatRequest('groq'), env);
       assert.equal(response.status, 200);
     }
-    assert.deepEqual(authorizations, [
-      'Bearer groq-key-1',
-      'Bearer groq-key-2',
-      'Bearer groq-key-3',
-      'Bearer groq-key-1',
-    ]);
+    assert.deepEqual(authorizations, [...keys.map((key) => `Bearer ${key}`), 'Bearer groq-key-1']);
   } finally {
     globalThis.fetch = originalFetch;
   }
 });
 
-test('Gemini requests rotate through every configured key and wrap to the first', async () => {
+test('Gemini requests rotate through ten configured keys and wrap to the first', async () => {
   const originalFetch = globalThis.fetch;
   const requestedKeys = [];
   globalThis.fetch = async (url) => {
@@ -160,15 +156,16 @@ test('Gemini requests rotate through every configured key and wrap to the first'
   };
 
   try {
+    const keys = Array.from({ length: 10 }, (_, index) => `gemini-key-${index + 1}`);
     const env = {
       GATEWAY_SECRET: 'test-secret',
-      GEMINI_API_KEYS_JSON: JSON.stringify([{ key: 'gemini-key-1' }, { key: 'gemini-key-2' }, { key: 'gemini-key-3' }]),
+      ...Object.fromEntries(keys.map((key, index) => [`GEMINI_API_KEY_${index + 1}`, key])),
     };
-    for (let request = 0; request < 4; request += 1) {
+    for (let request = 0; request < 11; request += 1) {
       const response = await gateway.fetch(chatRequest('gemini'), env);
       assert.equal(response.status, 200);
     }
-    assert.deepEqual(requestedKeys, ['gemini-key-1', 'gemini-key-2', 'gemini-key-3', 'gemini-key-1']);
+    assert.deepEqual(requestedKeys, [...keys, 'gemini-key-1']);
   } finally {
     globalThis.fetch = originalFetch;
   }

@@ -10,6 +10,9 @@ import type { PresentationBackground } from '@/lib/presentation/types';
 export function PresentationBackgroundManager() {
   const [items, setItems] = useState<PresentationBackground[]>([]);
   const [busy, setBusy] = useState(false);
+  const [subject, setSubject] = useState('');
+  const [keywords, setKeywords] = useState('');
+  const [isGlobal, setIsGlobal] = useState(false);
 
   async function refresh() {
     const response = await fetch('/api/admin/presentation-backgrounds');
@@ -26,6 +29,9 @@ export function PresentationBackgroundManager() {
     setBusy(true);
     const form = new FormData();
     Array.from(files).forEach((file) => form.append('images', file));
+    form.set('subject', subject);
+    form.set('keywords', keywords);
+    form.set('isGlobal', String(isGlobal));
     const response = await fetch('/api/admin/presentation-backgrounds', { method: 'POST', body: form });
     const json = await response.json();
     if (response.ok) {
@@ -52,9 +58,33 @@ export function PresentationBackgroundManager() {
       </CardHeader>
       <CardContent className="space-y-5">
         <p className="text-muted-foreground text-sm">
-          Upload JPG, PNG, or WebP images (maximum 10 MB each). New presentations automatically rotate through this
-          library and add a readable dark overlay.
+          Add a subject and topic keywords before uploading. The presentation builder matches these labels against
+          the requested topic, then rotates only through relevant images.
         </p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="space-y-1.5 text-sm font-medium">
+            Subject
+            <input
+              value={subject}
+              onChange={(event) => setSubject(event.target.value)}
+              placeholder="e.g. Biology"
+              className="border-input bg-background h-10 w-full rounded-lg border px-3 font-normal"
+            />
+          </label>
+          <label className="space-y-1.5 text-sm font-medium">
+            Keywords / topics
+            <input
+              value={keywords}
+              onChange={(event) => setKeywords(event.target.value)}
+              placeholder="photosynthesis, cells, plants"
+              className="border-input bg-background h-10 w-full rounded-lg border px-3 font-normal"
+            />
+          </label>
+        </div>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={isGlobal} onChange={(event) => setIsGlobal(event.target.checked)} />
+          Use these as general fallback backgrounds when no related image matches
+        </label>
         <label className="border-border hover:bg-muted/40 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed p-6 text-sm font-medium transition">
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
           {busy ? 'Uploading...' : 'Choose background images'}
@@ -65,8 +95,15 @@ export function PresentationBackgroundManager() {
             <div key={item.name} className="overflow-hidden rounded-xl border">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={item.url} alt="Presentation background" className="aspect-video w-full object-cover" />
-              <div className="flex items-center justify-between gap-2 p-3">
-                <span className="min-w-0 truncate text-xs">{item.name}</span>
+              <div className="flex items-start justify-between gap-2 p-3">
+                <div className="min-w-0 space-y-1">
+                  <p className="truncate text-xs font-medium">{item.name}</p>
+                  <p className="text-muted-foreground text-xs">
+                    {item.isGlobal
+                      ? 'General fallback'
+                      : [item.subject, item.keywords.join(', ')].filter(Boolean).join(' • ') || 'Needs labels'}
+                  </p>
+                </div>
                 <Button type="button" variant="ghost" size="icon" aria-label="Delete background" onClick={() => void remove(item.name)}>
                   <Trash2 className="h-4 w-4 text-red-500" />
                 </Button>
