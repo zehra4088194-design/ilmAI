@@ -10,7 +10,7 @@ This Node service runs only on Coolify's private Docker network. The public Next
 
 ## Local model
 
-Compose runs the official ARM64 `llama.cpp` server with `Qwen/Qwen3-4B-GGUF:Q4_K_M`. Its cache is stored in the persistent `llama-cache` volume, so the model is downloaded once rather than on every deployment.
+Compose runs the official ARM64 `llama.cpp` server with `Qwen/Qwen3-4B-GGUF:Q4_K_M`. Its Hugging Face cache is stored in the persistent `llama-cache` volume, so the model is downloaded once rather than on every deployment.
 
 Resource summaries, resource analysis, and tests receive only the resource's attached companion `.txt`. A missing or unreadable TXT returns an error; the application never loads the PDF and sends it through OCR as an AI fallback.
 

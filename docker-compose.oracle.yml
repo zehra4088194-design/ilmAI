@@ -224,7 +224,7 @@ services:
       LLAMA_ARG_CACHE_TYPE_V: q8_0
       LLAMA_ARG_NO_WEBUI: 1
     volumes:
-      - llama-cache:/root/.cache/llama.cpp
+      - llama-cache:/root/.cache/huggingface
     deploy:
       resources:
         limits:
