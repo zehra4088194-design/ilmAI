@@ -51,6 +51,7 @@ export async function POST(req: NextRequest) {
         ],
         maxTokens: 1024,
         temperature: 0.6,
+        routingPolicy: 'tutor',
       });
 
       // Find or create the AI teacher profile

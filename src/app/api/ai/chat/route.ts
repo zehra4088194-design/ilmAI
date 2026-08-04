@@ -15,6 +15,7 @@ import {
   getConfiguredLimitExceededMessage,
 } from '@/lib/rate-limit';
 import type { SubscriptionTier } from '@/types';
+import { shouldUseLocalSmallTalk } from '@/lib/ai/request-routing';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -142,12 +143,15 @@ export async function POST(req: NextRequest) {
       { role: 'user' as const, content: message },
     ];
 
+    const localSmallTalk = isSideChat && shouldUseLocalSmallTalk(message);
     const result = await gatewayChat({
-      provider,
+      provider: localSmallTalk ? 'local' : provider,
       tier,
       messages,
       maxTokens: source === 'side_chat' ? 1100 : 2048,
       temperature: 0.7,
+      strictProvider: localSmallTalk,
+      routingPolicy: localSmallTalk ? 'local' : isSideChat ? 'text' : 'tutor',
     });
 
     // Simulate a stream so the existing chat UI (which reads response.body as a stream)

@@ -67,10 +67,24 @@ Strict rules:
 3. Mix slide types. Do not repeat bullets only.
 4. ${compact ? 'Bulk mode: use 3-4 strong bullets per bullet slide, each 8-14 words.' : 'Per-slide mode: use 4-6 strong bullets per bullet slide, each 8-16 words.'}
 5. ${compact ? 'Bulk mode: use 2-4 bullets per column and speaker notes of 45-80 words.' : 'Per-slide mode: use 3-5 bullets per column and speaker notes of 80-130 words.'}
+6. Keep one central message per slide and avoid paragraphs inside slide content.
 7. Include practical examples, key terms, mini case studies, viva-ready ideas, and one memorable takeaway across the deck.
-8. Pick a theme based on topic: science/tech -> dark-tech or modern-blue, literature/history -> warm-academic, environment -> nature-green.
-9. Match the requested language. Use Roman Urdu/Urdu-English only when requested.
-10. Do not add fake citations. If references are needed, mention reference placeholders only.`;
+8. Build a deliberate story arc: hook, context, core explanation, evidence/example, implications, memorable conclusion.
+9. Never invent a statistic. Use a stats slide only for well-established values; otherwise choose another slide type.
+10. Slide titles must communicate an insight, not generic labels such as "Overview" or "Introduction".
+11. Pick a theme based on topic: science/tech -> dark-tech or modern-blue, literature/history -> warm-academic, environment -> nature-green.
+12. Match the requested language. Use Roman Urdu/Urdu-English only when requested.
+13. Do not add fake citations. If references are needed, mention reference placeholders only.`;
+}
+
+function validDeckResponse(text: string) {
+  const parsed = parseAiJson<Record<string, unknown>>(text, {});
+  return Array.isArray(parsed.slides) && parsed.slides.length > 0;
+}
+
+function validSlideResponse(text: string) {
+  const parsed = parseAiJson<Record<string, unknown>>(text, {});
+  return Boolean(parsed.type || parsed.title || parsed.quote);
 }
 
 function buildUserPrompt(input: PresentationGenerateInput) {
@@ -175,13 +189,12 @@ export function normalizePresentationDeck(raw: unknown, fallbackTopic: string): 
   const deck = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
   const rawSlides = Array.isArray(deck.slides) ? deck.slides : [];
   const slides = rawSlides
-    .map((slide, index) =>
-      normalizeSlide(
-        slide && typeof slide === 'object' ? (slide as Record<string, unknown>) : {},
-        index,
-        rawSlides.length
-      )
-    )
+    .map((slide, index) => {
+      const source = slide && typeof slide === 'object' ? (slide as Record<string, unknown>) : {};
+      const normalized = normalizeSlide(source, index, rawSlides.length);
+      const backgroundImageUrl = cleanString(source.backgroundImageUrl, '', 500);
+      return backgroundImageUrl ? { ...normalized, backgroundImageUrl } : normalized;
+    })
     .filter(Boolean);
 
   return {
@@ -205,6 +218,8 @@ async function askForDeck(input: PresentationGenerateInput, tier: ModelTier) {
     ],
     maxTokens: 7600,
     temperature: 0.45,
+    routingPolicy: 'presentation',
+    validateResponse: validDeckResponse,
   });
   return applyRequestedTheme(normalizePresentationDeck(parseAiJson(result.text, {}), input.topic), input);
 }
@@ -239,6 +254,8 @@ Use exactly ${slideCount} slides. Use the requested color theme. First type titl
     ],
     maxTokens: 2400,
     temperature: 0.35,
+    routingPolicy: 'presentation',
+    validateResponse: validDeckResponse,
   });
   const parsed = parseAiJson<Record<string, unknown>>(result.text, {});
   const rawSlides = Array.isArray(parsed.slides) ? parsed.slides : [];
@@ -292,6 +309,8 @@ Make this slide substantial: presentation-ready bullets, useful speaker notes, a
     ],
     maxTokens: 2400,
     temperature: 0.42,
+    routingPolicy: 'presentation',
+    validateResponse: validSlideResponse,
   });
   return parseAiJson<Record<string, unknown>>(result.text, {});
 }
@@ -408,5 +427,18 @@ export async function generatePresentationDeck(
   const mode = input.mode === 'bulk' && slideCount <= 12 ? 'bulk' : 'per-slide';
   const deck = mode === 'per-slide' ? await askForDeckPerSlide(input, tier) : await askForDeck(input, tier);
   if (!deck.slides.length) throw new Error('Presentation slides could not be generated.');
-  return applyRequestedTheme(deck, input);
+  const backgrounds =
+    deck.theme === 'minimal-mono'
+      ? []
+      : (input.backgroundImageUrls || []).filter((url) => /^\/api\/presentation\/backgrounds\//.test(url));
+  const withBackgrounds = backgrounds.length
+    ? {
+        ...deck,
+        slides: deck.slides.map((slide, index) => ({
+          ...slide,
+          backgroundImageUrl: backgrounds[index % backgrounds.length],
+        })),
+      }
+    : deck;
+  return applyRequestedTheme(withBackgrounds, input);
 }

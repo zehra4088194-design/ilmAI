@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Activity, LayoutDashboard, Users, BookOpen, BarChart3, FileQuestion, Settings, Shield, Library, GraduationCap, Menu, X, MessageCircleWarning, Music2, School } from 'lucide-react';
+import { Activity, LayoutDashboard, Users, BookOpen, BarChart3, FileQuestion, Settings, Shield, Library, GraduationCap, Menu, X, MessageCircleWarning, Music2, School, Images } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils/cn';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ const ADMIN_NAV = [
   { icon: Activity, label: 'Release Readiness', href: '/admin/release' },
   { icon: Shield, label: 'AI Usage', href: '/admin/ai-usage' },
   { icon: MessageCircleWarning, label: 'Chat Blocks', href: '/admin/chat-moderation' },
+  { icon: Images, label: 'Presentation Images', href: '/admin/presentation-backgrounds' },
   { icon: Settings, label: 'Settings', href: '/admin/settings' },
 ];
 

@@ -1,6 +1,7 @@
 import pptxgen from 'pptxgenjs';
 import { normalizePresentationDeck } from './generator';
 import type { PresentationDeck } from './types';
+import { presentationBackgroundNameFromUrl, readPresentationBackground } from './backgrounds';
 
 const THEMES = {
   'modern-blue': { bg: '0F2C59', accent: '5FD4D0', accent2: 'FFC857', text: 'F5F9FF', subtext: 'BFD7F5', card: '1B4B8F' },
@@ -37,9 +38,34 @@ export async function exportPresentationToPptx(input: unknown): Promise<ArrayBuf
 
   const width = 13.333;
 
+  const backgroundData = new Map<string, string>();
+  await Promise.all(
+    deck.slides.map(async (item) => {
+      const name = presentationBackgroundNameFromUrl(item.backgroundImageUrl);
+      if (!name || backgroundData.has(name)) return;
+      const image = await readPresentationBackground(name);
+      if (!image) return;
+      const mime = name.endsWith('.png') ? 'image/png' : name.endsWith('.webp') ? 'image/webp' : 'image/jpeg';
+      backgroundData.set(name, `data:${mime};base64,${image.data.toString('base64')}`);
+    })
+  );
+
   deck.slides.forEach((item, index) => {
     const slide = pres.addSlide();
     slide.background = { color: theme.bg };
+    const backgroundName = presentationBackgroundNameFromUrl(item.backgroundImageUrl);
+    const backgroundImage = backgroundName ? backgroundData.get(backgroundName) : undefined;
+    if (backgroundImage) {
+      slide.addImage({ data: backgroundImage, x: 0, y: 0, w: width, h: 7.5 });
+      slide.addShape(pres.ShapeType.rect, {
+        x: 0,
+        y: 0,
+        w: width,
+        h: 7.5,
+        fill: { color: '050A14', transparency: 28 },
+        line: { color: '050A14', transparency: 100 },
+      });
+    }
     slide.addText(String(index + 1).padStart(2, '0'), {
       x: width - 1.2,
       y: 0.25,

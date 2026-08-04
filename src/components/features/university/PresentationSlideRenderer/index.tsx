@@ -191,6 +191,11 @@ function PrintableSlide({ slide, theme, index, total }: { slide: PresentationSli
         padding: '54px 64px',
         borderRadius: '24px',
         background: theme.bg,
+        backgroundImage: slide.backgroundImageUrl
+          ? `linear-gradient(rgba(5,10,20,.68), rgba(5,10,20,.76)), url("${slide.backgroundImageUrl}")`
+          : theme.bg,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
         color: theme.text,
         position: 'relative',
         overflow: 'hidden',
@@ -276,8 +281,17 @@ export function PresentationSlideRenderer({ deck, exportId = 'presentation-expor
   return (
     <div className="space-y-4">
       <div id={exportId} className="mx-auto w-full max-w-5xl">
-        <div className="relative aspect-video overflow-hidden rounded-2xl shadow-2xl ring-1 ring-white/10" style={{ background: theme.bg }}>
-          <div key={current} className="h-full w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <div
+          className="relative aspect-video overflow-hidden rounded-2xl shadow-2xl ring-1 ring-white/10"
+          style={{
+            background: theme.bg,
+            backgroundImage: slide.backgroundImageUrl ? `url("${slide.backgroundImageUrl}")` : theme.bg,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        >
+          {slide.backgroundImageUrl && <div className="absolute inset-0 bg-slate-950/70" />}
+          <div key={current} className="relative h-full w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
             <SlideCanvas slide={slide} theme={theme} />
           </div>
           <div className="absolute right-4 top-4 rounded-full px-3 py-1 text-xs font-semibold backdrop-blur" style={{ color: theme.subtext, background: theme.cardBg }}>

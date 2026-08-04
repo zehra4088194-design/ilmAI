@@ -38,7 +38,8 @@ export interface GatewayChatRequest {
   maxTokens?: number;
   temperature?: number;
   strictProvider?: boolean;
-  routingPolicy?: 'text' | 'grading' | 'gemini';
+  routingPolicy?: 'text' | 'tutor' | 'presentation' | 'grading' | 'gemini' | 'local';
+  validateResponse?: (text: string) => boolean;
 }
 
 export interface GatewayChatResponse {
@@ -48,6 +49,17 @@ export interface GatewayChatResponse {
   fallbackTriggered?: boolean;
   originalProvider?: AiProviderId;
   error?: string;
+}
+
+export function isUsableAiResponse(text: string): boolean {
+  const value = text.trim();
+  if (value.length < 2 || !/[\p{L}\p{N}]/u.test(value)) return false;
+  if (/^\s*<!doctype html|^\s*<html[\s>]/i.test(value)) return false;
+  if (/^\s*\{\s*"?(?:error|message)"?\s*:/i.test(value) && /(?:error|failed|unavailable|rate.?limit)/i.test(value)) {
+    return false;
+  }
+  if (/^(?:error|service unavailable|bad gateway|gateway timeout|internal server error)\b/i.test(value)) return false;
+  return true;
 }
 
 function getProviderBudgetKey(provider: AiProviderId, tier: ModelTier): ProviderBudgetKey | null {
@@ -90,17 +102,34 @@ export async function gatewayChat({
   temperature = 0.7,
   strictProvider = false,
   routingPolicy = 'text',
+  validateResponse,
 }: GatewayChatRequest): Promise<GatewayChatResponse> {
-  const routedProvider: AiProviderId =
-    routingPolicy === 'grading' ? 'groq' : routingPolicy === 'gemini' ? 'gemini' : 'deepseek';
+  const providerChain: Array<{ provider: AiProviderId; tier: ModelTier }> =
+    routingPolicy === 'gemini'
+      ? [{ provider: 'gemini', tier }]
+      : routingPolicy === 'local'
+        ? [{ provider: 'local', tier: 'mini' }]
+        : routingPolicy === 'tutor' || routingPolicy === 'presentation'
+          ? [
+              { provider: 'gemini', tier },
+              { provider: 'deepseek', tier },
+            ]
+          : [
+              { provider: 'groq', tier: routingPolicy === 'grading' ? 'mini' : tier },
+              { provider: 'gemini', tier },
+              { provider: 'deepseek', tier },
+            ];
+  const primaryProvider = providerChain[0]?.provider || provider;
   const attempts: GatewayChatRequest[] = strictProvider
-    ? [{ provider, tier, messages, maxTokens, temperature, strictProvider: true, routingPolicy }]
-    : routingPolicy === 'grading'
-      ? [
-          { provider: 'groq', tier: 'mini', messages, maxTokens, temperature, routingPolicy },
-          { provider: 'deepseek', tier, messages, maxTokens, temperature, routingPolicy },
-        ]
-      : [{ provider: routedProvider, tier, messages, maxTokens, temperature, routingPolicy }];
+    ? [{ provider, tier, messages, maxTokens, temperature, strictProvider: true, routingPolicy, validateResponse }]
+    : providerChain.map((attempt) => ({
+        ...attempt,
+        messages,
+        maxTokens,
+        temperature,
+        routingPolicy,
+        validateResponse,
+      }));
   const seen = new Set<string>();
   let lastError: unknown;
 
@@ -133,7 +162,7 @@ export async function gatewayChat({
         strict_provider: true,
       })) as GatewayChatResponse;
 
-      if (data.text?.trim()) {
+      if (isUsableAiResponse(data.text || '') && (!validateResponse || validateResponse(data.text))) {
         const rawProviderUsed = String(data.providerUsed || '');
         const rawOriginalProvider = data.originalProvider ? String(data.originalProvider) : undefined;
         const providerUsed = rawProviderUsed === ADVANCED_GATEWAY_PROVIDER ? 'advanced' : data.providerUsed;
@@ -141,14 +170,14 @@ export async function gatewayChat({
         return {
           ...data,
           providerUsed: providerUsed as AiProviderId,
-          fallbackTriggered: data.fallbackTriggered || attempt.provider !== routedProvider,
+          fallbackTriggered: data.fallbackTriggered || attempt.provider !== primaryProvider,
           originalProvider:
             (originalProvider as AiProviderId | undefined) ||
-            (attempt.provider !== routedProvider ? routedProvider : undefined),
+            (attempt.provider !== primaryProvider ? primaryProvider : undefined),
         };
       }
 
-      lastError = new GatewayError('AI gateway returned an empty response.', 502, data);
+      lastError = new GatewayError('AI provider returned an unusable response.', 502, data);
     } catch (error) {
       if (error instanceof GatewayError && (error.status === 401 || error.status === 403)) {
         throw error;

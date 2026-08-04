@@ -44,7 +44,7 @@ Each "improvements" array item should be one concise sentence (plain text, no ma
     ];
     let result;
     let parsed: { score: number; maxScore: number; feedback: string; improvements: string[] } | null = null;
-    for (const provider of ['groq', 'deepseek'] as const) {
+    for (const provider of ['groq', 'gemini', 'deepseek'] as const) {
       try {
         result = await gatewayChat({
           provider,
@@ -70,7 +70,7 @@ Each "improvements" array item should be one concise sentence (plain text, no ma
         console.warn(`${provider} answer grading failed:`, gradingError);
       }
     }
-    if (!parsed) throw new Error('Both grading providers returned an invalid response.');
+    if (!parsed) throw new Error('All grading providers returned an invalid response.');
 
     await consumeAiCredits(user.id, tier, 'grade_answer');
     return NextResponse.json({ status: 'success', data: parsed, provider: result?.providerUsed });

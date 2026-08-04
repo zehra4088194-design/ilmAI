@@ -77,7 +77,7 @@ ENV NODE_ENV=production \
 
 RUN groupadd --system --gid 1001 nodejs \
     && useradd --system --uid 1001 --gid nodejs nextjs \
-    && mkdir -p /app/data/ai-artifacts \
+    && mkdir -p /app/data/ai-artifacts /app/data/presentation-assets \
     && chown -R nextjs:nodejs /app/data
 
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public

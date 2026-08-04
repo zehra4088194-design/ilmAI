@@ -59,6 +59,7 @@ services:
       EMBEDDING_URL: http://embedding:8080/v1
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-qwen3-embedding-0.6b-q8}
       AI_ARTIFACTS_PATH: /app/data/ai-artifacts
+      PRESENTATION_ASSETS_PATH: /app/data/presentation-assets
       OCR_SERVICE_URL: http://ocr:8000
       OCR_SERVICE_SECRET: ${OCR_SERVICE_SECRET:?}
       EASYOCR_API_URL: ${EASYOCR_API_URL:-https://console.easyocr.org/api/ocr}
@@ -134,6 +135,7 @@ services:
         condition: service_started
     volumes:
       - ai-artifacts:/app/data/ai-artifacts
+      - presentation-assets:/app/data/presentation-assets
     healthcheck:
       test:
         [
@@ -349,3 +351,4 @@ volumes:
   llama-cache:
   embedding-cache:
   ai-artifacts:
+  presentation-assets:

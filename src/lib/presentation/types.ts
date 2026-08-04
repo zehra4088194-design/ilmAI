@@ -36,6 +36,7 @@ export type PresentationSlide = {
   author?: string;
   stats?: PresentationStat[];
   speakerNotes?: string;
+  backgroundImageUrl?: string;
 };
 
 export type PresentationDeck = {
@@ -56,6 +57,13 @@ export type PresentationGenerateInput = {
   outputStyle?: string;
   theme?: PresentationTheme;
   mode?: PresentationGenerateMode;
+  backgroundImageUrls?: string[];
+};
+
+export type PresentationBackground = {
+  name: string;
+  url: string;
+  size: number;
 };
 
 export const PRESENTATION_THEMES: PresentationTheme[] = [

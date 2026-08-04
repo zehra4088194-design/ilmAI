@@ -42,7 +42,7 @@ The "feedback" value should be a short Markdown-formatted mini-document: a one-l
         },
       ];
       let ev: { score: number; grade: string; feedback: string } | null = null;
-      for (const provider of ['groq', 'deepseek'] as const) {
+      for (const provider of ['groq', 'gemini', 'deepseek'] as const) {
         try {
           const result = await gatewayChat({
             provider,
@@ -67,7 +67,7 @@ The "feedback" value should be a short Markdown-formatted mini-document: a one-l
           console.warn(`${provider} test grading failed:`, gradingError);
         }
       }
-      if (!ev) throw new Error('Both grading providers returned an invalid response.');
+      if (!ev) throw new Error('All grading providers returned an invalid response.');
       ev.score = Math.max(0, Math.min(Number(ev.score) || 0, maxMarks));
       evals.push(ev);
     }
