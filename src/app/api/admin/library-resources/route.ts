@@ -36,7 +36,8 @@ export async function GET() {
     .select('*, subjects(name), chapters(name)')
     .order('created_at', { ascending: false });
 
-  if (error) return NextResponse.json({ error: `Library resources could not be loaded: ${error.message}` }, { status: 500 });
+  if (error)
+    return NextResponse.json({ error: `Library resources could not be loaded: ${error.message}` }, { status: 500 });
 
   const resources = (data ?? []).map((resource) => {
     const subjects = resource.subjects as SubjectJoin;
@@ -55,8 +56,8 @@ export async function POST(req: NextRequest) {
   const lightFileUrl = (body.light_file_url ?? body.drive_url ?? '').trim();
   const darkFileUrl = body.dark_file_url?.trim() || null;
   const contextTextUrl = body.context_text_url?.trim() || null;
-  if (!body.title?.trim() || !lightFileUrl) {
-    return NextResponse.json({ error: 'Title and PDF URL are required' }, { status: 400 });
+  if (!body.title?.trim() || !lightFileUrl || !contextTextUrl) {
+    return NextResponse.json({ error: 'Title, PDF URL, and companion TXT URL are required' }, { status: 400 });
   }
   const driveUrl = lightFileUrl;
   const driveFileId = body.drive_file_id ?? extractGoogleDriveFileId(driveUrl);
@@ -107,7 +108,7 @@ export async function POST(req: NextRequest) {
       await queueResourceContextProcessing('library', data.id);
     } catch (queueError) {
       processingWarning =
-        queueError instanceof Error ? queueError.message : 'The automatic OCR queue could not be started.';
+        queueError instanceof Error ? queueError.message : 'The TXT indexing queue could not be started.';
       console.error('library context queue error:', queueError);
     }
   }
@@ -115,7 +116,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(
     {
       resource: data,
-      contextStatus: processingWarning ? 'queue_failed' : contextTextUrl ? 'provided_and_queued' : 'queued',
+      contextStatus: processingWarning ? 'queue_failed' : 'provided_and_queued',
       warning: processingWarning,
     },
     { status: 201 }

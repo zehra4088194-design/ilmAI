@@ -1,9 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/server';
-import { performOcr } from '@/lib/ocr';
-import { getRedisClient } from '@/lib/redis/client';
 import { extractGoogleDriveFileId } from '@/lib/utils/filePreview';
 import type { SubscriptionTier } from '@/types';
-import { getR2Text, getR2Uri, isR2Configured, parseR2Uri, putR2Object } from '@/lib/storage/r2';
+import { getR2Text, parseR2Uri } from '@/lib/storage/r2';
 
 export type ProtectedResourceKind = 'library' | 'past-paper' | 'college-resource';
 export type ResourceMode = 'light' | 'dark';
@@ -30,9 +28,7 @@ export type ProtectedResource = {
 
 const MAX_PROTECTED_RESOURCE_BYTES = 125 * 1024 * 1024;
 const MAX_RESOURCE_CONTEXT_BYTES = 5 * 1024 * 1024;
-const MAX_RESOURCE_OCR_BYTES = 25 * 1024 * 1024;
 const MAX_AI_CONTEXT_CHARACTERS = 120_000;
-const RESOURCE_CONTEXT_CACHE_SECONDS = 24 * 60 * 60;
 const RESOURCE_CONTEXT_BUCKET = 'resource-context';
 const STORAGE_CONTEXT_PREFIX = `storage://${RESOURCE_CONTEXT_BUCKET}/`;
 const GOOGLE_DRIVE_DOWNLOAD_HOSTS = new Set(['drive.google.com', 'drive.usercontent.google.com']);
@@ -335,109 +331,16 @@ function normalizeContextText(value: string) {
     .slice(0, MAX_AI_CONTEXT_CHARACTERS);
 }
 
-async function readCachedOcrContext(cacheKey: string) {
-  try {
-    const redis = await getRedisClient();
-    return redis ? await redis.get(cacheKey) : null;
-  } catch (error) {
-    console.warn('Resource OCR cache read failed:', error);
-    return null;
-  }
-}
-
-async function cacheOcrContext(cacheKey: string, context: string) {
-  try {
-    const redis = await getRedisClient();
-    if (redis) await redis.set(cacheKey, context, { EX: RESOURCE_CONTEXT_CACHE_SECONDS });
-  } catch (error) {
-    console.warn('Resource OCR cache write failed:', error);
-  }
-}
-
-async function persistResourceContext(resource: ProtectedResource, context: string) {
-  const admin = (await createAdminClient()) as any;
-  const path = `${resource.kind}/${resource.id}.txt`;
-  let storageUrl: string | null = null;
-
-  if (isR2Configured()) {
-    try {
-      const r2Key = `resource-context/${path}`;
-      await putR2Object(r2Key, Buffer.from(context, 'utf8'), {
-        contentType: 'text/plain; charset=utf-8',
-        cacheControl: 'private, max-age=31536000, immutable',
-      });
-      storageUrl = getR2Uri(r2Key);
-    } catch (error) {
-      console.warn('R2 context sidecar save failed; using Supabase Storage:', error);
-    }
-  }
-
-  if (!storageUrl) {
-    const { error: uploadError } = await admin.storage
-      .from(RESOURCE_CONTEXT_BUCKET)
-      .upload(path, Buffer.from(context, 'utf8'), {
-        contentType: 'text/plain; charset=utf-8',
-        cacheControl: '31536000',
-        upsert: true,
-      });
-    if (uploadError) throw new Error(`Context sidecar could not be saved: ${uploadError.message}`);
-    storageUrl = `${STORAGE_CONTEXT_PREFIX}${path}`;
-  }
-
-  const table =
-    resource.kind === 'library'
-      ? 'library_resources'
-      : resource.kind === 'past-paper'
-        ? 'past_papers'
-        : 'college_resources';
-  const { error: updateError } = await admin.from(table).update({ context_text_url: storageUrl }).eq('id', resource.id);
-  if (updateError) throw new Error(`Resource context reference could not be updated: ${updateError.message}`);
-  resource.contextTextUrl = storageUrl;
-}
-
 export async function fetchResourceContext(resource: ProtectedResource) {
-  if (resource.contextTextUrl) {
-    try {
-      const companionContext = await fetchCompanionContext(resource);
-      if (companionContext) return companionContext;
-    } catch (error) {
-      console.warn(`Companion context failed for ${resource.kind}/${resource.id}; trying protected OCR:`, error);
-    }
+  if (!resource.contextTextUrl) {
+    throw new Error('This resource has no companion .txt file. Attach its extracted text before using AI tools.');
   }
 
-  const cacheKey = `resource-context:v1:${resource.kind}:${resource.id}`;
-  const cachedContext = await readCachedOcrContext(cacheKey);
-  if (cachedContext && cachedContext.length >= 50) return cachedContext.slice(0, MAX_AI_CONTEXT_CHARACTERS);
-
-  const response = await fetchProtectedFile(resource);
-  const contentLength = Number(response.headers.get('content-length') || 0);
-  if (contentLength > MAX_RESOURCE_OCR_BYTES) {
-    throw new Error('For AI summaries or tests, use a PDF smaller than 25 MB or add a companion .txt file.');
+  const companionContext = await fetchCompanionContext(resource);
+  if (!companionContext) {
+    throw new Error('The companion .txt file could not be read. PDF files are never sent to AI as a fallback.');
   }
-  const fileBuffer = Buffer.from(await response.arrayBuffer());
-  if (fileBuffer.length > MAX_RESOURCE_OCR_BYTES) {
-    throw new Error('For AI summaries or tests, use a PDF smaller than 25 MB or add a companion .txt file.');
-  }
-
-  const responseMime = response.headers.get('content-type')?.split(';')[0]?.trim().toLowerCase();
-  const mimeType =
-    responseMime === 'application/pdf' || resource.fileType.toLowerCase().includes('pdf')
-      ? 'application/pdf'
-      : responseMime || 'application/octet-stream';
-  const ocrResult = await performOcr({
-    imageBuffer: fileBuffer,
-    mimeType,
-    userTier: resource.tier,
-    mode: 'printed',
-    timeoutMs: 180_000,
-  });
-  const context = normalizeContextText(ocrResult.text);
-  if (context.length < 50) {
-    throw new Error('No readable text could be extracted for the AI summary or test. Add a companion .txt file.');
-  }
-  await persistResourceContext(resource, context);
-  await cacheOcrContext(cacheKey, context);
-  return context;
+  return companionContext;
 }
 
 export async function getResourceForProcessing(

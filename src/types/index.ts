@@ -2,7 +2,8 @@
 // ILM AI - GLOBAL TYPES
 // ============================================
 
-export type Board = 'FBISE' | 'BISE_LHR' | 'BISE_KHI' | 'BISE_RWP' | 'BISE_FSD' | 'AKU' | 'CBSE' | 'ICSE' | 'STATE_BOARD_IN' | 'OTHER';
+export type Board =
+  'FBISE' | 'BISE_LHR' | 'BISE_KHI' | 'BISE_RWP' | 'BISE_FSD' | 'AKU' | 'CBSE' | 'ICSE' | 'STATE_BOARD_IN' | 'OTHER';
 export type GradeLevel = 'GRADE_9' | 'GRADE_10' | 'GRADE_11' | 'GRADE_12' | 'O_LEVEL' | 'A_LEVEL';
 export type SubscriptionTier = 'FREE' | 'PRO' | 'ELITE';
 export type QuestionType = 'MCQ' | 'SHORT' | 'LONG' | 'FILL_BLANK' | 'TRUE_FALSE';
@@ -11,7 +12,7 @@ export type SessionStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'ABAND
 export type AiProvider = 'groq' | 'anthropic' | 'openai';
 export type ConversationRole = 'user' | 'assistant' | 'system';
 
-export type AiProviderId = 'groq' | 'grok' | 'claude' | 'gpt' | 'gemini' | 'advanced';
+export type AiProviderId = 'local' | 'groq' | 'grok' | 'claude' | 'gpt' | 'gemini' | 'advanced';
 export type UserRole = 'student' | 'parent' | 'teacher' | 'admin';
 export type Gender = 'girl' | 'boy';
 export type EducationLevel = 'school' | 'college' | 'university';

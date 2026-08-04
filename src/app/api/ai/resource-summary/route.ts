@@ -3,13 +3,10 @@ import { createClient } from '@/lib/supabase/server';
 import { gatewayChat, MARKDOWN_ANSWER_FORMAT_INSTRUCTION } from '@/lib/ai/gateway';
 import { checkAiMessageLimit, checkFileSummaryLimit, consumeAiCredits } from '@/lib/rate-limit';
 import { fetchResourceContext, getProtectedResource, type ProtectedResourceKind } from '@/lib/resources/server';
-import {
-  buildResourceEvidence,
-  buildResourceEvidenceFromChunk,
-  verifiedSourceInstruction,
-} from '@/lib/resources/evidence';
+import { buildResourceEvidence, verifiedSourceInstruction } from '@/lib/resources/evidence';
 import { buildResourceSourceSummary } from '@/lib/resources/source-fallback';
 import type { SubscriptionTier } from '@/types';
+import { buildRepresentativeTextContext } from '@/lib/resources/context-window';
 
 export const runtime = 'nodejs';
 export const maxDuration = 180;
@@ -46,6 +43,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: 'error', error: "Today's AI limit has been reached." }, { status: 429 });
     }
     const context = await fetchResourceContext(resource);
+    const modelContext = buildRepresentativeTextContext(context);
 
     let summary: string;
     let provider = 'source-fallback';
@@ -53,7 +51,7 @@ export async function POST(req: NextRequest) {
     let fallbackUsed = false;
     try {
       const result = await gatewayChat({
-        provider: 'groq',
+        provider: 'local',
         tier: 'mini',
         maxTokens: 1800,
         temperature: 0.25,
@@ -64,7 +62,7 @@ export async function POST(req: NextRequest) {
           },
           {
             role: 'user',
-            content: `Resource: ${resource.title}\n\nCreate a student-friendly summary from this companion text file. Include:\n1. What this file covers\n2. Key concepts/formulas\n3. Important exam points\n4. A compact revision checklist\n\nSOURCE TEXT:\n${context}`,
+            content: `Resource: ${resource.title}\n\nCreate a student-friendly summary from this companion text file. Include:\n1. What this file covers\n2. Key concepts/formulas\n3. Important exam points\n4. A compact revision checklist\n\nSOURCE TEXT (representative sections from the attached TXT):\n${modelContext}`,
           },
         ],
       });
@@ -73,18 +71,9 @@ export async function POST(req: NextRequest) {
       model = result.modelUsed;
     } catch (gatewayError) {
       fallbackUsed = true;
-      console.warn('Groq summary gateway unavailable; using source fallback:', gatewayError);
+      console.warn('Local summary model unavailable; using source fallback:', gatewayError);
       summary = buildResourceSourceSummary(resource.title, context);
     }
-
-    const { data: evidenceChunk } = await (supabase as any)
-      .from('resource_source_chunks')
-      .select('content, page_number, metadata')
-      .eq('resource_kind', resource.kind)
-      .eq('resource_id', resource.id)
-      .order('chunk_index', { ascending: true })
-      .limit(1)
-      .maybeSingle();
 
     await consumeAiCredits(user.id, resource.tier as SubscriptionTier, 'resource_summary');
     return NextResponse.json({
@@ -94,9 +83,7 @@ export async function POST(req: NextRequest) {
         provider,
         model,
         fallbackUsed,
-        source: evidenceChunk
-          ? buildResourceEvidenceFromChunk(resource.title, evidenceChunk as any, fallbackUsed ? 100 : 92)
-          : buildResourceEvidence(resource.title, context, fallbackUsed ? 100 : 88),
+        source: buildResourceEvidence(resource.title, context, fallbackUsed ? 100 : 88),
       },
     });
   } catch (error) {

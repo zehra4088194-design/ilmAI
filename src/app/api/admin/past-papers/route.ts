@@ -39,10 +39,20 @@ export async function POST(req: NextRequest) {
 
   const body = (await req.json()) as PastPaperInsert;
   const year = Number(body.year);
-  if (!body.subject_id || !body.board || !body.file_url?.trim() || !Number.isInteger(year) || year < 1900 || year > 2100) {
+  if (
+    !body.subject_id ||
+    !body.board ||
+    !body.file_url?.trim() ||
+    !Number.isInteger(year) ||
+    year < 1900 ||
+    year > 2100
+  ) {
     return NextResponse.json({ error: 'Subject, board, a valid year, and PDF URL are required' }, { status: 400 });
   }
   const contextTextUrl = body.context_text_url?.trim() || null;
+  if (!contextTextUrl) {
+    return NextResponse.json({ error: 'A companion TXT URL is required for every PDF' }, { status: 400 });
+  }
 
   const adminClient = await createAdminClient();
   const { data, error } = await adminClient
@@ -75,7 +85,7 @@ export async function POST(req: NextRequest) {
       await queueResourceContextProcessing('past-paper', data.id);
     } catch (queueError) {
       processingWarning =
-        queueError instanceof Error ? queueError.message : 'The automatic OCR queue could not be started.';
+        queueError instanceof Error ? queueError.message : 'The TXT indexing queue could not be started.';
       console.error('past paper context queue error:', queueError);
     }
   }
@@ -83,7 +93,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(
     {
       paper: data,
-      contextStatus: processingWarning ? 'queue_failed' : contextTextUrl ? 'provided_and_queued' : 'queued',
+      contextStatus: processingWarning ? 'queue_failed' : 'provided_and_queued',
       warning: processingWarning,
     },
     { status: 201 }

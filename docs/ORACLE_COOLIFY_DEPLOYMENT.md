@@ -8,10 +8,11 @@ and compose file `docker-compose.oracle.yml`.
 
 | Service          | Production role                                                  |
 | ---------------- | ---------------------------------------------------------------- |
-| Oracle + Coolify | Host and orchestrate the five private Docker services            |
+| Oracle + Coolify | Host and orchestrate the six private Docker services             |
 | Node AI gateway  | Provider rotation, timeout, fallback, and empty-response control |
 | Valkey           | Private persistent rate-limit and cache state                    |
 | Local OCR        | OCRmyPDF, Tesseract, and native PDF extraction                   |
+| Local llama.cpp  | Qwen 4B inference for companion-TXT summaries and tests          |
 | Supabase         | Managed database, Auth, Storage, and Realtime                    |
 | Google Drive     | Source storage behind authenticated proxy routes                 |
 
@@ -20,7 +21,7 @@ The Oracle Always Free Ampere allowance currently provides up to 4 OCPUs and 24 
 ## 1. Prepare Oracle Cloud
 
 1. Create the VM in the tenancy home region.
-2. Choose `VM.Standard.A1.Flex`, ARM64, 2 OCPUs, and 12 GB RAM. The compose limits are tuned for this currently provisioned shape.
+2. Choose `VM.Standard.A1.Flex`, ARM64, 4 OCPUs, and 24 GB RAM. The local-model compose limits are tuned for this shape.
 3. Use Ubuntu 24.04 LTS or 22.04 LTS and a 100-150 GB boot volume.
 4. Add an SSH public key and keep the private key backed up.
 5. Reserve the public IPv4 address so a VM restart does not change DNS.
@@ -65,7 +66,7 @@ After login:
 4. Create a Project, Production environment, and Docker Compose resource.
 5. Select `docker-compose.oracle.yml` as the compose file.
 6. Attach the app domain to service `web`, port `3000`.
-7. Do not attach domains to `ai-gateway`, `ocr`, `valkey`, or `cron`.
+7. Do not attach domains to `ai-gateway`, `llama`, `ocr`, `valkey`, or `cron`.
 
 ## 3. Configure Coolify environment
 
@@ -84,7 +85,7 @@ Required groups:
 
 1. Public app URL and Supabase public values.
 2. Supabase service-role key, which must remain server-only.
-3. AI provider key arrays such as `GROQ_API_KEYS_JSON` and `GEMINI_API_KEYS_JSON`.
+3. Local llama.cpp settings. Hosted-provider arrays such as `GROQ_API_KEYS_JSON` and `GEMINI_API_KEYS_JSON` are optional fallbacks.
 4. Oracle SMTP credentials.
 5. Payment keys only after sandbox testing and merchant approval.
 6. Android package/fingerprint values only when preparing the Play build.
@@ -98,9 +99,9 @@ GEMINI_API_KEYS_JSON=["AIza_first","AIza_second"]
 
 Do not add the same key more than once. Multiple accounts or keys do not override a provider's terms, anti-abuse rules, or project-level quota. Keep Admin Settings budgets below the real provider dashboard quota.
 
-Keep `OCR_MAX_CONCURRENT_JOBS=1` on the free 2-OCPU VM. Printed OCR is local. Handwriting uses Gemini first because Tesseract is not dependable for handwriting.
+Keep `OCR_MAX_CONCURRENT_JOBS=1` while the local model shares the 4-OCPU VM. Printed OCR is local. Handwriting uses Gemini first because Tesseract is not dependable for handwriting.
 
-Deploy the resource. A healthy deployment has five running services: `web`, `ai-gateway`, `ocr`, `valkey`, and `cron`.
+Deploy the resource. A healthy deployment has six running services: `web`, `ai-gateway`, `llama`, `ocr`, `valkey`, and `cron`. The first deployment downloads the GGUF model into the persistent `llama-cache` volume and therefore takes longer than later deployments.
 
 ## 4. Run Supabase changes
 
@@ -122,6 +123,8 @@ If `20260717100000_profile_academic_institution.sql` was the last manually appli
 14. `supabase/migrations/20260719130000_public_resource_catalog.sql`
 15. `supabase/migrations/20260719140000_user_data_retention.sql`
 16. `supabase/migrations/20260719200000_push_subscriptions.sql`
+
+For an existing current deployment, also apply `supabase/migrations/20260804140000_txt_resource_rag.sql` before deploying the local-model code. It fixes TXT chunk metadata/search and removes direct browser access to raw companion text.
 
 Confirm in Supabase after running them:
 
@@ -219,7 +222,7 @@ Manual product checks:
 4. Open the same lecture twice and verify the thumbnail both times.
 5. Open light and dark resource versions without exposing the Drive source in resource metadata.
 6. Verify Free can read but not download, while Pro/Elite can save in-app/offline.
-7. Generate Summary/Test with a companion `.txt`, then with no `.txt` to exercise Oracle OCR.
+7. Generate Summary/Test with a companion `.txt`, then verify a resource without `.txt` is rejected without fetching or OCR-processing its PDF.
 8. Test printed and handwritten scans and inspect Admin provider usage.
 9. Test institution inquiry chat and institution-specific usage reporting.
 10. Complete Paddle sandbox checkout and inspect webhook delivery.
@@ -250,7 +253,7 @@ Google's current payments policy: https://support.google.com/googleplay/android-
 
 1. Watch Oracle CPU, memory, boot volume, and Email Delivery usage.
 2. Keep OCR concurrency at one until measurements show headroom.
-3. Back up Coolify configuration and the `valkey-data` volume; Valkey loss resets counters/cache but not user data.
+3. Back up Coolify configuration and the `valkey-data` volume. The `llama-cache` volume can be recreated by downloading the configured GGUF model again.
 4. Keep Supabase backups and Storage policies under review.
 5. Rotate AI/payment/service secrets immediately if any appear in logs or source control.
 6. Keep free provider budgets conservative; a pool of 20 keys improves failover but does not guarantee 20 times the allowed quota.

@@ -12,7 +12,7 @@ import type { ChatMessage } from '@/types';
 import { checkProviderDailyLimit } from '@/lib/rate-limit';
 import type { ProviderBudgetKey } from '@/lib/platform-settings/shared';
 
-export type AiProviderId = 'groq' | 'grok' | 'claude' | 'gpt' | 'gemini' | 'advanced';
+export type AiProviderId = 'local' | 'groq' | 'grok' | 'claude' | 'gpt' | 'gemini' | 'advanced';
 export type ModelTier = 'mini' | 'medium' | 'pro';
 
 const GATEWAY_URL = process.env.AI_GATEWAY_URL || 'http://127.0.0.1:8787';
@@ -49,19 +49,21 @@ export interface GatewayChatResponse {
   error?: string;
 }
 
-function getProviderBudgetKey(provider: AiProviderId, tier: ModelTier): ProviderBudgetKey {
+function getProviderBudgetKey(provider: AiProviderId, tier: ModelTier): ProviderBudgetKey | null {
+  if (provider === 'local') return null;
   if (provider === 'groq') return tier === 'mini' ? 'groqFast' : 'groqLarge';
   if (provider === 'advanced') return 'openRouter';
   return provider;
 }
 
 async function gatewayFetch(path: string, body: unknown) {
+  const provider = typeof body === 'object' && body ? String((body as { provider?: unknown }).provider || '') : '';
   const res = await fetch(`${GATEWAY_URL}${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GATEWAY_SECRET}` },
     body: JSON.stringify(body),
     // Gateway does its own multi-key retries; give it room to work
-    signal: AbortSignal.timeout(90000),
+    signal: AbortSignal.timeout(provider === 'local' ? 185000 : 90000),
   });
   const contentType = res.headers.get('content-type') || '';
   const data = contentType.includes('application/json') ? await res.json() : await res.text();
@@ -102,13 +104,15 @@ export async function gatewayChat({
 
     try {
       const budgetKey = getProviderBudgetKey(attempt.provider, attempt.tier);
-      const budget = await checkProviderDailyLimit(budgetKey);
-      if (!budget.success) {
-        lastError = new GatewayError(`${attempt.provider} has reached its free daily budget.`, 429, {
-          provider: attempt.provider,
-          reset: budget.reset,
-        });
-        continue;
+      if (budgetKey) {
+        const budget = await checkProviderDailyLimit(budgetKey);
+        if (!budget.success) {
+          lastError = new GatewayError(`${attempt.provider} has reached its free daily budget.`, 429, {
+            provider: attempt.provider,
+            reset: budget.reset,
+          });
+          continue;
+        }
       }
 
       const data = (await gatewayFetch('/chat', {

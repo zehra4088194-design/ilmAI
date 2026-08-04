@@ -21,6 +21,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const { id } = await params;
   const body = (await req.json()) as LibraryUpdate;
+  if (body.context_text_url !== undefined && !body.context_text_url?.trim()) {
+    return NextResponse.json({ error: 'The companion TXT URL cannot be removed from a PDF resource' }, { status: 400 });
+  }
   const update: LibraryUpdate = {};
 
   if (body.title !== undefined) update.title = body.title.trim();
@@ -84,23 +87,21 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
   if (!data) return NextResponse.json({ error: 'The resource was not found.' }, { status: 404 });
 
-  const sourceChanged = body.light_file_url !== undefined || body.drive_url !== undefined;
-  const needsGeneratedContext =
-    body.context_text_url === null || body.context_text_url?.trim() === '' || (sourceChanged && !data.context_text_url);
+  const shouldReindexContext = Boolean(body.context_text_url?.trim());
   let processingWarning: string | null = null;
-  if (needsGeneratedContext) {
+  if (shouldReindexContext) {
     try {
       await queueResourceContextProcessing('library', id);
     } catch (queueError) {
       processingWarning =
-        queueError instanceof Error ? queueError.message : 'The automatic OCR queue could not be started.';
+        queueError instanceof Error ? queueError.message : 'The TXT indexing queue could not be started.';
       console.error('library context requeue error:', queueError);
     }
   }
 
   return NextResponse.json({
     resource: data,
-    contextStatus: needsGeneratedContext ? (processingWarning ? 'queue_failed' : 'queued') : 'provided',
+    contextStatus: shouldReindexContext ? (processingWarning ? 'queue_failed' : 'queued') : 'provided',
     warning: processingWarning,
   });
 }

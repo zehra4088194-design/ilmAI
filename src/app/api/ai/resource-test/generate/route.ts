@@ -4,13 +4,10 @@ import { gatewayChat } from '@/lib/ai/gateway';
 import { checkAiMessageLimit, checkFileTestLimit, consumeAiCredits } from '@/lib/rate-limit';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import { fetchResourceContext, getProtectedResource, type ProtectedResourceKind } from '@/lib/resources/server';
-import {
-  buildResourceEvidence,
-  buildResourceEvidenceFromChunk,
-  verifiedSourceInstruction,
-} from '@/lib/resources/evidence';
+import { buildResourceEvidence, verifiedSourceInstruction } from '@/lib/resources/evidence';
 import type { FullTestPaper } from '@/app/api/ai/full-test/route';
 import { buildResourceSourceTest, filterHighQualitySourceMcqs } from '@/lib/resources/source-fallback';
+import { buildRepresentativeTextContext } from '@/lib/resources/context-window';
 
 export const runtime = 'nodejs';
 export const maxDuration = 180;
@@ -57,6 +54,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: 'error', error: "Today's AI limit has been reached." }, { status: 429 });
     }
     const context = await fetchResourceContext(resource);
+    const modelContext = buildRepresentativeTextContext(context);
     const fallback: FullTestPaper = {
       title: `${resource.title} - AI Test`,
       totalMarks: mcqCount + shortCount * 3 + longCount * 8,
@@ -75,7 +73,7 @@ export async function POST(req: NextRequest) {
     let fallbackUsed = false;
     try {
       const result = await gatewayChat({
-        provider: 'gemini',
+        provider: 'local',
         tier: 'medium',
         maxTokens: 8192,
         temperature: 0.25,
@@ -86,7 +84,7 @@ export async function POST(req: NextRequest) {
           },
           {
             role: 'user',
-            content: `Create a high-quality test strictly from the facts and concepts in this resource.\nExact counts: ${mcqCount} MCQs, ${shortCount} short questions, ${longCount} long questions.\n\nMCQ QUALITY RULES:\n- Every question must be self-contained and directly test a named concept, fact, definition, formula, application, comparison, or worked example.\n- Never write meta questions such as "According to the file/source/document...", "Which option is supported by the text?", or "What does the uploaded material say?"\n- Never mention the file, source, document, passage, notes, or upload in any question or option.\n- Use four distinct, plausible subject-specific options with exactly one correct answer.\n- Avoid "all of the above", "none of the above", placeholder options, and repeated questions.\n- Explanations must state the relevant concept and why the answer is correct.\n- If the material cannot support the requested count without repetition or invention, return fewer questions rather than filler.\n\nWritten questions need marks and source-grounded key points.\n\nReturn exactly:\n{"title":"...","totalMarks":number,"timeAllowed":number,"mcqs":[{"q":"...","opts":["A","B","C","D"],"correct":0,"exp":"..."}],"shortQs":[{"q":"...","marks":3,"keyPoints":["..."]}],"longQs":[{"q":"...","marks":8,"keyPoints":["..."],"guide":"..."}]}\n\nRESOURCE: ${resource.title}\n\nSOURCE TEXT:\n${context}`,
+            content: `Create a high-quality test strictly from the facts and concepts in this resource.\nExact counts: ${mcqCount} MCQs, ${shortCount} short questions, ${longCount} long questions.\n\nMCQ QUALITY RULES:\n- Every question must be self-contained and directly test a named concept, fact, definition, formula, application, comparison, or worked example.\n- Never write meta questions such as "According to the file/source/document...", "Which option is supported by the text?", or "What does the uploaded material say?"\n- Never mention the file, source, document, passage, notes, or upload in any question or option.\n- Use four distinct, plausible subject-specific options with exactly one correct answer.\n- Avoid "all of the above", "none of the above", placeholder options, and repeated questions.\n- Explanations must state the relevant concept and why the answer is correct.\n- If the material cannot support the requested count without repetition or invention, return fewer questions rather than filler.\n\nWritten questions need marks and source-grounded key points.\n\nReturn exactly:\n{"title":"...","totalMarks":number,"timeAllowed":number,"mcqs":[{"q":"...","opts":["A","B","C","D"],"correct":0,"exp":"..."}],"shortQs":[{"q":"...","marks":3,"keyPoints":["..."]}],"longQs":[{"q":"...","marks":8,"keyPoints":["..."],"guide":"..."}]}\n\nRESOURCE: ${resource.title}\n\nSOURCE TEXT (representative sections from the attached TXT):\n${modelContext}`,
           },
         ],
       });
@@ -94,7 +92,7 @@ export async function POST(req: NextRequest) {
       provider = result.providerUsed;
     } catch (gatewayError) {
       fallbackUsed = true;
-      console.warn('Gemini test generation unavailable; using source fallback:', gatewayError);
+      console.warn('Local test model unavailable; using source fallback:', gatewayError);
       paper = sourcePaper;
     }
     paper.mcqs = filterHighQualitySourceMcqs([...(paper.mcqs || []), ...sourcePaper.mcqs]).slice(0, mcqCount);
@@ -104,15 +102,6 @@ export async function POST(req: NextRequest) {
       paper.mcqs.length +
       paper.shortQs.reduce((sum, item) => sum + item.marks, 0) +
       paper.longQs.reduce((sum, item) => sum + item.marks, 0);
-    const { data: evidenceChunk } = await (supabase as any)
-      .from('resource_source_chunks')
-      .select('content, page_number, metadata')
-      .eq('resource_kind', resource.kind)
-      .eq('resource_id', resource.id)
-      .order('chunk_index', { ascending: true })
-      .limit(1)
-      .maybeSingle();
-
     await consumeAiCredits(user.id, resource.tier, 'resource_test_generate');
     return NextResponse.json({
       status: 'success',
@@ -120,9 +109,7 @@ export async function POST(req: NextRequest) {
         paper,
         resourceTitle: resource.title,
         fallbackUsed,
-        source: evidenceChunk
-          ? buildResourceEvidenceFromChunk(resource.title, evidenceChunk as any, fallbackUsed ? 100 : 92)
-          : buildResourceEvidence(resource.title, context, fallbackUsed ? 100 : 88),
+        source: buildResourceEvidence(resource.title, context, fallbackUsed ? 100 : 88),
       },
       provider,
     });

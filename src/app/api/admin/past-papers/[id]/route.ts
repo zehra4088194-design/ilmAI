@@ -16,6 +16,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const { id } = await params;
   const body = (await req.json()) as PastPaperUpdate;
+  if (body.context_text_url !== undefined && !body.context_text_url?.trim()) {
+    return NextResponse.json({ error: 'The companion TXT URL cannot be removed from a PDF resource' }, { status: 400 });
+  }
   const update: Database['public']['Tables']['past_papers']['Update'] = {};
 
   if (body.subject_id !== undefined) update.subject_id = body.subject_id;
@@ -44,23 +47,21 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
   if (!data) return NextResponse.json({ error: 'Past paper was not found' }, { status: 404 });
 
-  const sourceChanged = body.file_url !== undefined;
-  const needsGeneratedContext =
-    body.context_text_url === null || body.context_text_url?.trim() === '' || (sourceChanged && !data.context_text_url);
+  const shouldReindexContext = Boolean(body.context_text_url?.trim());
   let processingWarning: string | null = null;
-  if (needsGeneratedContext) {
+  if (shouldReindexContext) {
     try {
       await queueResourceContextProcessing('past-paper', id);
     } catch (queueError) {
       processingWarning =
-        queueError instanceof Error ? queueError.message : 'The automatic OCR queue could not be started.';
+        queueError instanceof Error ? queueError.message : 'The TXT indexing queue could not be started.';
       console.error('past paper context requeue error:', queueError);
     }
   }
 
   return NextResponse.json({
     paper: data,
-    contextStatus: needsGeneratedContext ? (processingWarning ? 'queue_failed' : 'queued') : 'provided',
+    contextStatus: shouldReindexContext ? (processingWarning ? 'queue_failed' : 'queued') : 'provided',
     warning: processingWarning,
   });
 }

@@ -120,8 +120,8 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
       setError('Paste a valid Google Drive, Google Docs, or direct PDF URL for dark mode.');
       return;
     }
-    if (contextTextUrl && !/^https:\/\//i.test(contextTextUrl)) {
-      setError('Paste an HTTPS or Google Drive link for the companion .txt file.');
+    if (!/^https:\/\//i.test(contextTextUrl)) {
+      setError('A valid HTTPS or Google Drive link for the companion .txt file is required.');
       return;
     }
 
@@ -405,16 +405,16 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="context-text-url">Companion context .txt link (optional)</Label>
+            <Label htmlFor="context-text-url">Companion context .txt link</Label>
             <Input
               id="context-text-url"
               value={form.context_text_url}
               onChange={(event) => setForm((current) => ({ ...current, context_text_url: event.target.value }))}
               placeholder="https://drive.google.com/file/d/.../view"
+              required
             />
             <p className="text-muted-foreground text-xs">
-              If left empty, the server will OCR the PDF once and create a private TXT sidecar. Providing complete
-              readable TXT content is more accurate and faster.
+              Required. AI summaries, tests, and tutoring use this TXT only; the PDF is never sent to AI.
             </p>
           </div>
 

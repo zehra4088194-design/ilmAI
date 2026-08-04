@@ -57,6 +57,46 @@ test('readiness requires the universal Groq fallback key', async () => {
   assert.equal(body.providers.groq, true);
 });
 
+test('local llama.cpp serves chat without a provider API key', async () => {
+  const originalFetch = globalThis.fetch;
+  let requestBody;
+  globalThis.fetch = async (url, options = {}) => {
+    assert.equal(String(url), 'http://llama:8080/v1/chat/completions');
+    requestBody = JSON.parse(options.body);
+    return Response.json({
+      model: 'qwen3-4b-q4',
+      choices: [{ message: { content: '<think>hidden</think>\nThe answer.' } }],
+    });
+  };
+
+  try {
+    const response = await gateway.fetch(chatRequest('local'), {
+      GATEWAY_SECRET: 'test-secret',
+      LLAMA_CPP_URL: 'http://llama:8080/v1',
+      LLAMA_CPP_MODEL: 'qwen3-4b-q4',
+    });
+    const body = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(body.text, 'The answer.');
+    assert.equal(body.providerUsed, 'local');
+    assert.equal(body.modelUsed, 'qwen3-4b-q4');
+    assert.deepEqual(requestBody.chat_template_kwargs, { enable_thinking: false });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('readiness accepts local llama.cpp without Groq', async () => {
+  const response = await gateway.fetch(new Request('http://gateway/ready'), {
+    GATEWAY_SECRET: 'test-secret',
+    LLAMA_CPP_URL: 'http://llama:8080/v1',
+  });
+  const body = await response.json();
+  assert.equal(response.status, 200);
+  assert.equal(body.primaryProvider, 'local');
+  assert.equal(body.providers.groq, false);
+});
+
 test('handwritten vision returns transcription and summary in one Gemini call', async () => {
   const originalFetch = globalThis.fetch;
   let calls = 0;

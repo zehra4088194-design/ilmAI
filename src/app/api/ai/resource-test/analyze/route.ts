@@ -5,6 +5,7 @@ import { checkAiMessageLimit, consumeAiCredits } from '@/lib/rate-limit';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import { fetchResourceContext, getProtectedResource, type ProtectedResourceKind } from '@/lib/resources/server';
 import { analyzeResourceSource, type ResourceAnalysis } from '@/lib/resources/source-fallback';
+import { buildRepresentativeTextContext } from '@/lib/resources/context-window';
 
 export const runtime = 'nodejs';
 export const maxDuration = 180;
@@ -31,6 +32,7 @@ export async function POST(req: NextRequest) {
       );
     }
     const context = await fetchResourceContext(resource);
+    const modelContext = buildRepresentativeTextContext(context);
     const limit = await checkAiMessageLimit(user.id, resource.tier, 'resource_test_analyze');
     if (!limit.success) {
       return NextResponse.json({ status: 'error', error: "Today's AI limit has been reached." }, { status: 429 });
@@ -40,7 +42,7 @@ export async function POST(req: NextRequest) {
     let fallbackUsed = false;
     try {
       const result = await gatewayChat({
-        provider: 'grok',
+        provider: 'local',
         tier: 'mini',
         maxTokens: 900,
         temperature: 0.1,
@@ -52,7 +54,7 @@ export async function POST(req: NextRequest) {
           },
           {
             role: 'user',
-            content: `Analyze this educational file before another model creates a test. Identify the content type, main topics, whether MCQs/short/long questions can sensibly be generated, and safe recommended maximum counts based on how much source material exists.\n\nReturn exactly:\n{"documentType":"notes|book|past_paper|mixed","topics":["..."],"detectedSections":["concepts","formulas","worked examples","existing mcqs","short questions","long questions"],"available":{"mcq":0-30,"short":0-15,"long":0-8}}\n\nRESOURCE: ${resource.title}\n\nSOURCE TEXT:\n${context}`,
+            content: `Analyze this educational file before another model creates a test. Identify the content type, main topics, whether MCQs/short/long questions can sensibly be generated, and safe recommended maximum counts based on how much source material exists.\n\nReturn exactly:\n{"documentType":"notes|book|past_paper|mixed","topics":["..."],"detectedSections":["concepts","formulas","worked examples","existing mcqs","short questions","long questions"],"available":{"mcq":0-30,"short":0-15,"long":0-8}}\n\nRESOURCE: ${resource.title}\n\nSOURCE TEXT (representative sections from the attached TXT):\n${modelContext}`,
           },
         ],
       });
@@ -60,7 +62,7 @@ export async function POST(req: NextRequest) {
       provider = result.providerUsed;
     } catch (gatewayError) {
       fallbackUsed = true;
-      console.warn('Grok analysis unavailable; using source fallback:', gatewayError);
+      console.warn('Local analysis model unavailable; using source fallback:', gatewayError);
       parsed = analyzeResourceSource(context);
     }
     parsed.available = {

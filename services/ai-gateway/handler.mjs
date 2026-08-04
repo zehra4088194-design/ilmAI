@@ -55,6 +55,11 @@ const GEMINI_FLASH_MODEL = 'gemini-3.6-flash';
 const GEMINI_DOCUMENT_MODEL = 'gemini-3.5-flash-lite';
 
 const DEFAULT_MODEL_MAP = {
+  local: {
+    mini: 'qwen3-4b-q4',
+    medium: 'qwen3-4b-q4',
+    pro: 'qwen3-4b-q4',
+  },
   groq: {
     mini: 'llama-3.1-8b-instant',
     medium: 'llama-3.3-70b-versatile',
@@ -97,6 +102,7 @@ const MODEL_ENV_PREFIX = {
 };
 
 function getModel(env, provider, tier) {
+  if (provider === 'local' && env.LLAMA_CPP_MODEL) return env.LLAMA_CPP_MODEL;
   if (provider === 'gemini' && env.GEMINI_FLASH_MODEL) return env.GEMINI_FLASH_MODEL;
   const prefix = MODEL_ENV_PREFIX[provider];
   const override = prefix ? env[`${prefix}_${String(tier).toUpperCase()}_MODEL`] : '';
@@ -234,6 +240,36 @@ async function callGroq(key, model, messages, maxTokens, temperature) {
   return { ok: true, data: json.choices?.[0]?.message?.content || '' };
 }
 
+async function callLocalLlama(env, model, messages, maxTokens, temperature) {
+  const baseUrl = String(env.LLAMA_CPP_URL || '').replace(/\/$/, '');
+  if (!baseUrl) return { ok: false, status: 503, error: 'LLAMA_CPP_URL is not configured' };
+  const headers = { 'Content-Type': 'application/json' };
+  if (env.LLAMA_CPP_API_KEY) headers.Authorization = `Bearer ${env.LLAMA_CPP_API_KEY}`;
+
+  try {
+    const res = await fetch(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        model,
+        messages,
+        max_tokens: maxTokens,
+        temperature,
+        stream: false,
+        chat_template_kwargs: { enable_thinking: false },
+      }),
+      signal: AbortSignal.timeout(Math.max(30_000, Number(env.LLAMA_CPP_TIMEOUT_MS) || 180_000)),
+    });
+    if (!res.ok) return { ok: false, status: res.status, error: await res.text() };
+    const payload = await res.json();
+    const rawText = String(payload.choices?.[0]?.message?.content || '');
+    const text = rawText.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+    return { ok: true, data: text, modelUsed: payload.model || model };
+  } catch (error) {
+    return { ok: false, status: 503, error: `Local llama.cpp request failed: ${error.message}` };
+  }
+}
+
 async function callOpenAI(key, model, messages, maxTokens, temperature) {
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -363,7 +399,10 @@ async function withOpenRouterFallback(env, messages, maxTokens, temperature) {
 }
 
 function parseGeminiDocumentPayload(rawText, includeSummary) {
-  const cleaned = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+  const cleaned = rawText
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim();
   if (!includeSummary) return { text: cleaned };
 
   try {
@@ -524,7 +563,9 @@ async function handleChat(req, env) {
   const model = getModel(env, provider, tier);
   let result;
 
-  if (provider === 'groq') {
+  if (provider === 'local') {
+    result = await callLocalLlama(env, model, messages, max_tokens, temperature);
+  } else if (provider === 'groq') {
     result = await withKeyRotation(
       getKeys(env, 'GROQ_API_KEY'),
       (k) => callGroq(k, model, messages, max_tokens, temperature),
@@ -709,6 +750,7 @@ export default {
     if (url.pathname === '/health') return json({ status: 'ok', service: 'ilm-ai-gateway' });
     if (url.pathname === '/ready') {
       const providers = {
+        local: Boolean(env.LLAMA_CPP_URL),
         groq: getKeys(env, 'GROQ_API_KEY').length > 0,
         grok: getKeys(env, 'GROK_API_KEY').length > 0,
         claude: getKeys(env, 'CLAUDE_API_KEY').length > 0,
@@ -717,14 +759,15 @@ export default {
         openrouter: getKeys(env, 'OPENROUTER_API_KEY').length > 0,
         ocrSpace: getKeys(env, 'OCRSPACE_API_KEY').length > 0,
       };
-      const ready = providers.groq;
+      const ready = providers.local || providers.groq;
       return json(
         {
           status: ready ? 'ready' : 'not_ready',
           service: 'ilm-ai-gateway',
-          fallbackProvider: 'groq',
+          primaryProvider: providers.local ? 'local' : 'groq',
+          fallbackProvider: providers.groq ? 'groq' : null,
           providers,
-          error: ready ? undefined : 'Configure GROQ_API_KEY or GROQ_API_KEYS_JSON in Coolify.',
+          error: ready ? undefined : 'Configure LLAMA_CPP_URL or a Groq key in Coolify.',
         },
         ready ? 200 : 503
       );

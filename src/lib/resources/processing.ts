@@ -1,12 +1,14 @@
 import { createAdminClient } from '@/lib/supabase/server';
-import {
-  fetchResourceContext,
-  getResourceForProcessing,
-  type ProtectedResourceKind,
-} from '@/lib/resources/server';
+import { fetchResourceContext, getResourceForProcessing, type ProtectedResourceKind } from '@/lib/resources/server';
 import { buildResourceSourceTest } from '@/lib/resources/source-fallback';
 
-async function persistResourceMcqs(admin: any, kind: ProtectedResourceKind, resourceId: string, title: string, context: string) {
+async function persistResourceMcqs(
+  admin: any,
+  kind: ProtectedResourceKind,
+  resourceId: string,
+  title: string,
+  context: string
+) {
   const paper = buildResourceSourceTest(title, context, { mcq: 30, short: 15, long: 8 });
   const questions = paper.mcqs.slice(0, 30);
   if (!questions.length) throw new Error('The source did not contain enough material to prepare a question bank.');
@@ -46,7 +48,7 @@ function splitIntoSourceChunks(context: string) {
   return chunks.slice(0, 400).map((content, index) => ({
     chunk_index: index,
     page_number: index + 1,
-    content,
+    text: content,
     metadata: {
       source: explicitPages.length > 1 ? 'page_marker' : 'text_window',
       char_count: content.length,
@@ -78,17 +80,17 @@ async function markImporterStatus(
   notes?: string,
   chunkCount?: number
 ) {
-  const table =
-    kind === 'library' ? 'library_resources' : kind === 'past-paper' ? 'past_papers' : 'college_resources';
+  const table = kind === 'library' ? 'library_resources' : kind === 'past-paper' ? 'past_papers' : 'college_resources';
   const payload: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
   };
+  const storedStatus = status === 'ready' ? 'approved' : status;
 
   if (kind === 'past-paper') {
-    payload.extraction_status = status;
+    payload.extraction_status = storedStatus;
     if (typeof chunkCount === 'number') payload.extracted_question_count = chunkCount;
   } else {
-    payload.importer_status = status;
+    payload.importer_status = storedStatus;
     payload.importer_notes = notes || null;
     if (typeof chunkCount === 'number') payload.extracted_chunk_count = chunkCount;
   }
@@ -111,8 +113,8 @@ export async function queueResourceContextProcessing(kind: ProtectedResourceKind
     },
     { onConflict: 'resource_kind,resource_id' }
   );
-  if (error) throw new Error(`The resource could not be added to the OCR queue: ${error.message}`);
-  await markImporterStatus(admin, kind, resourceId, 'queued', 'Waiting for OCR and source extraction.');
+  if (error) throw new Error(`The resource could not be added to the TXT indexing queue: ${error.message}`);
+  await markImporterStatus(admin, kind, resourceId, 'queued', 'Waiting for companion TXT indexing.');
 }
 
 export async function processQueuedResourceContexts(maxJobs = 1) {
@@ -148,13 +150,26 @@ export async function processQueuedResourceContexts(maxJobs = 1) {
 
     try {
       const kind = job.resource_kind as ProtectedResourceKind;
-      await markImporterStatus(admin, kind, job.resource_id, 'processing', 'Extracting readable text and building the chapter question bank.');
+      await markImporterStatus(
+        admin,
+        kind,
+        job.resource_id,
+        'processing',
+        'Reading companion TXT and building the chapter question bank.'
+      );
       const resource = await getResourceForProcessing(kind, job.resource_id);
       if (!resource) throw new Error('Resource no longer exists.');
       const context = await fetchResourceContext(resource);
       const chunkCount = await persistResourceChunks(admin, kind, job.resource_id, context);
       await persistResourceMcqs(admin, kind, job.resource_id, resource.title, context);
-      await markImporterStatus(admin, kind, job.resource_id, 'ready', 'OCR, source chunks, MCQs, short questions, and long questions are ready.', chunkCount);
+      await markImporterStatus(
+        admin,
+        kind,
+        job.resource_id,
+        'ready',
+        'TXT source chunks, MCQs, short questions, and long questions are ready.',
+        chunkCount
+      );
       await admin
         .from('resource_processing_jobs')
         .update({

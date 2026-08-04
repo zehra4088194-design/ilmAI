@@ -107,8 +107,8 @@ export function PastPaperFormDialog({ open, onOpenChange, paper, onSaved }: Prop
       setError('The file URL is not valid.');
       return;
     }
-    if (form.context_text_url.trim() && !/^https:\/\//i.test(form.context_text_url.trim())) {
-      setError('Paste an HTTPS or Google Drive link for the companion .txt file.');
+    if (!/^https:\/\//i.test(form.context_text_url.trim())) {
+      setError('A valid HTTPS or Google Drive link for the companion .txt file is required.');
       return;
     }
 
@@ -157,7 +157,12 @@ export function PastPaperFormDialog({ open, onOpenChange, paper, onSaved }: Prop
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <Label>Subject</Label>
-              <Select value={form.subject_id} onValueChange={(value) => setForm((current) => ({ ...current, subject_id: value, chapter_id: ALL_VALUE }))}>
+              <Select
+                value={form.subject_id}
+                onValueChange={(value) =>
+                  setForm((current) => ({ ...current, subject_id: value, chapter_id: ALL_VALUE }))
+                }
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Subject chunein" />
                 </SelectTrigger>
@@ -173,7 +178,11 @@ export function PastPaperFormDialog({ open, onOpenChange, paper, onSaved }: Prop
 
             <div className="flex flex-col gap-1.5">
               <Label>Chapter</Label>
-              <Select value={form.chapter_id} onValueChange={(value) => setForm((current) => ({ ...current, chapter_id: value }))} disabled={!form.subject_id}>
+              <Select
+                value={form.chapter_id}
+                onValueChange={(value) => setForm((current) => ({ ...current, chapter_id: value }))}
+                disabled={!form.subject_id}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -192,7 +201,10 @@ export function PastPaperFormDialog({ open, onOpenChange, paper, onSaved }: Prop
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <Label>Board</Label>
-              <Select value={form.board} onValueChange={(value) => setForm((current) => ({ ...current, board: value }))}>
+              <Select
+                value={form.board}
+                onValueChange={(value) => setForm((current) => ({ ...current, board: value }))}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Board chunein" />
                 </SelectTrigger>
@@ -208,7 +220,12 @@ export function PastPaperFormDialog({ open, onOpenChange, paper, onSaved }: Prop
 
             <div className="flex flex-col gap-1.5">
               <Label>Paper Type</Label>
-              <Select value={form.paper_type} onValueChange={(value) => setForm((current) => ({ ...current, paper_type: value as PastPaper['paper_type'] }))}>
+              <Select
+                value={form.paper_type}
+                onValueChange={(value) =>
+                  setForm((current) => ({ ...current, paper_type: value as PastPaper['paper_type'] }))
+                }
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -226,7 +243,10 @@ export function PastPaperFormDialog({ open, onOpenChange, paper, onSaved }: Prop
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <Label>Grade Level</Label>
-              <Select value={form.grade_level} onValueChange={(value) => setForm((current) => ({ ...current, grade_level: value }))}>
+              <Select
+                value={form.grade_level}
+                onValueChange={(value) => setForm((current) => ({ ...current, grade_level: value }))}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Class chunein" />
                 </SelectTrigger>
@@ -242,45 +262,76 @@ export function PastPaperFormDialog({ open, onOpenChange, paper, onSaved }: Prop
 
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="paper-year">Year</Label>
-              <Input id="paper-year" type="number" value={form.year} onChange={(event) => setForm((current) => ({ ...current, year: Number(event.target.value) }))} min={1990} max={currentYear + 1} required />
+              <Input
+                id="paper-year"
+                type="number"
+                value={form.year}
+                onChange={(event) => setForm((current) => ({ ...current, year: Number(event.target.value) }))}
+                min={1990}
+                max={currentYear + 1}
+                required
+              />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="paper-duration">Duration (minutes)</Label>
-              <Input id="paper-duration" type="number" value={form.duration} onChange={(event) => setForm((current) => ({ ...current, duration: Number(event.target.value) }))} min={1} />
+              <Input
+                id="paper-duration"
+                type="number"
+                value={form.duration}
+                onChange={(event) => setForm((current) => ({ ...current, duration: Number(event.target.value) }))}
+                min={1}
+              />
             </div>
           </div>
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="file-url">File URL</Label>
-            <Input id="file-url" value={form.file_url} onChange={(event) => setForm((current) => ({ ...current, file_url: event.target.value }))} placeholder="https://.../paper.pdf" required />
+            <Input
+              id="file-url"
+              value={form.file_url}
+              onChange={(event) => setForm((current) => ({ ...current, file_url: event.target.value }))}
+              placeholder="https://.../paper.pdf"
+              required
+            />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="paper-context-text-url">Companion context .txt link (optional)</Label>
+            <Label htmlFor="paper-context-text-url">Companion context .txt link</Label>
             <Input
               id="paper-context-text-url"
               value={form.context_text_url}
               onChange={(event) => setForm((current) => ({ ...current, context_text_url: event.target.value }))}
               placeholder="https://drive.google.com/file/d/.../view"
+              required
             />
             <p className="text-muted-foreground text-xs">
-              If left empty, the server will OCR the PDF once and create a private TXT sidecar.
+              Required. AI uses this TXT only; the PDF is never sent to a model or OCR fallback.
             </p>
           </div>
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="total-questions">Total Questions</Label>
-            <Input id="total-questions" type="number" value={form.total_questions} onChange={(event) => setForm((current) => ({ ...current, total_questions: Number(event.target.value) }))} min={0} />
+            <Input
+              id="total-questions"
+              type="number"
+              value={form.total_questions}
+              onChange={(event) => setForm((current) => ({ ...current, total_questions: Number(event.target.value) }))}
+              min={0}
+            />
           </div>
 
           <div className="flex items-center gap-2">
-            <Checkbox id="is-verified" checked={form.is_verified} onCheckedChange={(checked) => setForm((current) => ({ ...current, is_verified: checked === true }))} />
+            <Checkbox
+              id="is-verified"
+              checked={form.is_verified}
+              onCheckedChange={(checked) => setForm((current) => ({ ...current, is_verified: checked === true }))}
+            />
             <Label htmlFor="is-verified" className="cursor-pointer">
               Verified
             </Label>
           </div>
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && <p className="text-destructive text-sm">{error}</p>}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

@@ -25,4 +25,13 @@ describe('server security contracts', () => {
     expect(source('src/app/api/diagnostic/route.ts')).toContain('auth.getUser');
     expect(source('src/app/api/resources/questions/route.ts')).toContain('auth.getUser');
   });
+
+  it('uses companion TXT as the only AI context for catalog resources', () => {
+    const resourceServer = source('src/lib/resources/server.ts');
+    const contextLoader = resourceServer.slice(resourceServer.indexOf('export async function fetchResourceContext'));
+    expect(contextLoader).toContain('companion .txt file');
+    expect(contextLoader).toContain('PDF files are never sent to AI as a fallback');
+    expect(contextLoader).not.toContain('performOcr');
+    expect(contextLoader).not.toContain('fetchProtectedFile(resource)');
+  });
 });
