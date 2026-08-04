@@ -9,16 +9,20 @@ async function persistResourceMcqs(
   title: string,
   context: string
 ) {
-  const paper = buildResourceSourceTest(title, context, { mcq: 30, short: 15, long: 8 });
-  const questions = paper.mcqs.slice(0, 30);
-  if (!questions.length) throw new Error('The source did not contain enough material to prepare a question bank.');
+  const paper = buildResourceSourceTest(title, context, { mcq: 100, short: 50, long: 20 });
+  const questions = paper.mcqs.slice(0, 100);
+  const shortQuestions = paper.shortQs.slice(0, 50);
+  const longQuestions = paper.longQs.slice(0, 20);
+  if (!questions.length && !shortQuestions.length && !longQuestions.length) {
+    throw new Error('The TXT source did not contain recognizable MCQ, short, or long questions.');
+  }
   const { error } = await admin.from('resource_mcq_sets').upsert(
     {
       resource_kind: kind,
       resource_id: resourceId,
       questions,
-      short_questions: paper.shortQs.slice(0, 15),
-      long_questions: paper.longQs.slice(0, 8),
+      short_questions: shortQuestions,
+      long_questions: longQuestions,
       status: 'ready',
       error_message: null,
       generated_at: new Date().toISOString(),

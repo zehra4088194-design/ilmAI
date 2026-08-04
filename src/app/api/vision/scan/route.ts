@@ -98,6 +98,7 @@ export async function POST(req: NextRequest) {
       ? { text: ocr.summary || 'No summary could be generated.' }
       : await gatewayChat({
           provider: 'gemini',
+          routingPolicy: 'gemini',
           tier: tier === 'ELITE' ? 'pro' : 'medium',
           messages: [
             {

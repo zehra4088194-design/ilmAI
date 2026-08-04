@@ -73,7 +73,11 @@ Return ONLY valid JSON, no markdown fences, no extra text:
 
     const englishPrompt = `${prompt}\n\nImportant language instruction: write all note and flashcard content in professional English. Do not use Roman Urdu unless the student explicitly requested it.`;
     const messages = [
-      { role: 'system' as const, content: 'Expert study-notes and flashcard creator for Pakistani/Indian students. Return only valid JSON in professional English.' },
+      {
+        role: 'system' as const,
+        content:
+          'Expert study-notes and flashcard creator for Pakistani/Indian students. Return only valid JSON in professional English.',
+      },
       { role: 'user' as const, content: englishPrompt },
     ];
 
@@ -83,12 +87,23 @@ Return ONLY valid JSON, no markdown fences, no extra text:
     let result;
     const geminiQuota = await checkModelTierLimit(user.id, 'gemini', 'mini');
     if (geminiQuota.success) {
-      result = await gatewayChat({ provider: 'gemini', tier: 'mini', messages, maxTokens: 3072, temperature: 0.4 });
+      result = await gatewayChat({
+        provider: 'gemini',
+        tier: 'mini',
+        messages,
+        maxTokens: 3072,
+        temperature: 0.4,
+        routingPolicy: 'gemini',
+      });
     } else {
       result = await gatewayChat({ provider: 'groq', tier: 'medium', messages, maxTokens: 3072, temperature: 0.4 });
     }
 
-    const parsed = parseAiJson<MagicNotesResult>(result.text, { noteTitle: 'Voice Lesson Notes', noteContent: '', flashcards: [] });
+    const parsed = parseAiJson<MagicNotesResult>(result.text, {
+      noteTitle: 'Voice Lesson Notes',
+      noteContent: '',
+      flashcards: [],
+    });
 
     if (!parsed.noteContent && (!parsed.flashcards || parsed.flashcards.length === 0)) {
       return NextResponse.json({ status: 'error', error: 'Notes could not be generated.' }, { status: 500 });

@@ -12,7 +12,7 @@ import type { ChatMessage } from '@/types';
 import { checkProviderDailyLimit } from '@/lib/rate-limit';
 import type { ProviderBudgetKey } from '@/lib/platform-settings/shared';
 
-export type AiProviderId = 'local' | 'groq' | 'grok' | 'claude' | 'gpt' | 'gemini' | 'advanced';
+export type AiProviderId = 'local' | 'groq' | 'grok' | 'claude' | 'gpt' | 'gemini' | 'deepseek' | 'advanced';
 export type ModelTier = 'mini' | 'medium' | 'pro';
 
 const GATEWAY_URL = process.env.AI_GATEWAY_URL || 'http://127.0.0.1:8787';
@@ -38,6 +38,7 @@ export interface GatewayChatRequest {
   maxTokens?: number;
   temperature?: number;
   strictProvider?: boolean;
+  routingPolicy?: 'text' | 'grading' | 'gemini';
 }
 
 export interface GatewayChatResponse {
@@ -52,6 +53,7 @@ export interface GatewayChatResponse {
 function getProviderBudgetKey(provider: AiProviderId, tier: ModelTier): ProviderBudgetKey | null {
   if (provider === 'local') return null;
   if (provider === 'groq') return tier === 'mini' ? 'groqFast' : 'groqLarge';
+  if (provider === 'deepseek') return 'deepseek';
   if (provider === 'advanced') return 'openRouter';
   return provider;
 }
@@ -87,13 +89,18 @@ export async function gatewayChat({
   maxTokens = 2048,
   temperature = 0.7,
   strictProvider = false,
+  routingPolicy = 'text',
 }: GatewayChatRequest): Promise<GatewayChatResponse> {
+  const routedProvider: AiProviderId =
+    routingPolicy === 'grading' ? 'groq' : routingPolicy === 'gemini' ? 'gemini' : 'deepseek';
   const attempts: GatewayChatRequest[] = strictProvider
-    ? [{ provider, tier, messages, maxTokens, temperature, strictProvider: true }]
-    : [
-        { provider, tier, messages, maxTokens, temperature },
-        { provider: 'groq', tier: 'mini', messages, maxTokens, temperature },
-      ];
+    ? [{ provider, tier, messages, maxTokens, temperature, strictProvider: true, routingPolicy }]
+    : routingPolicy === 'grading'
+      ? [
+          { provider: 'groq', tier: 'mini', messages, maxTokens, temperature, routingPolicy },
+          { provider: 'deepseek', tier, messages, maxTokens, temperature, routingPolicy },
+        ]
+      : [{ provider: routedProvider, tier, messages, maxTokens, temperature, routingPolicy }];
   const seen = new Set<string>();
   let lastError: unknown;
 
@@ -134,9 +141,10 @@ export async function gatewayChat({
         return {
           ...data,
           providerUsed: providerUsed as AiProviderId,
-          fallbackTriggered: data.fallbackTriggered || attempt.provider !== provider,
+          fallbackTriggered: data.fallbackTriggered || attempt.provider !== routedProvider,
           originalProvider:
-            (originalProvider as AiProviderId | undefined) || (attempt.provider !== provider ? provider : undefined),
+            (originalProvider as AiProviderId | undefined) ||
+            (attempt.provider !== routedProvider ? routedProvider : undefined),
         };
       }
 

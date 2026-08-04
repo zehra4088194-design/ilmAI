@@ -35,6 +35,7 @@
  * GEMINI_API_KEYS_JSON -> JSON array with up to 20 Gemini keys
  * OCRSPACE_API_KEYS_JSON -> JSON array with up to 20 OCR.space keys
  * OPENROUTER_API_KEYS_JSON -> JSON array with up to 20 OpenRouter keys
+ * DEEPSEEK_API_KEYS_JSON -> JSON array with up to 20 direct DeepSeek keys
  * Numbered PREFIX_1 .. PREFIX_20 secrets remain backwards-compatible.
  *
  * OPTIONAL (Live Voice Call — has a safe built-in default, only set if you
@@ -85,10 +86,15 @@ const DEFAULT_MODEL_MAP = {
     medium: GEMINI_FLASH_MODEL,
     pro: GEMINI_FLASH_MODEL,
   },
+  deepseek: {
+    mini: 'deepseek-v4-flash',
+    medium: 'deepseek-v4-flash',
+    pro: 'deepseek-v4-flash',
+  },
   openrouter: {
     mini: 'deepseek/deepseek-v4-flash',
-    medium: 'z-ai/glm-5.2',
-    pro: 'nvidia/nemotron-3-ultra-550b-a55b',
+    medium: 'deepseek/deepseek-v4-flash',
+    pro: 'deepseek/deepseek-v4-flash',
   },
 };
 
@@ -98,6 +104,7 @@ const MODEL_ENV_PREFIX = {
   claude: 'CLAUDE',
   gpt: 'GPT',
   gemini: 'GEMINI',
+  deepseek: 'DEEPSEEK',
   openrouter: 'OPENROUTER',
 };
 
@@ -110,15 +117,9 @@ function getModel(env, provider, tier) {
 }
 
 const OPENROUTER_FALLBACK_MODELS = [
-  'z-ai/glm-5.2',
-  'nvidia/nemotron-3-ultra-550b-a55b',
-  'openai/gpt-oss-120b',
   'deepseek/deepseek-v4-flash',
-  'tencent/hy3',
-  'nvidia/nemotron-3-ultra-550b-a55b:free',
-  'openai/gpt-oss-120b:free',
+  'deepseek/deepseek-v3.2',
   'deepseek/deepseek-v4-flash:free',
-  'tencent/hy3:free',
 ];
 
 // Default Live Voice Call model — see GEMINI_LIVE_MODEL override note above.
@@ -361,6 +362,21 @@ async function callOpenRouter(key, model, messages, maxTokens, temperature) {
   return { ok: true, data: payload.choices?.[0]?.message?.content || '' };
 }
 
+async function callDeepSeek(key, model, messages, maxTokens, temperature) {
+  const res = await fetch('https://api.deepseek.com/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${key}`,
+    },
+    body: JSON.stringify({ model, messages, max_tokens: maxTokens, temperature, stream: false }),
+  });
+  if (!res.ok) return { ok: false, status: res.status, error: await res.text() };
+  const payload = await res.json();
+  const text = payload.choices?.[0]?.message?.content || '';
+  return text ? { ok: true, data: text } : { ok: false, status: 502, error: 'DeepSeek returned an empty response.' };
+}
+
 async function withOpenRouterFallback(env, messages, maxTokens, temperature) {
   const keys = getKeys(env, 'OPENROUTER_API_KEY');
   if (!keys.length) return { ok: false, error: 'No keys configured for OpenRouter' };
@@ -369,12 +385,16 @@ async function withOpenRouterFallback(env, messages, maxTokens, temperature) {
   if (env.OPENROUTER_MODELS_JSON) {
     try {
       const configured = JSON.parse(env.OPENROUTER_MODELS_JSON);
-      if (Array.isArray(configured) && configured.some(Boolean)) models = configured.filter(Boolean);
+      if (Array.isArray(configured) && configured.some(Boolean)) {
+        const deepseekModels = configured.filter((model) => String(model).toLowerCase().includes('deepseek'));
+        if (deepseekModels.length) models = deepseekModels;
+      }
     } catch {
-      models = String(env.OPENROUTER_MODELS_JSON)
+      const deepseekModels = String(env.OPENROUTER_MODELS_JSON)
         .split(/[\r\n,]+/)
         .map((model) => model.trim())
-        .filter(Boolean);
+        .filter((model) => model.toLowerCase().includes('deepseek'));
+      if (deepseekModels.length) models = deepseekModels;
     }
   }
 
@@ -605,6 +625,14 @@ async function handleChat(req, env) {
       DEFAULT_KEY_ATTEMPTS,
       'gemini'
     );
+  } else if (provider === 'deepseek') {
+    result = await withKeyRotation(
+      getKeys(env, 'DEEPSEEK_API_KEY'),
+      (k) => callDeepSeek(k, model, messages, max_tokens, temperature),
+      'DeepSeek',
+      DEFAULT_KEY_ATTEMPTS,
+      'deepseek'
+    );
   } else if (provider === 'openrouter') {
     result = await withOpenRouterFallback(env, messages, max_tokens, temperature);
   } else {
@@ -628,23 +656,6 @@ async function handleChat(req, env) {
         providerUsed: 'groq',
         modelUsed: getModel(env, 'groq', 'mini'),
         keyIndexUsed: groqFallback.keyIndexUsed,
-        fallbackTriggered: true,
-        originalProvider: provider,
-        dailyLimit: TIER_DAILY_LIMITS[tier],
-      });
-    }
-  }
-
-  // OpenRouter remains the final non-strict fallback only when Groq itself was
-  // requested and unavailable. Normal paid-provider failures never route here.
-  if (!strict_provider && !result.ok && provider === 'groq') {
-    const openRouterFallback = await withOpenRouterFallback(env, messages, max_tokens, temperature);
-    if (openRouterFallback.ok) {
-      return json({
-        text: openRouterFallback.data,
-        providerUsed: 'openrouter',
-        modelUsed: openRouterFallback.modelUsed,
-        keyIndexUsed: openRouterFallback.keyIndexUsed,
         fallbackTriggered: true,
         originalProvider: provider,
         dailyLimit: TIER_DAILY_LIMITS[tier],
@@ -756,18 +767,19 @@ export default {
         claude: getKeys(env, 'CLAUDE_API_KEY').length > 0,
         gpt: getKeys(env, 'GPT_API_KEY').length > 0,
         gemini: getKeys(env, 'GEMINI_API_KEY').length > 0,
+        deepseek: getKeys(env, 'DEEPSEEK_API_KEY').length > 0,
         openrouter: getKeys(env, 'OPENROUTER_API_KEY').length > 0,
         ocrSpace: getKeys(env, 'OCRSPACE_API_KEY').length > 0,
       };
-      const ready = providers.local || providers.groq;
+      const ready = providers.local || providers.groq || providers.deepseek;
       return json(
         {
           status: ready ? 'ready' : 'not_ready',
           service: 'ilm-ai-gateway',
-          primaryProvider: providers.local ? 'local' : 'groq',
+          primaryProvider: providers.deepseek ? 'deepseek' : providers.local ? 'local' : 'groq',
           fallbackProvider: providers.groq ? 'groq' : null,
           providers,
-          error: ready ? undefined : 'Configure LLAMA_CPP_URL or a Groq key in Coolify.',
+          error: ready ? undefined : 'Configure DEEPSEEK_API_KEY, LLAMA_CPP_URL, or a Groq key in Coolify.',
         },
         ready ? 200 : 503
       );

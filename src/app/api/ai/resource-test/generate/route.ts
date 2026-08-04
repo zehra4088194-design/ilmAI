@@ -6,7 +6,13 @@ import { parseAiJson } from '@/lib/utils/json-extract';
 import { fetchResourceContext, getProtectedResource, type ProtectedResourceKind } from '@/lib/resources/server';
 import { buildResourceEvidence, verifiedSourceInstruction } from '@/lib/resources/evidence';
 import type { FullTestPaper } from '@/app/api/ai/full-test/route';
-import { buildResourceSourceTest, filterHighQualitySourceMcqs } from '@/lib/resources/source-fallback';
+import {
+  buildResourceSourceTest,
+  buildRawResourceQuestionBank,
+  filterHighQualitySourceMcqs,
+  filterSourceWrittenQuestions,
+  shuffleSourceQuestions,
+} from '@/lib/resources/source-fallback';
 import { buildRepresentativeTextContext } from '@/lib/resources/context-window';
 import { createArtifactKey, readAiArtifact, writeAiArtifact } from '@/lib/ai/artifact-cache';
 import { buildHybridResourceContext } from '@/lib/resources/semantic-context';
@@ -16,6 +22,23 @@ export const maxDuration = 180;
 
 function count(value: unknown, max: number) {
   return Math.max(0, Math.min(max, Math.floor(Number(value) || 0)));
+}
+
+function selectRandomPaper(bank: FullTestPaper, counts: { mcq: number; short: number; long: number }): FullTestPaper {
+  const mcqs = shuffleSourceQuestions(filterHighQualitySourceMcqs(bank.mcqs)).slice(0, counts.mcq);
+  const shortQs = shuffleSourceQuestions(filterSourceWrittenQuestions(bank.shortQs, 'short')).slice(0, counts.short);
+  const longQs = shuffleSourceQuestions(filterSourceWrittenQuestions(bank.longQs, 'long')).slice(0, counts.long);
+  return {
+    ...bank,
+    mcqs,
+    shortQs,
+    longQs,
+    totalMarks:
+      mcqs.length +
+      shortQs.reduce((sum, item) => sum + item.marks, 0) +
+      longQs.reduce((sum, item) => sum + item.marks, 0),
+    timeAllowed: Math.max(15, mcqs.length + shortQs.length * 5 + longQs.length * 12),
+  };
 }
 
 export async function POST(req: NextRequest) {
@@ -46,7 +69,7 @@ export async function POST(req: NextRequest) {
     }
     const context = await fetchResourceContext(resource);
     const artifactKey = createArtifactKey('resource-test', {
-      prompt: 2,
+      prompt: 3,
       kind,
       id: body.id,
       title: resource.title,
@@ -61,10 +84,15 @@ export async function POST(req: NextRequest) {
       fallbackUsed: boolean;
     }>(artifactKey);
     if (cached) {
+      const randomPaper = selectRandomPaper(cached.paper, {
+        mcq: mcqCount,
+        short: shortCount,
+        long: longCount,
+      });
       return NextResponse.json({
         status: 'success',
         data: {
-          paper: cached.paper,
+          paper: randomPaper,
           resourceTitle: resource.title,
           fallbackUsed: cached.fallbackUsed,
           cached: true,
@@ -73,23 +101,37 @@ export async function POST(req: NextRequest) {
         provider: cached.provider,
       });
     }
-    const featureLimit = await checkFileTestLimit(user.id, resource.tier);
-    if (!featureLimit.success) {
-      return NextResponse.json(
-        { status: 'error', error: 'The monthly file-based test limit has been reached.' },
-        { status: 429 }
-      );
+    const rawQuestionBank = buildRawResourceQuestionBank(resource.title, context);
+    const sourcePaper = buildResourceSourceTest(resource.title, context, {
+      mcq: Math.min(100, Math.max(30, mcqCount * 3)),
+      short: Math.min(50, Math.max(15, shortCount * 3)),
+      long: Math.min(20, Math.max(8, longCount * 3)),
+    });
+    const rawTxtHasRequestedQuestions =
+      rawQuestionBank.mcqs.length >= mcqCount &&
+      rawQuestionBank.shortQs.length >= shortCount &&
+      rawQuestionBank.longQs.length >= longCount;
+    if (!rawTxtHasRequestedQuestions) {
+      const featureLimit = await checkFileTestLimit(user.id, resource.tier);
+      if (!featureLimit.success) {
+        return NextResponse.json(
+          { status: 'error', error: 'The monthly file-based test limit has been reached.' },
+          { status: 429 }
+        );
+      }
+      const limit = await checkAiMessageLimit(user.id, resource.tier, 'resource_test_generate');
+      if (!limit.success) {
+        return NextResponse.json({ status: 'error', error: "Today's AI limit has been reached." }, { status: 429 });
+      }
     }
-    const limit = await checkAiMessageLimit(user.id, resource.tier, 'resource_test_generate');
-    if (!limit.success) {
-      return NextResponse.json({ status: 'error', error: "Today's AI limit has been reached." }, { status: 429 });
-    }
-    const modelContext = await buildHybridResourceContext({
-      resourceKey: `${kind}:${body.id}`,
-      source: context,
-      query:
-        'testable facts concepts definitions formulas applications comparisons examples MCQs short and long questions',
-    }).catch(() => buildRepresentativeTextContext(context));
+    const modelContext = rawTxtHasRequestedQuestions
+      ? ''
+      : await buildHybridResourceContext({
+          resourceKey: `${kind}:${body.id}`,
+          source: context,
+          query:
+            'testable facts concepts definitions formulas applications comparisons examples MCQs short and long questions',
+        }).catch(() => buildRepresentativeTextContext(context));
     const fallback: FullTestPaper = {
       title: `${resource.title} - AI Test`,
       totalMarks: mcqCount + shortCount * 3 + longCount * 8,
@@ -98,51 +140,45 @@ export async function POST(req: NextRequest) {
       shortQs: [],
       longQs: [],
     };
-    const sourcePaper = buildResourceSourceTest(resource.title, context, {
-      mcq: mcqCount,
-      short: shortCount,
-      long: longCount,
-    });
-    let paper = fallback;
-    let provider = 'source-fallback';
-    let fallbackUsed = false;
-    try {
-      const result = await gatewayChat({
-        provider: 'local',
-        tier: 'medium',
-        maxTokens: 8192,
-        temperature: 0.25,
-        messages: [
-          {
-            role: 'system',
-            content: `You are an expert exam setter. ${verifiedSourceInstruction()} Return valid JSON only, with no markdown fences.`,
-          },
-          {
-            role: 'user',
-            content: `Create a high-quality test strictly from the facts and concepts in this resource.\nExact counts: ${mcqCount} MCQs, ${shortCount} short questions, ${longCount} long questions.\n\nMCQ QUALITY RULES:\n- Every question must be self-contained and directly test a named concept, fact, definition, formula, application, comparison, or worked example.\n- Never write meta questions such as "According to the file/source/document...", "Which option is supported by the text?", or "What does the uploaded material say?"\n- Never mention the file, source, document, passage, notes, or upload in any question or option.\n- Use four distinct, plausible subject-specific options with exactly one correct answer.\n- Avoid "all of the above", "none of the above", placeholder options, and repeated questions.\n- Explanations must state the relevant concept and why the answer is correct.\n- If the material cannot support the requested count without repetition or invention, return fewer questions rather than filler.\n\nWritten questions need marks and source-grounded key points.\n\nReturn exactly:\n{"title":"...","totalMarks":number,"timeAllowed":number,"mcqs":[{"q":"...","opts":["A","B","C","D"],"correct":0,"exp":"..."}],"shortQs":[{"q":"...","marks":3,"keyPoints":["..."]}],"longQs":[{"q":"...","marks":8,"keyPoints":["..."],"guide":"..."}]}\n\nRESOURCE: ${resource.title}\n\nSOURCE TEXT (representative sections from the attached TXT):\n${modelContext}`,
-          },
-        ],
-      });
-      paper = parseAiJson<FullTestPaper>(result.text, fallback);
-      provider = result.providerUsed;
-    } catch (gatewayError) {
-      fallbackUsed = true;
-      console.warn('Local test model unavailable; using source fallback:', gatewayError);
-      paper = sourcePaper;
-    }
-    paper.mcqs = filterHighQualitySourceMcqs([...(paper.mcqs || []), ...sourcePaper.mcqs]).slice(0, mcqCount);
-    paper.shortQs = [...(paper.shortQs || []), ...sourcePaper.shortQs].slice(0, shortCount);
-    paper.longQs = [...(paper.longQs || []), ...sourcePaper.longQs].slice(0, longCount);
-    paper.totalMarks =
-      paper.mcqs.length +
-      paper.shortQs.reduce((sum, item) => sum + item.marks, 0) +
-      paper.longQs.reduce((sum, item) => sum + item.marks, 0);
+    let paper = rawTxtHasRequestedQuestions ? rawQuestionBank : sourcePaper;
+    let provider = rawTxtHasRequestedQuestions ? 'raw-txt-bank' : 'source-fallback';
+    let fallbackUsed = true;
+    if (!rawTxtHasRequestedQuestions)
+      try {
+        const result = await gatewayChat({
+          provider: 'deepseek',
+          tier: 'medium',
+          maxTokens: 8192,
+          temperature: 0.25,
+          messages: [
+            {
+              role: 'system',
+              content: `You are an expert exam setter. ${verifiedSourceInstruction()} Return valid JSON only, with no markdown fences.`,
+            },
+            {
+              role: 'user',
+              content: `Create a high-quality test strictly from the facts and concepts in this resource.\nExact counts: ${mcqCount} MCQs, ${shortCount} short questions, ${longCount} long questions.\n\nMCQ QUALITY RULES:\n- Every question must be self-contained and directly test a named concept, fact, definition, formula, application, comparison, or worked example.\n- Never write meta questions such as "According to the file/source/document...", "Which option is supported by the text?", or "What does the uploaded material say?"\n- Never mention the file, source, document, passage, notes, or upload in any question or option.\n- Use four distinct, plausible subject-specific options with exactly one correct answer.\n- Avoid "all of the above", "none of the above", placeholder options, and repeated questions.\n- Explanations must state the relevant concept and why the answer is correct.\n- If the material cannot support the requested count without repetition or invention, return fewer questions rather than filler.\n\nWritten questions need marks and source-grounded key points.\n\nReturn exactly:\n{"title":"...","totalMarks":number,"timeAllowed":number,"mcqs":[{"q":"...","opts":["A","B","C","D"],"correct":0,"exp":"..."}],"shortQs":[{"q":"...","marks":3,"keyPoints":["..."]}],"longQs":[{"q":"...","marks":8,"keyPoints":["..."],"guide":"..."}]}\n\nRESOURCE: ${resource.title}\n\nSOURCE TEXT (representative sections from the attached TXT):\n${modelContext}`,
+            },
+          ],
+        });
+        paper = parseAiJson<FullTestPaper>(result.text, fallback);
+        provider = result.providerUsed;
+        fallbackUsed = false;
+      } catch (gatewayError) {
+        fallbackUsed = true;
+        console.warn('DeepSeek test model unavailable; using raw TXT question bank:', gatewayError);
+        paper = sourcePaper;
+      }
+    paper.mcqs = filterHighQualitySourceMcqs([...(paper.mcqs || []), ...sourcePaper.mcqs]);
+    paper.shortQs = filterSourceWrittenQuestions([...(paper.shortQs || []), ...sourcePaper.shortQs], 'short');
+    paper.longQs = filterSourceWrittenQuestions([...(paper.longQs || []), ...sourcePaper.longQs], 'long');
     await writeAiArtifact(artifactKey, { paper, provider, fallbackUsed });
-    await consumeAiCredits(user.id, resource.tier, 'resource_test_generate');
+    if (!rawTxtHasRequestedQuestions) await consumeAiCredits(user.id, resource.tier, 'resource_test_generate');
+    const randomPaper = selectRandomPaper(paper, { mcq: mcqCount, short: shortCount, long: longCount });
     return NextResponse.json({
       status: 'success',
       data: {
-        paper,
+        paper: randomPaper,
         resourceTitle: resource.title,
         fallbackUsed,
         cached: false,

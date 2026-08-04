@@ -10,6 +10,8 @@ export type ResourceAnalysis = {
 type QuestionCandidate = {
   question: string;
   block: string;
+  kind: 'mcq' | 'short' | 'long' | 'unknown';
+  number?: number;
 };
 
 type SourceMcq = FullTestPaper['mcqs'][number];
@@ -20,6 +22,8 @@ const META_QUESTION_PATTERNS = [
   /\b(?:uploaded|provided|attached) (?:file|source|document|material|text|notes)\b/i,
   /\b(?:this|the) (?:file|source|document|material|passage) (?:states|mentions|describes|contains|says)\b/i,
   /\bwhich (?:option|statement) is (?:correct|supported) (?:by|according to)\b/i,
+  /\bwhat does (?:the )?(?:uploaded |provided |attached )?(?:file|source|document|material|text|notes|passage) say\b/i,
+  /\b(?:in|from) (?:the )?(?:uploaded |provided |attached )?(?:file|source|document|material|text|notes|passage)\b/i,
 ];
 
 const VAGUE_QUESTION_PATTERNS = [
@@ -38,38 +42,97 @@ const GENERIC_OPTION_PATTERNS = [
   /^source point \d+$/i,
 ];
 
+export function hasMetaSourceWording(value: unknown) {
+  const text = String(value || '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return META_QUESTION_PATTERNS.some((pattern) => pattern.test(text));
+}
+
+/** Removes file-awareness wording so students only see the actual subject question. */
+export function sanitizeSourceQuestionText(value: unknown) {
+  let question = String(value || '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  question = question
+    .replace(
+      /^what does (?:the )?(?:uploaded |provided |attached )?(?:file|source|document|material|text|notes|passage) say about\s+(.+?)[?.]*$/i,
+      'Explain $1.'
+    )
+    .replace(
+      /^(?:according to|based on) (?:the )?(?:uploaded |provided |attached )?(?:file|source|document|material|text|notes|passage)\s*[,;:-]\s*/i,
+      ''
+    )
+    .replace(
+      /\s+(?:in|from) (?:the )?(?:uploaded |provided |attached )?(?:file|source|document|material|text|notes|passage)(?=[?.!,]|$)/gi,
+      ''
+    )
+    .trim();
+  if (
+    !question ||
+    hasMetaSourceWording(question) ||
+    VAGUE_QUESTION_PATTERNS.some((pattern) => pattern.test(question))
+  ) {
+    return '';
+  }
+  return question.charAt(0).toUpperCase() + question.slice(1);
+}
+
+export function shuffleSourceQuestions<T>(values: T[]) {
+  const shuffled = [...values];
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex]!, shuffled[index]!];
+  }
+  return shuffled;
+}
+
 export function isHighQualitySourceMcq(value: unknown): value is SourceMcq {
   const mcq = value as Partial<SourceMcq> | null;
-  const question = String(mcq?.q || '').replace(/\s+/g, ' ').trim();
+  const question = sanitizeSourceQuestionText(mcq?.q);
   const options = Array.isArray(mcq?.opts) ? mcq.opts.map((option) => String(option).replace(/\s+/g, ' ').trim()) : [];
   const correct = Number(mcq?.correct);
   const normalizedOptions = new Set(options.map((option) => option.toLowerCase()));
 
   return Boolean(
     question.length >= 12 &&
-      question.length <= 320 &&
-      !META_QUESTION_PATTERNS.some((pattern) => pattern.test(question)) &&
-      !VAGUE_QUESTION_PATTERNS.some((pattern) => pattern.test(question)) &&
-      options.length === 4 &&
-      options.every((option) => option.length >= 1 && option.length <= 240) &&
-      options.every((option) => !META_QUESTION_PATTERNS.some((pattern) => pattern.test(option))) &&
-      options.every((option) => !GENERIC_OPTION_PATTERNS.some((pattern) => pattern.test(option))) &&
-      normalizedOptions.size === 4 &&
-      Number.isInteger(correct) &&
-      correct >= 0 &&
-      correct < options.length
+    question.length <= 320 &&
+    !hasMetaSourceWording(question) &&
+    !VAGUE_QUESTION_PATTERNS.some((pattern) => pattern.test(question)) &&
+    options.length === 4 &&
+    options.every((option) => option.length >= 1 && option.length <= 240) &&
+    options.every((option) => !META_QUESTION_PATTERNS.some((pattern) => pattern.test(option))) &&
+    options.every((option) => !GENERIC_OPTION_PATTERNS.some((pattern) => pattern.test(option))) &&
+    normalizedOptions.size === 4 &&
+    Number.isInteger(correct) &&
+    correct >= 0 &&
+    correct < options.length
   );
 }
 
 export function filterHighQualitySourceMcqs(values: unknown): SourceMcq[] {
   if (!Array.isArray(values)) return [];
   const seen = new Set<string>();
-  return values.filter(isHighQualitySourceMcq).filter((mcq) => {
-    const key = mcq.q.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
-    if (!key || seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+  return values
+    .map((value) => {
+      const raw = value as Partial<SourceMcq> | null;
+      return {
+        q: sanitizeSourceQuestionText(raw?.q),
+        opts: Array.isArray(raw?.opts) ? raw.opts.map((option) => String(option).replace(/\s+/g, ' ').trim()) : [],
+        correct: Number(raw?.correct),
+        exp: String(raw?.exp || '').trim(),
+      };
+    })
+    .filter(isHighQualitySourceMcq)
+    .filter((mcq) => {
+      const key = mcq.q
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
 }
 
 const STOP_WORDS = new Set([
@@ -152,10 +215,30 @@ function isQuestionText(value: string) {
   );
 }
 
+function questionSection(line: string): QuestionCandidate['kind'] | null {
+  const heading = line
+    .replace(/[^a-z\s]/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (/^(?:multiple choice questions?|mcqs?|objective(?: questions?)?)$/i.test(heading)) return 'mcq';
+  if (/^(?:short(?: answer)? questions?|brief questions?)$/i.test(heading)) return 'short';
+  if (/^(?:long(?: answer)? questions?|descriptive questions?|essay questions?)$/i.test(heading)) return 'long';
+  return null;
+}
+
+function questionNumber(line: string) {
+  const match = line.match(/^\s*\/?(?:Q(?:uestion)?\.?\s*)?(\d{1,3})\s*[.)|:-]+/i);
+  return match?.[1] ? Number(match[1]) : undefined;
+}
+
 function extractQuestionCandidates(context: string) {
   const lines = sourceLines(context);
   const starts: number[] = [];
+  const kinds: QuestionCandidate['kind'][] = [];
+  let activeKind: QuestionCandidate['kind'] = 'unknown';
   for (let index = 0; index < lines.length; index += 1) {
+    activeKind = questionSection(lines[index] || '') || activeKind;
+    kinds[index] = activeKind;
     if (/^\/?(?:Q(?:uestion)?\.?\s*)?\d{1,3}\s*[.)|:-]+\s*\S/i.test(lines[index] || '')) starts.push(index);
   }
 
@@ -168,7 +251,12 @@ function extractQuestionCandidates(context: string) {
     const hasOptions =
       [...block.matchAll(/(?:^|\n|\s)\(?([A-D])\)?[.):]\*?\s*([^\n]+?)(?=(?:\s+\(?[A-D]\)?[.):])|\n|$)/gi)].length >= 4;
     if ((isQuestionText(question) || hasOptions) && question.length >= 8 && question.length <= 500) {
-      candidates.push({ question, block });
+      candidates.push({
+        question,
+        block,
+        kind: hasOptions ? 'mcq' : kinds[start] || 'unknown',
+        number: questionNumber(lines[start] || ''),
+      });
     }
   }
 
@@ -178,8 +266,19 @@ function extractQuestionCandidates(context: string) {
   );
 }
 
+function extractAnswerKey(context: string) {
+  const key = new Map<number, string>();
+  const answerSection = context.match(/(?:answer\s*key|answers?)\s*[:\n-]+([\s\S]{0,6000})/i)?.[1] || '';
+  for (const match of answerSection.matchAll(/(?:^|[\s,;|])(?:Q\.?\s*)?(\d{1,3})\s*[.)|:=\-]\s*\(?([A-D])\)?\b/gi)) {
+    key.set(Number(match[1]), match[2]!.toUpperCase());
+  }
+  return key;
+}
+
 function extractExistingMcqs(context: string) {
+  const answerKey = extractAnswerKey(context);
   return extractQuestionCandidates(context)
+    .filter((candidate) => candidate.kind === 'mcq')
     .map((candidate) => {
       const options = [
         ...candidate.block.matchAll(/(?:^|\n|\s)\(?([A-D])\)?[.):]\*?\s*([^\n]+?)(?=(?:\s+\(?[A-D]\)?[.):])|\n|$)/gi),
@@ -194,7 +293,12 @@ function extractExistingMcqs(context: string) {
       if (options.length !== 4) return null;
       const explicitAnswer = candidate.block.match(/(?:answer|correct\s+answer)\s*[:=-]?\s*\(?([A-D])\)?/i)?.[1];
       const markedAnswer = options.find((option) => option.marked)?.letter;
-      const answerLetter = (explicitAnswer || markedAnswer || '').toUpperCase();
+      const answerLetter = (
+        explicitAnswer ||
+        markedAnswer ||
+        answerKey.get(candidate.number || -1) ||
+        ''
+      ).toUpperCase();
       if (!answerLetter) return null;
       const correct = options.findIndex((option) => option.letter === answerLetter);
       if (correct < 0) return null;
@@ -379,37 +483,144 @@ function keyPointsForTopic(topic: string, points: string[]) {
   return (matching.length ? matching : points).slice(0, 4);
 }
 
+type SourceShortQuestion = FullTestPaper['shortQs'][number] & { modelAnswer?: string };
+type SourceLongQuestion = FullTestPaper['longQs'][number] & { modelAnswer?: string };
+type SourceWrittenQuestion = SourceShortQuestion | SourceLongQuestion;
+
+export function filterSourceWrittenQuestions(values: unknown, kind: 'short'): SourceShortQuestion[];
+export function filterSourceWrittenQuestions(values: unknown, kind: 'long'): SourceLongQuestion[];
+export function filterSourceWrittenQuestions(values: unknown, kind: 'short' | 'long'): SourceWrittenQuestion[] {
+  if (!Array.isArray(values)) return [];
+  const seen = new Set<string>();
+  return values
+    .map((value) => {
+      const raw = value as (Partial<SourceShortQuestion> & Partial<SourceLongQuestion>) | null;
+      const q = sanitizeSourceQuestionText(raw?.q);
+      const keyPoints = Array.isArray(raw?.keyPoints)
+        ? raw.keyPoints
+            .map((point) => String(point).trim())
+            .filter(Boolean)
+            .slice(0, kind === 'short' ? 4 : 8)
+        : [];
+      return {
+        q,
+        marks: Math.max(1, Number(raw?.marks) || (kind === 'short' ? 3 : 8)),
+        keyPoints,
+        ...(raw?.modelAnswer ? { modelAnswer: String(raw.modelAnswer).trim() } : {}),
+        ...(kind === 'long'
+          ? { guide: String(raw?.guide || 'Write a structured answer with relevant concepts and examples.').trim() }
+          : {}),
+      };
+    })
+    .filter((item) => item.q.length >= 8 && item.q.length <= 500 && !hasMetaSourceWording(item.q))
+    .filter((item) => {
+      const key = item.q
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+function extractWrittenQuestions(context: string) {
+  const short: SourceShortQuestion[] = [];
+  const long: SourceLongQuestion[] = [];
+  for (const candidate of extractQuestionCandidates(context).filter((item) => item.kind !== 'mcq')) {
+    const q = sanitizeSourceQuestionText(candidate.question);
+    if (!q) continue;
+    const blockLines = candidate.block.split('\n').slice(1);
+    const answer = blockLines
+      .filter((line) => !questionSection(line) && !/^\s*(?:answer\s*key|answers?)\s*:?\s*$/i.test(line))
+      .join(' ')
+      .replace(/^\s*(?:Ans(?:wer)?\.?\s*[:=-]?\s*)/i, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const keyPoints = answer
+      ? answer
+          .split(/(?<=[.!?])\s+|\s*[;•]\s*/)
+          .map((point) => point.trim())
+          .filter((point) => point.length >= 8)
+          .slice(0, 8)
+      : [];
+    const inferredKind =
+      candidate.kind === 'unknown'
+        ? /^(?:discuss|explain in detail|evaluate|derive|prove|analyze|describe in detail)\b/i.test(q) ||
+          answer.length > 320
+          ? 'long'
+          : 'short'
+        : candidate.kind;
+    if (inferredKind === 'long') {
+      long.push({
+        q,
+        marks: 8,
+        keyPoints,
+        guide: 'Write a structured answer with relevant concepts and examples.',
+        ...(answer ? { modelAnswer: answer } : {}),
+      });
+    } else {
+      short.push({ q, marks: 3, keyPoints, ...(answer ? { modelAnswer: answer } : {}) });
+    }
+  }
+  return {
+    short: filterSourceWrittenQuestions(short, 'short'),
+    long: filterSourceWrittenQuestions(long, 'long'),
+  };
+}
+
+export function buildRawResourceQuestionBank(title: string, context: string): FullTestPaper {
+  const written = extractWrittenQuestions(context);
+  const mcqs = filterHighQualitySourceMcqs(extractExistingMcqs(context));
+  const totalMarks =
+    mcqs.length +
+    written.short.reduce((sum, item) => sum + item.marks, 0) +
+    written.long.reduce((sum, item) => sum + item.marks, 0);
+  return {
+    title: `${title} - TXT Question Bank`,
+    totalMarks,
+    timeAllowed: Math.max(15, mcqs.length + written.short.length * 5 + written.long.length * 12),
+    mcqs,
+    shortQs: written.short,
+    longQs: written.long,
+  };
+}
+
 export function buildResourceSourceTest(
   title: string,
   context: string,
   counts: { mcq: number; short: number; long: number }
 ): FullTestPaper {
-  const existingMcqs = extractExistingMcqs(context);
+  const rawBank = buildRawResourceQuestionBank(title, context);
+  const existingMcqs = rawBank.mcqs;
   const syntheticMcqs = buildSyntheticMcqs(context, counts.mcq);
-  const mcqs = filterHighQualitySourceMcqs([...existingMcqs, ...syntheticMcqs]).slice(0, counts.mcq);
-  const questions = extractQuestionCandidates(context)
-    .filter((candidate) => !extractExistingMcqs(candidate.block).length)
-    .map((candidate) => candidate.question);
+  const mcqs = filterHighQualitySourceMcqs([
+    ...shuffleSourceQuestions(existingMcqs),
+    ...shuffleSourceQuestions(syntheticMcqs),
+  ]).slice(0, counts.mcq);
+  const written = { short: rawBank.shortQs, long: rawBank.longQs };
   const topics = extractTopics(context);
   const points = extractStudyPoints(context);
-  const questionAt = (index: number, kind: 'short' | 'long') =>
-    questions[index] ||
-    `${kind === 'short' ? 'Briefly explain' : 'Explain in detail'} ${topics[index % Math.max(topics.length, 1)] || 'the main concept in this source'}.`;
-
-  const shortQs = Array.from({ length: counts.short }, (_, index) => {
-    const q = questionAt(index, 'short');
-    return { q, marks: 3, keyPoints: keyPointsForTopic(q, points).slice(0, 3) };
-  });
-  const longQs = Array.from({ length: counts.long }, (_, index) => {
-    const q = questionAt(index + counts.short, 'long');
-    return {
-      q,
-      marks: 8,
-      keyPoints: keyPointsForTopic(q, points),
-      guide:
-        'Write a structured answer using only the uploaded source. Add headings, relevant examples, and formulas where present.',
-    };
-  });
+  const syntheticWritten = (kind: 'short' | 'long', count: number) =>
+    topics.slice(0, Math.max(count, topics.length)).map((topic) => {
+      const q = `${kind === 'short' ? 'Briefly explain' : 'Explain in detail'} ${topic}.`;
+      return {
+        q,
+        marks: kind === 'short' ? 3 : 8,
+        keyPoints: keyPointsForTopic(q, points).slice(0, kind === 'short' ? 3 : 6),
+        ...(kind === 'long'
+          ? { guide: 'Write a structured answer with headings, relevant examples, and formulas where applicable.' }
+          : {}),
+      };
+    });
+  const shortQs = filterSourceWrittenQuestions(
+    [...shuffleSourceQuestions(written.short), ...shuffleSourceQuestions(syntheticWritten('short', counts.short))],
+    'short'
+  ).slice(0, counts.short);
+  const longQs = filterSourceWrittenQuestions(
+    [...shuffleSourceQuestions(written.long), ...shuffleSourceQuestions(syntheticWritten('long', counts.long))],
+    'long'
+  ).slice(0, counts.long);
 
   return {
     title: `${title} - Source Test`,

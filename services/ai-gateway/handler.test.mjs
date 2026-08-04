@@ -97,6 +97,31 @@ test('readiness accepts local llama.cpp without Groq', async () => {
   assert.equal(body.providers.groq, false);
 });
 
+test('direct DeepSeek key serves text without OpenRouter', async () => {
+  const originalFetch = globalThis.fetch;
+  let requestBody;
+  globalThis.fetch = async (url, options = {}) => {
+    assert.equal(String(url), 'https://api.deepseek.com/chat/completions');
+    assert.equal(options.headers.Authorization, 'Bearer direct-deepseek-key');
+    requestBody = JSON.parse(options.body);
+    return Response.json({ choices: [{ message: { content: 'Direct response' } }] });
+  };
+
+  try {
+    const response = await gateway.fetch(chatRequest('deepseek'), {
+      GATEWAY_SECRET: 'test-secret',
+      DEEPSEEK_API_KEY: 'direct-deepseek-key',
+    });
+    const body = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(body.providerUsed, 'deepseek');
+    assert.equal(body.modelUsed, 'deepseek-v4-flash');
+    assert.equal(requestBody.model, 'deepseek-v4-flash');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test('handwritten vision returns transcription and summary in one Gemini call', async () => {
   const originalFetch = globalThis.fetch;
   let calls = 0;

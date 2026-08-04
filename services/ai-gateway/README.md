@@ -1,12 +1,13 @@
 # Private AI Gateway
 
-This Node service runs only on Coolify's private Docker network. The public Next.js web container calls it through `http://ai-gateway:8787`; raw provider keys never reach the browser or the web container. TXT-grounded resource tools use the private `llama.cpp` service first.
+This Node service runs only on Coolify's private Docker network. The public Next.js web container calls it through `http://ai-gateway:8787`; raw provider keys never reach the browser or the web container. Text-only tools use the direct DeepSeek API. Student-answer grading uses Groq first and direct DeepSeek after a failed or invalid response; voice and vision use Gemini.
 
 ## Required Coolify variables
 
 - `AI_GATEWAY_SECRET`: shared by the `web` and `ai-gateway` services.
 - `LLAMA_CPP_URL`: supplied by Compose as `http://llama:8080/v1`.
-- Groq and every hosted provider are optional fallbacks.
+- `DEEPSEEK_API_KEY`: direct DeepSeek key for text-only tools.
+- Groq is the first grading provider; Gemini remains the voice and vision provider.
 
 ## Local model
 
@@ -25,6 +26,7 @@ JSON arrays support up to 20 rotating keys. A singular variable can be used for 
 | Anthropic  | `CLAUDE_API_KEYS_JSON`     | `CLAUDE_API_KEY`     |
 | OpenAI     | `GPT_API_KEYS_JSON`        | `GPT_API_KEY`        |
 | Gemini     | `GEMINI_API_KEYS_JSON`     | `GEMINI_API_KEY`     |
+| DeepSeek   | `DEEPSEEK_API_KEYS_JSON`   | `DEEPSEEK_API_KEY`   |
 | OpenRouter | `OPENROUTER_API_KEYS_JSON` | `OPENROUTER_API_KEY` |
 | OCR.space  | `OCRSPACE_API_KEYS_JSON`   | `OCRSPACE_API_KEY`   |
 
@@ -41,6 +43,7 @@ Example pool:
 - `CLAUDE_MINI_MODEL`, `CLAUDE_MEDIUM_MODEL`, `CLAUDE_PRO_MODEL`
 - `GPT_MINI_MODEL`, `GPT_MEDIUM_MODEL`, `GPT_PRO_MODEL`
 - `GEMINI_FLASH_MODEL`, `GEMINI_LIVE_MODEL`, `GEMINI_VISION_MODEL`
+- `DEEPSEEK_MINI_MODEL`, `DEEPSEEK_MEDIUM_MODEL`, `DEEPSEEK_PRO_MODEL`
 - `OPENROUTER_MODELS_JSON`
 - `LLAMA_CPP_HF_REPO`, `LLAMA_CPP_MODEL`, `LLAMA_CPP_CONTEXT_SIZE`, `LLAMA_CPP_THREADS`, `LLAMA_CPP_TIMEOUT_MS`
 

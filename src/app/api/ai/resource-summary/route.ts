@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     }
     const context = await fetchResourceContext(resource);
     const artifactKey = createArtifactKey('resource-summary', {
-      prompt: 2,
+      prompt: 3,
       kind,
       id,
       title: resource.title,
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
     let fallbackUsed = false;
     try {
       const result = await gatewayChat({
-        provider: 'local',
+        provider: 'deepseek',
         tier: 'mini',
         maxTokens: 1800,
         temperature: 0.25,
@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
       model = result.modelUsed;
     } catch (gatewayError) {
       fallbackUsed = true;
-      console.warn('Local summary model unavailable; using source fallback:', gatewayError);
+      console.warn('DeepSeek summary model unavailable; using source fallback:', gatewayError);
       summary = buildResourceSourceSummary(resource.title, context);
     }
 

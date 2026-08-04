@@ -3,7 +3,9 @@ import {
   analyzeResourceSource,
   buildResourceSourceSummary,
   buildResourceSourceTest,
+  filterSourceWrittenQuestions,
   isHighQualitySourceMcq,
+  sanitizeSourceQuestionText,
 } from './source-fallback';
 
 const SOURCE = `
@@ -85,5 +87,51 @@ describe('resource source fallback', () => {
         exp: 'Force is correct.',
       })
     ).toBe(false);
+  });
+
+  it('reads a separate MCQ answer key and builds questions from every TXT section', () => {
+    const source = `
+MULTIPLE CHOICE QUESTIONS
+1. Which planet is known as the Red Planet?
+A. Venus
+B. Mars
+C. Jupiter
+D. Mercury
+2. Which gas is essential for respiration?
+A. Nitrogen
+B. Hydrogen
+C. Oxygen
+D. Helium
+
+SHORT QUESTIONS
+3. Define respiration.
+Ans. Respiration is the process that releases energy from food.
+4. State two functions of the respiratory system.
+
+LONG QUESTIONS
+5. Explain the human respiratory system in detail.
+
+ANSWER KEY
+1-B, 2-C
+`;
+    const paper = buildResourceSourceTest('Biology Bank', source, { mcq: 2, short: 2, long: 1 });
+    expect(paper.mcqs).toHaveLength(2);
+    expect(paper.mcqs.find((question) => question.q.includes('Red Planet'))?.correct).toBe(1);
+    expect(paper.mcqs.find((question) => question.q.includes('respiration'))?.correct).toBe(2);
+    expect(paper.shortQs.some((question) => question.q === 'Define respiration.')).toBe(true);
+    expect(paper.longQs.some((question) => question.q.includes('human respiratory system'))).toBe(true);
+  });
+
+  it('cleans or rejects file-aware wording in MCQ, short, and long questions', () => {
+    expect(sanitizeSourceQuestionText('According to the uploaded file, what is momentum?')).toBe('What is momentum?');
+    expect(sanitizeSourceQuestionText('What does the provided document say about inertia?')).toBe('Explain inertia.');
+    const cleaned = filterSourceWrittenQuestions(
+      [
+        { q: 'Based on the source: define force.', marks: 3, keyPoints: [] },
+        { q: 'Which option is supported by the text?', marks: 3, keyPoints: [] },
+      ],
+      'short'
+    );
+    expect(cleaned.map((question) => question.q)).toEqual(['Define force.']);
   });
 });

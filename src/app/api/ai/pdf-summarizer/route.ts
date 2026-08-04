@@ -33,7 +33,7 @@ Rules:
 - If extraction quality is poor, summarize whatever is readable and mention that limitation inside the relevant field.
 - Return ONLY valid JSON. No markdown fences.`;
   const result = await gatewayChat({
-    provider: 'groq',
+    provider: 'deepseek',
     tier: 'medium',
     messages: [
       {
@@ -82,7 +82,7 @@ ${clippedText}`,
         'flowchart TD\n  A[Research Problem] --> B[Methodology]\n  B --> C[Key Findings]\n  C --> D[Conclusion]'
     ),
     provider: result.providerUsed,
-    routeReason: 'ocr_space_text_to_groq_summary',
+    routeReason: 'local_extracted_text_to_deepseek_summary',
   };
 }
 

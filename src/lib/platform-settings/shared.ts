@@ -4,7 +4,7 @@ export type BillingCurrency = 'USD' | 'PKR';
 export type PdfThemeMode = 'follow-user' | 'dark' | 'light';
 
 export type ProviderBudgetKey =
-  'groqFast' | 'groqLarge' | 'gemini' | 'ocrSpace' | 'openRouter' | 'grok' | 'claude' | 'gpt';
+  'groqFast' | 'groqLarge' | 'gemini' | 'deepseek' | 'ocrSpace' | 'openRouter' | 'grok' | 'claude' | 'gpt';
 
 export type ProviderDailyBudgets = Record<ProviderBudgetKey, number>;
 
@@ -70,6 +70,7 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
     groqFast: 400,
     groqLarge: 40,
     gemini: 200,
+    deepseek: 500,
     ocrSpace: 500,
     openRouter: 45,
     grok: 100,
@@ -420,6 +421,10 @@ export function normalizePlatformSettings(input: unknown): PlatformSettings {
       gemini: Math.max(
         0,
         numberOrFallback(sourceProviderBudgets.gemini, DEFAULT_PLATFORM_SETTINGS.providerDailyBudgets.gemini)
+      ),
+      deepseek: Math.max(
+        0,
+        numberOrFallback(sourceProviderBudgets.deepseek, DEFAULT_PLATFORM_SETTINGS.providerDailyBudgets.deepseek)
       ),
       ocrSpace: Math.max(
         0,

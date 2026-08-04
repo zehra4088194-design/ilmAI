@@ -12,7 +12,7 @@ export type SessionStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'ABAND
 export type AiProvider = 'groq' | 'anthropic' | 'openai';
 export type ConversationRole = 'user' | 'assistant' | 'system';
 
-export type AiProviderId = 'local' | 'groq' | 'grok' | 'claude' | 'gpt' | 'gemini' | 'advanced';
+export type AiProviderId = 'local' | 'groq' | 'grok' | 'claude' | 'gpt' | 'gemini' | 'deepseek' | 'advanced';
 export type UserRole = 'student' | 'parent' | 'teacher' | 'admin';
 export type Gender = 'girl' | 'boy';
 export type EducationLevel = 'school' | 'college' | 'university';

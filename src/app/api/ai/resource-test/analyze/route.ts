@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       );
     }
     const context = await fetchResourceContext(resource);
-    const artifactKey = createArtifactKey('resource-analysis', { prompt: 2, kind, id, title: resource.title, context });
+    const artifactKey = createArtifactKey('resource-analysis', { prompt: 3, kind, id, title: resource.title, context });
     const cached = await readAiArtifact<{ parsed: Analysis; provider: string; fallbackUsed: boolean }>(artifactKey);
     if (cached) {
       return NextResponse.json({
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     let fallbackUsed = false;
     try {
       const result = await gatewayChat({
-        provider: 'local',
+        provider: 'deepseek',
         tier: 'mini',
         maxTokens: 900,
         temperature: 0.1,
@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
       provider = result.providerUsed;
     } catch (gatewayError) {
       fallbackUsed = true;
-      console.warn('Local analysis model unavailable; using source fallback:', gatewayError);
+      console.warn('DeepSeek analysis model unavailable; using source fallback:', gatewayError);
       parsed = analyzeResourceSource(context);
     }
     parsed.available = {

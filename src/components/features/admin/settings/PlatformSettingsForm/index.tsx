@@ -57,6 +57,7 @@ const PROVIDER_BUDGET_LABELS: Array<[keyof PlatformSettings['providerDailyBudget
   ['groqFast', 'Groq fast/day'],
   ['groqLarge', 'Groq large/day'],
   ['gemini', 'Gemini/day'],
+  ['deepseek', 'DeepSeek direct/day'],
   ['ocrSpace', 'OCR.space/day'],
   ['openRouter', 'OpenRouter/day'],
   ['grok', 'Grok/day'],

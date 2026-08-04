@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
     const difficulty = req.nextUrl.searchParams.get('difficulty') || 'intermediate';
     const result = await gatewayChat({
       provider: 'gemini',
+      routingPolicy: 'gemini',
       tier: 'mini',
       messages: [
         {
@@ -95,6 +96,7 @@ export async function POST(req: NextRequest) {
 
     const result = await gatewayChat({
       provider: 'gemini',
+      routingPolicy: 'gemini',
       tier: tier === 'ELITE' ? 'medium' : 'mini',
       messages: [
         {
