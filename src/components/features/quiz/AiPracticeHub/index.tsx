@@ -424,7 +424,7 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
                 <div>
                   <h3 className="font-semibold">{selectedSubject.name} Chapter Test</h3>
                   <p className="text-muted-foreground text-xs">
-                    Each attempt presents a fresh selection from this chapter's approved question bank.
+                    Each attempt presents a fresh selection from this chapter&apos;s approved question bank.
                   </p>
                 </div>
                 <button onClick={() => setOpenSubjectId(null)} className="text-muted-foreground hover:text-foreground">
