@@ -9,6 +9,7 @@ import {
   CalendarCheck2,
   ClipboardList,
   GraduationCap,
+  ListChecks,
   LayoutDashboard,
   Menu,
   MessageSquareText,
@@ -29,6 +30,7 @@ const ITEMS: Array<{
   permission: SchoolPermission;
 }> = [
   { href: '/school-admin', label: 'Overview', icon: LayoutDashboard, permission: 'dashboard.read' },
+  { href: '/school-admin/launchpad', label: 'Launchpad', icon: ListChecks, permission: 'dashboard.read' },
   { href: '/school-admin/people', label: 'People', icon: Users, permission: 'people.read' },
   { href: '/school-admin/admissions', label: 'Admissions', icon: ClipboardList, permission: 'admissions.read' },
   { href: '/school-admin/attendance', label: 'Attendance', icon: CalendarCheck2, permission: 'attendance.read' },
