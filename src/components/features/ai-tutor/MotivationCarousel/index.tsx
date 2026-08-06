@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils/cn';
 
 const FALLBACK_QUOTES = [
   'A small, consistent step today builds confidence for tomorrow.',
-  'A focused 25 minutes today can make tomorrow’s exam feel much calmer.',
+  "A focused 25 minutes today can make tomorrow's exam feel much calmer.",
   'A wrong answer is not the end; it is a shortcut to understanding the concept.',
   'Work at your own pace. Keep moving and keep revising.',
   'Break a difficult topic into four parts: definition, formula, example, and practice.',

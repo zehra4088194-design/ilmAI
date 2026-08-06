@@ -11,6 +11,7 @@ import { LiveVoiceCall } from '@/components/features/ai-tutor/LiveVoiceCall';
 import { MotivationCarousel } from '@/components/features/ai-tutor/MotivationCarousel';
 import { TeacherIdentityCard } from '@/components/features/teacher/TeacherIdentityCard';
 import { AIProviderSelector } from '@/components/features/ai-selector/AIProviderSelector';
+import { CreditBalancePill } from '@/components/features/ai-selector/CreditBalancePill';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/auth/useAuth';
@@ -138,12 +139,18 @@ export function ChatInterface() {
         <div className="border-border flex min-h-14 min-w-0 items-center gap-2 border-b px-2 py-2 sm:gap-3 sm:px-4">
           <Button variant="ghost" size="icon-sm" className="shrink-0 lg:hidden" onClick={() => setSidebarOpen(true)} aria-label="Open chat history"><Menu className="h-4 w-4" /></Button>
           <TeacherIdentityCard subjectName={subject?.name} size="md" className="min-w-0 flex-1" />
+          <div className="hidden shrink-0 sm:block">
+            <CreditBalancePill />
+          </div>
           <div className="hidden shrink-0 md:block">
             <LiveVoiceCall subject={subject?.name} hasAccess={hasLiveVoiceAccess} userTier={userTier} />
           </div>
           <div className="shrink-0">
             <AIProviderSelector provider={provider} tier={tier} onChange={(p, t) => { setProvider(p); setTier(t); }} isFreeTier={isFreeTier} userTier={user?.subscriptionTier || 'FREE'} compact />
           </div>
+        </div>
+        <div className="border-border flex items-center justify-end border-b px-3 py-2 sm:hidden">
+          <CreditBalancePill />
         </div>
 
         {/* Messages */}

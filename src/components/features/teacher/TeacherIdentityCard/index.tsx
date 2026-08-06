@@ -32,7 +32,7 @@ export function TeacherIdentityCard({ subjectName, size = 'md', avatarOnly = fal
       {avatar}
       <div className="min-w-0">
         <p className={cn('font-semibold leading-tight truncate', s.name)}>{persona.name}</p>
-        <p className={cn('text-muted-foreground leading-tight truncate', s.bio)}>{persona.specialty} · {persona.bio}</p>
+        <p className={cn('text-muted-foreground leading-tight truncate', s.bio)}>{persona.specialty} - {persona.bio}</p>
       </div>
     </div>
   );

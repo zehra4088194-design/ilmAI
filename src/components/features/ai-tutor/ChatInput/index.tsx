@@ -35,7 +35,7 @@ export function ChatInput({ onSend, disabled, value, onChange, textareaRef }: Ch
     }
   };
 
-  // Called when OCR successfully extracts text from a scanned photo —
+  // Called when OCR successfully extracts text from a scanned photo.
   // we prefix it so the AI knows this came from a scanned question/homework
   const handleScannedText = (extractedText: string) => {
     if (!extractedText) {
