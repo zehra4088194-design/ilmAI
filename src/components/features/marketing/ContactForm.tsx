@@ -131,8 +131,8 @@ export function ContactForm() {
       <p className="text-muted-foreground flex items-start gap-2 text-xs leading-5">
         <Mail className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         If the form is unavailable, email{' '}
-        <a href="mailto:support@ilmai.study" className="text-violet-300 underline">
-          support@ilmai.study
+        <a href="mailto:ilmai.study1@gmail.com" className="text-violet-300 underline">
+          ilmai.study1@gmail.com
         </a>
         .
       </p>

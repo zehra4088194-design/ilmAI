@@ -214,7 +214,7 @@ export function ManualUpgradePage({
                 ))}
               </div>
               <p className="text-muted-foreground mt-4 text-xs">
-                Send proof and your registered email to `zehra4088194@gmail.com`. Never share an OTP or wallet PIN.
+                Send proof and your registered email to `ilmai.study1@gmail.com`. Never share an OTP or wallet PIN.
               </p>
             </div>
           )}

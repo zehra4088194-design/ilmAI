@@ -73,13 +73,13 @@ export async function POST(request: NextRequest) {
 
   if (!isEmailConfigured()) {
     return NextResponse.json(
-      { error: 'The contact form is temporarily unavailable. Please email support@ilmai.study.' },
+      { error: 'The contact form is temporarily unavailable. Please email ilmai.study1@gmail.com.' },
       { status: 503 }
     );
   }
 
   const { name, email, subject, message } = parsed.data;
-  const recipient = process.env.CONTACT_EMAIL || 'support@ilmai.study';
+  const recipient = process.env.CONTACT_EMAIL || 'ilmai.study1@gmail.com';
   const safeName = escapeHtml(name);
   const safeEmail = escapeHtml(email);
   const safeSubject = escapeHtml(subject);
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Public contact delivery failed:', error);
     return NextResponse.json(
-      { error: 'The message could not be delivered. Please email support@ilmai.study directly.' },
+      { error: 'The message could not be delivered. Please email ilmai.study1@gmail.com directly.' },
       { status: 502 }
     );
   }

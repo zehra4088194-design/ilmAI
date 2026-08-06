@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { BookOpenCheck, CreditCard, LifeBuoy, Mail, MessageSquareWarning } from 'lucide-react';
+import { BookOpenCheck, CreditCard, LifeBuoy, Mail, MessageSquareWarning, Phone } from 'lucide-react';
 import { Navbar } from '@/components/features/landing/Navbar';
 import { LandingFooter } from '@/components/features/landing/Footer';
 import { ContactForm } from '@/components/features/marketing/ContactForm';
@@ -69,12 +69,19 @@ export default function ContactPage() {
                 ))}
               </div>
               <div className="border-border/70 mt-8 rounded-xl border p-5">
-                <p className="text-sm font-semibold">Direct email</p>
+                <p className="text-sm font-semibold">Direct contact</p>
                 <a
-                  href="mailto:support@ilmai.study"
+                  href="mailto:ilmai.study1@gmail.com"
                   className="mt-2 block text-sm text-violet-300 underline-offset-4 hover:underline"
                 >
-                  support@ilmai.study
+                  ilmai.study1@gmail.com
+                </a>
+                <a
+                  href="tel:+923480049900"
+                  className="mt-3 flex items-center gap-2 text-sm text-violet-300 underline-offset-4 hover:underline"
+                >
+                  <Phone className="h-4 w-4" />
+                  03480049900
                 </a>
               </div>
             </aside>

@@ -5,6 +5,7 @@ import { Loader2, Maximize2, Minimize2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { ProtectedResourceKind, ResourceMode } from '@/lib/resources/server';
 import { ProtectedPdfViewer } from '@/components/features/resources/ProtectedPdfViewer';
+import { ResourceComments } from '@/components/features/resources/ResourceComments';
 
 export async function fetchProtectedResourceResponse(input: {
   kind: ProtectedResourceKind;
@@ -140,7 +141,7 @@ export function ProtectedResourceReader({
         </div>
       </div>
       <div className="relative min-h-0 flex-1 bg-slate-950">
-        <div className="grid h-full min-h-0 grid-cols-1">
+        <div className="grid h-full min-h-0 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_22rem]">
           <div className="relative min-h-0 min-w-0">
             {!blobUrl && !loadError && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white/75">
@@ -155,6 +156,7 @@ export function ProtectedResourceReader({
             )}
             {blobUrl && <ProtectedPdfViewer url={blobUrl} title={title} className="h-full w-full" />}
           </div>
+          <ResourceComments resourceKind={kind} resourceId={resourceId} />
         </div>
       </div>
     </div>

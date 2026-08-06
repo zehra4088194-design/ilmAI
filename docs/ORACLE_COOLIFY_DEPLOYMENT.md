@@ -125,6 +125,7 @@ If `20260717100000_profile_academic_institution.sql` was the last manually appli
 16. `supabase/migrations/20260719200000_push_subscriptions.sql`
 
 For an existing current deployment, also apply `supabase/migrations/20260804140000_txt_resource_rag.sql` before deploying the local-model code. It fixes TXT chunk metadata/search and removes direct browser access to raw companion text.
+Also apply `supabase/migrations/20260805190000_resource_comments.sql` to enable live comments and replies under protected PDFs.
 
 Confirm in Supabase after running them:
 
@@ -134,6 +135,7 @@ Confirm in Supabase after running them:
 4. `profiles` has gender and academic institution fields.
 5. Realtime includes parent links, parent attachments, and student chat requests.
 6. Admin Settings shows USD-only plan fields.
+7. `resource_comments` exists and is enabled for Realtime.
 
 ## 5. Configure Supabase Auth and email
 
@@ -152,6 +154,7 @@ In Oracle Email Delivery:
 4. Generate SMTP credentials; OCI console login credentials do not work as SMTP credentials.
 5. Put the SMTP host, port 587, username, password, and sender into Coolify.
 6. Put the same SMTP credentials into Supabase Auth SMTP settings.
+7. Set `CONTACT_EMAIL=ilmai.study1@gmail.com` for public contact-form delivery.
 
 Customize Supabase Auth templates with the ilm AI name/logo. Include the normal confirmation/recovery link and the template token where Supabase supports it, so the email can present both a button and a code. Test signup, email confirmation, and password recovery before launch.
 
@@ -223,9 +226,10 @@ Manual product checks:
 5. Open light and dark resource versions without exposing the Drive source in resource metadata.
 6. Verify Free can read but not download, while Pro/Elite can save in-app/offline.
 7. Generate Summary/Test with a companion `.txt`, then verify a resource without `.txt` is rejected without fetching or OCR-processing its PDF.
-8. Test printed and handwritten scans and inspect Admin provider usage.
-9. Test institution inquiry chat and institution-specific usage reporting.
-10. Complete Paddle sandbox checkout and inspect webhook delivery.
+8. Open a PDF, post a comment and reply from two accounts, and confirm both update live under the same file.
+9. Test printed and handwritten scans and inspect Admin provider usage.
+10. Test institution inquiry chat and institution-specific usage reporting.
+11. Complete Paddle sandbox checkout and inspect webhook delivery.
 
 Do not delete the old deployment on cutover day. Point DNS to Oracle, monitor for at least 48 hours, then remove obsolete provider secrets and services.
 
