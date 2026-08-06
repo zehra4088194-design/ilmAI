@@ -81,3 +81,64 @@ export async function createSchoolOrganization(
   revalidatePath('/admin/schools');
   return { success: true, message: `${name} created and assigned to ${ownerEmail}.` };
 }
+
+export async function updateSchoolPlanSettings(
+  _state: SchoolActionState,
+  formData: FormData
+): Promise<SchoolActionState> {
+  const admin = await requireAdminUser();
+  if (!admin) return { success: false, message: 'Admin access required.' };
+  const organizationId = String(formData.get('organization_id') || '').trim();
+  if (!organizationId) return { success: false, message: 'Organization is required.' };
+  const enabledModules = String(formData.get('enabled_modules') || '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const numberField = (key: string, fallback: number) => {
+    const value = Number(formData.get(key));
+    return Number.isFinite(value) && value >= 0 ? value : fallback;
+  };
+
+  const db = (await createAdminClient()) as any;
+  const { data: tier } = await db
+    .from('institution_plan_tiers')
+    .select('*')
+    .eq('id', String(formData.get('plan_tier_id') || ''))
+    .maybeSingle();
+
+  const payload = {
+    organization_id: organizationId,
+    plan_tier_id: tier?.id || null,
+    billing_status: String(formData.get('billing_status') || 'trial'),
+    max_students: numberField('max_students', tier?.max_students || 200),
+    max_teachers: numberField('max_teachers', tier?.max_teachers || 25),
+    max_storage_gb: numberField('max_storage_gb', tier?.max_storage_gb || 10),
+    monthly_price_usd: numberField('monthly_price_usd', tier?.monthly_price_usd || 10),
+    monthly_price_pkr: numberField('monthly_price_pkr', tier?.monthly_price_pkr || 0),
+    enabled_modules: enabledModules.length ? enabledModules : tier?.enabled_modules || undefined,
+    notes: String(formData.get('notes') || '').trim() || null,
+    renews_on: String(formData.get('renews_on') || '').trim() || null,
+    updated_by: admin.id,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { error } = await db
+    .from('school_organization_plan_settings')
+    .upsert(payload, { onConflict: 'organization_id' });
+  if (error) return { success: false, message: error.message };
+
+  await db.from('school_audit_logs').insert({
+    organization_id: organizationId,
+    actor_user_id: admin.id,
+    action: 'update',
+    entity_type: 'school_plan_settings',
+    entity_id: organizationId,
+    metadata: {
+      maxStudents: payload.max_students,
+      billingStatus: payload.billing_status,
+      monthlyPriceUsd: payload.monthly_price_usd,
+    },
+  });
+  revalidatePath('/admin/schools');
+  return { success: true, message: 'Institution plan settings updated.' };
+}

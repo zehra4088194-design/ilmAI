@@ -16,12 +16,14 @@ export default async function SchoolPeoplePage() {
   const data = await getSchoolPeople(supabase, context);
   const canManage = hasSchoolPermission(context, 'people.manage');
   const canEnroll = hasSchoolPermission(context, 'admissions.manage');
+  const maxStudents = Number(data.planSettings?.max_students || 200);
 
   return (
     <div className="space-y-6">
       <SchoolPageHeader
         title="People"
         description="Students, teachers, staff, parents, enrollment and guardian relationships."
+        action={<div className="border-border bg-card rounded-lg border px-4 py-2 text-right"><p className="text-muted-foreground text-[11px]">Student plan usage</p><p className="font-bold">{data.activeStudentCount.toLocaleString()} / {maxStudents.toLocaleString()}</p></div>}
       />
       {(canManage || canEnroll) && (
         <div className="grid gap-5 xl:grid-cols-3">

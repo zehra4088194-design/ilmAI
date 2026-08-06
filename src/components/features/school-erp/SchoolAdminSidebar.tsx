@@ -15,6 +15,7 @@ import {
   MessageSquareText,
   ReceiptText,
   Settings2,
+  WalletCards,
   Users,
   X,
 } from 'lucide-react';
@@ -36,6 +37,7 @@ const ITEMS: Array<{
   { href: '/school-admin/attendance', label: 'Attendance', icon: CalendarCheck2, permission: 'attendance.read' },
   { href: '/school-admin/exams', label: 'Exams & Results', icon: GraduationCap, permission: 'exams.read' },
   { href: '/school-admin/fees', label: 'Fees', icon: ReceiptText, permission: 'fees.read' },
+  { href: '/school-admin/payroll', label: 'Payroll', icon: WalletCards, permission: 'payroll.read' },
   { href: '/school-admin/academics', label: 'Academics', icon: BookOpenCheck, permission: 'academics.read' },
   { href: '/school-admin/communication', label: 'Communication', icon: MessageSquareText, permission: 'communication.read' },
   { href: '/school-admin/reports', label: 'Reports', icon: BarChart3, permission: 'reports.read' },

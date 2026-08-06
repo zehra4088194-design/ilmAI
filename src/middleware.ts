@@ -83,6 +83,12 @@ export async function middleware(request: NextRequest) {
   const requestedPath = `${pathname}${request.nextUrl.search}`;
   const playConsumptionOnly = isPlayConsumptionOnlyHost(getRequestHost(request.headers));
 
+  if (pathname.startsWith('/principal-') && pathname.length > '/principal-'.length) {
+    const url = request.nextUrl.clone();
+    url.pathname = `/principal/${pathname.slice('/principal-'.length)}`;
+    return secure(NextResponse.rewrite(url));
+  }
+
   if (playConsumptionOnly && (pathname === '/checkout' || pathname === '/pricing')) {
     return secure(NextResponse.redirect(getPublicRequestUrl(request.headers, request.url, '/subscription')));
   }

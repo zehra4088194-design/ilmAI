@@ -58,14 +58,24 @@ export async function getSchoolAcademicSetup(supabase: SupabaseClient, context: 
 export async function getSchoolPeople(supabase: SupabaseClient, context: SchoolContext) {
   const db = supabase as any;
   const organizationId = context.organization.id;
-  const [memberships, enrollments, guardians, sections, years] = await Promise.all([
+  const [memberships, enrollments, guardians, sections, years, planSettings, activeStudents] = await Promise.all([
     rows(db.from('school_memberships').select('*, profiles(id, full_name, email, phone, avatar_url)').eq('organization_id', organizationId).order('member_role').order('joined_at', { ascending: false })),
     rows(db.from('school_enrollments').select('*, profiles!school_enrollments_student_id_fkey(id, full_name, email), school_sections(name, school_classes(name))').eq('organization_id', organizationId).order('created_at', { ascending: false })),
     rows(db.from('school_guardians').select('*, student:profiles!school_guardians_student_id_fkey(full_name), guardian:profiles!school_guardians_guardian_id_fkey(full_name, email)').eq('organization_id', organizationId)),
     rows(db.from('school_sections').select('id, name, school_classes(name)').eq('organization_id', organizationId).eq('is_active', true)),
     rows(db.from('school_academic_years').select('id, name').eq('organization_id', organizationId).order('starts_on', { ascending: false })),
+    rows(db.from('school_organization_plan_settings').select('*').eq('organization_id', organizationId).limit(1)),
+    db.from('school_enrollments').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId).eq('status', 'active'),
   ]);
-  return { memberships, enrollments, guardians, sections, years };
+  return {
+    memberships,
+    enrollments,
+    guardians,
+    sections,
+    years,
+    planSettings: planSettings[0] || null,
+    activeStudentCount: activeStudents.count || 0,
+  };
 }
 
 export async function getSchoolAdmissions(supabase: SupabaseClient, context: SchoolContext) {
@@ -120,6 +130,46 @@ export async function getSchoolFees(supabase: SupabaseClient, context: SchoolCon
     rows(db.from('school_enrollments').select('student_id, admission_number, profiles!school_enrollments_student_id_fkey(full_name)').eq('organization_id', organizationId).eq('status', 'active')),
   ]);
   return { structures, invoices, payments, years, classes, students };
+}
+
+export async function getSchoolPayroll(supabase: SupabaseClient, context: SchoolContext) {
+  const db = supabase as any;
+  const organizationId = context.organization.id;
+  const [memberships, compensation, runs, items] = await Promise.all([
+    rows(
+      db
+        .from('school_memberships')
+        .select('id, member_role, employee_code, designation, profiles(full_name, email)')
+        .eq('organization_id', organizationId)
+        .eq('status', 'active')
+        .in('member_role', ['owner', 'admin', 'admissions', 'teacher', 'staff', 'accountant'])
+        .order('member_role'),
+    ),
+    rows(
+      db
+        .from('school_staff_compensation')
+        .select('*, school_memberships(member_role, designation, employee_code, profiles(full_name, email))')
+        .eq('organization_id', organizationId)
+        .order('effective_from', { ascending: false }),
+    ),
+    rows(
+      db
+        .from('school_payroll_runs')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .order('payroll_month', { ascending: false })
+        .limit(24),
+    ),
+    rows(
+      db
+        .from('school_payroll_items')
+        .select('*, school_memberships(member_role, designation, employee_code, profiles(full_name, email)), school_payroll_runs(payroll_month, status)')
+        .eq('organization_id', organizationId)
+        .order('created_at', { ascending: false })
+        .limit(500),
+    ),
+  ]);
+  return { memberships, compensation, runs, items };
 }
 
 export async function getSchoolAcademics(supabase: SupabaseClient, context: SchoolContext) {

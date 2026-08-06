@@ -13,6 +13,8 @@ export type SchoolPermission =
   | 'exams.manage'
   | 'fees.read'
   | 'fees.manage'
+  | 'payroll.read'
+  | 'payroll.manage'
   | 'academics.read'
   | 'academics.manage'
   | 'communication.read'

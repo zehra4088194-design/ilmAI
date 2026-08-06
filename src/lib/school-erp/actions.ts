@@ -75,6 +75,25 @@ function failure(error: unknown): SchoolActionState {
   return { success: false, message: error instanceof Error ? error.message : 'The update could not be completed.' };
 }
 
+async function assertStudentLimit(db: any, organizationId: string) {
+  const [{ data: plan }, { count }] = await Promise.all([
+    db
+      .from('school_organization_plan_settings')
+      .select('max_students')
+      .eq('organization_id', organizationId)
+      .maybeSingle(),
+    db
+      .from('school_enrollments')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', organizationId)
+      .eq('status', 'active'),
+  ]);
+  const maxStudents = Number(plan?.max_students || 200);
+  if ((count || 0) >= maxStudents) {
+    throw new Error(`Student limit reached (${count || 0}/${maxStudents}). Ask platform admin to increase this school's plan.`);
+  }
+}
+
 export async function updateSchoolOrganization(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
   try {
     const name = text(formData, 'name');
@@ -262,6 +281,14 @@ export async function enrollStudent(_state: SchoolActionState, formData: FormDat
     const { db, context } = await mutationContext('admissions.manage', 'enrollment');
     const { data: profile } = await db.from('profiles').select('id').eq('email', studentEmail).maybeSingle();
     if (!profile) throw new Error('The student must register an ilm AI account first.');
+    const { data: existingActive } = await db
+      .from('school_enrollments')
+      .select('id')
+      .eq('organization_id', context.organization.id)
+      .eq('student_id', profile.id)
+      .eq('status', 'active')
+      .maybeSingle();
+    if (!existingActive) await assertStudentLimit(db, context.organization.id);
     await db.from('school_memberships').upsert({
       organization_id: context.organization.id,
       profile_id: profile.id,
@@ -282,6 +309,121 @@ export async function enrollStudent(_state: SchoolActionState, formData: FormDat
     if (error) throw new Error(error.message);
     await audit(db, context, 'upsert', 'enrollment', data.id, { studentId: profile.id });
     return done('/school-admin/people', 'Student enrolled.');
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function upsertStaffCompensation(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
+  try {
+    const membershipId = text(formData, 'membership_id');
+    const baseSalary = numberValue(formData, 'base_salary');
+    const effectiveFrom = dateValue(formData, 'effective_from') || new Date().toISOString().slice(0, 10);
+    if (!membershipId || baseSalary < 0) throw new Error('Staff member and salary are required.');
+    const { db, context, user } = await mutationContext('payroll.manage', 'staff-compensation');
+    const { data, error } = await db
+      .from('school_staff_compensation')
+      .insert({
+        organization_id: context.organization.id,
+        membership_id: membershipId,
+        base_salary: baseSalary,
+        currency: text(formData, 'currency') || context.organization.currency,
+        pay_frequency: text(formData, 'pay_frequency') || 'monthly',
+        bank_account_title: optionalText(formData, 'bank_account_title'),
+        bank_account_number: optionalText(formData, 'bank_account_number'),
+        wallet_number: optionalText(formData, 'wallet_number'),
+        notes: optionalText(formData, 'notes'),
+        effective_from: effectiveFrom,
+        created_by: user.id,
+      })
+      .select('id')
+      .single();
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'upsert', 'staff_compensation', data.id, { membershipId, baseSalary });
+    return done('/school-admin/payroll', 'Staff salary saved.');
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function createPayrollRun(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
+  try {
+    const payrollMonth = dateValue(formData, 'payroll_month');
+    if (!payrollMonth) throw new Error('Payroll month is required.');
+    const { db, context, user } = await mutationContext('payroll.manage', 'payroll-run');
+    const { data: compensationRows, error: compensationError } = await db
+      .from('school_staff_compensation')
+      .select('membership_id, base_salary')
+      .eq('organization_id', context.organization.id)
+      .eq('is_active', true);
+    if (compensationError) throw new Error(compensationError.message);
+    const grossAmount = (compensationRows || []).reduce((sum: number, row: any) => sum + Number(row.base_salary || 0), 0);
+    const { data: run, error } = await db
+      .from('school_payroll_runs')
+      .insert({
+        organization_id: context.organization.id,
+        payroll_month: payrollMonth,
+        gross_amount: grossAmount,
+        net_amount: grossAmount,
+        notes: optionalText(formData, 'notes'),
+        created_by: user.id,
+      })
+      .select('id')
+      .single();
+    if (error) throw new Error(error.message);
+    if (compensationRows?.length) {
+      const { error: itemsError } = await db.from('school_payroll_items').insert(
+        compensationRows.map((row: any) => ({
+          organization_id: context.organization.id,
+          payroll_run_id: run.id,
+          membership_id: row.membership_id,
+          base_salary: Number(row.base_salary || 0),
+          net_amount: Number(row.base_salary || 0),
+        })),
+      );
+      if (itemsError) throw new Error(itemsError.message);
+    }
+    await audit(db, context, 'create', 'payroll_run', run.id, { payrollMonth, grossAmount });
+    return done('/school-admin/payroll', 'Payroll run created.');
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function updatePayrollItem(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
+  try {
+    const id = text(formData, 'id');
+    const bonus = Math.max(0, numberValue(formData, 'bonus_amount'));
+    const deduction = Math.max(0, numberValue(formData, 'deduction_amount'));
+    const status = text(formData, 'payment_status') || 'unpaid';
+    if (!id || !['unpaid', 'paid', 'held', 'cancelled'].includes(status)) throw new Error('Payroll item and status are required.');
+    const { db, context } = await mutationContext('payroll.manage', 'payroll-item');
+    const { data: item } = await db
+      .from('school_payroll_items')
+      .select('base_salary')
+      .eq('organization_id', context.organization.id)
+      .eq('id', id)
+      .maybeSingle();
+    if (!item) throw new Error('Payroll item not found.');
+    const netAmount = Math.max(0, Number(item.base_salary || 0) + bonus - deduction);
+    const { error } = await db
+      .from('school_payroll_items')
+      .update({
+        bonus_amount: bonus,
+        deduction_amount: deduction,
+        net_amount: netAmount,
+        payment_status: status,
+        payment_method: optionalText(formData, 'payment_method'),
+        payment_reference: optionalText(formData, 'payment_reference'),
+        paid_at: status === 'paid' ? new Date().toISOString() : null,
+        notes: optionalText(formData, 'notes'),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('organization_id', context.organization.id)
+      .eq('id', id);
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'update', 'payroll_item', id, { status, netAmount });
+    return done('/school-admin/payroll', 'Payroll item updated.');
   } catch (error) {
     return failure(error);
   }

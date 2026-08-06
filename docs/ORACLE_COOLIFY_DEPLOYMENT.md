@@ -126,6 +126,7 @@ If `20260717100000_profile_academic_institution.sql` was the last manually appli
 
 For an existing current deployment, also apply `supabase/migrations/20260804140000_txt_resource_rag.sql` before deploying the local-model code. It fixes TXT chunk metadata/search and removes direct browser access to raw companion text.
 Also apply `supabase/migrations/20260805190000_resource_comments.sql` to enable live comments and replies under protected PDFs.
+Apply `supabase/migrations/20260806110000_institution_limits_payroll_resources.sql` after that to enable institution plan limits, principal links, payroll, and school-scoped resource metadata.
 
 Confirm in Supabase after running them:
 
@@ -136,6 +137,7 @@ Confirm in Supabase after running them:
 5. Realtime includes parent links, parent attachments, and student chat requests.
 6. Admin Settings shows USD-only plan fields.
 7. `resource_comments` exists and is enabled for Realtime.
+8. `school_organization_plan_settings`, `institution_plan_tiers`, `school_staff_compensation`, `school_payroll_runs`, `school_payroll_items`, `school_principal_links`, and `school_resources` exist.
 
 ## 5. Configure Supabase Auth and email
 
@@ -227,9 +229,12 @@ Manual product checks:
 6. Verify Free can read but not download, while Pro/Elite can save in-app/offline.
 7. Generate Summary/Test with a companion `.txt`, then verify a resource without `.txt` is rejected without fetching or OCR-processing its PDF.
 8. Open a PDF, post a comment and reply from two accounts, and confirm both update live under the same file.
-9. Test printed and handwritten scans and inspect Admin provider usage.
-10. Test institution inquiry chat and institution-specific usage reporting.
-11. Complete Paddle sandbox checkout and inspect webhook delivery.
+9. In `/admin/schools`, set a school max-student limit and confirm `/school-admin/people` shows usage and blocks enrollments beyond the limit.
+10. Open `/principal-{school-slug}` while signed in as the school owner/principal and confirm it selects that school and redirects to `/school-admin`.
+11. Create staff salary setup and a payroll run from `/school-admin/payroll`.
+12. Test printed and handwritten scans and inspect Admin provider usage.
+13. Test institution inquiry chat and institution-specific usage reporting.
+14. Complete Paddle sandbox checkout and inspect webhook delivery.
 
 Do not delete the old deployment on cutover day. Point DNS to Oracle, monitor for at least 48 hours, then remove obsolete provider secrets and services.
 
