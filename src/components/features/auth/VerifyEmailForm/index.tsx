@@ -41,7 +41,7 @@ export function VerifyEmailForm() {
     const { data, error } = await supabase.auth.verifyOtp({
       email: normalizedEmail,
       token: code,
-      type: 'email',
+      type: 'signup',
     });
 
     if (error || !data.user) {
