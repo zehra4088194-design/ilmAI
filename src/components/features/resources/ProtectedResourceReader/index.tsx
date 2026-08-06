@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Loader2, Maximize2, Minimize2, X } from 'lucide-react';
+import { Loader2, Maximize2, MessageSquareText, Minimize2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { ProtectedResourceKind, ResourceMode } from '@/lib/resources/server';
 import { ProtectedPdfViewer } from '@/components/features/resources/ProtectedPdfViewer';
@@ -58,6 +58,7 @@ export function ProtectedResourceReader({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [canFullscreen, setCanFullscreen] = useState(false);
+  const [showComments, setShowComments] = useState(false);
   const readerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -125,6 +126,14 @@ export function ProtectedResourceReader({
           <p className="text-muted-foreground text-xs">PDF reader</p>
         </div>
         <div className="flex shrink-0 items-center gap-1">
+          <Button
+            variant={showComments ? 'secondary' : 'ghost'}
+            size="icon-sm"
+            onClick={() => setShowComments((value) => !value)}
+            aria-label={showComments ? 'Hide PDF comments' : 'Show PDF comments'}
+          >
+            <MessageSquareText className="h-4 w-4" />
+          </Button>
           {canFullscreen && (
             <Button
               variant="ghost"
@@ -141,7 +150,7 @@ export function ProtectedResourceReader({
         </div>
       </div>
       <div className="relative min-h-0 flex-1 bg-slate-950">
-        <div className="grid h-full min-h-0 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="grid h-full min-h-0 grid-cols-1">
           <div className="relative min-h-0 min-w-0">
             {!blobUrl && !loadError && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white/75">
@@ -156,8 +165,12 @@ export function ProtectedResourceReader({
             )}
             {blobUrl && <ProtectedPdfViewer url={blobUrl} title={title} className="h-full w-full" />}
           </div>
-          <ResourceComments resourceKind={kind} resourceId={resourceId} />
         </div>
+        {showComments && (
+          <div className="bg-background absolute inset-y-0 right-0 z-20 w-full max-w-md border-l shadow-2xl">
+            <ResourceComments resourceKind={kind} resourceId={resourceId} />
+          </div>
+        )}
       </div>
     </div>
   );

@@ -17,6 +17,7 @@ export function ProtectedPdfViewer({
   title: string;
   className?: string;
 }) {
+  const frameRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
   const [pages, setPages] = useState(0);
@@ -26,12 +27,15 @@ export function ProtectedPdfViewer({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const viewport = viewportRef.current;
-    if (!viewport) return;
-    const updateWidth = () => setContainerWidth(viewport.clientWidth);
+    const frame = frameRef.current;
+    if (!frame) return;
+    const updateWidth = () => {
+      const nextWidth = Math.floor(frame.getBoundingClientRect().width);
+      setContainerWidth((current) => (Math.abs(current - nextWidth) > 2 ? nextWidth : current));
+    };
     updateWidth();
     const observer = new ResizeObserver(updateWidth);
-    observer.observe(viewport);
+    observer.observe(frame);
     return () => observer.disconnect();
   }, []);
 
@@ -43,11 +47,11 @@ export function ProtectedPdfViewer({
     setError(null);
   }, [url]);
 
-  const fittedWidth = Math.max(240, Math.min(containerWidth - 24, 1100));
+  const fittedWidth = Math.max(240, Math.min(containerWidth - 32, 1100));
   const renderedWidth = Math.round(fittedWidth * zoom);
 
   return (
-    <div className={cn('bg-slate-200 text-slate-950', className)}>
+    <div ref={frameRef} className={cn('bg-slate-200 text-slate-950', className)}>
       <div className="flex h-full min-h-0 flex-col">
         <div className="flex min-h-12 shrink-0 items-center justify-between gap-2 border-b border-slate-300 bg-white px-2 shadow-sm sm:px-3">
           <div className="flex min-w-0 items-center gap-1">
@@ -112,7 +116,7 @@ export function ProtectedPdfViewer({
           </div>
         </div>
 
-        <div ref={viewportRef} className="min-h-0 flex-1 overflow-auto overscroll-contain p-3 sm:p-4">
+        <div ref={viewportRef} className="min-h-0 flex-1 overflow-auto overscroll-contain p-3 [scrollbar-gutter:stable] sm:p-4">
           {error ? (
             <div className="mx-auto flex min-h-64 max-w-md flex-col items-center justify-center rounded-2xl bg-white p-6 text-center shadow-sm">
               <FileWarning className="mb-3 h-9 w-9 text-amber-600" />
@@ -136,7 +140,7 @@ export function ProtectedPdfViewer({
                 console.error('Protected PDF render failed:', loadError);
                 setError('The response is not a valid PDF, or the connection was interrupted. Reopen the file and try again.');
               }}
-              className="flex min-w-full justify-center"
+              className="mx-auto flex w-max max-w-none justify-center"
             >
               <Page
                 key={`${page}:${zoom}:${rotation}`}
