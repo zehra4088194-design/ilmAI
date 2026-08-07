@@ -14,7 +14,8 @@ and compose file `docker-compose.oracle.yml`.
 | Local OCR        | OCRmyPDF, Tesseract, and native PDF extraction                   |
 | Local llama.cpp  | Qwen 4B inference for companion-TXT summaries and tests          |
 | Supabase         | Managed database, Auth, Storage, and Realtime                    |
-| Google Drive     | Source storage behind authenticated proxy routes                 |
+| Object storage   | Backblaze B2/R2/S3-compatible PDF and companion TXT storage      |
+| Google Drive     | Legacy source storage behind authenticated proxy routes          |
 
 The Oracle Always Free Ampere allowance currently provides up to 4 OCPUs and 24 GB RAM across the tenancy, with 200 GB total block volume. Official limits can change, so confirm them before creating the VM: https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm
 
@@ -89,6 +90,18 @@ Required groups:
 4. Oracle SMTP credentials.
 5. Payment keys only after sandbox testing and merchant approval.
 6. Android package/fingerprint values only when preparing the Play build.
+
+For Backblaze B2 PDF/TXT hosting, create a private bucket and an application key with read/write access to that bucket. Set:
+
+```text
+OBJECT_STORAGE_ENDPOINT=https://s3.YOUR-B2-REGION.backblazeb2.com
+OBJECT_STORAGE_REGION=YOUR-B2-REGION
+OBJECT_STORAGE_ACCESS_KEY_ID=your-key-id
+OBJECT_STORAGE_SECRET_ACCESS_KEY=your-application-key
+OBJECT_STORAGE_BUCKET=your-private-bucket-name
+```
+
+Admin resource forms can upload PDF and companion `.txt` files directly to this storage. The database stores `r2://bucket/key` URIs, and the app streams them through protected `/api/resources/content` routes. Existing Google Drive links continue to work until migrated.
 
 Provider arrays must be valid one-line JSON, for example:
 

@@ -1,7 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/server';
 import { extractGoogleDriveFileId } from '@/lib/utils/filePreview';
 import type { SubscriptionTier } from '@/types';
-import { getR2Text, parseR2Uri } from '@/lib/storage/r2';
+import { getR2Object, getR2Text, parseR2Uri } from '@/lib/storage/r2';
 
 export type ProtectedResourceKind = 'library' | 'past-paper' | 'college-resource';
 export type ResourceMode = 'light' | 'dark';
@@ -233,6 +233,19 @@ export async function getPublicResource(
 }
 
 export async function fetchProtectedFile(resource: ProtectedResource) {
+  if (resource.sourceUrl.startsWith('r2://')) {
+    const key = parseR2Uri(resource.sourceUrl);
+    if (!key) throw new Error('Invalid stored PDF path.');
+    const storedFile = await getR2Object(key);
+    if (!storedFile) throw new Error('Stored PDF file is missing.');
+    if (storedFile.body.byteLength > MAX_PROTECTED_RESOURCE_BYTES) {
+      throw new Error('Resource is larger than the 125MB reader limit.');
+    }
+    return new Response(storedFile.body, {
+      headers: { 'content-type': storedFile.contentType || 'application/pdf' },
+    });
+  }
+
   const requestInit: RequestInit = {
     redirect: 'follow',
     cache: 'no-store',

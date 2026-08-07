@@ -24,6 +24,7 @@ const ALL_VALUE = '__all__';
 const FILE_TYPES: LibraryResource['file_type'][] = ['pdf', 'docx', 'pptx', 'other'];
 
 function isAcceptableResourceUrl(url: string) {
+  if (/^r2:\/\/[^/]+\/.+/i.test(url)) return true;
   if (!/^https?:\/\//i.test(url)) return false;
   if (extractGoogleDriveFileId(url)) return true;
   try {
@@ -33,6 +34,10 @@ function isAcceptableResourceUrl(url: string) {
   } catch {
     return false;
   }
+}
+
+function isAcceptableContextUrl(url: string) {
+  return /^r2:\/\/[^/]+\/.+/i.test(url) || /^https:\/\//i.test(url);
 }
 
 const emptyForm = {
@@ -57,6 +62,9 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
   const [chapters, setChapters] = useState<Option[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [uploadingField, setUploadingField] = useState<'light_file_url' | 'dark_file_url' | 'context_text_url' | null>(
+    null
+  );
   const [error, setError] = useState<string | null>(null);
 
   const isEdit = !!resource;
@@ -120,8 +128,8 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
       setError('Paste a valid Google Drive, Google Docs, or direct PDF URL for dark mode.');
       return;
     }
-    if (!/^https:\/\//i.test(contextTextUrl)) {
-      setError('A valid HTTPS or Google Drive link for the companion .txt file is required.');
+    if (!isAcceptableContextUrl(contextTextUrl)) {
+      setError('A valid object-storage URI, HTTPS, or Google Drive link for the companion .txt file is required.');
       return;
     }
 
@@ -166,6 +174,30 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
     }
   }
 
+  async function uploadResourceFile(field: 'light_file_url' | 'dark_file_url' | 'context_text_url', file: File | null) {
+    if (!file) return;
+    const isContext = field === 'context_text_url';
+    const formData = new FormData();
+    formData.set('file', file);
+    formData.set('type', isContext ? 'txt' : 'pdf');
+    formData.set(
+      'scope',
+      [form.board, form.grade_level, form.subject_id].filter((value) => value && value !== ALL_VALUE).join('/')
+    );
+    setUploadingField(field);
+    setError(null);
+    try {
+      const response = await fetch('/api/admin/resource-files', { method: 'POST', body: formData });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Upload failed.');
+      setForm((current) => ({ ...current, [field]: data.uri }));
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : 'Upload failed.');
+    } finally {
+      setUploadingField(null);
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-w-lg">
@@ -191,12 +223,18 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
               id="light-drive-url"
               value={form.light_file_url}
               onChange={(event) => setForm((current) => ({ ...current, light_file_url: event.target.value }))}
-              placeholder="https://drive.google.com/file/d/.../view"
+              placeholder="r2://... or https://drive.google.com/file/d/.../view"
               required
             />
+            <Input
+              type="file"
+              accept="application/pdf"
+              disabled={uploadingField !== null}
+              onChange={(event) => void uploadResourceFile('light_file_url', event.target.files?.[0] || null)}
+            />
             <p className="text-muted-foreground text-xs">
-              Paste the public link. Drive sharing must be set to &quot;Anyone with the link can view&quot;; the cover
-              preview will be generated automatically.
+              Upload to configured object storage, or paste a public Drive/direct PDF link.
+              {uploadingField === 'light_file_url' ? ' Uploading...' : ''}
             </p>
           </div>
 
@@ -399,7 +437,13 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
               id="dark-drive-url"
               value={form.dark_file_url}
               onChange={(event) => setForm((current) => ({ ...current, dark_file_url: event.target.value }))}
-              placeholder="https://drive.google.com/file/d/.../view"
+              placeholder="r2://... or https://drive.google.com/file/d/.../view"
+            />
+            <Input
+              type="file"
+              accept="application/pdf"
+              disabled={uploadingField !== null}
+              onChange={(event) => void uploadResourceFile('dark_file_url', event.target.files?.[0] || null)}
             />
             <p className="text-muted-foreground text-xs">Student dark mode on kare to ye PDF open hogi.</p>
           </div>
@@ -410,11 +454,18 @@ export function LibraryFormDialog({ open, onOpenChange, resource, onSaved }: Pro
               id="context-text-url"
               value={form.context_text_url}
               onChange={(event) => setForm((current) => ({ ...current, context_text_url: event.target.value }))}
-              placeholder="https://drive.google.com/file/d/.../view"
+              placeholder="r2://... or https://drive.google.com/file/d/.../view"
               required
+            />
+            <Input
+              type="file"
+              accept=".txt,text/plain"
+              disabled={uploadingField !== null}
+              onChange={(event) => void uploadResourceFile('context_text_url', event.target.files?.[0] || null)}
             />
             <p className="text-muted-foreground text-xs">
               Required. AI summaries, tests, and tutoring use this TXT only; the PDF is never sent to AI.
+              {uploadingField === 'context_text_url' ? ' Uploading...' : ''}
             </p>
           </div>
 

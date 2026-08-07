@@ -23,6 +23,14 @@ const ALL_VALUE = '__all__';
 const PAPER_TYPES: PastPaper['paper_type'][] = ['ANNUAL', 'SUPPLEMENTARY', 'MODEL'];
 const currentYear = new Date().getFullYear();
 
+function isStorageOrHttpsUrl(url: string) {
+  return /^r2:\/\/[^/]+\/.+/i.test(url) || /^https?:\/\//i.test(url);
+}
+
+function isStorageOrHttpsContextUrl(url: string) {
+  return /^r2:\/\/[^/]+\/.+/i.test(url) || /^https:\/\//i.test(url);
+}
+
 const emptyForm = {
   subject_id: '',
   chapter_id: ALL_VALUE,
@@ -42,6 +50,7 @@ export function PastPaperFormDialog({ open, onOpenChange, paper, onSaved }: Prop
   const [chapters, setChapters] = useState<Option[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [uploadingField, setUploadingField] = useState<'file_url' | 'context_text_url' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const isEdit = !!paper;
@@ -103,12 +112,12 @@ export function PastPaperFormDialog({ open, onOpenChange, paper, onSaved }: Prop
       setError('Class is required.');
       return;
     }
-    if (!/^https?:\/\//.test(form.file_url.trim())) {
+    if (!isStorageOrHttpsUrl(form.file_url.trim())) {
       setError('The file URL is not valid.');
       return;
     }
-    if (!/^https:\/\//i.test(form.context_text_url.trim())) {
-      setError('A valid HTTPS or Google Drive link for the companion .txt file is required.');
+    if (!isStorageOrHttpsContextUrl(form.context_text_url.trim())) {
+      setError('A valid object-storage URI, HTTPS, or Google Drive link for the companion .txt file is required.');
       return;
     }
 
@@ -143,6 +152,26 @@ export function PastPaperFormDialog({ open, onOpenChange, paper, onSaved }: Prop
       setError(err instanceof Error ? err.message : 'Something went wrong.');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function uploadResourceFile(field: 'file_url' | 'context_text_url', file: File | null) {
+    if (!file) return;
+    const formData = new FormData();
+    formData.set('file', file);
+    formData.set('type', field === 'context_text_url' ? 'txt' : 'pdf');
+    formData.set('scope', [form.board, form.grade_level, form.subject_id].filter(Boolean).join('/'));
+    setUploadingField(field);
+    setError(null);
+    try {
+      const response = await fetch('/api/admin/resource-files', { method: 'POST', body: formData });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Upload failed.');
+      setForm((current) => ({ ...current, [field]: data.uri }));
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : 'Upload failed.');
+    } finally {
+      setUploadingField(null);
     }
   }
 
@@ -290,9 +319,16 @@ export function PastPaperFormDialog({ open, onOpenChange, paper, onSaved }: Prop
               id="file-url"
               value={form.file_url}
               onChange={(event) => setForm((current) => ({ ...current, file_url: event.target.value }))}
-              placeholder="https://.../paper.pdf"
+              placeholder="r2://... or https://.../paper.pdf"
               required
             />
+            <Input
+              type="file"
+              accept="application/pdf"
+              disabled={uploadingField !== null}
+              onChange={(event) => void uploadResourceFile('file_url', event.target.files?.[0] || null)}
+            />
+            {uploadingField === 'file_url' && <p className="text-muted-foreground text-xs">Uploading PDF...</p>}
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -301,11 +337,18 @@ export function PastPaperFormDialog({ open, onOpenChange, paper, onSaved }: Prop
               id="paper-context-text-url"
               value={form.context_text_url}
               onChange={(event) => setForm((current) => ({ ...current, context_text_url: event.target.value }))}
-              placeholder="https://drive.google.com/file/d/.../view"
+              placeholder="r2://... or https://drive.google.com/file/d/.../view"
               required
+            />
+            <Input
+              type="file"
+              accept=".txt,text/plain"
+              disabled={uploadingField !== null}
+              onChange={(event) => void uploadResourceFile('context_text_url', event.target.files?.[0] || null)}
             />
             <p className="text-muted-foreground text-xs">
               Required. AI uses this TXT only; the PDF is never sent to a model or OCR fallback.
+              {uploadingField === 'context_text_url' ? ' Uploading...' : ''}
             </p>
           </div>
 

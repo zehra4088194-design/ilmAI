@@ -1,30 +1,52 @@
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 
 type R2Config = {
-  accountId: string;
+  accountId?: string;
   accessKeyId: string;
   secretAccessKey: string;
   bucket: string;
+  endpoint: string;
+  region: string;
 };
 
 let client: S3Client | null = null;
 
 function getConfig(): R2Config | null {
   const accountId = process.env.R2_ACCOUNT_ID;
-  const accessKeyId = process.env.R2_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
-  const bucket = process.env.R2_BUCKET;
-  return accountId && accessKeyId && secretAccessKey && bucket
-    ? { accountId, accessKeyId, secretAccessKey, bucket }
+  const endpoint =
+    process.env.OBJECT_STORAGE_ENDPOINT ||
+    process.env.S3_ENDPOINT ||
+    process.env.B2_ENDPOINT ||
+    (accountId ? `https://${accountId}.r2.cloudflarestorage.com` : '');
+  const accessKeyId =
+    process.env.R2_ACCESS_KEY_ID ||
+    process.env.OBJECT_STORAGE_ACCESS_KEY_ID ||
+    process.env.S3_ACCESS_KEY_ID ||
+    process.env.B2_KEY_ID;
+  const secretAccessKey =
+    process.env.R2_SECRET_ACCESS_KEY ||
+    process.env.OBJECT_STORAGE_SECRET_ACCESS_KEY ||
+    process.env.S3_SECRET_ACCESS_KEY ||
+    process.env.B2_APPLICATION_KEY;
+  const bucket =
+    process.env.R2_BUCKET || process.env.OBJECT_STORAGE_BUCKET || process.env.S3_BUCKET || process.env.B2_BUCKET;
+  const region = process.env.OBJECT_STORAGE_REGION || process.env.S3_REGION || process.env.B2_REGION || 'auto';
+  return endpoint && accessKeyId && secretAccessKey && bucket
+    ? { accountId, accessKeyId, secretAccessKey, bucket, endpoint, region }
     : null;
 }
 
 function getClient(config: R2Config) {
   if (!client) {
     client = new S3Client({
-      region: 'auto',
-      endpoint: `https://${config.accountId}.r2.cloudflarestorage.com`,
+      region: config.region,
+      endpoint: config.endpoint,
       credentials: { accessKeyId: config.accessKeyId, secretAccessKey: config.secretAccessKey },
+      forcePathStyle: Boolean(
+        process.env.OBJECT_STORAGE_FORCE_PATH_STYLE ||
+        process.env.S3_FORCE_PATH_STYLE ||
+        process.env.B2_FORCE_PATH_STYLE
+      ),
     });
   }
   return client;
