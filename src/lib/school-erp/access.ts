@@ -25,6 +25,8 @@ const ROLE_PERMISSIONS: Record<SchoolRole, SchoolPermission[]> = {
     'academics.manage',
     'communication.read',
     'communication.manage',
+    'ptm.read',
+    'ptm.manage',
     'reports.read',
     'audit.read',
   ],
@@ -47,6 +49,8 @@ const ROLE_PERMISSIONS: Record<SchoolRole, SchoolPermission[]> = {
     'academics.manage',
     'communication.read',
     'communication.manage',
+    'ptm.read',
+    'ptm.manage',
     'reports.read',
     'audit.read',
   ],
@@ -69,6 +73,8 @@ const ROLE_PERMISSIONS: Record<SchoolRole, SchoolPermission[]> = {
     'academics.manage',
     'communication.read',
     'communication.manage',
+    'ptm.read',
+    'ptm.manage',
     'reports.read',
   ],
   staff: [
@@ -78,6 +84,7 @@ const ROLE_PERMISSIONS: Record<SchoolRole, SchoolPermission[]> = {
     'academics.read',
     'communication.read',
     'communication.manage',
+    'ptm.read',
     'reports.read',
   ],
   accountant: [
@@ -90,11 +97,36 @@ const ROLE_PERMISSIONS: Record<SchoolRole, SchoolPermission[]> = {
     'communication.read',
     'reports.read',
   ],
-  parent: ['dashboard.read', 'attendance.read', 'exams.read', 'fees.read', 'academics.read', 'communication.read'],
-  student: ['dashboard.read', 'attendance.read', 'exams.read', 'fees.read', 'academics.read', 'communication.read'],
+  parent: [
+    'dashboard.read',
+    'attendance.read',
+    'exams.read',
+    'fees.read',
+    'academics.read',
+    'communication.read',
+    'ptm.read',
+  ],
+  student: [
+    'dashboard.read',
+    'attendance.read',
+    'exams.read',
+    'fees.read',
+    'academics.read',
+    'communication.read',
+    'ptm.read',
+  ],
 };
 
-const ROLE_PRIORITY: SchoolRole[] = ['owner', 'admin', 'admissions', 'accountant', 'teacher', 'staff', 'parent', 'student'];
+const ROLE_PRIORITY: SchoolRole[] = [
+  'owner',
+  'admin',
+  'admissions',
+  'accountant',
+  'teacher',
+  'staff',
+  'parent',
+  'student',
+];
 
 function mergePermissions(role: SchoolRole, overrides: string[]) {
   return Array.from(new Set([...ROLE_PERMISSIONS[role], ...overrides])) as SchoolPermission[];
@@ -107,13 +139,13 @@ export function hasSchoolPermission(context: SchoolContext, permission: SchoolPe
 export async function getSchoolContext(
   supabase: SupabaseClient,
   userId: string,
-  organizationId?: string,
+  organizationId?: string
 ): Promise<SchoolContext | null> {
   const db = supabase as any;
   let query = db
     .from('school_memberships')
     .select(
-      'id, organization_id, campus_id, profile_id, member_role, permissions, employee_code, designation, status, school_organizations(id, name, slug, organization_type, status, timezone, currency, email, phone, address, logo_url), school_campuses(id, name, code)',
+      'id, organization_id, campus_id, profile_id, member_role, permissions, employee_code, designation, status, school_organizations(id, name, slug, organization_type, status, timezone, currency, email, phone, address, logo_url), school_campuses(id, name, code)'
     )
     .eq('profile_id', userId)
     .eq('status', 'active');
@@ -123,12 +155,10 @@ export async function getSchoolContext(
 
   const rows = [...data].sort(
     (left: any, right: any) =>
-      ROLE_PRIORITY.indexOf(left.member_role as SchoolRole) - ROLE_PRIORITY.indexOf(right.member_role as SchoolRole),
+      ROLE_PRIORITY.indexOf(left.member_role as SchoolRole) - ROLE_PRIORITY.indexOf(right.member_role as SchoolRole)
   );
   const row = rows[0];
-  const organization = Array.isArray(row.school_organizations)
-    ? row.school_organizations[0]
-    : row.school_organizations;
+  const organization = Array.isArray(row.school_organizations) ? row.school_organizations[0] : row.school_organizations;
   const campus = Array.isArray(row.school_campuses) ? row.school_campuses[0] : row.school_campuses;
   if (!organization || organization.status === 'suspended' || organization.status === 'archived') return null;
   const role = row.member_role as SchoolRole;
@@ -166,11 +196,9 @@ export async function getSchoolContexts(supabase: SupabaseClient, userId: string
     .eq('status', 'active');
   if (error || !data?.length) return [] as SchoolContext[];
 
-  const organizationIds: string[] = Array.from(
-    new Set<string>(data.map((row: any) => String(row.organization_id))),
-  );
+  const organizationIds: string[] = Array.from(new Set<string>(data.map((row: any) => String(row.organization_id))));
   const contexts = await Promise.all(
-    organizationIds.map((organizationId) => getSchoolContext(supabase, userId, organizationId)),
+    organizationIds.map((organizationId) => getSchoolContext(supabase, userId, organizationId))
   );
   return contexts.filter((context): context is SchoolContext => Boolean(context));
 }

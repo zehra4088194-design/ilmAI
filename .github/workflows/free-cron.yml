@@ -27,6 +27,7 @@ jobs:
           }
 
           call_job /api/cron/resource-context
+          call_job /api/cron/school-notifications
 
           day=$(date -u +%u)
           time=$(date -u +%H:%M)

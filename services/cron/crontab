@@ -1,6 +1,7 @@
 # Schedules are UTC. This file is retained for local/container deployments;
 # the free hosted deployment uses GitHub Actions schedule triggers.
 */5 * * * * curl -fsS --retry 2 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/resource-context"
+*/5 * * * * curl -fsS --retry 2 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/school-notifications"
 0 0 * * 1 curl -fsS --retry 3 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/weekly-snapshots"
 10 0 * * 1 curl -fsS --retry 3 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/weekly-league-rollover"
 0 1 * * * curl -fsS --retry 3 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/student-predictions"

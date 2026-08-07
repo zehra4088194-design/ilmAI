@@ -11,8 +11,16 @@ export default async function TeacherTestsPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect('/login');
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, subscription_tier')
+    .eq('id', user.id)
+    .maybeSingle();
   if (!profile || !['teacher', 'admin'].includes(String((profile as any).role))) redirect('/dashboard');
+
+  const planTier = ['PRO', 'ELITE'].includes(String((profile as any).subscription_tier))
+    ? ((profile as any).subscription_tier as 'PRO' | 'ELITE')
+    : 'FREE';
 
   const [{ data: subjects }, { data: chapters }] = await Promise.all([
     supabase.from('subjects').select('id, name, grade_levels').eq('is_active', true).order('name'),
@@ -25,11 +33,11 @@ export default async function TeacherTestsPage() {
         <p className="text-sm font-semibold text-amber-400">Teacher tools</p>
         <h1 className="text-2xl font-bold sm:text-3xl">Test Paper Studio</h1>
         <p className="text-muted-foreground mt-1 max-w-3xl text-sm">
-          Build a fresh paper from the uploaded chapter TXT banks, add your institution name, then print or save it as a
-          branded PDF.
+          Build a fresh paper from the uploaded chapter question bank, add your institution name, then print or save it
+          as a branded PDF.
         </p>
       </div>
-      <TeacherTestStudio subjects={subjects || []} chapters={chapters || []} />
+      <TeacherTestStudio subjects={subjects || []} chapters={chapters || []} planTier={planTier} />
     </div>
   );
 }

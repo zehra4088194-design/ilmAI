@@ -15,6 +15,7 @@ import {
   MessageSquareText,
   ReceiptText,
   Settings2,
+  Users2,
   WalletCards,
   Users,
   X,
@@ -39,7 +40,13 @@ const ITEMS: Array<{
   { href: '/school-admin/fees', label: 'Fees', icon: ReceiptText, permission: 'fees.read' },
   { href: '/school-admin/payroll', label: 'Payroll', icon: WalletCards, permission: 'payroll.read' },
   { href: '/school-admin/academics', label: 'Academics', icon: BookOpenCheck, permission: 'academics.read' },
-  { href: '/school-admin/communication', label: 'Communication', icon: MessageSquareText, permission: 'communication.read' },
+  { href: '/school-admin/ptm', label: 'PTM Meetings', icon: Users2, permission: 'ptm.read' },
+  {
+    href: '/school-admin/communication',
+    label: 'Communication',
+    icon: MessageSquareText,
+    permission: 'communication.read',
+  },
   { href: '/school-admin/reports', label: 'Reports', icon: BarChart3, permission: 'reports.read' },
   { href: '/school-admin/settings', label: 'Organization', icon: Settings2, permission: 'organization.manage' },
 ];
@@ -76,7 +83,9 @@ export function SchoolAdminSidebar({
         {organizations.filter((item) => item.operations).length > 1 && (
           <form action={switchSchoolOrganization} className="mt-3">
             <input type="hidden" name="return_to" value="/school-admin" />
-            <label htmlFor="school-organization" className="sr-only">Active organization</label>
+            <label htmlFor="school-organization" className="sr-only">
+              Active organization
+            </label>
             <select
               id="school-organization"
               name="organization_id"
@@ -84,9 +93,13 @@ export function SchoolAdminSidebar({
               onChange={(event) => event.currentTarget.form?.requestSubmit()}
               className="border-sidebar-border bg-sidebar-accent text-sidebar-foreground h-9 w-full rounded-lg border px-2 text-xs"
             >
-              {organizations.filter((item) => item.operations).map((item) => (
-                <option key={item.id} value={item.id}>{item.name} ({item.role})</option>
-              ))}
+              {organizations
+                .filter((item) => item.operations)
+                .map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name} ({item.role})
+                  </option>
+                ))}
             </select>
           </form>
         )}
@@ -103,7 +116,7 @@ export function SchoolAdminSidebar({
                 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                 active
                   ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                  : 'text-sidebar-foreground/65 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground',
+                  : 'text-sidebar-foreground/65 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground'
               )}
             >
               <item.icon className="h-4 w-4 shrink-0" />
@@ -113,7 +126,10 @@ export function SchoolAdminSidebar({
         })}
       </nav>
       <div className="border-sidebar-border border-t p-3">
-        <Link href="/school" className="text-sidebar-foreground/60 flex items-center gap-2 rounded-lg px-3 py-2 text-xs hover:bg-sidebar-accent">
+        <Link
+          href="/school"
+          className="text-sidebar-foreground/60 hover:bg-sidebar-accent flex items-center gap-2 rounded-lg px-3 py-2 text-xs"
+        >
           <BookOpenCheck className="h-4 w-4" />
           Open member portal
         </Link>
@@ -146,7 +162,7 @@ export function SchoolAdminSidebar({
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="text-sidebar-foreground/70 absolute top-3 right-3 rounded-lg p-2 hover:bg-sidebar-accent"
+              className="text-sidebar-foreground/70 hover:bg-sidebar-accent absolute top-3 right-3 rounded-lg p-2"
               aria-label="Close school menu"
             >
               <X className="h-5 w-5" />

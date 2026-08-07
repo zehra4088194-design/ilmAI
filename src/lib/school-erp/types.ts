@@ -19,6 +19,8 @@ export type SchoolPermission =
   | 'academics.manage'
   | 'communication.read'
   | 'communication.manage'
+  | 'ptm.read'
+  | 'ptm.manage'
   | 'reports.read'
   | 'audit.read';
 

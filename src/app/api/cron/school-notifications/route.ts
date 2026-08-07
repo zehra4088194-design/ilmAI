@@ -21,9 +21,10 @@ function related<T>(value: T | T[] | null): T | null {
 }
 
 function escapeHtml(value: string) {
-  return value.replace(/[&<>"']/g, (character) => (
-    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[character]!
-  ));
+  return value.replace(
+    /[&<>"']/g,
+    (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[character]!
+  );
 }
 
 async function sendWebhook(channel: 'sms' | 'whatsapp', delivery: Delivery, title: string, body: string) {
@@ -95,6 +96,54 @@ async function deliver(db: any, delivery: Delivery) {
   return sendWebhook(delivery.channel, delivery, title, body);
 }
 
+// PTM reminders: notify the teacher, parent, and any linked guardians ~24h
+// before a scheduled meeting. reminder_sent_at guards against duplicates
+// across cron runs; no AI credits are involved (plain notification rows).
+async function sendPtmReminders(db: any) {
+  const now = new Date();
+  const windowEnd = new Date(now.getTime() + 24 * 60 * 60_000).toISOString();
+  const { data: meetings } = await db
+    .from('school_ptm_requests')
+    .select('id, organization_id, teacher_id, student_id, parent_id, starts_at, join_link, location')
+    .in('status', ['approved', 'scheduled'])
+    .not('starts_at', 'is', null)
+    .is('reminder_sent_at', null)
+    .gte('starts_at', now.toISOString())
+    .lte('starts_at', windowEnd)
+    .limit(200);
+
+  let sent = 0;
+  for (const meeting of meetings || []) {
+    const { data: student } = await db.from('profiles').select('full_name').eq('id', meeting.student_id).maybeSingle();
+    const studentName = student?.full_name || 'the student';
+    const when = new Date(meeting.starts_at).toLocaleString();
+    const where = meeting.join_link || meeting.location || 'the scheduled meeting details';
+
+    const { data: guardians } = await db
+      .from('school_guardians')
+      .select('guardian_id')
+      .eq('organization_id', meeting.organization_id)
+      .eq('student_id', meeting.student_id)
+      .eq('receives_alerts', true);
+    const recipients = new Set<string>(
+      [meeting.teacher_id, meeting.parent_id, ...(guardians || []).map((g: any) => g.guardian_id)].filter(Boolean)
+    );
+
+    for (const recipientId of recipients) {
+      await db.from('notifications').insert({
+        user_id: recipientId,
+        type: 'REMINDER',
+        title: 'PTM meeting reminder',
+        message: `Parent-teacher meeting for ${studentName} is at ${when}. Details: ${where}`,
+        link: '/school',
+      });
+    }
+    await db.from('school_ptm_requests').update({ reminder_sent_at: new Date().toISOString() }).eq('id', meeting.id);
+    sent++;
+  }
+  return { remindersSent: sent };
+}
+
 export async function GET(request: NextRequest) {
   if (request.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -113,9 +162,13 @@ export async function GET(request: NextRequest) {
     .eq('status', 'processing')
     .lt('scheduled_for', staleProcessing);
 
+  const ptmStats = await sendPtmReminders(db);
+
   const { data, error } = await db
     .from('school_notification_deliveries')
-    .select('id, recipient_id, recipient_address, channel, attempts, school_announcements(title, body, priority), profiles!school_notification_deliveries_recipient_id_fkey(email, phone)')
+    .select(
+      'id, recipient_id, recipient_address, channel, attempts, school_announcements(title, body, priority), profiles!school_notification_deliveries_recipient_id_fkey(email, phone)'
+    )
     .in('status', ['queued', 'failed'])
     .lte('scheduled_for', new Date().toISOString())
     .lt('attempts', 3)
@@ -138,22 +191,28 @@ export async function GET(request: NextRequest) {
     try {
       const result = await deliver(db, row);
       const skipped = 'skipped' in result && result.skipped;
-      await db.from('school_notification_deliveries').update({
-        status: skipped ? 'skipped' : 'sent',
-        provider_reference: 'providerReference' in result ? result.providerReference : null,
-        last_error: skipped && 'reason' in result ? result.reason : null,
-        sent_at: skipped ? null : new Date().toISOString(),
-      }).eq('id', row.id);
+      await db
+        .from('school_notification_deliveries')
+        .update({
+          status: skipped ? 'skipped' : 'sent',
+          provider_reference: 'providerReference' in result ? result.providerReference : null,
+          last_error: skipped && 'reason' in result ? result.reason : null,
+          sent_at: skipped ? null : new Date().toISOString(),
+        })
+        .eq('id', row.id);
       skipped ? stats.skipped++ : stats.sent++;
     } catch (deliveryError) {
       const message = deliveryError instanceof Error ? deliveryError.message.slice(0, 500) : 'Delivery failed';
-      await db.from('school_notification_deliveries').update({
-        status: 'failed',
-        last_error: message,
-        scheduled_for: new Date(Date.now() + Math.min(60, attempts * 10) * 60_000).toISOString(),
-      }).eq('id', row.id);
+      await db
+        .from('school_notification_deliveries')
+        .update({
+          status: 'failed',
+          last_error: message,
+          scheduled_for: new Date(Date.now() + Math.min(60, attempts * 10) * 60_000).toISOString(),
+        })
+        .eq('id', row.id);
       stats.failed++;
     }
   }
-  return NextResponse.json({ status: 'ok', processed: (data || []).length, ...stats });
+  return NextResponse.json({ status: 'ok', processed: (data || []).length, ...stats, ...ptmStats });
 }

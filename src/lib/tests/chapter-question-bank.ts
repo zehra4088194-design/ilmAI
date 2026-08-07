@@ -6,12 +6,14 @@ import {
   sanitizeSourceQuestionText,
 } from '@/lib/resources/source-fallback';
 import { fetchResourceContext, getResourceForProcessing } from '@/lib/resources/server';
+import { pickRandomQuestions, type DifficultyFilter } from '@/lib/tests/paper-selection';
 
 export type BankMcq = {
   q: string;
   opts: string[];
   correct: number;
   exp: string;
+  difficulty?: string | null;
 };
 
 export type BankSubjectiveQuestion = {
@@ -20,6 +22,7 @@ export type BankSubjectiveQuestion = {
   keyPoints: string[];
   modelAnswer: string;
   guide?: string;
+  difficulty?: string | null;
 };
 
 export type ChapterQuestionPaper = {
@@ -39,29 +42,8 @@ type GenerateOptions = {
   mcqCount: number;
   shortCount: number;
   longCount: number;
+  difficulty?: DifficultyFilter;
 };
-
-function shuffle<T>(items: T[]) {
-  const copy = [...items];
-  for (let index = copy.length - 1; index > 0; index -= 1) {
-    const swapIndex = Math.floor(Math.random() * (index + 1));
-    [copy[index], copy[swapIndex]] = [copy[swapIndex]!, copy[index]!];
-  }
-  return copy;
-}
-
-function uniqueByQuestion<T extends { q: string }>(items: T[]) {
-  const seen = new Set<string>();
-  return items.filter((item) => {
-    const key = item.q
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, ' ')
-      .trim();
-    if (!key || seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
 
 function normalizeMcq(value: any): BankMcq | null {
   const q = String(value?.q || value?.text || '').trim();
@@ -77,9 +59,12 @@ function normalizeMcq(value: any): BankMcq | null {
   if (!Number.isInteger(correct) && typeof rawCorrect === 'string') {
     correct = Math.max(0, rawCorrect.toLowerCase().charCodeAt(0) - 97);
   }
-  return (
-    filterHighQualitySourceMcqs([{ q, opts, correct, exp: String(value?.exp || value?.explanation || '') }])[0] || null
-  );
+  const normalized = filterHighQualitySourceMcqs([
+    { q, opts, correct, exp: String(value?.exp || value?.explanation || '') },
+  ])[0];
+  if (!normalized) return null;
+  const difficulty = value?.difficulty ? String(value.difficulty).toUpperCase() : null;
+  return { ...normalized, difficulty };
 }
 
 function normalizeSubjective(value: any, defaultMarks: number): BankSubjectiveQuestion | null {
@@ -99,6 +84,7 @@ function normalizeSubjective(value: any, defaultMarks: number): BankSubjectiveQu
     keyPoints,
     modelAnswer,
     guide: value?.guide ? String(value.guide) : undefined,
+    difficulty: value?.difficulty ? String(value.difficulty).toUpperCase() : null,
   };
 }
 
@@ -130,7 +116,7 @@ export async function generateChapterQuestionPaper(options: GenerateOptions): Pr
     resourcesQuery,
     db
       .from('questions')
-      .select('id, type, text, options, correct_answer, explanation, marks, tags')
+      .select('id, type, text, options, correct_answer, explanation, marks, tags, difficulty')
       .eq('subject_id', options.subjectId)
       .eq('chapter_id', options.chapterId)
       .limit(500),
@@ -228,9 +214,9 @@ export async function generateChapterQuestionPaper(options: GenerateOptions): Pr
     subject: { id: subject.id, name: subject.name },
     chapter: { id: chapter.id, name: chapter.name },
     gradeLevel: options.gradeLevel || subject.grade_levels?.[0] || '',
-    mcqs: shuffle(uniqueByQuestion(mcqs)).slice(0, options.mcqCount),
-    shortQuestions: shuffle(uniqueByQuestion(shortQuestions)).slice(0, options.shortCount),
-    longQuestions: shuffle(uniqueByQuestion(longQuestions)).slice(0, options.longCount),
+    mcqs: pickRandomQuestions(mcqs, options.mcqCount, options.difficulty),
+    shortQuestions: pickRandomQuestions(shortQuestions, options.shortCount, options.difficulty),
+    longQuestions: pickRandomQuestions(longQuestions, options.longCount, options.difficulty),
     sourceCount: resourceRows.length,
   };
 }
