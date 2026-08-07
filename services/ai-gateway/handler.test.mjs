@@ -41,7 +41,7 @@ test('falls back to Coolify Groq when the selected provider has no key', async (
   }
 });
 
-test('readiness requires the universal Groq fallback key', async () => {
+test('readiness accepts Gemini as the primary text provider', async () => {
   const missing = await gateway.fetch(new Request('http://gateway/ready'), {
     GATEWAY_SECRET: 'test-secret',
   });
@@ -49,12 +49,13 @@ test('readiness requires the universal Groq fallback key', async () => {
 
   const ready = await gateway.fetch(new Request('http://gateway/ready'), {
     GATEWAY_SECRET: 'test-secret',
-    GROQ_API_KEYS_JSON: JSON.stringify([{ key: 'coolify-groq-key' }]),
+    GEMINI_API_KEYS_JSON: JSON.stringify([{ key: 'gemini-key' }]),
   });
   const body = await ready.json();
   assert.equal(ready.status, 200);
   assert.equal(body.status, 'ready');
-  assert.equal(body.providers.groq, true);
+  assert.equal(body.primaryProvider, 'gemini');
+  assert.equal(body.providers.gemini, true);
 });
 
 test('local llama.cpp serves chat without a provider API key', async () => {

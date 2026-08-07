@@ -14,7 +14,7 @@ import {
   getConfiguredLimitExceededMessage,
 } from '@/lib/rate-limit';
 import type { SubscriptionTier } from '@/types';
-import { shouldUseLocalSmallTalk } from '@/lib/ai/request-routing';
+import { getLocalSmallTalkResponse, shouldUseLocalSmallTalk } from '@/lib/ai/request-routing';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -88,7 +88,30 @@ export async function POST(req: NextRequest) {
       return new Response(JSON.stringify({ error: 'A message is required.' }), { status: 400 });
     }
 
-    const provider: AiProviderId = requestedProvider === 'groq' ? 'groq' : 'gemini';
+    const localSmallTalk = shouldUseLocalSmallTalk(message);
+    if (localSmallTalk) {
+      const encoder = new TextEncoder();
+      const text = getLocalSmallTalkResponse(message, user.id);
+      const readableStream = new ReadableStream({
+        async start(controller) {
+          const chunkSize = 4;
+          for (let i = 0; i < text.length; i += chunkSize) {
+            controller.enqueue(encoder.encode(text.slice(i, i + chunkSize)));
+            await new Promise((r) => setTimeout(r, 8));
+          }
+          controller.close();
+        },
+      });
+      return new Response(readableStream, {
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'X-Provider-Used': 'local',
+          'X-Fallback-Triggered': 'false',
+        },
+      });
+    }
+
+    const provider: AiProviderId = 'gemini';
     const tier: ModelTier = 'mini';
 
     const isSideChat = source === 'side_chat';
@@ -115,15 +138,13 @@ export async function POST(req: NextRequest) {
       { role: 'user' as const, content: message },
     ];
 
-    const localSmallTalk = isSideChat && shouldUseLocalSmallTalk(message);
     const result = await gatewayChat({
-      provider: localSmallTalk ? 'local' : provider,
+      provider,
       tier,
       messages,
       maxTokens: source === 'side_chat' ? 1100 : 2048,
       temperature: 0.7,
-      strictProvider: localSmallTalk,
-      routingPolicy: localSmallTalk ? 'local' : provider === 'gemini' ? 'gemini' : 'text',
+      routingPolicy: provider === 'gemini' ? 'gemini' : 'text',
     });
 
     // Simulate a stream so the existing chat UI (which reads response.body as a stream)
@@ -147,7 +168,7 @@ export async function POST(req: NextRequest) {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
         'X-Provider-Used': result.providerUsed,
-        'X-Fallback-Triggered': String(result.fallbackTriggered || provider !== requestedProvider),
+        'X-Fallback-Triggered': String(result.fallbackTriggered || (Boolean(requestedProvider) && provider !== requestedProvider)),
       },
     });
   } catch (error) {

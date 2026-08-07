@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       concept,
       subject,
       profile?.grade_level || 'GRADE_10',
-      'groq',
+      'gemini',
       'mini'
     );
     await consumeAiCredits(user.id, tier, 'explain');

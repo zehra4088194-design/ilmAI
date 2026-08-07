@@ -2,10 +2,14 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Loader2, Maximize2, MessageSquareText, Minimize2, X } from 'lucide-react';
+import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import type { ProtectedResourceKind, ResourceMode } from '@/lib/resources/server';
 import { ProtectedPdfViewer } from '@/components/features/resources/ProtectedPdfViewer';
 import { ResourceComments } from '@/components/features/resources/ResourceComments';
+import { isDarkThemeId } from '@/lib/constants/themes';
+
+type PdfReaderThemePreference = 'auto' | 'dark' | 'light';
 
 export async function fetchProtectedResourceResponse(input: {
   kind: ProtectedResourceKind;
@@ -53,13 +57,18 @@ export function ProtectedResourceReader({
   offlineBlob?: Blob | null;
   sourceUrl?: string | null;
 }) {
+  const { resolvedTheme, theme } = useTheme();
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [resolvedBlob, setResolvedBlob] = useState<Blob | null>(offlineBlob || null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [canFullscreen, setCanFullscreen] = useState(false);
   const [showComments, setShowComments] = useState(false);
+  const [pdfThemePreference, setPdfThemePreference] = useState<PdfReaderThemePreference>('auto');
   const readerRef = useRef<HTMLDivElement>(null);
+  const activeAppTheme = resolvedTheme || theme || '';
+  const autoMode: ResourceMode = isDarkThemeId(activeAppTheme) ? 'dark' : 'light';
+  const effectiveMode: ResourceMode = pdfThemePreference === 'auto' ? autoMode : pdfThemePreference;
 
   useEffect(() => {
     if (!open) {
@@ -75,7 +84,7 @@ export function ProtectedResourceReader({
     let cancelled = false;
     setResolvedBlob(null);
     setLoadError(null);
-    void fetchProtectedResourceBlob({ kind, id: resourceId, mode, purpose: 'reader' })
+    void fetchProtectedResourceBlob({ kind, id: resourceId, mode: effectiveMode, purpose: 'reader' })
       .then((blob) => {
         if (!cancelled) setResolvedBlob(blob);
       })
@@ -85,7 +94,7 @@ export function ProtectedResourceReader({
     return () => {
       cancelled = true;
     };
-  }, [kind, mode, offlineBlob, open, resourceId]);
+  }, [effectiveMode, kind, offlineBlob, open, resourceId]);
 
   useEffect(() => {
     if (!open || !resolvedBlob) {
@@ -126,6 +135,21 @@ export function ProtectedResourceReader({
           <p className="text-muted-foreground text-xs">PDF reader</p>
         </div>
         <div className="flex shrink-0 items-center gap-1">
+          <div className="border-border bg-muted/60 mr-1 flex rounded-full border p-0.5">
+            {(['auto', 'dark', 'light'] as const).map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => setPdfThemePreference(option)}
+                className={`rounded-full px-1.5 py-1 text-[10px] font-semibold transition sm:px-2.5 sm:text-[11px] ${
+                  pdfThemePreference === option ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                }`}
+                aria-pressed={pdfThemePreference === option}
+              >
+                {option === 'auto' ? 'Auto' : option === 'dark' ? 'Dark' : 'Light'}
+              </button>
+            ))}
+          </div>
           <Button
             variant={showComments ? 'secondary' : 'ghost'}
             size="icon-sm"

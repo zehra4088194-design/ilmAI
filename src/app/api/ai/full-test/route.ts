@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
       mcqCount = 15,
       shortCount = 6,
       longCount = 3,
-      provider = 'groq',
+      provider = 'gemini',
       aiTier = 'medium',
     } = await req.json();
 

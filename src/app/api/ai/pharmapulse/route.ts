@@ -169,7 +169,7 @@ export async function POST(req: NextRequest) {
         );
       }
       const result = await gatewayChat({
-        provider: 'groq',
+        provider: 'gemini',
         tier: 'mini',
         messages: [
           {

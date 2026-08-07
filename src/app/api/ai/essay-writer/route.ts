@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
       ? body.gradeLevel
       : normalizeEssayGradeLevel(profileGradeLevel);
 
-    const useProvider: AiProviderId = provider || 'groq';
+    const useProvider: AiProviderId = provider || 'gemini';
     const useTier: ModelTier = aiTier || 'mini';
     const targetWords = wordCount || 300;
     const type = essayType || 'general';

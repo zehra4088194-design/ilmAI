@@ -52,7 +52,7 @@
 // ---------- MODEL MAP (edit anytime, no redeploy needed elsewhere) ----------
 // General Gemini tools and document vision use separate models. Document
 // vision favors the lighter model because it is optimized for extraction.
-const GEMINI_FLASH_MODEL = 'gemini-2.5-flash-lite';
+const GEMINI_FLASH_MODEL = 'gemini-3.5-flash-lite';
 const GEMINI_DOCUMENT_MODEL = 'gemini-3.5-flash-lite';
 
 const DEFAULT_MODEL_MAP = {
@@ -779,15 +779,15 @@ export default {
         openrouter: getKeys(env, 'OPENROUTER_API_KEY').length > 0,
         ocrSpace: getKeys(env, 'OCRSPACE_API_KEY').length > 0,
       };
-      const ready = providers.local || providers.groq || providers.deepseek;
+      const ready = providers.local || providers.gemini || providers.deepseek || providers.groq;
       return json(
         {
           status: ready ? 'ready' : 'not_ready',
           service: 'ilm-ai-gateway',
-          primaryProvider: providers.deepseek ? 'deepseek' : providers.local ? 'local' : 'groq',
+          primaryProvider: providers.gemini ? 'gemini' : providers.deepseek ? 'deepseek' : providers.local ? 'local' : 'groq',
           fallbackProvider: providers.groq ? 'groq' : null,
           providers,
-          error: ready ? undefined : 'Configure DEEPSEEK_API_KEY, LLAMA_CPP_URL, or a Groq key in Coolify.',
+          error: ready ? undefined : 'Configure GEMINI_API_KEY_1, DEEPSEEK_API_KEY, LLAMA_CPP_URL, or a Groq key in Coolify.',
         },
         ready ? 200 : 503
       );

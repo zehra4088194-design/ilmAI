@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
       if (!limit.success) throw new Error('Doubt AI daily limit complete');
       const { gatewayChat, MARKDOWN_ANSWER_FORMAT_INSTRUCTION } = await import('@/lib/ai/gateway');
       const aiReply = await gatewayChat({
-        provider: 'groq',
+        provider: 'gemini',
         tier: 'medium',
         messages: [
           {

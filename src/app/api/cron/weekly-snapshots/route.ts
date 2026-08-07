@@ -79,7 +79,7 @@ export async function GET(req: NextRequest) {
       let aiNarrative = `This week: ${summary.study_minutes} study minutes, ${summary.quizzes_completed} quizzes, ${summary.xp_earned} XP.`;
       try {
         const result = await gatewayChat({
-          provider: 'groq',
+          provider: 'gemini',
           tier: 'mini',
           messages: [
             { role: 'system', content: 'Write a concise, supportive weekly parent report. No alarmist language. Return plain text.' },

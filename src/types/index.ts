@@ -9,7 +9,7 @@ export type SubscriptionTier = 'FREE' | 'PRO' | 'ELITE';
 export type QuestionType = 'MCQ' | 'SHORT' | 'LONG' | 'FILL_BLANK' | 'TRUE_FALSE';
 export type Difficulty = 'EASY' | 'MEDIUM' | 'HARD' | 'EXPERT';
 export type SessionStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'ABANDONED';
-export type AiProvider = 'groq' | 'anthropic' | 'openai';
+export type AiProvider = 'groq' | 'anthropic' | 'openai' | 'gemini' | 'deepseek' | 'local';
 export type ConversationRole = 'user' | 'assistant' | 'system';
 
 export type AiProviderId = 'local' | 'groq' | 'grok' | 'claude' | 'gpt' | 'gemini' | 'deepseek' | 'advanced';

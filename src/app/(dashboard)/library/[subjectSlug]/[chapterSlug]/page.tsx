@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, ArrowRight, BookMarked, CheckCircle2, FileQuestion, FileText, ListChecks } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookMarked, CheckCircle2, FileQuestion, FileText, Files, ListChecks } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { AdSenseBanner } from '@/components/features/ads/AdSenseBanner';
 import {
   buildCatalogSearch,
@@ -90,6 +91,10 @@ export default async function LibraryChapterPage({
     visibleResources[0]?.book_title ||
     `${subject?.name || 'General'} ${getLibraryResourceTypeLabel(resourceType)}`;
   const catalogSearch = buildCatalogSearch(resourceType, resolvedBookTitle);
+  const availableSections = LIBRARY_SECTIONS.map((section) => ({
+    ...section,
+    files: visibleResources.filter((resource: any) => (resource.content_section || 'reading') === section.value),
+  })).filter((section) => section.files.length > 0);
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -110,13 +115,10 @@ export default async function LibraryChapterPage({
       </div>
       <AdSenseBanner slot="inline" className="mx-auto max-w-5xl" />
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        {LIBRARY_SECTIONS.map((section) => {
+      {availableSections.length ? (
+        <div className="grid gap-4 sm:grid-cols-2">
+          {availableSections.map((section) => {
           const Icon = SECTION_ICONS[section.value];
-          const sectionFiles = visibleResources.filter(
-            (resource: any) => (resource.content_section || 'reading') === section.value
-          );
-          const contextReady = sectionFiles.filter((resource: any) => resource.has_context_text).length;
           return (
             <Link
               key={section.value}
@@ -129,13 +131,13 @@ export default async function LibraryChapterPage({
                     <span className="bg-primary/10 text-primary flex h-12 w-12 items-center justify-center rounded-2xl">
                       <Icon className="h-6 w-6" />
                     </span>
-                    <Badge variant={sectionFiles.length ? 'secondary' : 'outline'}>{sectionFiles.length} files</Badge>
+                    <Badge variant="secondary">{section.files.length} files</Badge>
                   </div>
                   <h2 className="mt-4 text-lg font-semibold">{section.title}</h2>
                   <p className="text-muted-foreground mt-1 text-sm">{section.description}</p>
                   <div className="border-border/70 mt-5 flex items-center justify-between border-t pt-4 text-xs font-semibold">
                     <span className="inline-flex items-center gap-1.5">
-                  <CheckCircle2 className="h-3.5 w-3.5" /> Study tools ready
+                      <CheckCircle2 className="h-3.5 w-3.5" /> Study tools ready
                     </span>
                     <ArrowRight className="text-primary h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </div>
@@ -143,8 +145,17 @@ export default async function LibraryChapterPage({
               </Card>
             </Link>
           );
-        })}
-      </div>
+          })}
+        </div>
+      ) : (
+        <EmptyState
+          icon={Files}
+          title="No files have been added for this chapter yet"
+          description="This chapter will show Reading, MCQs, Short Questions, or Long Questions only after an admin uploads files for those sections."
+          primaryHref={`/library/${subjectSlug}?${catalogSearch}`}
+          primaryLabel="Back to chapters"
+        />
+      )}
     </div>
   );
 }

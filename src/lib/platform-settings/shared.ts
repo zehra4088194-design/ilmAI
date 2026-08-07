@@ -201,7 +201,7 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
         parentReports: true,
       },
       features: [
-        '300 shared AI credits/month, max 15/day',
+        '300 shared AI credits/month in one common pool',
         'Groq/DeepSeek budget AI routing',
         'Printed scan: 1 shared AI credit',
         'Handwritten scan: 3 shared AI credits',
@@ -269,7 +269,7 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
         parentReports: true,
       },
       features: [
-        '600 shared AI credits/month, max 30/day',
+        '600 shared AI credits/month in one common pool',
         '10 premium AI calls/month, budget model by default',
         'Printed scan: 1 shared AI credit',
         'Handwritten scan: 3 shared AI credits',

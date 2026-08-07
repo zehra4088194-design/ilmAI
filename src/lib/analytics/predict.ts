@@ -52,7 +52,7 @@ export async function computeStudentPredictions(studentId: string) {
   };
   try {
     const ai = await gatewayChat({
-      provider: 'groq',
+      provider: 'gemini',
       tier: 'mini',
       messages: [
         { role: 'system', content: 'Write supportive, non-alarming learning analytics explanations. Return JSON only.' },

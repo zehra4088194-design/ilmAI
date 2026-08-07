@@ -43,7 +43,7 @@ export function FullTestSetup({
   const [grade, setGrade] = useState(defaultGrade);
   const [pattern, setPattern] = useState<'board' | 'custom'>('board');
   const [custom, setCustom] = useState({ mcq: 10, short: 4, long: 2 });
-  const [provider, setProvider] = useState<AiProviderId>('groq');
+  const [provider, setProvider] = useState<AiProviderId>('gemini');
   const [aiTier, setAiTier] = useState<ModelTier>('medium');
   const [paper, setPaper] = useState<any>(null);
   const [answers, setAnswers] = useState<Record<string, any>>({});

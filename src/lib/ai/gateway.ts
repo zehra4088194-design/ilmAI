@@ -115,7 +115,6 @@ export async function gatewayChat({
               { provider: 'deepseek', tier },
             ]
           : [
-              { provider: 'groq', tier: routingPolicy === 'grading' ? 'mini' : tier },
               { provider: 'gemini', tier },
               { provider: 'deepseek', tier },
             ];
@@ -198,7 +197,7 @@ export async function sendAiMessage(opts: {
   messages: ChatMessage[];
   subject?: string;
 }): Promise<string> {
-  const { provider = 'groq', tier = 'mini', systemPrompt, messages, subject } = opts;
+  const { provider = 'gemini', tier = 'mini', systemPrompt, messages, subject } = opts;
   const sys = systemPrompt || buildSystemPrompt(subject);
   const formatted = [
     { role: 'system' as const, content: sys },
@@ -251,7 +250,7 @@ Difficulty: ${params.difficulty || 'MEDIUM'}
 Each "explanation" should be 2-4 sentences of Markdown: bold the key term, use LaTeX ($...$) for any formula, and a short numbered list if the reasoning has multiple steps.
 Return ONLY valid JSON array: [{"text":"...","options":[{"id":"a","text":"..."}],"correctAnswer":"a","explanation":"...","difficulty":"MEDIUM","marks":1}]`;
   const result = await gatewayChat({
-    provider: params.provider || 'groq',
+    provider: params.provider || 'gemini',
     tier: params.tier || 'medium',
     messages: [
       {
@@ -271,7 +270,7 @@ export async function explainConceptViaGateway(
   concept: string,
   subject: string,
   gradeLevel: string,
-  provider: AiProviderId = 'groq',
+  provider: AiProviderId = 'gemini',
   tier: ModelTier = 'mini'
 ): Promise<string> {
   const result = await gatewayChat({
@@ -297,7 +296,7 @@ export async function generateFlashcardsViaGateway(
   topic: string,
   subject: string,
   count = 10,
-  provider: AiProviderId = 'groq',
+  provider: AiProviderId = 'gemini',
   tier: ModelTier = 'mini'
 ): Promise<string> {
   const result = await gatewayChat({

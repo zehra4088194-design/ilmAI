@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
       roadmap: [],
     };
     const result = await gatewayChat({
-      provider: 'groq',
+      provider: 'gemini',
       tier: 'medium',
       messages: [
         {

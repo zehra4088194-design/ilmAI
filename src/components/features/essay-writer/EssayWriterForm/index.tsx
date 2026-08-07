@@ -41,7 +41,7 @@ export function EssayWriterForm({ userTier, gradeLevel: initialGradeLevel }: Ess
   const [essayType, setEssayType] = useState('general');
   const [wordCount, setWordCount] = useState(300);
   const [language, setLanguage] = useState<'english' | 'urdu'>('english');
-  const [provider, setProvider] = useState<AiProviderId>('groq');
+  const [provider, setProvider] = useState<AiProviderId>('gemini');
   const [aiTier, setAiTier] = useState<ModelTier>('mini');
   const [gradeLevel, setGradeLevel] = useState<GradeLevel>(profileGradeLevel);
   const [showOverride, setShowOverride] = useState(false);

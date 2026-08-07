@@ -44,7 +44,7 @@ Each "improvements" array item should be one concise sentence (plain text, no ma
     ];
     let result;
     let parsed: { score: number; maxScore: number; feedback: string; improvements: string[] } | null = null;
-    for (const provider of ['groq', 'gemini', 'deepseek'] as const) {
+    for (const provider of ['gemini', 'deepseek'] as const) {
       try {
         result = await gatewayChat({
           provider,

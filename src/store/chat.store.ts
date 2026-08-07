@@ -34,7 +34,7 @@ export const useChatStore = create<ChatState>()(
           state.conversations.unshift({
             id, userId: '', title, subjectId,
             messages: [], createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(), totalMessages: 0, provider: 'groq',
+            updatedAt: new Date().toISOString(), totalMessages: 0, provider: 'gemini',
           });
           state.activeConversationId = id;
         });

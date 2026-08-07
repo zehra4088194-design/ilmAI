@@ -96,7 +96,7 @@ Return ONLY valid JSON, no markdown fences, no extra text:
         routingPolicy: 'gemini',
       });
     } else {
-      result = await gatewayChat({ provider: 'groq', tier: 'medium', messages, maxTokens: 3072, temperature: 0.4 });
+      result = await gatewayChat({ provider: 'gemini', tier: 'mini', messages, maxTokens: 3072, temperature: 0.4 });
     }
 
     const parsed = parseAiJson<MagicNotesResult>(result.text, {

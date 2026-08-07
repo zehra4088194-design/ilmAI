@@ -102,8 +102,9 @@ async function moderateIfNeeded(admin: any, request: any) {
       .join('\n');
 
     const ai = await gatewayChat({
-      provider: 'groq',
+      provider: 'deepseek',
       tier: 'mini',
+      strictProvider: true,
       messages: [
         {
           role: 'system',

@@ -11,7 +11,6 @@ export interface AIProviderOption {
 }
 
 export const AI_PROVIDERS: AIProviderOption[] = [
-  { id: 'groq', label: 'Assistant', freeAvailable: true },
   { id: 'gemini', label: 'Gemini Flash-Lite', freeAvailable: true },
 ];
 

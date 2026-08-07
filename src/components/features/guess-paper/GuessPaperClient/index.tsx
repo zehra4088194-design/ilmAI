@@ -39,7 +39,7 @@ export function GuessPaperClient({
   const [selectedSubject, setSelectedSubject] = useState('');
   const [board, setBoard] = useState(defaultBoard || 'FBISE');
   const [gradeLevel, setGradeLevel] = useState(defaultGrade || 'GRADE_10');
-  const [provider, setProvider] = useState<AiProviderId>('groq');
+  const [provider, setProvider] = useState<AiProviderId>('gemini');
   const [aiTier, setAiTier] = useState<ModelTier>('mini');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<GuessPaperResult | null>(null);

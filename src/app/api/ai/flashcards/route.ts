@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     const { topic, subjectId, count = 10 } = await req.json();
     if (!topic) return NextResponse.json({ status: 'error', error: 'A topic is required' }, { status: 400 });
 
-    const aiResult = await generateFlashcardsViaGateway(topic, subjectId || 'General', count, 'groq', 'mini');
+    const aiResult = await generateFlashcardsViaGateway(topic, subjectId || 'General', count, 'gemini', 'mini');
     const cleaned = aiResult.replace(/```json|```/g, '').trim();
     const cards = JSON.parse(cleaned);
 

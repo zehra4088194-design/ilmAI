@@ -112,7 +112,7 @@ export function SideChatWidget() {
   const [messages, setMessages] = useState<SideChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [provider, setProvider] = useState<AiProviderId>('groq');
+  const [provider, setProvider] = useState<AiProviderId>('gemini');
   const [tier, setTier] = useState<ModelTier>('mini');
   const scrollRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();

@@ -53,7 +53,7 @@ Return ONLY valid JSON, no extra text:
 }`;
 
     const result = await gatewayChat({
-      provider: 'groq',
+      provider: 'gemini',
       tier: 'medium',
       messages: [{ role: 'user', content: prompt }],
       maxTokens: 2048,

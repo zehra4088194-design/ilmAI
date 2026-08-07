@@ -21,7 +21,7 @@ import { createClient } from '@/lib/supabase/client';
 export function ChatInterface() {
   const { activeConversationId, conversations, createConversation, addMessage, updateLastMessage, isStreaming, setStreaming } = useChatStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [provider, setProvider] = useState<AiProviderId>('groq');
+  const [provider, setProvider] = useState<AiProviderId>('gemini');
   const [tier, setTier] = useState<ModelTier>('mini');
   const [subjects, setSubjects] = useState<{ id: string; name: string }[]>([]);
   const [subject, setSubject] = useState<{ id: string; name: string } | null>(null);

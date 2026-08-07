@@ -109,7 +109,7 @@ Rules: stay within dailyAvailableHours, prioritize weakKeys, respect constraint 
   let aiSessions: AiPlanSession[] = [];
   try {
     const result = await gatewayChat({
-      provider: 'groq',
+      provider: 'gemini',
       tier: 'medium',
       messages: [
         { role: 'system', content: 'You are a study planner. Return only valid JSON, no markdown fences.' },

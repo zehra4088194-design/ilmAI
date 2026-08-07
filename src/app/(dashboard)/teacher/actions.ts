@@ -154,7 +154,7 @@ export async function draftAiSubmissionFeedback(formData: FormData) {
   const assignmentId = String(formData.get('assignment_id'));
   const classId = String(formData.get('class_id'));
   const result = await gatewayChat({
-    provider: 'groq',
+    provider: 'gemini',
     tier: 'mini',
     messages: [
       { role: 'system', content: 'Draft concise teacher feedback for a student assignment. The teacher will review and edit it before saving. Return plain text only.' },

@@ -214,7 +214,7 @@ services:
       GPT_MINI_MODEL: ${GPT_MINI_MODEL:-}
       GPT_MEDIUM_MODEL: ${GPT_MEDIUM_MODEL:-}
       GPT_PRO_MODEL: ${GPT_PRO_MODEL:-}
-      GEMINI_FLASH_MODEL: ${GEMINI_FLASH_MODEL:-gemini-2.5-flash-lite}
+      GEMINI_FLASH_MODEL: ${GEMINI_FLASH_MODEL:-gemini-3.5-flash-lite}
       DEEPSEEK_MINI_MODEL: ${DEEPSEEK_MINI_MODEL:-deepseek-v4-flash}
       DEEPSEEK_MEDIUM_MODEL: ${DEEPSEEK_MEDIUM_MODEL:-deepseek-v4-flash}
       DEEPSEEK_PRO_MODEL: ${DEEPSEEK_PRO_MODEL:-deepseek-v4-flash}

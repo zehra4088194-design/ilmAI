@@ -46,7 +46,7 @@ async function generateStudyEmail(profile: EmailProfile) {
   ].join('\n');
 
   const result = await gatewayChat({
-    provider: 'groq',
+    provider: 'gemini',
     tier: 'mini',
     messages: [
       {

@@ -17,3 +17,20 @@ export function shouldUseLocalSmallTalk(message: string): boolean {
     .trim();
   return SIMPLE_CHAT_PATTERNS.some((pattern) => pattern.test(withoutDecoration));
 }
+
+const SMALL_TALK_REPLIES = [
+  'Hi. Tell me the subject or chapter and I will help you directly.',
+  'Hello. Send your question, MCQ, or chapter name.',
+  'I am here. What do you want to study right now?',
+  'Okay. Share the question or topic you need help with.',
+  'Welcome back. Which subject should we start with?',
+];
+
+export function getLocalSmallTalkResponse(message: string, userId = '') {
+  const seed = `${userId}:${message.trim().toLowerCase()}:${new Date().toISOString().slice(0, 10)}`;
+  let hash = 0;
+  for (let index = 0; index < seed.length; index += 1) {
+    hash = (hash * 31 + seed.charCodeAt(index)) >>> 0;
+  }
+  return SMALL_TALK_REPLIES[hash % SMALL_TALK_REPLIES.length] || 'Hi. Tell me the subject or chapter and I will help you directly.';
+}

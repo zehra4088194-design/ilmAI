@@ -42,7 +42,7 @@ The "feedback" value should be a short Markdown-formatted mini-document: a one-l
         },
       ];
       let ev: { score: number; grade: string; feedback: string } | null = null;
-      for (const provider of ['groq', 'gemini', 'deepseek'] as const) {
+      for (const provider of ['gemini', 'deepseek'] as const) {
         try {
           const result = await gatewayChat({
             provider,

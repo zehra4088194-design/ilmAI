@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
       chapterIds = [],
       board = 'FBISE',
       gradeLevel = 'GRADE_10',
-      provider = 'groq',
+      provider = 'gemini',
       aiTier = 'mini',
     } = await req.json();
     if (!subjectId) return NextResponse.json({ status: 'error', error: 'A subject is required' }, { status: 400 });

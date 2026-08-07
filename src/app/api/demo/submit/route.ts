@@ -17,7 +17,7 @@ function fallbackFeedback(correct: number, total: number) {
 async function generateFeedback(correct: number, total: number, subjectName?: string) {
   try {
     const result = await gatewayChat({
-      provider: 'groq',
+      provider: 'gemini',
       tier: 'mini',
       messages: [
         { role: 'system', content: 'Write short, encouraging feedback in professional English for a student quiz result. Use no more than two sentences and no Markdown.' },
