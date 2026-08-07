@@ -302,9 +302,9 @@ export async function getConfiguredLimitExceededMessage(tier: SubscriptionTier, 
     return `You have used all free weekly credits for ${featureLabel}. Pro includes ${pro.limits.aiCreditsMonthly} per month, up to ${pro.limits.aiCreditsDaily} per day.`;
   }
   if (tier === 'PRO') {
-    return `The shared Pro quota for ${featureLabel} has been reached. Elite includes ${elite.limits.aiCreditsMonthly} per month, up to ${elite.limits.aiCreditsDaily} per day.`;
+    return `The shared Pro credit pool for ${featureLabel} has been reached. Elite includes ${elite.limits.aiCreditsMonthly} shared credits per month.`;
   }
-  return `The shared Elite quota for ${featureLabel} has been reached. Try again after the daily or monthly window resets.`;
+  return `The shared Elite credit pool for ${featureLabel} has been reached. Try again after the monthly window resets.`;
 }
 
 export async function checkDailyLimit(userId: string, feature: DailyLimitFeature, limit: number): Promise<QuotaResult> {
@@ -349,14 +349,8 @@ function buildSharedAiWindows(userId: string, tier: SubscriptionTier, plan: Plat
       },
     ];
   }
-  const day = dayWindow();
   const month = monthWindow();
   return [
-    {
-      key: `ratelimit:ai_credit:${userId}:day:${day.key}`,
-      limit: plan.limits.aiCreditsDaily,
-      resetAt: day.reset,
-    },
     {
       key: `ratelimit:ai_credit:${userId}:month:${month.key}`,
       limit: plan.limits.aiCreditsMonthly,
@@ -392,11 +386,9 @@ export async function consumeAiCredits(userId: string, tier: SubscriptionTier, f
 }
 
 export function summarizeAiCreditWindows(tier: SubscriptionTier, windows: RedisQuotaWindow[], counts: number[]) {
-  const primaryWindowIndex = tier === 'FREE' ? 0 : 1;
+  const primaryWindowIndex = 0;
   const primaryWindow = windows[primaryWindowIndex] || windows[0];
   const primaryUsed = counts[primaryWindowIndex] ?? counts[0] ?? 0;
-  const dailyWindow = tier === 'FREE' ? null : windows[0] || null;
-  const dailyUsed = tier === 'FREE' ? null : (counts[0] ?? 0);
 
   return {
     tier,
@@ -405,15 +397,7 @@ export function summarizeAiCreditWindows(tier: SubscriptionTier, windows: RedisQ
     remaining: Math.max(0, (primaryWindow?.limit ?? 0) - primaryUsed),
     limit: primaryWindow?.limit ?? 0,
     reset: primaryWindow?.resetAt ?? 0,
-    daily:
-      dailyWindow && dailyUsed !== null
-        ? {
-            used: dailyUsed,
-            remaining: Math.max(0, dailyWindow.limit - dailyUsed),
-            limit: dailyWindow.limit,
-            reset: dailyWindow.resetAt,
-          }
-        : null,
+    daily: null,
   };
 }
 

@@ -15,15 +15,8 @@ describe('summarizeAiCreditWindows', () => {
     });
   });
 
-  it('reports the Pro monthly pool separately from its daily cap', () => {
-    const status = summarizeAiCreditWindows(
-      'PRO',
-      [
-        { key: 'pro-day', limit: 15, resetAt: 100 },
-        { key: 'pro-month', limit: 300, resetAt: 900 },
-      ],
-      [2, 24]
-    );
+  it('reports the Pro monthly common pool without a per-tool daily cap', () => {
+    const status = summarizeAiCreditWindows('PRO', [{ key: 'pro-month', limit: 300, resetAt: 900 }], [24]);
 
     expect(status).toMatchObject({
       period: 'month',
@@ -31,26 +24,19 @@ describe('summarizeAiCreditWindows', () => {
       remaining: 276,
       limit: 300,
       reset: 900,
-      daily: { used: 2, remaining: 13, limit: 15, reset: 100 },
+      daily: null,
     });
   });
 
   it('reports the Elite 600-credit monthly pool', () => {
-    const status = summarizeAiCreditWindows(
-      'ELITE',
-      [
-        { key: 'elite-day', limit: 30, resetAt: 100 },
-        { key: 'elite-month', limit: 600, resetAt: 900 },
-      ],
-      [8, 125]
-    );
+    const status = summarizeAiCreditWindows('ELITE', [{ key: 'elite-month', limit: 600, resetAt: 900 }], [125]);
 
     expect(status).toMatchObject({
       period: 'month',
       used: 125,
       remaining: 475,
       limit: 600,
-      daily: { used: 8, remaining: 22, limit: 30 },
+      daily: null,
     });
   });
 });

@@ -52,7 +52,7 @@
 // ---------- MODEL MAP (edit anytime, no redeploy needed elsewhere) ----------
 // General Gemini tools and document vision use separate models. Document
 // vision favors the lighter model because it is optimized for extraction.
-const GEMINI_FLASH_MODEL = 'gemini-3.6-flash';
+const GEMINI_FLASH_MODEL = 'gemini-2.5-flash-lite';
 const GEMINI_DOCUMENT_MODEL = 'gemini-3.5-flash-lite';
 
 const DEFAULT_MODEL_MAP = {

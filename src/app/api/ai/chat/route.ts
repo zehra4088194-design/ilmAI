@@ -10,7 +10,6 @@ import {
 import {
   checkAiMessageLimit,
   checkAiSideChatLimit,
-  checkModelTierLimit,
   consumeAiCredits,
   getConfiguredLimitExceededMessage,
 } from '@/lib/rate-limit';
@@ -84,31 +83,13 @@ export async function POST(req: NextRequest) {
     const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
     const userTier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
 
-    const {
-      message,
-      history = [],
-      provider: requestedProvider,
-      tier: requestedTier,
-      subject,
-      source,
-    } = await req.json();
+    const { message, history = [], provider: requestedProvider, subject, source } = await req.json();
     if (!message || typeof message !== 'string') {
       return new Response(JSON.stringify({ error: 'A message is required.' }), { status: 400 });
     }
 
-    // Free and Pro always use the budget provider. Elite may explicitly spend
-    // one of its capped premium calls on another provider.
-    let provider: AiProviderId = userTier === 'ELITE' ? requestedProvider || 'groq' : 'groq';
-    let tier: ModelTier = userTier === 'ELITE' ? requestedTier || 'mini' : 'mini';
-    let entitlementFallback = false;
-    if (tier === 'pro' && userTier !== 'ELITE') {
-      return new Response(
-        JSON.stringify({
-          error: 'The Pro model tier is available only to Elite users. Upgrade to Elite or use the mini/medium tier.',
-        }),
-        { status: 403 }
-      );
-    }
+    const provider: AiProviderId = requestedProvider === 'groq' ? 'groq' : 'gemini';
+    const tier: ModelTier = 'mini';
 
     const isSideChat = source === 'side_chat';
     const limitCheck = isSideChat
@@ -121,15 +102,6 @@ export async function POST(req: NextRequest) {
         }),
         { status: 429 }
       );
-    }
-
-    if (provider !== 'groq') {
-      const tierCheck = await checkModelTierLimit(user.id, provider, tier, userTier);
-      if (!tierCheck.success) {
-        provider = 'groq';
-        tier = 'mini';
-        entitlementFallback = true;
-      }
     }
 
     const messages = [
@@ -151,7 +123,7 @@ export async function POST(req: NextRequest) {
       maxTokens: source === 'side_chat' ? 1100 : 2048,
       temperature: 0.7,
       strictProvider: localSmallTalk,
-      routingPolicy: localSmallTalk ? 'local' : isSideChat ? 'text' : 'tutor',
+      routingPolicy: localSmallTalk ? 'local' : provider === 'gemini' ? 'gemini' : 'text',
     });
 
     // Simulate a stream so the existing chat UI (which reads response.body as a stream)
@@ -175,7 +147,7 @@ export async function POST(req: NextRequest) {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
         'X-Provider-Used': result.providerUsed,
-        'X-Fallback-Triggered': String(result.fallbackTriggered || entitlementFallback),
+        'X-Fallback-Triggered': String(result.fallbackTriggered || provider !== requestedProvider),
       },
     });
   } catch (error) {
