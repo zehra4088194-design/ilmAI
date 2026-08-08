@@ -15,11 +15,12 @@ import {
 } from '@/lib/rate-limit';
 import type { SubscriptionTier } from '@/types';
 import { getLocalSmallTalkResponse, shouldUseLocalSmallTalk } from '@/lib/ai/request-routing';
+import { buildSubjectTutorContext } from '@/lib/resources/subject-tutor-context';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
 
-function buildSystemPrompt(subject?: string, source?: string) {
+function buildSystemPrompt(subject?: string, source?: string, subjectContext?: string | null) {
   const navigationCatalog = `
 App navigation (use only these exact internal links when the student asks where a feature is):
 - Dashboard: /dashboard
@@ -66,6 +67,13 @@ Rules:
 - For math/physics numericals: show readable formulas, substitutions, units, and final answer on separate lines
 - If the question is navigation/help about the app, answer directly and include the relevant link instead of tutoring steps
 ${sideChatRules}
+${subjectContext ? `
+Subject-specific source context:
+- Use the context below as the first source for subject questions.
+- If the answer is not present in this context, say what is missing and then give a general explanation.
+- Do not claim "according to uploaded file"; answer naturally.
+
+${subjectContext}` : ''}
 
 ${MARKDOWN_ANSWER_FORMAT_INSTRUCTION}`;
 }
@@ -83,7 +91,7 @@ export async function POST(req: NextRequest) {
     const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
     const userTier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
 
-    const { message, history = [], provider: requestedProvider, subject, source } = await req.json();
+    const { message, history = [], provider: requestedProvider, subject, subjectId, source } = await req.json();
     if (!message || typeof message !== 'string') {
       return new Response(JSON.stringify({ error: 'A message is required.' }), { status: 400 });
     }
@@ -111,7 +119,9 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const provider: AiProviderId = 'gemini';
+    const requested = typeof requestedProvider === 'string' ? requestedProvider : 'groq';
+    const assistantSelected = requested === 'groq' || requested === 'assistant';
+    const provider: AiProviderId = assistantSelected ? 'local' : 'deepseek';
     const tier: ModelTier = 'mini';
 
     const isSideChat = source === 'side_chat';
@@ -127,10 +137,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const subjectContext =
+      source === 'ai_tutor'
+        ? await buildSubjectTutorContext({
+            subjectId: typeof subjectId === 'string' ? subjectId : null,
+            subjectName: typeof subject === 'string' ? subject : null,
+            query: message,
+          }).catch((error) => {
+            console.warn('Subject tutor context unavailable:', error);
+            return null;
+          })
+        : null;
+
     const messages = [
       {
         role: 'system' as const,
-        content: buildSystemPrompt(typeof subject === 'string' ? subject : undefined, source),
+        content: buildSystemPrompt(typeof subject === 'string' ? subject : undefined, source, subjectContext),
       },
       ...history
         .filter((m: { role: string; content: string }) => m.content)
@@ -138,13 +160,30 @@ export async function POST(req: NextRequest) {
       { role: 'user' as const, content: message },
     ];
 
-    const result = await gatewayChat({
-      provider,
+    let result;
+    if (source === 'ai_tutor' && assistantSelected && subjectContext) {
+      try {
+        result = await gatewayChat({
+          provider: 'local',
+          tier,
+          messages,
+          maxTokens: 1600,
+          temperature: 0.55,
+          strictProvider: true,
+          routingPolicy: 'local',
+        });
+      } catch (localError) {
+        console.warn('Local subject tutor unavailable; falling back to DeepSeek lite:', localError);
+      }
+    }
+    result ||= await gatewayChat({
+      provider: provider === 'local' ? 'deepseek' : provider,
       tier,
       messages,
       maxTokens: source === 'side_chat' ? 1100 : 2048,
       temperature: 0.7,
-      routingPolicy: provider === 'gemini' ? 'gemini' : 'text',
+      strictProvider: true,
+      routingPolicy: 'text',
     });
 
     // Simulate a stream so the existing chat UI (which reads response.body as a stream)
@@ -168,7 +207,7 @@ export async function POST(req: NextRequest) {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
         'X-Provider-Used': result.providerUsed,
-        'X-Fallback-Triggered': String(result.fallbackTriggered || (Boolean(requestedProvider) && provider !== requestedProvider)),
+        'X-Fallback-Triggered': String(result.fallbackTriggered || (Boolean(requestedProvider) && result.providerUsed !== requestedProvider)),
       },
     });
   } catch (error) {

@@ -11,6 +11,9 @@ export interface AIProviderOption {
 }
 
 export const AI_PROVIDERS: AIProviderOption[] = [
+  { id: 'groq', label: 'Assistant', freeAvailable: true },
+  { id: 'gpt', label: 'ChatGPT', freeAvailable: true },
+  { id: 'claude', label: 'Claude', freeAvailable: true },
   { id: 'gemini', label: 'Gemini Flash-Lite', freeAvailable: true },
 ];
 
@@ -22,6 +25,5 @@ export interface ModelTierOption {
 }
 
 export const MODEL_TIERS: ModelTierOption[] = [
-  { id: 'mini', label: 'Flash-Lite', dailyLimit: 0, description: 'Uses the shared credit pool' },
-  { id: 'medium', label: 'Flash-Lite', dailyLimit: 0, description: 'Uses the shared credit pool' },
+  { id: 'mini', label: 'Free Lite', dailyLimit: 0, description: 'Uses the shared credit pool' },
 ];

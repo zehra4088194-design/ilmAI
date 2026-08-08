@@ -23,7 +23,7 @@ import { createClient } from '@/lib/supabase/client';
 export function ChatInterface() {
   const { activeConversationId, conversations, createConversation, addMessage, updateLastMessage, isStreaming, setStreaming } = useChatStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [provider, setProvider] = useState<AiProviderId>('gemini');
+  const [provider, setProvider] = useState<AiProviderId>('groq');
   const [tier, setTier] = useState<ModelTier>('mini');
   const [subjects, setSubjects] = useState<{ id: string; name: string }[]>([]);
   const [subject, setSubject] = useState<{ id: string; name: string } | null>(null);
@@ -75,7 +75,7 @@ export function ChatInterface() {
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, conversationId: convId, history: messages.slice(-10), provider, tier, subject: subject?.name, source: 'ai_tutor' }),
+        body: JSON.stringify({ message: text, conversationId: convId, history: messages.slice(-10), provider, tier, subject: subject?.name, subjectId: subject?.id, source: 'ai_tutor' }),
       });
 
       if (!response.ok) {
