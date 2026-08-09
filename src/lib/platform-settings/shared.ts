@@ -2,6 +2,25 @@ import type { SubscriptionTier } from '@/types';
 
 export type BillingCurrency = 'USD' | 'PKR';
 export type PdfThemeMode = 'follow-user' | 'dark' | 'light';
+export type AdminAiProvider = 'local' | 'groq' | 'gemini' | 'deepseek' | 'grok' | 'claude' | 'gpt';
+export type AiRoutingKey =
+  | 'sideChat'
+  | 'aiTutor'
+  | 'studyTools'
+  | 'grading'
+  | 'resourceTest'
+  | 'resourceSummary'
+  | 'presentation'
+  | 'visionOcr'
+  | 'studentChatModeration';
+export type AiRoutingSettings = Record<AiRoutingKey, AdminAiProvider>;
+export type ExchangeRateSettings = {
+  usdToPkr: number;
+  base: 'USD';
+  target: 'PKR';
+  lastUpdated: string | null;
+  fetchedAt: string | null;
+};
 
 export type ProviderBudgetKey =
   'groqFast' | 'groqLarge' | 'gemini' | 'deepseek' | 'ocrSpace' | 'openRouter' | 'grok' | 'claude' | 'gpt';
@@ -58,12 +77,32 @@ export type PlatformSettings = {
   pdfThemeMode: PdfThemeMode;
   subscriptionPlans: Record<SubscriptionTier, PlatformSubscriptionPlan>;
   providerDailyBudgets: ProviderDailyBudgets;
+  aiRouting: AiRoutingSettings;
+  exchangeRate: ExchangeRateSettings;
 };
 
 export const SUBSCRIPTION_SETTINGS_KEY = 'subscription_plans';
 
 export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
   pdfThemeMode: 'dark',
+  aiRouting: {
+    sideChat: 'groq',
+    aiTutor: 'groq',
+    studyTools: 'deepseek',
+    grading: 'deepseek',
+    resourceTest: 'deepseek',
+    resourceSummary: 'deepseek',
+    presentation: 'gemini',
+    visionOcr: 'gemini',
+    studentChatModeration: 'deepseek',
+  },
+  exchangeRate: {
+    usdToPkr: 280,
+    base: 'USD',
+    target: 'PKR',
+    lastUpdated: null,
+    fetchedAt: null,
+  },
   providerDailyBudgets: {
     // Conservative platform-wide caps for a free-hosted beta. Admin can tune
     // these without a deploy as provider dashboards expose the real quotas.
@@ -299,6 +338,38 @@ function stringArrayOrFallback(value: unknown, fallback: string[]) {
   return value.map((item) => String(item).trim()).filter(Boolean);
 }
 
+const AI_ROUTING_KEYS: AiRoutingKey[] = [
+  'sideChat',
+  'aiTutor',
+  'studyTools',
+  'grading',
+  'resourceTest',
+  'resourceSummary',
+  'presentation',
+  'visionOcr',
+  'studentChatModeration',
+];
+
+function aiProviderOrFallback(value: unknown, fallback: AdminAiProvider): AdminAiProvider {
+  return value === 'local' ||
+    value === 'groq' ||
+    value === 'gemini' ||
+    value === 'deepseek' ||
+    value === 'grok' ||
+    value === 'claude' ||
+    value === 'gpt'
+    ? value
+    : fallback;
+}
+
+function normalizeAiRouting(value: unknown): AiRoutingSettings {
+  const source = value && typeof value === 'object' ? (value as Partial<AiRoutingSettings>) : {};
+  return AI_ROUTING_KEYS.reduce((result, key) => {
+    result[key] = aiProviderOrFallback(source[key], DEFAULT_PLATFORM_SETTINGS.aiRouting[key]);
+    return result;
+  }, {} as AiRoutingSettings);
+}
+
 function normalizeAudienceLimits(
   value: Partial<Record<PlanAudience, Partial<AudienceFeatureLimits>>> | undefined,
   fallback: Record<PlanAudience, AudienceFeatureLimits>
@@ -326,6 +397,11 @@ export function normalizePlatformSettings(input: unknown): PlatformSettings {
   const sourcePlans = (
     source.subscriptionPlans && typeof source.subscriptionPlans === 'object' ? source.subscriptionPlans : {}
   ) as Partial<Record<SubscriptionTier, Partial<PlatformSubscriptionPlan>>>;
+  const sourceExchangeRate =
+    source.exchangeRate && typeof source.exchangeRate === 'object'
+      ? (source.exchangeRate as Partial<ExchangeRateSettings>)
+      : {};
+  const usdToPkr = Math.max(1, numberOrFallback(sourceExchangeRate.usdToPkr, DEFAULT_PLATFORM_SETTINGS.exchangeRate.usdToPkr));
 
   const subscriptionPlans = TIERS.reduce(
     (acc, tier) => {
@@ -337,6 +413,8 @@ export function normalizePlatformSettings(input: unknown): PlatformSettings {
       const incomingAudienceLimits = (incoming.audienceLimits || {}) as Partial<
         Record<PlanAudience, Partial<AudienceFeatureLimits>>
       >;
+      const usdMonthly = numberOrFallback(incomingPrice.USD?.monthly, fallback.price.USD.monthly);
+      const usdAnnual = numberOrFallback(incomingPrice.USD?.annual, fallback.price.USD.annual);
 
       acc[tier] = {
         tier,
@@ -344,12 +422,12 @@ export function normalizePlatformSettings(input: unknown): PlatformSettings {
         enabled: booleanOrFallback(incoming.enabled, fallback.enabled),
         price: {
           USD: {
-            monthly: numberOrFallback(incomingPrice.USD?.monthly, fallback.price.USD.monthly),
-            annual: numberOrFallback(incomingPrice.USD?.annual, fallback.price.USD.annual),
+            monthly: usdMonthly,
+            annual: usdAnnual,
           },
           PKR: {
-            monthly: numberOrFallback(incomingPrice.PKR?.monthly, fallback.price.PKR.monthly),
-            annual: numberOrFallback(incomingPrice.PKR?.annual, fallback.price.PKR.annual),
+            monthly: Math.round(usdMonthly * usdToPkr),
+            annual: Math.round(usdAnnual * usdToPkr),
           },
         },
         limits: {
@@ -409,6 +487,18 @@ export function normalizePlatformSettings(input: unknown): PlatformSettings {
         ? source.pdfThemeMode
         : DEFAULT_PLATFORM_SETTINGS.pdfThemeMode,
     subscriptionPlans,
+    aiRouting: normalizeAiRouting(source.aiRouting),
+    exchangeRate: {
+      usdToPkr,
+      base: 'USD',
+      target: 'PKR',
+      lastUpdated:
+        typeof sourceExchangeRate.lastUpdated === 'string' && sourceExchangeRate.lastUpdated
+          ? sourceExchangeRate.lastUpdated
+          : null,
+      fetchedAt:
+        typeof sourceExchangeRate.fetchedAt === 'string' && sourceExchangeRate.fetchedAt ? sourceExchangeRate.fetchedAt : null,
+    },
     providerDailyBudgets: {
       groqFast: Math.max(
         0,
@@ -445,6 +535,14 @@ export function normalizePlatformSettings(input: unknown): PlatformSettings {
       gpt: Math.max(0, numberOrFallback(sourceProviderBudgets.gpt, DEFAULT_PLATFORM_SETTINGS.providerDailyBudgets.gpt)),
     },
   };
+}
+
+export function getAdminAiProvider(settings: PlatformSettings, key: AiRoutingKey): AdminAiProvider {
+  return settings.aiRouting[key] || DEFAULT_PLATFORM_SETTINGS.aiRouting[key];
+}
+
+export function convertUsdToPkr(usd: number, settings: PlatformSettings) {
+  return Math.round(Number(usd || 0) * settings.exchangeRate.usdToPkr);
 }
 
 export function resolvePdfThemeMode(preference: PdfThemeMode, userUsesDarkTheme: boolean): 'light' | 'dark' {

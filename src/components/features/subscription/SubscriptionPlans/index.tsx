@@ -42,6 +42,8 @@ export function SubscriptionPlans({
   const [inquiryLoading, setInquiryLoading] = useState(false);
   const searchParams = useSearchParams();
   const symbol = CURRENCY_SYMBOLS[currency];
+  const usdSymbol = CURRENCY_SYMBOLS.USD;
+  const pkrSymbol = CURRENCY_SYMBOLS.PKR;
   const free = settings.subscriptionPlans.FREE;
   const pro = settings.subscriptionPlans.PRO;
   const elite = settings.subscriptionPlans.ELITE;
@@ -194,10 +196,13 @@ export function SubscriptionPlans({
           const plan = settings.subscriptionPlans[key];
           const isCurrent = currentTier === key;
           const isFree = key === 'FREE';
-          const pricing = plan.price[currency];
-          const displayPrice = billingCycle === 'annual' && !isFree ? pricing.annual : pricing.monthly;
+          const usdPricing = plan.price.USD;
+          const pkrPricing = plan.price.PKR;
+          const displayPrice = billingCycle === 'annual' && !isFree ? usdPricing.annual : usdPricing.monthly;
+          const pkrDisplayPrice = billingCycle === 'annual' && !isFree ? pkrPricing.annual : pkrPricing.monthly;
           const priceSuffix = billingCycle === 'annual' && !isFree ? '/year' : '/mo';
-          const monthlyEquivalent = billingCycle === 'annual' && !isFree ? pricing.annual / 12 : null;
+          const monthlyEquivalent = billingCycle === 'annual' && !isFree ? usdPricing.annual / 12 : null;
+          const pkrMonthlyEquivalent = billingCycle === 'annual' && !isFree ? pkrPricing.annual / 12 : null;
           const creditAmount = isFree ? plan.limits.aiCreditsWeekly : plan.limits.aiCreditsMonthly;
           const creditPeriod = isFree ? 'every week' : 'every month';
           const PlanIcon = key === 'FREE' ? Sparkles : key === 'PRO' ? Rocket : Crown;
@@ -238,14 +243,23 @@ export function SubscriptionPlans({
                 <h3 className="mb-2 text-xl font-bold">{plan.name}</h3>
                 <div className="mb-4">
                   <p className="text-3xl font-bold">
-                    {symbol}
-                    {formatPrice(displayPrice, currency)}
+                    {usdSymbol}
+                    {formatPrice(displayPrice, 'USD')}
                     <span className="text-muted-foreground text-sm font-normal">{priceSuffix}</span>
+                  </p>
+                  <p className="text-muted-foreground mt-1 text-sm">
+                    = {pkrSymbol}
+                    {formatPrice(pkrDisplayPrice, 'PKR')}
+                    <span className="text-xs"> {priceSuffix}</span>
                   </p>
                   {monthlyEquivalent !== null && (
                     <p className="text-muted-foreground mt-1 text-sm">
-                      {symbol}
-                      {formatPrice(monthlyEquivalent, currency)}/mo effective
+                      {usdSymbol}
+                      {formatPrice(monthlyEquivalent, 'USD')}/mo effective
+                      <span className="ml-1 text-xs">
+                        = {pkrSymbol}
+                        {formatPrice(pkrMonthlyEquivalent || 0, 'PKR')}/mo
+                      </span>
                     </p>
                   )}
                 </div>

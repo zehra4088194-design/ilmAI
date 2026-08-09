@@ -188,6 +188,19 @@ export function DashboardSidebar({ mobileOpen: controlledMobileOpen, onMobileOpe
             </Link>
           </div>
         )}
+        {(user?.role === 'teacher' || user?.role === 'admin') && (
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/30 px-2 mb-1.5">Teacher Tools</p>
+            <Link href="/teacher/tests" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
+              className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
+                isActive('/teacher/tests') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}>
+              <FileQuestion className={cn('w-4 h-4 shrink-0', isActive('/teacher/tests') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
+              <span className="flex-1">Test Paper Studio</span>
+              <Badge className="text-[10px] bg-violet-600 text-white px-1.5 py-0 shrink-0">Teacher</Badge>
+              {isActive('/teacher/tests') && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
+            </Link>
+          </div>
+        )}
         {NAV_GROUPS.map((group) => (
           <div key={group.label}>
             <p className="text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/30 px-2 mb-1.5">{group.label}</p>

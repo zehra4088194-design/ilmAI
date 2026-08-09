@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { BookOpenCheck, Moon, Save, ShieldCheck, Sun, UserRoundCog } from 'lucide-react';
+import { Bot, BookOpenCheck, DollarSign, Moon, Save, ShieldCheck, Sun, UserRoundCog } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -65,9 +65,53 @@ const PROVIDER_BUDGET_LABELS: Array<[keyof PlatformSettings['providerDailyBudget
   ['gpt', 'GPT/day'],
 ];
 
+const AI_ROUTING_LABELS: Array<[keyof PlatformSettings['aiRouting'], string]> = [
+  ['sideChat', 'Side chat'],
+  ['aiTutor', 'AI Tutor'],
+  ['studyTools', 'General study tools'],
+  ['grading', 'Answer checking / grading'],
+  ['resourceTest', 'PDF/resource tests'],
+  ['resourceSummary', 'PDF/resource summaries'],
+  ['presentation', 'Presentation builder'],
+  ['visionOcr', 'Vision / handwritten OCR'],
+  ['studentChatModeration', 'Student chat safety check'],
+];
+
+const AI_PROVIDER_OPTIONS: Array<{ value: PlatformSettings['aiRouting'][keyof PlatformSettings['aiRouting']]; label: string }> = [
+  { value: 'groq', label: 'Groq / Assistant' },
+  { value: 'gemini', label: 'Gemini Flash-Lite' },
+  { value: 'deepseek', label: 'DeepSeek' },
+  { value: 'local', label: 'Local Llama' },
+  { value: 'grok', label: 'Grok' },
+  { value: 'claude', label: 'Claude' },
+  { value: 'gpt', label: 'ChatGPT / GPT' },
+];
+
 export function PlatformSettingsForm({ initialSettings }: { initialSettings: PlatformSettings }) {
   const [settings, setSettings] = useState(() => normalizePlatformSettings(initialSettings));
   const [saving, setSaving] = useState(false);
+
+  const withConvertedPkrPrices = (current: PlatformSettings, usdToPkr = current.exchangeRate.usdToPkr) => ({
+    ...current,
+    subscriptionPlans: Object.fromEntries(
+      TIERS.map((tier) => {
+        const plan = current.subscriptionPlans[tier];
+        return [
+          tier,
+          {
+            ...plan,
+            price: {
+              ...plan.price,
+              PKR: {
+                monthly: Math.round(plan.price.USD.monthly * usdToPkr),
+                annual: Math.round(plan.price.USD.annual * usdToPkr),
+              },
+            },
+          },
+        ];
+      })
+    ) as PlatformSettings['subscriptionPlans'],
+  });
 
   const updatePlan = (
     tier: SubscriptionTier,
@@ -151,6 +195,84 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
             Defaults are conservative beta caps. Claude/GPT do not have dependable permanent free API tiers, so both are
             0. The Grok cap is for available promotional credits only.
           </p>
+        </CardContent>
+      </Card>
+
+      <Card className="border-fuchsia-500/25 bg-fuchsia-500/5">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bot className="h-5 w-5 text-fuchsia-400" />
+            AI routing by module
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-muted-foreground text-sm">
+            These server-side choices override the user dropdown. If a user selects Claude/ChatGPT/Gemini but this
+            module is set to DeepSeek, the request will still go to DeepSeek.
+          </p>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {AI_ROUTING_LABELS.map(([key, label]) => (
+              <label key={key} className="text-muted-foreground space-y-1 text-xs font-medium">
+                <span>{label}</span>
+                <select
+                  value={settings.aiRouting[key]}
+                  onChange={(event) =>
+                    setSettings((current) => ({
+                      ...current,
+                      aiRouting: { ...current.aiRouting, [key]: event.target.value as PlatformSettings['aiRouting'][typeof key] },
+                    }))
+                  }
+                  className="border-input bg-background text-foreground h-10 w-full rounded-lg border px-3 text-sm"
+                >
+                  {AI_PROVIDER_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-emerald-500/25 bg-emerald-500/5">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <DollarSign className="h-5 w-5 text-emerald-400" />
+            USD to PKR rate
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-muted-foreground text-sm">
+            Set plan prices in USD below. The cron updates this rate and recalculates PKR prices automatically.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <NumberField
+              label="USD = PKR"
+              value={settings.exchangeRate.usdToPkr}
+              onChange={(value) =>
+                setSettings((current) => {
+                  const usdToPkr = Math.max(1, value);
+                  return withConvertedPkrPrices(
+                    {
+                      ...current,
+                      exchangeRate: { ...current.exchangeRate, usdToPkr },
+                    },
+                    usdToPkr
+                  );
+                })
+              }
+            />
+            <div className="text-muted-foreground rounded-lg border p-3 text-xs">
+              <p className="font-semibold text-foreground">Last API update</p>
+              <p>{settings.exchangeRate.fetchedAt ? new Date(settings.exchangeRate.fetchedAt).toLocaleString() : 'Not fetched yet'}</p>
+            </div>
+            <div className="text-muted-foreground rounded-lg border p-3 text-xs">
+              <p className="font-semibold text-foreground">Provider timestamp</p>
+              <p>{settings.exchangeRate.lastUpdated || 'Not available'}</p>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -249,41 +371,53 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
                     label="USD/month"
                     value={plan.price.USD.monthly}
                     onChange={(value) =>
-                      updatePlan(tier, (item) => ({
-                        ...item,
-                        price: { ...item.price, USD: { ...item.price.USD, monthly: value } },
-                      }))
+                      updatePlan(tier, (item) => {
+                        const nextUsd = { ...item.price.USD, monthly: value };
+                        return {
+                          ...item,
+                          price: {
+                            ...item.price,
+                            USD: nextUsd,
+                            PKR: {
+                              monthly: Math.round(nextUsd.monthly * settings.exchangeRate.usdToPkr),
+                              annual: Math.round(nextUsd.annual * settings.exchangeRate.usdToPkr),
+                            },
+                          },
+                        };
+                      })
                     }
                   />
                   <NumberField
                     label="USD/year"
                     value={plan.price.USD.annual}
                     onChange={(value) =>
-                      updatePlan(tier, (item) => ({
-                        ...item,
-                        price: { ...item.price, USD: { ...item.price.USD, annual: value } },
-                      }))
+                      updatePlan(tier, (item) => {
+                        const nextUsd = { ...item.price.USD, annual: value };
+                        return {
+                          ...item,
+                          price: {
+                            ...item.price,
+                            USD: nextUsd,
+                            PKR: {
+                              monthly: Math.round(nextUsd.monthly * settings.exchangeRate.usdToPkr),
+                              annual: Math.round(nextUsd.annual * settings.exchangeRate.usdToPkr),
+                            },
+                          },
+                        };
+                      })
                     }
                   />
                   <NumberField
-                    label="PKR/month"
+                    label="PKR/month (auto)"
                     value={plan.price.PKR.monthly}
-                    onChange={(value) =>
-                      updatePlan(tier, (item) => ({
-                        ...item,
-                        price: { ...item.price, PKR: { ...item.price.PKR, monthly: value } },
-                      }))
-                    }
+                    onChange={() => undefined}
+                    disabled
                   />
                   <NumberField
-                    label="PKR/year"
+                    label="PKR/year (auto)"
                     value={plan.price.PKR.annual}
-                    onChange={(value) =>
-                      updatePlan(tier, (item) => ({
-                        ...item,
-                        price: { ...item.price, PKR: { ...item.price.PKR, annual: value } },
-                      }))
-                    }
+                    onChange={() => undefined}
+                    disabled
                   />
                 </div>
 
@@ -389,11 +523,27 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
   );
 }
 
-function NumberField({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {
+function NumberField({
+  label,
+  value,
+  onChange,
+  disabled = false,
+}: {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+  disabled?: boolean;
+}) {
   return (
     <label className="text-muted-foreground space-y-1 text-xs font-medium">
       <span>{label}</span>
-      <Input type="number" step="any" value={value} onChange={(event) => onChange(Number(event.target.value))} />
+      <Input
+        type="number"
+        step="any"
+        value={value}
+        disabled={disabled}
+        onChange={(event) => onChange(Number(event.target.value))}
+      />
     </label>
   );
 }

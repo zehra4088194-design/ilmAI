@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { gatewayChat } from '@/lib/ai/gateway';
+import { gatewayChat, type AiProviderId } from '@/lib/ai/gateway';
 import { checkAiMessageLimit, consumeAiCredits } from '@/lib/rate-limit';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import type { SubscriptionTier } from '@/types';
+import { getPlatformSettings } from '@/lib/platform-settings/server';
+import { getAdminAiProvider } from '@/lib/platform-settings/shared';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -24,6 +26,9 @@ export async function POST(req: NextRequest) {
 
     const { questions, answers, subjectName, className } = await req.json();
     const evals: { score: number; grade: string; feedback: string }[] = [];
+    const platformSettings = await getPlatformSettings();
+    const adminProvider = getAdminAiProvider(platformSettings, 'grading');
+    const providerToUse: AiProviderId = adminProvider === 'local' ? 'groq' : adminProvider;
 
     for (const qa of questions) {
       const userAns = answers[qa.id] || '(No answer provided)';
@@ -41,33 +46,24 @@ The "feedback" value should be a short Markdown-formatted mini-document: a one-l
           content: `Evaluate: Class ${className} ${subjectName}. Q: ${qa.q}. KeyPoints: ${qa.keyPoints?.join('; ')}. Marks: ${maxMarks}. Answer: "${userAns}". Return ONLY JSON with score as a number from 0 to ${maxMarks}.`,
         },
       ];
-      let ev: { score: number; grade: string; feedback: string } | null = null;
-      for (const provider of ['gemini', 'deepseek'] as const) {
-        try {
-          const result = await gatewayChat({
-            provider,
-            tier: 'mini',
-            messages,
-            maxTokens: 500,
-            temperature: 0.2,
-            strictProvider: true,
-            routingPolicy: 'grading',
-          });
-          const candidate = parseAiJson<Partial<{ score: number; grade: string; feedback: string }>>(result.text, {});
-          if (!Number.isFinite(Number(candidate.score)) || typeof candidate.feedback !== 'string') {
-            throw new Error('Invalid grading response.');
-          }
-          ev = {
-            score: Number(candidate.score),
-            grade: String(candidate.grade || '?'),
-            feedback: candidate.feedback,
-          };
-          break;
-        } catch (gradingError) {
-          console.warn(`${provider} test grading failed:`, gradingError);
-        }
+      const result = await gatewayChat({
+        provider: providerToUse,
+        tier: 'mini',
+        messages,
+        maxTokens: 500,
+        temperature: 0.2,
+        strictProvider: true,
+        routingPolicy: 'grading',
+      });
+      const candidate = parseAiJson<Partial<{ score: number; grade: string; feedback: string }>>(result.text, {});
+      if (!Number.isFinite(Number(candidate.score)) || typeof candidate.feedback !== 'string') {
+        throw new Error('Invalid grading response.');
       }
-      if (!ev) throw new Error('All grading providers returned an invalid response.');
+      const ev = {
+        score: Number(candidate.score),
+        grade: String(candidate.grade || '?'),
+        feedback: candidate.feedback,
+      };
       ev.score = Math.max(0, Math.min(Number(ev.score) || 0, maxMarks));
       evals.push(ev);
     }

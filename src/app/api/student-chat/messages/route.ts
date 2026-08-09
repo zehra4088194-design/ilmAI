@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { getPlatformSettings } from '@/lib/platform-settings/server';
-import { getPlanFromSettings } from '@/lib/platform-settings/shared';
-import { gatewayChat } from '@/lib/ai/gateway';
+import { getAdminAiProvider, getPlanFromSettings } from '@/lib/platform-settings/shared';
+import { gatewayChat, type AiProviderId } from '@/lib/ai/gateway';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import { createNotificationIfEnabled, createNotificationsIfEnabled } from '@/lib/notifications/preferences';
 import { checkAiMessageLimit, consumeAiCredits, getConfiguredLimitExceededMessage } from '@/lib/rate-limit';
@@ -101,10 +101,14 @@ async function moderateIfNeeded(admin: any, request: any) {
       )
       .join('\n');
 
+    const platformSettings = await getPlatformSettings();
+    const adminProvider = getAdminAiProvider(platformSettings, 'studentChatModeration');
+    const providerToUse: AiProviderId = adminProvider === 'local' ? 'groq' : adminProvider;
     const ai = await gatewayChat({
-      provider: 'deepseek',
+      provider: providerToUse,
       tier: 'mini',
       strictProvider: true,
+      routingPolicy: 'text',
       messages: [
         {
           role: 'system',

@@ -1,6 +1,11 @@
-name: Manual maintenance fallback
+name: Scheduled maintenance
 
 on:
+  schedule:
+    # 12:01 AM Pakistan time (UTC+5)
+    - cron: '1 19 * * *'
+    # 1:00 PM Pakistan time (UTC+5)
+    - cron: '0 8 * * *'
   workflow_dispatch:
 
 permissions:
@@ -28,6 +33,7 @@ jobs:
 
           call_job /api/cron/resource-context
           call_job /api/cron/school-notifications
+          call_job /api/cron/usd-pkr-rate
 
           day=$(date -u +%u)
           time=$(date -u +%H:%M)

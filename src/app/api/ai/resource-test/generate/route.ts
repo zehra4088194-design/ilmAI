@@ -16,6 +16,9 @@ import {
 import { buildRepresentativeTextContext } from '@/lib/resources/context-window';
 import { createArtifactKey, readAiArtifact, writeAiArtifact } from '@/lib/ai/artifact-cache';
 import { buildHybridResourceContext } from '@/lib/resources/semantic-context';
+import { getPlatformSettings } from '@/lib/platform-settings/server';
+import { getAdminAiProvider } from '@/lib/platform-settings/shared';
+import type { AiProviderId } from '@/lib/ai/gateway';
 
 export const runtime = 'nodejs';
 export const maxDuration = 180;
@@ -145,11 +148,16 @@ export async function POST(req: NextRequest) {
     let fallbackUsed = true;
     if (!rawTxtHasRequestedQuestions)
       try {
+        const platformSettings = await getPlatformSettings();
+        const adminProvider = getAdminAiProvider(platformSettings, 'resourceTest');
+        const providerToUse: AiProviderId = adminProvider === 'local' ? 'groq' : adminProvider;
         const result = await gatewayChat({
-          provider: 'deepseek',
-          tier: 'medium',
+          provider: providerToUse,
+          tier: 'mini',
           maxTokens: 8192,
           temperature: 0.25,
+          strictProvider: true,
+          routingPolicy: 'text',
           messages: [
             {
               role: 'system',
@@ -166,7 +174,7 @@ export async function POST(req: NextRequest) {
         fallbackUsed = false;
       } catch (gatewayError) {
         fallbackUsed = true;
-        console.warn('DeepSeek test model unavailable; using raw TXT question bank:', gatewayError);
+        console.warn('Admin-selected test model unavailable; using raw TXT question bank:', gatewayError);
         paper = sourcePaper;
       }
     paper.mcqs = filterHighQualitySourceMcqs([...(paper.mcqs || []), ...sourcePaper.mcqs]);
@@ -187,7 +195,7 @@ export async function POST(req: NextRequest) {
       provider,
     });
   } catch (error) {
-    console.error('Gemini resource test generation failed:', error);
+    console.error('Resource test generation failed:', error);
     return NextResponse.json(
       { status: 'error', error: error instanceof Error ? error.message : 'The test could not be generated.' },
       { status: 500 }

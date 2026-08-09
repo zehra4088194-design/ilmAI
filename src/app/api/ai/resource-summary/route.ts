@@ -9,6 +9,9 @@ import type { SubscriptionTier } from '@/types';
 import { buildRepresentativeTextContext } from '@/lib/resources/context-window';
 import { createArtifactKey, readAiArtifact, writeAiArtifact } from '@/lib/ai/artifact-cache';
 import { buildHybridResourceContext } from '@/lib/resources/semantic-context';
+import { getPlatformSettings } from '@/lib/platform-settings/server';
+import { getAdminAiProvider } from '@/lib/platform-settings/shared';
+import type { AiProviderId } from '@/lib/ai/gateway';
 
 export const runtime = 'nodejs';
 export const maxDuration = 180;
@@ -76,11 +79,16 @@ export async function POST(req: NextRequest) {
     let model = 'deterministic-source-parser';
     let fallbackUsed = false;
     try {
+      const platformSettings = await getPlatformSettings();
+      const adminProvider = getAdminAiProvider(platformSettings, 'resourceSummary');
+      const providerToUse: AiProviderId = adminProvider === 'local' ? 'groq' : adminProvider;
       const result = await gatewayChat({
-        provider: 'deepseek',
+        provider: providerToUse,
         tier: 'mini',
         maxTokens: 1800,
         temperature: 0.25,
+        strictProvider: true,
+        routingPolicy: 'text',
         messages: [
           {
             role: 'system',
@@ -97,7 +105,7 @@ export async function POST(req: NextRequest) {
       model = result.modelUsed;
     } catch (gatewayError) {
       fallbackUsed = true;
-      console.warn('DeepSeek summary model unavailable; using source fallback:', gatewayError);
+      console.warn('Admin-selected summary model unavailable; using source fallback:', gatewayError);
       summary = buildResourceSourceSummary(resource.title, context);
     }
 

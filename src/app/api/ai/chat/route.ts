@@ -16,6 +16,8 @@ import {
 import type { SubscriptionTier } from '@/types';
 import { getLocalSmallTalkResponse, shouldUseLocalSmallTalk } from '@/lib/ai/request-routing';
 import { buildSubjectTutorContext } from '@/lib/resources/subject-tutor-context';
+import { getPlatformSettings } from '@/lib/platform-settings/server';
+import { getAdminAiProvider } from '@/lib/platform-settings/shared';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -121,10 +123,10 @@ export async function POST(req: NextRequest) {
 
     const requested = typeof requestedProvider === 'string' ? requestedProvider : 'groq';
     const assistantSelected = requested === 'groq' || requested === 'assistant';
-    const provider: AiProviderId = assistantSelected ? 'local' : 'deepseek';
     const tier: ModelTier = 'mini';
 
     const isSideChat = source === 'side_chat';
+    const platformSettings = await getPlatformSettings();
     const limitCheck = isSideChat
       ? await checkAiSideChatLimit(user.id, userTier)
       : await checkAiMessageLimit(user.id, userTier, 'ai_tutor');
@@ -148,6 +150,13 @@ export async function POST(req: NextRequest) {
             return null;
           })
         : null;
+    const adminProvider = getAdminAiProvider(platformSettings, isSideChat ? 'sideChat' : 'aiTutor') as AiProviderId;
+    const provider: AiProviderId =
+      assistantSelected && source === 'ai_tutor' && subjectContext && adminProvider === 'local'
+        ? 'local'
+        : adminProvider === 'local'
+          ? 'groq'
+          : adminProvider;
 
     const messages = [
       {
@@ -161,7 +170,7 @@ export async function POST(req: NextRequest) {
     ];
 
     let result;
-    if (source === 'ai_tutor' && assistantSelected && subjectContext) {
+    if (source === 'ai_tutor' && subjectContext && adminProvider === 'local') {
       try {
         result = await gatewayChat({
           provider: 'local',
@@ -173,11 +182,11 @@ export async function POST(req: NextRequest) {
           routingPolicy: 'local',
         });
       } catch (localError) {
-        console.warn('Local subject tutor unavailable; falling back to DeepSeek lite:', localError);
+        console.warn('Local subject tutor unavailable; falling back to admin chat provider:', localError);
       }
     }
     result ||= await gatewayChat({
-      provider: provider === 'local' ? 'deepseek' : provider,
+      provider: provider === 'local' ? 'groq' : provider,
       tier,
       messages,
       maxTokens: source === 'side_chat' ? 1100 : 2048,
