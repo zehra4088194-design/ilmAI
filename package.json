@@ -32,6 +32,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1090.0",
+    "@aws-sdk/s3-request-presigner": "^3.1106.0",
     "@hookform/resolvers": "^3.9.1",
     "@paddle/paddle-js": "^1.6.4",
     "@radix-ui/react-accordion": "^1.2.3",

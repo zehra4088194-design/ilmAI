@@ -1,4 +1,5 @@
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 type R2Config = {
   accountId?: string;
@@ -10,6 +11,7 @@ type R2Config = {
 };
 
 let client: S3Client | null = null;
+export const R2_SIGNED_URL_TTL_SECONDS = 18_000; // 5 hours
 
 function getConfig(): R2Config | null {
   const accountId = process.env.R2_ACCOUNT_ID;
@@ -92,13 +94,19 @@ export async function getR2Object(key: string) {
   const config = getConfig();
   if (!config) return null;
   try {
-    const result = await getClient(config).send(new GetObjectCommand({ Bucket: config.bucket, Key: key }));
-    if (!result.Body) return null;
-    const bytes = await result.Body.transformToByteArray();
+    const signedUrl = await getR2SignedUrl(key);
+    const result = await fetch(signedUrl, {
+      method: 'GET',
+      cache: 'no-store',
+      signal: AbortSignal.timeout(45_000),
+    });
+    if (result.status === 404) return null;
+    if (!result.ok) throw new Error(`Signed object fetch failed (${result.status}).`);
+    const bytes = await result.arrayBuffer();
     return {
-      body: Uint8Array.from(bytes).buffer,
-      contentType: result.ContentType || 'application/octet-stream',
-      contentEncoding: result.ContentEncoding || null,
+      body: bytes,
+      contentType: result.headers.get('content-type') || 'application/octet-stream',
+      contentEncoding: result.headers.get('content-encoding'),
     };
   } catch (error: any) {
     const status = error?.$metadata?.httpStatusCode;
@@ -110,6 +118,15 @@ export async function getR2Object(key: string) {
 export async function getR2Text(key: string) {
   const object = await getR2Object(key);
   return object ? new TextDecoder().decode(object.body) : null;
+}
+
+export async function getR2SignedUrl(key: string, expiresIn = R2_SIGNED_URL_TTL_SECONDS) {
+  const config = getConfig();
+  if (!config) throw new Error('R2 is not configured.');
+  if (!key || key.includes('..')) throw new Error('Invalid stored object key.');
+  return getSignedUrl(getClient(config), new GetObjectCommand({ Bucket: config.bucket, Key: key }), {
+    expiresIn,
+  });
 }
 
 export async function deleteR2Object(key: string) {

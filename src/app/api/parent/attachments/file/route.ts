@@ -1,13 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { getParentLinkAccess } from '@/lib/parent/access';
-import { getR2Object, parseR2Uri } from '@/lib/storage/r2';
+import { getR2SignedUrl, parseR2Uri } from '@/lib/storage/r2';
 
 export const runtime = 'nodejs';
-
-function safeFileName(value: string) {
-  return value.replace(/[\r\n"]/g, '_').slice(0, 180);
-}
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient();
@@ -32,15 +28,6 @@ export async function GET(req: NextRequest) {
 
   const key = parseR2Uri(attachment.file_url);
   if (!key) return NextResponse.json({ error: 'This file uses legacy storage' }, { status: 409 });
-  const object = await getR2Object(key);
-  if (!object) return NextResponse.json({ error: 'The archived file was not found' }, { status: 404 });
-
-  return new NextResponse(object.body, {
-    headers: {
-      'Content-Type': attachment.file_type || object.contentType,
-      'Content-Disposition': `inline; filename="${safeFileName(attachment.file_name)}"`,
-      'Cache-Control': 'private, no-store',
-      'X-Content-Type-Options': 'nosniff',
-    },
-  });
+  const signedUrl = await getR2SignedUrl(key);
+  return NextResponse.redirect(signedUrl);
 }
