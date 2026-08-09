@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from './database.types';
 import { needsProfileCompletion } from '@/lib/utils/checkProfileComplete';
+import { getRequestSiteUrl } from '@/lib/utils/siteUrl';
 
 const ONBOARDING_PATH = '/onboarding/class';
 const COMPLETE_PROFILE_PATH = '/onboarding/complete-profile';
@@ -51,11 +52,11 @@ export async function enforceOnboarding(
   }
 
   if (needsProfileCompletion(profile)) {
-    return NextResponse.redirect(new URL(COMPLETE_PROFILE_PATH, request.url));
+    return NextResponse.redirect(`${getRequestSiteUrl(request)}${COMPLETE_PROFILE_PATH}`);
   }
 
   if (profile.onboarding_completed === false) {
-    return NextResponse.redirect(new URL(ONBOARDING_PATH, request.url));
+    return NextResponse.redirect(`${getRequestSiteUrl(request)}${ONBOARDING_PATH}`);
   }
 
   return null;

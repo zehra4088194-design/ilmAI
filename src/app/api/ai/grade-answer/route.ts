@@ -44,12 +44,11 @@ Each "improvements" array item should be one concise sentence (plain text, no ma
         content: `Question (${marks || 5} marks): ${question}\n\nModel Answer: ${modelAnswer || 'N/A'}\n\nStudent Answer: ${studentAnswer}\n\nGrade this answer.`,
       },
     ];
-    let result;
     let parsed: { score: number; maxScore: number; feedback: string; improvements: string[] } | null = null;
     const platformSettings = await getPlatformSettings();
     const adminProvider = getAdminAiProvider(platformSettings, 'grading');
     const providerToUse: AiProviderId = adminProvider === 'local' ? 'groq' : adminProvider;
-    result = await gatewayChat({
+    const result = await gatewayChat({
       provider: providerToUse,
       tier: 'mini',
       messages,

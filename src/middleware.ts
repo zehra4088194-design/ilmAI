@@ -8,6 +8,7 @@ import {
   isPlayConsumptionOnlyHost,
   PLAY_CONSUMPTION_ONLY_HEADER,
 } from '@/lib/payments/distribution';
+import { getRequestSiteUrl } from '@/lib/utils/siteUrl';
 
 const AUTH_ROUTES = ['/login', '/register', '/forgot-password'];
 const PROTECTED_PREFIXES = [
@@ -81,6 +82,7 @@ export async function middleware(request: NextRequest) {
   };
   const { pathname } = request.nextUrl;
   const requestedPath = `${pathname}${request.nextUrl.search}`;
+  const origin = getRequestSiteUrl(request);
   const playConsumptionOnly = isPlayConsumptionOnlyHost(getRequestHost(request.headers));
 
   if (pathname.startsWith('/principal-') && pathname.length > '/principal-'.length) {
@@ -119,9 +121,7 @@ export async function middleware(request: NextRequest) {
   // Admin routes
   if (ADMIN_PREFIXES.some((p) => matchesRoutePrefix(pathname, p))) {
     if (!user) {
-      return secure(
-        NextResponse.redirect(new URL('/login?redirect=' + encodeURIComponent(requestedPath), request.url))
-      );
+      return secure(NextResponse.redirect(`${origin}/login?redirect=${encodeURIComponent(requestedPath)}`));
     }
     // Admin check would be done in the page component
     return secure(response);
@@ -129,31 +129,25 @@ export async function middleware(request: NextRequest) {
 
   if (matchesRoutePrefix(pathname, '/teacher')) {
     if (!user) {
-      return secure(
-        NextResponse.redirect(new URL('/login?redirect=' + encodeURIComponent(requestedPath), request.url))
-      );
+      return secure(NextResponse.redirect(`${origin}/login?redirect=${encodeURIComponent(requestedPath)}`));
     }
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
     if (profile?.role !== 'teacher' && profile?.role !== 'admin') {
-      return secure(NextResponse.redirect(new URL('/dashboard', request.url)));
+      return secure(NextResponse.redirect(`${origin}/dashboard`));
     }
     return secure(response);
   }
 
   if (COLLEGE_ADMIN_PREFIXES.some((p) => matchesRoutePrefix(pathname, p))) {
     if (!user) {
-      return secure(
-        NextResponse.redirect(new URL('/login?redirect=' + encodeURIComponent(requestedPath), request.url))
-      );
+      return secure(NextResponse.redirect(`${origin}/login?redirect=${encodeURIComponent(requestedPath)}`));
     }
     return secure(response);
   }
 
   if (SCHOOL_ADMIN_PREFIXES.some((p) => matchesRoutePrefix(pathname, p))) {
     if (!user) {
-      return secure(
-        NextResponse.redirect(new URL('/login?redirect=' + encodeURIComponent(requestedPath), request.url))
-      );
+      return secure(NextResponse.redirect(`${origin}/login?redirect=${encodeURIComponent(requestedPath)}`));
     }
     return secure(response);
   }
@@ -161,9 +155,7 @@ export async function middleware(request: NextRequest) {
   // Protected dashboard routes
   if (PROTECTED_PREFIXES.some((p) => matchesRoutePrefix(pathname, p))) {
     if (!user) {
-      return secure(
-        NextResponse.redirect(new URL('/login?redirect=' + encodeURIComponent(requestedPath), request.url))
-      );
+      return secure(NextResponse.redirect(`${origin}/login?redirect=${encodeURIComponent(requestedPath)}`));
     }
     const onboardingRedirect = await enforceOnboarding(request, supabase);
     if (onboardingRedirect) {
@@ -174,7 +166,7 @@ export async function middleware(request: NextRequest) {
 
   // Auth routes - redirect logged in users to dashboard
   if (AUTH_ROUTES.includes(pathname) && user) {
-    return secure(NextResponse.redirect(new URL('/dashboard', request.url)));
+    return secure(NextResponse.redirect(`${origin}/dashboard`));
   }
 
   return secure(response);

@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { ACTIVE_SCHOOL_COOKIE } from '@/lib/school-erp/access';
+import { getRequestSiteUrl } from '@/lib/utils/siteUrl';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
+  const origin = getRequestSiteUrl(request);
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   const redirectTarget = `/principal-${encodeURIComponent(slug)}`;
   if (!user) {
-    return NextResponse.redirect(new URL(`/login?redirect=${encodeURIComponent(redirectTarget)}`, request.url));
+    return NextResponse.redirect(`${origin}/login?redirect=${encodeURIComponent(redirectTarget)}`);
   }
 
   const db = supabase as any;
@@ -31,7 +33,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         .maybeSingle()
     ).data?.id;
 
-  if (!organizationId) return NextResponse.redirect(new URL('/dashboard', request.url));
+  if (!organizationId) return NextResponse.redirect(`${origin}/dashboard`);
 
   const { data: membership } = await db
     .from('school_memberships')
@@ -41,9 +43,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     .eq('status', 'active')
     .in('member_role', ['owner', 'admin', 'admissions', 'teacher', 'staff', 'accountant'])
     .maybeSingle();
-  if (!membership) return NextResponse.redirect(new URL('/dashboard', request.url));
+  if (!membership) return NextResponse.redirect(`${origin}/dashboard`);
 
-  const response = NextResponse.redirect(new URL('/school-admin', request.url));
+  const response = NextResponse.redirect(`${origin}/school-admin`);
   response.cookies.set(ACTIVE_SCHOOL_COOKIE, organizationId, {
     httpOnly: true,
     sameSite: 'lax',

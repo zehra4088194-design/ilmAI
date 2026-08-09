@@ -149,6 +149,48 @@ const KEY_COUNT = 20;
 const DEFAULT_KEY_ATTEMPTS = KEY_COUNT;
 const RETRYABLE_STATUS = new Set([401, 403, 429, 500, 502, 503, 504]);
 const keyCursors = new Map();
+const keyFailures = new Map();
+
+function recordKeyFailure(provider, label, keyIndex, status, error) {
+  const keyNumber = keyIndex + 1;
+  const id = `${provider}:${keyNumber}`;
+  const current = keyFailures.get(id) || {
+    id,
+    provider,
+    label,
+    keyNumber,
+    failureCount: 0,
+    lastStatus: null,
+    lastError: null,
+    lastFailedAt: null,
+  };
+  current.failureCount += 1;
+  current.lastStatus = status || null;
+  current.lastError = String(error || 'Provider request failed').slice(0, 500);
+  current.lastFailedAt = new Date().toISOString();
+  keyFailures.set(id, current);
+}
+
+function getKeyHealth(env) {
+  const providers = [
+    ['groq', 'GROQ_API_KEY'],
+    ['grok', 'GROK_API_KEY'],
+    ['claude', 'CLAUDE_API_KEY'],
+    ['gpt', 'GPT_API_KEY'],
+    ['gemini', 'GEMINI_API_KEY'],
+    ['deepseek', 'DEEPSEEK_API_KEY'],
+    ['openrouter', 'OPENROUTER_API_KEY'],
+    ['ocrSpace', 'OCRSPACE_API_KEY'],
+  ];
+
+  return providers.map(([provider, prefix]) => {
+    const configuredKeys = getKeys(env, prefix).length;
+    const failures = Array.from(keyFailures.values())
+      .filter((item) => item.provider === provider)
+      .sort((left, right) => String(right.lastFailedAt).localeCompare(String(left.lastFailedAt)));
+    return { provider, configuredKeys, failures };
+  });
+}
 
 function corsHeaders() {
   return {
@@ -218,16 +260,20 @@ async function withKeyRotation(keys, callFn, label, maxAttempts = DEFAULT_KEY_AT
       if (result.ok) {
         if (typeof result.data === 'string' && !result.data.trim()) {
           lastError = `${label} key #${keyIndex + 1} returned an empty response`;
+          recordKeyFailure(cursorKey, label, keyIndex, 502, lastError);
           continue;
         }
         return { ok: true, data: result.data, keyIndexUsed: keyIndex + 1 };
       }
       if (!RETRYABLE_STATUS.has(result.status)) {
+        recordKeyFailure(cursorKey, label, keyIndex, result.status, result.error);
         return { ok: false, error: result.error || `${label} request failed`, status: result.status };
       }
       lastError = result.error || `${label} key #${keyIndex + 1} failed (status ${result.status})`;
+      recordKeyFailure(cursorKey, label, keyIndex, result.status, lastError);
     } catch (err) {
-      lastError = `${label} key #${keyIndex + 1} network error: ${err.message}`;
+      lastError = `${label} key #${keyIndex + 1} network error: ${err?.message || 'unknown error'}`;
+      recordKeyFailure(cursorKey, label, keyIndex, 'network', lastError);
     }
   }
   return {
@@ -804,7 +850,10 @@ export default {
       if (url.pathname === '/document-scan' && req.method === 'POST') return await handleDocumentScan(req, env);
       if (url.pathname === '/ocr-space' && req.method === 'POST') return await handleOcrSpace(req, env);
       if (url.pathname === '/live/token' && req.method === 'POST') return await handleLiveToken(req, env);
-      return json({ error: 'Not found. Use /chat, /document-scan, /ocr-space, /live/token, /health, or /ready' }, 404);
+      if (url.pathname === '/key-health' && req.method === 'GET') {
+        return json({ status: 'success', data: getKeyHealth(env), generatedAt: new Date().toISOString() });
+      }
+      return json({ error: 'Not found. Use /chat, /document-scan, /ocr-space, /live/token, /key-health, /health, or /ready' }, 404);
     } catch (err) {
       return json({ error: `Gateway error: ${err.message}` }, 500);
     }

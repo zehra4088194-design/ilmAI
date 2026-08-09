@@ -185,13 +185,11 @@ export function FullTestSetup({
   };
 
   const submitTest = async () => {
-    const mcqCorrect = (paper.mcqs || []).filter((_: any, i: number) => answers[`mcq_${i}`] === i).length;
-    // Actually mcq answer is stored as index. Fix:
-    // We'll compare stored index to q.correct
     const mcqResults = (paper.mcqs || []).map((q: any, i: number) => ({
       correct: answers[`mcq_${i}`] === q.correct,
       userAns: answers[`mcq_${i}`],
       correctAns: q.correct,
+      explanation: q.exp || 'The correct option is shown above.',
     }));
 
     const writeQuestions = [
@@ -211,6 +209,12 @@ export function FullTestSetup({
         body: JSON.stringify({
           questions: writeQuestions,
           answers: writeAnswers,
+          mcqs: (paper.mcqs || []).map((q: any, i: number) => ({
+            q: q.q,
+            opts: q.opts || [],
+            correct: q.correct,
+            userAns: answers[`mcq_${i}`],
+          })),
           subjectName: selectedSubject?.name || resourceSourceTitle || 'Resource file',
           className: grade.replace('GRADE_', 'Class '),
           provider,
@@ -218,9 +222,23 @@ export function FullTestSetup({
         }),
       });
       const json = await res.json();
-      const writeEvals = json.data || writeQuestions.map(() => ({ score: 0, grade: '?', feedback: 'Grading pending' }));
+      if (json.status === 'error') {
+        toast.error(json.error || 'Grading failed.');
+        setState('paper');
+        return;
+      }
+      const writeEvals = Array.isArray(json.data)
+        ? json.data
+        : json.data?.written || writeQuestions.map(() => ({ score: 0, grade: '?', feedback: 'Grading pending' }));
+      const explanationByIndex = new Map(
+        (json.data?.mcqExplanations || []).map((item: any) => [Number(item.index), String(item.explanation || '')])
+      );
       setGradeResults([
-        ...mcqResults.map((r: any) => ({ type: 'mcq', ...r })),
+        ...mcqResults.map((r: any, index: number) => ({
+          type: 'mcq',
+          ...r,
+          explanation: explanationByIndex.get(index) || r.explanation,
+        })),
         ...writeEvals.map((e: any, i: number) => ({ type: writeQuestions[i]?.section, ...e })),
       ]);
       setState('result');
@@ -776,7 +794,7 @@ function TestResult({
                     <strong className="text-green-400">{L[q.correct]}</strong>
                   </p>
                   <p className="text-muted-foreground mt-1">
-                    Explanation: {q.exp || 'The correct option is shown above.'}
+                    Explanation: {r?.explanation || q.exp || 'The correct option is shown above.'}
                   </p>
                 </div>
               );

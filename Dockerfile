@@ -1,11 +1,11 @@
-FROM node:22-bookworm-slim AS dependencies
+FROM node:20-bookworm-slim AS dependencies
 
 WORKDIR /app
 ENV HUSKY=0 \
     NEXT_TELEMETRY_DISABLED=1
 
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm install
 
 FROM node:22-bookworm-slim AS builder
 

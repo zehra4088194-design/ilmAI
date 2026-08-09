@@ -1,0 +1,24 @@
+
+> ilm-ai@1.0.0 dev
+> next dev --turbopack --port 3001
+
+   ▲ Next.js 15.5.20 (Turbopack)
+   - Local:        http://localhost:3001
+   - Network:      http://192.168.1.4:3001
+   - Environments: .env.local
+   - Experiments (use with caution):
+     ⨯ reactCompiler
+     · optimizePackageImports
+
+ ✓ Starting...
+Creating turbopack project { dir: 'D:\\claude\\studyverse-ai - Copy', testMode: true }
+ ○ Compiling instrumentation Node.js ...
+ ✓ Compiled instrumentation Node.js in 7.4s
+ ○ Compiling instrumentation Edge ...
+ ✓ Compiled instrumentation Edge in 5.8s
+ ○ Compiling middleware ...
+ ✓ Compiled middleware in 2.2s
+ ✓ Ready in 30.1s
+ ○ Compiling /_not-found/page ...
+ ✓ Compiled /_not-found/page in 192.5s
+ GET /diagnostic 200 in 634ms

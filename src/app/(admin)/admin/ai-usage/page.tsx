@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import { Activity, Bot, CheckCircle2, Database, Gauge, ShieldAlert, Sparkles } from 'lucide-react';
+import { Activity, Bot, CheckCircle2, Database, Gauge, KeyRound, ShieldAlert, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { createAdminClient } from '@/lib/supabase/server';
@@ -17,6 +17,27 @@ type RedisStats = {
   totalUsage: number;
   byFeature: Record<string, number>;
   sampleKeys: { key: string; amount: number; ttl: number | null }[];
+};
+
+type GatewayKeyFailure = {
+  id: string;
+  provider: string;
+  label: string;
+  keyNumber: number;
+  failureCount: number;
+  lastStatus: string | number | null;
+  lastError: string | null;
+  lastFailedAt: string | null;
+};
+
+type GatewayKeyHealth = {
+  connected: boolean;
+  error: string | null;
+  rows: Array<{
+    provider: string;
+    configuredKeys: number;
+    failures: GatewayKeyFailure[];
+  }>;
 };
 
 function featureFromKey(key: string) {
@@ -91,13 +112,49 @@ async function safeCount(db: Awaited<ReturnType<typeof createAdminClient>>, tabl
   return count ?? 0;
 }
 
+async function getGatewayKeyHealth(): Promise<GatewayKeyHealth> {
+  const gatewayUrl = process.env.AI_GATEWAY_URL || 'http://127.0.0.1:8787';
+  const gatewaySecret = process.env.AI_GATEWAY_SECRET || '';
+  if (!gatewaySecret) {
+    return { connected: false, error: 'AI_GATEWAY_SECRET is missing.', rows: [] };
+  }
+
+  try {
+    const response = await fetch(`${gatewayUrl}/key-health`, {
+      headers: { Authorization: `Bearer ${gatewaySecret}` },
+      cache: 'no-store',
+      signal: AbortSignal.timeout(5000),
+    });
+    const json = await response.json().catch(() => null);
+    if (!response.ok) {
+      return {
+        connected: false,
+        error: json?.error || `Gateway key health failed (${response.status}).`,
+        rows: [],
+      };
+    }
+    return {
+      connected: true,
+      error: null,
+      rows: Array.isArray(json?.data) ? json.data : [],
+    };
+  } catch (error) {
+    return {
+      connected: false,
+      error: error instanceof Error ? error.message : 'Gateway key health unavailable.',
+      rows: [],
+    };
+  }
+}
+
 export default async function AdminAiUsagePage() {
   const db = await createAdminClient();
   const settings = await getPlatformSettings();
   const redisStats = await getRedisStats();
-  const [profilesRes, feedbackCount] = await Promise.all([
+  const [profilesRes, feedbackCount, gatewayKeyHealth] = await Promise.all([
     db.from('profiles').select('subscription_tier').limit(10000),
     safeCount(db, 'ai_answer_feedback'),
+    getGatewayKeyHealth(),
   ]);
 
   const profiles = profilesRes.data || [];
@@ -111,6 +168,9 @@ export default async function AdminAiUsagePage() {
   const pro = getPlanFromSettings(settings, 'PRO');
   const elite = getPlanFromSettings(settings, 'ELITE');
   const featureRows = Object.entries(redisStats.byFeature).sort((a, b) => b[1] - a[1]);
+  const failedKeyRows = gatewayKeyHealth.rows.flatMap((row) =>
+    row.failures.map((failure) => ({ ...failure, configuredKeys: row.configuredKeys }))
+  );
 
   return (
     <div className="space-y-6">
@@ -186,6 +246,37 @@ export default async function AdminAiUsagePage() {
           <Badge variant="outline" className="justify-center py-2">Voice</Badge>
           <Badge variant="outline" className="justify-center py-2">Premium models</Badge>
           <Badge variant="outline" className="justify-center py-2">Quiz/testing</Badge>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="flex items-center gap-2"><KeyRound className="h-5 w-5 text-amber-400" />Provider Key Failures</CardTitle></CardHeader>
+        <CardContent>
+          {!gatewayKeyHealth.connected ? (
+            <div className="rounded-lg border border-border/60 p-4 text-sm text-muted-foreground">
+              {gatewayKeyHealth.error || 'AI gateway key health is unavailable.'}
+            </div>
+          ) : failedKeyRows.length ? (
+            <div className="space-y-2">
+              {failedKeyRows.slice(0, 24).map((item) => (
+                <div key={item.id} className="grid gap-2 rounded-lg border border-border/60 p-3 text-sm md:grid-cols-[120px,110px,110px,150px,1fr]">
+                  <Badge variant="outline" className="justify-center capitalize">{item.provider}</Badge>
+                  <Badge variant="secondary" className="justify-center">Key #{item.keyNumber}</Badge>
+                  <Badge variant="outline" className="justify-center">{item.failureCount} fail</Badge>
+                  <span className="text-xs text-muted-foreground">
+                    {item.lastFailedAt ? new Date(item.lastFailedAt).toLocaleString() : '-'}
+                  </span>
+                  <code className="truncate text-xs text-muted-foreground">
+                    {item.lastStatus ? `${item.lastStatus}: ` : ''}{item.lastError || 'Request failed'}
+                  </code>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-lg border border-border/60 p-4 text-sm text-muted-foreground">
+              No provider key failures have been recorded since the current gateway container started.
+            </div>
+          )}
         </CardContent>
       </Card>
 
