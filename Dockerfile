@@ -1,4 +1,4 @@
-FROM node:20-bookworm-slim AS dependencies
+FROM node:22-bookworm-slim AS dependencies
 
 WORKDIR /app
 ENV HUSKY=0 \
@@ -13,7 +13,7 @@ WORKDIR /app
 ENV CI=1 \
     NEXT_TELEMETRY_DISABLED=1 \
     NEXT_PRIVATE_BUILD_WORKER=1 \
-    NODE_OPTIONS=--max-old-space-size=3072
+    NODE_OPTIONS=--max-old-space-size=2048
 
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY

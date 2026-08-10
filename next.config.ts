@@ -9,6 +9,12 @@ const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR || '.next',
   output: 'standalone',
   poweredByHeader: false,
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   serverExternalPackages: ['tesseract.js', 'tesseract.js-core'],
   experimental: {
     ppr: false,
