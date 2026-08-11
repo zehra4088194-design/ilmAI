@@ -13,7 +13,7 @@ const selectClass = 'border-input bg-background h-10 w-full rounded-lg border px
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 export default async function SchoolAcademicsPage() {
-  const { supabase, context } = await requireSchoolContext('academics.read');
+  const { supabase, context } = await requireSchoolContext('academics.read', 'academics');
   if (!context) redirect('/school-admin');
   const data = await getSchoolAcademics(supabase, context);
   const canManage = hasSchoolPermission(context, 'academics.manage');

@@ -6,13 +6,14 @@ import { ExamMarksRegister } from '@/components/features/school-erp/ExamMarksReg
 import { SchoolActionForm } from '@/components/features/school-erp/SchoolActionForm';
 import { SchoolPageHeader } from '@/components/features/school-erp/SchoolPageHeader';
 import { createExam, createExamSchedule, publishExamResults } from '@/lib/school-erp/actions';
+import { generateReportCardRemarks } from '@/lib/school-erp/ai-insights';
 import { hasSchoolPermission, requireSchoolContext } from '@/lib/school-erp/access';
 import { getSchoolExams } from '@/lib/school-erp/queries';
 
 const selectClass = 'border-input bg-background h-10 w-full rounded-lg border px-3 text-sm';
 
 export default async function SchoolExamsPage() {
-  const { supabase, context } = await requireSchoolContext('exams.read');
+  const { supabase, context } = await requireSchoolContext('exams.read', 'exams');
   if (!context) redirect('/school-admin');
   const data = await getSchoolExams(supabase, context);
   const canManage = hasSchoolPermission(context, 'exams.manage');
@@ -122,13 +123,20 @@ export default async function SchoolExamsPage() {
                 </p>
               </div>
               {canManage && (
-                <SchoolActionForm
-                  action={publishExamResults}
-                  submitLabel={exam.status === 'published' ? 'Rebuild report cards' : 'Publish results'}
-                  className=""
-                >
-                  <input type="hidden" name="exam_id" value={exam.id} />
-                </SchoolActionForm>
+                <div className="flex flex-wrap items-start gap-2">
+                  <SchoolActionForm
+                    action={publishExamResults}
+                    submitLabel={exam.status === 'published' ? 'Rebuild report cards' : 'Publish results'}
+                    className=""
+                  >
+                    <input type="hidden" name="exam_id" value={exam.id} />
+                  </SchoolActionForm>
+                  {exam.status === 'published' && (
+                    <SchoolActionForm action={generateReportCardRemarks} submitLabel="AI remarks" className="">
+                      <input type="hidden" name="exam_id" value={exam.id} />
+                    </SchoolActionForm>
+                  )}
+                </div>
               )}
             </div>
           ))}

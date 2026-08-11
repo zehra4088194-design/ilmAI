@@ -2,6 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
+import { getCollegeAdminAssignment } from '@/lib/college/access';
 import type { ActionResult, CollegeResourceType } from '@/lib/college/types';
 
 const VALID_TYPES: CollegeResourceType[] = ['notes', 'past_paper', 'slides', 'other'];
@@ -39,7 +41,16 @@ export async function createResource(formData: FormData): Promise<ActionResult> 
   } = await supabase.auth.getUser();
   if (!user) return { success: false, error: 'You need to sign in first.' };
 
-  const db = supabase as any;
+  // college_resources now lives in the standalone pdf-storage project, whose RLS
+  // denies authenticated/anon entirely (service-role only) — so the "is this
+  // caller actually this college's admin" check that used to be enforced by RLS
+  // must happen here instead, against the MAIN project's college_admins table.
+  const assignment = await getCollegeAdminAssignment(supabase, user.id);
+  if (!assignment || assignment.college_id !== collegeId) {
+    return { success: false, error: 'You are not authorized to manage this college.' };
+  }
+
+  const db = createServiceClient() as any;
   const { error } = await db.from('college_resources').insert({
     college_id: collegeId,
     uploaded_by: user.id,
@@ -82,7 +93,24 @@ export async function updateResource(resourceId: string, formData: FormData): Pr
   if (!isHttpsUrl(contextTextUrl)) return { success: false, error: 'A valid HTTPS link for the companion .txt file is required.' };
 
   const supabase = await createClient();
-  const db = supabase as any;
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'You need to sign in first.' };
+
+  const assignment = await getCollegeAdminAssignment(supabase, user.id);
+  if (!assignment) return { success: false, error: 'You are not authorized to manage college resources.' };
+
+  const db = createServiceClient() as any;
+  const { data: existing } = await db
+    .from('college_resources')
+    .select('id, college_id')
+    .eq('id', resourceId)
+    .maybeSingle();
+  if (!existing || existing.college_id !== assignment.college_id) {
+    return { success: false, error: 'You are not authorized to manage this resource.' };
+  }
+
   const { error } = await db
     .from('college_resources')
     .update({
@@ -109,7 +137,24 @@ export async function updateResource(resourceId: string, formData: FormData): Pr
 
 export async function deleteResource(resourceId: string, fileUrl: string): Promise<ActionResult> {
   const supabase = await createClient();
-  const db = supabase as any;
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'You need to sign in first.' };
+
+  const assignment = await getCollegeAdminAssignment(supabase, user.id);
+  if (!assignment) return { success: false, error: 'You are not authorized to manage college resources.' };
+
+  const db = createServiceClient() as any;
+  const { data: existing } = await db
+    .from('college_resources')
+    .select('id, college_id')
+    .eq('id', resourceId)
+    .maybeSingle();
+  if (!existing || existing.college_id !== assignment.college_id) {
+    return { success: false, error: 'You are not authorized to manage this resource.' };
+  }
+
   const { error } = await db.from('college_resources').delete().eq('id', resourceId);
   if (error) return { success: false, error: 'Could not delete the resource. Please try again.' };
 

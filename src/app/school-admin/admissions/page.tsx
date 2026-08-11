@@ -14,7 +14,7 @@ const selectClass = 'border-input bg-background h-10 w-full rounded-lg border px
 const STATUSES = ['submitted', 'under_review', 'waitlisted', 'approved', 'rejected', 'enrolled', 'withdrawn'];
 
 export default async function SchoolAdmissionsPage() {
-  const { supabase, context } = await requireSchoolContext('admissions.read');
+  const { supabase, context } = await requireSchoolContext('admissions.read', 'admissions');
   if (!context) redirect('/school-admin');
   const [applications, setup] = await Promise.all([
     getSchoolAdmissions(supabase, context),

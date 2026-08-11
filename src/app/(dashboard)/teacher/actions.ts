@@ -113,7 +113,10 @@ export async function createClassQuizTemplate(formData: FormData) {
   const count = Math.min(Math.max(Number(formData.get('count') || 10), 1), 30);
   const { data: klass } = await db.from('teacher_classes').select('subject_id').eq('id', classId).single();
   if (!klass?.subject_id) return { status: 'error', error: 'Class subject required' };
-  const { data: questions } = await supabase
+  // questions now live in the standalone question-bank project (service-role only —
+  // the plain session client used elsewhere in this file has no access there).
+  const questionBank = createServiceClient() as any;
+  const { data: questions } = await questionBank
     .from('questions')
     .select('*')
     .eq('subject_id', klass.subject_id)

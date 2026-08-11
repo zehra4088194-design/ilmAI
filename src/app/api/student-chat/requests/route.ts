@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { createNotificationIfEnabled } from '@/lib/notifications/preferences';
 
 type ChatRequest = {
@@ -19,6 +20,7 @@ async function getUser() {
   return user;
 }
 
+// `admin` here is always the MAIN project's client — profiles/notifications live there.
 async function decorateRequests(admin: any, requests: ChatRequest[]) {
   const ids = Array.from(new Set(requests.flatMap((request) => [request.requester_id, request.recipient_id])));
   const { data: profiles } = await admin
@@ -38,7 +40,8 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: 'Login required' }, { status: 401 });
 
   const admin = (await createAdminClient()) as any;
-  const { data, error } = await admin
+  const chatsAdmin = createServiceClient() as any;
+  const { data, error } = await chatsAdmin
     .from('student_chat_requests')
     .select('*')
     .or(`requester_id.eq.${user.id},recipient_id.eq.${user.id}`)
@@ -46,7 +49,7 @@ export async function GET() {
 
   if (error) {
     return NextResponse.json(
-      { error: 'Student chat is not configured. Run migration 011.' },
+      { error: 'Student chat is not configured.' },
       { status: 500 }
     );
   }
@@ -72,6 +75,7 @@ export async function POST(req: NextRequest) {
   if (!identifier) return NextResponse.json({ error: 'A student username or email is required' }, { status: 400 });
 
   const admin = (await createAdminClient()) as any;
+  const chatsAdmin = createServiceClient() as any;
   const { data: me } = await admin.from('profiles').select('id, role, gender').eq('id', user.id).maybeSingle();
   if (me?.role && me.role !== 'student') {
     return NextResponse.json({ error: 'Student chat is available only to student accounts.' }, { status: 403 });
@@ -107,7 +111,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { data: existing } = await admin
+  const { data: existing } = await chatsAdmin
     .from('student_chat_requests')
     .select('*')
     .or(
@@ -123,13 +127,13 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { data, error } = await admin
+  const { data, error } = await chatsAdmin
     .from('student_chat_requests')
     .insert({ requester_id: user.id, recipient_id: recipient.id, status: 'pending' })
     .select('*')
     .single();
 
-  if (error) return NextResponse.json({ error: 'The request could not be sent. Check migration 011.' }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'The request could not be sent. Check the chats DB schema.' }, { status: 500 });
 
   await createNotificationIfEnabled(admin, 'studentChat', {
     user_id: recipient.id,
@@ -153,7 +157,8 @@ export async function PATCH(req: NextRequest) {
   }
 
   const admin = (await createAdminClient()) as any;
-  const { data: existing } = await admin
+  const chatsAdmin = createServiceClient() as any;
+  const { data: existing } = await chatsAdmin
     .from('student_chat_requests')
     .select('*')
     .eq('id', requestId)
@@ -171,7 +176,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'This request cannot be approved under the same-gender privacy rule.' }, { status: 403 });
   }
 
-  const { data, error } = await admin
+  const { data, error } = await chatsAdmin
     .from('student_chat_requests')
     .update({ status, updated_at: new Date().toISOString() })
     .eq('id', requestId)

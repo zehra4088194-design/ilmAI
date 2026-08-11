@@ -3,6 +3,7 @@ import { Activity, BarChart3, BookOpen, Eye, GraduationCap, MessageCircle, Mouse
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { createAdminClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 
 export const metadata: Metadata = { title: 'Admin - Analytics' };
 export const dynamic = 'force-dynamic';
@@ -131,6 +132,7 @@ async function safeCount(db: Awaited<ReturnType<typeof createAdminClient>>, tabl
 
 export default async function AdminAnalyticsPage() {
   const db = await createAdminClient();
+  const chatsDb = createServiceClient();
   const today = new Date().toISOString().slice(0, 10);
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -152,7 +154,7 @@ export default async function AdminAnalyticsPage() {
     safeCount(db, 'lectures'),
     safeCount(db, 'library_resources'),
     safeCount(db, 'past_papers'),
-    safeCount(db, 'student_chat_messages'),
+    safeCount(chatsDb as any, 'student_chat_messages'),
     db.from('ai_answer_feedback').select('is_helpful, created_at').limit(10000),
     db.from('quiz_sessions').select('score, completed_at').not('score', 'is', null).limit(1000),
     getPostHogStats(),

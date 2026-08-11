@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { requireAdminUser } from '@/lib/admin/auth';
 import { extractGoogleDriveFileId, getGoogleDriveThumbnailUrl } from '@/lib/utils/filePreview';
 import { queueResourceContextProcessing } from '@/lib/resources/processing';
@@ -67,7 +67,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   let adminClient;
   try {
-    adminClient = await createAdminClient();
+    adminClient = createServiceClient();
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Supabase admin client missing' },
@@ -113,7 +113,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const { id } = await params;
   let adminClient;
   try {
-    adminClient = await createAdminClient();
+    adminClient = createServiceClient();
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Supabase admin client missing' },

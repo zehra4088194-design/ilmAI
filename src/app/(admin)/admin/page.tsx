@@ -1,14 +1,16 @@
 import { Metadata } from 'next';
 import { createAdminClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { Card, CardContent } from '@/components/ui/card';
 import { Users, BookOpen, MessageSquare, TrendingUp } from 'lucide-react';
 export const metadata: Metadata = { title: 'Admin Overview' };
 
 export default async function AdminOverviewPage() {
   const supabase = await createAdminClient();
+  const questionBank = createServiceClient();
   const { count: totalUsers } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
   const { count: proUsers } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).neq('subscription_tier', 'FREE');
-  const { count: totalQuestions } = await supabase.from('questions').select('*', { count: 'exact', head: true });
+  const { count: totalQuestions } = await questionBank.from('questions').select('*', { count: 'exact', head: true });
 
   const stats = [
     { icon: Users, label: 'Total Users', value: totalUsers || 0, color: 'text-violet-400' },

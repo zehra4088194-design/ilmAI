@@ -27,7 +27,7 @@ JSON arrays support up to 20 rotating keys. A singular variable can be used for 
 | OpenAI     | `GPT_API_KEYS_JSON`        | `GPT_API_KEY`        |
 | Gemini     | `GEMINI_API_KEYS_JSON`     | `GEMINI_API_KEY`     |
 | DeepSeek   | `DEEPSEEK_API_KEYS_JSON`   | `DEEPSEEK_API_KEY`   |
-| OpenRouter | `OPENROUTER_API_KEYS_JSON` | `OPENROUTER_API_KEY` |
+| OpenRouter | _(single key only)_        | `OPENROUTER_API_KEY` |
 | OCR.space  | `OCRSPACE_API_KEYS_JSON`   | `OCRSPACE_API_KEY`   |
 
 Example pool:
@@ -44,7 +44,7 @@ Example pool:
 - `GPT_MINI_MODEL`, `GPT_MEDIUM_MODEL`, `GPT_PRO_MODEL`
 - `GEMINI_FLASH_MODEL`, `GEMINI_LIVE_MODEL`, `GEMINI_VISION_MODEL`
 - `DEEPSEEK_MINI_MODEL`, `DEEPSEEK_MEDIUM_MODEL`, `DEEPSEEK_PRO_MODEL`
-- `OPENROUTER_MODELS_JSON`
+- OpenRouter has no model override: the one `OPENROUTER_API_KEY` tries `openrouter/free`, and retries on `deepseek/deepseek-v4-flash` only when that call errors, times out (30s), is unavailable, or returns nothing usable.
 - `LLAMA_CPP_HF_REPO`, `LLAMA_CPP_MODEL`, `LLAMA_CPP_CONTEXT_SIZE`, `LLAMA_CPP_THREADS`, `LLAMA_CPP_TIMEOUT_MS`
 
 Changing a Coolify variable requires redeploying the Compose resource so the private gateway container receives the new environment.

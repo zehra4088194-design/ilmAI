@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient, createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { getParentLinkAccess } from '@/lib/parent/access';
 import { getR2SignedUrl, parseR2Uri } from '@/lib/storage/r2';
 
@@ -15,8 +16,8 @@ export async function GET(req: NextRequest) {
   const attachmentId = req.nextUrl.searchParams.get('id');
   if (!attachmentId) return NextResponse.json({ error: 'An attachment ID is required' }, { status: 400 });
 
-  const admin = await createAdminClient();
-  const { data: attachment, error } = await admin
+  const chatsAdmin = createServiceClient() as any;
+  const { data: attachment, error } = await chatsAdmin
     .from('parent_attachments')
     .select('*')
     .eq('id', attachmentId)

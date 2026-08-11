@@ -27,6 +27,13 @@ function cleanKeywords(value: unknown) {
   return [...new Set(values.map((item) => cleanText(item, 60).toLowerCase()).filter(Boolean))].slice(0, 30);
 }
 
+// Older sidecar files never had a category. Defaulting a missing/blank value to
+// 'uncategorized' keeps every reader (matching, admin UI) backward-compatible.
+function cleanCategory(value: unknown) {
+  const cleaned = cleanText(value, 40).toLowerCase();
+  return cleaned || 'uncategorized';
+}
+
 function metadataPath(name: string) {
   return path.join(ROOT, `${name}.json`);
 }
@@ -37,10 +44,11 @@ async function readMetadata(name: string) {
     return {
       subject: cleanText(parsed.subject, 100),
       keywords: cleanKeywords(parsed.keywords),
+      category: cleanCategory(parsed.category),
       isGlobal: parsed.isGlobal === true,
     };
   } catch {
-    return { subject: '', keywords: [], isGlobal: false };
+    return { subject: '', keywords: [], category: 'uncategorized', isGlobal: false };
   }
 }
 
@@ -65,7 +73,7 @@ export async function listPresentationBackgrounds(): Promise<PresentationBackgro
 
 export async function savePresentationBackground(
   file: File,
-  metadata: { subject?: string; keywords?: string[]; isGlobal?: boolean } = {}
+  metadata: { subject?: string; keywords?: string[]; category?: string; isGlobal?: boolean } = {}
 ): Promise<PresentationBackground> {
   const extension = MIME_EXTENSIONS[file.type];
   if (!extension) throw new Error('Only JPG, PNG, and WebP images are allowed.');
@@ -83,6 +91,7 @@ export async function savePresentationBackground(
   const storedMetadata = {
     subject: cleanText(metadata.subject, 100),
     keywords: cleanKeywords(metadata.keywords),
+    category: cleanCategory(metadata.category),
     isGlobal: metadata.isGlobal === true,
   };
   await writeFile(path.join(ROOT, name), bytes, { flag: 'wx' });

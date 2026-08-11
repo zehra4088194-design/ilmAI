@@ -62,6 +62,27 @@ const SUBJECT_SUGGESTIONS: Record<string, string[]> = {
     'Help me answer this map-related question',
     'Guide me in writing an essay-style answer',
   ],
+  hindi: [
+    'Explain this poem',
+    'Help me write a Hindi essay',
+    'Explain this grammar rule',
+    'Summarize this passage',
+    'Explain these muhavare and their meanings',
+  ],
+  'social-science': [
+    'Explain the timeline of this event',
+    'Help me remember these important dates',
+    'Summarize this topic',
+    'Help me answer this map-related question',
+    'Guide me in writing an essay-style answer',
+  ],
+  'tarjuma-tul-quran': [
+    'Explain the translation of this ayah',
+    'Give the tafseer in simple words',
+    'Help me memorize this ayah',
+    'Summarize this surah\'s main message',
+    'Give me the important points for the exam',
+  ],
 };
 
 const SUBJECT_ALIASES: Record<string, string> = {
@@ -72,7 +93,9 @@ const SUBJECT_ALIASES: Record<string, string> = {
   'computer-studies': 'computer-science',
   'pak-studies': 'pakistan-studies',
   'pakistan-study': 'pakistan-studies',
-  'pakistan-studies': 'pakistan-studies',
+  'social-studies': 'social-science',
+  'ttq': 'tarjuma-tul-quran',
+  'quran-translation': 'tarjuma-tul-quran',
 };
 
 const GENERIC_FALLBACK = [

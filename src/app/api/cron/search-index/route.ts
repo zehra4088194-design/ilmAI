@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { replaceAlgoliaCatalog, type ExternalSearchResult } from '@/lib/search/algolia';
 
 function isAuthorized(request: NextRequest) {
@@ -14,15 +15,16 @@ export async function POST(request: NextRequest) {
   }
 
   const admin = (await createAdminClient()) as any;
+  const pdfStorage = createServiceClient() as any;
   const [subjectsResult, chaptersResult, resourcesResult, lecturesResult, papersResult] = await Promise.all([
     admin.from('subjects').select('id, name, slug').eq('is_active', true).limit(1000),
     admin.from('chapters').select('id, name, slug, subjects(name, slug)').limit(1000),
-    admin
+    pdfStorage
       .from('library_resources')
       .select('id, title, resource_type, book_title, subjects(name, slug)')
       .limit(1000),
     admin.from('lectures').select('id, title, chapters(name, slug, subjects(name, slug))').limit(1000),
-    admin.from('past_papers').select('id, year, paper_type, subjects(name, slug), chapters(name, slug)').limit(1000),
+    pdfStorage.from('past_papers').select('id, year, paper_type, subjects(name, slug), chapters(name, slug)').limit(1000),
   ]);
   const firstError = [subjectsResult, chaptersResult, resourcesResult, lecturesResult, papersResult].find(
     (result) => result.error

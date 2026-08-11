@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { LibraryGrid } from '@/components/features/library/LibraryGrid';
 import { AdSenseBanner } from '@/components/features/ads/AdSenseBanner';
 import { isCatalogResourceVisible, normalizeLegacyCatalogResource } from '@/lib/resources/catalog';
@@ -18,7 +19,8 @@ export default async function LibraryPage() {
   const { data: profile } = user
     ? await supabase.from('profiles').select('board, grade_level').eq('id', user.id).single()
     : { data: null };
-  const catalogResult = await (supabase.from('library_resources') as any)
+  const pdfStorage = createServiceClient();
+  const catalogResult = await (pdfStorage.from('library_resources') as any)
     .select(
       'id, title, description, category, resource_type, book_title, content_section, has_context_text, drive_url, light_file_url, dark_file_url, subject_id, chapter_id, board, grade_level, file_type, created_at, subjects(id, name, slug, color), chapters(id, name, slug, order_index)'
     )
@@ -26,7 +28,7 @@ export default async function LibraryPage() {
   let resources = catalogResult.data;
   if (catalogResult.error) {
     console.warn('Structured library catalog is not migrated yet; using the safe legacy catalog fallback.');
-    const fallbackResult = await (supabase.from('library_resources') as any)
+    const fallbackResult = await (pdfStorage.from('library_resources') as any)
       .select(
         'id, title, description, category, resource_type, subject_id, chapter_id, board, grade_level, file_type, drive_url, light_file_url, dark_file_url, context_text_url, created_at, subjects(id, name, slug, color), chapters(id, name, slug, order_index)'
       )

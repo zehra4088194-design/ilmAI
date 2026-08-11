@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
   if (!type || !TYPES.includes(type)) {
     return NextResponse.json({ error: 'Invalid report type.' }, { status: 400 });
   }
-  const { supabase, user, context } = await requireSchoolContext('reports.read');
+  const { supabase, user, context } = await requireSchoolContext('reports.read', 'reports');
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!context) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const db = supabase as any;

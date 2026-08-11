@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { PastPapersGrid } from '@/components/features/past-papers/PastPapersGrid';
 import { AdSenseBanner } from '@/components/features/ads/AdSenseBanner';
 export const metadata: Metadata = {
@@ -16,7 +17,7 @@ export default async function PastPapersPage() {
   const { data: profile } = user
     ? await supabase.from('profiles').select('board, grade_level').eq('id', user.id).single()
     : { data: null };
-  let papersQuery = supabase
+  let papersQuery = createServiceClient()
     .from('past_papers')
     .select(
       'id, subject_id, chapter_id, board, grade_level, year, paper_type, total_questions, duration, is_verified, download_count, created_at, subjects(id, name, slug, color), chapters(id, name, slug)'

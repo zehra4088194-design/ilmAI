@@ -10,6 +10,12 @@ const THEMES = {
   'nature-green': { bg: '0F2E1D', accent: 'B7E778', accent2: 'FFB86B', text: 'F2FBF3', subtext: 'C7E6CC', card: '1E5631' },
   'vibrant-purple': { bg: '2B0B4E', accent: 'FFD166', accent2: '4CE0D2', text: 'FBF3FF', subtext: 'E2C6F5', card: '6B1FA0' },
   'minimal-mono': { bg: 'FAFAFA', accent: '111111', accent2: '8A8A8A', text: '111111', subtext: '555555', card: 'EDEDED' },
+  'ocean-teal': { bg: '052E2B', accent: '2DD4BF', accent2: 'FDE68A', text: 'EAFBF8', subtext: 'B7E4DD', card: '0B4A45' },
+  'royal-violet': { bg: '1A0B33', accent: 'F2C744', accent2: '38BDF8', text: 'F5EEFF', subtext: 'D8C7F5', card: '3B1370' },
+  'charcoal-slate': { bg: '15181D', accent: '7DD3FC', accent2: 'F97362', text: 'F1F3F5', subtext: 'AEB6C2', card: '22262E' },
+  'sunset-coral': { bg: 'FFF4ED', accent: 'F2622E', accent2: '0F9E8E', text: '3A1F16', subtext: '7A4B3A', card: 'FFE1D1' },
+  'blush-rose': { bg: 'FFF3F6', accent: 'D6336C', accent2: '8C6A3F', text: '3D1B26', subtext: '7A4256', card: 'FBDCE4' },
+  'golden-sand': { bg: 'FFFBEB', accent: 'C9861A', accent2: '0F766E', text: '332508', subtext: '6B551F', card: 'FDEFC7' },
 } as const;
 
 function themeFor(deck: PresentationDeck) {

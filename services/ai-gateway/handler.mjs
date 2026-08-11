@@ -34,7 +34,9 @@
  * GPT_API_KEYS_JSON -> JSON array with up to 20 OpenAI keys
  * GEMINI_API_KEYS_JSON or GEMINI_API_KEY_1..10 -> ten-key Gemini pool
  * OCRSPACE_API_KEYS_JSON -> JSON array with up to 20 OCR.space keys
- * OPENROUTER_API_KEYS_JSON -> JSON array with up to 20 OpenRouter keys
+ * OPENROUTER_API_KEY -> ONE OpenRouter key. It serves the free router first and
+ *                       retries on DeepSeek V4 Flash only if that call fails.
+ *                       No pool, no JSON, no rotation for this provider.
  * DEEPSEEK_API_KEY -> one direct DeepSeek key
  * Numbered PREFIX_1 .. PREFIX_20 secrets remain backwards-compatible.
  *
@@ -54,6 +56,12 @@
 // vision favors the lighter model because it is optimized for extraction.
 const GEMINI_FLASH_MODEL = 'gemini-3.5-flash-lite';
 const GEMINI_DOCUMENT_MODEL = 'gemini-3.5-flash-lite';
+
+// OpenRouter serves its free router first and only falls back to DeepSeek V4
+// Flash — same OpenRouter API, same single key — when the free router actually
+// fails (API error, timeout, unavailable model/provider, or an empty response).
+// A successful free-router reply never triggers a second request.
+const OPENROUTER_FREE_MODEL = 'openrouter/free';
 
 const DEFAULT_MODEL_MAP = {
   local: {
@@ -92,9 +100,9 @@ const DEFAULT_MODEL_MAP = {
     pro: 'deepseek-v4-flash',
   },
   openrouter: {
-    mini: 'deepseek/deepseek-v4-flash',
-    medium: 'deepseek/deepseek-v4-flash',
-    pro: 'deepseek/deepseek-v4-flash',
+    mini: OPENROUTER_FREE_MODEL,
+    medium: OPENROUTER_FREE_MODEL,
+    pro: OPENROUTER_FREE_MODEL,
   },
 };
 
@@ -116,11 +124,14 @@ function getModel(env, provider, tier) {
   return override || DEFAULT_MODEL_MAP[provider]?.[tier] || DEFAULT_MODEL_MAP.groq.mini;
 }
 
-const OPENROUTER_FALLBACK_MODELS = [
-  'deepseek/deepseek-v4-flash',
-  'deepseek/deepseek-v3.2',
-  'deepseek/deepseek-v4-flash:free',
-];
+// The whole OpenRouter chain: free router, then DeepSeek V4 Flash. Both run on
+// the one OPENROUTER_API_KEY.
+const OPENROUTER_CHAIN = [OPENROUTER_FREE_MODEL, 'deepseek/deepseek-v4-flash'];
+
+// Per-request ceiling so a stalled free-router call surfaces as a failure and
+// hands over to DeepSeek instead of holding the whole chain past the caller's
+// own 90s gateway timeout.
+const OPENROUTER_TIMEOUT_MS = 30_000;
 
 // Default Live Voice Call model — see GEMINI_LIVE_MODEL override note above.
 const DEFAULT_LIVE_MODEL = 'gemini-3.1-flash-live-preview';
@@ -184,7 +195,8 @@ function getKeyHealth(env) {
   ];
 
   return providers.map(([provider, prefix]) => {
-    const configuredKeys = getKeys(env, prefix).length;
+    // OpenRouter is single-key by design, so it never reads a pool.
+    const configuredKeys = provider === 'openrouter' ? (env.OPENROUTER_API_KEY ? 1 : 0) : getKeys(env, prefix).length;
     const failures = Array.from(keyFailures.values())
       .filter((item) => item.provider === provider)
       .sort((left, right) => String(right.lastFailedAt).localeCompare(String(left.lastFailedAt)));
@@ -410,6 +422,7 @@ async function callOpenRouter(key, model, messages, maxTokens, temperature) {
       'X-Title': 'ilm AI',
     },
     body: JSON.stringify({ model, messages, max_tokens: maxTokens, temperature }),
+    signal: AbortSignal.timeout(OPENROUTER_TIMEOUT_MS),
   });
   if (!res.ok) return { ok: false, status: res.status, error: await res.text() };
   const payload = await res.json();
@@ -431,45 +444,30 @@ async function callDeepSeek(key, model, messages, maxTokens, temperature) {
   return text ? { ok: true, data: text } : { ok: false, status: 502, error: 'DeepSeek returned an empty response.' };
 }
 
+/**
+ * OpenRouter runs on ONE key (OPENROUTER_API_KEY) — no key pool, no rotation.
+ * That single key tries the free router first; only if that call actually
+ * fails does the same key retry on DeepSeek V4 Flash. A successful free-router
+ * reply returns immediately, so DeepSeek is never billed a second request.
+ */
 async function withOpenRouterFallback(env, messages, maxTokens, temperature) {
-  const keys = getKeys(env, 'OPENROUTER_API_KEY');
-  if (!keys.length) return { ok: false, error: 'No keys configured for OpenRouter' };
+  const key = String(env.OPENROUTER_API_KEY || '').trim();
+  if (!key) return { ok: false, error: 'No key configured for OpenRouter (set OPENROUTER_API_KEY)' };
 
-  let models = OPENROUTER_FALLBACK_MODELS;
-  if (env.OPENROUTER_MODELS_JSON) {
+  let lastError = null;
+  for (const model of OPENROUTER_CHAIN) {
     try {
-      const configured = JSON.parse(env.OPENROUTER_MODELS_JSON);
-      if (Array.isArray(configured) && configured.some(Boolean)) {
-        const deepseekModels = configured.filter((model) => String(model).toLowerCase().includes('deepseek'));
-        if (deepseekModels.length) models = deepseekModels;
-      }
-    } catch {
-      const deepseekModels = String(env.OPENROUTER_MODELS_JSON)
-        .split(/[\r\n,]+/)
-        .map((model) => model.trim())
-        .filter((model) => model.toLowerCase().includes('deepseek'));
-      if (deepseekModels.length) models = deepseekModels;
+      const result = await callOpenRouter(key, model, messages, maxTokens, temperature);
+      if (result.ok && String(result.data || '').trim()) return { ok: true, data: result.data, modelUsed: model };
+      lastError = result.error || `OpenRouter ${model} returned an empty response`;
+      recordKeyFailure('openrouter', `OpenRouter ${model}`, 0, result.status || 502, lastError);
+    } catch (err) {
+      lastError = `OpenRouter ${model} network error: ${err?.message || 'unknown error'}`;
+      recordKeyFailure('openrouter', `OpenRouter ${model}`, 0, 'network', lastError);
     }
   }
 
-  let lastError = null;
-  let attemptsRemaining = KEY_COUNT;
-  for (const model of models) {
-    if (attemptsRemaining <= 0) break;
-    const attemptsForModel = Math.min(2, attemptsRemaining);
-    const result = await withKeyRotation(
-      keys,
-      (k) => callOpenRouter(k, model, messages, maxTokens, temperature),
-      `OpenRouter ${model}`,
-      attemptsForModel,
-      'openrouter'
-    );
-    if (result.ok) return { ...result, modelUsed: model };
-    lastError = result.error;
-    attemptsRemaining -= Math.min(keys.length, attemptsForModel);
-  }
-
-  return { ok: false, error: `All OpenRouter fallback models failed. Last error: ${lastError}` };
+  return { ok: false, error: `OpenRouter free router and DeepSeek fallback both failed. Last error: ${lastError}` };
 }
 
 function parseGeminiDocumentPayload(rawText, includeSummary) {
@@ -822,7 +820,7 @@ export default {
         gpt: getKeys(env, 'GPT_API_KEY').length > 0,
         gemini: getKeys(env, 'GEMINI_API_KEY').length > 0,
         deepseek: getKeys(env, 'DEEPSEEK_API_KEY').length > 0,
-        openrouter: getKeys(env, 'OPENROUTER_API_KEY').length > 0,
+        openrouter: Boolean(env.OPENROUTER_API_KEY),
         ocrSpace: getKeys(env, 'OCRSPACE_API_KEY').length > 0,
       };
       const ready = providers.local || providers.gemini || providers.deepseek || providers.groq;

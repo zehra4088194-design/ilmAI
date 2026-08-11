@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import slugify from "slugify";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { isSuperAdminEmail } from "@/lib/college/access";
 import { isValidEmail, isValidSlug } from "@/lib/college/validators";
 import { COLLEGE_COVER_BUCKET, COLLEGE_LOGO_BUCKET, uploadCollegeImage } from "@/lib/college/storage";
@@ -56,7 +57,7 @@ export async function createCollege(formData: FormData): Promise<ActionResult<{ 
 
   if (logoFile && logoFile.size > 0) {
     try {
-      const logoUrl = await uploadCollegeImage(admin, COLLEGE_LOGO_BUCKET, inserted.id, logoFile);
+      const logoUrl = await uploadCollegeImage(createServiceClient(), COLLEGE_LOGO_BUCKET, inserted.id, logoFile);
       await admin.from("colleges").update({ logo_url: logoUrl }).eq("id", inserted.id);
     } catch {
       // Non-fatal: the college was created; a logo can be added from the edit page.
@@ -87,10 +88,10 @@ export async function updateCollege(collegeId: string, formData: FormData): Prom
 
   try {
     if (logoFile && logoFile.size > 0) {
-      update.logo_url = await uploadCollegeImage(admin, COLLEGE_LOGO_BUCKET, collegeId, logoFile);
+      update.logo_url = await uploadCollegeImage(createServiceClient(), COLLEGE_LOGO_BUCKET, collegeId, logoFile);
     }
     if (coverFile && coverFile.size > 0) {
-      update.cover_url = await uploadCollegeImage(admin, COLLEGE_COVER_BUCKET, collegeId, coverFile);
+      update.cover_url = await uploadCollegeImage(createServiceClient(), COLLEGE_COVER_BUCKET, collegeId, coverFile);
     }
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : "Upload failed." };

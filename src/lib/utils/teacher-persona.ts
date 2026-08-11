@@ -18,8 +18,11 @@ const ROSTER: Record<string, TeacherPersona> = {
   english: { name: 'Miss Sara', specialty: 'English Specialist', bio: 'Grammar, comprehension & essay writing', initials: 'SR', gradient: 'from-amber-500 to-orange-600' },
   urdu: { name: 'Sir Kashif', specialty: 'Urdu Specialist', bio: 'Specialist in literature and grammar', initials: 'KF', gradient: 'from-fuchsia-500 to-purple-600' },
   computer: { name: 'Sir Bilal', specialty: 'Computer Science Specialist', bio: 'Programming & CS fundamentals expert', initials: 'BL', gradient: 'from-slate-500 to-zinc-700' },
-  islamiyat: { name: 'Sir Usman', specialty: 'Islamiyat Specialist', bio: 'Islamic studies, clear & thoughtful', initials: 'US', gradient: 'from-green-600 to-emerald-700' },
+  islamiat: { name: 'Sir Usman', specialty: 'Islamiat Specialist', bio: 'Islamic studies, clear & thoughtful', initials: 'US', gradient: 'from-green-600 to-emerald-700' },
+  'tarjuma tul quran': { name: 'Sir Usman', specialty: 'Tarjuma tul Quran Specialist', bio: 'Quran translation & tafseer, clear & thoughtful', initials: 'TQ', gradient: 'from-green-600 to-emerald-700' },
   pakistan: { name: 'Miss Fatima', specialty: 'Pakistan Studies Specialist', bio: 'History & civics made simple', initials: 'FT', gradient: 'from-teal-500 to-green-600' },
+  hindi: { name: 'Miss Priya', specialty: 'Hindi Specialist', bio: 'Gadya, padya aur vyakaran expert', initials: 'PR', gradient: 'from-orange-500 to-amber-600' },
+  'social science': { name: 'Miss Fatima', specialty: 'Social Science Specialist', bio: 'History, geography & civics made simple', initials: 'SS', gradient: 'from-teal-500 to-green-600' },
   default: { name: 'Team ilm AI', specialty: 'General Tutor', bio: 'Here to help with any subject', initials: 'IA', gradient: 'from-violet-500 to-indigo-600' },
 };
 

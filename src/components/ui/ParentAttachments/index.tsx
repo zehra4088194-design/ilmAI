@@ -4,7 +4,6 @@ import { Paperclip, FileText, Upload, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
 import { toast } from 'sonner';
-import { createClient } from '@/lib/supabase/client';
 
 interface Attachment {
   id: string;
@@ -31,8 +30,10 @@ function formatFileSize(kb: number) {
  * receipts, notes, homework photos, report cards, etc. Used on both the
  * Parent Dashboard (per student card) and the student's Settings > Parent
  * Link tab, right next to ParentMessageThread. Files live in private R2
- * storage (with legacy Supabase Storage support) and are only accessed
- * through an authenticated API route.
+ * storage (with legacy Supabase Storage support in the separate chats-DB
+ * project) and are only accessed through an authenticated API route. That
+ * project has no anon/authenticated Realtime access (service-role only), so
+ * this polls instead of subscribing to Supabase Realtime.
  */
 export function ParentAttachments({
   linkId,
@@ -48,7 +49,6 @@ export function ParentAttachments({
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const supabase = createClient();
 
   const load = () => {
     setLoading(true);
@@ -71,19 +71,10 @@ export function ParentAttachments({
 
   useEffect(() => {
     if (!open) return;
-    const channel = supabase
-      .channel(`parent_attachments:${linkId}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'parent_attachments', filter: `link_id=eq.${linkId}` },
-        () => load()
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    const timer = window.setInterval(load, 8000);
+    return () => window.clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [linkId, open, supabase]);
+  }, [linkId, open]);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

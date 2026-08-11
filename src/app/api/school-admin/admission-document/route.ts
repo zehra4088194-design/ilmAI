@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   const documentId = request.nextUrl.searchParams.get('id');
   if (!documentId) return NextResponse.json({ error: 'Document is required.' }, { status: 400 });
 
-  const { supabase, user, context } = await requireSchoolContext('admissions.read');
+  const { supabase, user, context } = await requireSchoolContext('admissions.read', 'admissions');
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!context) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 

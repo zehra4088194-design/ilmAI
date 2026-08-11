@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { checkAiMessageLimit, checkPresentationLimit, consumeAiCredits } from '@/lib/rate-limit';
 import { generatePresentationDeck } from '@/lib/presentation/generator';
 import { PRESENTATION_THEMES, type PresentationGenerateInput, type PresentationTheme } from '@/lib/presentation/types';
@@ -22,6 +23,17 @@ function cleanNumber(value: unknown, fallback: number, min: number, max: number)
 
 function cleanTheme(value: unknown): PresentationTheme {
   return PRESENTATION_THEMES.includes(value as PresentationTheme) ? (value as PresentationTheme) : 'modern-blue';
+}
+
+// Best-effort history save into public.presentations. Never blocks/fails generation.
+async function savePresentationHistory(userId: string, topic: string, deck: unknown) {
+  const admin = createServiceClient() as any;
+  const { error } = await admin.from('presentations').insert({
+    user_id: userId,
+    title: topic,
+    deck_json: deck,
+  });
+  if (error) throw error;
 }
 
 export async function POST(req: NextRequest) {
@@ -91,6 +103,9 @@ export async function POST(req: NextRequest) {
 
     const deck = await generatePresentationDeck(input, tier === 'ELITE' ? 'medium' : 'mini');
     await consumeAiCredits(user.id, tier, 'university_presentation');
+    await savePresentationHistory(user.id, topic, deck).catch((error) =>
+      console.error('Presentation history could not be saved (non-fatal):', error)
+    );
     return NextResponse.json({ status: 'success', data: { deck, mode: input.mode } });
   } catch (error) {
     console.error('Presentation generate route error:', error);

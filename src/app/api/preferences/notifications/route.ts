@@ -9,6 +9,7 @@ const DEFAULT_NOTIFICATION_PREFERENCES = {
   parentMessages: true,
   studentChat: true,
   achievements: true,
+  schoolJoinRequests: true,
   dailyStudyEmails: false,
 };
 

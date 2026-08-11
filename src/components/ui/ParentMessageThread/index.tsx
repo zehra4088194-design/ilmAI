@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from 'react';
 import { CheckCheck, Send, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils/cn';
 import { toast } from 'sonner';
 
@@ -17,9 +16,11 @@ interface Message {
 }
 
 /**
- * Live chat between a parent and their linked student, used on both the
- * Parent Dashboard (per student card) and the student's Settings > Parent
- * Link tab. Realtime via Supabase — no polling needed.
+ * Chat between a parent and their linked student, used on both the Parent
+ * Dashboard (per student card) and the student's Settings > Parent Link tab.
+ * Polls the API route on a short interval rather than subscribing to
+ * Supabase Realtime (kept simple; can be switched back to Realtime later
+ * if instant delivery is needed).
  */
 export function ParentMessageThread({
   linkId,
@@ -35,7 +36,6 @@ export function ParentMessageThread({
   const [sending, setSending] = useState(false);
   const [open, setOpen] = useState(autoOpen);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const supabase = createClient();
 
   useEffect(() => {
     if (autoOpen) setOpen(true);
@@ -53,40 +53,34 @@ export function ParentMessageThread({
     if (!open) return;
 
     let active = true;
-    fetch(`/api/parent/messages?linkId=${linkId}`)
-      .then((r) => r.json())
-      .then((json) => {
-        if (active) setMessages(json.messages || []);
-      });
+    let hadUnread = false;
 
-    const channel = supabase
-      .channel(`parent_messages:${linkId}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'parent_messages', filter: `link_id=eq.${linkId}` },
-        (payload) => {
-          const incoming = payload.new as Message;
-          setMessages((prev) => (prev.some((item) => item.id === incoming.id) ? prev : [...prev, incoming]));
-          if (incoming.sender_id !== currentUserId) markRead();
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'parent_messages', filter: `link_id=eq.${linkId}` },
-        (payload) => {
-          const updated = payload.new as Message;
-          setMessages((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
-        }
-      )
-      .subscribe();
+    const load = () => {
+      fetch(`/api/parent/messages?linkId=${linkId}`)
+        .then((r) => r.json())
+        .then((json) => {
+          if (!active) return;
+          const next: Message[] = json.messages || [];
+          setMessages(next);
+          const unread = next.some((item) => item.sender_id !== currentUserId && !item.read_at);
+          if (unread) {
+            hadUnread = true;
+            markRead();
+          } else if (hadUnread) {
+            hadUnread = false;
+          }
+        });
+    };
 
+    load();
     markRead();
+    const timer = window.setInterval(load, 4000);
 
     return () => {
       active = false;
-      supabase.removeChannel(channel);
+      window.clearInterval(timer);
     };
-  }, [open, linkId, currentUserId, supabase]);
+  }, [open, linkId, currentUserId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -104,8 +98,7 @@ export function ParentMessageThread({
         body: JSON.stringify({ linkId, content }),
       });
       if (!res.ok) throw new Error();
-      // Realtime subscription above will append it — but add optimistically
-      // in case the realtime event lags.
+      // The next poll tick will pick it up; no optimistic append needed here.
     } catch {
       toast.error('The message could not be sent.');
       setText(content);

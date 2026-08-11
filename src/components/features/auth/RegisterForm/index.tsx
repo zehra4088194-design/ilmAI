@@ -18,7 +18,9 @@ import {
   Lock,
   Languages,
   Mail,
+  Presentation,
   School,
+  Search,
   ShieldCheck,
   User,
   Users,
@@ -60,9 +62,13 @@ const schema = formSchema.refine((data) => data.password === data.confirmPasswor
 
 type FormData = z.infer<typeof schema>;
 type AccountType = 'student' | 'parent';
+type MembershipMode = 'individual' | 'institutional';
+type InstitutionalRole = 'student' | 'teacher';
 type Gender = 'girl' | 'boy';
 type SignupStepId =
+  | 'mode'
   | 'account'
+  | 'role'
   | 'language'
   | 'name'
   | 'email'
@@ -71,6 +77,7 @@ type SignupStepId =
   | 'gender'
   | 'education'
   | 'institution'
+  | 'school'
   | 'grade'
   | 'board';
 
@@ -80,12 +87,25 @@ type SignupStep = {
   description: string;
 };
 
-const BASE_STEPS: SignupStep[] = [
-  {
-    id: 'account',
-    title: 'How will you use ilm AI?',
-    description: 'Choose your account type once to personalise signup.',
-  },
+const MODE_STEP: SignupStep = {
+  id: 'mode',
+  title: 'How will you use ilm AI?',
+  description: 'A personal account, or one linked to your school/college on ilm AI?',
+};
+
+const ACCOUNT_STEP: SignupStep = {
+  id: 'account',
+  title: 'Student or parent?',
+  description: 'Choose your account type once to personalise signup.',
+};
+
+const ROLE_STEP: SignupStep = {
+  id: 'role',
+  title: 'Student or teacher?',
+  description: 'Choose your role at the institution.',
+};
+
+const CORE_STEPS: SignupStep[] = [
   { id: 'language', title: 'Choose your language', description: 'Choose English or Roman Urdu for the interface.' },
   { id: 'name', title: 'Your name', description: 'Enter the name that will appear in the app.' },
   { id: 'email', title: 'Email address', description: 'Used for login and account recovery.' },
@@ -101,8 +121,14 @@ const BASE_STEPS: SignupStep[] = [
   },
 ];
 
+const GENDER_STEP: SignupStep = {
+  id: 'gender',
+  title: 'Gender',
+  description: 'Used for Study Buddies privacy and your default theme.',
+};
+
 const STUDENT_STEPS: SignupStep[] = [
-  { id: 'gender', title: 'Gender', description: 'Used for Study Buddies privacy and your default theme.' },
+  GENDER_STEP,
   {
     id: 'education',
     title: 'Where do you study?',
@@ -124,16 +150,52 @@ const SCHOOL_STEPS: SignupStep[] = [
   },
 ];
 
-export function getSignupSteps(accountType: AccountType, educationLevel: EducationLevel) {
-  if (accountType === 'parent') return BASE_STEPS;
-  return [...BASE_STEPS, ...STUDENT_STEPS, ...(educationLevel === 'university' ? [] : SCHOOL_STEPS)];
+const SCHOOL_SEARCH_STEP: SignupStep = {
+  id: 'school',
+  title: 'Find your institution',
+  description: 'Search for your school on ilm AI. Its admin approves your request before you get access.',
+};
+
+// `institutional` skips the free `institution`/`education` text fields in
+// favour of SCHOOL_SEARCH_STEP, which looks up a real school_organizations
+// row and (post-signup) files a school_join_requests approval request
+// instead of just storing a label on the profile — see
+// src/lib/school-erp/join-requests.ts.
+export function getSignupSteps(
+  membershipMode: MembershipMode,
+  accountType: AccountType,
+  institutionalRole: InstitutionalRole,
+  educationLevel: EducationLevel
+) {
+  if (membershipMode === 'institutional') {
+    if (institutionalRole === 'teacher') {
+      return [MODE_STEP, ROLE_STEP, ...CORE_STEPS, SCHOOL_SEARCH_STEP];
+    }
+    return [MODE_STEP, ROLE_STEP, ...CORE_STEPS, GENDER_STEP, SCHOOL_SEARCH_STEP, ...SCHOOL_STEPS];
+  }
+  if (accountType === 'parent') return [MODE_STEP, ACCOUNT_STEP, ...CORE_STEPS];
+  return [
+    MODE_STEP,
+    ACCOUNT_STEP,
+    ...CORE_STEPS,
+    ...STUDENT_STEPS,
+    ...(educationLevel === 'university' ? [] : SCHOOL_STEPS),
+  ];
 }
+
+type SchoolSearchResult = { id: string; name: string; organization_type: string };
 
 export function RegisterForm() {
   const [showPass, setShowPass] = useState(false);
+  const [membershipMode, setMembershipMode] = useState<MembershipMode>('individual');
   const [accountType, setAccountType] = useState<AccountType>('student');
+  const [institutionalRole, setInstitutionalRole] = useState<InstitutionalRole>('student');
   const [educationLevel, setEducationLevel] = useState<EducationLevel>('school');
   const [gender, setGender] = useState<Gender | null>(null);
+  const [schoolQuery, setSchoolQuery] = useState('');
+  const [schoolResults, setSchoolResults] = useState<SchoolSearchResult[]>([]);
+  const [searchingSchools, setSearchingSchools] = useState(false);
+  const [selectedSchool, setSelectedSchool] = useState<{ id: string; name: string } | null>(null);
   const { locale, setLocale } = useLocale();
   const [preferredLanguage, setPreferredLanguage] = useState<Locale>(locale);
   const [stepIndex, setStepIndex] = useState(0);
@@ -144,7 +206,14 @@ export function RegisterForm() {
   const redirect = searchParams.get('redirect') || '/dashboard';
   const supabase = createClient();
   const t = useTranslations();
-  const steps = useMemo(() => getSignupSteps(accountType, educationLevel), [accountType, educationLevel]);
+  // The account's identity (drives profiles.role): institutional signup
+  // asks for it directly via the role step; individual signup keeps the
+  // existing student/parent choice.
+  const effectiveRole: InstitutionalRole | 'parent' = membershipMode === 'institutional' ? institutionalRole : accountType;
+  const steps = useMemo(
+    () => getSignupSteps(membershipMode, accountType, institutionalRole, educationLevel),
+    [membershipMode, accountType, institutionalRole, educationLevel]
+  );
   const currentStep = steps[Math.min(stepIndex, steps.length - 1)]!;
   const isFirstStep = stepIndex === 0;
   const isLastStep = stepIndex === steps.length - 1;
@@ -203,6 +272,25 @@ export function RegisterForm() {
     const timer = window.setTimeout(() => setFocus(field), 80);
     return () => window.clearTimeout(timer);
   }, [currentStep.id, setFocus]);
+
+  useEffect(() => {
+    if (currentStep.id !== 'school') return;
+    const term = schoolQuery.trim();
+    if (term.length < 2) {
+      setSchoolResults([]);
+      setSearchingSchools(false);
+      return;
+    }
+    setSearchingSchools(true);
+    const timer = window.setTimeout(() => {
+      fetch(`/api/schools/search?q=${encodeURIComponent(term)}`)
+        .then((response) => response.json())
+        .then((json) => setSchoolResults(json.schools || []))
+        .catch(() => setSchoolResults([]))
+        .finally(() => setSearchingSchools(false));
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [schoolQuery, currentStep.id]);
 
   const checkUsername = async () => {
     const username = getValues('username').trim().toLowerCase();
@@ -265,6 +353,12 @@ export function RegisterForm() {
           return false;
         }
         return true;
+      case 'school':
+        if (!selectedSchool) {
+          toast.error('Search and select your institution first.');
+          return false;
+        }
+        return true;
       case 'grade':
         if (!getValues('gradeLevel')) {
           toast.error('Please select your class.');
@@ -292,13 +386,27 @@ export function RegisterForm() {
     if (nextType === 'parent') setGender(null);
   };
 
+  const changeMembershipMode = (mode: MembershipMode) => {
+    setMembershipMode(mode);
+    setSelectedSchool(null);
+    setSchoolQuery('');
+    setSchoolResults([]);
+  };
+
   const onSubmit = async (data: FormData) => {
-    if (accountType === 'student') {
+    const isInstitutional = membershipMode === 'institutional';
+
+    if (effectiveRole === 'student') {
       if (!gender) {
         toast.error('Please select your gender.');
         return;
       }
-      if (!data.institutionName?.trim()) {
+      if (isInstitutional) {
+        if (!selectedSchool) {
+          toast.error('Search and select your institution first.');
+          return;
+        }
+      } else if (!data.institutionName?.trim()) {
         toast.error('Enter your institution name.');
         return;
       }
@@ -306,6 +414,11 @@ export function RegisterForm() {
         toast.error('Select your class and board.');
         return;
       }
+    }
+
+    if (effectiveRole === 'teacher' && !selectedSchool) {
+      toast.error('Search and select your institution first.');
+      return;
     }
 
     if (!(await checkUsername())) return;
@@ -327,14 +440,17 @@ export function RegisterForm() {
         data: {
           full_name: data.fullName.trim(),
           username: data.username.trim().toLowerCase(),
-          role: accountType,
-          board: accountType === 'student' && educationLevel !== 'university' ? data.board : undefined,
-          grade_level: accountType === 'student' && educationLevel !== 'university' ? data.gradeLevel : undefined,
-          education_level: accountType === 'student' ? educationLevel : undefined,
-          academic_institution_name: accountType === 'student' ? data.institutionName?.trim() || undefined : undefined,
-          academic_institution_type: accountType === 'student' ? educationLevel : undefined,
-          gender: accountType === 'student' ? gender : undefined,
+          role: effectiveRole,
+          board: effectiveRole === 'student' && educationLevel !== 'university' ? data.board : undefined,
+          grade_level: effectiveRole === 'student' && educationLevel !== 'university' ? data.gradeLevel : undefined,
+          education_level: effectiveRole === 'student' ? educationLevel : undefined,
+          academic_institution_name:
+            effectiveRole === 'student' && !isInstitutional ? data.institutionName?.trim() || undefined : undefined,
+          academic_institution_type: effectiveRole === 'student' && !isInstitutional ? educationLevel : undefined,
+          gender: effectiveRole === 'student' ? gender : undefined,
           preferred_language: preferredLanguage,
+          signup_institution_id: isInstitutional ? selectedSchool?.id : undefined,
+          signup_role_requested: isInstitutional ? institutionalRole : undefined,
         },
         emailRedirectTo: callbackUrl.toString(),
       },
@@ -350,17 +466,21 @@ export function RegisterForm() {
         toast.error('Profile setup failed. Please log in again and try.');
         return;
       }
-      toast.success('Account created successfully.');
-      if (accountType === 'student' && gender) {
+      toast.success(
+        isInstitutional && selectedSchool
+          ? `Account created. Your request to join ${selectedSchool.name} has been sent for approval.`
+          : 'Account created successfully.'
+      );
+      if (effectiveRole === 'student' && gender) {
         const genderTheme = gender === 'girl' ? 'theme-pink-light' : 'theme-midnight-dark';
         window.localStorage.setItem('theme', genderTheme);
         document.cookie = `${THEME_COOKIE_NAME}=${genderTheme}; Path=/; Max-Age=31536000; SameSite=Lax`;
         window.localStorage.setItem('ilm-ai-gender-theme-user', signUpData.user?.id || data.email);
       }
       router.push(
-        accountType === 'parent'
+        effectiveRole === 'parent'
           ? '/parent'
-          : educationLevel === 'university'
+          : !isInstitutional && educationLevel === 'university'
             ? '/onboarding/complete-profile'
             : redirect
       );
@@ -407,7 +527,7 @@ export function RegisterForm() {
         </p>
       </div>
 
-      {currentStep.id === 'name' && (
+      {currentStep.id === 'name' && membershipMode === 'individual' && (
         <>
           <OAuthButtons action="Register" role={accountType} />
           <div className="relative my-5">
@@ -431,6 +551,74 @@ export function RegisterForm() {
       >
         <div className="min-h-36">
           <h2 className="mb-4 text-xl font-bold">{currentStep.title}</h2>
+
+          {currentStep.id === 'mode' && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => changeMembershipMode('individual')}
+                aria-pressed={membershipMode === 'individual'}
+                className={cn(
+                  'flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border-2 p-4 text-center text-sm font-semibold transition-all',
+                  membershipMode === 'individual'
+                    ? 'border-primary bg-primary/15 text-primary'
+                    : 'border-border bg-card/80 text-muted-foreground hover:border-primary/40'
+                )}
+              >
+                <User className="h-6 w-6" /> Individual
+                <span className="text-muted-foreground text-xs font-normal">Personal account, learn at your own pace</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => changeMembershipMode('institutional')}
+                aria-pressed={membershipMode === 'institutional'}
+                className={cn(
+                  'flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border-2 p-4 text-center text-sm font-semibold transition-all',
+                  membershipMode === 'institutional'
+                    ? 'border-primary bg-primary/15 text-primary'
+                    : 'border-border bg-card/80 text-muted-foreground hover:border-primary/40'
+                )}
+              >
+                <Building2 className="h-6 w-6" /> Institutional
+                <span className="text-muted-foreground text-xs font-normal">
+                  Join your school or college as a student or teacher
+                </span>
+              </button>
+            </div>
+          )}
+
+          {currentStep.id === 'role' && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => setInstitutionalRole('student')}
+                aria-pressed={institutionalRole === 'student'}
+                className={cn(
+                  'flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border-2 p-4 text-center text-sm font-semibold transition-all',
+                  institutionalRole === 'student'
+                    ? 'border-primary bg-primary/15 text-primary'
+                    : 'border-border bg-card/80 text-muted-foreground hover:border-primary/40'
+                )}
+              >
+                <GraduationCap className="h-6 w-6" /> Student
+                <span className="text-muted-foreground text-xs font-normal">Attend classes, view results and fees</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setInstitutionalRole('teacher')}
+                aria-pressed={institutionalRole === 'teacher'}
+                className={cn(
+                  'flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border-2 p-4 text-center text-sm font-semibold transition-all',
+                  institutionalRole === 'teacher'
+                    ? 'border-primary bg-primary/15 text-primary'
+                    : 'border-border bg-card/80 text-muted-foreground hover:border-primary/40'
+                )}
+              >
+                <Presentation className="h-6 w-6" /> Teacher
+                <span className="text-muted-foreground text-xs font-normal">Manage classes, attendance and exams</span>
+              </button>
+            </div>
+          )}
 
           {currentStep.id === 'account' && (
             <div className="grid gap-3 sm:grid-cols-2">
@@ -706,6 +894,76 @@ export function RegisterForm() {
             </div>
           )}
 
+          {currentStep.id === 'school' && (
+            <div>
+              <label htmlFor="signup-school-search" className="mb-2 block text-sm font-medium">
+                Institution name
+              </label>
+              <div className="relative">
+                <Search className="text-muted-foreground pointer-events-none absolute top-5 left-3 z-10 h-4 w-4 -translate-y-1/2" />
+                <Input
+                  id="signup-school-search"
+                  value={schoolQuery}
+                  onChange={(event) => {
+                    setSchoolQuery(event.target.value);
+                    setSelectedSchool(null);
+                  }}
+                  autoComplete="off"
+                  placeholder="Start typing your institution's name"
+                  className="pl-10"
+                />
+              </div>
+              {selectedSchool ? (
+                <div className="border-primary bg-primary/10 text-primary mt-3 flex items-center justify-between gap-2 rounded-xl border-2 p-3 text-sm font-semibold">
+                  <span className="flex items-center gap-2">
+                    <Check className="h-4 w-4 shrink-0" /> {selectedSchool.name}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSchool(null)}
+                    className="text-xs font-normal underline"
+                  >
+                    Change
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {searchingSchools && <p className="text-muted-foreground mt-2 text-xs">Searching…</p>}
+                  {!searchingSchools && schoolQuery.trim().length > 1 && schoolResults.length > 0 && (
+                    <div className="border-border bg-card/70 mt-2 max-h-56 divide-y overflow-y-auto rounded-xl border">
+                      {schoolResults.map((school) => (
+                        <button
+                          key={school.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedSchool({ id: school.id, name: school.name });
+                            setSchoolQuery(school.name);
+                          }}
+                          className="hover:bg-muted/60 flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm"
+                        >
+                          <Building2 className="text-muted-foreground h-4 w-4 shrink-0" />
+                          <span className="min-w-0">
+                            <span className="block truncate font-medium">{school.name}</span>
+                            <span className="text-muted-foreground text-xs capitalize">{school.organization_type}</span>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {!searchingSchools && schoolQuery.trim().length > 1 && schoolResults.length === 0 && (
+                    <p className="text-muted-foreground mt-2 text-xs leading-5">
+                      No institution found by that name. Ask your school to set up its account at{' '}
+                      <Link href="/schools/start" className="text-primary underline">
+                        ilmai.study/schools/start
+                      </Link>
+                      , then search again.
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
           {currentStep.id === 'grade' && (
             <div className="grid gap-2 sm:grid-cols-2">
               {availableGrades.map((grade) => (
@@ -782,7 +1040,11 @@ export function RegisterForm() {
             {isLastStep ? (
               <>
                 <Zap className="h-4 w-4" />
-                {accountType === 'parent' ? t('auth.register.submitParent') : t('auth.register.submitStudent')}
+                {effectiveRole === 'parent'
+                  ? t('auth.register.submitParent')
+                  : effectiveRole === 'teacher'
+                    ? 'Create teacher account'
+                    : t('auth.register.submitStudent')}
               </>
             ) : (
               <>

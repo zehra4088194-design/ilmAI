@@ -101,7 +101,11 @@ async function sourcePaper(resourceId: string, title: string, counts: GenerateOp
 
 export async function generateChapterQuestionPaper(options: GenerateOptions): Promise<ChapterQuestionPaper> {
   const db = createServiceClient() as any;
-  let resourcesQuery = db
+  // questions + resource_mcq_sets now live in the standalone question-bank project.
+  const questionBank = createServiceClient() as any;
+  // library_resources now lives in the standalone pdf-storage project.
+  const pdfStorage = createServiceClient() as any;
+  let resourcesQuery = pdfStorage
     .from('library_resources')
     .select('id, title')
     .eq('subject_id', options.subjectId)
@@ -114,7 +118,7 @@ export async function generateChapterQuestionPaper(options: GenerateOptions): Pr
     db.from('subjects').select('id, name, grade_levels').eq('id', options.subjectId).maybeSingle(),
     db.from('chapters').select('id, name, subject_id').eq('id', options.chapterId).maybeSingle(),
     resourcesQuery,
-    db
+    questionBank
       .from('questions')
       .select('id, type, text, options, correct_answer, explanation, marks, tags, difficulty')
       .eq('subject_id', options.subjectId)
@@ -135,7 +139,7 @@ export async function generateChapterQuestionPaper(options: GenerateOptions): Pr
   const resourceRows = resources || [];
   const resourceIds = resourceRows.map((resource: any) => resource.id);
   const { data: cachedBanks } = resourceIds.length
-    ? await db
+    ? await questionBank
         .from('resource_mcq_sets')
         .select('resource_id, questions, short_questions, long_questions, status')
         .eq('resource_kind', 'library')

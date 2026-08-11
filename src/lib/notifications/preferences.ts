@@ -1,5 +1,11 @@
 export type NotificationPreferenceKey =
-  'studyReminders' | 'weakSubjectAlerts' | 'routineTestAlerts' | 'parentMessages' | 'studentChat' | 'achievements';
+  | 'studyReminders'
+  | 'weakSubjectAlerts'
+  | 'routineTestAlerts'
+  | 'parentMessages'
+  | 'studentChat'
+  | 'achievements'
+  | 'schoolJoinRequests';
 
 const DEFAULT_NOTIFICATION_PREFERENCES: Record<NotificationPreferenceKey, boolean> = {
   studyReminders: true,
@@ -8,6 +14,7 @@ const DEFAULT_NOTIFICATION_PREFERENCES: Record<NotificationPreferenceKey, boolea
   parentMessages: true,
   studentChat: true,
   achievements: true,
+  schoolJoinRequests: true,
 };
 
 export type NotificationInsert = {
@@ -37,6 +44,7 @@ const DEFAULT_LINKS: Record<NotificationPreferenceKey, string> = {
   parentMessages: '/settings?tab=parent-link',
   studentChat: '/student-chat',
   achievements: '/achievements',
+  schoolJoinRequests: '/school-admin/requests',
 };
 
 function withDestination(key: NotificationPreferenceKey, notification: NotificationInsert) {

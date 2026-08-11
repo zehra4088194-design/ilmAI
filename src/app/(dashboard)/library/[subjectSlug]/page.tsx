@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, ArrowRight, BookOpen, FileText, Layers3 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -40,7 +41,8 @@ export default async function LibraryBookPage({
   const subject = subjectResult.data as { id: string; name: string; slug: string; color: string } | null;
   if (subjectSlug !== 'general' && !subject) notFound();
 
-  let resourcesQuery = (supabase.from('library_resources') as any)
+  const pdfStorage = createServiceClient();
+  let resourcesQuery = (pdfStorage.from('library_resources') as any)
     .select(
       'id, title, description, book_title, content_section, has_context_text, resource_type, drive_url, light_file_url, dark_file_url, subject_id, chapter_id, board, grade_level, chapters(id, name, slug, order_index)'
     )
@@ -52,7 +54,7 @@ export default async function LibraryBookPage({
   let resources = catalogResult.data;
   if (catalogResult.error) {
     console.warn('Structured library catalog is not migrated yet; using the safe legacy subject fallback.');
-    let fallbackQuery = (supabase.from('library_resources') as any)
+    let fallbackQuery = (pdfStorage.from('library_resources') as any)
       .select(
         'id, title, description, context_text_url, resource_type, drive_url, light_file_url, dark_file_url, subject_id, chapter_id, board, grade_level, chapters(id, name, slug, order_index)'
       )

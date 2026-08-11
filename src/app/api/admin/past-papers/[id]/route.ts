@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { requireAdminUser } from '@/lib/admin/auth';
 import { queueResourceContextProcessing } from '@/lib/resources/processing';
 import type { Database } from '@/lib/supabase/database.types';
@@ -38,7 +38,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: 'No fields were provided for update' }, { status: 400 });
   }
 
-  const adminClient = await createAdminClient();
+  const adminClient = createServiceClient();
   const { data, error } = await adminClient.from('past_papers').update(update).eq('id', id).select().single();
 
   if (error) {
@@ -71,7 +71,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const { id } = await params;
-  const adminClient = await createAdminClient();
+  const adminClient = createServiceClient();
   const { error } = await adminClient.from('past_papers').delete().eq('id', id);
 
   if (error) {

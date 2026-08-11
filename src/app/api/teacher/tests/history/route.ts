@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { isTeacherAuthorized } from '@/lib/teacher/authorization';
 
 export const runtime = 'nodejs';
 
@@ -14,8 +15,7 @@ export async function GET(req: NextRequest) {
     } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Login required.' }, { status: 401 });
 
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
-    if (!profile || !['teacher', 'admin'].includes(String((profile as any).role))) {
+    if (!(await isTeacherAuthorized(supabase, user.id))) {
       return NextResponse.json({ error: 'Teacher access is required.' }, { status: 403 });
     }
 

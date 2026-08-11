@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getPlatformSettings } from '@/lib/platform-settings/server';
 import { getPlanFromSettings } from '@/lib/platform-settings/shared';
+import { getRequestSiteUrl } from '@/lib/utils/siteUrl';
 import {
   fetchProtectedFile,
   getPublicResource,
@@ -13,10 +14,14 @@ import {
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
+// req.nextUrl.origin is unreliable behind a reverse proxy (e.g. Traefik
+// terminates TLS and proxies over plain HTTP, so Next sees http:// while the
+// browser's real Origin is https://) — use the same x-forwarded-* aware
+// resolver the rest of the app uses instead of comparing against it directly.
 function sameOrigin(req: NextRequest) {
   const origin = req.headers.get('origin');
   if (!origin) return true;
-  return origin === req.nextUrl.origin;
+  return origin === getRequestSiteUrl(req);
 }
 
 export async function POST(req: NextRequest) {

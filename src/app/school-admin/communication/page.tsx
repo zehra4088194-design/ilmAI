@@ -12,7 +12,7 @@ import { getSchoolCommunication } from '@/lib/school-erp/queries';
 const selectClass = 'border-input bg-background h-10 w-full rounded-lg border px-3 text-sm';
 
 export default async function SchoolCommunicationPage() {
-  const { supabase, context } = await requireSchoolContext('communication.read');
+  const { supabase, context } = await requireSchoolContext('communication.read', 'communication');
   if (!context) redirect('/school-admin');
   const data = await getSchoolCommunication(supabase, context);
   const canManage = hasSchoolPermission(context, 'communication.manage');

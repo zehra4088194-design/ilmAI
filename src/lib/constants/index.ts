@@ -134,6 +134,8 @@ export const XP_REWARDS = {
 } as const;
 
 // Fallback colors used before a subject's own `color` (from the DB) loads.
+// Keyed by the `subjects.slug` value in Supabase — keep in sync with that
+// table (see database/seeds/001_subjects_seed.sql and 004_india_subjects_seed.sql).
 // Includes both Pakistani-board and Indian-board subjects.
 export const SUBJECTS_COLORS: Record<string, string> = {
   mathematics: '#7c3aed',
@@ -142,11 +144,12 @@ export const SUBJECTS_COLORS: Record<string, string> = {
   biology: '#dc2626',
   english: '#d97706',
   urdu: '#0891b2',
-  computer: '#7c3aed',
+  'computer-science': '#7c3aed',
   islamiat: '#059669',
-  pakistan_studies: '#6d28d9',
+  'pakistan-studies': '#6d28d9',
   hindi: '#ea580c',
-  social_science: '#6d28d9',
+  'social-science': '#6d28d9',
+  'tarjuma-tul-quran': '#7c3aed',
 };
 
 export const AI_PROVIDERS_CONFIG = {

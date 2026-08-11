@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, ArrowRight, BookMarked, FileQuestion, FileText, ListChecks } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { Card, CardContent } from '@/components/ui/card';
 import { LectureGrid, type StudyLecture } from '@/components/features/study/LectureGrid';
 import { LIBRARY_SECTIONS } from '@/lib/resources/catalog';
@@ -71,13 +72,13 @@ export default async function ChapterDetailPage({
       .eq('chapter_id', chapter.id)
       .order('order_index', { ascending: true })
       .order('created_at', { ascending: true }),
-    loadStudyCatalogResources(supabase, {
+    loadStudyCatalogResources(createServiceClient(), {
       subjectId: subject.id,
       subjectName: subject.name,
       chapterId: chapter.id,
       profile: profileScope,
     }),
-    loadStudySubjectResources(supabase, {
+    loadStudySubjectResources(createServiceClient(), {
       subjectId: subject.id,
       subjectName: subject.name,
       profile: profileScope,

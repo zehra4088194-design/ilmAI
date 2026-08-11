@@ -6,6 +6,7 @@ import { needsProfileCompletion } from '@/lib/utils/checkProfileComplete';
 import { nanoid } from 'nanoid';
 import { LOCALE_COOKIE_NAME } from '@/lib/i18n/config';
 import { getRequestSiteUrl } from '@/lib/utils/siteUrl';
+import { createInstitutionalJoinRequestFromSignup } from '@/lib/school-erp/join-request-signup';
 
 type BoardType = Database['public']['Enums']['board_type'];
 type GradeLevel = Database['public']['Enums']['grade_level'];
@@ -99,6 +100,12 @@ export async function GET(request: NextRequest) {
       const metadataPreferredLanguage =
         userMetadata?.preferred_language === 'roman-ur' || userMetadata?.preferred_language === 'en'
           ? userMetadata.preferred_language
+          : null;
+      const signupInstitutionId =
+        typeof userMetadata?.signup_institution_id === 'string' ? userMetadata.signup_institution_id : null;
+      const signupRoleRequested =
+        userMetadata?.signup_role_requested === 'teacher' || userMetadata?.signup_role_requested === 'student'
+          ? userMetadata.signup_role_requested
           : null;
 
       // Ensure a profile row exists (for OAuth sign-ups that skip our register form)
@@ -243,6 +250,20 @@ export async function GET(request: NextRequest) {
 
       if (resolvedRole === 'parent') {
         await ensureParentInvite(data.user.id);
+      }
+
+      if (signupInstitutionId && signupRoleRequested) {
+        // Uses the service-role client, not `supabase` — notifying the
+        // org's owner/admin means reading OTHER users' school_memberships
+        // rows, which this not-yet-a-member user can't do under RLS.
+        const admin = (await createAdminClient()) as any;
+        await createInstitutionalJoinRequestFromSignup(
+          admin,
+          data.user.id,
+          signupInstitutionId,
+          signupRoleRequested,
+          data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || 'A new user'
+        );
       }
 
       const destination = isParentLinkRedirect

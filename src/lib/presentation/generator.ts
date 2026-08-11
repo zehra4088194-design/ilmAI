@@ -1,6 +1,7 @@
 import { gatewayChat, type ModelTier } from '@/lib/ai/gateway';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import {
+  PRESENTATION_LIGHT_THEMES,
   PRESENTATION_SLIDE_TYPES,
   PRESENTATION_THEMES,
   type PresentationDeck,
@@ -53,7 +54,7 @@ Strict rules:
 2. Use this schema:
 {
   "topic": "string",
-  "theme": "modern-blue | warm-academic | dark-tech | nature-green | vibrant-purple | minimal-mono",
+  "theme": "modern-blue | warm-academic | dark-tech | nature-green | vibrant-purple | minimal-mono | ocean-teal | royal-violet | charcoal-slate | sunset-coral | blush-rose | golden-sand",
   "slides": [
     {"type":"title","title":"string","subtitle":"string","speakerNotes":"string"},
     {"type":"bullets","title":"string","bullets":["short point"],"speakerNotes":"string"},
@@ -72,7 +73,7 @@ Strict rules:
 8. Build a deliberate story arc: hook, context, core explanation, evidence/example, implications, memorable conclusion.
 9. Never invent a statistic. Use a stats slide only for well-established values; otherwise choose another slide type.
 10. Slide titles must communicate an insight, not generic labels such as "Overview" or "Introduction".
-11. Pick a theme based on topic: science/tech -> dark-tech or modern-blue, literature/history -> warm-academic, environment -> nature-green.
+11. Pick a theme based on topic: science/tech -> dark-tech, ocean-teal, or modern-blue, literature/history -> warm-academic or sunset-coral, environment/nature -> nature-green, business/finance -> golden-sand or charcoal-slate, arts/creative -> vibrant-purple, royal-violet, or blush-rose.
 12. Match the requested language. Use Roman Urdu/Urdu-English only when requested.
 13. Do not add fake citations. If references are needed, mention reference placeholders only.`;
 }
@@ -248,7 +249,7 @@ Language: ${cleanString(input.language, 'English')}
 Color theme: ${requestedTheme(input)}
 
 Return JSON:
-{"topic":"...","theme":"modern-blue | warm-academic | dark-tech | nature-green | vibrant-purple | minimal-mono","slides":[{"type":"title","title":"...","focus":"..."},{"type":"bullets","title":"...","focus":"..."}]}
+{"topic":"...","theme":"modern-blue | warm-academic | dark-tech | nature-green | vibrant-purple | minimal-mono | ocean-teal | royal-violet | charcoal-slate | sunset-coral | blush-rose | golden-sand","slides":[{"type":"title","title":"...","focus":"..."},{"type":"bullets","title":"...","focus":"..."}]}
 Use exactly ${slideCount} slides. Use the requested color theme. First type title, last type closing, include mixed slide types and a logical PowerPoint-style story arc.`,
       },
     ],
@@ -427,10 +428,11 @@ export async function generatePresentationDeck(
   const mode = input.mode === 'bulk' && slideCount <= 12 ? 'bulk' : 'per-slide';
   const deck = mode === 'per-slide' ? await askForDeckPerSlide(input, tier) : await askForDeck(input, tier);
   if (!deck.slides.length) throw new Error('Presentation slides could not be generated.');
-  const backgrounds =
-    deck.theme === 'minimal-mono'
-      ? []
-      : (input.backgroundImageUrls || []).filter((url) => /^\/api\/presentation\/backgrounds\//.test(url));
+  // Light-background themes pair dark text with a dark photo overlay, which would
+  // be unreadable — skip background photos for every light theme, not just one.
+  const backgrounds = PRESENTATION_LIGHT_THEMES.includes(deck.theme)
+    ? []
+    : (input.backgroundImageUrls || []).filter((url) => /^\/api\/presentation\/backgrounds\//.test(url));
   const withBackgrounds = backgrounds.length
     ? {
         ...deck,

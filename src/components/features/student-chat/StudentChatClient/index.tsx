@@ -14,7 +14,6 @@ import { useAuth } from '@/hooks/auth/useAuth';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 import { cn } from '@/lib/utils/cn';
 import { toast } from 'sonner';
-import { createClient } from '@/lib/supabase/client';
 
 type StudentProfile = {
   id: string;
@@ -65,7 +64,6 @@ export function StudentChatClient() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [moderationAlert, setModerationAlert] = useState<string | null>(null);
-  const supabase = useMemo(() => createClient(), []);
   const requestedChatId = searchParams.get('requestId');
 
   const userTier = user?.subscriptionTier || 'FREE';
@@ -138,18 +136,13 @@ export function StudentChatClient() {
     loadRequests();
   }, []);
 
+  // Polls the API route on an interval rather than subscribing to Supabase
+  // Realtime (kept simple; can be switched back to Realtime later if needed).
   useEffect(() => {
     if (!user?.id) return;
-    const channel = supabase
-      .channel(`student_chat_requests_live:${user.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'student_chat_requests' }, () => {
-        void loadRequests(false);
-      })
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [supabase, user?.id]);
+    const timer = window.setInterval(() => void loadRequests(false), 15000);
+    return () => window.clearInterval(timer);
+  }, [user?.id]);
 
   useEffect(() => {
     if (!selected?.id) {
@@ -160,34 +153,10 @@ export function StudentChatClient() {
     setModerationAlert(null);
     loadMessages(selected.id);
     markSelectedRead(selected.id);
-    const timer = window.setInterval(() => loadMessages(selected.id), 10000);
-    const channel = supabase
-      .channel(`student_chat_messages:${selected.id}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'student_chat_messages', filter: `request_id=eq.${selected.id}` },
-        (payload) => {
-          const incoming = payload.new as ChatMessage;
-          upsertMessage(incoming);
-          if (incoming.sender_id !== user?.id) {
-            markSelectedRead(selected.id)
-              .then(() => loadMessages(selected.id))
-              .catch(() => {});
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'student_chat_messages', filter: `request_id=eq.${selected.id}` },
-        (payload) => upsertMessage(payload.new as ChatMessage)
-      )
-      .subscribe();
-
-    return () => {
-      window.clearInterval(timer);
-      supabase.removeChannel(channel);
-    };
-  }, [selected?.id, supabase, upsertMessage, user?.id]);
+    // Same reasoning as above: poll instead of subscribing to Realtime on the chats-DB project.
+    const timer = window.setInterval(() => loadMessages(selected.id), 5000);
+    return () => window.clearInterval(timer);
+  }, [selected?.id, user?.id]);
 
   const sendRequest = async () => {
     if (!identifier.trim()) return;

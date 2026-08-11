@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { getPlatformSettings } from '@/lib/platform-settings/server';
 import { getAdminAiProvider, getPlanFromSettings } from '@/lib/platform-settings/shared';
 import { gatewayChat, type AiProviderId } from '@/lib/ai/gateway';
@@ -17,8 +18,10 @@ async function getUser() {
   return user;
 }
 
-async function getApprovedRequest(admin: any, requestId: string, userId: string) {
-  const { data } = await admin
+// `chatsAdmin` = chats-DB (student_chat_requests/messages, chat_archives).
+// `admin` = main DB (profiles, notifications).
+async function getApprovedRequest(chatsAdmin: any, admin: any, requestId: string, userId: string) {
+  const { data } = await chatsAdmin
     .from('student_chat_requests')
     .select('*')
     .eq('id', requestId)
@@ -66,14 +69,14 @@ async function notifyBoth(admin: any, request: any, payload: { title: string; me
   ]);
 }
 
-async function moderateIfNeeded(admin: any, request: any) {
+async function moderateIfNeeded(chatsAdmin: any, admin: any, request: any) {
   try {
-    const { count } = await admin
+    const { count } = await chatsAdmin
       .from('student_chat_messages')
       .select('id', { count: 'exact', head: true })
       .eq('request_id', request.id);
 
-    const { data: archiveCounts } = await admin
+    const { data: archiveCounts } = await chatsAdmin
       .from('chat_archives')
       .select('message_count')
       .eq('archive_type', 'student')
@@ -86,7 +89,7 @@ async function moderateIfNeeded(admin: any, request: any) {
     const lastChecked = Number(request.moderation_last_checked_message_count || 0);
     if (totalMessages < 50 || totalMessages - lastChecked < 50) return null;
 
-    const { data: recent } = await admin
+    const { data: recent } = await chatsAdmin
       .from('student_chat_messages')
       .select('sender_id, content, created_at')
       .eq('request_id', request.id)
@@ -145,14 +148,14 @@ ${transcript}`,
     };
 
     if (verdict.status !== 'off_topic') {
-      await admin.from('student_chat_requests').update(updateBase).eq('id', request.id);
+      await chatsAdmin.from('student_chat_requests').update(updateBase).eq('id', request.id);
       return null;
     }
 
     const warningCount = Number(request.moderation_warning_count || 0);
     if (warningCount >= 1) {
       const blockedUntil = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString();
-      await admin
+      await chatsAdmin
         .from('student_chat_requests')
         .update({
           ...updateBase,
@@ -171,7 +174,7 @@ ${transcript}`,
       };
     }
 
-    await admin
+    await chatsAdmin
       .from('student_chat_requests')
       .update({
         ...updateBase,
@@ -196,7 +199,8 @@ export async function GET(req: NextRequest) {
   if (!requestId) return NextResponse.json({ error: 'A request ID is required' }, { status: 400 });
 
   const admin = (await createAdminClient()) as any;
-  const request = await getApprovedRequest(admin, requestId, user.id);
+  const chatsAdmin = createServiceClient() as any;
+  const request = await getApprovedRequest(chatsAdmin, admin, requestId, user.id);
   if (!request) return NextResponse.json({ error: 'An approved chat was not found.' }, { status: 403 });
   if (isBlocked(request)) {
     return NextResponse.json(
@@ -208,22 +212,22 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  await admin
+  await chatsAdmin
     .from('student_chat_messages')
     .update({ read_at: new Date().toISOString() })
     .eq('request_id', requestId)
     .neq('sender_id', user.id)
     .is('read_at', null);
 
-  const { data, error } = await admin
+  const { data, error } = await chatsAdmin
     .from('student_chat_messages')
     .select('*')
     .eq('request_id', requestId)
     .order('created_at', { ascending: true })
     .limit(200);
 
-  if (error) return NextResponse.json({ error: 'Messages could not be loaded. Check migration 011.' }, { status: 500 });
-  const archived = await loadArchivedChatMessages<any>(admin, 'student', requestId);
+  if (error) return NextResponse.json({ error: 'Messages could not be loaded. Check the chats DB schema.' }, { status: 500 });
+  const archived = await loadArchivedChatMessages<any>(chatsAdmin, 'student', requestId);
   return NextResponse.json({ messages: mergeChatMessages(archived, data || []) });
 }
 
@@ -237,6 +241,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'A request ID and message are required' }, { status: 400 });
 
   const admin = (await createAdminClient()) as any;
+  const chatsAdmin = createServiceClient() as any;
   const { data: profile } = await admin.from('profiles').select('subscription_tier').eq('id', user.id).maybeSingle();
   const tier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
   const settings = await getPlatformSettings();
@@ -255,10 +260,10 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const request = await getApprovedRequest(admin, requestId, user.id);
+  const request = await getApprovedRequest(chatsAdmin, admin, requestId, user.id);
   if (!request) return NextResponse.json({ error: 'An approved chat was not found.' }, { status: 403 });
 
-  const { data, error } = await admin
+  const { data, error } = await chatsAdmin
     .from('student_chat_messages')
     .insert({ request_id: requestId, sender_id: user.id, content: message })
     .select('*')
@@ -276,7 +281,7 @@ export async function POST(req: NextRequest) {
     is_read: false,
   });
 
-  const moderation = await moderateIfNeeded(admin, request);
+  const moderation = await moderateIfNeeded(chatsAdmin, admin, request);
   await consumeAiCredits(user.id, tier, 'student_chat_moderation');
 
   return NextResponse.json({ message: data, moderation });
@@ -290,10 +295,11 @@ export async function PATCH(req: NextRequest) {
   if (!requestId) return NextResponse.json({ error: 'A request ID is required' }, { status: 400 });
 
   const admin = (await createAdminClient()) as any;
-  const request = await getApprovedRequest(admin, requestId, user.id);
+  const chatsAdmin = createServiceClient() as any;
+  const request = await getApprovedRequest(chatsAdmin, admin, requestId, user.id);
   if (!request) return NextResponse.json({ error: 'An approved chat was not found.' }, { status: 403 });
 
-  const { error } = await admin
+  const { error } = await chatsAdmin
     .from('student_chat_messages')
     .update({ read_at: new Date().toISOString() })
     .eq('request_id', requestId)

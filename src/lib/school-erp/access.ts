@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
+import { isSchoolModuleEnabled, normalizeSchoolModules, type SchoolModuleKey } from './modules';
 import type { SchoolContext, SchoolPermission, SchoolRole } from './types';
 
 export const ACTIVE_SCHOOL_COOKIE = 'ilm_active_school';
@@ -136,6 +137,10 @@ export function hasSchoolPermission(context: SchoolContext, permission: SchoolPe
   return context.permissions.includes(permission);
 }
 
+export function hasSchoolModule(context: SchoolContext, module: SchoolModuleKey) {
+  return isSchoolModuleEnabled(context.enabledModules, module);
+}
+
 export async function getSchoolContext(
   supabase: SupabaseClient,
   userId: string,
@@ -162,6 +167,9 @@ export async function getSchoolContext(
   const campus = Array.isArray(row.school_campuses) ? row.school_campuses[0] : row.school_campuses;
   if (!organization || organization.status === 'suspended' || organization.status === 'archived') return null;
   const role = row.member_role as SchoolRole;
+  // SECURITY DEFINER function: exposes only the module list to members, while
+  // the rest of the plan row (pricing, limits) stays owner/admin-only.
+  const { data: modules } = await db.rpc('school_enabled_modules', { p_organization_id: organization.id });
 
   return {
     userId,
@@ -179,6 +187,7 @@ export async function getSchoolContext(
     },
     campus: campus || null,
     permissions: mergePermissions(role, row.permissions || []),
+    enabledModules: normalizeSchoolModules(modules),
   };
 }
 
@@ -203,7 +212,7 @@ export async function getSchoolContexts(supabase: SupabaseClient, userId: string
   return contexts.filter((context): context is SchoolContext => Boolean(context));
 }
 
-export async function requireSchoolContext(permission?: SchoolPermission) {
+export async function requireSchoolContext(permission?: SchoolPermission, module?: SchoolModuleKey) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -214,6 +223,11 @@ export async function requireSchoolContext(permission?: SchoolPermission) {
     (organizationId ? await getSchoolContext(supabase, user.id, organizationId) : null) ||
     (await getSchoolContext(supabase, user.id));
   if (!context || (permission && !hasSchoolPermission(context, permission))) {
+    return { supabase, user, context: null };
+  }
+  // A module the institution's plan does not include is treated exactly like a
+  // missing permission, so every gated page redirects the same way.
+  if (module && !hasSchoolModule(context, module)) {
     return { supabase, user, context: null };
   }
   return { supabase, user, context };

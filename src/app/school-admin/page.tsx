@@ -1,16 +1,19 @@
-import { CalendarDays, CircleDollarSign, ClipboardList, GraduationCap, UserRoundCheck, Users2 } from 'lucide-react';
+import { CalendarDays, CircleDollarSign, ClipboardList, GraduationCap, Sparkles, UserRoundCheck, Users2 } from 'lucide-react';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SchoolMetric } from '@/components/features/school-erp/SchoolMetric';
 import { SchoolPageHeader } from '@/components/features/school-erp/SchoolPageHeader';
-import { requireSchoolContext } from '@/lib/school-erp/access';
+import { hasSchoolPermission, requireSchoolContext } from '@/lib/school-erp/access';
 import { getSchoolOverview } from '@/lib/school-erp/queries';
 
 export default async function SchoolAdminPage() {
   const { supabase, context } = await requireSchoolContext('dashboard.read');
   if (!context) redirect('/dashboard');
   const overview = await getSchoolOverview(supabase, context);
+  const canManageExams = hasSchoolPermission(context, 'exams.manage');
 
   return (
     <div className="space-y-6">
@@ -23,6 +26,25 @@ export default async function SchoolAdminPage() {
           </Badge>
         }
       />
+      {canManageExams && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Create a test</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3 sm:flex-row">
+            <Button asChild>
+              <Link href="/school-admin/tests">
+                <Sparkles className="h-4 w-4" /> AI Test Studio
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/school-admin/exams">
+                <GraduationCap className="h-4 w-4" /> Formal exam & marks
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <SchoolMetric label="Active students" value={overview.counts.students} icon={GraduationCap} />
         <SchoolMetric

@@ -96,7 +96,7 @@ function PtmRequestRow({
 }
 
 export default async function SchoolPtmPage() {
-  const { supabase, context } = await requireSchoolContext('ptm.read');
+  const { supabase, context } = await requireSchoolContext('ptm.read', 'ptm');
   if (!context) redirect('/school-admin');
   const data = await getSchoolPtm(supabase, context);
   const role = context.membership.member_role;

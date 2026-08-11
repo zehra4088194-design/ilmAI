@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { archiveOldChatRows } from '@/lib/storage/chat-archive';
 import { getR2Uri, isR2Configured, putR2Object } from '@/lib/storage/r2';
 
@@ -102,6 +103,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const db = (await createAdminClient()) as any;
+    const chatsDb = createServiceClient() as any;
 
     const cutoff = olderThan(2);
     const visionScans = await cleanupMediaRows(db, 'vision_scans', 'vision-scans', cutoff, 'image_url');
@@ -112,14 +114,14 @@ export async function GET(req: NextRequest) {
       cutoff,
       'audio_url'
     );
-    const parentAttachmentsMigrated = await migrateParentAttachmentsToR2(db, cutoff);
-    const studentChat = await archiveOldChatRows(db, {
+    const parentAttachmentsMigrated = await migrateParentAttachmentsToR2(chatsDb, cutoff);
+    const studentChat = await archiveOldChatRows(chatsDb, {
       type: 'student',
       table: 'student_chat_messages',
       conversationColumn: 'request_id',
       cutoff,
     });
-    const parentChat = await archiveOldChatRows(db, {
+    const parentChat = await archiveOldChatRows(chatsDb, {
       type: 'parent',
       table: 'parent_messages',
       conversationColumn: 'link_id',

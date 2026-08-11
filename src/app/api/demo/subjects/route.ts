@@ -4,6 +4,8 @@ import { createServiceClient } from '@/lib/supabase/service';
 export const runtime = 'nodejs';
 
 export async function GET() {
+  // questions now live in the standalone question-bank project, which has its own
+  // subjects copy (same IDs) so this embedded join still works.
   const supabase = createServiceClient() as any;
   const { data, error } = await supabase
     .from('questions')

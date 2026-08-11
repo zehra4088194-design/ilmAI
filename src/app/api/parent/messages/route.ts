@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { createNotificationIfEnabled } from '@/lib/notifications/preferences';
 import { getParentLinkAccess } from '@/lib/parent/access';
 import { loadArchivedChatMessages, mergeChatMessages } from '@/lib/storage/chat-archive';
@@ -26,17 +27,16 @@ export async function GET(req: NextRequest) {
       { status: 403 }
     );
   }
-  const { link } = access;
 
-  const admin = await createAdminClient();
-  await admin
+  const chatsAdmin = createServiceClient() as any;
+  await chatsAdmin
     .from('parent_messages')
     .update({ read_at: new Date().toISOString() })
     .eq('link_id', linkId)
     .neq('sender_id', user.id)
     .is('read_at', null);
 
-  const { data, error } = await admin
+  const { data, error } = await chatsAdmin
     .from('parent_messages')
     .select('*')
     .eq('link_id', linkId)
@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
     .limit(200);
 
   if (error) return NextResponse.json({ error: 'Messages could not be loaded.' }, { status: 500 });
-  const archived = await loadArchivedChatMessages<any>(admin, 'parent', linkId);
+  const archived = await loadArchivedChatMessages<any>(chatsAdmin, 'parent', linkId);
   return NextResponse.json({ messages: mergeChatMessages(archived, data || []) });
 }
 
@@ -68,8 +68,8 @@ export async function POST(req: NextRequest) {
   }
   const { link } = access;
 
-  const admin = await createAdminClient();
-  const { data, error } = await admin
+  const chatsAdmin = createServiceClient() as any;
+  const { data, error } = await chatsAdmin
     .from('parent_messages')
     .insert({ link_id: linkId, sender_id: user.id, content: content.trim() })
     .select()
@@ -79,6 +79,7 @@ export async function POST(req: NextRequest) {
 
   const recipientId = user.id === link.parent_id ? link.student_id : link.parent_id;
   if (!recipientId) return NextResponse.json({ error: 'The linked recipient was not found.' }, { status: 409 });
+  const admin = await createAdminClient();
   await createNotificationIfEnabled(admin, 'parentMessages', {
     user_id: recipientId,
     type: 'SOCIAL',
@@ -109,10 +110,9 @@ export async function PATCH(req: NextRequest) {
       { status: 403 }
     );
   }
-  const { link } = access;
 
-  const admin = await createAdminClient();
-  const { error } = await admin
+  const chatsAdmin = createServiceClient() as any;
+  const { error } = await chatsAdmin
     .from('parent_messages')
     .update({ read_at: new Date().toISOString() })
     .eq('link_id', linkId)

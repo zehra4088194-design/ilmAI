@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { MessageCircleWarning, ShieldCheck } from 'lucide-react';
 import { createAdminClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -26,8 +27,9 @@ type BlockedChat = {
 
 export default async function ChatModerationPage() {
   const admin = await createAdminClient() as any;
+  const chatsAdmin = createServiceClient() as any;
   const now = new Date().toISOString();
-  const { data: blockedChats, error } = await admin
+  const { data: blockedChats, error } = await chatsAdmin
     .from('student_chat_requests')
     .select('id, requester_id, recipient_id, moderation_warning_count, moderation_blocked_until, moderation_last_reason, updated_at')
     .gt('moderation_blocked_until', now)

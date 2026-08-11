@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { WelcomeSection } from '@/components/features/dashboard/WelcomeSection';
 import { StatsGrid } from '@/components/features/dashboard/StatsGrid';
 import { ContinueLearning } from '@/components/features/dashboard/ContinueLearning';
+import { getContinueLearningItems } from '@/lib/resources/continue-learning';
 import { RecentActivity } from '@/components/features/dashboard/RecentActivity';
 import { QuickActions } from '@/components/features/dashboard/QuickActions';
 import { UniversityDashboard } from '@/components/features/dashboard/UniversityDashboard';
@@ -60,6 +61,7 @@ export default async function DashboardPage() {
     { data: latestDiagnostic },
     { data: weakMastery },
     { count: revisionDueCount },
+    continueLearningItems,
   ] =
     await Promise.all([
       subjectsQuery,
@@ -104,6 +106,7 @@ export default async function DashboardPage() {
         .eq('student_id', user!.id)
         .eq('status', 'due')
         .lte('due_at', new Date().toISOString()),
+      getContinueLearningItems(supabase, user!.id, { board: profile?.board, gradeLevel: profile?.grade_level }),
     ]);
 
   const subjectNames = new Map((subjects || []).map((subject) => [subject.id, subject.name]));
@@ -174,7 +177,7 @@ export default async function DashboardPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
           <WeaknessRadar scores={subjectScores} />
-          <ContinueLearning />
+          <ContinueLearning items={continueLearningItems} />
           <RecentActivity userId={user!.id} />
         </div>
         <div className="space-y-6">

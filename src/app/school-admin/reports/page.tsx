@@ -1,13 +1,14 @@
 import { redirect } from 'next/navigation';
 import { Download } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PrincipalAiSummary } from '@/components/features/school-erp/PrincipalAiSummary';
 import { SchoolPageHeader } from '@/components/features/school-erp/SchoolPageHeader';
 import { SchoolReportsDashboard } from '@/components/features/school-erp/SchoolReportsDashboard';
 import { hasSchoolPermission, requireSchoolContext } from '@/lib/school-erp/access';
 import { getSchoolReports } from '@/lib/school-erp/queries';
 
 export default async function SchoolReportsPage() {
-  const { supabase, context } = await requireSchoolContext('reports.read');
+  const { supabase, context } = await requireSchoolContext('reports.read', 'reports');
   if (!context) redirect('/school-admin');
   const data = await getSchoolReports(supabase, context);
   const canReadAudit = hasSchoolPermission(context, 'audit.read');
@@ -27,6 +28,7 @@ export default async function SchoolReportsPage() {
           </div>
         }
       />
+      <PrincipalAiSummary />
       <SchoolReportsDashboard attendance={data.attendance} invoices={data.invoices} reportCards={data.reportCards} admissions={data.admissions} />
       {canReadAudit && (
         <Card>

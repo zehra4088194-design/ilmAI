@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient, createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { createNotificationIfEnabled } from '@/lib/notifications/preferences';
 import { getParentLinkAccess } from '@/lib/parent/access';
 import { checkParentAttachmentLimits } from '@/lib/rate-limit';
@@ -13,10 +14,10 @@ const MAX_FILE_SIZE = 4 * 1024 * 1024;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf'];
 const SIGNED_URL_TTL = 60 * 60; // 1 hour
 
-async function ensureBucket(admin: Awaited<ReturnType<typeof createAdminClient>>) {
-  const { error } = await admin.storage.getBucket(BUCKET);
+async function ensureBucket(chatsAdmin: ReturnType<typeof createServiceClient>) {
+  const { error } = await chatsAdmin.storage.getBucket(BUCKET);
   if (!error) return;
-  const { error: createError } = await admin.storage.createBucket(BUCKET, {
+  const { error: createError } = await chatsAdmin.storage.createBucket(BUCKET, {
     public: false,
     fileSizeLimit: MAX_FILE_SIZE,
     allowedMimeTypes: ALLOWED_TYPES,
@@ -49,8 +50,8 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const { admin } = access;
-    const { data, error } = await admin
+    const chatsAdmin = createServiceClient() as any;
+    const { data, error } = await chatsAdmin
       .from('parent_attachments')
       .select('*')
       .eq('link_id', linkId)
@@ -62,11 +63,11 @@ export async function GET(req: NextRequest) {
     }
 
     const withUrls = await Promise.all(
-      (data || []).map(async (att) => {
+      (data || []).map(async (att: any) => {
         if (parseR2Uri(att.file_url)) {
           return { ...att, signed_url: `/api/parent/attachments/file?id=${encodeURIComponent(att.id)}` };
         }
-        const { data: signed } = await admin.storage.from(BUCKET).createSignedUrl(att.file_url, SIGNED_URL_TTL);
+        const { data: signed } = await chatsAdmin.storage.from(BUCKET).createSignedUrl(att.file_url, SIGNED_URL_TTL);
         return { ...att, signed_url: signed?.signedUrl || null };
       })
     );
@@ -116,7 +117,8 @@ export async function POST(req: NextRequest) {
         { status: 403 }
       );
     }
-    const { admin, link } = access;
+    const { link } = access;
+    const chatsAdmin = createServiceClient() as any;
     const ext = file.name.includes('.') ? file.name.split('.').pop() : 'bin';
     const path = `${linkId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
     const buffer = Buffer.from(await file.arrayBuffer());
@@ -131,8 +133,8 @@ export async function POST(req: NextRequest) {
       });
       storedPath = getR2Uri(r2Key);
     } else {
-      await ensureBucket(admin);
-      const { error: uploadError } = await admin.storage
+      await ensureBucket(chatsAdmin);
+      const { error: uploadError } = await chatsAdmin.storage
         .from(BUCKET)
         .upload(path, buffer, { contentType: file.type, upsert: false });
       if (uploadError) {
@@ -144,7 +146,7 @@ export async function POST(req: NextRequest) {
     const quota = await checkParentAttachmentLimits(link.student_id!, access.tier, file.size);
     if (!quota.success) {
       if (r2Key) await deleteR2Object(r2Key);
-      else await admin.storage.from(BUCKET).remove([path]);
+      else await chatsAdmin.storage.from(BUCKET).remove([path]);
       return NextResponse.json(
         {
           status: 'error',
@@ -154,7 +156,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { data: record, error: insertError } = await admin
+    const { data: record, error: insertError } = await chatsAdmin
       .from('parent_attachments')
       .insert({
         link_id: linkId,
@@ -171,7 +173,7 @@ export async function POST(req: NextRequest) {
     if (insertError) {
       console.error('Attachment insert error:', insertError);
       if (r2Key) await deleteR2Object(r2Key);
-      else await admin.storage.from(BUCKET).remove([path]);
+      else await chatsAdmin.storage.from(BUCKET).remove([path]);
       return NextResponse.json({ status: 'error', error: 'The attachment could not be saved' }, { status: 500 });
     }
 
@@ -179,7 +181,7 @@ export async function POST(req: NextRequest) {
     if (!recipientId) {
       return NextResponse.json({ status: 'error', error: 'The linked student was not found' }, { status: 409 });
     }
-    await createNotificationIfEnabled(admin, 'parentMessages', {
+    await createNotificationIfEnabled(access.admin, 'parentMessages', {
       user_id: recipientId,
       type: 'SOCIAL',
       title: 'New parent file',
@@ -193,7 +195,7 @@ export async function POST(req: NextRequest) {
 
     const signedUrl = useR2
       ? `/api/parent/attachments/file?id=${encodeURIComponent(record.id)}`
-      : (await admin.storage.from(BUCKET).createSignedUrl(path, SIGNED_URL_TTL)).data?.signedUrl || null;
+      : (await chatsAdmin.storage.from(BUCKET).createSignedUrl(path, SIGNED_URL_TTL)).data?.signedUrl || null;
 
     return NextResponse.json({ status: 'success', data: { ...record, signed_url: signedUrl } });
   } catch (error) {

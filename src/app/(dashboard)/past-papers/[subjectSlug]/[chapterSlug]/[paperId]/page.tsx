@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { Badge } from '@/components/ui/badge';
 import { PastPaperDetailClient } from '@/components/features/past-papers/PastPaperDetailClient';
 
@@ -18,7 +19,7 @@ export default async function PastPaperFilePage({
   const { data: profile } = user
     ? await supabase.from('profiles').select('board, grade_level').eq('id', user.id).single()
     : { data: null };
-  const { data: paper } = await (supabase.from('past_papers') as any)
+  const { data: paper } = await (createServiceClient().from('past_papers') as any)
     .select(
       'id, subject_id, chapter_id, board, grade_level, year, paper_type, total_questions, duration, is_verified, file_url, subjects(name, slug), chapters(name, slug)'
     )

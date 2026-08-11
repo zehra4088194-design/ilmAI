@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { getCollegeAdminAssignment } from "@/lib/college/access";
 import { COLLEGE_COVER_BUCKET, COLLEGE_LOGO_BUCKET, uploadCollegeImage } from "@/lib/college/storage";
 import type { ActionResult } from "@/lib/college/types";
@@ -28,10 +29,10 @@ export async function updateCollegeSettings(formData: FormData): Promise<ActionR
 
   try {
     if (logoFile && logoFile.size > 0) {
-      update.logo_url = await uploadCollegeImage(supabase, COLLEGE_LOGO_BUCKET, assignment.college_id, logoFile);
+      update.logo_url = await uploadCollegeImage(createServiceClient(), COLLEGE_LOGO_BUCKET, assignment.college_id, logoFile);
     }
     if (coverFile && coverFile.size > 0) {
-      update.cover_url = await uploadCollegeImage(supabase, COLLEGE_COVER_BUCKET, assignment.college_id, coverFile);
+      update.cover_url = await uploadCollegeImage(createServiceClient(), COLLEGE_COVER_BUCKET, assignment.college_id, coverFile);
     }
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : "Upload failed." };

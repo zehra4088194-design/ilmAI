@@ -65,7 +65,10 @@ export async function GET(req: NextRequest) {
     .map((id) => id.trim())
     .filter(Boolean)
     .slice(0, 20);
-  let query = db
+  // questions now live in the standalone question-bank project, which has its own
+  // subjects/chapters copies (same IDs) so this embedded join still works.
+  const questionBank = createServiceClient() as any;
+  let query = questionBank
     .from('questions')
     .select('id, text, options, correct_answer, subject_id, chapter_id, subjects(name), chapters(name)')
     .in('subject_id', subjectIds)

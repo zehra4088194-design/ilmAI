@@ -1,3 +1,5 @@
+import type { SchoolModuleKey } from './modules';
+
 export type SchoolRole = 'owner' | 'admin' | 'admissions' | 'teacher' | 'staff' | 'accountant' | 'parent' | 'student';
 
 export type SchoolPermission =
@@ -56,6 +58,8 @@ export type SchoolContext = {
   membership: SchoolMembership;
   campus: { id: string; name: string; code: string } | null;
   permissions: SchoolPermission[];
+  // null when the institution has no plan row — treated as "everything on".
+  enabledModules: SchoolModuleKey[] | null;
 };
 
 export type SchoolActionState = {
@@ -67,4 +71,42 @@ export type SchoolActionState = {
 export const INITIAL_SCHOOL_ACTION_STATE: SchoolActionState = {
   success: false,
   message: '',
+};
+
+/** Public-facing subset of school_organizations, for the signup autocomplete / directory search. */
+export type PublicSchoolOrganization = {
+  id: string;
+  name: string;
+  slug: string;
+  organization_type: 'school' | 'academy' | 'college';
+  logo_url: string | null;
+};
+
+export type SchoolJoinRole = 'student' | 'teacher';
+export type SchoolJoinStatus = 'pending' | 'approved' | 'declined';
+
+export type SchoolJoinRequest = {
+  id: string;
+  requester_id: string;
+  organization_id: string;
+  role_requested: SchoolJoinRole;
+  status: SchoolJoinStatus;
+  requested_at: string;
+  resolved_at: string | null;
+  resolved_by: string | null;
+};
+
+export type SchoolJoinRequestWithRequester = SchoolJoinRequest & {
+  requester: {
+    id: string;
+    full_name: string | null;
+    email: string | null;
+    avatar_url: string | null;
+  } | null;
+};
+
+export type ActionResult<T = undefined> = {
+  success: boolean;
+  error?: string;
+  data?: T;
 };

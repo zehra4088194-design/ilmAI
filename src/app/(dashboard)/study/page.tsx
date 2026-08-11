@@ -4,6 +4,7 @@ import { ArrowRight, BookOpen } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { BOARDS, GRADE_LEVELS } from '@/lib/constants';
 import { Card, CardContent } from '@/components/ui/card';
+import { getContinueLearningItems } from '@/lib/resources/continue-learning';
 
 export const metadata: Metadata = { title: 'Study' };
 
@@ -61,9 +62,32 @@ export default async function StudyPage() {
 
   const boardLabel = BOARDS.find((item) => item.value === activeBoard)?.label;
   const gradeLabel = GRADE_LEVELS.find((item) => item.value === activeGrade)?.label;
+  const [continueItem] = user
+    ? await getContinueLearningItems(supabase, user.id, { board: activeBoard, gradeLevel: activeGrade, limit: 1 })
+    : [];
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
+      {continueItem && (
+        <Link
+          href={`/study/${continueItem.subjectSlug}/${continueItem.chapterSlug}`}
+          className="border-violet-500/25 bg-violet-500/10 hover:border-violet-500/40 group flex items-center justify-between gap-3 rounded-2xl border p-4 transition-colors"
+        >
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-violet-300">Continue where you left off</p>
+            <p className="mt-0.5 truncate text-sm font-medium">
+              {continueItem.subjectName} - {continueItem.chapterName}
+            </p>
+          </div>
+          {continueItem.nextChapter ? (
+            <span className="text-muted-foreground shrink-0 text-xs">
+              Next: <span className="text-foreground font-medium">{continueItem.nextChapter.name}</span>
+            </span>
+          ) : (
+            <ArrowRight className="h-4 w-4 shrink-0 text-violet-300 transition-transform group-hover:translate-x-1" />
+          )}
+        </Link>
+      )}
       <header className="space-y-3">
         <div className="flex flex-wrap gap-2 text-xs font-semibold">
           {boardLabel && (

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { requireAdminUser } from '@/lib/admin/auth';
 
 export async function GET() {
   const admin = await requireAdminUser();
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  const adminClient = await createAdminClient();
+  const adminClient = createServiceClient();
   const { data, error } = await adminClient
     .from('questions')
     .select('*, subjects(name), chapters(name), topics(name)')
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Options and a correct answer are required for an MCQ' }, { status: 400 });
   }
 
-  const adminClient = await createAdminClient();
+  const adminClient = createServiceClient();
   const { data, error } = await adminClient
     .from('questions')
     .insert({

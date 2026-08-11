@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { requireAdminUser } from '@/lib/admin/auth';
 import { extractGoogleDriveFileId, getGoogleDriveThumbnailUrl } from '@/lib/utils/filePreview';
 import { queueResourceContextProcessing } from '@/lib/resources/processing';
@@ -23,7 +23,7 @@ export async function GET() {
 
   let adminClient;
   try {
-    adminClient = await createAdminClient();
+    adminClient = createServiceClient();
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Supabase admin client missing' },
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
 
   let adminClient;
   try {
-    adminClient = await createAdminClient();
+    adminClient = createServiceClient();
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Supabase admin client missing' },

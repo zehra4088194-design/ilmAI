@@ -55,6 +55,7 @@ const DEFAULT_NOTIFICATION_PREFERENCES = {
   parentMessages: true,
   studentChat: true,
   achievements: true,
+  schoolJoinRequests: true,
   dailyStudyEmails: false,
 };
 
@@ -770,6 +771,12 @@ export function SettingsTabs({
                   description="XP, streak and milestone celebration alerts."
                   checked={notificationPreferences.achievements}
                   onClick={() => toggleNotificationPreference('achievements')}
+                />
+                <NotificationToggle
+                  title="School join requests"
+                  description="New student and teacher requests to join your institution (school owners and admins)."
+                  checked={notificationPreferences.schoolJoinRequests}
+                  onClick={() => toggleNotificationPreference('schoolJoinRequests')}
                 />
                 <NotificationToggle
                   title="Daily study emails"

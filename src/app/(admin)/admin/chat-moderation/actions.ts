@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { requireAdminUser } from '@/lib/admin/auth';
-import { createAdminClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 
 export async function unblockStudentChat(formData: FormData) {
   const adminUser = await requireAdminUser();
@@ -11,7 +11,7 @@ export async function unblockStudentChat(formData: FormData) {
   const requestId = String(formData.get('request_id') || '');
   if (!requestId) throw new Error('request_id required');
 
-  const admin = await createAdminClient();
+  const admin = createServiceClient();
   const { error } = await admin
     .from('student_chat_requests')
     .update({

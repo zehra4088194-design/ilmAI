@@ -4,7 +4,13 @@ export type PresentationTheme =
   | 'dark-tech'
   | 'nature-green'
   | 'vibrant-purple'
-  | 'minimal-mono';
+  | 'minimal-mono'
+  | 'ocean-teal'
+  | 'royal-violet'
+  | 'charcoal-slate'
+  | 'sunset-coral'
+  | 'blush-rose'
+  | 'golden-sand';
 
 export type PresentationSlideType =
   | 'title'
@@ -66,8 +72,28 @@ export type PresentationBackground = {
   size: number;
   subject: string;
   keywords: string[];
+  // Optional so older sidecar metadata (saved before this field existed) keeps
+  // type-checking; readers should treat a missing value as 'uncategorized'.
+  category?: string;
   isGlobal: boolean;
 };
+
+// Suggested categories shown in the admin picker. Admins can still type a custom
+// value — this list only seeds the dropdown/datalist for consistent naming.
+export const PRESENTATION_BACKGROUND_CATEGORIES = [
+  'science',
+  'technology',
+  'business',
+  'history',
+  'nature',
+  'abstract',
+  'arts',
+  'health',
+  'sports',
+  'education',
+] as const;
+
+export const DEFAULT_PRESENTATION_BACKGROUND_CATEGORY = 'uncategorized';
 
 export const PRESENTATION_THEMES: PresentationTheme[] = [
   'modern-blue',
@@ -76,6 +102,22 @@ export const PRESENTATION_THEMES: PresentationTheme[] = [
   'nature-green',
   'vibrant-purple',
   'minimal-mono',
+  'ocean-teal',
+  'royal-violet',
+  'charcoal-slate',
+  'sunset-coral',
+  'blush-rose',
+  'golden-sand',
+];
+
+// Themes with a light background need dark slide text (and no dark photo overlay)
+// to stay readable — this is the single source of truth other modules key off of
+// instead of special-casing 'minimal-mono' by name.
+export const PRESENTATION_LIGHT_THEMES: PresentationTheme[] = [
+  'minimal-mono',
+  'sunset-coral',
+  'blush-rose',
+  'golden-sand',
 ];
 
 export const PRESENTATION_SLIDE_TYPES: PresentationSlideType[] = [

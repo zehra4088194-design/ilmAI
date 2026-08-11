@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Loader2, Maximize2, MessageSquareText, Minimize2, X } from 'lucide-react';
+import { CheckCircle2, Loader2, Maximize2, MessageSquareText, Minimize2, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import type { ProtectedResourceKind, ResourceMode } from '@/lib/resources/server';
 import { ProtectedPdfViewer } from '@/components/features/resources/ProtectedPdfViewer';
@@ -65,6 +66,8 @@ export function ProtectedResourceReader({
   const [canFullscreen, setCanFullscreen] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [pdfThemePreference, setPdfThemePreference] = useState<PdfReaderThemePreference>('auto');
+  const [marking, setMarking] = useState(false);
+  const [marked, setMarked] = useState(false);
   const readerRef = useRef<HTMLDivElement>(null);
   const activeAppTheme = resolvedTheme || theme || '';
   const autoMode: ResourceMode = isDarkThemeId(activeAppTheme) ? 'dark' : 'light';
@@ -126,6 +129,25 @@ export function ProtectedResourceReader({
     onClose();
   };
 
+  const markAsRead = async () => {
+    if (marking || marked) return;
+    setMarking(true);
+    try {
+      const response = await fetch('/api/resources/mark-read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kind, resourceId }),
+      });
+      if (!response.ok) throw new Error();
+      setMarked(true);
+      toast.success('Marked as read', { description: 'A practice test is ready when you are.' });
+    } catch {
+      toast.error('Could not save your reading progress.');
+    } finally {
+      setMarking(false);
+    }
+  };
+
   if (!open) return null;
   return (
     <div ref={readerRef} className="bg-background fixed inset-0 z-[230] flex h-dvh min-h-0 flex-col">
@@ -150,6 +172,20 @@ export function ProtectedResourceReader({
               </button>
             ))}
           </div>
+          <Button
+            variant={marked ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={markAsRead}
+            disabled={marking || marked}
+            className="gap-1.5 px-2 text-xs sm:px-3"
+          >
+            {marking ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <CheckCircle2 className="h-3.5 w-3.5" />
+            )}
+            <span className="hidden sm:inline">{marked ? 'Read' : 'Mark as read'}</span>
+          </Button>
           <Button
             variant={showComments ? 'secondary' : 'ghost'}
             size="icon-sm"

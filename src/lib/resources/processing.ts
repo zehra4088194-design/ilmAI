@@ -1,4 +1,4 @@
-import { createAdminClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { fetchResourceContext, getResourceForProcessing, type ProtectedResourceKind } from '@/lib/resources/server';
 import { buildResourceSourceTest } from '@/lib/resources/source-fallback';
 
@@ -103,7 +103,7 @@ async function markImporterStatus(
 }
 
 export async function queueResourceContextProcessing(kind: ProtectedResourceKind, resourceId: string) {
-  const admin = (await createAdminClient()) as any;
+  const admin = createServiceClient() as any;
   const { error } = await admin.from('resource_processing_jobs').upsert(
     {
       resource_kind: kind,
@@ -122,7 +122,7 @@ export async function queueResourceContextProcessing(kind: ProtectedResourceKind
 }
 
 export async function processQueuedResourceContexts(maxJobs = 1) {
-  const admin = (await createAdminClient()) as any;
+  const admin = createServiceClient() as any;
   const staleBefore = new Date(Date.now() - 10 * 60 * 1000).toISOString();
   const { error: recoveryError } = await admin
     .from('resource_processing_jobs')
@@ -165,7 +165,8 @@ export async function processQueuedResourceContexts(maxJobs = 1) {
       if (!resource) throw new Error('Resource no longer exists.');
       const context = await fetchResourceContext(resource);
       const chunkCount = await persistResourceChunks(admin, kind, job.resource_id, context);
-      await persistResourceMcqs(admin, kind, job.resource_id, resource.title, context);
+      // resource_mcq_sets now lives in the standalone question-bank project.
+      await persistResourceMcqs(createServiceClient(), kind, job.resource_id, resource.title, context);
       await markImporterStatus(
         admin,
         kind,

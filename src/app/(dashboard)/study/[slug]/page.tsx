@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, ArrowRight, BookOpen, FileQuestion, FileText, ListChecks } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   countStudyResourceSections,
@@ -63,12 +64,12 @@ export default async function SubjectDetailPage({ params }: { params: Promise<{ 
 
   const profileScope = { board: activeBoard, grade_level: activeGrade };
   const [studyResources, subjectResources] = await Promise.all([
-    loadStudyCatalogResources(supabase, {
+    loadStudyCatalogResources(createServiceClient(), {
       subjectId: subject.id,
       subjectName: subject.name,
       profile: profileScope,
     }),
-    loadStudySubjectResources(supabase, {
+    loadStudySubjectResources(createServiceClient(), {
       subjectId: subject.id,
       subjectName: subject.name,
       profile: profileScope,

@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { Flame, Shield, Users } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { getCurrentWeekStart } from '@/lib/gamification/week';
 import { cn } from '@/lib/utils/cn';
 
@@ -24,7 +25,11 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
 
   const friendIds = new Set<string>([user!.id]);
   if (friendsOnly) {
-    const { data: requests } = await db
+    // student_chat_requests lives in the separate chats DB, which denies anon/authenticated
+    // entirely — this narrowly-scoped, server-only lookup (filtered to the current user's own
+    // participation) must go through the chats service-role client, not the cookie-based `db`.
+    const chatsAdmin = createServiceClient() as any;
+    const { data: requests } = await chatsAdmin
       .from('student_chat_requests')
       .select('requester_id, recipient_id')
       .eq('status', 'approved')

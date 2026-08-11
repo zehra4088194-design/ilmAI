@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { extractGoogleDriveFileId } from '@/lib/utils/filePreview';
 import type { SubscriptionTier } from '@/types';
 import { getR2Object, getR2Text, parseR2Uri } from '@/lib/storage/r2';
@@ -97,6 +98,7 @@ export async function getProtectedResource(
   mode: ResourceMode
 ): Promise<ProtectedResource | null> {
   const admin = (await createAdminClient()) as any;
+  const pdfAdmin = createServiceClient() as any;
   const { data: profile } = await admin
     .from('profiles')
     .select(
@@ -107,7 +109,7 @@ export async function getProtectedResource(
   if (!profile) return null;
 
   if (kind === 'library') {
-    const { data: resource } = await admin
+    const { data: resource } = await pdfAdmin
       .from('library_resources')
       .select('id, title, board, grade_level, drive_url, light_file_url, dark_file_url, file_type, context_text_url')
       .eq('id', resourceId)
@@ -130,7 +132,7 @@ export async function getProtectedResource(
   }
 
   if (kind === 'past-paper') {
-    const { data: paper } = await admin
+    const { data: paper } = await pdfAdmin
       .from('past_papers')
       .select('id, board, grade_level, year, paper_type, file_url, context_text_url, subjects(name)')
       .eq('id', resourceId)
@@ -147,7 +149,7 @@ export async function getProtectedResource(
     };
   }
 
-  const { data: resource } = await admin
+  const { data: resource } = await pdfAdmin
     .from('college_resources')
     .select(
       'id, college_id, title, resource_type, stream, degree_name, semester, file_url, light_file_url, dark_file_url, context_text_url'
@@ -191,9 +193,9 @@ export async function getPublicResource(
   resourceId: string,
   mode: ResourceMode
 ): Promise<ProtectedResource | null> {
-  const admin = (await createAdminClient()) as any;
+  const pdfAdmin = createServiceClient() as any;
   if (kind === 'library') {
-    const { data: resource } = await admin
+    const { data: resource } = await pdfAdmin
       .from('library_resources')
       .select('id, title, drive_url, light_file_url, dark_file_url, file_type, context_text_url')
       .eq('id', resourceId)
@@ -215,7 +217,7 @@ export async function getPublicResource(
     };
   }
 
-  const { data: paper } = await admin
+  const { data: paper } = await pdfAdmin
     .from('past_papers')
     .select('id, year, paper_type, file_url, context_text_url, subjects(name)')
     .eq('id', resourceId)
@@ -289,8 +291,8 @@ async function fetchCompanionContext(resource: ProtectedResource) {
   if (resource.contextTextUrl.startsWith(STORAGE_CONTEXT_PREFIX)) {
     const path = resource.contextTextUrl.slice(STORAGE_CONTEXT_PREFIX.length);
     if (!path || path.includes('..')) throw new Error('Invalid stored context path.');
-    const admin = (await createAdminClient()) as any;
-    const { data, error } = await admin.storage.from(RESOURCE_CONTEXT_BUCKET).download(path);
+    const pdfAdmin = createServiceClient() as any;
+    const { data, error } = await pdfAdmin.storage.from(RESOURCE_CONTEXT_BUCKET).download(path);
     if (error || !data) throw new Error(`Stored context file could not be loaded: ${error?.message || 'missing file'}`);
     const text = normalizeContextText(await data.text());
     if (text.length < 50) throw new Error('Stored context file has too little readable text.');
@@ -360,9 +362,9 @@ export async function getResourceForProcessing(
   kind: ProtectedResourceKind,
   resourceId: string
 ): Promise<ProtectedResource | null> {
-  const admin = (await createAdminClient()) as any;
+  const pdfAdmin = createServiceClient() as any;
   if (kind === 'library') {
-    const { data } = await admin
+    const { data } = await pdfAdmin
       .from('library_resources')
       .select('id, title, drive_url, light_file_url, dark_file_url, file_type, context_text_url')
       .eq('id', resourceId)
@@ -381,7 +383,7 @@ export async function getResourceForProcessing(
     };
   }
   if (kind === 'past-paper') {
-    const { data } = await admin
+    const { data } = await pdfAdmin
       .from('past_papers')
       .select('id, year, paper_type, file_url, context_text_url, subjects(name)')
       .eq('id', resourceId)
@@ -397,7 +399,7 @@ export async function getResourceForProcessing(
       tier: 'PRO',
     };
   }
-  const { data } = await admin
+  const { data } = await pdfAdmin
     .from('college_resources')
     .select('id, title, resource_type, file_url, light_file_url, dark_file_url, context_text_url')
     .eq('id', resourceId)

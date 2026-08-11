@@ -4,7 +4,9 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { checkDailyLimit } from '@/lib/rate-limit';
-import { getActiveSchoolOrganizationId, getSchoolContext, hasSchoolPermission } from './access';
+import { getActiveSchoolOrganizationId, getSchoolContext, hasSchoolModule, hasSchoolPermission } from './access';
+import type { SchoolModuleKey } from './modules';
+import { grantSchoolSubscription, isOrganizationBillingActive } from './subscription-cascade';
 import type { SchoolActionState, SchoolContext, SchoolPermission } from './types';
 
 const SUCCESS: SchoolActionState = { success: true, message: 'Saved successfully.' };
@@ -27,7 +29,7 @@ function dateValue(formData: FormData, key: string) {
   return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : '';
 }
 
-async function mutationContext(permission: SchoolPermission, action: string) {
+async function mutationContext(permission: SchoolPermission, action: string, module?: SchoolModuleKey) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -39,6 +41,10 @@ async function mutationContext(permission: SchoolPermission, action: string) {
     (await getSchoolContext(supabase, user.id));
   if (!context || !hasSchoolPermission(context, permission))
     throw new Error('You do not have permission for this action.');
+  // Hiding a page is not access control — a disabled module must reject the
+  // action itself, otherwise a direct POST still writes.
+  if (module && !hasSchoolModule(context, module))
+    throw new Error('This module is not included in your institution plan.');
 
   // Operational abuse protection only. It is intentionally independent of
   // the student's FREE/PRO/ELITE learning quotas and does not consume AI credits.
@@ -278,7 +284,7 @@ export async function addSchoolMember(_state: SchoolActionState, formData: FormD
     if (!z.string().email().safeParse(email).success || !allowedRoles.includes(role)) {
       throw new Error('A valid registered email and role are required.');
     }
-    const { db, context } = await mutationContext('people.manage', 'member');
+    const { db, context } = await mutationContext('people.manage', 'member', 'people');
     const { data: profile } = await db.from('profiles').select('id').eq('email', email).maybeSingle();
     if (!profile) throw new Error('This email must register an ilm AI account first.');
     const { data, error } = await db
@@ -300,6 +306,9 @@ export async function addSchoolMember(_state: SchoolActionState, formData: FormD
       .single();
     if (error) throw new Error(error.message);
     await audit(db, context, 'upsert', 'membership', data.id, { role });
+    if (await isOrganizationBillingActive(db, context.organization.id)) {
+      await grantSchoolSubscription(context.organization.id, profile.id);
+    }
     return done('/school-admin/people', 'School member added.');
   } catch (error) {
     return failure(error);
@@ -315,7 +324,7 @@ export async function enrollStudent(_state: SchoolActionState, formData: FormDat
     if (!studentEmail || !sectionId || !academicYearId || !admissionNumber) {
       throw new Error('Student email, section, academic year, and admission number are required.');
     }
-    const { db, context } = await mutationContext('admissions.manage', 'enrollment');
+    const { db, context } = await mutationContext('admissions.manage', 'enrollment', 'people');
     const { data: profile } = await db.from('profiles').select('id').eq('email', studentEmail).maybeSingle();
     if (!profile) throw new Error('The student must register an ilm AI account first.');
     const { data: existingActive } = await db
@@ -355,6 +364,9 @@ export async function enrollStudent(_state: SchoolActionState, formData: FormDat
       .single();
     if (error) throw new Error(error.message);
     await audit(db, context, 'upsert', 'enrollment', data.id, { studentId: profile.id });
+    if (await isOrganizationBillingActive(db, context.organization.id)) {
+      await grantSchoolSubscription(context.organization.id, profile.id);
+    }
     return done('/school-admin/people', 'Student enrolled.');
   } catch (error) {
     return failure(error);
@@ -370,7 +382,7 @@ export async function upsertStaffCompensation(
     const baseSalary = numberValue(formData, 'base_salary');
     const effectiveFrom = dateValue(formData, 'effective_from') || new Date().toISOString().slice(0, 10);
     if (!membershipId || baseSalary < 0) throw new Error('Staff member and salary are required.');
-    const { db, context, user } = await mutationContext('payroll.manage', 'staff-compensation');
+    const { db, context, user } = await mutationContext('payroll.manage', 'staff-compensation', 'payroll');
     const { data, error } = await db
       .from('school_staff_compensation')
       .insert({
@@ -400,7 +412,7 @@ export async function createPayrollRun(_state: SchoolActionState, formData: Form
   try {
     const payrollMonth = dateValue(formData, 'payroll_month');
     if (!payrollMonth) throw new Error('Payroll month is required.');
-    const { db, context, user } = await mutationContext('payroll.manage', 'payroll-run');
+    const { db, context, user } = await mutationContext('payroll.manage', 'payroll-run', 'payroll');
     const { data: compensationRows, error: compensationError } = await db
       .from('school_staff_compensation')
       .select('membership_id, base_salary')
@@ -451,7 +463,7 @@ export async function updatePayrollItem(_state: SchoolActionState, formData: For
     const status = text(formData, 'payment_status') || 'unpaid';
     if (!id || !['unpaid', 'paid', 'held', 'cancelled'].includes(status))
       throw new Error('Payroll item and status are required.');
-    const { db, context } = await mutationContext('payroll.manage', 'payroll-item');
+    const { db, context } = await mutationContext('payroll.manage', 'payroll-item', 'payroll');
     const { data: item } = await db
       .from('school_payroll_items')
       .select('base_salary')
@@ -489,7 +501,7 @@ export async function linkGuardian(_state: SchoolActionState, formData: FormData
     const guardianEmail = text(formData, 'guardian_email').toLowerCase();
     if (!studentId || !z.string().email().safeParse(guardianEmail).success)
       throw new Error('Student and guardian email are required.');
-    const { db, context } = await mutationContext('people.manage', 'guardian');
+    const { db, context } = await mutationContext('people.manage', 'guardian', 'people');
     const { data: profile } = await db.from('profiles').select('id').eq('email', guardianEmail).maybeSingle();
     if (!profile) throw new Error('The guardian must register an ilm AI account first.');
     await db.from('school_memberships').upsert(
@@ -534,7 +546,7 @@ export async function createAdmission(_state: SchoolActionState, formData: FormD
     if (!applicantName || !applyingForClass || !guardianName || !guardianPhone) {
       throw new Error('Applicant, class, guardian, and phone are required.');
     }
-    const { db, context } = await mutationContext('admissions.manage', 'admission');
+    const { db, context } = await mutationContext('admissions.manage', 'admission', 'admissions');
     const applicationNumber = text(formData, 'application_number') || `APP-${Date.now().toString(36).toUpperCase()}`;
     const { data, error } = await db
       .from('school_admissions')
@@ -570,7 +582,7 @@ export async function updateAdmissionStatus(_state: SchoolActionState, formData:
     const status = text(formData, 'status');
     const statuses = ['submitted', 'under_review', 'waitlisted', 'approved', 'rejected', 'enrolled', 'withdrawn'];
     if (!id || !statuses.includes(status)) throw new Error('Application and valid status are required.');
-    const { db, context, user } = await mutationContext('admissions.manage', 'admission-status');
+    const { db, context, user } = await mutationContext('admissions.manage', 'admission-status', 'admissions');
     const { error } = await db
       .from('school_admissions')
       .update({
@@ -598,7 +610,7 @@ export async function saveAttendance(_state: SchoolActionState, formData: FormDa
     const entries = JSON.parse(text(formData, 'entries') || '[]') as AttendanceInput[];
     if (!sectionId || !attendanceDate || !entries.length)
       throw new Error('Section, date, and at least one attendance entry are required.');
-    const { db, context, user } = await mutationContext('attendance.manage', 'attendance');
+    const { db, context, user } = await mutationContext('attendance.manage', 'attendance', 'attendance');
     const allowed = new Set(['present', 'absent', 'late', 'excused', 'leave']);
     const records = entries
       .filter((entry) => entry.studentId && allowed.has(entry.status))
@@ -632,7 +644,7 @@ export async function saveStaffAttendance(_state: SchoolActionState, formData: F
     const attendanceDate = dateValue(formData, 'attendance_date');
     const entries = JSON.parse(text(formData, 'entries') || '[]') as StaffAttendanceInput[];
     if (!attendanceDate || !entries.length) throw new Error('Date and staff attendance entries are required.');
-    const { db, context, user } = await mutationContext('attendance.manage', 'staff-attendance');
+    const { db, context, user } = await mutationContext('attendance.manage', 'staff-attendance', 'attendance');
     if (!['owner', 'admin'].includes(context.membership.member_role)) {
       throw new Error('Only school owners and administrators can mark staff attendance.');
     }
@@ -663,7 +675,7 @@ export async function createLeaveRequest(_state: SchoolActionState, formData: Fo
     const endsOn = dateValue(formData, 'ends_on');
     const reason = text(formData, 'reason');
     if (!startsOn || !endsOn || !reason) throw new Error('Leave dates and reason are required.');
-    const { db, context, user } = await mutationContext('attendance.read', 'leave-request');
+    const { db, context, user } = await mutationContext('attendance.read', 'leave-request', 'attendance');
     const role = context.membership.member_role;
     let requesterId = user.id;
     let requesterType = role === 'teacher' ? 'teacher' : role === 'staff' ? 'staff' : 'student';
@@ -709,7 +721,7 @@ export async function reviewLeaveRequest(_state: SchoolActionState, formData: Fo
     const id = text(formData, 'id');
     const status = text(formData, 'status');
     if (!id || !['approved', 'rejected'].includes(status)) throw new Error('Leave request and decision are required.');
-    const { db, context, user } = await mutationContext('attendance.manage', 'leave-review');
+    const { db, context, user } = await mutationContext('attendance.manage', 'leave-review', 'attendance');
     const { error } = await db
       .from('school_leave_requests')
       .update({
@@ -734,7 +746,7 @@ export async function createExam(_state: SchoolActionState, formData: FormData):
     const startsOn = dateValue(formData, 'starts_on');
     const endsOn = dateValue(formData, 'ends_on');
     if (!name || !academicYearId || !startsOn || !endsOn) throw new Error('Exam name, year, and dates are required.');
-    const { db, context, user } = await mutationContext('exams.manage', 'exam');
+    const { db, context, user } = await mutationContext('exams.manage', 'exam', 'exams');
     const { data, error } = await db
       .from('school_exams')
       .insert({
@@ -765,7 +777,7 @@ export async function createExamSchedule(_state: SchoolActionState, formData: Fo
     const examDate = dateValue(formData, 'exam_date');
     if (!examId || !sectionId || !subjectName || !examDate)
       throw new Error('Exam, section, subject, and date are required.');
-    const { db, context } = await mutationContext('exams.manage', 'exam-schedule');
+    const { db, context } = await mutationContext('exams.manage', 'exam-schedule', 'exams');
     const { data, error } = await db
       .from('school_exam_schedules')
       .insert({
@@ -798,7 +810,7 @@ export async function saveExamMarks(_state: SchoolActionState, formData: FormDat
     const scheduleId = text(formData, 'schedule_id');
     const entries = JSON.parse(text(formData, 'entries') || '[]') as MarkInput[];
     if (!scheduleId || !entries.length) throw new Error('Exam schedule and marks are required.');
-    const { db, context, user } = await mutationContext('exams.manage', 'exam-marks');
+    const { db, context, user } = await mutationContext('exams.manage', 'exam-marks', 'exams');
     const { data: schedule } = await db
       .from('school_exam_schedules')
       .select('max_marks')
@@ -844,7 +856,7 @@ export async function publishExamResults(_state: SchoolActionState, formData: Fo
   try {
     const examId = text(formData, 'exam_id');
     if (!examId) throw new Error('Exam is required.');
-    const { db, context } = await mutationContext('exams.manage', 'publish-results');
+    const { db, context } = await mutationContext('exams.manage', 'publish-results', 'exams');
     const { data: schedules } = await db
       .from('school_exam_schedules')
       .select('id, max_marks, subject_name')
@@ -915,7 +927,7 @@ export async function createFeeStructure(_state: SchoolActionState, formData: Fo
     const academicYearId = text(formData, 'academic_year_id');
     const amount = numberValue(formData, 'amount', -1);
     if (!name || !academicYearId || amount < 0) throw new Error('Name, academic year, and valid amount are required.');
-    const { db, context } = await mutationContext('fees.manage', 'fee-structure');
+    const { db, context } = await mutationContext('fees.manage', 'fee-structure', 'fees');
     const { data, error } = await db
       .from('school_fee_structures')
       .insert({
@@ -948,7 +960,7 @@ export async function createFeeInvoice(_state: SchoolActionState, formData: Form
     const subtotal = numberValue(formData, 'subtotal', -1);
     if (!studentId || !academicYearId || !dueDate || subtotal < 0)
       throw new Error('Student, year, due date, and amount are required.');
-    const { db, context, user } = await mutationContext('fees.manage', 'fee-invoice');
+    const { db, context, user } = await mutationContext('fees.manage', 'fee-invoice', 'fees');
     const voucherNumber = text(formData, 'voucher_number') || `V-${Date.now().toString(36).toUpperCase()}`;
     const { data, error } = await db
       .from('school_fee_invoices')
@@ -984,7 +996,7 @@ export async function recordFeePayment(_state: SchoolActionState, formData: Form
     const invoiceId = text(formData, 'invoice_id');
     const amount = numberValue(formData, 'amount', -1);
     if (!invoiceId || amount <= 0) throw new Error('Invoice and payment amount are required.');
-    const { db, context, user } = await mutationContext('fees.manage', 'fee-payment');
+    const { db, context, user } = await mutationContext('fees.manage', 'fee-payment', 'fees');
     const receiptNumber = text(formData, 'receipt_number') || `R-${Date.now().toString(36).toUpperCase()}`;
     const { data, error } = await db
       .from('school_fee_payments')
@@ -1014,7 +1026,7 @@ export async function createHomework(_state: SchoolActionState, formData: FormDa
     const sectionId = text(formData, 'section_id');
     const title = text(formData, 'title');
     if (!sectionId || !title) throw new Error('Section and title are required.');
-    const { db, context, user } = await mutationContext('academics.manage', 'homework');
+    const { db, context, user } = await mutationContext('academics.manage', 'homework', 'academics');
     const { data, error } = await db
       .from('school_homework')
       .insert({
@@ -1048,7 +1060,7 @@ export async function createLessonPlan(_state: SchoolActionState, formData: Form
       throw new Error('Subject, lesson title, and date are required.');
     }
     if (!['draft', 'ready', 'delivered', 'reviewed'].includes(status)) throw new Error('Invalid lesson status.');
-    const { db, context, user } = await mutationContext('academics.manage', 'lesson-plan');
+    const { db, context, user } = await mutationContext('academics.manage', 'lesson-plan', 'academics');
     const resources = text(formData, 'resources')
       .split(',')
       .map((item) => item.trim())
@@ -1085,7 +1097,7 @@ export async function createTimetableEntry(_state: SchoolActionState, formData: 
     const endsAt = text(formData, 'ends_at');
     if (!sectionId || !subjectName || !startsAt || !endsAt)
       throw new Error('Section, subject, and times are required.');
-    const { db, context } = await mutationContext('academics.manage', 'timetable');
+    const { db, context } = await mutationContext('academics.manage', 'timetable', 'academics');
     const { data, error } = await db
       .from('school_timetable_entries')
       .insert({
@@ -1114,7 +1126,7 @@ export async function createCalendarEvent(_state: SchoolActionState, formData: F
     const title = text(formData, 'title');
     const startsAt = text(formData, 'starts_at');
     if (!title || !startsAt) throw new Error('Event title and start time are required.');
-    const { db, context, user } = await mutationContext('academics.manage', 'calendar-event');
+    const { db, context, user } = await mutationContext('academics.manage', 'calendar-event', 'academics');
     const { data, error } = await db
       .from('school_calendar_events')
       .insert({
@@ -1144,7 +1156,7 @@ export async function createAnnouncement(_state: SchoolActionState, formData: Fo
     if (!title || !body) throw new Error('Announcement title and message are required.');
     const roles = formData.getAll('audience_roles').map(String);
     const channels = formData.getAll('delivery_channels').map(String);
-    const { db, context, user } = await mutationContext('communication.manage', 'announcement');
+    const { db, context, user } = await mutationContext('communication.manage', 'announcement', 'communication');
     const publishedAt = formData.get('publish_now') === 'on' ? new Date().toISOString() : null;
     const { data, error } = await db
       .from('school_announcements')
@@ -1205,7 +1217,7 @@ export async function publishAnnouncement(_state: SchoolActionState, formData: F
   try {
     const id = text(formData, 'id');
     if (!id) throw new Error('Announcement is required.');
-    const { db, context } = await mutationContext('communication.manage', 'announcement-publish');
+    const { db, context } = await mutationContext('communication.manage', 'announcement-publish', 'communication');
     const { data: announcement, error } = await db
       .from('school_announcements')
       .select('id, audience_roles, delivery_channels, published_at')
@@ -1269,7 +1281,7 @@ export async function createSchoolContactMessage(
     if (!['admin', 'admissions', 'teacher', 'accountant'].includes(recipientRole)) {
       throw new Error('Invalid recipient team.');
     }
-    const { db, context, user } = await mutationContext('communication.read', 'contact-message');
+    const { db, context, user } = await mutationContext('communication.read', 'contact-message', 'communication');
     const { data, error } = await db
       .from('school_contact_messages')
       .insert({
@@ -1299,7 +1311,7 @@ export async function respondSchoolContactMessage(
     const status = text(formData, 'status') || 'replied';
     if (!id || !response) throw new Error('Message and response are required.');
     if (!['replied', 'closed'].includes(status)) throw new Error('Invalid response status.');
-    const { db, context, user } = await mutationContext('communication.read', 'contact-response');
+    const { db, context, user } = await mutationContext('communication.read', 'contact-response', 'communication');
     const { error } = await db
       .from('school_contact_messages')
       .update({
@@ -1328,7 +1340,7 @@ export async function createPtmSlot(_state: SchoolActionState, formData: FormDat
     if (!startsAt || !endsAt) throw new Error('Start and end time are required.');
     if (new Date(endsAt).getTime() <= new Date(startsAt).getTime())
       throw new Error('End time must be after the start time.');
-    const { db, context, user } = await mutationContext('ptm.manage', 'ptm-slot');
+    const { db, context, user } = await mutationContext('ptm.manage', 'ptm-slot', 'ptm');
     const role = context.membership.member_role;
     let teacherId = user.id;
     if (['owner', 'admin'].includes(role)) {
@@ -1362,7 +1374,7 @@ export async function closePtmSlot(_state: SchoolActionState, formData: FormData
   try {
     const id = text(formData, 'id');
     if (!id) throw new Error('Slot is required.');
-    const { db, context } = await mutationContext('ptm.manage', 'ptm-slot-close');
+    const { db, context } = await mutationContext('ptm.manage', 'ptm-slot-close', 'ptm');
     let query = db
       .from('school_ptm_slots')
       .update({ is_open: false })
@@ -1382,7 +1394,7 @@ export async function requestPtm(_state: SchoolActionState, formData: FormData):
   try {
     let teacherId = text(formData, 'teacher_id');
     let studentId = text(formData, 'student_id');
-    const { db, context, user } = await mutationContext('ptm.read', 'ptm-request');
+    const { db, context, user } = await mutationContext('ptm.read', 'ptm-request', 'ptm');
     const role = context.membership.member_role;
 
     let parentId: string | null = null;
@@ -1476,7 +1488,7 @@ export async function respondPtmRequest(_state: SchoolActionState, formData: For
     const id = text(formData, 'id');
     const status = text(formData, 'status');
     if (!id || !PTM_RESPOND_STATUSES.has(status)) throw new Error('Meeting and a valid decision are required.');
-    const { db, context, user } = await mutationContext('ptm.manage', 'ptm-respond');
+    const { db, context, user } = await mutationContext('ptm.manage', 'ptm-respond', 'ptm');
     const startsAt = optionalText(formData, 'starts_at');
     const endsAt = optionalText(formData, 'ends_at');
     if (status === 'scheduled' && !startsAt) throw new Error('A meeting time is required to schedule.');
@@ -1518,7 +1530,7 @@ export async function updatePtmOutcome(_state: SchoolActionState, formData: Form
     const id = text(formData, 'id');
     const status = text(formData, 'status');
     if (!id || !PTM_OUTCOME_STATUSES.has(status)) throw new Error('Meeting and a valid outcome are required.');
-    const { db, context } = await mutationContext('ptm.manage', 'ptm-outcome');
+    const { db, context } = await mutationContext('ptm.manage', 'ptm-outcome', 'ptm');
     const update: Record<string, unknown> = { status, updated_at: new Date().toISOString() };
     if (status === 'completed') update.completed_at = new Date().toISOString();
     let query = db
@@ -1540,7 +1552,7 @@ export async function cancelPtmRequest(_state: SchoolActionState, formData: Form
   try {
     const id = text(formData, 'id');
     if (!id) throw new Error('Meeting is required.');
-    const { db, context, user } = await mutationContext('ptm.read', 'ptm-cancel');
+    const { db, context, user } = await mutationContext('ptm.read', 'ptm-cancel', 'ptm');
     const { error } = await db
       .from('school_ptm_requests')
       .update({
@@ -1564,7 +1576,7 @@ export async function addPtmNote(_state: SchoolActionState, formData: FormData):
     const requestId = text(formData, 'request_id');
     const note = text(formData, 'note');
     if (!requestId || !note) throw new Error('A note is required.');
-    const { db, context, user } = await mutationContext('ptm.manage', 'ptm-note');
+    const { db, context, user } = await mutationContext('ptm.manage', 'ptm-note', 'ptm');
     const { data, error } = await db
       .from('school_ptm_notes')
       .insert({

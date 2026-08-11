@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, ArrowRight, Files } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { AdSenseBanner } from '@/components/features/ads/AdSenseBanner';
@@ -19,7 +20,7 @@ export default async function PastPaperSubjectPage({ params }: { params: Promise
     ? { data: null }
     : await supabase.from('subjects').select('id, name, slug, color').eq('slug', subjectSlug).maybeSingle();
   if (subjectSlug !== 'general' && !subject) notFound();
-  let papersQuery = (supabase.from('past_papers') as any)
+  let papersQuery = (createServiceClient().from('past_papers') as any)
     .select('id, year, paper_type, chapter_id, chapters(id, name, slug)')
     .order('year', { ascending: false });
   if (profile?.board) papersQuery = papersQuery.eq('board', profile.board);

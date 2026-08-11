@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { BOARDS, GRADE_LEVELS } from '@/lib/constants';
 import { EDUCATION_LEVELS } from '@/lib/constants/university';
+import { createInstitutionalJoinRequestFromSignup } from '@/lib/school-erp/join-request-signup';
 
 function isMissingAcademicInstitutionColumn(error: { code?: string; message?: string } | null) {
   return (
@@ -17,7 +18,13 @@ export async function POST() {
   if (!user) return NextResponse.json({ error: 'Authentication is required' }, { status: 401 });
 
   const metadata = user.user_metadata || {};
-  const role = metadata.role === 'parent' ? 'parent' : 'student';
+  const role = metadata.role === 'parent' ? 'parent' : metadata.role === 'teacher' ? 'teacher' : 'student';
+  const signupInstitutionId =
+    typeof metadata.signup_institution_id === 'string' ? metadata.signup_institution_id : null;
+  const signupRoleRequested =
+    metadata.signup_role_requested === 'teacher' || metadata.signup_role_requested === 'student'
+      ? metadata.signup_role_requested
+      : null;
   const username = typeof metadata.username === 'string' ? metadata.username.trim().toLowerCase() : null;
   const gender = metadata.gender === 'girl' || metadata.gender === 'boy' ? metadata.gender : null;
   const preferredLanguage = metadata.preferred_language === 'roman-ur' ? 'roman-ur' : 'en';
@@ -105,6 +112,16 @@ export async function POST() {
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
     }
+  }
+
+  if (signupInstitutionId && signupRoleRequested) {
+    await createInstitutionalJoinRequestFromSignup(
+      admin,
+      user.id,
+      signupInstitutionId,
+      signupRoleRequested,
+      metadata.full_name || user.email?.split('@')[0] || 'A new user'
+    );
   }
 
   return NextResponse.json({ success: true });

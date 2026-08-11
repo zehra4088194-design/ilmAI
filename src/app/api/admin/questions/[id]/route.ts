@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { requireAdminUser } from '@/lib/admin/auth';
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -7,7 +7,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const { id } = await params;
-  const adminClient = await createAdminClient();
+  const adminClient = createServiceClient();
   const { error } = await adminClient.from('questions').delete().eq('id', id);
   if (error) {
     console.error('question delete error:', error);
@@ -29,7 +29,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (typeof body.is_demo_eligible === 'boolean') updates.is_demo_eligible = body.is_demo_eligible;
   if (!Object.keys(updates).length) return NextResponse.json({ error: 'No valid update fields' }, { status: 400 });
 
-  const adminClient = await createAdminClient();
+  const adminClient = createServiceClient();
   const { data, error } = await adminClient.from('questions').update(updates as any).eq('id', id).select('*').single();
   if (error) {
     console.error('question update error:', error);

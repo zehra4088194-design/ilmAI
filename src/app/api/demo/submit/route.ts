@@ -54,7 +54,8 @@ export async function POST(req: NextRequest) {
     if (attempt.completed_at) return NextResponse.json({ status: 'error', error: 'This demo has already been submitted.' }, { status: 409 });
 
     const questionIds = attempt.question_ids || [];
-    const { data: questions, error: questionError } = await supabase
+    const questionBank = createServiceClient() as any;
+    const { data: questions, error: questionError } = await questionBank
       .from('questions')
       .select('id, text, type, difficulty, marks, options, correct_answer, explanation')
       .in('id', questionIds);

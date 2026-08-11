@@ -36,10 +36,11 @@ export async function POST(req: NextRequest) {
 
     const requestedSubjectId = typeof body.subject_id === 'string' ? body.subject_id : null;
     const supabase = createServiceClient() as any;
+    const questionBank = createServiceClient() as any;
 
     let subjectId = requestedSubjectId;
     if (!subjectId) {
-      const { data: firstEligible } = await supabase
+      const { data: firstEligible } = await questionBank
         .from('questions')
         .select('subject_id')
         .eq('is_demo_eligible', true)
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { data: questions, error } = await supabase
+    const { data: questions, error } = await questionBank
       .from('questions')
       .select('id, text, type, difficulty, marks, options')
       .eq('is_demo_eligible', true)

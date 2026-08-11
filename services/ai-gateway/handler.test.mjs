@@ -123,6 +123,64 @@ test('direct DeepSeek key serves text without OpenRouter', async () => {
   }
 });
 
+test('OpenRouter serves the free router and never calls the DeepSeek fallback', async () => {
+  const originalFetch = globalThis.fetch;
+  const modelsCalled = [];
+  const keysUsed = [];
+  globalThis.fetch = async (url, options = {}) => {
+    assert.equal(String(url), 'https://openrouter.ai/api/v1/chat/completions');
+    modelsCalled.push(JSON.parse(options.body).model);
+    keysUsed.push(options.headers.Authorization);
+    return Response.json({ choices: [{ message: { content: 'Free router reply' } }] });
+  };
+
+  try {
+    const response = await gateway.fetch(chatRequest('openrouter'), {
+      GATEWAY_SECRET: 'test-secret',
+      OPENROUTER_API_KEY: 'openrouter-key',
+    });
+    const body = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(body.text, 'Free router reply');
+    assert.equal(body.providerUsed, 'openrouter');
+    assert.equal(body.modelUsed, 'openrouter/free');
+    assert.deepEqual(modelsCalled, ['openrouter/free']);
+    assert.deepEqual(keysUsed, ['Bearer openrouter-key']);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('OpenRouter falls back to DeepSeek V4 Flash on the same key when the free router fails', async () => {
+  const originalFetch = globalThis.fetch;
+  const modelsCalled = [];
+  const keysUsed = [];
+  globalThis.fetch = async (url, options = {}) => {
+    assert.equal(String(url), 'https://openrouter.ai/api/v1/chat/completions');
+    const model = JSON.parse(options.body).model;
+    modelsCalled.push(model);
+    keysUsed.push(options.headers.Authorization);
+    if (model === 'openrouter/free') return new Response('upstream unavailable', { status: 503 });
+    return Response.json({ choices: [{ message: { content: 'DeepSeek reply' } }] });
+  };
+
+  try {
+    const response = await gateway.fetch(chatRequest('openrouter'), {
+      GATEWAY_SECRET: 'test-secret',
+      OPENROUTER_API_KEY: 'openrouter-key',
+    });
+    const body = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(body.text, 'DeepSeek reply');
+    assert.equal(body.providerUsed, 'openrouter');
+    assert.equal(body.modelUsed, 'deepseek/deepseek-v4-flash');
+    assert.deepEqual(modelsCalled, ['openrouter/free', 'deepseek/deepseek-v4-flash']);
+    assert.deepEqual(keysUsed, ['Bearer openrouter-key', 'Bearer openrouter-key']);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test('Groq requests rotate through ten configured keys and wrap to the first', async () => {
   const originalFetch = globalThis.fetch;
   const authorizations = [];

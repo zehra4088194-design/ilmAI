@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { createServiceClient } from '@/lib/supabase/service';
 import type {
   CollegeJoinRequestWithStudent,
   CollegeLecture,
@@ -42,9 +43,11 @@ export async function getCollegeBySlug(supabase: SupabaseClient, slug: string): 
 
 export async function getCollegeCounts(supabase: SupabaseClient, collegeId: string) {
   const db = supabase as any;
+  // college_resources now lives in the standalone pdf-storage project.
+  const pdfStorage = createServiceClient() as any;
   const [{ count: lectureCount }, { count: resourceCount }] = await Promise.all([
     db.from('college_lectures').select('id', { count: 'exact', head: true }).eq('college_id', collegeId),
-    db.from('college_resources').select('id', { count: 'exact', head: true }).eq('college_id', collegeId),
+    pdfStorage.from('college_resources').select('id', { count: 'exact', head: true }).eq('college_id', collegeId),
   ]);
   return { lectures: lectureCount ?? 0, resources: resourceCount ?? 0 };
 }
@@ -140,8 +143,8 @@ export async function getCollegeLectures(supabase: SupabaseClient, collegeId: st
   return (data as CollegeLecture[] | null) ?? [];
 }
 
-export async function getCollegeResources(supabase: SupabaseClient, collegeId: string): Promise<CollegeResource[]> {
-  const db = supabase as any;
+export async function getCollegeResources(_supabase: SupabaseClient, collegeId: string): Promise<CollegeResource[]> {
+  const db = createServiceClient() as any;
   const { data, error } = await db
     .from('college_resources')
     .select('*')
@@ -152,10 +155,10 @@ export async function getCollegeResources(supabase: SupabaseClient, collegeId: s
 }
 
 export async function getCollegeResourceMetadata(
-  supabase: SupabaseClient,
+  _supabase: SupabaseClient,
   collegeId: string
 ): Promise<CollegeResourceMetadata[]> {
-  const db = supabase as any;
+  const db = createServiceClient() as any;
   const { data, error } = await db
     .from('college_resources')
     .select(

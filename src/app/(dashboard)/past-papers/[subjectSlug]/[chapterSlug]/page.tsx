@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, ArrowRight, FileCheck2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { AdSenseBanner } from '@/components/features/ads/AdSenseBanner';
@@ -17,7 +18,7 @@ export default async function PastPaperChapterPage({ params }: { params: Promise
   if (subjectSlug !== 'general' && !subject) notFound();
   const { data: chapter } = chapterSlug === 'full-syllabus' || !subject ? { data: null } : await supabase.from('chapters').select('id, name, slug').eq('subject_id', subject.id).eq('slug', chapterSlug).maybeSingle();
   if (chapterSlug !== 'full-syllabus' && !chapter) notFound();
-  let papersQuery = (supabase.from('past_papers') as any).select('id, year, paper_type, total_questions, duration, is_verified').order('year', { ascending: false });
+  let papersQuery = (createServiceClient().from('past_papers') as any).select('id, year, paper_type, total_questions, duration, is_verified').order('year', { ascending: false });
   if (profile?.board) papersQuery = papersQuery.eq('board', profile.board);
   if (profile?.grade_level) papersQuery = papersQuery.eq('grade_level', profile.grade_level);
   papersQuery = subject ? papersQuery.eq('subject_id', subject.id) : papersQuery.is('subject_id', null);

@@ -1,4 +1,6 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { Upload } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +13,7 @@ import { getSchoolPeople } from '@/lib/school-erp/queries';
 const selectClass = 'border-input bg-background h-10 w-full rounded-lg border px-3 text-sm';
 
 export default async function SchoolPeoplePage() {
-  const { supabase, context } = await requireSchoolContext('people.read');
+  const { supabase, context } = await requireSchoolContext('people.read', 'people');
   if (!context) redirect('/school-admin');
   const data = await getSchoolPeople(supabase, context);
   const canManage = hasSchoolPermission(context, 'people.manage');
@@ -23,7 +25,20 @@ export default async function SchoolPeoplePage() {
       <SchoolPageHeader
         title="People"
         description="Students, teachers, staff, parents, enrollment and guardian relationships."
-        action={<div className="border-border bg-card rounded-lg border px-4 py-2 text-right"><p className="text-muted-foreground text-[11px]">Student plan usage</p><p className="font-bold">{data.activeStudentCount.toLocaleString()} / {maxStudents.toLocaleString()}</p></div>}
+        action={
+          <div className="flex items-center gap-3">
+            {canManage && (
+              <Link
+                href="/school-admin/people/import"
+                className="border-border hover:bg-muted inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium"
+              >
+                <Upload className="h-3.5 w-3.5" />
+                Bulk import
+              </Link>
+            )}
+            <div className="border-border bg-card rounded-lg border px-4 py-2 text-right"><p className="text-muted-foreground text-[11px]">Student plan usage</p><p className="font-bold">{data.activeStudentCount.toLocaleString()} / {maxStudents.toLocaleString()}</p></div>
+          </div>
+        }
       />
       {(canManage || canEnroll) && (
         <div className="grid gap-5 xl:grid-cols-3">

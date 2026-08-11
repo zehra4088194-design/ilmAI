@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, Files } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { GoogleDriveResourceCard } from '@/components/features/library/GoogleDriveResourceCard';
@@ -52,7 +53,8 @@ export default async function LibrarySectionPage({
           .maybeSingle();
   if (chapterSlug !== 'general' && !chapter) notFound();
 
-  let resourcesQuery = (supabase.from('library_resources') as any)
+  const pdfStorage = createServiceClient();
+  let resourcesQuery = (pdfStorage.from('library_resources') as any)
     .select(
       'id, title, description, book_title, content_section, has_context_text, resource_type, drive_url, light_file_url, dark_file_url, board, grade_level, file_type, subjects(id, name, slug, color), chapters(id, name, slug, order_index)'
     )
@@ -66,7 +68,7 @@ export default async function LibrarySectionPage({
   let resources = catalogResult.data;
   if (catalogResult.error) {
     console.warn('Structured library catalog is not migrated yet; using the safe legacy section fallback.');
-    let fallbackQuery = (supabase.from('library_resources') as any)
+    let fallbackQuery = (pdfStorage.from('library_resources') as any)
       .select(
         'id, title, description, context_text_url, resource_type, drive_url, light_file_url, dark_file_url, board, grade_level, file_type, subjects(id, name, slug, color), chapters(id, name, slug, order_index)'
       )

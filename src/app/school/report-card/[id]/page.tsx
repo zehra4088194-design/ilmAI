@@ -70,6 +70,15 @@ export default async function SchoolReportCardPage({
           ))}
         </div>
         {report.teacher_comment && <div className="bg-muted/40 mt-5 rounded-lg p-4"><p className="text-xs font-semibold">Teacher comment</p><p className="mt-1 text-sm">{report.teacher_comment}</p></div>}
+        {report.ai_comment && (
+          <div className="bg-muted/40 mt-3 rounded-lg p-4">
+            <p className="text-xs font-semibold">Performance summary</p>
+            <p className="mt-1 text-sm">{report.ai_comment}</p>
+            <p className="text-muted-foreground mt-2 text-[10px]">
+              AI-assisted summary based on this exam&apos;s marks. Reviewed by the school.
+            </p>
+          </div>
+        )}
       </article>
     </main>
   );

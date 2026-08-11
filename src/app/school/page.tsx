@@ -61,11 +61,27 @@ export default async function SchoolPortalPage() {
       <div className="border-border bg-card/80 sticky top-0 z-30 border-b backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
           <Link href="/dashboard" className="flex min-w-0 items-center gap-2.5">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white">
-              <Building2 className="h-4 w-4" />
-            </span>
+            {context.organization.logo_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={context.organization.logo_url}
+                alt={context.organization.name}
+                className="h-10 w-10 shrink-0 rounded-lg object-cover"
+              />
+            ) : (
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white">
+                <Building2 className="h-5 w-5" />
+              </span>
+            )}
             <span className="min-w-0">
-              <span className="block truncate text-sm font-bold">{context.organization.name}</span>
+              <span className="flex min-w-0 items-baseline gap-1.5">
+                <span className="truncate text-lg leading-tight font-extrabold sm:text-xl">
+                  {context.organization.name}
+                </span>
+                <span className="text-muted-foreground shrink-0 text-xs font-semibold whitespace-nowrap">
+                  x ilm AI
+                </span>
+              </span>
               <span className="text-muted-foreground block text-[11px] capitalize">{role} portal</span>
             </span>
           </Link>

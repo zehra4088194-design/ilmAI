@@ -3,6 +3,7 @@ import { SchoolActionForm } from '@/components/features/school-erp/SchoolActionF
 import { SchoolPageHeader } from '@/components/features/school-erp/SchoolPageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { DEFAULT_SCHOOL_MODULES, SCHOOL_MODULES } from '@/lib/school-erp/modules';
 import { createSchoolOrganization, updateSchoolPlanSettings } from './actions';
 
 const selectClass = 'border-input bg-background h-10 w-full rounded-lg border px-3 text-sm';
@@ -74,7 +75,29 @@ export default async function AdminSchoolsPage() {
                     <Input name="monthly_price_usd" type="number" min={0} step="0.01" defaultValue={plan?.monthly_price_usd ?? 10} placeholder="USD/mo" />
                     <Input name="monthly_price_pkr" type="number" min={0} step="1" defaultValue={plan?.monthly_price_pkr ?? 0} placeholder="PKR/mo" />
                   </div>
-                  <Input name="enabled_modules" defaultValue={(plan?.enabled_modules || []).join(', ')} placeholder="dashboard, people, fees, payroll" />
+                  <fieldset className="border-border rounded-lg border p-3">
+                    <legend className="text-muted-foreground px-1 text-[11px]">Enabled modules</legend>
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                      {SCHOOL_MODULES.map((module) => {
+                        const enabled = plan?.enabled_modules
+                          ? plan.enabled_modules.includes(module.key)
+                          : DEFAULT_SCHOOL_MODULES.includes(module.key);
+                        return (
+                          <label key={module.key} className="flex items-center gap-2 text-xs" title={module.description}>
+                            <input
+                              type="checkbox"
+                              name="enabled_modules"
+                              value={module.key}
+                              defaultChecked={enabled}
+                              disabled={module.key === 'dashboard'}
+                              className="h-3.5 w-3.5 rounded"
+                            />
+                            {module.label}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </fieldset>
                   <Input name="notes" defaultValue={plan?.notes || ''} placeholder="Internal notes" />
                 </SchoolActionForm>
               </CardContent>

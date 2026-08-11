@@ -5,7 +5,9 @@ import { ChevronLeft, ChevronRight, Circle } from 'lucide-react';
 import type { PresentationDeck, PresentationSlide } from '@/lib/presentation/types';
 import { cn } from '@/lib/utils/cn';
 
-const THEMES = {
+// Exported so the builder's theme picker can reuse the exact same gradients for
+// its swatch previews instead of duplicating color values in a second place.
+export const THEMES = {
   'modern-blue': {
     bg: 'linear-gradient(135deg, #0F2C59 0%, #1B4B8F 55%, #2E7BC4 100%)',
     accent: '#5FD4D0',
@@ -66,9 +68,70 @@ const THEMES = {
     display: 'Inter, sans-serif',
     body: 'Inter, sans-serif',
   },
+  // --- Color-pigment themes (dark trio + light trio) ---
+  'ocean-teal': {
+    bg: 'linear-gradient(135deg, #052E2B 0%, #0B4A45 55%, #12746B 100%)',
+    accent: '#2DD4BF',
+    accent2: '#FDE68A',
+    text: '#EAFBF8',
+    subtext: '#B7E4DD',
+    cardBg: 'rgba(255,255,255,0.08)',
+    display: 'Inter, sans-serif',
+    body: 'Inter, sans-serif',
+  },
+  'royal-violet': {
+    bg: 'linear-gradient(135deg, #1A0B33 0%, #3B1370 55%, #5B21B6 100%)',
+    accent: '#F2C744',
+    accent2: '#38BDF8',
+    text: '#F5EEFF',
+    subtext: '#D8C7F5',
+    cardBg: 'rgba(255,255,255,0.08)',
+    display: 'Inter, sans-serif',
+    body: 'Inter, sans-serif',
+  },
+  'charcoal-slate': {
+    bg: 'linear-gradient(135deg, #15181D 0%, #22262E 55%, #343A46 100%)',
+    accent: '#7DD3FC',
+    accent2: '#F97362',
+    text: '#F1F3F5',
+    subtext: '#AEB6C2',
+    cardBg: 'rgba(255,255,255,0.06)',
+    display: 'Inter, sans-serif',
+    body: 'Inter, sans-serif',
+  },
+  'sunset-coral': {
+    bg: 'linear-gradient(135deg, #FFF4ED 0%, #FFE1D1 55%, #FFC9AE 100%)',
+    accent: '#F2622E',
+    accent2: '#0F9E8E',
+    text: '#3A1F16',
+    subtext: '#7A4B3A',
+    cardBg: 'rgba(0,0,0,0.045)',
+    display: 'Inter, sans-serif',
+    body: 'Inter, sans-serif',
+  },
+  'blush-rose': {
+    bg: 'linear-gradient(135deg, #FFF3F6 0%, #FBDCE4 55%, #F5C1CF 100%)',
+    accent: '#D6336C',
+    accent2: '#8C6A3F',
+    text: '#3D1B26',
+    subtext: '#7A4256',
+    cardBg: 'rgba(0,0,0,0.045)',
+    display: 'Inter, sans-serif',
+    body: 'Inter, sans-serif',
+  },
+  'golden-sand': {
+    bg: 'linear-gradient(135deg, #FFFBEB 0%, #FDEFC7 55%, #F7DFA0 100%)',
+    accent: '#C9861A',
+    accent2: '#0F766E',
+    text: '#332508',
+    subtext: '#6B551F',
+    cardBg: 'rgba(0,0,0,0.045)',
+    display: 'Inter, sans-serif',
+    body: 'Inter, sans-serif',
+  },
 } as const;
 
-type Theme = (typeof THEMES)[keyof typeof THEMES];
+export type Theme = (typeof THEMES)[keyof typeof THEMES];
 
 function themeFor(deck: PresentationDeck): Theme {
   return THEMES[deck.theme] || THEMES['modern-blue'];
@@ -201,6 +264,11 @@ function PrintableSlide({ slide, theme, index, total }: { slide: PresentationSli
         overflow: 'hidden',
         fontFamily: theme.body,
         boxShadow: '0 18px 45px rgba(15,23,42,.18)',
+        // Belt-and-suspenders: the dedicated print stylesheet also forces this,
+        // but setting it directly on the slide keeps the gradient/photo visible
+        // even if a browser ignores the popup document's <style> block.
+        WebkitPrintColorAdjust: 'exact',
+        printColorAdjust: 'exact',
       }}
     >
       <div style={{ position: 'absolute', right: '-80px', top: '-90px', width: 260, height: 260, borderRadius: 999, background: theme.accent, opacity: 0.18 }} />

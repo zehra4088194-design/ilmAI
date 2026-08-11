@@ -35,6 +35,7 @@ export function LoginForm() {
   const [mfaLoading, setMfaLoading] = useState(false);
   const [mfaError, setMfaError] = useState<string | null>(null);
   const searchParams = useSearchParams();
+  const hasExplicitRedirect = searchParams.has('redirect');
   const redirect = searchParams.get('redirect') || '/dashboard';
   const supabase = createClient();
   const t = useTranslations();
@@ -45,9 +46,18 @@ export function LoginForm() {
     formState: { errors, isSubmitting },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
 
-  const finishLogin = () => {
+  const finishLogin = async () => {
     toast.success('Welcome back!');
-    const destination = redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/dashboard';
+    let destination = redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/dashboard';
+    if (!hasExplicitRedirect) {
+      try {
+        const response = await fetch('/api/auth/post-login-destination');
+        const data = await response.json();
+        if (typeof data.destination === 'string') destination = data.destination;
+      } catch {
+        // Keep the default '/dashboard' destination if the lookup fails.
+      }
+    }
     window.location.assign(new URL(destination, getBrowserSiteUrl()).toString());
   };
 
@@ -84,7 +94,7 @@ export function LoginForm() {
       return;
     }
     if (await prepareMfaIfRequired()) return;
-    finishLogin();
+    await finishLogin();
   };
 
   const sendMagicLink = async () => {
@@ -144,7 +154,7 @@ export function LoginForm() {
       return;
     }
     if (await prepareMfaIfRequired()) return;
-    finishLogin();
+    await finishLogin();
   };
 
   const verifyMfaCode = async (event: React.FormEvent) => {
@@ -166,7 +176,7 @@ export function LoginForm() {
       setMfaError(error.message);
       return;
     }
-    finishLogin();
+    await finishLogin();
   };
 
   return (

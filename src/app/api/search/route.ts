@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { searchAlgoliaCatalog } from '@/lib/search/algolia';
 
 export async function GET(req: NextRequest) {
@@ -28,7 +29,7 @@ export async function GET(req: NextRequest) {
         .ilike('title', `%${query}%`)
         .order('created_at', { ascending: false })
         .limit(8),
-      supabase
+      createServiceClient()
         .from('college_resources')
         .select('id, title, resource_type, course_name, chapter_title')
         .ilike('title', `%${query}%`)
@@ -87,7 +88,7 @@ export async function GET(req: NextRequest) {
       .ilike('name', `%${query}%`)
       .order('name')
       .limit(8),
-    supabase
+    createServiceClient()
       .from('library_resources')
       .select('id, title, resource_type, book_title, content_section, subjects(name, slug), chapters(name, slug)')
       .ilike('title', `%${query}%`)
@@ -108,7 +109,7 @@ export async function GET(req: NextRequest) {
           .order('updated_at', { ascending: false })
           .limit(8)
       : Promise.resolve({ data: [] as Array<{ id: string; title: string }> }),
-    supabase
+    createServiceClient()
       .from('past_papers')
       .select('id, year, paper_type, subjects(name, slug), chapters(name, slug)')
       .order('created_at', { ascending: false })
@@ -119,7 +120,7 @@ export async function GET(req: NextRequest) {
       .ilike('title', `%${query}%`)
       .order('created_at', { ascending: false })
       .limit(8),
-    supabase
+    createServiceClient()
       .from('college_resources')
       .select('id, title, resource_type, course_name, chapter_title')
       .ilike('title', `%${query}%`)

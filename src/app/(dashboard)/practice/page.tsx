@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { AiPracticeHub } from '@/components/features/quiz/AiPracticeHub';
 import type { Board, GradeLevel } from '@/types';
 
@@ -53,7 +54,7 @@ export default async function PracticePage() {
     chaptersBySubject[c.subject_id]!.push({ id: c.id, name: c.name });
   });
 
-  const { data: sourceFiles } = await supabase
+  const { data: sourceFiles } = await createServiceClient()
     .from('library_resources')
     .select('id, title, chapter_id, subject_id, board, grade_level')
     .eq('resource_type', 'notes')

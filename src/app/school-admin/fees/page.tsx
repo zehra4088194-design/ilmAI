@@ -16,7 +16,7 @@ function profileName(value: any) {
 }
 
 export default async function SchoolFeesPage() {
-  const { supabase, context } = await requireSchoolContext('fees.read');
+  const { supabase, context } = await requireSchoolContext('fees.read', 'fees');
   if (!context) redirect('/school-admin');
   const data = await getSchoolFees(supabase, context);
   const canManage = hasSchoolPermission(context, 'fees.manage');

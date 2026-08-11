@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { generateChapterQuestionPaper } from '@/lib/tests/chapter-question-bank';
+import { isTeacherAuthorized } from '@/lib/teacher/authorization';
 import { resolveTestBranding, type PlanTier } from '@/lib/teacher/test-branding';
 import type { DifficultyFilter } from '@/lib/tests/paper-selection';
 
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest) {
       .select('role, subscription_tier, full_name')
       .eq('id', user.id)
       .maybeSingle();
-    if (!profile || !['teacher', 'admin'].includes(String((profile as any).role))) {
+    if (!profile || !(await isTeacherAuthorized(supabase, user.id))) {
       return NextResponse.json({ error: 'Teacher access is required.' }, { status: 403 });
     }
     const planTier = (

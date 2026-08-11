@@ -49,9 +49,12 @@ export async function GET() {
       { status: 404 }
     );
 
+  // questions now live in the standalone question-bank project, which has its own
+  // subjects/chapters copies (same IDs) so this embedded join still works.
+  const questionBank = createServiceClient() as any;
   const questionResults = await Promise.all(
     subjectIds.map((subjectId: string) =>
-      db
+      questionBank
         .from('questions')
         .select('id, text, options, subject_id, chapter_id, is_verified, subjects(name), chapters(name)')
         .eq('subject_id', subjectId)
@@ -113,7 +116,8 @@ export async function POST(req: NextRequest) {
     );
 
   const db = createServiceClient() as any;
-  const { data: questions, error } = await db
+  const questionBank = createServiceClient() as any;
+  const { data: questions, error } = await questionBank
     .from('questions')
     .select('id, text, subject_id, chapter_id, concept_id, options, correct_answer, explanation')
     .in('id', questionIds);

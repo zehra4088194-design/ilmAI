@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { getResourceForProcessing } from '@/lib/resources/server';
 import type { ProtectedResourceKind } from '@/lib/resources/server';
 import { filterHighQualitySourceMcqs, shuffleSourceQuestions } from '@/lib/resources/source-fallback';
@@ -21,7 +22,10 @@ export async function GET(req: NextRequest) {
 
   const resource = await getResourceForProcessing(kind, id);
   if (!resource) return NextResponse.json({ status: 'error', error: 'The resource was not found.' }, { status: 404 });
-  const { data, error } = await (supabase
+  // resource_mcq_sets now lives in the standalone question-bank project (service-role
+  // only) — the plain session client used above (for auth) has no access there.
+  const questionBank = createServiceClient();
+  const { data, error } = await (questionBank
     .from('resource_mcq_sets' as any)
     .select('questions, short_questions, long_questions, status, generated_at')
     .eq('resource_kind', kind)

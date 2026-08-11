@@ -7,9 +7,16 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BrandLoader } from '@/components/ui/BrandLoader';
-import { PresentationSlideRenderer } from '@/components/features/university/PresentationSlideRenderer';
-import { printElementById } from '@/lib/utils/printElement';
-import type { PresentationDeck, PresentationGenerateMode, PresentationTheme } from '@/lib/presentation/types';
+import { PresentationSlideRenderer, THEMES } from '@/components/features/university/PresentationSlideRenderer';
+import { printPresentationDeck } from '@/lib/utils/printPresentation';
+import { cn } from '@/lib/utils/cn';
+import {
+  PRESENTATION_LIGHT_THEMES,
+  PRESENTATION_THEMES,
+  type PresentationDeck,
+  type PresentationGenerateMode,
+  type PresentationTheme,
+} from '@/lib/presentation/types';
 
 type Props = {
   defaultSubject?: string;
@@ -23,14 +30,16 @@ const progressCopy = [
   'Preparing colorful PowerPoint preview...',
 ];
 
-const colorThemeOptions: PresentationTheme[] = [
-  'modern-blue',
-  'warm-academic',
-  'dark-tech',
-  'nature-green',
-  'vibrant-purple',
-  'minimal-mono',
-];
+// Single source of truth for which themes exist — stays in sync with
+// PRESENTATION_THEMES (types.ts) automatically instead of a second hardcoded list.
+const colorThemeOptions: PresentationTheme[] = PRESENTATION_THEMES;
+
+function themeLabel(theme: PresentationTheme) {
+  return theme
+    .split('-')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
 
 export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 'professional' }: Props) {
   const [topic, setTopic] = useState('');
@@ -235,12 +244,7 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
                 options={['simple', 'academic', 'professional', 'detailed']}
               />
             </div>
-            <SelectField
-              label="Color theme"
-              value={theme}
-              onChange={(value) => setTheme(value as PresentationTheme)}
-              options={colorThemeOptions}
-            />
+            <ThemeSwatchPicker value={theme} onChange={setTheme} options={colorThemeOptions} />
             <SelectField
               label="Generation mode"
               value={mode}
@@ -297,7 +301,7 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    const ok = printElementById('presentation-export-all', deck.topic);
+                    const ok = printPresentationDeck('presentation-export-all', deck.topic);
                     if (!ok) toast.error('Presentation export content is unavailable.');
                   }}
                 >
@@ -380,6 +384,49 @@ function NumberField({
         onChange={(event) => onChange(Number(event.target.value))}
         className="border-input bg-background focus:ring-primary/40 h-10 w-full rounded-lg border px-3 text-sm transition outline-none focus:ring-2"
       />
+    </div>
+  );
+}
+
+function ThemeSwatchPicker({
+  value,
+  onChange,
+  options,
+}: {
+  value: PresentationTheme;
+  onChange: (value: PresentationTheme) => void;
+  options: PresentationTheme[];
+}) {
+  return (
+    <div>
+      <label className="text-muted-foreground mb-1.5 block text-xs font-bold tracking-wide uppercase">
+        Color theme
+      </label>
+      <div className="grid grid-cols-3 gap-2">
+        {options.map((option) => {
+          const palette = THEMES[option];
+          const active = value === option;
+          const isLight = PRESENTATION_LIGHT_THEMES.includes(option);
+          return (
+            <button
+              key={option}
+              type="button"
+              aria-pressed={active}
+              onClick={() => onChange(option)}
+              className={cn(
+                'flex flex-col items-center gap-1.5 rounded-lg border p-2 text-center transition',
+                active ? 'border-violet-400 ring-2 ring-violet-400/50' : 'border-input hover:border-violet-300'
+              )}
+            >
+              <span className="h-8 w-full rounded-md ring-1 ring-black/10" style={{ background: palette.bg }} />
+              <span className="text-[11px] font-medium leading-tight">{themeLabel(option)}</span>
+              <span className="text-muted-foreground text-[9px] font-semibold tracking-wide uppercase">
+                {isLight ? 'Light' : 'Dark'}
+              </span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

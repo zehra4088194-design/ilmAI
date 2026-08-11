@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, ArrowRight, BookMarked, CheckCircle2, FileQuestion, FileText, Files, ListChecks } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -59,7 +60,8 @@ export default async function LibraryChapterPage({
           .maybeSingle();
   if (chapterSlug !== 'general' && !chapter) notFound();
 
-  let resourcesQuery = (supabase.from('library_resources') as any)
+  const pdfStorage = createServiceClient();
+  let resourcesQuery = (pdfStorage.from('library_resources') as any)
     .select('id, title, book_title, content_section, has_context_text, drive_url, light_file_url, dark_file_url, board, grade_level')
     .eq('resource_type', resourceType);
   resourcesQuery = subject ? resourcesQuery.eq('subject_id', subject.id) : resourcesQuery.is('subject_id', null);
@@ -69,7 +71,7 @@ export default async function LibraryChapterPage({
   let resources = catalogResult.data;
   if (catalogResult.error) {
     console.warn('Structured library catalog is not migrated yet; using the safe legacy chapter fallback.');
-    let fallbackQuery = (supabase.from('library_resources') as any)
+    let fallbackQuery = (pdfStorage.from('library_resources') as any)
       .select('id, title, context_text_url, drive_url, light_file_url, dark_file_url, board, grade_level')
       .eq('resource_type', resourceType);
     fallbackQuery = subject ? fallbackQuery.eq('subject_id', subject.id) : fallbackQuery.is('subject_id', null);

@@ -16,7 +16,7 @@ function profileName(value: any) {
 }
 
 export default async function SchoolPayrollPage() {
-  const { supabase, context } = await requireSchoolContext('payroll.read');
+  const { supabase, context } = await requireSchoolContext('payroll.read', 'payroll');
   if (!context) redirect('/school-admin');
   const data = await getSchoolPayroll(supabase, context);
   const canManage = hasSchoolPermission(context, 'payroll.manage');

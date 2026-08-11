@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { requireAdminUser } from '@/lib/admin/auth';
 import { queueResourceContextProcessing } from '@/lib/resources/processing';
 import type { Database } from '@/lib/supabase/database.types';
@@ -15,7 +15,7 @@ export async function GET() {
   const admin = await requireAdminUser();
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  const adminClient = await createAdminClient();
+  const adminClient = createServiceClient();
   const { data, error } = await adminClient
     .from('past_papers')
     .select('*, subjects(name), chapters(name)')
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'A companion TXT URL is required for every PDF' }, { status: 400 });
   }
 
-  const adminClient = await createAdminClient();
+  const adminClient = createServiceClient();
   const { data, error } = await adminClient
     .from('past_papers')
     .insert({

@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache';
 import slugify from 'slugify';
 import { requireAdminUser } from '@/lib/admin/auth';
 import { createAdminClient } from '@/lib/supabase/server';
+import { normalizeSchoolModules } from '@/lib/school-erp/modules';
+import { syncOrganizationSchoolGrants } from '@/lib/school-erp/subscription-cascade';
 import type { SchoolActionState } from '@/lib/school-erp/types';
 
 export async function createSchoolOrganization(
@@ -90,10 +92,8 @@ export async function updateSchoolPlanSettings(
   if (!admin) return { success: false, message: 'Admin access required.' };
   const organizationId = String(formData.get('organization_id') || '').trim();
   if (!organizationId) return { success: false, message: 'Organization is required.' };
-  const enabledModules = String(formData.get('enabled_modules') || '')
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean);
+  // Checkbox group: unchecked modules simply do not appear in the payload.
+  const enabledModules = normalizeSchoolModules(formData.getAll('enabled_modules')) || [];
   const numberField = (key: string, fallback: number) => {
     const value = Number(formData.get(key));
     return Number.isFinite(value) && value >= 0 ? value : fallback;
@@ -115,7 +115,7 @@ export async function updateSchoolPlanSettings(
     max_storage_gb: numberField('max_storage_gb', tier?.max_storage_gb || 10),
     monthly_price_usd: numberField('monthly_price_usd', tier?.monthly_price_usd || 10),
     monthly_price_pkr: numberField('monthly_price_pkr', tier?.monthly_price_pkr || 0),
-    enabled_modules: enabledModules.length ? enabledModules : tier?.enabled_modules || undefined,
+    enabled_modules: enabledModules,
     notes: String(formData.get('notes') || '').trim() || null,
     renews_on: String(formData.get('renews_on') || '').trim() || null,
     updated_by: admin.id,
@@ -126,6 +126,8 @@ export async function updateSchoolPlanSettings(
     .from('school_organization_plan_settings')
     .upsert(payload, { onConflict: 'organization_id' });
   if (error) return { success: false, message: error.message };
+
+  await syncOrganizationSchoolGrants(organizationId, payload.billing_status === 'active');
 
   await db.from('school_audit_logs').insert({
     organization_id: organizationId,

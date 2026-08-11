@@ -1,5 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { SchoolContext } from './types';
+import type { PublicSchoolOrganization, SchoolContext, SchoolJoinRequestWithRequester } from './types';
+
+// Only these columns are ever selected for the public-facing signup
+// autocomplete — mirrors PUBLIC_COLUMNS in src/lib/college/queries.ts.
+const PUBLIC_SCHOOL_COLUMNS = 'id, name, slug, organization_type, logo_url';
 
 async function rows(query: PromiseLike<{ data: any[] | null; error: { message: string } | null }>): Promise<any[]> {
   const { data, error } = await query;
@@ -796,4 +800,47 @@ export async function getSchoolPortalData(supabase: SupabaseClient, context: Sch
     ptmSlots,
     ptmTeacherOptions,
   };
+}
+
+// =========================================
+// Institutional signup: school directory search + join requests
+// Mirrors getActiveColleges / getPendingJoinRequests in src/lib/college/queries.ts
+// =========================================
+
+export async function getActiveSchools(supabase: SupabaseClient, search?: string): Promise<PublicSchoolOrganization[]> {
+  const db = supabase as any;
+  let query = db
+    .from('school_organizations')
+    .select(PUBLIC_SCHOOL_COLUMNS)
+    .in('status', ['trial', 'active'])
+    .order('name');
+
+  if (search && search.trim()) {
+    const term = search.trim().replace(/[%_]/g, '');
+    query = query.ilike('name', `%${term}%`);
+  }
+
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return (data as PublicSchoolOrganization[] | null) ?? [];
+}
+
+export async function getPendingSchoolJoinRequests(
+  supabase: SupabaseClient,
+  organizationId: string
+): Promise<SchoolJoinRequestWithRequester[]> {
+  const db = supabase as any;
+  // `requester:profiles!school_join_requests_requester_id_fkey` disambiguates
+  // the embed — school_join_requests has two FKs into profiles
+  // (requester_id and resolved_by), so PostgREST needs the constraint name.
+  const { data, error } = await db
+    .from('school_join_requests')
+    .select(
+      'id, requester_id, organization_id, role_requested, status, requested_at, resolved_at, resolved_by, requester:profiles!school_join_requests_requester_id_fkey ( id, full_name, email, avatar_url )'
+    )
+    .eq('organization_id', organizationId)
+    .eq('status', 'pending')
+    .order('requested_at', { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as unknown as SchoolJoinRequestWithRequester[];
 }

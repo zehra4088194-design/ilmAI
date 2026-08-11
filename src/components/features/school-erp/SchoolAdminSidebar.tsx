@@ -15,6 +15,8 @@ import {
   MessageSquareText,
   ReceiptText,
   Settings2,
+  Sparkles,
+  UserPlus,
   Users2,
   WalletCards,
   Users,
@@ -23,6 +25,7 @@ import {
 import { useState } from 'react';
 import { cn } from '@/lib/utils/cn';
 import { switchSchoolOrganization } from '@/lib/school-erp/context-actions';
+import { isSchoolModuleEnabled, type SchoolModuleKey } from '@/lib/school-erp/modules';
 import type { SchoolPermission, SchoolRole } from '@/lib/school-erp/types';
 
 const ITEMS: Array<{
@@ -30,25 +33,71 @@ const ITEMS: Array<{
   label: string;
   icon: typeof LayoutDashboard;
   permission: SchoolPermission;
+  module: SchoolModuleKey;
 }> = [
-  { href: '/school-admin', label: 'Overview', icon: LayoutDashboard, permission: 'dashboard.read' },
-  { href: '/school-admin/launchpad', label: 'Launchpad', icon: ListChecks, permission: 'dashboard.read' },
-  { href: '/school-admin/people', label: 'People', icon: Users, permission: 'people.read' },
-  { href: '/school-admin/admissions', label: 'Admissions', icon: ClipboardList, permission: 'admissions.read' },
-  { href: '/school-admin/attendance', label: 'Attendance', icon: CalendarCheck2, permission: 'attendance.read' },
-  { href: '/school-admin/exams', label: 'Exams & Results', icon: GraduationCap, permission: 'exams.read' },
-  { href: '/school-admin/fees', label: 'Fees', icon: ReceiptText, permission: 'fees.read' },
-  { href: '/school-admin/payroll', label: 'Payroll', icon: WalletCards, permission: 'payroll.read' },
-  { href: '/school-admin/academics', label: 'Academics', icon: BookOpenCheck, permission: 'academics.read' },
-  { href: '/school-admin/ptm', label: 'PTM Meetings', icon: Users2, permission: 'ptm.read' },
+  { href: '/school-admin', label: 'Overview', icon: LayoutDashboard, permission: 'dashboard.read', module: 'dashboard' },
+  {
+    href: '/school-admin/launchpad',
+    label: 'Launchpad',
+    icon: ListChecks,
+    permission: 'dashboard.read',
+    module: 'dashboard',
+  },
+  { href: '/school-admin/people', label: 'People', icon: Users, permission: 'people.read', module: 'people' },
+  {
+    href: '/school-admin/requests',
+    label: 'Join Requests',
+    icon: UserPlus,
+    permission: 'people.manage',
+    module: 'people',
+  },
+  {
+    href: '/school-admin/admissions',
+    label: 'Admissions',
+    icon: ClipboardList,
+    permission: 'admissions.read',
+    module: 'admissions',
+  },
+  {
+    href: '/school-admin/attendance',
+    label: 'Attendance',
+    icon: CalendarCheck2,
+    permission: 'attendance.read',
+    module: 'attendance',
+  },
+  {
+    href: '/school-admin/exams',
+    label: 'Exams & Results',
+    icon: GraduationCap,
+    permission: 'exams.read',
+    module: 'exams',
+  },
+  { href: '/school-admin/tests', label: 'Test Studio', icon: Sparkles, permission: 'exams.manage', module: 'tests' },
+  { href: '/school-admin/fees', label: 'Fees', icon: ReceiptText, permission: 'fees.read', module: 'fees' },
+  { href: '/school-admin/payroll', label: 'Payroll', icon: WalletCards, permission: 'payroll.read', module: 'payroll' },
+  {
+    href: '/school-admin/academics',
+    label: 'Academics',
+    icon: BookOpenCheck,
+    permission: 'academics.read',
+    module: 'academics',
+  },
+  { href: '/school-admin/ptm', label: 'PTM Meetings', icon: Users2, permission: 'ptm.read', module: 'ptm' },
   {
     href: '/school-admin/communication',
     label: 'Communication',
     icon: MessageSquareText,
     permission: 'communication.read',
+    module: 'communication',
   },
-  { href: '/school-admin/reports', label: 'Reports', icon: BarChart3, permission: 'reports.read' },
-  { href: '/school-admin/settings', label: 'Organization', icon: Settings2, permission: 'organization.manage' },
+  { href: '/school-admin/reports', label: 'Reports', icon: BarChart3, permission: 'reports.read', module: 'reports' },
+  {
+    href: '/school-admin/settings',
+    label: 'Organization',
+    icon: Settings2,
+    permission: 'organization.manage',
+    module: 'dashboard',
+  },
 ];
 
 export function SchoolAdminSidebar({
@@ -57,16 +106,20 @@ export function SchoolAdminSidebar({
   organizations,
   role,
   permissions,
+  enabledModules,
 }: {
   organizationName: string;
   organizationId: string;
   organizations: Array<{ id: string; name: string; role: SchoolRole; operations: boolean }>;
   role: SchoolRole;
   permissions: SchoolPermission[];
+  enabledModules: SchoolModuleKey[] | null;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const items = ITEMS.filter((item) => permissions.includes(item.permission));
+  const items = ITEMS.filter(
+    (item) => permissions.includes(item.permission) && isSchoolModuleEnabled(enabledModules, item.module)
+  );
 
   const content = (
     <div className="flex h-full flex-col">
