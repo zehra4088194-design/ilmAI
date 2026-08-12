@@ -116,6 +116,7 @@ export async function generateReportCardRemarks(
       const result = await gatewayChat({
         provider,
         tier: 'mini',
+        strictProvider: true,
         routingPolicy: 'text',
         temperature: 0.4,
         maxTokens: 220 * batch.length + 400,
@@ -253,6 +254,7 @@ export async function generatePrincipalSummary(
     const result = await gatewayChat({
       provider,
       tier: 'mini',
+      strictProvider: true,
       routingPolicy: 'text',
       temperature: 0.3,
       maxTokens: 900,
