@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { enforceOnboarding } from '@/lib/supabase/enforceOnboarding';
 import { updateSession } from '@/lib/supabase/middleware';
 import { matchesRoutePrefix } from '@/lib/navigation/route-prefix';
+import { resolveSchoolRole, schoolAdminHomeForRole } from '@/lib/school-erp/access';
+import { resolveCollegeRole, collegeAdminHomeForRole } from '@/lib/college-erp/access';
 import {
   getPublicRequestUrl,
   getRequestHost,
@@ -54,11 +56,18 @@ const ADMIN_PREFIXES = ['/admin'];
 const COLLEGE_ADMIN_PREFIXES = ['/college-admin'];
 const SCHOOL_ADMIN_PREFIXES = ['/school-admin'];
 
+// pdfjs-dist (react-pdf's PDF viewer) bootstraps its worker with a tiny fixed
+// inline script; workers inherit the page's script-src, so without this hash
+// the worker is created but its code is blocked from running — the PDF
+// silently never loads. Content is pinned to the installed pdfjs-dist
+// version, so re-verify this hash if that dependency is upgraded.
+const PDFJS_WORKER_BOOTSTRAP_HASH = "'sha256-PQNBmepyn3corN4iAcIkbTGAzPr+5/ubjCJHc7QNtUU='";
+
 function buildContentSecurityPolicy(nonce: string) {
   const developmentEval = process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : '';
   return [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https: http:${developmentEval}`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${PDFJS_WORKER_BOOTSTRAP_HASH} https: http:${developmentEval}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
     "font-src 'self' data:",
@@ -142,6 +151,24 @@ export async function middleware(request: NextRequest) {
     if (!user) {
       return secure(NextResponse.redirect(`${origin}/login?redirect=${encodeURIComponent(requestedPath)}`));
     }
+    const collegeRole = await resolveCollegeRole(supabase, user.id);
+    if (collegeRole && (collegeRole.role === 'student' || collegeRole.role === 'parent')) {
+      console.warn(
+        `[middleware] college member ${user.id} (role=${collegeRole.role}) hit ${pathname}; redirecting to own portal`
+      );
+      return secure(NextResponse.redirect(`${origin}${collegeAdminHomeForRole(collegeRole.role)}`));
+    }
+    if (!collegeRole) {
+      const schoolRole = await resolveSchoolRole(supabase, user.id);
+      if (schoolRole) {
+        console.warn(
+          `[middleware] school member ${user.id} (org=${schoolRole.organizationId}) hit college-admin route ${pathname}; redirecting to own portal`
+        );
+        return secure(NextResponse.redirect(`${origin}${schoolAdminHomeForRole(schoolRole.role)}`));
+      }
+    }
+    // No college membership resolved (and no school membership to redirect against) — the
+    // page component still performs the definitive admin/tenant check per-route.
     return secure(response);
   }
 
@@ -149,6 +176,24 @@ export async function middleware(request: NextRequest) {
     if (!user) {
       return secure(NextResponse.redirect(`${origin}/login?redirect=${encodeURIComponent(requestedPath)}`));
     }
+    const schoolRole = await resolveSchoolRole(supabase, user.id);
+    if (schoolRole && (schoolRole.role === 'student' || schoolRole.role === 'parent')) {
+      console.warn(
+        `[middleware] school member ${user.id} (role=${schoolRole.role}) hit ${pathname}; redirecting to own portal`
+      );
+      return secure(NextResponse.redirect(`${origin}${schoolAdminHomeForRole(schoolRole.role)}`));
+    }
+    if (!schoolRole) {
+      const collegeRole = await resolveCollegeRole(supabase, user.id);
+      if (collegeRole) {
+        console.warn(
+          `[middleware] college member ${user.id} (org=${collegeRole.organizationId}) hit school-admin route ${pathname}; redirecting to own portal`
+        );
+        return secure(NextResponse.redirect(`${origin}${collegeAdminHomeForRole(collegeRole.role)}`));
+      }
+    }
+    // No school membership resolved (and no college membership to redirect against) — the
+    // page component still performs the definitive admin/tenant check per-route.
     return secure(response);
   }
 
