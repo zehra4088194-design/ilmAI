@@ -113,19 +113,29 @@ export function ProtectedResourceReader({
 
   useEffect(() => {
     setCanFullscreen(typeof document !== 'undefined' && Boolean(document.documentElement.requestFullscreen));
-    const handleFullscreenChange = () => setIsFullscreen(document.fullscreenElement === readerRef.current);
+    // Fullscreen the whole page (document.documentElement), not the reader's own `fixed inset-0`
+    // div — requesting fullscreen on a fixed-position element fights the browser's fullscreen
+    // top-layer on some Chromium/Windows builds, which is what caused the jitter/refresh-needed bug.
+    const handleFullscreenChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
   const toggleFullscreen = async () => {
-    if (!readerRef.current || !canFullscreen) return;
-    if (document.fullscreenElement) await document.exitFullscreen();
-    else await readerRef.current.requestFullscreen();
+    if (!canFullscreen) return;
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else {
+        await document.documentElement.requestFullscreen();
+      }
+    } catch (error) {
+      console.error('Fullscreen toggle failed:', error);
+    }
   };
 
   const closeReader = () => {
-    if (document.fullscreenElement === readerRef.current) void document.exitFullscreen();
+    if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
     onClose();
   };
 

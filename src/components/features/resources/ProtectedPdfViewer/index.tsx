@@ -53,14 +53,26 @@ export function ProtectedPdfViewer({
   useEffect(() => {
     const frame = frameRef.current;
     if (!frame) return;
+    // Coalesce rapid-fire ResizeObserver ticks into one width update per animation frame.
+    // Without this, entering/exiting fullscreen (which resizes the viewport repeatedly while the
+    // browser chrome animates in/out) re-renders every page on each tick and the whole document
+    // visibly shakes; rAF-batching settles it to a single clean re-layout once the resize stops.
+    let raf = 0;
     const updateWidth = () => {
-      const nextWidth = Math.floor(frame.getBoundingClientRect().width);
-      setContainerWidth((current) => (Math.abs(current - nextWidth) > 2 ? nextWidth : current));
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        if (!frameRef.current) return;
+        const nextWidth = Math.floor(frameRef.current.getBoundingClientRect().width);
+        setContainerWidth((current) => (Math.abs(current - nextWidth) > 2 ? nextWidth : current));
+      });
     };
     updateWidth();
     const observer = new ResizeObserver(updateWidth);
     observer.observe(frame);
-    return () => observer.disconnect();
+    return () => {
+      cancelAnimationFrame(raf);
+      observer.disconnect();
+    };
   }, []);
 
   useEffect(() => {
