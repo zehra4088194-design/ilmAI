@@ -17,6 +17,8 @@
     "src/app/colleges/**/*.tsx",
     "src/app/api/auth/post-login-destination/**/*.ts",
     "src/app/api/college-admin/**/*.ts",
+    "src/app/(admin)/admin/colleges/**/*.ts",
+    "src/app/(admin)/admin/colleges/**/*.tsx",
     "src/components/college/**/*.tsx",
     "src/components/features/college-erp/**/*.tsx",
     "src/components/features/school-erp/**/*.tsx",

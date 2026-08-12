@@ -1,13 +1,11 @@
 'use client';
 
+// College-side mirror of src/components/features/school-erp/SchoolActionForm.tsx.
 import { useActionState, type ReactNode } from 'react';
 import { CheckCircle2, CircleAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { INITIAL_COLLEGE_ACTION_STATE, type CollegeActionState } from '@/lib/college-erp/types';
 
-// Mirrors src/components/features/school-erp/SchoolActionForm.tsx, typed against
-// CollegeActionState instead — SchoolPageHeader/SchoolMetric are reused as-is elsewhere since
-// they carry no school-specific typing.
 type CollegeServerAction = (state: CollegeActionState, formData: FormData) => Promise<CollegeActionState>;
 
 export function CollegeActionForm({

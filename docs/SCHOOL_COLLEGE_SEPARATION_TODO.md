@@ -646,3 +646,68 @@ new college-admin would notice it missing.
 
 Both `tsconfig.school-erp.json` and `tsconfig.college-erp.json` typecheck clean (0 errors) as of this
 update, covering all school and college ERP code written this session.
+
+## 14. Priority 0 (continuation prompt) — college organization provisioning: shipped
+
+The unblocking gap flagged at the top of the continuation prompt — no admin UI could create a
+`college_organizations` row, so the entire Phase 5 college-admin system was unreachable — is fixed.
+
+**What shipped:**
+- **`src/lib/college-erp/admin-actions.ts`** (new) — `createCollegeOrganization` and
+  `updateCollegePlanSettings`, a line-for-line mirror of `src/app/(admin)/admin/schools/actions.ts`'s
+  `createSchoolOrganization`/`updateSchoolPlanSettings`, operating on `college_organizations` /
+  `college_campuses` / `college_memberships` / `college_organization_plan_settings` /
+  `college_audit_logs` instead. Same guardrails: `requireAdminUser()` gate, owner email must already
+  have an ilm AI account, campus + owner membership created atomically (rolled back via delete on
+  failure), audit-logged. Plan settings save calls the existing
+  `syncOrganizationCollegeGrants()` (built in Phase 3, previously unused) exactly like school's action
+  calls `syncOrganizationSchoolGrants()`. Billing status defaults to `'trial'`, matching school's
+  pattern — deliberate, not a guess (see continuation prompt §1 point 1's own reasoning, confirmed by
+  reading `updateSchoolPlanSettings`).
+- **`src/components/features/college-erp/CollegeActionForm.tsx`** (new) — mirror of
+  `SchoolActionForm.tsx`, typed against `CollegeActionState` (already existed, same shape as
+  `SchoolActionState`).
+- **`src/app/(admin)/admin/colleges/page.tsx`** (extended, not replaced) — decision made per the
+  continuation prompt's own instruction to read the existing structure first: the legacy page was a
+  thin `CollegesTable` + "Add College" link to `/admin/colleges/new` (legacy `colleges`/`college_admins`
+  schema, untouched). Chose to **extend the existing page** with a second section below a `border-t`
+  divider ("College organizations (new system)") rather than a separate `/admin/colleges-v2` route —
+  this was the lower-risk option since the legacy table/list at the top is completely untouched (same
+  query, same component, same "Add College" link, now labeled "(legacy)" for clarity) and the new
+  section is purely additive, mirroring `/admin/schools`'s create-form-plus-org-cards layout exactly.
+  New section: create-organization form (name/slug/type/owner email/campus/contact fields) + a card per
+  existing `college_organizations` row with an inline plan-settings form (tier picker, billing status,
+  limits, enabled modules, notes) — identical shape to `/admin/schools`'s per-org cards.
+  `organization_type` options are `college | university | institute` (the new schema's actual check
+  constraint — confirmed by reading the migration — not school's `school | academy | college`).
+- **`tsconfig.college-erp.json`** — added `src/app/(admin)/admin/colleges/**/*.{ts,tsx}` to `include` so
+  this route is covered by the scoped typecheck (it wasn't before; only `src/app/college*` prefixes were
+  listed).
+
+**Verified:**
+- `npx tsc --noEmit -p tsconfig.college-erp.json` — clean, 0 errors.
+- `npx tsc --noEmit -p tsconfig.school-erp.json` — still clean, 0 errors (unaffected).
+- Live DB check via Supabase MCP (`execute_sql` against project `bvbipddsowwivuynuuuu`): confirmed
+  `college_organizations` currently has 0 rows (so the "unreachable" claim was accurate — nothing was
+  silently already working), and the 2 seeded `institution_plan_tiers` rows with
+  `institution_type = 'college'` (`college_1_500`, `college_501_2000`) are `is_active = true` and ready
+  for the tier picker.
+- Navigated to `/admin/colleges` in the browser preview unauthenticated: correctly redirected to
+  `/login` (not a 500/crash), confirming the route compiles and the admin gate still functions.
+  **Not verified**: an actual end-to-end create-organization submission and post-login landing on
+  `/college-admin` — that requires a real admin login, which was not attempted (no credentials were
+  entered on the user's behalf, per the standing rule against handling credentials). **This is the one
+  piece of Priority 0 the continuation prompt asked for that still needs a human click-through**: log in
+  as a platform admin, create one test college organization with your own account as owner email, then
+  log in as that owner and confirm you land on `/college-admin`.
+
+**Not done from Priority 0** (deliberately, not an oversight):
+- No toggle/tab UI was built — the two systems are just stacked sections on one page, which was judged
+  sufficient given the legacy section is a single table and doesn't need visual separation beyond the
+  divider + heading.
+- No new env vars were needed for this step.
+
+**Next**: per the continuation prompt's execution order, Priority 1 (verification debt) is next once a
+human confirms the create-organization → login → `/college-admin` loop above actually works end-to-end.
+Not started yet — waiting on that confirmation before proceeding, per the continuation prompt's explicit
+"stop after each numbered item and wait for confirmation" instruction.
