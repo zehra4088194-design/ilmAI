@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils/cn';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { useEffect, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
+import type { InstitutionBranding } from '@/lib/branding/resolveInstitutionBranding';
 
 const NAV_GROUPS = [
   { 
@@ -103,9 +104,10 @@ type DashboardSidebarProps = {
   onMobileOpenChange?: (open: boolean) => void;
   desktopOpen?: boolean;
   onDesktopOpenChange?: (open: boolean) => void;
+  branding?: InstitutionBranding | null;
 };
 
-export function DashboardSidebar({ mobileOpen: controlledMobileOpen, onMobileOpenChange, desktopOpen = true, onDesktopOpenChange }: DashboardSidebarProps = {}) {
+export function DashboardSidebar({ mobileOpen: controlledMobileOpen, onMobileOpenChange, desktopOpen = true, onDesktopOpenChange, branding }: DashboardSidebarProps = {}) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { user, signOut } = useAuth();
@@ -158,11 +160,33 @@ export function DashboardSidebar({ mobileOpen: controlledMobileOpen, onMobileOpe
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="flex items-center justify-between border-b border-sidebar-border p-5">
-        <Link href="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
-            <BookOpen className="w-4 h-4 text-white" />
-          </div>
-          <span className="font-bold text-sidebar-foreground">ilm <span className="text-violet-400">AI</span></span>
+        <Link href="/" className="flex min-w-0 items-center gap-2.5 hover:opacity-80 transition-opacity">
+          {branding ? (
+            <>
+              {branding.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element -- institution-supplied logo, arbitrary remote host
+                <img
+                  src={branding.logoUrl}
+                  alt={branding.name}
+                  className="h-8 w-8 shrink-0 rounded-lg object-cover"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shrink-0">
+                  <BookOpen className="w-4 h-4 text-white" />
+                </div>
+              )}
+              <span className="min-w-0 truncate text-sm font-bold text-sidebar-foreground" title={`${branding.name} · Ilm AI`}>
+                {branding.name} <span className="text-sidebar-foreground/40">· ilm <span className="text-violet-400">AI</span></span>
+              </span>
+            </>
+          ) : (
+            <>
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shrink-0">
+                <BookOpen className="w-4 h-4 text-white" />
+              </div>
+              <span className="font-bold text-sidebar-foreground">ilm <span className="text-violet-400">AI</span></span>
+            </>
+          )}
         </Link>
         {onDesktopOpenChange && (
           <button type="button" onClick={() => onDesktopOpenChange(false)} className="hidden rounded-lg p-1.5 text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground lg:inline-flex" aria-label="Close sidebar" title="Close sidebar">
@@ -179,13 +203,22 @@ export function DashboardSidebar({ mobileOpen: controlledMobileOpen, onMobileOpe
         {user?.role === 'parent' && (
           <div>
             <p className="text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/30 px-2 mb-1.5">Parent Portal</p>
-            <Link href="/parent" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
-              className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
-                isActive('/parent') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}>
-              <Users className={cn('w-4 h-4 shrink-0', isActive('/parent') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
-              <span className="flex-1">My Children</span>
-              {isActive('/parent') && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
-            </Link>
+            <div className="space-y-0.5">
+              <Link href="/parent" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
+                className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
+                  isActive('/parent') && !isActive('/parent/analytics') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}>
+                <Users className={cn('w-4 h-4 shrink-0', isActive('/parent') && !isActive('/parent/analytics') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
+                <span className="flex-1">My Children</span>
+                {isActive('/parent') && !isActive('/parent/analytics') && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
+              </Link>
+              <Link href="/parent/analytics" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
+                className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
+                  isActive('/parent/analytics') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}>
+                <TrendingUp className={cn('w-4 h-4 shrink-0', isActive('/parent/analytics') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
+                <span className="flex-1">Performance & Reports</span>
+                {isActive('/parent/analytics') && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
+              </Link>
+            </div>
           </div>
         )}
         {(user?.role === 'teacher' || user?.role === 'admin') && (
@@ -201,7 +234,10 @@ export function DashboardSidebar({ mobileOpen: controlledMobileOpen, onMobileOpe
             </Link>
           </div>
         )}
-        {NAV_GROUPS.map((group) => (
+        {/* Parents get their own trimmed nav above — the full consumer tool nav (AI tutor,
+            flashcards, games, etc.) is student/consumer-facing and must not leak into the parent
+            portal. See CLAUDE_CODE_MASTER_PROMPT.md Part 4.4 / point 12. */}
+        {user?.role !== 'parent' && NAV_GROUPS.map((group) => (
           <div key={group.label}>
             <p className="text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/30 px-2 mb-1.5">{group.label}</p>
             <div className="space-y-0.5">

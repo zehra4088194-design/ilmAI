@@ -1,8 +1,10 @@
 'use client';
 
-import { useActionState, useMemo, useState } from 'react';
+import { useActionState, useCallback, useMemo, useState } from 'react';
 import { CheckCircle2, CircleAlert, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PersonSearchInput } from './PersonSearchInput';
+import { useNameSearch } from '@/lib/hooks/useNameSearch';
 import { saveAttendance } from '@/lib/school-erp/actions';
 import { INITIAL_SCHOOL_ACTION_STATE } from '@/lib/school-erp/types';
 
@@ -69,10 +71,17 @@ export function AttendanceRegister({
   const [answers, setAnswers] = useState<Record<string, string>>(initial);
   const [state, action, pending] = useActionState(saveAttendance, INITIAL_SCHOOL_ACTION_STATE);
   const students = enrollments.filter((enrollment) => enrollment.section_id === sectionId);
+  // Submitted regardless of the search box below — search only narrows what's displayed, marking
+  // stays possible for the whole section so a filtered-out student's status isn't silently dropped.
   const entries = students.map((student) => ({
     studentId: student.student_id,
     status: answers[student.student_id] || 'present',
   }));
+  const getSearchableText = useCallback((item: Enrollment) => {
+    const profile = Array.isArray(item.profiles) ? item.profiles[0] : item.profiles;
+    return `${profile?.full_name || ''} ${item.roll_number || ''}`;
+  }, []);
+  const { query, setQuery, filtered: visibleStudents } = useNameSearch(students, getSearchableText);
 
   return (
     <div className="space-y-4">
@@ -102,13 +111,15 @@ export function AttendanceRegister({
         </label>
       </div>
 
+      <PersonSearchInput value={query} onChange={setQuery} placeholder="Search this section by name or roll no..." />
+
       <div className="border-border overflow-hidden rounded-lg border">
         <div className="bg-muted/50 grid grid-cols-[minmax(150px,1fr)_150px] gap-2 px-3 py-2 text-xs font-semibold">
           <span>Student</span>
           <span>Attendance</span>
         </div>
         <div className="divide-border divide-y">
-          {students.map((student) => {
+          {visibleStudents.map((student) => {
             const profile = Array.isArray(student.profiles) ? student.profiles[0] : student.profiles;
             return (
               <div
@@ -142,6 +153,9 @@ export function AttendanceRegister({
           })}
           {!students.length && (
             <p className="text-muted-foreground p-6 text-center text-sm">No active students in this section.</p>
+          )}
+          {students.length > 0 && !visibleStudents.length && (
+            <p className="text-muted-foreground p-6 text-center text-sm">No students match &quot;{query}&quot;.</p>
           )}
         </div>
       </div>

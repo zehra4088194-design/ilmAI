@@ -20,6 +20,7 @@ import { SchoolOrganizationSwitcher } from '@/components/features/school-erp/Sch
 import { cancelPtmRequest, createLeaveRequest, createSchoolContactMessage, requestPtm } from '@/lib/school-erp/actions';
 import { getSchoolContexts, requireSchoolContext } from '@/lib/school-erp/access';
 import { getSchoolPortalData } from '@/lib/school-erp/queries';
+import { getStudentKidsZoneEligibility } from '@/lib/school-erp/kids-zone';
 
 function ptmStatusVariant(
   status: string
@@ -55,6 +56,7 @@ export default async function SchoolPortalPage() {
     (sum: number, item: any) => sum + Math.max(0, Number(item.total_amount || 0) - Number(item.paid_amount || 0)),
     0
   );
+  const kidsZone = role === 'student' ? await getStudentKidsZoneEligibility(supabase, context) : { eligible: false };
 
   return (
     <main className="bg-background min-h-screen">
@@ -107,6 +109,20 @@ export default async function SchoolPortalPage() {
             available on every ilm AI plan.
           </p>
         </header>
+        {kidsZone.eligible && (
+          <Link
+            href="/school/kids-zone"
+            className="flex items-center gap-4 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 p-5 text-white shadow-lg transition hover:opacity-95"
+          >
+            <span className="text-4xl">🚀</span>
+            <span>
+              <span className="block text-lg font-black">Kids Zone</span>
+              <span className="block text-sm font-medium text-white/85">
+                Fun letter, number, and spelling games just for you!
+              </span>
+            </span>
+          </Link>
+        )}
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <SchoolMetric label="Attendance rate" value={`${attendanceRate}%`} icon={CalendarCheck2} />
           <SchoolMetric

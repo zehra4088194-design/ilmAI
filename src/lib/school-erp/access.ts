@@ -237,6 +237,16 @@ export function schoolAdminHomeForRole(role: SchoolRole) {
   return role === 'student' || role === 'parent' ? '/school' : '/school-admin';
 }
 
+// Lightweight role lookup for src/middleware.ts (edge-safe: no next/headers cookies() call,
+// just the membership row). Deliberately a distinct named helper from college-erp's
+// resolveCollegeRole rather than one generic resolveInstitutionRole, per
+// CLAUDE_CODE_MASTER_PROMPT.md Phase 2 — data/portals stay separate even where the shape matches.
+export async function resolveSchoolRole(supabase: SupabaseClient, userId: string) {
+  const context = await getSchoolContext(supabase, userId);
+  if (!context) return null;
+  return { role: context.membership.member_role, organizationId: context.organization.id };
+}
+
 // Institutional records do not consume consumer plan quotas. AI-powered
 // analysis continues to use the existing FREE/PRO/ELITE credit gateway.
 export const SCHOOL_ERP_ACCESS_POLICY = {

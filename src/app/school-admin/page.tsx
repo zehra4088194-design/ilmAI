@@ -6,13 +6,17 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SchoolMetric } from '@/components/features/school-erp/SchoolMetric';
 import { SchoolPageHeader } from '@/components/features/school-erp/SchoolPageHeader';
+import { AbsenceAlertWidget } from '@/components/features/school-erp/AbsenceAlertWidget';
 import { hasSchoolPermission, requireSchoolContext } from '@/lib/school-erp/access';
-import { getSchoolOverview } from '@/lib/school-erp/queries';
+import { getSchoolOverview, getTodayAbsences } from '@/lib/school-erp/queries';
 
 export default async function SchoolAdminPage() {
   const { supabase, context } = await requireSchoolContext('dashboard.read');
   if (!context) redirect('/dashboard');
-  const overview = await getSchoolOverview(supabase, context);
+  const [overview, absences] = await Promise.all([
+    getSchoolOverview(supabase, context),
+    getTodayAbsences(supabase, context),
+  ]);
   const canManageExams = hasSchoolPermission(context, 'exams.manage');
 
   return (
@@ -92,6 +96,14 @@ export default async function SchoolAdminPage() {
           tone="bg-emerald-500/10 text-emerald-600"
         />
       </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Absence alerts — today</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <AbsenceAlertWidget absences={absences} />
+        </CardContent>
+      </Card>
       <div className="grid gap-5 lg:grid-cols-2">
         <Card>
           <CardHeader>

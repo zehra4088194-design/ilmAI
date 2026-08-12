@@ -61,7 +61,7 @@ export function PresentationBackgroundManager() {
     const response = await fetch('/api/admin/presentation-backgrounds', { method: 'POST', body: form });
     const json = await response.json();
     if (response.ok) {
-      toast.success('Presentation backgrounds uploaded to Oracle storage.');
+      toast.success('Presentation backgrounds uploaded to Supabase storage.');
       await refresh();
     } else toast.error(json.error || 'Upload failed.');
     setBusy(false);
@@ -80,7 +80,7 @@ export function PresentationBackgroundManager() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Oracle Presentation Backgrounds</CardTitle>
+        <CardTitle>Presentation Backgrounds</CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
         <p className="text-muted-foreground text-sm">

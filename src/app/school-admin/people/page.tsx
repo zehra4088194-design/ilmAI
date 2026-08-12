@@ -3,9 +3,9 @@ import { redirect } from 'next/navigation';
 import { Upload } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { SchoolActionForm } from '@/components/features/school-erp/SchoolActionForm';
 import { SchoolPageHeader } from '@/components/features/school-erp/SchoolPageHeader';
+import { PeopleDirectoryTable } from '@/components/features/school-erp/PeopleDirectoryTable';
 import { addSchoolMember, enrollStudent, linkGuardian } from '@/lib/school-erp/actions';
 import { hasSchoolPermission, requireSchoolContext } from '@/lib/school-erp/access';
 import { getSchoolPeople } from '@/lib/school-erp/queries';
@@ -129,34 +129,16 @@ export default async function SchoolPeoplePage() {
         <CardHeader>
           <CardTitle className="text-base">Directory</CardTitle>
         </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <table className="w-full min-w-[680px] text-sm">
-            <thead className="text-muted-foreground border-b text-left text-xs">
-              <tr>
-                <th className="py-2">Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Designation</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.memberships.map((item: any) => {
-                const profile = Array.isArray(item.profiles) ? item.profiles[0] : item.profiles;
-                return (
-                  <tr key={item.id} className="border-b last:border-0">
-                    <td className="py-2 font-medium">{profile?.full_name}</td>
-                    <td>{profile?.email}</td>
-                    <td className="capitalize">{item.member_role}</td>
-                    <td>{item.designation || '-'}</td>
-                    <td>
-                      <Badge variant={item.status === 'active' ? 'secondary' : 'outline'}>{item.status}</Badge>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <CardContent>
+          <PeopleDirectoryTable
+            memberships={data.memberships.map((item: any) => ({
+              id: item.id,
+              member_role: item.member_role,
+              designation: item.designation,
+              status: item.status,
+              profiles: Array.isArray(item.profiles) ? item.profiles[0] : item.profiles,
+            }))}
+          />
         </CardContent>
       </Card>
     </div>

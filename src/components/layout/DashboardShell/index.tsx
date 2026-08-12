@@ -5,8 +5,9 @@ import { DashboardNavbar } from '@/components/layout/DashboardNavbar';
 import { DashboardSidebar } from '@/components/layout/DashboardSidebar';
 import { SideChatWidget } from '@/components/features/ai-selector/SideChatWidget';
 import { DataRetentionNotice } from '@/components/features/privacy/DataRetentionNotice';
+import type { InstitutionBranding } from '@/lib/branding/resolveInstitutionBranding';
 
-export function DashboardShell({ children }: { children: ReactNode }) {
+export function DashboardShell({ children, branding }: { children: ReactNode; branding?: InstitutionBranding | null }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
   const [desktopAutoCloseEnabled, setDesktopAutoCloseEnabled] = useState(true);
@@ -36,6 +37,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
         onMobileOpenChange={setMobileMenuOpen}
         desktopOpen={desktopSidebarOpen}
         onDesktopOpenChange={setDesktopSidebar}
+        branding={branding}
       />
       <div className={`flex min-h-dvh min-w-0 flex-1 flex-col transition-[margin] duration-300 ${desktopSidebarOpen ? 'lg:ml-64' : 'lg:ml-0'}`}>
         <DashboardNavbar

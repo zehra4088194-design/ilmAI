@@ -1,8 +1,11 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ExamMarksRegister } from '@/components/features/school-erp/ExamMarksRegister';
+import { DateSheetWizard } from '@/components/features/school-erp/DateSheetWizard';
 import { SchoolActionForm } from '@/components/features/school-erp/SchoolActionForm';
 import { SchoolPageHeader } from '@/components/features/school-erp/SchoolPageHeader';
 import { createExam, createExamSchedule, publishExamResults } from '@/lib/school-erp/actions';
@@ -53,7 +56,7 @@ export default async function SchoolExamsPage() {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Date-sheet entry</CardTitle>
+              <CardTitle className="text-base">Quick add (single subject)</CardTitle>
             </CardHeader>
             <CardContent>
               <SchoolActionForm action={createExamSchedule} submitLabel="Add subject">
@@ -89,6 +92,16 @@ export default async function SchoolExamsPage() {
             </CardContent>
           </Card>
         </div>
+      )}
+      {canManage && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Guided date-sheet builder</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <DateSheetWizard exams={data.exams} sections={data.sections} />
+          </CardContent>
+        </Card>
       )}
       <Card>
         <CardHeader>
@@ -132,9 +145,14 @@ export default async function SchoolExamsPage() {
                     <input type="hidden" name="exam_id" value={exam.id} />
                   </SchoolActionForm>
                   {exam.status === 'published' && (
-                    <SchoolActionForm action={generateReportCardRemarks} submitLabel="AI remarks" className="">
-                      <input type="hidden" name="exam_id" value={exam.id} />
-                    </SchoolActionForm>
+                    <>
+                      <SchoolActionForm action={generateReportCardRemarks} submitLabel="AI remarks" className="">
+                        <input type="hidden" name="exam_id" value={exam.id} />
+                      </SchoolActionForm>
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={`/school-admin/exams/report-cards/${exam.id}`}>Report cards</Link>
+                      </Button>
+                    </>
                   )}
                 </div>
               )}

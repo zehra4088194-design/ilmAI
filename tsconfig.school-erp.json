@@ -22,6 +22,13 @@
     "src/components/layout/AdminSidebar/index.tsx",
     "src/components/layout/DashboardSidebar/index.tsx",
     "src/lib/rate-limit/index.ts",
+    "src/lib/branding/**/*.ts",
+    "src/app/(dashboard)/layout.tsx",
+    "src/components/layout/DashboardShell/index.tsx",
+    "src/components/features/parent/ParentQrScanner/**/*.tsx",
+    "src/lib/parent/invite-code.ts",
+    "src/lib/institution-directory/**/*.ts",
+    "src/lib/college-erp/**/*.ts",
     "src/middleware.ts"
   ],
   "exclude": ["node_modules", ".next"]

@@ -102,6 +102,73 @@ export async function getSchoolOverview(supabase: SupabaseClient, context: Schoo
   };
 }
 
+export type AbsenceAlertRow = {
+  id: string;
+  status: 'absent' | 'late';
+  studentId: string;
+  studentName: string;
+  className: string;
+  guardianPhone: string | null;
+  guardianName: string | null;
+};
+
+// Powers the principal-dashboard absence alert widget (CLAUDE_CODE_MASTER_PROMPT.md Part 4.1):
+// today's absent/late students with their primary alert-receiving guardian's phone number, so the
+// UI can offer a one-tap "WhatsApp or Call?" prompt per row.
+export async function getTodayAbsences(supabase: SupabaseClient, context: SchoolContext): Promise<AbsenceAlertRow[]> {
+  const db = supabase as any;
+  const organizationId = context.organization.id;
+  const today = new Date().toISOString().slice(0, 10);
+
+  const records = await rows(
+    db
+      .from('school_attendance_records')
+      .select(
+        'id, status, student_id, profiles!school_attendance_records_student_id_fkey(id, full_name), school_sections(name, school_classes(name))'
+      )
+      .eq('organization_id', organizationId)
+      .eq('attendance_date', today)
+      .in('status', ['absent', 'late'])
+      .order('marked_at', { ascending: false })
+      .limit(100)
+  );
+  if (!records.length) return [];
+
+  const studentIds = Array.from(new Set(records.map((row: any) => row.student_id)));
+  const guardianLinks = await rows(
+    db
+      .from('school_guardians')
+      .select('student_id, is_primary, receives_alerts, guardian:profiles!school_guardians_guardian_id_fkey(full_name, phone)')
+      .eq('organization_id', organizationId)
+      .eq('receives_alerts', true)
+      .in('student_id', studentIds)
+  );
+  const guardianByStudent = new Map<string, { full_name: string | null; phone: string | null }>();
+  for (const link of guardianLinks) {
+    const existing = guardianByStudent.get(link.student_id);
+    if (!existing || link.is_primary) {
+      const guardian = Array.isArray(link.guardian) ? link.guardian[0] : link.guardian;
+      guardianByStudent.set(link.student_id, guardian || null);
+    }
+  }
+
+  return records.map((row: any) => {
+    const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
+    const section = Array.isArray(row.school_sections) ? row.school_sections[0] : row.school_sections;
+    const klass = section ? (Array.isArray(section.school_classes) ? section.school_classes[0] : section.school_classes) : null;
+    const guardian = guardianByStudent.get(row.student_id);
+    return {
+      id: row.id,
+      status: row.status,
+      studentId: row.student_id,
+      studentName: profile?.full_name || 'Student',
+      className: [klass?.name, section?.name].filter(Boolean).join(' - '),
+      guardianPhone: guardian?.phone || null,
+      guardianName: guardian?.full_name || null,
+    };
+  });
+}
+
 export async function getSchoolPtm(supabase: SupabaseClient, context: SchoolContext) {
   const db = supabase as any;
   const organizationId = context.organization.id;
@@ -335,6 +402,29 @@ export async function getSchoolAttendance(supabase: SupabaseClient, context: Sch
     ),
   ]);
   return { sections, enrollments, records, leaves, staffMembers, staffRecords, date };
+}
+
+// Bulk fetch for the report-card template gallery (/school-admin/exams/report-cards/[examId]).
+export async function getExamReportCards(supabase: SupabaseClient, context: SchoolContext, examId: string) {
+  const db = supabase as any;
+  const { data: exam } = await db
+    .from('school_exams')
+    .select('id, name, term')
+    .eq('id', examId)
+    .eq('organization_id', context.organization.id)
+    .maybeSingle();
+  if (!exam) return null;
+
+  const cards = await rows(
+    db
+      .from('school_report_cards')
+      .select('*, profiles!school_report_cards_student_id_fkey(full_name)')
+      .eq('organization_id', context.organization.id)
+      .eq('exam_id', examId)
+      .not('published_at', 'is', null)
+      .order('class_position', { ascending: true, nullsFirst: false })
+  );
+  return { exam, cards };
 }
 
 export async function getSchoolExams(supabase: SupabaseClient, context: SchoolContext) {
@@ -843,4 +933,43 @@ export async function getPendingSchoolJoinRequests(
     .order('requested_at', { ascending: true });
   if (error) throw new Error(error.message);
   return (data ?? []) as unknown as SchoolJoinRequestWithRequester[];
+}
+
+export type PendingStudentAddition = {
+  id: string;
+  section_id: string;
+  extracted_name: string;
+  extracted_roll_number: string | null;
+  status: string;
+  created_at: string;
+  section: { name: string; className: string | null } | null;
+};
+
+// New-student-detected list for /school-admin/requests — see
+// supabase/migrations/20260812096000_school_attendance_scan_pending_students.sql.
+export async function getPendingStudentAdditions(
+  supabase: SupabaseClient,
+  organizationId: string
+): Promise<PendingStudentAddition[]> {
+  const db = supabase as any;
+  const { data, error } = await db
+    .from('school_pending_student_additions')
+    .select('id, section_id, extracted_name, extracted_roll_number, status, created_at, school_sections(name, school_classes(name))')
+    .eq('organization_id', organizationId)
+    .eq('status', 'pending_principal_approval')
+    .order('created_at', { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row: any) => {
+    const section = Array.isArray(row.school_sections) ? row.school_sections[0] : row.school_sections;
+    const klass = section ? (Array.isArray(section.school_classes) ? section.school_classes[0] : section.school_classes) : null;
+    return {
+      id: row.id,
+      section_id: row.section_id,
+      extracted_name: row.extracted_name,
+      extracted_roll_number: row.extracted_roll_number,
+      status: row.status,
+      created_at: row.created_at,
+      section: section ? { name: section.name, className: klass?.name || null } : null,
+    };
+  });
 }

@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { PersonalizationModal } from '@/components/features/onboarding/PersonalizationModal';
 import { PublicResourceShell } from '@/components/layout/PublicResourceShell';
+import { resolveInstitutionBranding } from '@/lib/branding/resolveInstitutionBranding';
 import { headers } from 'next/headers';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -56,9 +57,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
       }));
   }
 
+  const branding = await resolveInstitutionBranding(supabase, user.id);
+
   return (
     <>
-      <DashboardShell>{children}</DashboardShell>
+      <DashboardShell branding={branding}>{children}</DashboardShell>
       {shouldShowPersonalization && personalizationGradeLevel && (
         <PersonalizationModal
           gradeLevel={personalizationGradeLevel}

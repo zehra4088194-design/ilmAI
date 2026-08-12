@@ -1,34 +1,114 @@
 import Link from 'next/link';
-import { Inbox, Video, FileText, Users } from 'lucide-react';
+import { CalendarDays, CircleDollarSign, ClipboardList, GraduationCap, Inbox, UserRoundCheck, Video, FileText, Users } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { SchoolMetric } from '@/components/features/school-erp/SchoolMetric';
+import { SchoolPageHeader } from '@/components/features/school-erp/SchoolPageHeader';
+import { AbsenceAlertWidget } from '@/components/features/school-erp/AbsenceAlertWidget';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { getCollegeAdminContext } from '@/lib/college/access';
-import {
-  getPendingJoinRequests,
-  getCollegeLectures,
-  getCollegeResources,
-  getApprovedStudents,
-} from '@/lib/college/queries';
+import { getPendingJoinRequests, getCollegeLectures, getCollegeResources, getApprovedStudents } from '@/lib/college/queries';
+import { requireCollegeContext } from '@/lib/college-erp/access';
+import { getCollegeOverview, getCollegeTodayAbsences } from '@/lib/college-erp/queries';
 
 export const metadata = { title: 'College Admin | ilm AI' };
 
 export default async function CollegeAdminHomePage() {
-  const supabase = await createClient();
+  const { supabase, context: newContext } = await requireCollegeContext('dashboard.read');
+  if (newContext) {
+    const [overview, absences] = await Promise.all([
+      getCollegeOverview(supabase, newContext),
+      getCollegeTodayAbsences(supabase, newContext),
+    ]);
+    // AbsenceAlertWidget's props (studentName/className/guardianPhone/guardianName/id/status) are
+    // identical in shape to CollegeAbsenceAlertRow (sectionName vs className is the only rename) —
+    // reused directly rather than building a college-specific twin.
+    const absenceRows = absences.map((row) => ({
+      id: row.id,
+      status: row.status,
+      studentId: row.studentId,
+      studentName: row.studentName,
+      className: row.sectionName,
+      guardianPhone: row.guardianPhone,
+      guardianName: row.guardianName,
+    }));
+
+    return (
+      <div className="space-y-6">
+        <SchoolPageHeader
+          title="College overview"
+          description={`${newContext.organization.name} operations for the current academic cycle.`}
+          action={
+            <Badge variant="outline" className="capitalize">
+              {newContext.membership.member_role}
+            </Badge>
+          }
+        />
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          <SchoolMetric label="Active students" value={overview.counts.students} icon={GraduationCap} />
+          <SchoolMetric label="Staff members" value={overview.counts.staff} icon={UserRoundCheck} tone="bg-sky-500/10 text-sky-600" />
+          <SchoolMetric label="Pending admissions" value={overview.counts.pendingAdmissions} icon={ClipboardList} tone="bg-violet-500/10 text-violet-600" />
+          <SchoolMetric label="Absent or late today" value={overview.counts.absentToday} icon={CalendarDays} tone="bg-amber-500/10 text-amber-600" />
+          <SchoolMetric label="Fee follow-ups" value={overview.counts.overdueInvoices} icon={CircleDollarSign} tone="bg-rose-500/10 text-rose-600" />
+        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Absence alerts — today</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AbsenceAlertWidget absences={absenceRows} />
+          </CardContent>
+        </Card>
+        <div className="grid gap-5 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Recent announcements</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {overview.announcements.map((item: any) => (
+                <div key={item.id} className="border-border flex items-center justify-between gap-3 border-b py-2 last:border-0">
+                  <span className="truncate text-sm font-medium">{item.title}</span>
+                  <Badge variant={item.priority === 'urgent' ? 'destructive' : 'outline'}>{item.priority}</Badge>
+                </div>
+              ))}
+              {!overview.announcements.length && <p className="text-muted-foreground text-sm">No published announcements.</p>}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Upcoming calendar</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {overview.events.map((item: any) => (
+                <div key={item.id} className="border-border flex items-center gap-3 border-b py-2 last:border-0">
+                  <CalendarDays className="h-4 w-4 shrink-0 text-indigo-600" />
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium">{item.title}</span>
+                  <span className="text-muted-foreground text-xs">{new Date(item.starts_at).toLocaleDateString()}</span>
+                </div>
+              ))}
+              {!overview.events.length && <p className="text-muted-foreground text-sm">No upcoming events.</p>}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Legacy dashboard (colleges provisioned under the old schema) — unchanged.
+  const supabaseLegacy = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
-  // The layout above already redirects if this fails; the check here is
-  // just to satisfy TypeScript's non-null expectations for `user.id` below.
+  } = await supabaseLegacy.auth.getUser();
   if (!user) return null;
-
-  const context = await getCollegeAdminContext(supabase, user.id);
-  if (!context) return null;
+  const legacyContext = await getCollegeAdminContext(supabaseLegacy, user.id);
+  if (!legacyContext) return null;
   const admin = await createAdminClient();
 
   const [pending, lectures, resources, students] = await Promise.all([
-    getPendingJoinRequests(supabase, context.college.id),
-    getCollegeLectures(supabase, context.college.id),
-    getCollegeResources(admin, context.college.id),
-    getApprovedStudents(supabase, context.college.id),
+    getPendingJoinRequests(supabaseLegacy, legacyContext.college.id),
+    getCollegeLectures(supabaseLegacy, legacyContext.college.id),
+    getCollegeResources(admin, legacyContext.college.id),
+    getApprovedStudents(supabaseLegacy, legacyContext.college.id),
   ]);
 
   const cards = [

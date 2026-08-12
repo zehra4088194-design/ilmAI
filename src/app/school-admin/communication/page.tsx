@@ -5,9 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { SchoolActionForm } from '@/components/features/school-erp/SchoolActionForm';
 import { SchoolPageHeader } from '@/components/features/school-erp/SchoolPageHeader';
+import { PrincipalDirectoryMessenger } from '@/components/features/school-erp/PrincipalDirectoryMessenger';
 import { createAnnouncement, publishAnnouncement, respondSchoolContactMessage } from '@/lib/school-erp/actions';
 import { hasSchoolPermission, requireSchoolContext } from '@/lib/school-erp/access';
 import { getSchoolCommunication } from '@/lib/school-erp/queries';
+import { getInstitutionDirectoryMessages } from '@/lib/institution-directory/queries';
 
 const selectClass = 'border-input bg-background h-10 w-full rounded-lg border px-3 text-sm';
 
@@ -16,6 +18,10 @@ export default async function SchoolCommunicationPage() {
   if (!context) redirect('/school-admin');
   const data = await getSchoolCommunication(supabase, context);
   const canManage = hasSchoolPermission(context, 'communication.manage');
+  const isPrincipal = ['owner', 'admin'].includes(context.membership.member_role);
+  const directoryMessages = isPrincipal
+    ? await getInstitutionDirectoryMessages(supabase, 'school', context.organization.id)
+    : [];
   const canRespond = ['owner', 'admin', 'admissions', 'teacher', 'accountant'].includes(context.membership.member_role);
   const deliveryCounts = data.deliveries.reduce((result: Record<string, number>, item: any) => {
     result[`${item.channel}:${item.status}`] = (result[`${item.channel}:${item.status}`] || 0) + 1;
@@ -90,6 +96,33 @@ export default async function SchoolCommunicationPage() {
           {!data.messages.length && <p className="text-muted-foreground text-sm">No contact messages.</p>}
         </CardContent>
       </Card>
+      {isPrincipal && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Message another school or college</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <PrincipalDirectoryMessenger />
+            {directoryMessages.length > 0 && (
+              <div className="border-border space-y-2 border-t pt-4">
+                <p className="text-xs font-semibold">Recent directory messages</p>
+                {directoryMessages.map((message) => (
+                  <div key={message.id} className="border-border rounded-lg border p-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant={message.direction === 'sent' ? 'outline' : 'secondary'}>
+                        {message.direction === 'sent' ? 'To' : 'From'} {message.counterpartName}
+                      </Badge>
+                      <span className="text-muted-foreground text-[11px]">{new Date(message.createdAt).toLocaleString()}</span>
+                    </div>
+                    <p className="mt-2 text-sm font-medium">{message.subject}</p>
+                    <p className="text-muted-foreground mt-1 whitespace-pre-wrap text-sm">{message.body}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { checkDailyLimit } from '@/lib/rate-limit';
 import { getActiveSchoolOrganizationId, getSchoolContext, hasSchoolModule, hasSchoolPermission } from './access';
 import type { SchoolModuleKey } from './modules';
 import { grantSchoolSubscription, isOrganizationBillingActive } from './subscription-cascade';
+import { uploadSchoolLogo } from './storage';
 import type { SchoolActionState, SchoolContext, SchoolPermission } from './types';
 
 const SUCCESS: SchoolActionState = { success: true, message: 'Saved successfully.' };
@@ -132,6 +133,28 @@ export async function updateSchoolOrganization(
     if (error) throw new Error(error.message);
     await audit(db, context, 'update', 'school_organization', context.organization.id);
     return done('/school-admin/settings', 'Organization profile updated.');
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+// White-labeling (CLAUDE_CODE_MASTER_PROMPT.md point 7): lets an owner/admin upload a logo that
+// then replaces the "ilm AI" mark on every enrolled member's dashboard sidebar — see
+// resolveInstitutionBranding() / DashboardSidebar's branding prop.
+export async function updateSchoolLogo(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
+  try {
+    const file = formData.get('logo');
+    if (!(file instanceof File) || file.size === 0) throw new Error('Choose a logo image to upload.');
+    if (!file.type.startsWith('image/')) throw new Error('Logo must be an image file.');
+    const { db, context } = await mutationContext('organization.manage', 'organization-logo');
+    const logoUrl = await uploadSchoolLogo(db, context.organization.id, file);
+    const { error } = await db.rpc('school_update_organization_logo', {
+      p_organization_id: context.organization.id,
+      p_logo_url: logoUrl,
+    });
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'update', 'school_organization_logo', context.organization.id);
+    return done('/school-admin/settings', 'Logo updated.');
   } catch (error) {
     return failure(error);
   }
@@ -637,6 +660,69 @@ export async function saveAttendance(_state: SchoolActionState, formData: FormDa
   }
 }
 
+// New-student detection from the attendance scan pipeline (Part 4.2): a name/roll number the OCR
+// pass finds with no matching enrollment gets reported here instead of silently discarded.
+export async function requestNewStudentAddition(
+  _state: SchoolActionState,
+  formData: FormData
+): Promise<SchoolActionState> {
+  try {
+    const sectionId = text(formData, 'section_id');
+    const extractedName = text(formData, 'extracted_name');
+    const extractedRollNumber = optionalText(formData, 'extracted_roll_number');
+    if (!sectionId || !extractedName) throw new Error('Section and student name are required.');
+    const { db, context, user } = await mutationContext('attendance.manage', 'pending-student-addition', 'attendance');
+    const { error } = await db.from('school_pending_student_additions').upsert(
+      {
+        organization_id: context.organization.id,
+        section_id: sectionId,
+        extracted_name: extractedName.slice(0, 200),
+        extracted_roll_number: extractedRollNumber?.slice(0, 50) || null,
+        detected_by: user.id,
+        status: 'pending_principal_approval',
+      },
+      { onConflict: 'section_id,extracted_name,extracted_roll_number' }
+    );
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'create', 'pending_student_addition', null, { sectionId, extractedName });
+    return done('/school-admin/requests', `Reported "${extractedName}" to the principal for approval.`);
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function reviewPendingStudentAddition(
+  _state: SchoolActionState,
+  formData: FormData
+): Promise<SchoolActionState> {
+  try {
+    const id = text(formData, 'id');
+    const status = text(formData, 'status');
+    if (!id || !['approved', 'rejected'].includes(status)) throw new Error('Request and decision are required.');
+    const { db, context, user } = await mutationContext('people.manage', 'pending-student-review', 'people');
+    const { error } = await db
+      .from('school_pending_student_additions')
+      .update({ status, reviewed_by: user.id, reviewed_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('organization_id', context.organization.id);
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'review', 'pending_student_addition', id, { status });
+    // Deliberately does not auto-create an enrollment: a scan-detected name has no linked account
+    // or guardian details yet (school_admissions requires guardian_name/guardian_phone NOT NULL —
+    // see the migration's header comment for why this couldn't just extend that table). Approval
+    // means "yes, go enroll them" — the admissions/people team still completes it via the existing
+    // Enroll student form once the family provides an account.
+    return done(
+      '/school-admin/requests',
+      status === 'approved'
+        ? 'Approved — enroll this student from People once their account/guardian details are collected.'
+        : 'Rejected.'
+    );
+  } catch (error) {
+    return failure(error);
+  }
+}
+
 type StaffAttendanceInput = { membershipId: string; status: string };
 
 export async function saveStaffAttendance(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
@@ -798,6 +884,55 @@ export async function createExamSchedule(_state: SchoolActionState, formData: Fo
     if (error) throw new Error(error.message);
     await audit(db, context, 'create', 'exam_schedule', data.id);
     return done('/school-admin/exams', 'Date-sheet entry added.');
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+type DateSheetEntryInput = {
+  sectionId: string;
+  subjectName: string;
+  examDate: string;
+  startsAt?: string | null;
+  endsAt?: string | null;
+  room?: string | null;
+  maxMarks?: number;
+  passingMarks?: number;
+};
+
+// Bulk write for the guided date-sheet wizard (Part 4.1): the principal answers one exam slot at a
+// time client-side, then this saves the whole accumulated date sheet in one submission — same
+// underlying table/constraint as createExamSchedule above, just batched.
+export async function createExamScheduleBatch(
+  _state: SchoolActionState,
+  formData: FormData
+): Promise<SchoolActionState> {
+  try {
+    const examId = text(formData, 'exam_id');
+    const entries = JSON.parse(text(formData, 'entries') || '[]') as DateSheetEntryInput[];
+    if (!examId || !entries.length) throw new Error('An exam and at least one exam slot are required.');
+    const { db, context } = await mutationContext('exams.manage', 'exam-schedule-batch', 'exams');
+
+    const records = entries
+      .filter((entry) => entry.sectionId && entry.subjectName && entry.examDate)
+      .map((entry) => ({
+        organization_id: context.organization.id,
+        exam_id: examId,
+        section_id: entry.sectionId,
+        subject_name: entry.subjectName.slice(0, 200),
+        exam_date: entry.examDate,
+        starts_at: entry.startsAt || null,
+        ends_at: entry.endsAt || null,
+        room: entry.room?.slice(0, 100) || null,
+        max_marks: Math.max(1, Number(entry.maxMarks) || 100),
+        passing_marks: Math.max(0, Number(entry.passingMarks) || 40),
+      }));
+    if (!records.length) throw new Error('No valid exam slots were provided.');
+
+    const { error } = await db.from('school_exam_schedules').upsert(records, { onConflict: 'exam_id,section_id,subject_name' });
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'bulk_upsert', 'exam_schedule', examId, { count: records.length });
+    return done('/school-admin/exams', `Date sheet saved — ${records.length} exam slot${records.length === 1 ? '' : 's'}.`);
   } catch (error) {
     return failure(error);
   }

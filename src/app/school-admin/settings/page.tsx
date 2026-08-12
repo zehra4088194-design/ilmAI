@@ -9,6 +9,7 @@ import {
   createSchoolClass,
   createSection,
   createSubjectOffering,
+  updateSchoolLogo,
   updateSchoolOrganization,
 } from '@/lib/school-erp/actions';
 import { hasSchoolPermission, requireSchoolContext } from '@/lib/school-erp/access';
@@ -36,6 +37,30 @@ export default async function SchoolSettingsPage() {
             <Input name="phone" defaultValue={context.organization.phone || ''} placeholder="Phone" />
             <Input name="address" defaultValue={context.organization.address || ''} placeholder="Address" />
           </SchoolActionForm>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Branding</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-start">
+          {context.organization.logo_url && (
+            // eslint-disable-next-line @next/next/no-img-element -- institution-supplied logo
+            <img
+              src={context.organization.logo_url}
+              alt={context.organization.name}
+              className="h-16 w-16 shrink-0 rounded-lg border border-border object-cover"
+            />
+          )}
+          <div className="flex-1">
+            <p className="text-muted-foreground mb-2 text-xs">
+              Every enrolled member sees this logo (plus &quot;{context.organization.name} · Ilm AI&quot;)
+              instead of the default Ilm AI mark on their dashboard.
+            </p>
+            <SchoolActionForm action={updateSchoolLogo} submitLabel="Upload logo" className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <Input name="logo" type="file" accept="image/*" required />
+            </SchoolActionForm>
+          </div>
         </CardContent>
       </Card>
       <div className="grid gap-5 lg:grid-cols-2">

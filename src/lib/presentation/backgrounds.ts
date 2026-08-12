@@ -1,9 +1,15 @@
 import 'server-only';
-import { mkdir, readdir, readFile, stat, unlink, writeFile } from 'node:fs/promises';
-import path from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { createServiceClient } from '@/lib/supabase/service';
+import { deleteR2Object, getR2Object, isR2Configured, putR2Object } from '@/lib/storage/r2';
 
-const ROOT = process.env.PRESENTATION_ASSETS_PATH || path.join(process.cwd(), 'data', 'presentation-assets');
+// Image bytes live in the shared B2 (R2-compatible) object storage bucket under the
+// `presentation-backgrounds/` prefix. Metadata (subject, keywords, category, isGlobal,
+// the B2 key, size) lives in the public.presentation_backgrounds Supabase table, so the
+// name/category/URL is looked up from Supabase while the actual file is downloaded from
+// B2 on demand — both at admin-preview time (via the proxy route) and when a
+// presentation is exported (pptx-export.ts calls readPresentationBackground directly).
+const B2_PREFIX = 'presentation-backgrounds/';
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const MIME_EXTENSIONS: Record<string, string> = {
   'image/jpeg': 'jpg',
@@ -13,8 +19,17 @@ const MIME_EXTENSIONS: Record<string, string> = {
 
 import type { PresentationBackground } from './types';
 
+type BackgroundRow = {
+  storage_path: string;
+  subject: string;
+  keywords: string[];
+  category: string;
+  is_global: boolean;
+  size_bytes: number;
+};
+
 function safeName(value: string) {
-  const name = path.basename(value);
+  const name = value.split('/').pop() || '';
   return /^[a-z0-9][a-z0-9-]*\.(?:jpg|png|webp)$/i.test(name) ? name : null;
 }
 
@@ -34,52 +49,37 @@ function cleanCategory(value: unknown) {
   return cleaned || 'uncategorized';
 }
 
-function metadataPath(name: string) {
-  return path.join(ROOT, `${name}.json`);
-}
-
-async function readMetadata(name: string) {
-  try {
-    const parsed = JSON.parse(await readFile(metadataPath(name), 'utf8')) as Record<string, unknown>;
-    return {
-      subject: cleanText(parsed.subject, 100),
-      keywords: cleanKeywords(parsed.keywords),
-      category: cleanCategory(parsed.category),
-      isGlobal: parsed.isGlobal === true,
-    };
-  } catch {
-    return { subject: '', keywords: [], category: 'uncategorized', isGlobal: false };
-  }
+function toBackground(row: BackgroundRow): PresentationBackground {
+  return {
+    name: row.storage_path,
+    url: `/api/presentation/backgrounds/${row.storage_path}`,
+    size: row.size_bytes,
+    subject: row.subject,
+    keywords: row.keywords,
+    category: row.category,
+    isGlobal: row.is_global,
+  };
 }
 
 export async function listPresentationBackgrounds(): Promise<PresentationBackground[]> {
-  await mkdir(ROOT, { recursive: true });
-  const entries = await readdir(ROOT, { withFileTypes: true });
-  const results = await Promise.all(
-    entries
-      .filter((entry) => entry.isFile() && safeName(entry.name))
-      .map(async (entry) => {
-        const [details, metadata] = await Promise.all([stat(path.join(ROOT, entry.name)), readMetadata(entry.name)]);
-        return {
-          name: entry.name,
-          url: `/api/presentation/backgrounds/${entry.name}`,
-          size: details.size,
-          ...metadata,
-        };
-      })
-  );
-  return results.sort((a, b) => a.name.localeCompare(b.name));
+  const supabase = createServiceClient();
+  const { data, error } = await supabase
+    .from('presentation_backgrounds')
+    .select('storage_path, subject, keywords, category, is_global, size_bytes')
+    .order('storage_path', { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data as BackgroundRow[]).map(toBackground);
 }
 
 export async function savePresentationBackground(
   file: File,
   metadata: { subject?: string; keywords?: string[]; category?: string; isGlobal?: boolean } = {}
 ): Promise<PresentationBackground> {
+  if (!isR2Configured()) throw new Error('Object storage is not configured (missing OBJECT_STORAGE_* env vars).');
   const extension = MIME_EXTENSIONS[file.type];
   if (!extension) throw new Error('Only JPG, PNG, and WebP images are allowed.');
   if (file.size <= 0 || file.size > MAX_IMAGE_BYTES) throw new Error('Each image must be 10 MB or smaller.');
 
-  await mkdir(ROOT, { recursive: true });
   const stem = file.name
     .replace(/\.[^.]+$/, '')
     .toLowerCase()
@@ -94,26 +94,40 @@ export async function savePresentationBackground(
     category: cleanCategory(metadata.category),
     isGlobal: metadata.isGlobal === true,
   };
-  await writeFile(path.join(ROOT, name), bytes, { flag: 'wx' });
-  await writeFile(metadataPath(name), JSON.stringify(storedMetadata), { flag: 'wx' });
+
+  await putR2Object(`${B2_PREFIX}${name}`, bytes, { contentType: file.type, cacheControl: 'public, max-age=31536000, immutable' });
+
+  const supabase = createServiceClient();
+  const { error: insertError } = await supabase.from('presentation_backgrounds').insert({
+    storage_path: name,
+    subject: storedMetadata.subject,
+    keywords: storedMetadata.keywords,
+    category: storedMetadata.category,
+    is_global: storedMetadata.isGlobal,
+    size_bytes: bytes.byteLength,
+  });
+  if (insertError) {
+    await deleteR2Object(`${B2_PREFIX}${name}`).catch(() => undefined);
+    throw new Error(insertError.message);
+  }
+
   return { name, url: `/api/presentation/backgrounds/${name}`, size: bytes.byteLength, ...storedMetadata };
 }
 
 export async function deletePresentationBackground(name: string) {
   const validName = safeName(name);
   if (!validName) throw new Error('Invalid background name.');
-  await unlink(path.join(ROOT, validName));
-  await unlink(metadataPath(validName)).catch(() => undefined);
+  await deleteR2Object(`${B2_PREFIX}${validName}`);
+  const supabase = createServiceClient();
+  await supabase.from('presentation_backgrounds').delete().eq('storage_path', validName);
 }
 
 export async function readPresentationBackground(name: string) {
   const validName = safeName(name);
   if (!validName) return null;
-  try {
-    return { name: validName, data: await readFile(path.join(ROOT, validName)) };
-  } catch {
-    return null;
-  }
+  const object = await getR2Object(`${B2_PREFIX}${validName}`);
+  if (!object) return null;
+  return { name: validName, data: Buffer.from(object.body) };
 }
 
 export function presentationBackgroundNameFromUrl(url?: string) {

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { getSchoolContext, schoolAdminHomeForRole } from '@/lib/school-erp/access';
+import { resolveMembershipRedirect } from '@/lib/auth/resolveMembershipRedirect';
 
 export async function GET() {
   const supabase = await createClient();
@@ -9,8 +9,6 @@ export async function GET() {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ destination: '/dashboard' });
 
-  const context = await getSchoolContext(supabase, user.id);
-  if (!context) return NextResponse.json({ destination: '/dashboard' });
-
-  return NextResponse.json({ destination: schoolAdminHomeForRole(context.membership.member_role) });
+  const { destination } = await resolveMembershipRedirect(supabase, user.id);
+  return NextResponse.json({ destination });
 }

@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AttendanceRegister } from '@/components/features/school-erp/AttendanceRegister';
+import { AttendanceScanUploader } from '@/components/features/school-erp/AttendanceScanUploader';
 import { StaffAttendanceRegister } from '@/components/features/school-erp/StaffAttendanceRegister';
 import { SchoolActionForm } from '@/components/features/school-erp/SchoolActionForm';
 import { SchoolPageHeader } from '@/components/features/school-erp/SchoolPageHeader';
@@ -25,6 +26,14 @@ export default async function SchoolAttendancePage({
   return (
     <div className="space-y-6">
       <SchoolPageHeader title="Attendance" description="Daily student attendance, late arrivals, absences, and leave decisions." />
+      {canManage && (
+        <Card>
+          <CardHeader><CardTitle className="text-base">Scan a handwritten register</CardTitle></CardHeader>
+          <CardContent>
+            <AttendanceScanUploader sections={data.sections} date={date} />
+          </CardContent>
+        </Card>
+      )}
       <Card>
         <CardHeader><CardTitle className="text-base">Daily register</CardTitle></CardHeader>
         <CardContent>

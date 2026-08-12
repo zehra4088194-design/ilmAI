@@ -60,73 +60,152 @@ export function ParentQrScanner() {
     if (!open || mode !== 'camera' || resolvedInvite) return;
 
     let active = true;
+    let nativeStream: MediaStream | null = null;
+    let nativeRafId: number | null = null;
     handledRef.current = false;
     setStarting(true);
     setError(null);
 
-    Promise.all([import('@zxing/browser'), import('@zxing/library')])
-      .then(async ([{ BrowserQRCodeReader }, { BarcodeFormat, DecodeHintType }]) => {
-        if (!active || !videoRef.current) return;
-
-        const hints = new Map();
-        hints.set(DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.QR_CODE]);
-        hints.set(DecodeHintType.TRY_HARDER, true);
-        const reader = new BrowserQRCodeReader(hints, {
-          delayBetweenScanAttempts: 100,
-          delayBetweenScanSuccess: 500,
+    const handleDecodedText = (text: string) => {
+      if (!active || handledRef.current) return;
+      handledRef.current = true;
+      setResolving(true);
+      setError(null);
+      resolveCameraPayload(text)
+        .then((invite) => {
+          if (!active) return;
+          setResolvedInvite(invite);
+        })
+        .catch((scanError) => {
+          if (!active) return;
+          setError(scanError instanceof Error ? scanError.message : 'The QR link could not be found.');
+          handledRef.current = false;
+        })
+        .finally(() => {
+          if (active) setResolving(false);
         });
-        const controls = await reader.decodeFromConstraints(
-          {
-            audio: false,
-            video: {
-              facingMode: { ideal: 'environment' },
-              width: { ideal: 1920 },
-              height: { ideal: 1080 },
-            },
-          },
-          videoRef.current,
-          (result, _scanError, scannerControls) => {
-            controlsRef.current = scannerControls;
-            if (!result || handledRef.current) return;
+    };
 
-            handledRef.current = true;
-            setResolving(true);
-            setError(null);
-            resolveCameraPayload(result.getText())
-              .then((invite) => {
-                if (!active) return;
-                scannerControls.stop();
-                setResolvedInvite(invite);
-              })
-              .catch((scanError) => {
-                if (!active) return;
-                setError(scanError instanceof Error ? scanError.message : 'The QR link could not be found.');
-                handledRef.current = false;
-              })
-              .finally(() => {
-                if (active) setResolving(false);
-              });
-          }
-        );
-        if (!active) {
-          controls.stop();
-          return;
-        }
-        controlsRef.current = controls;
-        setStarting(false);
-      })
-      .catch((cameraError) => {
-        if (!active) return;
-        setStarting(false);
-        setError(
-          cameraError instanceof Error && cameraError.name === 'NotAllowedError'
-            ? 'Allow camera access or upload a QR image.'
-            : 'The camera could not start. Upload a QR image and try again.'
-        );
+    const cameraFailureMessage = (cameraError: unknown) =>
+      cameraError instanceof Error && cameraError.name === 'NotAllowedError'
+        ? 'Allow camera access or upload a QR image.'
+        : 'The camera could not start. Upload a QR image and try again.';
+
+    // Best-effort permission pre-check: distinguishes "denied forever" from "not yet asked" before
+    // getUserMedia even runs, so the error message is accurate. Not all browsers support the
+    // Permissions API for 'camera' (notably Safari) — silently fall through when it's unavailable.
+    const checkPermission = async () => {
+      try {
+        const nav = navigator as Navigator & { permissions?: { query: (opts: { name: string }) => Promise<{ state: string }> } };
+        const status = await nav.permissions?.query({ name: 'camera' });
+        return status?.state !== 'denied';
+      } catch {
+        return true;
+      }
+    };
+
+    // Hardware-accelerated fast path where the browser supports it (Chrome/Edge on Android, most
+    // desktop Chromium). Falls back to the ZXing JS decoder below when unavailable — that path is
+    // unchanged in behavior, just with its two bugs (see comments below) fixed.
+    const tryNativeBarcodeDetector = async (): Promise<boolean> => {
+      const BarcodeDetectorCtor = (window as any).BarcodeDetector;
+      if (!BarcodeDetectorCtor) return false;
+      try {
+        const supported: string[] = await BarcodeDetectorCtor.getSupportedFormats();
+        if (!supported.includes('qr_code')) return false;
+      } catch {
+        return false;
+      }
+
+      nativeStream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
       });
+      if (!active || !videoRef.current) {
+        nativeStream.getTracks().forEach((track) => track.stop());
+        return true;
+      }
+      videoRef.current.srcObject = nativeStream;
+      await videoRef.current.play().catch(() => {});
+      setStarting(false);
+
+      const detector = new BarcodeDetectorCtor({ formats: ['qr_code'] });
+      const tick = async () => {
+        if (!active || handledRef.current || !videoRef.current) return;
+        try {
+          const codes = await detector.detect(videoRef.current);
+          if (codes[0]?.rawValue) {
+            handleDecodedText(codes[0].rawValue);
+          }
+        } catch {
+          // Transient decode errors (e.g. a frame mid-transition) are expected — keep polling.
+        }
+        if (active) nativeRafId = requestAnimationFrame(tick);
+      };
+      nativeRafId = requestAnimationFrame(tick);
+      return true;
+    };
+
+    (async () => {
+      const permitted = await checkPermission();
+      if (!permitted) {
+        throw Object.assign(new Error('Camera access was previously denied.'), { name: 'NotAllowedError' });
+      }
+
+      if (await tryNativeBarcodeDetector()) return;
+
+      const [{ BrowserQRCodeReader }, { BarcodeFormat, DecodeHintType }] = await Promise.all([
+        import('@zxing/browser'),
+        import('@zxing/library'),
+      ]);
+      if (!active || !videoRef.current) return;
+
+      const hints = new Map();
+      hints.set(DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.QR_CODE]);
+      hints.set(DecodeHintType.TRY_HARDER, true);
+      const reader = new BrowserQRCodeReader(hints, {
+        delayBetweenScanAttempts: 100,
+        delayBetweenScanSuccess: 500,
+      });
+      const controls = await reader.decodeFromConstraints(
+        {
+          audio: false,
+          // Lowered from 1920x1080: that "ideal" resolution slows constraint negotiation and
+          // per-frame decode on low-end devices without meaningfully improving QR readability.
+          video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+        },
+        videoRef.current,
+        (result, _scanError, scannerControls) => {
+          // Bug fix: this callback can fire after the effect's cleanup already ran (a decode
+          // in flight when the component unmounts/closes). Previously controlsRef.current was
+          // reassigned unconditionally here, which could resurrect a "stopped" scanner with a
+          // live, never-stopped camera stream. Guard on `active` before touching the ref.
+          if (!active) return;
+          controlsRef.current = scannerControls;
+          if (!result || handledRef.current) return;
+          handleDecodedText(result.getText());
+        }
+      );
+      if (!active) {
+        controls.stop();
+        return;
+      }
+      controlsRef.current = controls;
+      setStarting(false);
+    })().catch((cameraError) => {
+      if (!active) return;
+      setStarting(false);
+      setError(cameraFailureMessage(cameraError));
+    });
 
     return () => {
       active = false;
+      if (nativeRafId !== null) cancelAnimationFrame(nativeRafId);
+      nativeStream?.getTracks().forEach((track) => track.stop());
       controlsRef.current?.stop();
       controlsRef.current = null;
     };
