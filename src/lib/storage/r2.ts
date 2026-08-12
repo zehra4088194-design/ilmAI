@@ -20,18 +20,22 @@ function getConfig(): R2Config | null {
     process.env.S3_ENDPOINT ||
     process.env.B2_ENDPOINT ||
     (accountId ? `https://${accountId}.r2.cloudflarestorage.com` : '');
+  // OBJECT_STORAGE_* takes priority — it's the actively-configured provider
+  // (currently Backblaze B2). R2_*/S3_*/B2_* are only a fallback for stale
+  // leftover env vars from an earlier Cloudflare R2 setup; letting those win
+  // silently pointed the app at the wrong bucket/credentials.
   const accessKeyId =
-    process.env.R2_ACCESS_KEY_ID ||
     process.env.OBJECT_STORAGE_ACCESS_KEY_ID ||
+    process.env.R2_ACCESS_KEY_ID ||
     process.env.S3_ACCESS_KEY_ID ||
     process.env.B2_KEY_ID;
   const secretAccessKey =
-    process.env.R2_SECRET_ACCESS_KEY ||
     process.env.OBJECT_STORAGE_SECRET_ACCESS_KEY ||
+    process.env.R2_SECRET_ACCESS_KEY ||
     process.env.S3_SECRET_ACCESS_KEY ||
     process.env.B2_APPLICATION_KEY;
   const bucket =
-    process.env.R2_BUCKET || process.env.OBJECT_STORAGE_BUCKET || process.env.S3_BUCKET || process.env.B2_BUCKET;
+    process.env.OBJECT_STORAGE_BUCKET || process.env.R2_BUCKET || process.env.S3_BUCKET || process.env.B2_BUCKET;
   const region = process.env.OBJECT_STORAGE_REGION || process.env.S3_REGION || process.env.B2_REGION || 'auto';
   return endpoint && accessKeyId && secretAccessKey && bucket
     ? { accountId, accessKeyId, secretAccessKey, bucket, endpoint, region }
