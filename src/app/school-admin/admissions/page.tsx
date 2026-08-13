@@ -1,17 +1,16 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { SchoolActionForm } from '@/components/features/school-erp/SchoolActionForm';
 import { SchoolPageHeader } from '@/components/features/school-erp/SchoolPageHeader';
+import { AdmissionsList } from '@/components/features/school-erp/AdmissionsList';
 import { createAdmission, updateAdmissionStatus } from '@/lib/school-erp/actions';
 import { hasSchoolPermission, requireSchoolContext } from '@/lib/school-erp/access';
 import { getSchoolAcademicSetup, getSchoolAdmissions } from '@/lib/school-erp/queries';
 
 const selectClass = 'border-input bg-background h-10 w-full rounded-lg border px-3 text-sm';
-const STATUSES = ['submitted', 'under_review', 'waitlisted', 'approved', 'rejected', 'enrolled', 'withdrawn'];
 
 export default async function SchoolAdmissionsPage() {
   const { supabase, context } = await requireSchoolContext('admissions.read', 'admissions');
@@ -49,47 +48,7 @@ export default async function SchoolAdmissionsPage() {
           </CardContent>
         </Card>
       )}
-      <div className="grid gap-4">
-        {applications.map((item: any) => (
-          <Card key={item.id}>
-            <CardContent className="grid gap-4 p-4 lg:grid-cols-[1fr_240px] lg:items-center">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="font-semibold">{item.applicant_name}</h2>
-                  <Badge variant={item.status === 'approved' || item.status === 'enrolled' ? 'secondary' : item.status === 'rejected' ? 'destructive' : 'outline'}>{item.status.replace('_', ' ')}</Badge>
-                </div>
-                <p className="text-muted-foreground mt-1 text-sm">{item.application_number} - {item.applying_for_class} - {item.guardian_name} - {item.guardian_phone}</p>
-                <p className="text-muted-foreground mt-2 text-xs">
-                  {(item.school_admission_documents || []).length} documents - Submitted {new Date(item.submitted_at).toLocaleDateString()}
-                </p>
-                {(item.school_admission_documents || []).length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {item.school_admission_documents.map((document: any) => (
-                      <Link
-                        key={document.id}
-                        href={`/api/school-admin/admission-document?id=${encodeURIComponent(document.id)}`}
-                        target="_blank"
-                        className="text-xs font-medium text-emerald-700 hover:underline dark:text-emerald-400"
-                      >
-                        {document.file_name}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-              {canManage && (
-                <SchoolActionForm action={updateAdmissionStatus} submitLabel="Update" className="flex items-end gap-2">
-                  <input type="hidden" name="id" value={item.id} />
-                  <select name="status" defaultValue={item.status} className={selectClass}>
-                    {STATUSES.map((status) => <option key={status} value={status}>{status.replace('_', ' ')}</option>)}
-                  </select>
-                </SchoolActionForm>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-        {!applications.length && <Card><CardContent className="text-muted-foreground p-8 text-center text-sm">No admission applications yet.</CardContent></Card>}
-      </div>
+      <AdmissionsList applications={applications} canManage={canManage} updateAdmissionStatus={updateAdmissionStatus} />
     </div>
   );
 }

@@ -1,7 +1,7 @@
-import { gatewayChat, type ModelTier } from '@/lib/ai/gateway';
+import { gatewayChat, type AiProviderId, type ModelTier } from '@/lib/ai/gateway';
+import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import {
-  PRESENTATION_LIGHT_THEMES,
   PRESENTATION_SLIDE_TYPES,
   PRESENTATION_THEMES,
   type PresentationDeck,
@@ -11,7 +11,7 @@ import {
   type PresentationTheme,
 } from './types';
 
-const DEFAULT_THEME: PresentationTheme = 'modern-blue';
+const DEFAULT_THEME: PresentationTheme = 'dark';
 
 function cleanString(value: unknown, fallback = '', max = 500) {
   return typeof value === 'string' && value.trim() ? value.trim().slice(0, max) : fallback;
@@ -54,7 +54,7 @@ Strict rules:
 2. Use this schema:
 {
   "topic": "string",
-  "theme": "modern-blue | warm-academic | dark-tech | nature-green | vibrant-purple | minimal-mono | ocean-teal | royal-violet | charcoal-slate | sunset-coral | blush-rose | golden-sand",
+  "theme": "dark | light",
   "slides": [
     {"type":"title","title":"string","subtitle":"string","speakerNotes":"string"},
     {"type":"bullets","title":"string","bullets":["short point"],"speakerNotes":"string"},
@@ -73,7 +73,7 @@ Strict rules:
 8. Build a deliberate story arc: hook, context, core explanation, evidence/example, implications, memorable conclusion.
 9. Never invent a statistic. Use a stats slide only for well-established values; otherwise choose another slide type.
 10. Slide titles must communicate an insight, not generic labels such as "Overview" or "Introduction".
-11. Pick a theme based on topic: science/tech -> dark-tech, ocean-teal, or modern-blue, literature/history -> warm-academic or sunset-coral, environment/nature -> nature-green, business/finance -> golden-sand or charcoal-slate, arts/creative -> vibrant-purple, royal-violet, or blush-rose.
+11. The theme is fixed by the user's dark/light choice — never output a different value than the one given below.
 12. Match the requested language. Use Roman Urdu/Urdu-English only when requested.
 13. Do not add fake citations. If references are needed, mention reference placeholders only.`;
 }
@@ -209,9 +209,9 @@ function applyRequestedTheme(deck: PresentationDeck, input: PresentationGenerate
   return { ...deck, theme: requestedTheme(input) };
 }
 
-async function askForDeck(input: PresentationGenerateInput, tier: ModelTier) {
+async function askForDeck(input: PresentationGenerateInput, tier: ModelTier, provider: AiProviderId) {
   const result = await gatewayChat({
-    provider: 'gemini',
+    provider,
     tier,
     messages: [
       { role: 'system', content: buildSystemPrompt(true) },
@@ -219,7 +219,8 @@ async function askForDeck(input: PresentationGenerateInput, tier: ModelTier) {
     ],
     maxTokens: 7600,
     temperature: 0.45,
-    routingPolicy: 'presentation',
+    strictProvider: true,
+    routingPolicy: 'text',
     validateResponse: validDeckResponse,
   });
   return applyRequestedTheme(normalizePresentationDeck(parseAiJson(result.text, {}), input.topic), input);
@@ -231,10 +232,10 @@ type OutlineSlide = {
   title?: string;
 };
 
-async function askForOutline(input: PresentationGenerateInput, tier: ModelTier) {
+async function askForOutline(input: PresentationGenerateInput, tier: ModelTier, provider: AiProviderId) {
   const slideCount = cleanNumber(input.slideCount, 10, 4, 24);
   const result = await gatewayChat({
-    provider: 'gemini',
+    provider,
     tier,
     messages: [
       { role: 'system', content: 'Return only valid JSON. You create presentation outlines for university decks.' },
@@ -249,13 +250,14 @@ Language: ${cleanString(input.language, 'English')}
 Color theme: ${requestedTheme(input)}
 
 Return JSON:
-{"topic":"...","theme":"modern-blue | warm-academic | dark-tech | nature-green | vibrant-purple | minimal-mono | ocean-teal | royal-violet | charcoal-slate | sunset-coral | blush-rose | golden-sand","slides":[{"type":"title","title":"...","focus":"..."},{"type":"bullets","title":"...","focus":"..."}]}
+{"topic":"...","theme":"dark | light","slides":[{"type":"title","title":"...","focus":"..."},{"type":"bullets","title":"...","focus":"..."}]}
 Use exactly ${slideCount} slides. Use the requested color theme. First type title, last type closing, include mixed slide types and a logical PowerPoint-style story arc.`,
       },
     ],
     maxTokens: 2400,
     temperature: 0.35,
-    routingPolicy: 'presentation',
+    strictProvider: true,
+    routingPolicy: 'text',
     validateResponse: validDeckResponse,
   });
   const parsed = parseAiJson<Record<string, unknown>>(result.text, {});
@@ -285,9 +287,10 @@ async function askForSingleSlide(params: {
   total: number;
   previousSummary: string;
   tier: ModelTier;
+  provider: AiProviderId;
 }) {
   const result = await gatewayChat({
-    provider: 'gemini',
+    provider: params.provider,
     tier: params.tier,
     messages: [
       { role: 'system', content: buildSystemPrompt() },
@@ -310,7 +313,8 @@ Make this slide substantial: presentation-ready bullets, useful speaker notes, a
     ],
     maxTokens: 2400,
     temperature: 0.42,
-    routingPolicy: 'presentation',
+    strictProvider: true,
+    routingPolicy: 'text',
     validateResponse: validSlideResponse,
   });
   return parseAiJson<Record<string, unknown>>(result.text, {});
@@ -359,11 +363,11 @@ function fallbackOutline(input: PresentationGenerateInput): {
   return { topic, theme: requestedTheme(input), slides };
 }
 
-async function askForDeckPerSlide(input: PresentationGenerateInput, tier: ModelTier) {
+async function askForDeckPerSlide(input: PresentationGenerateInput, tier: ModelTier, provider: AiProviderId) {
   const fallback = fallbackOutline(input);
   let outline: typeof fallback;
   try {
-    outline = await askForOutline(input, tier);
+    outline = await askForOutline(input, tier, provider);
   } catch {
     // Still make one request per slide when the planning call is unavailable.
     outline = fallback;
@@ -397,6 +401,7 @@ async function askForDeckPerSlide(input: PresentationGenerateInput, tier: ModelT
           .map((item) => item.title || item.focus)
           .join(' -> '),
         tier,
+        provider,
       });
     } catch {
       return {
@@ -423,16 +428,19 @@ export async function generatePresentationDeck(
   tier: ModelTier
 ): Promise<PresentationDeck> {
   const slideCount = cleanNumber(input.slideCount, 8, 4, 24);
+  // Use whichever provider the admin panel has selected for "Presentation" — previously this
+  // was hardcoded to Gemini and silently ignored the admin dropdown entirely.
+  const provider: AiProviderId = await resolveAiRoutingProvider('presentation');
   // Detailed per-slide generation is the safe default. Bulk remains available
   // only when explicitly selected for a quick, compact draft.
   const mode = input.mode === 'bulk' && slideCount <= 12 ? 'bulk' : 'per-slide';
-  const deck = mode === 'per-slide' ? await askForDeckPerSlide(input, tier) : await askForDeck(input, tier);
+  const deck =
+    mode === 'per-slide' ? await askForDeckPerSlide(input, tier, provider) : await askForDeck(input, tier, provider);
   if (!deck.slides.length) throw new Error('Presentation slides could not be generated.');
-  // Light-background themes pair dark text with a dark photo overlay, which would
-  // be unreadable — skip background photos for every light theme, not just one.
-  const backgrounds = PRESENTATION_LIGHT_THEMES.includes(deck.theme)
-    ? []
-    : (input.backgroundImageUrls || []).filter((url) => /^\/api\/presentation\/backgrounds\//.test(url));
+  // Background photos are already mode-matched (dark/light) upstream in
+  // selectPresentationBackgrounds, and the renderer applies a matching-tone
+  // scrim + text color — so both themes can safely use photos here.
+  const backgrounds = (input.backgroundImageUrls || []).filter((url) => /^\/api\/presentation\/backgrounds\//.test(url));
   const withBackgrounds = backgrounds.length
     ? {
         ...deck,

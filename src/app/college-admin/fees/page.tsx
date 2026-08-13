@@ -1,11 +1,13 @@
 import { redirect } from 'next/navigation';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { CollegeActionForm } from '@/components/features/college-erp/CollegeActionForm';
 import { createCollegeFeeInvoice, createCollegeFeeStructure, recordCollegeFeePayment } from '@/lib/college-erp/actions';
 import { hasCollegePermission, requireCollegeContext } from '@/lib/college-erp/access';
 import { getCollegeFees } from '@/lib/college-erp/queries';
+import { listPendingFeePaymentClaims } from '@/lib/institution-payments/fee-actions';
+import { FeeClaimReviewRow } from '@/components/features/institution-payments/FeeClaimReviewRow';
+import { VoucherLedgerTable } from '@/components/features/school-erp/VoucherLedgerTable';
 
 const selectClass = 'border-input bg-background h-10 w-full rounded-lg border px-3 text-sm';
 
@@ -19,6 +21,7 @@ export default async function CollegeFeesPage() {
   if (!context) redirect('/college-admin');
   const data = await getCollegeFees(supabase, context);
   const canManage = hasCollegePermission(context, 'fees.manage');
+  const pendingClaims = canManage ? await listPendingFeePaymentClaims('college', context.organization.id) : [];
   const outstanding = data.invoices.reduce((sum: number, invoice: any) => sum + Math.max(0, Number(invoice.total_amount || 0) - Number(invoice.paid_amount || 0)), 0);
 
   return (
@@ -77,18 +80,31 @@ export default async function CollegeFeesPage() {
           </Card>
         </div>
       )}
+      {canManage && pendingClaims.length > 0 && (
+        <Card>
+          <CardHeader><CardTitle className="text-base">Pending payment claims ({pendingClaims.length})</CardTitle></CardHeader>
+          <CardContent className="overflow-x-auto">
+            <table className="w-full min-w-[720px] text-sm">
+              <thead className="text-muted-foreground border-b text-left text-xs"><tr><th className="py-2 pr-3">Student</th><th className="pr-3">Method</th><th className="pr-3">Amount</th><th className="pr-3">Contact</th><th>Action</th></tr></thead>
+              <tbody>
+                {pendingClaims.map((claim: any) => (
+                  <FeeClaimReviewRow
+                    key={claim.id}
+                    institutionType="college"
+                    claim={claim}
+                    studentName={profileName(claim.profiles)}
+                    currency={context.organization.currency}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+      )}
       <Card>
         <CardHeader><CardTitle className="text-base">Voucher ledger</CardTitle></CardHeader>
-        <CardContent className="overflow-x-auto">
-          <table className="w-full min-w-[820px] text-sm">
-            <thead className="text-muted-foreground border-b text-left text-xs"><tr><th className="py-2">Voucher</th><th>Student</th><th>Due</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th></tr></thead>
-            <tbody>
-              {data.invoices.map((item: any) => {
-                const balance = Math.max(0, Number(item.total_amount) - Number(item.paid_amount));
-                return <tr key={item.id} className="border-b last:border-0"><td className="py-2 font-medium">{item.voucher_number}</td><td>{profileName(item.profiles)}</td><td>{item.due_date}</td><td>{Number(item.total_amount).toLocaleString()}</td><td>{Number(item.paid_amount).toLocaleString()}</td><td>{balance.toLocaleString()}</td><td><Badge variant={item.status === 'paid' ? 'secondary' : item.status === 'overdue' ? 'destructive' : 'outline'}>{item.status}</Badge></td></tr>;
-              })}
-            </tbody>
-          </table>
+        <CardContent>
+          <VoucherLedgerTable invoices={data.invoices} />
         </CardContent>
       </Card>
     </div>

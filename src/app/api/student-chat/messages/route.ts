@@ -6,7 +6,6 @@ import { getAdminAiProvider, getPlanFromSettings } from '@/lib/platform-settings
 import { gatewayChat, type AiProviderId } from '@/lib/ai/gateway';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import { createNotificationIfEnabled, createNotificationsIfEnabled } from '@/lib/notifications/preferences';
-import { checkAiMessageLimit, consumeAiCredits, getConfiguredLimitExceededMessage } from '@/lib/rate-limit';
 import { loadArchivedChatMessages, mergeChatMessages } from '@/lib/storage/chat-archive';
 import type { SubscriptionTier } from '@/types';
 
@@ -252,13 +251,8 @@ export async function POST(req: NextRequest) {
       { status: 403 }
     );
   }
-  const moderationLimit = await checkAiMessageLimit(user.id, tier, 'student_chat_moderation');
-  if (!moderationLimit.success) {
-    return NextResponse.json(
-      { error: await getConfiguredLimitExceededMessage(tier, 'Study buddy safety check') },
-      { status: 429 }
-    );
-  }
+  // Safety moderation (every 50 messages) is a platform cost, not a student-requested AI tool —
+  // it must never gate message sending nor draw from the student's own shared AI credit pool.
 
   const request = await getApprovedRequest(chatsAdmin, admin, requestId, user.id);
   if (!request) return NextResponse.json({ error: 'An approved chat was not found.' }, { status: 403 });
@@ -282,7 +276,6 @@ export async function POST(req: NextRequest) {
   });
 
   const moderation = await moderateIfNeeded(chatsAdmin, admin, request);
-  await consumeAiCredits(user.id, tier, 'student_chat_moderation');
 
   return NextResponse.json({ message: data, moderation });
 }

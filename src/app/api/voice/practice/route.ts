@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { gatewayChat } from '@/lib/ai/gateway';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import { createClient } from '@/lib/supabase/server';
+import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
 import { checkAiMessageLimit, consumeAiCredits, getConfiguredLimitExceededMessage } from '@/lib/rate-limit';
 import type { SubscriptionTier } from '@/types';
 
@@ -21,9 +22,11 @@ export async function GET(req: NextRequest) {
   try {
     const language = normalizeLanguage(req.nextUrl.searchParams.get('language'));
     const difficulty = req.nextUrl.searchParams.get('difficulty') || 'intermediate';
+    const provider = await resolveAiRoutingProvider('studyTools');
     const result = await gatewayChat({
-      provider: 'gemini',
-      routingPolicy: 'gemini',
+      provider,
+      strictProvider: true,
+      routingPolicy: 'text',
       tier: 'mini',
       messages: [
         {
@@ -94,9 +97,11 @@ export async function POST(req: NextRequest) {
       if (upload.error) throw upload.error;
     }
 
+    const provider = await resolveAiRoutingProvider('studyTools');
     const result = await gatewayChat({
-      provider: 'gemini',
-      routingPolicy: 'gemini',
+      provider,
+      strictProvider: true,
+      routingPolicy: 'text',
       tier: tier === 'ELITE' ? 'medium' : 'mini',
       messages: [
         {

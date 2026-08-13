@@ -1,16 +1,7 @@
-export type PresentationTheme =
-  | 'modern-blue'
-  | 'warm-academic'
-  | 'dark-tech'
-  | 'nature-green'
-  | 'vibrant-purple'
-  | 'minimal-mono'
-  | 'ocean-teal'
-  | 'royal-violet'
-  | 'charcoal-slate'
-  | 'sunset-coral'
-  | 'blush-rose'
-  | 'golden-sand';
+// Simplified down to two modes on purpose — the many named color themes were
+// replaced with a single dark look and a single light look, each paired with
+// dark/light-tagged background photos instead (see PresentationBackground.mode).
+export type PresentationTheme = 'dark' | 'light';
 
 export type PresentationSlideType =
   | 'title'
@@ -75,6 +66,12 @@ export type PresentationBackground = {
   // Optional so older sidecar metadata (saved before this field existed) keeps
   // type-checking; readers should treat a missing value as 'uncategorized'.
   category?: string;
+  // Which slide theme this photo suits — a dark, moody photo for the 'dark'
+  // theme (rendered with a dark scrim + white text) or a bright, light photo
+  // for the 'light' theme (light scrim + dark text). Optional so pre-existing
+  // rows keep type-checking; readers should treat a missing value as 'dark'
+  // (the tone every background was designed for before this field existed).
+  mode?: PresentationTheme;
   isGlobal: boolean;
 };
 
@@ -95,30 +92,7 @@ export const PRESENTATION_BACKGROUND_CATEGORIES = [
 
 export const DEFAULT_PRESENTATION_BACKGROUND_CATEGORY = 'uncategorized';
 
-export const PRESENTATION_THEMES: PresentationTheme[] = [
-  'modern-blue',
-  'warm-academic',
-  'dark-tech',
-  'nature-green',
-  'vibrant-purple',
-  'minimal-mono',
-  'ocean-teal',
-  'royal-violet',
-  'charcoal-slate',
-  'sunset-coral',
-  'blush-rose',
-  'golden-sand',
-];
-
-// Themes with a light background need dark slide text (and no dark photo overlay)
-// to stay readable — this is the single source of truth other modules key off of
-// instead of special-casing 'minimal-mono' by name.
-export const PRESENTATION_LIGHT_THEMES: PresentationTheme[] = [
-  'minimal-mono',
-  'sunset-coral',
-  'blush-rose',
-  'golden-sand',
-];
+export const PRESENTATION_THEMES: PresentationTheme[] = ['dark', 'light'];
 
 export const PRESENTATION_SLIDE_TYPES: PresentationSlideType[] = [
   'title',

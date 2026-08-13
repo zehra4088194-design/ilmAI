@@ -2,6 +2,10 @@
 # the free hosted deployment uses GitHub Actions schedule triggers.
 */5 * * * * curl -fsS --retry 2 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/resource-context"
 */5 * * * * curl -fsS --retry 2 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/school-notifications"
+# ZKTeco biometric attendance sync (master prompt Part 8) — only useful on a deployment where this
+# container can actually reach each school's/college's device LAN IP (see the route's own deployment-
+# constraint comment); every device sync failure is visible in the Biometric Devices admin tab, not silent.
+*/2 * * * * curl -fsS --retry 1 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/biometric-attendance-sync"
 0 0 * * 1 curl -fsS --retry 3 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/weekly-snapshots"
 10 0 * * 1 curl -fsS --retry 3 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/weekly-league-rollover"
 0 1 * * * curl -fsS --retry 3 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/student-predictions"

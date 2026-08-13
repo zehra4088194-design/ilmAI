@@ -9,6 +9,8 @@ import { SchoolPageHeader } from '@/components/features/school-erp/SchoolPageHea
 import { reviewLeaveRequest } from '@/lib/school-erp/actions';
 import { hasSchoolPermission, requireSchoolContext } from '@/lib/school-erp/access';
 import { getSchoolAttendance } from '@/lib/school-erp/queries';
+import { listBiometricDevices } from '@/lib/biometric/actions';
+import { BiometricDevicesPanel } from '@/components/features/biometric/BiometricDevicesPanel';
 
 export default async function SchoolAttendancePage({
   searchParams,
@@ -22,6 +24,7 @@ export default async function SchoolAttendancePage({
   const data = await getSchoolAttendance(supabase, context, date);
   const canManage = hasSchoolPermission(context, 'attendance.manage');
   const canManageStaff = ['owner', 'admin'].includes(context.membership.member_role);
+  const biometricDevices = canManageStaff ? await listBiometricDevices('school', context.organization.id) : [];
 
   return (
     <div className="space-y-6">
@@ -44,6 +47,24 @@ export default async function SchoolAttendancePage({
         <Card>
           <CardHeader><CardTitle className="text-base">Staff attendance</CardTitle></CardHeader>
           <CardContent><StaffAttendanceRegister members={data.staffMembers} records={data.staffRecords} date={date} /></CardContent>
+        </Card>
+      )}
+      {canManageStaff && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Biometric devices (ZKTeco)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <BiometricDevicesPanel
+              institutionType="school"
+              organizationId={context.organization.id}
+              devices={biometricDevices}
+              teachers={(data.staffMembers || []).map((member: any) => ({
+                id: member.id,
+                name: Array.isArray(member.profiles) ? member.profiles[0]?.full_name : member.profiles?.full_name,
+              }))}
+            />
+          </CardContent>
         </Card>
       )}
       <Card>

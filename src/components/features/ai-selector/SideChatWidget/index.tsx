@@ -234,7 +234,7 @@ export function SideChatWidget() {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="bg-background fixed right-2 bottom-2 z-[70] flex h-[min(40rem,calc(100dvh-1rem))] w-[calc(100vw-1rem)] flex-col overflow-hidden rounded-2xl border border-white/10 shadow-2xl shadow-black/45 sm:right-5 sm:bottom-5 sm:h-[32rem] sm:w-96"
+            className="bg-background fixed right-2 bottom-2 z-[70] flex h-[min(40rem,calc(100svh-1rem))] w-[calc(100vw-1rem)] flex-col overflow-hidden rounded-2xl border border-white/10 shadow-2xl shadow-black/45 sm:right-5 sm:bottom-5 sm:h-[32rem] sm:w-96"
           >
             <div className="border-border/80 bg-background/70 flex shrink-0 items-center gap-2 border-b p-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600">

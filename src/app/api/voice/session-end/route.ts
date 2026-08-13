@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { gatewayChat } from '@/lib/ai/gateway';
-import { checkModelTierLimit } from '@/lib/rate-limit';
+import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
 import { parseAiJson } from '@/lib/utils/json-extract';
 
 // NOTE: notes/flashcard_decks/flashcards.id are all `uuid default
@@ -81,23 +81,18 @@ Return ONLY valid JSON, no markdown fences, no extra text:
       { role: 'user' as const, content: englishPrompt },
     ];
 
-    // Prefer Gemini (per the product spec) while the daily quota lasts;
-    // quietly drop to Assistant once it's spent - same silent-fallback philosophy
-    // already used by the gateway/worker for provider outages.
-    let result;
-    const geminiQuota = await checkModelTierLimit(user.id, 'gemini', 'mini');
-    if (geminiQuota.success) {
-      result = await gatewayChat({
-        provider: 'gemini',
-        tier: 'mini',
-        messages,
-        maxTokens: 3072,
-        temperature: 0.4,
-        routingPolicy: 'gemini',
-      });
-    } else {
-      result = await gatewayChat({ provider: 'gemini', tier: 'mini', messages, maxTokens: 3072, temperature: 0.4 });
-    }
+    // Use whichever provider the admin panel has selected for "General study tools" — this used
+    // to be hardcoded to Gemini regardless of admin config.
+    const provider = await resolveAiRoutingProvider('studyTools');
+    const result = await gatewayChat({
+      provider,
+      tier: 'mini',
+      strictProvider: true,
+      routingPolicy: 'text',
+      messages,
+      maxTokens: 3072,
+      temperature: 0.4,
+    });
 
     const parsed = parseAiJson<MagicNotesResult>(result.text, {
       noteTitle: 'Voice Lesson Notes',

@@ -16,6 +16,9 @@ import {
 } from '@/lib/college-erp/actions';
 import { requireCollegeContext } from '@/lib/college-erp/access';
 import { getCollegeAcademicSetup } from '@/lib/college-erp/queries';
+import { InstitutionPaymentCheckout } from '@/components/features/institution-payments/InstitutionPaymentCheckout';
+import { getPlatformSettings } from '@/lib/platform-settings/server';
+import { resolveInstitutionPricing } from '@/lib/platform-settings/shared';
 
 export const metadata = { title: 'Settings | College Admin | ilm AI' };
 
@@ -25,6 +28,15 @@ export default async function CollegeAdminSettingsPage() {
   const { supabase, context: newContext } = await requireCollegeContext('organization.manage');
   if (newContext) {
     const data = await getCollegeAcademicSetup(supabase, newContext);
+    const { data: planSettings } = await supabase
+      .from('college_organization_plan_settings')
+      .select('billing_status, plan_tier_id, max_students, renews_on')
+      .eq('organization_id', newContext.organization.id)
+      .maybeSingle();
+    const platformSettings = await getPlatformSettings();
+    const studentCount = planSettings?.max_students || 0;
+    const monthlyPricing = resolveInstitutionPricing(platformSettings, 'college', 'monthly', studentCount);
+    const annualPricing = resolveInstitutionPricing(platformSettings, 'college', 'annual', studentCount);
     return (
       <div className="space-y-6">
         <h1 className="text-xl font-bold">Organization setup</h1>
@@ -56,6 +68,27 @@ export default async function CollegeAdminSettingsPage() {
                 <Input name="logo" type="file" accept="image/*" required />
               </CollegeActionForm>
             </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Plan &amp; billing</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground text-xs">
+              Status: <span className="font-semibold">{planSettings?.billing_status || 'trial'}</span>
+              {planSettings?.renews_on && ` · renews ${planSettings.renews_on}`}
+            </p>
+            <InstitutionPaymentCheckout
+              institutionType="college"
+              organizationId={newContext.organization.id}
+              planTierId={planSettings?.plan_tier_id || null}
+              monthly={monthlyPricing}
+              annual={annualPricing}
+              annualDiscountPercent={platformSettings.institutionPricing.annualDiscountPercent}
+              volumeDiscountApplied={monthlyPricing.volumeDiscountApplied}
+              defaultContactEmail={newContext.organization.email || ''}
+            />
           </CardContent>
         </Card>
         <div className="grid gap-5 xl:grid-cols-2">

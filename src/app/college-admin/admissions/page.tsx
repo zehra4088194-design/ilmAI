@@ -1,15 +1,14 @@
 import { redirect } from 'next/navigation';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { CollegeActionForm } from '@/components/features/college-erp/CollegeActionForm';
+import { AdmissionsList } from '@/components/features/college-erp/AdmissionsList';
 import { createCollegeAdmission, updateCollegeAdmissionStatus } from '@/lib/college-erp/actions';
 import { hasCollegePermission, requireCollegeContext } from '@/lib/college-erp/access';
 import { getCollegeAcademicSetup, getCollegeAdmissions } from '@/lib/college-erp/queries';
 
 const selectClass = 'border-input bg-background h-10 w-full rounded-lg border px-3 text-sm';
-const STATUSES = ['submitted', 'under_review', 'waitlisted', 'approved', 'rejected', 'enrolled', 'withdrawn'];
 
 export default async function CollegeAdmissionsPage() {
   const { supabase, context } = await requireCollegeContext('admissions.read', 'admissions');
@@ -46,31 +45,7 @@ export default async function CollegeAdmissionsPage() {
           </CardContent>
         </Card>
       )}
-      <div className="grid gap-4">
-        {applications.map((item: any) => (
-          <Card key={item.id}>
-            <CardContent className="grid gap-4 p-4 lg:grid-cols-[1fr_240px] lg:items-center">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="font-semibold">{item.applicant_name}</h2>
-                  <Badge variant={item.status === 'approved' || item.status === 'enrolled' ? 'secondary' : item.status === 'rejected' ? 'destructive' : 'outline'}>{item.status.replace('_', ' ')}</Badge>
-                </div>
-                <p className="text-muted-foreground mt-1 text-sm">{item.application_number} - {item.applying_for_program} - {item.guardian_name} - {item.guardian_phone}</p>
-                <p className="text-muted-foreground mt-2 text-xs">Submitted {new Date(item.submitted_at).toLocaleDateString()}</p>
-              </div>
-              {canManage && (
-                <CollegeActionForm action={updateCollegeAdmissionStatus} submitLabel="Update" className="flex items-end gap-2">
-                  <input type="hidden" name="id" value={item.id} />
-                  <select name="status" defaultValue={item.status} className={selectClass}>
-                    {STATUSES.map((status) => <option key={status} value={status}>{status.replace('_', ' ')}</option>)}
-                  </select>
-                </CollegeActionForm>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-        {!applications.length && <Card><CardContent className="text-muted-foreground p-8 text-center text-sm">No admission applications yet.</CardContent></Card>}
-      </div>
+      <AdmissionsList applications={applications} canManage={canManage} updateCollegeAdmissionStatus={updateCollegeAdmissionStatus} />
     </div>
   );
 }

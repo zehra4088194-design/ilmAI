@@ -37,4 +37,25 @@ describe('presentation background matching', () => {
     const result = selectPresentationBackgrounds(noGlobal, 'Ancient Egyptian history', 'History');
     expect(result.map((item) => item.name)).toEqual(['abstract.jpg']);
   });
+
+  it('only picks backgrounds tagged for the requested dark/light mode', () => {
+    const mixed: PresentationBackground[] = [
+      { name: 'moon.jpg', url: '/moon', size: 1, subject: 'Space', keywords: ['galaxy'], mode: 'dark', isGlobal: false },
+      { name: 'sky.jpg', url: '/sky', size: 1, subject: 'Space', keywords: ['galaxy'], mode: 'light', isGlobal: false },
+    ];
+    expect(selectPresentationBackgrounds(mixed, 'Galaxy exploration', 'Space', 0, 'dark').map((item) => item.name)).toEqual([
+      'moon.jpg',
+    ]);
+    expect(selectPresentationBackgrounds(mixed, 'Galaxy exploration', 'Space', 0, 'light').map((item) => item.name)).toEqual([
+      'sky.jpg',
+    ]);
+  });
+
+  it('falls back to the full pool when nothing is tagged for the requested mode yet', () => {
+    const onlyDark: PresentationBackground[] = [
+      { name: 'moon.jpg', url: '/moon', size: 1, subject: 'Space', keywords: ['galaxy'], mode: 'dark', isGlobal: false },
+    ];
+    const result = selectPresentationBackgrounds(onlyDark, 'Galaxy exploration', 'Space', 0, 'light');
+    expect(result.map((item) => item.name)).toEqual(['moon.jpg']);
+  });
 });

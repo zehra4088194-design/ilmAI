@@ -259,6 +259,11 @@ export default async function SchoolPortalPage() {
                     >
                       {item.status}
                     </Badge>
+                    {['student', 'parent'].includes(role) && item.status !== 'paid' && item.status !== 'cancelled' && (
+                      <Link href={`/school/fees/${item.id}`} className="mt-1 block text-xs font-semibold text-emerald-600 underline">
+                        Pay now
+                      </Link>
+                    )}
                   </div>
                 </div>
               ))}

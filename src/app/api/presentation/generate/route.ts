@@ -22,7 +22,7 @@ function cleanNumber(value: unknown, fallback: number, min: number, max: number)
 }
 
 function cleanTheme(value: unknown): PresentationTheme {
-  return PRESENTATION_THEMES.includes(value as PresentationTheme) ? (value as PresentationTheme) : 'modern-blue';
+  return PRESENTATION_THEMES.includes(value as PresentationTheme) ? (value as PresentationTheme) : 'dark';
 }
 
 // Best-effort history save into public.presentations. Never blocks/fails generation.
@@ -87,7 +87,14 @@ export async function POST(req: NextRequest) {
       Array.isArray(profile?.university_courses) ? profile?.university_courses?.[0] || 'General' : 'General',
       160
     );
-    const matchedBackgrounds = selectPresentationBackgrounds(presentationBackgrounds, topic, requestedSubject);
+    const requestedTheme = cleanTheme(body.theme);
+    const matchedBackgrounds = selectPresentationBackgrounds(
+      presentationBackgrounds,
+      topic,
+      requestedSubject,
+      requestedSlides,
+      requestedTheme
+    );
     const input: PresentationGenerateInput = {
       topic,
       subject: requestedSubject,
@@ -96,7 +103,7 @@ export async function POST(req: NextRequest) {
       audienceLevel: cleanString(body.audienceLevel, 'University students', 120),
       language: cleanString(body.language, 'English', 80),
       outputStyle: cleanString(body.outputStyle, profile?.preferred_output_style || 'professional', 80),
-      theme: cleanTheme(body.theme),
+      theme: requestedTheme,
       mode: body.mode === 'bulk' ? 'bulk' : 'per-slide',
       backgroundImageUrls: matchedBackgrounds.map((background) => background.url),
     };

@@ -34,6 +34,10 @@ jobs:
           call_job /api/cron/resource-context
           call_job /api/cron/school-notifications
           call_job /api/cron/usd-pkr-rate
+          # Only twice/day here (this workflow's own schedule) vs. the ~2-minute cadence the
+          # self-hosted services/cron container runs it at — biometric attendance will lag on
+          # the free-hosted deployment, but still syncs instead of never running at all.
+          call_job /api/cron/biometric-attendance-sync
 
           day=$(date -u +%u)
           time=$(date -u +%H:%M)

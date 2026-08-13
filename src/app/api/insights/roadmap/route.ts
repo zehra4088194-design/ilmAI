@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { gatewayChat } from '@/lib/ai/gateway';
+import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
 import {
   checkAiToolLimit,
   consumeAiCredits,
@@ -353,8 +354,11 @@ export async function POST(req: NextRequest) {
       risk_flags: [],
     };
 
+    const roadmapProvider = await resolveAiRoutingProvider('studyTools');
     const result = await gatewayChat({
-      provider: 'gemini',
+      provider: roadmapProvider,
+      strictProvider: true,
+      routingPolicy: 'text',
       tier: tier === 'ELITE' ? 'medium' : 'mini',
       messages: [
         {

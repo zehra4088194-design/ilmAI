@@ -711,3 +711,235 @@ The unblocking gap flagged at the top of the continuation prompt — no admin UI
 human confirms the create-organization → login → `/college-admin` loop above actually works end-to-end.
 Not started yet — waiting on that confirmation before proceeding, per the continuation prompt's explicit
 "stop after each numbered item and wait for confirmation" instruction.
+
+## 15. Part 6 — institution pricing & manual payment checkout: 6.2 shipped, 6.1/6.3 partial
+
+The owner asked to continue past the human-verification blocker on Priority 0 (still outstanding, see §14)
+by picking up the next-highest-impact gap: Part 6 was previously **0% built** — only research notes existed
+in §8. This session shipped the core manual-payment checkout end to end (6.2), reusing rather than
+duplicating the existing per-organization pricing mechanism (6.1 partial — see below) and explicitly
+deferred the fee-payment page (6.3).
+
+**What shipped:**
+- **`supabase/migrations/20260812150000_institution_payment_verifications.sql`** — the one deliberately
+  shared table (same reasoning as `institution_directory_messages`): `institution_payment_verifications`
+  (institution_type, organization_id — not a real FK, cross-table — plan_tier_id, billing_cycle, amount_usd/
+  pkr, method, contact_email, notes, status, submitted_by, reviewed_by/at, review_notes). New
+  `is_institution_owner_or_admin(type, org_id)` security-definer dispatcher (mirrors
+  `is_institution_principal`) gates RLS insert/select; review (verify/reject) intentionally goes through the
+  service-role admin action only, not a user-facing RLS update policy, matching every other `/admin` write
+  path in this codebase.
+- **`src/lib/institution-payments/{types,actions}.ts`** — `submitInstitutionPaymentVerification` (owner/admin
+  submits a claim after paying outside the app; authorization checked via `requireSchoolContext`/
+  `requireCollegeContext`, not just RLS), `listPendingInstitutionPaymentVerifications` (admin-only),
+  `reviewInstitutionPaymentVerification` (admin verifies/rejects — verifying is the **only** place a claim
+  turns into real access: flips `{school,college}_organization_plan_settings.billing_status` to `'active'`,
+  sets `renews_on` per the billing cycle, and calls the existing `syncOrganization{School,College}Grants()`
+  cascade — no parallel grant path).
+- **`InstitutionPaymentCheckout.tsx`** — method picker (JazzCash/Easypaisa/Bank Transfer/Card, Card shows an
+  informational "not yet automated" note per the master prompt's explicit allowance), monthly/annual toggle,
+  `react-qr-code` QR of the destination number/details (no new dependency), a `wa.me/923480049900` deep link
+  with pre-filled confirmation text, "send the screenshot with your email" instructions, and the submit
+  form. Payment destination numbers are `NEXT_PUBLIC_SCHOOL_PAYMENT_{JAZZCASH,EASYPAISA,BANK_DETAILS,
+  WHATSAPP}_NUMBER` env vars (added to `.env.local.example`, `.env.oracle.example`, `Dockerfile` ARGs/ENV,
+  and `docker-compose.oracle.yml` build-args + runtime env) — never hardcoded, per the master prompt's
+  explicit instruction, and `NEXT_PUBLIC_*` deliberately since a checkout screen is public-facing by nature.
+- **Wired into both portals**: a new "Plan & billing" card on `/school-admin/settings` and
+  `/college-admin/settings` (both read their own `{school,college}_organization_plan_settings` row via the
+  already-existing owner/admin RLS `select` policy — no new query layer needed) showing current
+  `billing_status`/`renews_on` plus the checkout component.
+- **Admin review queue**: new `/admin/institution-payments` page + `PaymentReviewRow.tsx` — lists every
+  `pending_review` claim (school and college together, name-resolved via a small id→name map since there's
+  no FK to join through) with Verify/Reject buttons. Added to `AdminSidebar` nav.
+
+**6.1 (admin-controlled base pricing) — partially covered, not built as literally specified:**
+The master prompt asks for a *global* base USD/PKR price + a single auto-computed annual-discount % + a
+volume-discount % (never hand-entered dollar amounts). What already existed before this session
+(`updateSchoolPlanSettings`/the college mirror, `/admin/schools`'s per-org form) is a **per-organization**
+manual price (`monthly_price_usd`/`monthly_price_pkr` typed directly per institution) — functionally
+covers "admin controls the price," but not the "one global base + computed discounts" shape. This session's
+checkout **reads** whatever price is already sitting on that org's plan-settings row (or falls back to
+10 USD/school, 20 USD/college if unset) and computes the annual price client-side via an `annualDiscountPercent`
+prop that is currently **hardcoded to 0** (no UI to set it yet) — the checkout component itself already
+supports a discount prop, so wiring a real global-discount admin setting later is additive, not a rewrite.
+**Not done, flagged not skipped**: a global `institutionPricing` block in `PlatformSettings`
+(`platform-settings/shared.ts`) with base price + annual-discount % + volume-discount % read by this
+checkout instead of the per-org hardcoded fallback.
+
+**6.3 (student/parent fee payment page) — not started, deliberately deferred.** `school_fee_structures`/
+`school_fee_invoices` exist and `/school-admin/fees` (admin-side) already reads them, but no student/parent-
+facing payment page exists under `/school` to reuse `InstitutionPaymentCheckout` against a fee-invoice
+amount instead of a plan price. Flagging as the next Part-6 unit of work rather than rushing a half-wired
+page in the same pass — the checkout component's method-picker/QR/WhatsApp/instructions block is already
+built generically enough (takes an amount + org id) to be reused for a fee invoice with a small prop change,
+just not done yet.
+
+**Not verified end-to-end** (same constraint as Priority 0's college-org loop — requires a real login):
+submitting a claim as a school/college owner and having it show up + verify correctly in
+`/admin/institution-payments` has not been clicked through by a human. Typecheck is clean; this is the
+same category of "owed a real-device/real-login smoke test" as the QR scanner and Priority 0 items above.
+
+**Part 8 (ZKTeco biometric attendance) — still fully unbuilt as of the previous update.** See §16 below —
+picked up immediately after in the same continuation.
+
+## 16. Part 6.1 completed + Part 6.3 (student/parent fee payment) shipped
+
+Continuing past §15 per the owner's "jo krna he kro lkn sab kuch hona chaahiye, bs continue" instruction —
+finished 6.1 for real (it was flagged partial) and shipped 6.3 (previously deferred).
+
+**6.1 — global institution pricing, done:**
+- `PlatformSettings.institutionPricing` (`platform-settings/shared.ts`): `{ school: {monthlyUsd}, college:
+  {monthlyUsd}, annualDiscountPercent, volumeDiscountPercent, volumeDiscountMinStudents }` + normalization +
+  a new `resolveInstitutionPricing(settings, institutionType, cycle, studentCount)` helper that is the
+  **single place** the annual/volume $ amounts are computed (`monthly * (volume ? 1-volume% : 1) * (annual ?
+  12*(1-annual%) : 1)`) — never hand-entered anywhere downstream, per the master prompt's explicit
+  requirement.
+- Admin UI: new card on `/admin/settings` (base $/month for school and college, annual discount %, volume
+  discount %, min-students threshold for the volume tier) — reuses the existing generic
+  `/api/admin/platform-settings` save route unchanged (it already passes the whole settings object through).
+- `InstitutionPaymentCheckout` no longer takes raw price props — it takes **precomputed** `monthly`/`annual`
+  `{usd, pkr}` objects from `resolveInstitutionPricing()`, called server-side in both settings pages using
+  the org's `max_students` (from its own plan-settings row) as the volume-discount population signal — a
+  documented simplification of "by student-count tier" (a single threshold, not multiple tiers), not a
+  literal live-enrollment count query.
+
+**6.3 — student/parent fee payment page, done:**
+- New shared migration `20260813090000_institution_fee_payment_claims.sql` — `institution_fee_payment_claims`
+  (same cross-institution-type shape as `institution_payment_verifications`, but keyed to one
+  `{school,college}_fee_invoices` row instead of an org's plan). RLS: insert only as yourself
+  (`submitted_by = auth.uid()`), select as yourself or an institution owner/admin; review still goes through
+  a service-role, `fees.manage`-gated action only.
+- `src/lib/institution-payments/fee-actions.ts` — `loadFeeInvoiceForPayer` (re-verifies the caller is the
+  invoice's student or an approved guardian via `school_guardians`/`college_guardians` — never trusts the
+  form), `submitFeePaymentClaim` (also re-checks the claimed amount doesn't exceed the outstanding balance),
+  `listPendingFeePaymentClaims`, `reviewFeePaymentClaim` (verifying **inserts a real row into
+  `{school,college}_fee_payments`** — the pre-existing `trg_{school,college}_apply_fee_payment` trigger on
+  that table already reconciles the invoice's `paid_amount`/`status`, so no new reconciliation logic was
+  needed; the claim's JazzCash/Easypaisa/Bank/Card choice is preserved in the payment row's `provider` column
+  since `payment_method` itself is constrained to `cash|bank|card|wallet|online|adjustment`).
+- **Extracted `ManualPaymentMethodPicker.tsx`** (method buttons + QR + WhatsApp + instructions) out of
+  `InstitutionPaymentCheckout` so `FeePaymentCheckout.tsx` (new) reuses the identical UI block instead of
+  duplicating markup, per the master prompt's explicit "reuse the same checkout component" instruction for
+  6.3. `FeePaymentCheckout` additionally lets the payer edit the amount down from the full outstanding
+  balance (partial/installment payments), clamped both client-side (`max`) and server-side.
+- New routes: `/school/fees/[invoiceId]` and `/college/fees/[invoiceId]` (re-verify ownership, redirect home
+  otherwise), linked via a new "Pay now" link on each unpaid/partial voucher row on `/school` and `/college`'s
+  existing fee-voucher card (only shown to `student`/`parent` roles).
+- Review UI: a new "Pending payment claims" card on the **existing** `/school-admin/fees` and
+  `/college-admin/fees` pages (above the voucher ledger, `fees.manage`-gated) — reuses the same
+  `FeeClaimReviewRow.tsx` pattern as Part 6.2's `PaymentReviewRow.tsx`.
+
+**Verified:** `npx tsc --noEmit -p .` clean after all of the above — only the 2 pre-existing, unrelated
+`college-admin/communication` / `school-admin/communication` errors remain (present before this session,
+not touched). `database.types.ts` regenerated twice more (once after 6.1's no new tables — skipped — and
+once after `institution_fee_payment_claims` landed) to keep the Supabase-generated types in sync with every
+migration applied this session.
+
+**Not verified end-to-end** (same standing constraint as everything else in this document requiring a real
+login): no human has clicked through generate-a-voucher → student pays → admin verifies → invoice shows paid.
+
+## 17. Part 8 — ZKTeco biometric teacher attendance: shipped
+
+Per the master prompt's own architecture (§8), not deviated into a third-party SaaS:
+
+- **`node-zklib@1.3.0`** installed — confirmed on npm, actively maintained enough (5 published versions).
+  `src/lib/biometric/zkteco.ts` wraps it: `fetchDevicePunchLogs(ip, port)` returns `{deviceUserId,
+  recordTime}[]` (verified the package's actual field names by reading its source —
+  `decodeRecordData40` in `node_modules/node-zklib/utils.js` — since the README doesn't document the
+  return shape precisely). **No fingerprint image/template is ever read or stored** — only this numeric
+  User_ID + timestamp pair, per the master prompt's explicit privacy requirement.
+- **New migration** `20260813100000_zkteco_biometric_attendance.sql` — `{school,college}_teacher_
+  biometric_devices` (name, LAN IP, port, comm_key, last_synced_at, last_sync_status/error) and
+  `{school,college}_teacher_biometric_mappings` (device User_ID -> membership_id, unique per device). RLS:
+  owner/admin only, mirroring the pattern everywhere else in this effort.
+- **Sync cron**: `GET /api/cron/biometric-attendance-sync` (same `Authorization: Bearer $CRON_SECRET`
+  convention as every other cron route). For each registered device (school and college together): connects,
+  pulls punches since `last_synced_at` (or just today's, on a device's first-ever sync, so it never backfills
+  months of old logs), groups by membership+date to get a check-in (earliest) and check-out (latest) punch,
+  and **upserts** into `{school,college}_staff_attendance` on `(membership_id, attendance_date)` — merging
+  with any existing check-in/out times rather than overwriting, so re-running the same day's sync never
+  regresses an already-recorded earlier check-in. Every device's `last_sync_status`/`last_sync_error` is
+  written back regardless of success/failure, so a bad device never silently stops the others in the loop.
+- **Deployment constraint — flagged explicitly, not silently assumed away** (master prompt's own instruction):
+  ZKTeco devices are LAN-local hardware. The route's own comment and the admin panel's helper text both call
+  out that this only works if the container running this sync can actually reach the device's IP — true for
+  the **self-hosted Oracle `services/cron` container** (added at `*/2 * * * *`, matching the master prompt's
+  literal "every ~2 minutes"), not guaranteed at all for a school's own network unless port-forwarded or
+  bridged. Also added (best-effort, twice/day only) to the free-hosted GitHub Actions cron workflow with a
+  comment noting the cadence mismatch — still better than never running there.
+- **Admin UI**: `src/lib/biometric/actions.ts` (register/remove device, map/unmap a punch-card User_ID to a
+  teacher — all owner/admin-gated via `requireSchoolContext`/`requireCollegeContext('organization.manage')`)
+  + `BiometricDevicesPanel.tsx` (one generic component, parameterized by institution type like every other
+  shared-UI piece in this effort). Wired into the **existing** `/school-admin/attendance` and
+  `/college-admin/attendance` pages as a new "Biometric devices (ZKTeco)" card, gated the same way the
+  existing "Staff attendance" card already is (`canManageStaff = owner/admin`) — additive to, not a
+  replacement of, the manual staff-attendance marking UI and the Part 4.2 photo-scan flow (which is
+  *student* attendance, a different subsystem entirely).
+
+**Verified:** `npx tsc --noEmit -p .` — zero new errors from any of the above (the same 2 pre-existing
+`*-admin/communication` errors persist; a couple of unrelated errors also appeared in
+`components/features/resources/ProtectedPdfViewer` and `lib/presentation/backgrounds.ts` from concurrent
+work elsewhere in the codebase during this session — not touched, not part of this task).
+
+**Not verified / not possible without real hardware** (stated plainly, not hidden): no ZKTeco device was
+available to test an actual `createSocket()`/`getAttendances()` round-trip against. The code is written
+directly against the library's documented API and its own source (for the exact record-decoding field
+names), and the cron route's error handling means a real device that behaves differently than expected will
+surface a `last_sync_error` in the admin panel rather than crash silently — but this is the one part of the
+entire master prompt that inherently cannot be confirmed working end-to-end without a physical device on
+site, only code-reviewed for correctness against the library's contract.
+
+**Master prompt status after this continuation: every part (1 through 9) has at least a first, typechecked
+implementation.** What's left across the whole effort is exclusively the "requires a human with real
+credentials/hardware to click through" category already itemized in §14/§15/§16/§17 above — no phase is at
+0% anymore.
+
+## 18. Owner correction on Part 8 + remaining name-search rollout (this continuation)
+
+Owner clarification: biometric device registration must be usable **platform-wide by the admin**, not only
+by each institution's own owner/admin self-service — "I can add this biometric to any school." Fixed, plus
+picked up the one remaining buildable-without-a-human item from §12/15/16/17's open lists.
+
+**Biometric device management — now dual-path:**
+- `src/lib/biometric/actions.ts` refactored: every action (`createBiometricDevice`,
+  `deleteBiometricDevice`, `createBiometricMapping`, `deleteBiometricMapping`, `listBiometricDevices`) now
+  takes `organization_id` explicitly instead of resolving it from the caller's own session-scoped
+  institution context, and authorizes via a new `authorizeOrgAccess()` that accepts **either** a platform
+  admin (`requireAdminUser()`, any organization) **or** that exact organization's own owner/admin
+  (`requireSchoolContext`/`requireCollegeContext('organization.manage')`, matched against the passed
+  `organization_id`) — one authorization rule, two valid callers, matching how every other dual-access
+  surface in this effort (e.g. the OR-gate on `/college-admin`) already works.
+- New **`/admin/biometric-devices`** page: pick school or college, pick the exact institution from a
+  platform-wide dropdown (`listInstitutionsForAdmin`), then the same `BiometricDevicesPanel` used on that
+  institution's own attendance page renders — register/remove devices, map/unmap punch cards to teachers
+  (`listInstitutionTeachersForAdmin`), for **any** institution on the platform. Added to `AdminSidebar`.
+  Each institution's own owner/admin still keeps the exact same self-service panel on their own
+  `/school-admin` or `/college-admin` attendance page, unaffected — this was additive, not a replacement.
+- Since `listBiometricDevices` is now also called directly from a client component (not just rendered by an
+  already-gated server page), it now re-checks authorization itself too — every action in this file assumes
+  it can be reached as a raw RPC call, not just via the button that happens to render it today.
+
+**Name-search rollout (master prompt point 15) — the remaining explicitly-tracked items closed out:**
+- **Admissions**: new `AdmissionsList.tsx` (school) / `AdmissionsList.tsx` (college) client components —
+  moved the existing applications list out of the server page, wrapped in `useNameSearch` +
+  `PersonSearchInput`, searching applicant name / guardian name / application number. Server pages now just
+  fetch data and pass it down; the create-application form and status-update action are unchanged.
+- **Fee ledger** ("fee records" — the master prompt's own example): new shared `VoucherLedgerTable.tsx`
+  (one component, reused as-is by both school and college fee pages — the invoice row shape is identical on
+  both sides) searches student name / voucher number.
+- **Parent-linking approval list**: investigated, found **not applicable** — this codebase's parent linking
+  (`parent_student_links`, `ParentQrScanner` / `scan-invite` / `accept-invite`) is self-serve with no
+  separate admin moderation/approval queue to search (a parent scans a code and is linked immediately,
+  full stop). The closest real analog — an admin manually linking a guardian to a student — happens on
+  `/school-admin/people`, which already had name-search from an earlier phase. Nothing left to build here;
+  noted so this isn't silently reopened as if it were still outstanding.
+
+**Verified:** `npx tsc --noEmit -p .` clean — zero new errors from any of the above (same 2 pre-existing
+`*-admin/communication` errors, plus the same unrelated concurrent-session errors in `ProtectedPdfViewer`/
+`presentation/backgrounds.ts` noted in §17, still not part of this task).
+
+**What is genuinely still open, and why it can't be closed without a human:** every item already listed in
+§14 (college-org create→login loop), §15 (payment-claim submit→verify loop), §16 (fee-claim submit→verify
+loop), and §17 (a real ZKTeco device) — nothing new added to this list, nothing on it resolved by this
+round either, since all four still require either real login credentials or physical hardware neither of
+which this session can supply.

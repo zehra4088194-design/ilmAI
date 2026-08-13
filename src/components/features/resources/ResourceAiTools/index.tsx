@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { AiAnswerRenderer } from '@/components/features/ai/AiAnswerRenderer';
 import { useAuth } from '@/hooks/auth/useAuth';
 import type { ProtectedResourceKind } from '@/lib/resources/server';
+import { cn } from '@/lib/utils/cn';
 import { toast } from 'sonner';
 
 type StoredMcq = { q?: string; opts?: string[]; correct?: number; exp?: string };
@@ -178,28 +179,47 @@ export function ResourceAiTools({ kind, resourceId }: { kind: ProtectedResourceK
               </p>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-2">
-            {(['mcq', 'short', 'long'] as const).map((type) => (
-              <label key={type} className="border-border bg-background/70 rounded-lg border p-2 text-xs capitalize">
-                <span className="text-muted-foreground mb-1 block">
-                  {type} (max {analysis.available[type]})
-                </span>
-                <input
-                  type="number"
-                  min={0}
-                  max={analysis.available[type]}
-                  value={counts[type]}
-                  onChange={(event) =>
-                    setCounts((current) => ({
-                      ...current,
-                      [type]: Math.max(0, Math.min(analysis.available[type], Number(event.target.value) || 0)),
-                    }))
-                  }
-                  className="border-input bg-background h-9 w-full rounded-md border px-2 text-sm font-semibold"
-                />
-              </label>
-            ))}
-          </div>
+          {/* Only ask about question types this file actually has. A pure-MCQ file never shows
+              short/long boxes at all — it goes straight to "how many MCQs?". */}
+          {(() => {
+            const availableTypes = (['mcq', 'short', 'long'] as const).filter((type) => analysis.available[type] > 0);
+            if (availableTypes.length === 0) {
+              return (
+                <p className="text-muted-foreground text-xs">
+                  This file doesn&apos;t have enough content to build a test from.
+                </p>
+              );
+            }
+            const typeLabel = { mcq: 'MCQs', short: 'short questions', long: 'long questions' } as const;
+            const gridColsClass =
+              availableTypes.length === 3 ? 'grid-cols-3' : availableTypes.length === 2 ? 'grid-cols-2' : 'grid-cols-1';
+            return (
+              <div className={cn('grid gap-2', gridColsClass)}>
+                {availableTypes.map((type) => (
+                  <label key={type} className="border-border bg-background/70 rounded-lg border p-2 text-xs">
+                    <span className="text-muted-foreground mb-1 block">
+                      {availableTypes.length === 1
+                        ? `How many ${typeLabel[type]}? (up to ${analysis.available[type]})`
+                        : `${typeLabel[type]} (max ${analysis.available[type]})`}
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={analysis.available[type]}
+                      value={counts[type]}
+                      onChange={(event) =>
+                        setCounts((current) => ({
+                          ...current,
+                          [type]: Math.max(0, Math.min(analysis.available[type], Number(event.target.value) || 0)),
+                        }))
+                      }
+                      className="border-input bg-background h-9 w-full rounded-md border px-2 text-sm font-semibold"
+                    />
+                  </label>
+                ))}
+              </div>
+            );
+          })()}
           <Button className="mt-3 w-full" variant="gradient" size="sm" onClick={generateTest} disabled={generating}>
             {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
             Generate Test

@@ -73,12 +73,27 @@ export type PlatformSubscriptionPlan = {
   features: string[];
 };
 
+// Master prompt Part 6.1: a single global base monthly USD price per institution
+// type, plus admin-set discount percentages — the annual/volume $ amounts are
+// always computed from these (monthly * 12 * (1 - discount%)), never hand-entered,
+// per the master prompt's explicit "never entered manually" instruction.
+export type InstitutionPricingSettings = {
+  school: { monthlyUsd: number };
+  college: { monthlyUsd: number };
+  annualDiscountPercent: number;
+  volumeDiscountPercent: number;
+  // An institution's plan-settings max_students at/above this qualifies for the
+  // volume discount — a simple single-tier stand-in for "by student-count tier".
+  volumeDiscountMinStudents: number;
+};
+
 export type PlatformSettings = {
   pdfThemeMode: PdfThemeMode;
   subscriptionPlans: Record<SubscriptionTier, PlatformSubscriptionPlan>;
   providerDailyBudgets: ProviderDailyBudgets;
   aiRouting: AiRoutingSettings;
   exchangeRate: ExchangeRateSettings;
+  institutionPricing: InstitutionPricingSettings;
 };
 
 export const SUBSCRIPTION_SETTINGS_KEY = 'subscription_plans';
@@ -102,6 +117,13 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
     target: 'PKR',
     lastUpdated: null,
     fetchedAt: null,
+  },
+  institutionPricing: {
+    school: { monthlyUsd: 10 },
+    college: { monthlyUsd: 20 },
+    annualDiscountPercent: 15,
+    volumeDiscountPercent: 10,
+    volumeDiscountMinStudents: 500,
   },
   providerDailyBudgets: {
     // Conservative platform-wide caps for a free-hosted beta. Admin can tune
@@ -390,6 +412,27 @@ function normalizeAudienceLimits(
   );
 }
 
+function normalizeInstitutionPricing(value: unknown): InstitutionPricingSettings {
+  const source = (value && typeof value === 'object' ? value : {}) as Partial<InstitutionPricingSettings>;
+  const fallback = DEFAULT_PLATFORM_SETTINGS.institutionPricing;
+  return {
+    school: { monthlyUsd: Math.max(0, numberOrFallback(source.school?.monthlyUsd, fallback.school.monthlyUsd)) },
+    college: { monthlyUsd: Math.max(0, numberOrFallback(source.college?.monthlyUsd, fallback.college.monthlyUsd)) },
+    annualDiscountPercent: Math.min(
+      100,
+      Math.max(0, numberOrFallback(source.annualDiscountPercent, fallback.annualDiscountPercent))
+    ),
+    volumeDiscountPercent: Math.min(
+      100,
+      Math.max(0, numberOrFallback(source.volumeDiscountPercent, fallback.volumeDiscountPercent))
+    ),
+    volumeDiscountMinStudents: Math.max(
+      0,
+      numberOrFallback(source.volumeDiscountMinStudents, fallback.volumeDiscountMinStudents)
+    ),
+  };
+}
+
 export function normalizePlatformSettings(input: unknown): PlatformSettings {
   const source = (input && typeof input === 'object' ? input : {}) as Partial<PlatformSettings>;
   const sourceProviderBudgets: Partial<ProviderDailyBudgets> =
@@ -487,6 +530,7 @@ export function normalizePlatformSettings(input: unknown): PlatformSettings {
         ? source.pdfThemeMode
         : DEFAULT_PLATFORM_SETTINGS.pdfThemeMode,
     subscriptionPlans,
+    institutionPricing: normalizeInstitutionPricing(source.institutionPricing),
     aiRouting: normalizeAiRouting(source.aiRouting),
     exchangeRate: {
       usdToPkr,
@@ -551,4 +595,27 @@ export function resolvePdfThemeMode(preference: PdfThemeMode, userUsesDarkTheme:
 
 export function getPlanFromSettings(settings: PlatformSettings, tier: SubscriptionTier) {
   return settings.subscriptionPlans[tier] || DEFAULT_PLATFORM_SETTINGS.subscriptionPlans[tier];
+}
+
+// Master prompt Part 6.1's "computed, never hand-entered" pricing: base monthly
+// USD -> apply the volume discount (if the institution's student count qualifies)
+// -> apply the annual discount (if billing annually) -> convert to PKR. This is
+// the single source of truth the institution checkout reads from.
+export function resolveInstitutionPricing(
+  settings: PlatformSettings,
+  institutionType: 'school' | 'college',
+  billingCycle: 'monthly' | 'annual',
+  studentCount = 0
+) {
+  const pricing = settings.institutionPricing;
+  const baseMonthly = pricing[institutionType].monthlyUsd;
+  const volumeEligible = studentCount >= pricing.volumeDiscountMinStudents && pricing.volumeDiscountMinStudents > 0;
+  const afterVolume = volumeEligible ? baseMonthly * (1 - pricing.volumeDiscountPercent / 100) : baseMonthly;
+  const usd =
+    billingCycle === 'annual' ? afterVolume * 12 * (1 - pricing.annualDiscountPercent / 100) : afterVolume;
+  return {
+    usd: Math.round(usd * 100) / 100,
+    pkr: convertUsdToPkr(usd, settings),
+    volumeDiscountApplied: volumeEligible,
+  };
 }

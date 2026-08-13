@@ -24,6 +24,7 @@ type BackgroundRow = {
   subject: string;
   keywords: string[];
   category: string;
+  mode: string;
   is_global: boolean;
   size_bytes: number;
 };
@@ -49,6 +50,13 @@ function cleanCategory(value: unknown) {
   return cleaned || 'uncategorized';
 }
 
+// Every background predates 'mode' having a value other than 'dark' — that was
+// the only visual treatment (dark scrim + white text) applied before the
+// dark/light theme split, so anything else defaults to it too.
+function cleanMode(value: unknown) {
+  return value === 'light' ? 'light' : 'dark';
+}
+
 function toBackground(row: BackgroundRow): PresentationBackground {
   return {
     name: row.storage_path,
@@ -57,6 +65,7 @@ function toBackground(row: BackgroundRow): PresentationBackground {
     subject: row.subject,
     keywords: row.keywords,
     category: row.category,
+    mode: cleanMode(row.mode),
     isGlobal: row.is_global,
   };
 }
@@ -65,7 +74,7 @@ export async function listPresentationBackgrounds(): Promise<PresentationBackgro
   const supabase = createServiceClient();
   const { data, error } = await supabase
     .from('presentation_backgrounds')
-    .select('storage_path, subject, keywords, category, is_global, size_bytes')
+    .select('storage_path, subject, keywords, category, mode, is_global, size_bytes')
     .order('storage_path', { ascending: true });
   if (error) throw new Error(error.message);
   return (data as BackgroundRow[]).map(toBackground);
@@ -73,7 +82,7 @@ export async function listPresentationBackgrounds(): Promise<PresentationBackgro
 
 export async function savePresentationBackground(
   file: File,
-  metadata: { subject?: string; keywords?: string[]; category?: string; isGlobal?: boolean } = {}
+  metadata: { subject?: string; keywords?: string[]; category?: string; mode?: string; isGlobal?: boolean } = {}
 ): Promise<PresentationBackground> {
   if (!isR2Configured()) throw new Error('Object storage is not configured (missing OBJECT_STORAGE_* env vars).');
   const extension = MIME_EXTENSIONS[file.type];
@@ -92,6 +101,7 @@ export async function savePresentationBackground(
     subject: cleanText(metadata.subject, 100),
     keywords: cleanKeywords(metadata.keywords),
     category: cleanCategory(metadata.category),
+    mode: cleanMode(metadata.mode),
     isGlobal: metadata.isGlobal === true,
   };
 
@@ -103,6 +113,7 @@ export async function savePresentationBackground(
     subject: storedMetadata.subject,
     keywords: storedMetadata.keywords,
     category: storedMetadata.category,
+    mode: storedMetadata.mode,
     is_global: storedMetadata.isGlobal,
     size_bytes: bytes.byteLength,
   });

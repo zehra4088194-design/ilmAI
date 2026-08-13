@@ -276,6 +276,75 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
         </CardContent>
       </Card>
 
+      <Card className="border-lime-500/25 bg-lime-500/5">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <DollarSign className="h-5 w-5 text-lime-500" />
+            Institution pricing (schools &amp; colleges)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-muted-foreground text-sm">
+            One base monthly USD price per institution type. Annual and volume-tier prices are always computed
+            from this + the discount percentages below — never entered by hand on the checkout screen.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <NumberField
+              label="School base $/month"
+              value={settings.institutionPricing.school.monthlyUsd}
+              onChange={(value) =>
+                setSettings((current) => ({
+                  ...current,
+                  institutionPricing: { ...current.institutionPricing, school: { monthlyUsd: Math.max(0, value) } },
+                }))
+              }
+            />
+            <NumberField
+              label="College base $/month"
+              value={settings.institutionPricing.college.monthlyUsd}
+              onChange={(value) =>
+                setSettings((current) => ({
+                  ...current,
+                  institutionPricing: { ...current.institutionPricing, college: { monthlyUsd: Math.max(0, value) } },
+                }))
+              }
+            />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <NumberField
+              label="Annual discount %"
+              value={settings.institutionPricing.annualDiscountPercent}
+              onChange={(value) =>
+                setSettings((current) => ({
+                  ...current,
+                  institutionPricing: { ...current.institutionPricing, annualDiscountPercent: Math.min(100, Math.max(0, value)) },
+                }))
+              }
+            />
+            <NumberField
+              label="Volume discount %"
+              value={settings.institutionPricing.volumeDiscountPercent}
+              onChange={(value) =>
+                setSettings((current) => ({
+                  ...current,
+                  institutionPricing: { ...current.institutionPricing, volumeDiscountPercent: Math.min(100, Math.max(0, value)) },
+                }))
+              }
+            />
+            <NumberField
+              label="Min students for volume discount"
+              value={settings.institutionPricing.volumeDiscountMinStudents}
+              onChange={(value) =>
+                setSettings((current) => ({
+                  ...current,
+                  institutionPricing: { ...current.institutionPricing, volumeDiscountMinStudents: Math.max(0, value) },
+                }))
+              }
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       <Card className="border-cyan-500/25 bg-cyan-500/5">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

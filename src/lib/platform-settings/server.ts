@@ -1,8 +1,11 @@
 import { createServiceClient } from '@/lib/supabase/service';
+import type { AiProviderId } from '@/lib/ai/gateway';
 import {
   DEFAULT_PLATFORM_SETTINGS,
   SUBSCRIPTION_SETTINGS_KEY,
+  getAdminAiProvider,
   normalizePlatformSettings,
+  type AiRoutingKey,
   type PlatformSettings,
 } from './shared';
 
@@ -26,6 +29,20 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
     }
     return DEFAULT_PLATFORM_SETTINGS;
   }
+}
+
+/**
+ * Resolves which AiProviderId a gatewayChat({ strictProvider: true, ... }) call should use for a
+ * given admin-configurable routing key, in one place — every AI feature should call this instead
+ * of hardcoding a provider, so the /admin provider dropdowns actually control what runs.
+ * 'local' isn't a real inference target for most routes (it needs a self-hosted model reachable
+ * from the gateway), so it maps to 'groq' as the practical low-cost equivalent, matching the
+ * convention already used by chat/resource-test/resource-summary/student-chat routes.
+ */
+export async function resolveAiRoutingProvider(key: AiRoutingKey): Promise<AiProviderId> {
+  const settings = await getPlatformSettings();
+  const adminProvider = getAdminAiProvider(settings, key);
+  return adminProvider === 'local' ? 'groq' : adminProvider;
 }
 
 export async function savePlatformSettings(settings: PlatformSettings, updatedBy?: string) {

@@ -14,6 +14,9 @@ import {
 } from '@/lib/school-erp/actions';
 import { hasSchoolPermission, requireSchoolContext } from '@/lib/school-erp/access';
 import { getSchoolAcademicSetup } from '@/lib/school-erp/queries';
+import { InstitutionPaymentCheckout } from '@/components/features/institution-payments/InstitutionPaymentCheckout';
+import { getPlatformSettings } from '@/lib/platform-settings/server';
+import { resolveInstitutionPricing } from '@/lib/platform-settings/shared';
 
 const selectClass = 'border-input bg-background h-10 w-full rounded-lg border px-3 text-sm';
 
@@ -22,6 +25,15 @@ export default async function SchoolSettingsPage() {
   if (!context) redirect('/school-admin');
   const data = await getSchoolAcademicSetup(supabase, context);
   const canManageAcademics = hasSchoolPermission(context, 'academics.manage');
+  const { data: planSettings } = await supabase
+    .from('school_organization_plan_settings')
+    .select('billing_status, plan_tier_id, max_students, renews_on')
+    .eq('organization_id', context.organization.id)
+    .maybeSingle();
+  const platformSettings = await getPlatformSettings();
+  const studentCount = planSettings?.max_students || 0;
+  const monthlyPricing = resolveInstitutionPricing(platformSettings, 'school', 'monthly', studentCount);
+  const annualPricing = resolveInstitutionPricing(platformSettings, 'school', 'annual', studentCount);
 
   return (
     <div className="space-y-6">
@@ -61,6 +73,27 @@ export default async function SchoolSettingsPage() {
               <Input name="logo" type="file" accept="image/*" required />
             </SchoolActionForm>
           </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Plan &amp; billing</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-muted-foreground text-xs">
+            Status: <span className="font-semibold">{planSettings?.billing_status || 'trial'}</span>
+            {planSettings?.renews_on && ` · renews ${planSettings.renews_on}`}
+          </p>
+          <InstitutionPaymentCheckout
+            institutionType="school"
+            organizationId={context.organization.id}
+            planTierId={planSettings?.plan_tier_id || null}
+            monthly={monthlyPricing}
+            annual={annualPricing}
+            annualDiscountPercent={platformSettings.institutionPricing.annualDiscountPercent}
+            volumeDiscountApplied={monthlyPricing.volumeDiscountApplied}
+            defaultContactEmail={context.organization.email || ''}
+          />
         </CardContent>
       </Card>
       <div className="grid gap-5 lg:grid-cols-2">

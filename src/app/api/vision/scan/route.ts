@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { gatewayChat, MARKDOWN_ANSWER_FORMAT_INSTRUCTION } from '@/lib/ai/gateway';
 import { performOcr, validateOcrFile } from '@/lib/ocr';
 import { createClient } from '@/lib/supabase/server';
+import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
 import { checkOcrCredits, consumeOcrCredits, getConfiguredLimitExceededMessage } from '@/lib/rate-limit';
 import type { SubscriptionTier } from '@/types';
 
@@ -94,11 +95,17 @@ export async function POST(req: NextRequest) {
       language,
     });
 
+    // The raw scan (image -> text) stays on Gemini vision — it is the only vision-capable
+    // provider wired into this stack. Only the text explanation step below (extracted text ->
+    // student-friendly walkthrough) is admin-configurable, matching the "Vision/OCR" dropdown
+    // in /admin, which previously had no effect on this route at all.
+    const explanationProvider = await resolveAiRoutingProvider('visionOcr');
     const result = isGeminiDocumentScan
       ? { text: ocr.summary || 'No summary could be generated.' }
       : await gatewayChat({
-          provider: 'gemini',
-          routingPolicy: 'gemini',
+          provider: explanationProvider,
+          strictProvider: true,
+          routingPolicy: 'text',
           tier: tier === 'ELITE' ? 'pro' : 'medium',
           messages: [
             {

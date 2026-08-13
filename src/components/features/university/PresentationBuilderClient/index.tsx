@@ -1,22 +1,16 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Download, FileText, Loader2, Presentation, Sparkles } from 'lucide-react';
+import { Download, FileText, Loader2, Moon, Presentation, Sparkles, Sun } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BrandLoader } from '@/components/ui/BrandLoader';
 import { PresentationSlideRenderer, THEMES } from '@/components/features/university/PresentationSlideRenderer';
-import { printPresentationDeck } from '@/lib/utils/printPresentation';
+import { exportPresentationDeckToPdf } from '@/lib/utils/exportPresentationPdf';
 import { cn } from '@/lib/utils/cn';
-import {
-  PRESENTATION_LIGHT_THEMES,
-  PRESENTATION_THEMES,
-  type PresentationDeck,
-  type PresentationGenerateMode,
-  type PresentationTheme,
-} from '@/lib/presentation/types';
+import type { PresentationDeck, PresentationGenerateMode, PresentationTheme } from '@/lib/presentation/types';
 
 type Props = {
   defaultSubject?: string;
@@ -27,19 +21,8 @@ const progressCopy = [
   'Planning university-grade slide flow...',
   'Writing detailed slide content...',
   'Balancing visuals, notes, and viva-ready points...',
-  'Preparing colorful PowerPoint preview...',
+  'Preparing a polished PowerPoint preview...',
 ];
-
-// Single source of truth for which themes exist — stays in sync with
-// PRESENTATION_THEMES (types.ts) automatically instead of a second hardcoded list.
-const colorThemeOptions: PresentationTheme[] = PRESENTATION_THEMES;
-
-function themeLabel(theme: PresentationTheme) {
-  return theme
-    .split('-')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
-}
 
 export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 'professional' }: Props) {
   const [topic, setTopic] = useState('');
@@ -49,7 +32,7 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
   const [audienceLevel, setAudienceLevel] = useState('University students');
   const [language, setLanguage] = useState('English');
   const [outputStyle, setOutputStyle] = useState(defaultStyle);
-  const [theme, setTheme] = useState<PresentationTheme>('modern-blue');
+  const [theme, setTheme] = useState<PresentationTheme>('dark');
   const [mode, setMode] = useState<PresentationGenerateMode>('per-slide');
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -135,6 +118,37 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
       toast.success('PPTX download ready.');
     } catch {
       toast.error('The PPTX export could not be completed.');
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  async function downloadPdf() {
+    if (!deck) return;
+    setExporting(true);
+    try {
+      const blob = await exportPresentationDeckToPdf('presentation-export-all');
+      if (!blob) {
+        toast.error('Presentation export content is unavailable.');
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${
+        deck.topic
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '')
+          .slice(0, 60) || 'ilm-ai-presentation'
+      }.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success('PDF download ready.');
+    } catch {
+      toast.error('The PDF export could not be completed.');
     } finally {
       setExporting(false);
     }
@@ -244,7 +258,7 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
                 options={['simple', 'academic', 'professional', 'detailed']}
               />
             </div>
-            <ThemeSwatchPicker value={theme} onChange={setTheme} options={colorThemeOptions} />
+            <ThemeModePicker value={theme} onChange={setTheme} />
             <SelectField
               label="Generation mode"
               value={mode}
@@ -297,16 +311,9 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
                   {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />}
                   Download DOCX
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const ok = printPresentationDeck('presentation-export-all', deck.topic);
-                    if (!ok) toast.error('Presentation export content is unavailable.');
-                  }}
-                >
-                  <Download className="h-3.5 w-3.5" />
-                  Export PDF
+                <Button variant="outline" size="sm" onClick={downloadPdf} disabled={exporting}>
+                  {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                  Download PDF
                 </Button>
               </div>
               <PresentationSlideRenderer deck={deck} />
@@ -388,41 +395,49 @@ function NumberField({
   );
 }
 
-function ThemeSwatchPicker({
+const THEME_MODE_OPTIONS: { key: PresentationTheme; label: string; description: string; icon: typeof Moon }[] = [
+  { key: 'dark', label: 'Dark', description: 'Moody background, white text', icon: Moon },
+  { key: 'light', label: 'Light', description: 'Bright background, dark text', icon: Sun },
+];
+
+function ThemeModePicker({
   value,
   onChange,
-  options,
 }: {
   value: PresentationTheme;
   onChange: (value: PresentationTheme) => void;
-  options: PresentationTheme[];
 }) {
   return (
     <div>
       <label className="text-muted-foreground mb-1.5 block text-xs font-bold tracking-wide uppercase">
-        Color theme
+        Slide theme
       </label>
-      <div className="grid grid-cols-3 gap-2">
-        {options.map((option) => {
-          const palette = THEMES[option];
-          const active = value === option;
-          const isLight = PRESENTATION_LIGHT_THEMES.includes(option);
+      <div className="grid grid-cols-2 gap-3">
+        {THEME_MODE_OPTIONS.map(({ key, label, description, icon: Icon }) => {
+          const palette = THEMES[key];
+          const active = value === key;
           return (
             <button
-              key={option}
+              key={key}
               type="button"
               aria-pressed={active}
-              onClick={() => onChange(option)}
+              onClick={() => onChange(key)}
               className={cn(
-                'flex flex-col items-center gap-1.5 rounded-lg border p-2 text-center transition',
-                active ? 'border-violet-400 ring-2 ring-violet-400/50' : 'border-input hover:border-violet-300'
+                'relative overflow-hidden rounded-xl border-2 p-3 text-left transition',
+                active ? 'border-violet-400 ring-2 ring-violet-400/40' : 'border-input hover:border-violet-300'
               )}
             >
-              <span className="h-8 w-full rounded-md ring-1 ring-black/10" style={{ background: palette.bg }} />
-              <span className="text-[11px] font-medium leading-tight">{themeLabel(option)}</span>
-              <span className="text-muted-foreground text-[9px] font-semibold tracking-wide uppercase">
-                {isLight ? 'Light' : 'Dark'}
+              <span className="block h-14 w-full rounded-lg ring-1 ring-black/10" style={{ background: palette.bg }} />
+              <span className="mt-2 flex items-center gap-1.5">
+                <Icon className="h-3.5 w-3.5" style={{ color: palette.accent }} />
+                <span className="text-sm font-semibold">{label}</span>
               </span>
+              <span className="text-muted-foreground mt-0.5 block text-[11px] leading-tight">{description}</span>
+              {active && (
+                <span className="absolute right-2 top-2 rounded-full bg-violet-500 px-1.5 py-0.5 text-[9px] font-bold text-white">
+                  Selected
+                </span>
+              )}
             </button>
           );
         })}

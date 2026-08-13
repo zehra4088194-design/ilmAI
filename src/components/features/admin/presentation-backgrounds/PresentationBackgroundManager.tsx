@@ -1,12 +1,18 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { ImagePlus, Loader2, Trash2 } from 'lucide-react';
+import { ImagePlus, Loader2, Moon, Sun, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils/cn';
 import { PRESENTATION_BACKGROUND_CATEGORIES } from '@/lib/presentation/types';
-import type { PresentationBackground } from '@/lib/presentation/types';
+import type { PresentationBackground, PresentationTheme } from '@/lib/presentation/types';
+
+const MODE_OPTIONS: { key: PresentationTheme; label: string; icon: typeof Moon }[] = [
+  { key: 'dark', label: 'Dark', icon: Moon },
+  { key: 'light', label: 'Light', icon: Sun },
+];
 
 export function PresentationBackgroundManager() {
   const [items, setItems] = useState<PresentationBackground[]>([]);
@@ -14,6 +20,7 @@ export function PresentationBackgroundManager() {
   const [subject, setSubject] = useState('');
   const [keywords, setKeywords] = useState('');
   const [category, setCategory] = useState('');
+  const [mode, setMode] = useState<PresentationTheme>('dark');
   const [isGlobal, setIsGlobal] = useState(false);
 
   async function refresh() {
@@ -57,6 +64,7 @@ export function PresentationBackgroundManager() {
     form.set('subject', subject);
     form.set('keywords', keywords);
     form.set('category', category);
+    form.set('mode', mode);
     form.set('isGlobal', String(isGlobal));
     const response = await fetch('/api/admin/presentation-backgrounds', { method: 'POST', body: form });
     const json = await response.json();
@@ -87,6 +95,37 @@ export function PresentationBackgroundManager() {
           Add a subject, category, and topic keywords before uploading. The presentation builder matches these
           labels against the requested topic, then rotates only through relevant images.
         </p>
+        <div>
+          <label className="mb-1.5 block text-sm font-medium">Theme mode</label>
+          <p className="text-muted-foreground mb-2 text-xs">
+            Dark theme decks only pull dark-tagged photos (white text on top); light theme decks only pull
+            light-tagged photos (dark text on top). Pick the tone that matches these images.
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {MODE_OPTIONS.map(({ key, label, icon: Icon }) => {
+              const active = mode === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => setMode(key)}
+                  className={cn(
+                    'flex items-center justify-center gap-2 rounded-lg border-2 py-2.5 text-sm font-medium transition',
+                    active
+                      ? key === 'dark'
+                        ? 'border-slate-700 bg-slate-900 text-white'
+                        : 'border-amber-300 bg-amber-50 text-slate-900'
+                      : 'border-input hover:border-violet-300'
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="space-y-1.5 text-sm font-medium">
             Subject
@@ -155,6 +194,15 @@ export function PresentationBackgroundManager() {
                 <div className="min-w-0 space-y-1">
                   <p className="truncate text-xs font-medium">{item.name}</p>
                   <div className="flex flex-wrap items-center gap-1">
+                    <span
+                      className={cn(
+                        'flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
+                        item.mode === 'light' ? 'bg-amber-500/15 text-amber-600' : 'bg-slate-500/15 text-slate-500'
+                      )}
+                    >
+                      {item.mode === 'light' ? <Sun className="h-2.5 w-2.5" /> : <Moon className="h-2.5 w-2.5" />}
+                      {item.mode === 'light' ? 'Light' : 'Dark'}
+                    </span>
                     {item.category && item.category !== 'uncategorized' && (
                       <span className="rounded-full bg-violet-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-500">
                         {item.category}

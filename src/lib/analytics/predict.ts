@@ -1,5 +1,6 @@
 import { createServiceClient } from '@/lib/supabase/service';
 import { gatewayChat } from '@/lib/ai/gateway';
+import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
 import { parseAiJson } from '@/lib/utils/json-extract';
 
 type QuizRow = { score: number | null; completed_at: string | null; chapter_ids: string[] | null };
@@ -51,9 +52,12 @@ export async function computeStudentPredictions(studentId: string) {
     parent_message: 'Risk scores are based on recent study frequency, score trend, streak, and confidence trend.',
   };
   try {
+    const provider = await resolveAiRoutingProvider('studyTools');
     const ai = await gatewayChat({
-      provider: 'gemini',
+      provider,
       tier: 'mini',
+      strictProvider: true,
+      routingPolicy: 'text',
       messages: [
         { role: 'system', content: 'Write supportive, non-alarming learning analytics explanations. Return JSON only.' },
         { role: 'user', content: JSON.stringify({ dropoutRisk, burnoutRisk, scoreTrend, studyFrequency, confidenceTrend }) },

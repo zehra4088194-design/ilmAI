@@ -7,125 +7,33 @@ import { cn } from '@/lib/utils/cn';
 
 // Exported so the builder's theme picker can reuse the exact same gradients for
 // its swatch previews instead of duplicating color values in a second place.
+// Deliberately just two entries — the earlier named color themes were replaced
+// by a single polished dark look and a single polished light look, each paired
+// with dark/light-tagged background photos (PresentationBackground.mode).
 export const THEMES = {
-  'modern-blue': {
-    bg: 'linear-gradient(135deg, #0F2C59 0%, #1B4B8F 55%, #2E7BC4 100%)',
-    accent: '#5FD4D0',
-    accent2: '#FFC857',
-    text: '#F5F9FF',
-    subtext: '#BFD7F5',
+  dark: {
+    bg: 'linear-gradient(135deg, #0B1120 0%, #131B36 45%, #1E2A54 100%)',
+    accent: '#22D3EE',
+    accent2: '#FBBF24',
+    text: '#F8FAFC',
+    subtext: '#B8C4E0',
     cardBg: 'rgba(255,255,255,0.08)',
+    // A dark, moody photo needs a dark scrim so white text stays legible.
+    overlay: 'linear-gradient(rgba(6,10,22,.7), rgba(6,10,22,.78))',
+    scrimClass: 'bg-slate-950/70',
     display: 'Inter, sans-serif',
     body: 'Inter, sans-serif',
   },
-  'warm-academic': {
-    bg: 'linear-gradient(135deg, #3A2418 0%, #6B4226 55%, #9C6B3F 100%)',
-    accent: '#E8B15C',
-    accent2: '#C1442E',
-    text: '#FBF3E7',
-    subtext: '#E3C9A8',
-    cardBg: 'rgba(255,255,255,0.09)',
-    display: 'Georgia, serif',
-    body: 'Inter, sans-serif',
-  },
-  'dark-tech': {
-    bg: 'linear-gradient(135deg, #08090D 0%, #12141C 55%, #1B1E2B 100%)',
-    accent: '#00E5A0',
-    accent2: '#7B5CFF',
-    text: '#E9F1F0',
-    subtext: '#8FA3A0',
-    cardBg: 'rgba(255,255,255,0.05)',
-    display: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-    body: 'Inter, sans-serif',
-  },
-  'nature-green': {
-    bg: 'linear-gradient(135deg, #0F2E1D 0%, #1E5631 55%, #3E8E56 100%)',
-    accent: '#B7E778',
-    accent2: '#FFB86B',
-    text: '#F2FBF3',
-    subtext: '#C7E6CC',
-    cardBg: 'rgba(255,255,255,0.08)',
-    display: 'Inter, sans-serif',
-    body: 'Inter, sans-serif',
-  },
-  'vibrant-purple': {
-    bg: 'linear-gradient(135deg, #2B0B4E 0%, #6B1FA0 55%, #B23BD9 100%)',
-    accent: '#FFD166',
-    accent2: '#4CE0D2',
-    text: '#FBF3FF',
-    subtext: '#E2C6F5',
-    cardBg: 'rgba(255,255,255,0.09)',
-    display: 'Inter, sans-serif',
-    body: 'Inter, sans-serif',
-  },
-  'minimal-mono': {
-    bg: 'linear-gradient(135deg, #FAFAFA 0%, #F0F0F0 100%)',
-    accent: '#111111',
-    accent2: '#8A8A8A',
-    text: '#111111',
-    subtext: '#555555',
-    cardBg: 'rgba(0,0,0,0.04)',
-    display: 'Inter, sans-serif',
-    body: 'Inter, sans-serif',
-  },
-  // --- Color-pigment themes (dark trio + light trio) ---
-  'ocean-teal': {
-    bg: 'linear-gradient(135deg, #052E2B 0%, #0B4A45 55%, #12746B 100%)',
-    accent: '#2DD4BF',
-    accent2: '#FDE68A',
-    text: '#EAFBF8',
-    subtext: '#B7E4DD',
-    cardBg: 'rgba(255,255,255,0.08)',
-    display: 'Inter, sans-serif',
-    body: 'Inter, sans-serif',
-  },
-  'royal-violet': {
-    bg: 'linear-gradient(135deg, #1A0B33 0%, #3B1370 55%, #5B21B6 100%)',
-    accent: '#F2C744',
-    accent2: '#38BDF8',
-    text: '#F5EEFF',
-    subtext: '#D8C7F5',
-    cardBg: 'rgba(255,255,255,0.08)',
-    display: 'Inter, sans-serif',
-    body: 'Inter, sans-serif',
-  },
-  'charcoal-slate': {
-    bg: 'linear-gradient(135deg, #15181D 0%, #22262E 55%, #343A46 100%)',
-    accent: '#7DD3FC',
-    accent2: '#F97362',
-    text: '#F1F3F5',
-    subtext: '#AEB6C2',
-    cardBg: 'rgba(255,255,255,0.06)',
-    display: 'Inter, sans-serif',
-    body: 'Inter, sans-serif',
-  },
-  'sunset-coral': {
-    bg: 'linear-gradient(135deg, #FFF4ED 0%, #FFE1D1 55%, #FFC9AE 100%)',
-    accent: '#F2622E',
-    accent2: '#0F9E8E',
-    text: '#3A1F16',
-    subtext: '#7A4B3A',
-    cardBg: 'rgba(0,0,0,0.045)',
-    display: 'Inter, sans-serif',
-    body: 'Inter, sans-serif',
-  },
-  'blush-rose': {
-    bg: 'linear-gradient(135deg, #FFF3F6 0%, #FBDCE4 55%, #F5C1CF 100%)',
-    accent: '#D6336C',
-    accent2: '#8C6A3F',
-    text: '#3D1B26',
-    subtext: '#7A4256',
-    cardBg: 'rgba(0,0,0,0.045)',
-    display: 'Inter, sans-serif',
-    body: 'Inter, sans-serif',
-  },
-  'golden-sand': {
-    bg: 'linear-gradient(135deg, #FFFBEB 0%, #FDEFC7 55%, #F7DFA0 100%)',
-    accent: '#C9861A',
-    accent2: '#0F766E',
-    text: '#332508',
-    subtext: '#6B551F',
-    cardBg: 'rgba(0,0,0,0.045)',
+  light: {
+    bg: 'linear-gradient(135deg, #FFFFFF 0%, #F3F6FC 50%, #E8EEF9 100%)',
+    accent: '#2563EB',
+    accent2: '#F59E0B',
+    text: '#0F172A',
+    subtext: '#475569',
+    cardBg: 'rgba(15,23,42,0.045)',
+    // A bright photo needs a light scrim so dark text stays legible.
+    overlay: 'linear-gradient(rgba(255,255,255,.82), rgba(255,255,255,.88))',
+    scrimClass: 'bg-white/75',
     display: 'Inter, sans-serif',
     body: 'Inter, sans-serif',
   },
@@ -134,7 +42,7 @@ export const THEMES = {
 export type Theme = (typeof THEMES)[keyof typeof THEMES];
 
 function themeFor(deck: PresentationDeck): Theme {
-  return THEMES[deck.theme] || THEMES['modern-blue'];
+  return THEMES[deck.theme] || THEMES.dark;
 }
 
 function TitleSlide({ slide, theme }: { slide: PresentationSlide; theme: Theme }) {
@@ -254,9 +162,7 @@ function PrintableSlide({ slide, theme, index, total }: { slide: PresentationSli
         padding: '54px 64px',
         borderRadius: '24px',
         background: theme.bg,
-        backgroundImage: slide.backgroundImageUrl
-          ? `linear-gradient(rgba(5,10,20,.68), rgba(5,10,20,.76)), url("${slide.backgroundImageUrl}")`
-          : theme.bg,
+        backgroundImage: slide.backgroundImageUrl ? `${theme.overlay}, url("${slide.backgroundImageUrl}")` : theme.bg,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         color: theme.text,
@@ -358,7 +264,7 @@ export function PresentationSlideRenderer({ deck, exportId = 'presentation-expor
             backgroundPosition: 'center',
           }}
         >
-          {slide.backgroundImageUrl && <div className="absolute inset-0 bg-slate-950/70" />}
+          {slide.backgroundImageUrl && <div className={cn('absolute inset-0', theme.scrimClass)} />}
           <div key={current} className="relative h-full w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
             <SlideCanvas slide={slide} theme={theme} />
           </div>

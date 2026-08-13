@@ -29,12 +29,13 @@ export async function POST(req: NextRequest) {
       .map((keyword) => keyword.trim())
       .filter(Boolean);
     const category = String(form.get('category') || '').trim();
+    const mode = form.get('mode') === 'light' ? 'light' : 'dark';
     const isGlobal = form.get('isGlobal') === 'true';
     if (!isGlobal && !subject && !keywords.length) {
       return NextResponse.json({ error: 'Add a subject or keywords, or mark the images as general.' }, { status: 400 });
     }
     const backgrounds = [];
-    for (const file of files) backgrounds.push(await savePresentationBackground(file, { subject, keywords, category, isGlobal }));
+    for (const file of files) backgrounds.push(await savePresentationBackground(file, { subject, keywords, category, mode, isGlobal }));
     return NextResponse.json({ backgrounds });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Upload failed.' }, { status: 400 });

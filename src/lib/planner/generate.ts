@@ -1,4 +1,5 @@
 import { gatewayChat } from '@/lib/ai/gateway';
+import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import { addDaysIso, pakistanDateIso } from '@/lib/dates/pakistan';
 
@@ -108,9 +109,12 @@ Rules: stay within dailyAvailableHours, prioritize weakKeys, respect constraint 
 
   let aiSessions: AiPlanSession[] = [];
   try {
+    const provider = await resolveAiRoutingProvider('studyTools');
     const result = await gatewayChat({
-      provider: 'gemini',
+      provider,
       tier: 'medium',
+      strictProvider: true,
+      routingPolicy: 'text',
       messages: [
         { role: 'system', content: 'You are a study planner. Return only valid JSON, no markdown fences.' },
         { role: 'user', content: prompt },

@@ -7,6 +7,8 @@ import { CollegeActionForm } from '@/components/features/college-erp/CollegeActi
 import { reviewCollegeLeaveRequest } from '@/lib/college-erp/actions';
 import { hasCollegePermission, requireCollegeContext } from '@/lib/college-erp/access';
 import { getCollegeAttendance } from '@/lib/college-erp/queries';
+import { listBiometricDevices } from '@/lib/biometric/actions';
+import { BiometricDevicesPanel } from '@/components/features/biometric/BiometricDevicesPanel';
 
 export default async function CollegeAttendancePage({ searchParams }: { searchParams: Promise<{ date?: string }> }) {
   const { supabase, context } = await requireCollegeContext('attendance.read', 'attendance');
@@ -16,6 +18,7 @@ export default async function CollegeAttendancePage({ searchParams }: { searchPa
   const data = await getCollegeAttendance(supabase, context, date);
   const canManage = hasCollegePermission(context, 'attendance.manage');
   const canManageStaff = ['owner', 'admin'].includes(context.membership.member_role);
+  const biometricDevices = canManageStaff ? await listBiometricDevices('college', context.organization.id) : [];
 
   return (
     <div className="space-y-6">
@@ -41,8 +44,27 @@ export default async function CollegeAttendancePage({ searchParams }: { searchPa
         <Card>
           <CardHeader><CardTitle className="text-base">Staff attendance</CardTitle></CardHeader>
           <CardContent className="text-muted-foreground text-sm">
-            {data.staffMembers.length} active staff. Staff attendance marking UI wasn&apos;t ported for
+            {data.staffMembers.length} active staff. Manual staff attendance marking UI wasn&apos;t ported for
             college yet (school&apos;s StaffAttendanceRegister is school-specific) — flagged as a follow-up.
+            The ZKTeco biometric sync below writes to college_staff_attendance directly either way.
+          </CardContent>
+        </Card>
+      )}
+      {canManageStaff && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Biometric devices (ZKTeco)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <BiometricDevicesPanel
+              institutionType="college"
+              organizationId={context.organization.id}
+              devices={biometricDevices}
+              teachers={(data.staffMembers || []).map((member: any) => ({
+                id: member.id,
+                name: Array.isArray(member.profiles) ? member.profiles[0]?.full_name : member.profiles?.full_name,
+              }))}
+            />
           </CardContent>
         </Card>
       )}

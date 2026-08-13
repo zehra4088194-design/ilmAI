@@ -410,14 +410,14 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-[1px]"
+            className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/85 p-4 backdrop-blur-[1px] sm:items-center"
             onClick={() => setOpenSubjectId(null)}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="border-border bg-background max-h-[86vh] w-full max-w-2xl overflow-y-auto rounded-2xl border p-6 shadow-2xl shadow-black/70"
+              className="border-border bg-background my-auto max-h-[86svh] w-full max-w-2xl overflow-y-auto rounded-2xl border p-6 shadow-2xl shadow-black/70"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="mb-5 flex items-center justify-between">

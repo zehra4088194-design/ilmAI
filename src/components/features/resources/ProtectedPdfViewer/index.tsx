@@ -26,6 +26,14 @@ const AUTO_SCROLL_SPEEDS = [
   { label: '3x', pxPerSecond: 220 },
 ] as const;
 
+// How far outside the visible viewport a page is allowed to mount its real canvas. Generous
+// enough that continuous scrolling never shows a blank flash, small enough that a 100+ page
+// document never tries to rasterize more than a handful of pages at once (that's what used to
+// freeze the tab). Pages that have mounted once are kept mounted — cheap to keep, and it avoids
+// re-render jank when scrolling back up.
+const MOUNT_ROOT_MARGIN = '1400px 0px 1400px 0px';
+const A4_ASPECT = 210 / 297; // width / height fallback until the real page tells us its shape
+
 export function ProtectedPdfViewer({
   url,
   title,
@@ -47,6 +55,8 @@ export function ProtectedPdfViewer({
   const [autoScrolling, setAutoScrolling] = useState(false);
   const [speedIndex, setSpeedIndex] = useState(1);
   const [speedMenuOpen, setSpeedMenuOpen] = useState(false);
+  const [mountedPages, setMountedPages] = useState<Set<number>>(() => new Set([1]));
+  const [pageAspect, setPageAspect] = useState(A4_ASPECT);
 
   // Auto-load: the viewer starts pulling the document the moment a url is handed to it —
   // there is no "open" step for the caller to trigger beyond mounting/passing the url.
@@ -82,6 +92,8 @@ export function ProtectedPdfViewer({
     setRotation(0);
     setError(null);
     setAutoScrolling(false);
+    setMountedPages(new Set([1]));
+    setPageAspect(A4_ASPECT);
     pageRefs.current = [];
   }, [url]);
 
@@ -106,18 +118,14 @@ export function ProtectedPdfViewer({
     };
     raf = requestAnimationFrame(step);
 
-    let userScrollTimeout: ReturnType<typeof setTimeout> | null = null;
-    const onWheelOrTouch = () => {
-      setAutoScrolling(false);
-    };
-    viewport.addEventListener('wheel', onWheelOrTouch, { passive: true });
-    viewport.addEventListener('touchmove', onWheelOrTouch, { passive: true });
+    const stopOnUserScroll = () => setAutoScrolling(false);
+    viewport.addEventListener('wheel', stopOnUserScroll, { passive: true });
+    viewport.addEventListener('touchmove', stopOnUserScroll, { passive: true });
 
     return () => {
       cancelAnimationFrame(raf);
-      if (userScrollTimeout) clearTimeout(userScrollTimeout);
-      viewport.removeEventListener('wheel', onWheelOrTouch);
-      viewport.removeEventListener('touchmove', onWheelOrTouch);
+      viewport.removeEventListener('wheel', stopOnUserScroll);
+      viewport.removeEventListener('touchmove', stopOnUserScroll);
     };
   }, [autoScrolling, speedIndex]);
 
@@ -144,17 +152,85 @@ export function ProtectedPdfViewer({
     return () => observer.disconnect();
   }, [pages]);
 
+  // Windowed rendering: only pages within MOUNT_ROOT_MARGIN of the viewport ever get a real
+  // <Page> canvas. Everything else stays a lightweight, correctly-sized placeholder — this is
+  // what keeps a long PDF from freezing the tab while still feeling like it "just loaded".
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport || !pages) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const toMount: number[] = [];
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          const index = Number((entry.target as HTMLElement).dataset.pageIndex);
+          if (Number.isNaN(index)) continue;
+          toMount.push(index + 1);
+        }
+        if (toMount.length) {
+          setMountedPages((current) => {
+            const next = new Set(current);
+            let changed = false;
+            for (const pageNumber of toMount) {
+              if (!next.has(pageNumber)) {
+                next.add(pageNumber);
+                changed = true;
+              }
+            }
+            return changed ? next : current;
+          });
+        }
+      },
+      { root: viewport, rootMargin: MOUNT_ROOT_MARGIN, threshold: 0 },
+    );
+    pageRefs.current.forEach((node) => node && observer.observe(node));
+    return () => observer.disconnect();
+  }, [pages]);
+
   const fittedWidth = Math.max(240, Math.min(containerWidth - 32, 1100));
   const renderedWidth = Math.round(fittedWidth * zoom);
+  const rotated90 = rotation === 90 || rotation === 270;
+  const effectiveAspect = rotated90 ? 1 / pageAspect : pageAspect;
+  const placeholderHeight = Math.max(200, Math.round(renderedWidth / effectiveAspect));
   const pageNumbers = useMemo(() => Array.from({ length: pages }, (_, i) => i + 1), [pages]);
 
   const jumpToPage = (target: number) => {
+    setPage(target);
     const node = pageRefs.current[target - 1];
     if (node) node.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
+  // Keyboard shortcuts: Page navigation and zoom, ignored while the page-jump box (or anything
+  // else) has focus so typing never gets hijacked.
+  useEffect(() => {
+    const frame = frameRef.current;
+    if (!frame) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return;
+      if (event.key === 'ArrowDown' || event.key === 'PageDown') {
+        event.preventDefault();
+        jumpToPage(Math.min(pages || 1, page + 1));
+      } else if (event.key === 'ArrowUp' || event.key === 'PageUp') {
+        event.preventDefault();
+        jumpToPage(Math.max(1, page - 1));
+      } else if (event.key === '+' || event.key === '=') {
+        setZoom((value) => Math.min(2.25, Number((value + 0.15).toFixed(2))));
+      } else if (event.key === '-') {
+        setZoom((value) => Math.max(0.7, Number((value - 0.15).toFixed(2))));
+      }
+    };
+    frame.addEventListener('keydown', onKeyDown);
+    return () => frame.removeEventListener('keydown', onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, pages]);
+
   return (
-    <div ref={frameRef} className={cn('bg-slate-200 text-slate-950', className)}>
+    <div
+      ref={frameRef}
+      tabIndex={-1}
+      className={cn('bg-slate-200 text-slate-950 outline-none', className)}
+    >
       <div className="flex h-full min-h-0 flex-col">
         <div className="flex min-h-12 shrink-0 items-center justify-between gap-2 border-b border-slate-300 bg-white px-2 shadow-sm sm:px-3">
           <div className="flex min-w-0 items-center gap-1">
@@ -172,7 +248,7 @@ export function ProtectedPdfViewer({
                 if (event.key === 'Enter') jumpToPage(Number((event.target as HTMLInputElement).value) || 1);
               }}
               disabled={!pages}
-              className="h-7 w-11 rounded border border-slate-300 bg-slate-50 text-center text-xs font-semibold tabular-nums focus:border-primary focus:outline-none disabled:opacity-50"
+              className="focus:border-primary h-7 w-11 rounded border border-slate-300 bg-slate-50 text-center text-xs font-semibold tabular-nums focus:outline-none disabled:opacity-50"
               aria-label="Go to PDF page"
             />
             <span className="text-xs font-semibold tabular-nums text-slate-500 sm:text-sm">/ {pages || '—'}</span>
@@ -181,19 +257,17 @@ export function ProtectedPdfViewer({
           <p className="hidden min-w-0 flex-1 truncate px-3 text-center text-xs font-medium md:block">{title}</p>
 
           <div className="flex shrink-0 items-center gap-0.5">
-            <div className="relative">
-              <Button
-                type="button"
-                variant={autoScrolling ? 'secondary' : 'ghost'}
-                size="icon-sm"
-                onClick={() => setAutoScrolling((value) => !value)}
-                disabled={!pages}
-                aria-label={autoScrolling ? 'Pause auto-scroll' : 'Start auto-scroll'}
-                title={autoScrolling ? 'Pause auto-scroll' : 'Start auto-scroll'}
-              >
-                {autoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-              </Button>
-            </div>
+            <Button
+              type="button"
+              variant={autoScrolling ? 'secondary' : 'ghost'}
+              size="icon-sm"
+              onClick={() => setAutoScrolling((value) => !value)}
+              disabled={!pages}
+              aria-label={autoScrolling ? 'Pause auto-scroll' : 'Start auto-scroll'}
+              title={autoScrolling ? 'Pause auto-scroll' : 'Start auto-scroll'}
+            >
+              {autoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+            </Button>
             <div className="relative">
               <Button
                 type="button"
@@ -202,29 +276,32 @@ export function ProtectedPdfViewer({
                 onClick={() => setSpeedMenuOpen((value) => !value)}
                 aria-label="Auto-scroll speed"
                 title="Auto-scroll speed"
-                className="gap-0.5"
               >
                 <Gauge className="h-4 w-4" />
               </Button>
               {speedMenuOpen && (
-                <div className="absolute right-0 top-full z-10 mt-1 w-24 rounded-lg border border-slate-200 bg-white p-1 shadow-lg">
-                  {AUTO_SCROLL_SPEEDS.map((speed, index) => (
-                    <button
-                      key={speed.label}
-                      type="button"
-                      onClick={() => {
-                        setSpeedIndex(index);
-                        setSpeedMenuOpen(false);
-                      }}
-                      className={cn(
-                        'block w-full rounded-md px-2 py-1 text-left text-xs font-medium',
-                        index === speedIndex ? 'bg-primary/10 text-primary' : 'text-slate-600 hover:bg-slate-100',
-                      )}
-                    >
-                      {speed.label}
-                    </button>
-                  ))}
-                </div>
+                <>
+                  {/* Backdrop to close the menu on outside click/tap */}
+                  <div className="fixed inset-0 z-[5]" onClick={() => setSpeedMenuOpen(false)} />
+                  <div className="absolute right-0 top-full z-10 mt-1 w-24 rounded-lg border border-slate-200 bg-white p-1 shadow-lg">
+                    {AUTO_SCROLL_SPEEDS.map((speed, index) => (
+                      <button
+                        key={speed.label}
+                        type="button"
+                        onClick={() => {
+                          setSpeedIndex(index);
+                          setSpeedMenuOpen(false);
+                        }}
+                        className={cn(
+                          'block w-full rounded-md px-2 py-1 text-left text-xs font-medium',
+                          index === speedIndex ? 'bg-primary/10 text-primary' : 'text-slate-600 hover:bg-slate-100',
+                        )}
+                      >
+                        {speed.label}
+                      </button>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
             <div className="mx-1 h-5 w-px bg-slate-200" />
@@ -263,7 +340,7 @@ export function ProtectedPdfViewer({
 
         <div
           ref={viewportRef}
-          className="min-h-0 flex-1 overflow-auto overscroll-contain p-3 [scrollbar-gutter:stable] sm:p-4"
+          className="min-h-0 flex-1 overflow-auto overscroll-contain scroll-smooth p-3 [scrollbar-gutter:stable] sm:p-6"
         >
           {error ? (
             <div className="mx-auto flex min-h-64 max-w-md flex-col items-center justify-center rounded-2xl bg-white p-6 text-center shadow-sm">
@@ -288,7 +365,7 @@ export function ProtectedPdfViewer({
                 console.error('Protected PDF render failed:', loadError);
                 setError('The response is not a valid PDF, or the connection was interrupted. Reopen the file and try again.');
               }}
-              className="mx-auto flex w-max max-w-none flex-col items-center gap-4"
+              className="mx-auto flex w-max max-w-none flex-col items-center gap-5"
             >
               {pageNumbers.map((pageNumber) => (
                 <div
@@ -297,23 +374,41 @@ export function ProtectedPdfViewer({
                     pageRefs.current[pageNumber - 1] = node;
                   }}
                   data-page-index={pageNumber - 1}
+                  className="animate-in fade-in group relative w-max duration-300"
                 >
-                  <Page
-                    pageNumber={pageNumber}
-                    width={renderedWidth}
-                    rotate={rotation}
-                    renderAnnotationLayer={false}
-                    renderTextLayer
-                    loading={
-                      <div
-                        className="flex w-full items-center justify-center bg-white"
-                        style={{ height: renderedWidth * 1.294 }}
-                      >
-                        <Loader2 className="text-primary h-7 w-7 animate-spin" />
-                      </div>
-                    }
-                    className="overflow-hidden rounded-sm bg-white shadow-xl"
-                  />
+                  {mountedPages.has(pageNumber) ? (
+                    <Page
+                      pageNumber={pageNumber}
+                      width={renderedWidth}
+                      rotate={rotation}
+                      renderAnnotationLayer={false}
+                      renderTextLayer
+                      onLoadSuccess={(loadedPage) => {
+                        if (pageNumber !== 1) return;
+                        const view = loadedPage.view; // [x0, y0, x1, y1] at scale 1, unrotated
+                        const w = view[2] - view[0];
+                        const h = view[3] - view[1];
+                        if (w > 0 && h > 0) setPageAspect(w / h);
+                      }}
+                      loading={
+                        <div
+                          className="flex w-full animate-pulse items-center justify-center rounded-sm bg-white ring-1 ring-black/5"
+                          style={{ width: renderedWidth, height: placeholderHeight }}
+                        >
+                          <Loader2 className="text-primary h-7 w-7 animate-spin" />
+                        </div>
+                      }
+                      className="overflow-hidden rounded-sm bg-white shadow-xl ring-1 ring-black/5"
+                    />
+                  ) : (
+                    <div
+                      className="rounded-sm bg-white ring-1 ring-black/5"
+                      style={{ width: renderedWidth, height: placeholderHeight }}
+                    />
+                  )}
+                  <span className="pointer-events-none absolute -top-2 left-2 rounded-full bg-slate-900/70 px-2 py-0.5 text-[10px] font-semibold text-white opacity-0 shadow transition-opacity group-hover:opacity-100">
+                    {pageNumber}
+                  </span>
                 </div>
               ))}
             </Document>
