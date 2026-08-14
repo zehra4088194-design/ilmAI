@@ -6,6 +6,7 @@ import {
   getUniversityLimitExceededMessage,
 } from '@/lib/rate-limit';
 import { gatewayChat } from '@/lib/ai/gateway';
+import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import type { SubscriptionTier } from '@/types';
 
@@ -39,8 +40,11 @@ Rules:
 - Do not pretend you accessed live databases.
 - Keep the reference style-specific and submission-ready after user verification.`;
 
+  const citationProvider = await resolveAiRoutingProvider('studyTools');
   const result = await gatewayChat({
-    provider: 'gemini',
+    provider: citationProvider,
+    strictProvider: true,
+    routingPolicy: 'text',
     tier: 'pro',
     messages: [
       { role: 'system', content: 'You are a careful citation generator. Return only valid JSON.' },

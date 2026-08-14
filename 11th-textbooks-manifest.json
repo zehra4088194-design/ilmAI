@@ -1,0 +1,58 @@
+[
+  {
+    "subject_slug": "biology",
+    "title": "Biology — Class 11 Full Textbook (Punjab)",
+    "book_title": "Class 11 Biology Textbook (Punjab)",
+    "key": "library/text-books/grade-11/biology-full-textbook.pdf",
+    "source": "E:\\data\\11th\\text_books\\New 11 Biology EM Full Book Punjab 2025.pdf"
+  },
+  {
+    "subject_slug": "chemistry",
+    "title": "Chemistry — Class 11 Full Textbook (Punjab)",
+    "book_title": "Class 11 Chemistry Textbook (Punjab)",
+    "key": "library/text-books/grade-11/chemistry-full-textbook.pdf",
+    "source": "E:\\data\\11th\\text_books\\New 11 Chemistry EM Full Book Punjab 2025.pdf"
+  },
+  {
+    "subject_slug": "computer-science",
+    "title": "Computer Science — Class 11 Full Textbook (Punjab)",
+    "book_title": "Class 11 Computer Science Textbook (Punjab)",
+    "key": "library/text-books/grade-11/computer-science-full-textbook.pdf",
+    "source": "E:\\data\\11th\\text_books\\New 11 Computer EM Full Book Punjab 2025.pdf"
+  },
+  {
+    "subject_slug": "english",
+    "title": "English — Class 11 Full Textbook (Punjab)",
+    "book_title": "Class 11 English Textbook (Punjab)",
+    "key": "library/text-books/grade-11/english-full-textbook.pdf",
+    "source": "E:\\data\\11th\\text_books\\New 11 English Full Book Punjab 2025.pdf"
+  },
+  {
+    "subject_slug": "mathematics",
+    "title": "Mathematics — Class 11 Full Textbook (Punjab)",
+    "book_title": "Class 11 Mathematics Textbook (Punjab)",
+    "key": "library/text-books/grade-11/mathematics-full-textbook.pdf",
+    "source": "E:\\data\\11th\\text_books\\New 11 Maths EM Full Book Punjab 2025.pdf"
+  },
+  {
+    "subject_slug": "physics",
+    "title": "Physics — Class 11 Full Textbook (Punjab)",
+    "book_title": "Class 11 Physics Textbook (Punjab)",
+    "key": "library/text-books/grade-11/physics-full-textbook.pdf",
+    "source": "E:\\data\\11th\\text_books\\New 11 Physics EM Full Book Punjab 2025.pdf"
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "title": "Tarjuma Tul Quran — Class 11 Full Textbook (Punjab)",
+    "book_title": "Class 11 Tarjuma Tul Quran Textbook (Punjab)",
+    "key": "library/text-books/grade-11/tarjuma-tul-quran-full-textbook.pdf",
+    "source": "E:\\data\\11th\\text_books\\New 11 TTQ EM Full Book Punjab 2025.pdf"
+  },
+  {
+    "subject_slug": "urdu",
+    "title": "Urdu — Class 11 Full Textbook (Punjab)",
+    "book_title": "Class 11 Urdu Textbook (Punjab)",
+    "key": "library/text-books/grade-11/urdu-full-textbook.pdf",
+    "source": "E:\\data\\11th\\text_books\\New 11 Urdu Full Book Punjab 2025.pdf"
+  }
+]

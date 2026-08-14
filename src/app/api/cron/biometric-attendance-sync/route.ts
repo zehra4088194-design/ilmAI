@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { fetchDevicePunchLogs } from '@/lib/biometric/zkteco';
+import { dateKeyInZone, reinterpretWallTimeInZone, startOfTodayInZone } from '@/lib/utils/timezone';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -24,6 +25,7 @@ const DEVICE_TABLES = [
     devices: 'school_teacher_biometric_devices',
     mappings: 'school_teacher_biometric_mappings',
     memberships: 'school_memberships',
+    organizations: 'school_organizations',
     attendance: 'school_staff_attendance',
   },
   {
@@ -31,19 +33,31 @@ const DEVICE_TABLES = [
     devices: 'college_teacher_biometric_devices',
     mappings: 'college_teacher_biometric_mappings',
     memberships: 'college_memberships',
+    organizations: 'college_organizations',
     attendance: 'college_staff_attendance',
   },
 ];
 
-function dateKey(date: Date) {
-  return date.toISOString().slice(0, 10);
-}
-
 async function syncDevice(db: any, table: (typeof DEVICE_TABLES)[number], device: any) {
-  const logs = await fetchDevicePunchLogs(device.device_ip, device.port);
-  // First-ever sync: only import today's punches, not the device's entire
-  // history — avoids backfilling months of old logs as "present today".
-  const since = device.last_synced_at ? new Date(device.last_synced_at) : new Date(new Date().toDateString());
+  const { data: org } = await db.from(table.organizations).select('timezone').eq('id', device.organization_id).maybeSingle();
+  // Every organization row defaults `timezone` to a real IANA zone at creation
+  // (see school/college settings forms) — 'UTC' here is only a last-resort
+  // fallback if that's ever missing, not the expected case.
+  const timeZone = org?.timezone || 'UTC';
+
+  const rawLogs = await fetchDevicePunchLogs(device.device_ip, device.port);
+  // node-zklib decodes each punch's raw wall-clock components into a Date via
+  // the SERVER process's local timezone (`new Date(y,m,d,h,mi,s)`), not the
+  // device's/institution's actual timezone. Re-interpret those same wall-clock
+  // numbers as belonging to the institution's own timezone to get the correct
+  // absolute instant — otherwise every timestamp (and near-midnight punches'
+  // calendar day) can be off by the institution's UTC offset.
+  const logs = rawLogs.map((log) => ({ ...log, recordTime: reinterpretWallTimeInZone(log.recordTime, timeZone) }));
+
+  // First-ever sync: only import today's (institution-local) punches, not the
+  // device's entire history — avoids backfilling months of old logs as
+  // "present today".
+  const since = device.last_synced_at ? new Date(device.last_synced_at) : startOfTodayInZone(timeZone);
   const relevant = logs.filter((log) => log.recordTime >= since);
   if (!relevant.length) return { imported: 0 };
 
@@ -55,13 +69,13 @@ async function syncDevice(db: any, table: (typeof DEVICE_TABLES)[number], device
     (mappings || []).map((row: any) => [row.device_user_id, row.membership_id])
   );
 
-  // Group punches by membership + calendar date, tracking earliest (check-in)
-  // and latest (check-out) punch per day across this batch.
+  // Group punches by membership + institution-local calendar date, tracking
+  // earliest (check-in) and latest (check-out) punch per day across this batch.
   const byKey = new Map<string, { membershipId: string; date: string; min: Date; max: Date }>();
   for (const log of relevant) {
     const membershipId = membershipByDeviceUserId.get(log.deviceUserId);
     if (!membershipId) continue; // Unmapped device User_ID — admin hasn't linked this punch card yet.
-    const date = dateKey(log.recordTime);
+    const date = dateKeyInZone(log.recordTime, timeZone);
     const key = `${membershipId}:${date}`;
     const existing = byKey.get(key);
     if (!existing) {

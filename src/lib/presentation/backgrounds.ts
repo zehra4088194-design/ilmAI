@@ -1,7 +1,12 @@
 import 'server-only';
 import { randomUUID } from 'node:crypto';
 import { createServiceClient } from '@/lib/supabase/service';
-import { deleteR2Object, getR2Object, isR2Configured, putR2Object } from '@/lib/storage/r2';
+import {
+  deletePresentationR2Object as deleteR2Object,
+  getPresentationR2Object as getR2Object,
+  isPresentationR2Configured as isR2Configured,
+  putPresentationR2Object as putR2Object,
+} from '@/lib/storage/presentation-r2';
 
 // Image bytes live in the shared B2 (R2-compatible) object storage bucket under the
 // `presentation-backgrounds/` prefix. Metadata (subject, keywords, category, isGlobal,
@@ -84,7 +89,7 @@ export async function savePresentationBackground(
   file: File,
   metadata: { subject?: string; keywords?: string[]; category?: string; mode?: string; isGlobal?: boolean } = {}
 ): Promise<PresentationBackground> {
-  if (!isR2Configured()) throw new Error('Object storage is not configured (missing OBJECT_STORAGE_* env vars).');
+  if (!isR2Configured()) throw new Error('Object storage is not configured (missing PRESENTATION_STORAGE_* env vars).');
   const extension = MIME_EXTENSIONS[file.type];
   if (!extension) throw new Error('Only JPG, PNG, and WebP images are allowed.');
   if (file.size <= 0 || file.size > MAX_IMAGE_BYTES) throw new Error('Each image must be 10 MB or smaller.');

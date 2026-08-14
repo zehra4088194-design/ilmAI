@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { gatewayChat } from '@/lib/ai/gateway';
+import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
 import { parseAiJson } from '@/lib/utils/json-extract';
 
 export const runtime = 'nodejs';
@@ -11,8 +12,11 @@ export async function POST() {
   const { data: { user } } = await supabase.auth.getUser();
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user!.id).single();
   if (profile?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  const provider = await resolveAiRoutingProvider('studyTools');
   const result = await gatewayChat({
-    provider: 'gemini',
+    provider,
+    strictProvider: true,
+    routingPolicy: 'text',
     tier: 'mini',
     messages: [
       { role: 'system', content: 'Suggest Pakistani student opportunities as draft database rows. Return JSON array only.' },

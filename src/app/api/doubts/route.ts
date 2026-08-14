@@ -40,8 +40,11 @@ export async function POST(req: NextRequest) {
       const limit = await checkAiMessageLimit(user.id, tier, 'doubt_teacher');
       if (!limit.success) throw new Error('Doubt AI daily limit complete');
       const { gatewayChat, MARKDOWN_ANSWER_FORMAT_INSTRUCTION } = await import('@/lib/ai/gateway');
+      const doubtProvider = await resolveAiRoutingProvider('studyTools');
       const aiReply = await gatewayChat({
-        provider: 'gemini',
+        provider: doubtProvider,
+        strictProvider: true,
+        routingPolicy: 'text',
         tier: 'medium',
         messages: [
           {
@@ -52,7 +55,6 @@ export async function POST(req: NextRequest) {
         ],
         maxTokens: 1024,
         temperature: 0.6,
-        routingPolicy: 'tutor',
       });
 
       // Find or create the AI teacher profile

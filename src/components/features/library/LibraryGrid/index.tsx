@@ -17,7 +17,7 @@ export type LibraryCatalogResource = {
   file_type: string | null;
   resource_type?: CatalogResourceType | 'other';
   book_title?: string | null;
-  content_section?: 'reading' | 'mcq' | 'short' | 'long';
+  content_section?: 'reading' | 'mcq' | 'short' | 'long' | 'numericals';
   has_context_text?: boolean;
   drive_url?: string | null;
   light_file_url?: string | null;

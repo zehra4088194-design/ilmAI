@@ -22,6 +22,17 @@ const PRICE_IDS = {
   },
 } as const;
 
+export class PaddleRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly requestId?: string | null
+  ) {
+    super(message);
+    this.name = 'PaddleRequestError';
+  }
+}
+
 function getPaddleApiBaseUrl() {
   return PADDLE_API_KEY?.includes('_sdbx') ? 'https://sandbox-api.paddle.com' : 'https://api.paddle.com';
 }
@@ -61,13 +72,14 @@ async function paddleRequest<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   if (!response.ok) {
+    const requestId = response.headers.get('paddle-request-id') || response.headers.get('request-id');
     const providerMessage =
       json?.error?.detail ||
       json?.errors?.[0]?.detail ||
       json?.errors?.[0]?.message ||
       json?.message ||
       `Paddle request failed with status ${response.status}`;
-    throw new Error(providerMessage);
+    throw new PaddleRequestError(providerMessage, response.status, requestId);
   }
 
   return json as T;

@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { gatewayChat } from '@/lib/ai/gateway';
+import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
 import { createNotificationsIfEnabled } from '@/lib/notifications/preferences';
 
 function code() {
@@ -156,8 +157,11 @@ export async function draftAiSubmissionFeedback(formData: FormData) {
   const submissionId = String(formData.get('submission_id'));
   const assignmentId = String(formData.get('assignment_id'));
   const classId = String(formData.get('class_id'));
+  const provider = await resolveAiRoutingProvider('studyTools');
   const result = await gatewayChat({
-    provider: 'gemini',
+    provider,
+    strictProvider: true,
+    routingPolicy: 'text',
     tier: 'mini',
     messages: [
       { role: 'system', content: 'Draft concise teacher feedback for a student assignment. The teacher will review and edit it before saving. Return plain text only.' },

@@ -7,6 +7,7 @@ import {
 } from '@/lib/rate-limit';
 import { gatewayChat } from '@/lib/ai/gateway';
 import { MARKDOWN_ANSWER_FORMAT_INSTRUCTION } from '@/lib/ai/gateway';
+import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
 import type { SubscriptionTier } from '@/types';
 
 export const runtime = 'nodejs';
@@ -23,8 +24,11 @@ async function generateCareerDocs(userData: Record<string, string>, jobDescripti
       ? `Act as an expert career coach and ATS specialist. Create a highly professional, ATS-optimized resume using clear Markdown. Focus on action verbs, skills, measurable impact, and strong project framing.`
       : `Write a professional, persuasive cover letter for the job description, highlighting the student's exact skills and projects that align with the role. Keep it concise and specific.`;
 
+  const careerDocsProvider = await resolveAiRoutingProvider('studyTools');
   const result = await gatewayChat({
-    provider: 'gemini',
+    provider: careerDocsProvider,
+    strictProvider: true,
+    routingPolicy: 'text',
     tier: 'pro',
     messages: [
       {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { gatewayChat } from '@/lib/ai/gateway';
+import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
 import { checkAiMessageLimit, consumeAiCredits } from '@/lib/rate-limit';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import { createNotificationIfEnabled } from '@/lib/notifications/preferences';
@@ -52,8 +53,11 @@ Return ONLY valid JSON, no extra text:
   "examStrategy": "brief strategy based on exam date"
 }`;
 
+    const routineProvider = await resolveAiRoutingProvider('studyTools');
     const result = await gatewayChat({
-      provider: 'gemini',
+      provider: routineProvider,
+      strictProvider: true,
+      routingPolicy: 'text',
       tier: 'medium',
       messages: [{ role: 'user', content: prompt }],
       maxTokens: 2048,

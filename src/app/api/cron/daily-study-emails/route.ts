@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { gatewayChat } from '@/lib/ai/gateway';
+import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
 import { isEmailConfigured, sendEmail } from '@/lib/email/send';
 
 export const runtime = 'nodejs';
@@ -45,8 +46,11 @@ async function generateStudyEmail(profile: EmailProfile) {
     `Plan: ${profile.subscription_tier}`,
   ].join('\n');
 
+  const provider = await resolveAiRoutingProvider('studyTools');
   const result = await gatewayChat({
-    provider: 'gemini',
+    provider,
+    strictProvider: true,
+    routingPolicy: 'text',
     tier: 'mini',
     messages: [
       {

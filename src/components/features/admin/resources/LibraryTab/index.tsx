@@ -24,7 +24,7 @@ export type LibraryResource = {
   category: 'local' | 'international';
   resource_type: 'text_book' | 'notes' | 'pairing_scheme' | 'guess_paper' | 'other';
   book_title: string | null;
-  content_section: 'reading' | 'mcq' | 'short' | 'long';
+  content_section: 'reading' | 'mcq' | 'short' | 'long' | 'numericals';
   has_context_text?: boolean;
   subject_id: string | null;
   subject_name?: string | null;

@@ -15,6 +15,7 @@ import {
 import { hasSchoolPermission, requireSchoolContext } from '@/lib/school-erp/access';
 import { getSchoolAcademicSetup } from '@/lib/school-erp/queries';
 import { InstitutionPaymentCheckout } from '@/components/features/institution-payments/InstitutionPaymentCheckout';
+import { getActiveStudentCount } from '@/lib/institution-payments/actions';
 import { getPlatformSettings } from '@/lib/platform-settings/server';
 import { resolveInstitutionPricing } from '@/lib/platform-settings/shared';
 
@@ -27,11 +28,13 @@ export default async function SchoolSettingsPage() {
   const canManageAcademics = hasSchoolPermission(context, 'academics.manage');
   const { data: planSettings } = await supabase
     .from('school_organization_plan_settings')
-    .select('billing_status, plan_tier_id, max_students, renews_on')
+    .select('billing_status, plan_tier_id, renews_on')
     .eq('organization_id', context.organization.id)
     .maybeSingle();
-  const platformSettings = await getPlatformSettings();
-  const studentCount = planSettings?.max_students || 0;
+  const [platformSettings, studentCount] = await Promise.all([
+    getPlatformSettings(),
+    getActiveStudentCount('school', context.organization.id),
+  ]);
   const monthlyPricing = resolveInstitutionPricing(platformSettings, 'school', 'monthly', studentCount);
   const annualPricing = resolveInstitutionPricing(platformSettings, 'school', 'annual', studentCount);
 

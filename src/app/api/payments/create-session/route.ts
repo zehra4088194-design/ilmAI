@@ -4,11 +4,14 @@ import {
   getPaymentAvailability,
   getPaymentProvider,
   isPaymentRegionConfigured,
+  PaddleRequestError,
   type PaymentRegion,
 } from '@/lib/payments';
 import { getSiteUrl } from '@/lib/utils/siteUrl';
 
 export async function POST(req: NextRequest) {
+  let checkoutContext: { tier?: string; billingCycle?: string; region?: PaymentRegion } = {};
+
   try {
     const supabase = await createClient();
     const {
@@ -50,16 +53,20 @@ export async function POST(req: NextRequest) {
       billingCycle?: 'monthly' | 'annual';
       provider?: 'paddle' | 'paypro';
     };
-    const { tier, billingCycle } = body;
+    const { tier } = body;
+    const billingCycle = body.billingCycle === 'annual' ? 'annual' : body.billingCycle === 'monthly' ? 'monthly' : null;
     // PayPro currently does not support automatic recurring subscriptions for
     // the local wallet flow. Keep automated checkout on Paddle; Easypaisa and
     // JazzCash remain manual verification flows from the upgrade page.
-    const providerId = 'paddle';
     const region: PaymentRegion = 'GLOBAL';
     const currency = 'USD';
+    checkoutContext = { tier, billingCycle: billingCycle || undefined, region };
 
     if (tier !== 'PRO' && tier !== 'ELITE') {
       return NextResponse.json({ status: 'error', error: 'Invalid plan selected' }, { status: 400 });
+    }
+    if (!billingCycle) {
+      return NextResponse.json({ status: 'error', error: 'Invalid billing cycle selected' }, { status: 400 });
     }
     if (!isPaymentRegionConfigured(region, req.headers)) {
       return NextResponse.json(
@@ -78,7 +85,7 @@ export async function POST(req: NextRequest) {
       userId: user.id,
       userEmail: user.email || '',
       tier,
-      billingCycle: billingCycle || 'monthly',
+      billingCycle,
       region,
       currency,
       successUrl: `${appUrl}/subscription?success=true`,
@@ -87,7 +94,21 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ url: session.url });
   } catch (error) {
-    console.error('Checkout session error:', error);
-    return NextResponse.json({ status: 'error', error: 'The checkout session could not be created.' }, { status: 500 });
+    const isPaddleError = error instanceof PaddleRequestError;
+    const message = error instanceof Error ? error.message : 'Unknown checkout error';
+    console.error('Checkout session error:', {
+      message,
+      ...checkoutContext,
+      provider: isPaddleError ? 'paddle' : undefined,
+      providerStatus: isPaddleError ? error.status : undefined,
+      providerRequestId: isPaddleError ? error.requestId : undefined,
+    });
+
+    const errorMessage =
+      process.env.NODE_ENV === 'production'
+        ? 'The checkout session could not be created.'
+        : `The checkout session could not be created: ${message}`;
+
+    return NextResponse.json({ status: 'error', error: errorMessage }, { status: 500 });
   }
 }

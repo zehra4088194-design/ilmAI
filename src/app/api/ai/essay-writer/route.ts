@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { gatewayChat } from '@/lib/ai/gateway';
+import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
 import { checkAiMessageLimit, consumeAiCredits } from '@/lib/rate-limit';
 import { getUserGradeLevel } from '@/lib/supabase/getUserGradeLevel';
 import {
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: 'error', error: 'The daily AI limit has been reached.' }, { status: 429 });
 
     const body = await req.json();
-    const { topic, wordCount, essayType, language, provider, aiTier } = body;
+    const { topic, wordCount, essayType, language } = body;
     if (!topic) return NextResponse.json({ status: 'error', error: 'An essay topic is required' }, { status: 400 });
 
     const { gradeLevel: profileGradeLevel } = await getUserGradeLevel(supabase, user.id);
@@ -39,8 +40,10 @@ export async function POST(req: NextRequest) {
       ? body.gradeLevel
       : normalizeEssayGradeLevel(profileGradeLevel);
 
-    const useProvider: AiProviderId = provider || 'gemini';
-    const useTier: ModelTier = aiTier || 'mini';
+    // Provider is resolved from /admin, never trusted from the client — a request body could
+    // previously ask for any provider (e.g. Claude/GPT) with zero server-side check.
+    const useProvider: AiProviderId = await resolveAiRoutingProvider('studyTools');
+    const useTier: ModelTier = 'mini';
     const targetWords = wordCount || 300;
     const type = essayType || 'general';
     const lang = language === 'urdu' ? 'Roman Urdu mixed with simple English' : 'clear English';
@@ -48,6 +51,8 @@ export async function POST(req: NextRequest) {
 
     const result = await gatewayChat({
       provider: useProvider,
+      strictProvider: true,
+      routingPolicy: 'text',
       tier: useTier,
       messages: [
         {

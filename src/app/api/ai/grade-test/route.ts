@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { gatewayChat, type AiProviderId } from '@/lib/ai/gateway';
+import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
 import { checkAiMessageLimit, consumeAiCredits } from '@/lib/rate-limit';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import type { SubscriptionTier } from '@/types';
@@ -106,7 +107,7 @@ async function gradeWrittenBatch({
     provider,
     tier: 'mini',
     strictProvider: true,
-    routingPolicy: provider === 'local' ? 'local' : 'grading',
+    routingPolicy: 'text',
     maxTokens: Math.min(5000, Math.max(1200, questions.length * 650)),
     temperature: 0.15,
     messages: [
@@ -142,22 +143,24 @@ Clamp every score between 0 and that question's marks. Award partial marks when 
   });
 }
 
-async function explainMcqsWithDeepSeek({
+async function explainMcqs({
   mcqs,
   subjectName,
   className,
+  provider,
 }: {
   mcqs: McqReviewInput[];
   subjectName: string;
   className: string;
+  provider: AiProviderId;
 }) {
   if (!mcqs.length) return [] as McqExplanation[];
 
   const result = await gatewayChat({
-    provider: 'deepseek',
+    provider,
     tier: 'mini',
     strictProvider: true,
-    routingPolicy: 'grading',
+    routingPolicy: 'text',
     maxTokens: Math.min(3500, Math.max(700, mcqs.length * 180)),
     temperature: 0.2,
     messages: [
@@ -213,21 +216,26 @@ export async function POST(req: NextRequest) {
     const shortQuestions = writtenQuestions.filter((question) => question.section !== 'long');
     const longQuestions = writtenQuestions.filter((question) => question.section === 'long');
 
+    // Whichever provider /admin has selected for "Grading" now drives every grading sub-call —
+    // previously these were hardcoded to local/groq/deepseek independent of the admin dropdown.
+    const gradingProvider = await resolveAiRoutingProvider('grading');
     const [mcqExplanations, shortEvals, longEvals] = await Promise.all([
-      explainMcqsWithDeepSeek({ mcqs: Array.isArray(mcqs) ? mcqs : [], subjectName, className }).catch(() => []),
+      explainMcqs({ mcqs: Array.isArray(mcqs) ? mcqs : [], subjectName, className, provider: gradingProvider }).catch(
+        () => []
+      ),
       gradeWrittenBatch({
         questions: shortQuestions,
         answers,
         subjectName,
         className,
-        provider: 'local',
+        provider: gradingProvider,
       }).catch(() => shortQuestions.map((question) => gradeShortAnswerInternally(question, answers[question.id] || ''))),
       gradeWrittenBatch({
         questions: longQuestions,
         answers,
         subjectName,
         className,
-        provider: 'groq',
+        provider: gradingProvider,
       }),
     ]);
 

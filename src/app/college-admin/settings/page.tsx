@@ -17,6 +17,7 @@ import {
 import { requireCollegeContext } from '@/lib/college-erp/access';
 import { getCollegeAcademicSetup } from '@/lib/college-erp/queries';
 import { InstitutionPaymentCheckout } from '@/components/features/institution-payments/InstitutionPaymentCheckout';
+import { getActiveStudentCount } from '@/lib/institution-payments/actions';
 import { getPlatformSettings } from '@/lib/platform-settings/server';
 import { resolveInstitutionPricing } from '@/lib/platform-settings/shared';
 
@@ -30,11 +31,13 @@ export default async function CollegeAdminSettingsPage() {
     const data = await getCollegeAcademicSetup(supabase, newContext);
     const { data: planSettings } = await supabase
       .from('college_organization_plan_settings')
-      .select('billing_status, plan_tier_id, max_students, renews_on')
+      .select('billing_status, plan_tier_id, renews_on')
       .eq('organization_id', newContext.organization.id)
       .maybeSingle();
-    const platformSettings = await getPlatformSettings();
-    const studentCount = planSettings?.max_students || 0;
+    const [platformSettings, studentCount] = await Promise.all([
+      getPlatformSettings(),
+      getActiveStudentCount('college', newContext.organization.id),
+    ]);
     const monthlyPricing = resolveInstitutionPricing(platformSettings, 'college', 'monthly', studentCount);
     const annualPricing = resolveInstitutionPricing(platformSettings, 'college', 'annual', studentCount);
     return (

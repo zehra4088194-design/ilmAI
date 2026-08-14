@@ -6,6 +6,7 @@ import {
   getUniversityLimitExceededMessage,
 } from '@/lib/rate-limit';
 import { gatewayChat } from '@/lib/ai/gateway';
+import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
 import { performPdfOcr } from '@/lib/ocr';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import type { SubscriptionTier } from '@/types';
@@ -32,8 +33,11 @@ Rules:
 - Do not invent citations, authors, statistics, or claims not present in the text.
 - If extraction quality is poor, summarize whatever is readable and mention that limitation inside the relevant field.
 - Return ONLY valid JSON. No markdown fences.`;
+  const provider = await resolveAiRoutingProvider('resourceSummary');
   const result = await gatewayChat({
-    provider: 'deepseek',
+    provider,
+    strictProvider: true,
+    routingPolicy: 'text',
     tier: 'medium',
     messages: [
       {

@@ -193,6 +193,12 @@ export function ProtectedPdfViewer({
   const effectiveAspect = rotated90 ? 1 / pageAspect : pageAspect;
   const placeholderHeight = Math.max(200, Math.round(renderedWidth / effectiveAspect));
   const pageNumbers = useMemo(() => Array.from({ length: pages }, (_, i) => i + 1), [pages]);
+  // react-pdf reloads the whole document whenever the `file` prop's object identity changes
+  // (it only warns "consider memoizing", it doesn't dedupe for you) — an inline `{ url }` literal
+  // is a new object every render, so frequent re-renders (autoscroll, page tracking, the resize
+  // handling during fullscreen) were silently reloading the PDF from scratch mid-scroll, which is
+  // what caused the "jumps back / fails to load" behavior in fullscreen.
+  const file = useMemo(() => ({ url }), [url]);
 
   const jumpToPage = (target: number) => {
     setPage(target);
@@ -350,7 +356,7 @@ export function ProtectedPdfViewer({
             </div>
           ) : containerWidth > 0 ? (
             <Document
-              file={{ url }}
+              file={file}
               loading={
                 <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-slate-600">
                   <Loader2 className="text-primary h-8 w-8 animate-spin" />
@@ -386,8 +392,10 @@ export function ProtectedPdfViewer({
                       onLoadSuccess={(loadedPage) => {
                         if (pageNumber !== 1) return;
                         const view = loadedPage.view; // [x0, y0, x1, y1] at scale 1, unrotated
-                        const w = view[2] - view[0];
-                        const h = view[3] - view[1];
+                        const [x0, y0, x1, y1] = view;
+                        if (x0 === undefined || y0 === undefined || x1 === undefined || y1 === undefined) return;
+                        const w = x1 - x0;
+                        const h = y1 - y0;
                         if (w > 0 && h > 0) setPageAspect(w / h);
                       }}
                       loading={

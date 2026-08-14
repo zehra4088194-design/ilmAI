@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { gatewayChat, type AiProviderId, type ModelTier } from '@/lib/ai/gateway';
+import { gatewayChat } from '@/lib/ai/gateway';
+import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
 import { checkAiMessageLimit, consumeAiCredits } from '@/lib/rate-limit';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import type { SubscriptionTier } from '@/types';
@@ -41,8 +42,6 @@ export async function POST(req: NextRequest) {
       chapterIds = [],
       board = 'FBISE',
       gradeLevel = 'GRADE_10',
-      provider = 'gemini',
-      aiTier = 'mini',
     } = await req.json();
     if (!subjectId) return NextResponse.json({ status: 'error', error: 'A subject is required' }, { status: 400 });
 
@@ -72,9 +71,14 @@ Return ONLY valid JSON, no markdown, no extra text:
 }
 Include: 8 MCQs, 5 short questions, 3 long questions. Mark each as high or medium likelihood.`;
 
+    // Provider is resolved from /admin, never trusted from the client — the request body could
+    // previously ask for any provider/tier (e.g. Claude/GPT) with zero server-side check.
+    const guessPaperProvider = await resolveAiRoutingProvider('studyTools');
     const result = await gatewayChat({
-      provider: provider as AiProviderId,
-      tier: aiTier as ModelTier,
+      provider: guessPaperProvider,
+      strictProvider: true,
+      routingPolicy: 'text',
+      tier: 'mini',
       messages: [
         {
           role: 'system',

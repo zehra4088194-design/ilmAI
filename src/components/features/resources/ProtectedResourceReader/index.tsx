@@ -36,7 +36,15 @@ export async function fetchProtectedResourceBlob(input: {
   mode: ResourceMode;
   purpose: 'reader' | 'offline';
 }) {
-  return (await fetchProtectedResourceResponse(input)).blob();
+  const blob = await (await fetchProtectedResourceResponse(input)).blob();
+  const signature = await blob
+    .slice(0, 5)
+    .text()
+    .catch(() => '');
+  if (signature !== '%PDF-') {
+    throw new Error('The stored file is not a valid PDF. Check the resource file URL or uploaded object.');
+  }
+  return blob.type === 'application/pdf' ? blob : new Blob([blob], { type: 'application/pdf' });
 }
 
 export function ProtectedResourceReader({

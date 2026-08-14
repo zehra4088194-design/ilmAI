@@ -9,7 +9,7 @@
 //   const provider = getPaymentProvider('GLOBAL');
 //   const session = await provider.createCheckout({ ... });
 // ============================================
-import type { PaymentProvider, PaymentRegion } from './provider';
+import type { PaymentProvider, PaymentRegion, SubscriptionTier } from './provider';
 import { paddleProvider } from './paddle';
 import { payproProvider } from './paypro';
 import { isPlayConsumptionOnlyRequest } from './distribution';
@@ -31,12 +31,28 @@ export {
   isPlayConsumptionOnlyRequest,
   PLAY_CONSUMPTION_ONLY_HEADER,
 } from './distribution';
+export { PaddleRequestError } from './paddle';
 
 export type PaymentAvailability = {
   paddleConfigured: boolean;
+  institutionalPaddleConfigured: boolean;
   localGatewayConfigured: boolean;
   automatedAvailable: boolean;
   consumptionOnly: boolean;
+};
+
+type PaidSubscriptionTier = Exclude<SubscriptionTier, 'FREE'>;
+type BillingCycle = 'monthly' | 'annual';
+
+const INSTITUTIONAL_PADDLE_PRICE_IDS: Record<PaidSubscriptionTier, Record<BillingCycle, string | undefined>> = {
+  PRO: {
+    monthly: process.env.PADDLE_PRICE_ID_INSTITUTIONAL_PRO_MONTHLY,
+    annual: process.env.PADDLE_PRICE_ID_INSTITUTIONAL_PRO_ANNUAL,
+  },
+  ELITE: {
+    monthly: process.env.PADDLE_PRICE_ID_INSTITUTIONAL_ELITE_MONTHLY,
+    annual: process.env.PADDLE_PRICE_ID_INSTITUTIONAL_ELITE_ANNUAL,
+  },
 };
 
 const PROVIDERS: Partial<Record<PaymentRegion, PaymentProvider>> = {
@@ -72,18 +88,37 @@ export function getPaymentProviderById(id: string): PaymentProvider {
   return provider;
 }
 
+function hasPaddleBaseCredentials() {
+  return Boolean(process.env.PADDLE_API_KEY && process.env.PADDLE_WEBHOOK_SECRET && process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN);
+}
+
+export function getInstitutionalPaddlePriceId(tier: PaidSubscriptionTier, billingCycle: BillingCycle) {
+  return INSTITUTIONAL_PADDLE_PRICE_IDS[tier][billingCycle] || null;
+}
+
+export function isInstitutionalPaddleConfigured(requestHeaders?: Pick<Headers, 'get'>) {
+  const consumptionOnly = requestHeaders ? isPlayConsumptionOnlyRequest(requestHeaders) : false;
+  return Boolean(
+    !consumptionOnly &&
+      hasPaddleBaseCredentials() &&
+      process.env.PADDLE_PRICE_ID_INSTITUTIONAL_PRO_MONTHLY &&
+      process.env.PADDLE_PRICE_ID_INSTITUTIONAL_PRO_ANNUAL &&
+      process.env.PADDLE_PRICE_ID_INSTITUTIONAL_ELITE_MONTHLY &&
+      process.env.PADDLE_PRICE_ID_INSTITUTIONAL_ELITE_ANNUAL
+  );
+}
+
 export function getPaymentAvailability(requestHeaders?: Pick<Headers, 'get'>): PaymentAvailability {
   const consumptionOnly = requestHeaders ? isPlayConsumptionOnlyRequest(requestHeaders) : false;
   const paddleCredentialsConfigured = Boolean(
-    process.env.PADDLE_API_KEY &&
-    process.env.PADDLE_WEBHOOK_SECRET &&
-    process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN &&
+    hasPaddleBaseCredentials() &&
     process.env.PADDLE_PRICE_ID_PRO_MONTHLY &&
     process.env.PADDLE_PRICE_ID_PRO_ANNUAL &&
     process.env.PADDLE_PRICE_ID_ELITE_MONTHLY &&
     process.env.PADDLE_PRICE_ID_ELITE_ANNUAL
   );
   const paddleConfigured = !consumptionOnly && paddleCredentialsConfigured;
+  const institutionalPaddleConfigured = isInstitutionalPaddleConfigured(requestHeaders);
   const payproCredentialsConfigured = Boolean(
     process.env.PAYPRO_CHECKOUT_URL &&
       process.env.PAYPRO_WEBHOOK_SECRET &&
@@ -95,6 +130,7 @@ export function getPaymentAvailability(requestHeaders?: Pick<Headers, 'get'>): P
   const localGatewayConfigured = !consumptionOnly && payproCredentialsConfigured;
   return {
     paddleConfigured,
+    institutionalPaddleConfigured,
     localGatewayConfigured,
     automatedAvailable: paddleConfigured || localGatewayConfigured,
     consumptionOnly,

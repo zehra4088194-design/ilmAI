@@ -17,6 +17,36 @@ type ProfileScope = {
   university_semester: string | null;
 };
 
+const PDF_MAGIC_BYTES = '%PDF-';
+
+async function assertPdfResponse(response: Response, label = 'PDF') {
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error(`${label} stream is empty.`);
+
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+  let firstChunk: Uint8Array | null = null;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (!value) continue;
+    if (!firstChunk) firstChunk = value;
+    totalBytes += value.byteLength;
+    if (totalBytes > MAX_PROTECTED_RESOURCE_BYTES) {
+      throw new Error('Resource is larger than the 125MB reader limit.');
+    }
+    chunks.push(value);
+  }
+
+  const signature = new TextDecoder().decode((firstChunk || new Uint8Array()).slice(0, PDF_MAGIC_BYTES.length));
+  if (signature !== PDF_MAGIC_BYTES) {
+    throw new Error(`${label} response is not a PDF file. Check the stored file URL, bucket object, or Drive sharing.`);
+  }
+
+  return new Blob(chunks, { type: 'application/pdf' });
+}
+
 export type ProtectedResource = {
   id: string;
   kind: ProtectedResourceKind;
@@ -243,6 +273,10 @@ export async function fetchProtectedFile(resource: ProtectedResource) {
     if (storedFile.body.byteLength > MAX_PROTECTED_RESOURCE_BYTES) {
       throw new Error('Resource is larger than the 125MB reader limit.');
     }
+    const signature = new TextDecoder().decode(new Uint8Array(storedFile.body).slice(0, PDF_MAGIC_BYTES.length));
+    if (resource.fileType === 'pdf' && signature !== PDF_MAGIC_BYTES) {
+      throw new Error('Stored PDF object is not a PDF file. Check the bucket object key/content.');
+    }
     return new Response(storedFile.body, {
       headers: { 'content-type': storedFile.contentType || 'application/pdf' },
     });
@@ -273,6 +307,12 @@ export async function fetchProtectedFile(resource: ProtectedResource) {
   const contentLength = Number(response.headers.get('content-length') || 0);
   if (contentLength > MAX_PROTECTED_RESOURCE_BYTES) {
     throw new Error('Resource is larger than the 125MB reader limit.');
+  }
+  if (resource.fileType === 'pdf') {
+    const pdfBlob = await assertPdfResponse(response);
+    return new Response(pdfBlob.stream(), {
+      headers: { 'content-type': 'application/pdf' },
+    });
   }
   return response;
 }

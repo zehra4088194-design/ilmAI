@@ -1,19 +1,18 @@
-import { gatewayChat, type AiProviderId, type ModelTier } from '@/lib/ai/gateway';
+import { gatewayChat, type ModelTier } from '@/lib/ai/gateway';
+import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
 import { buildRepresentativeTextContext } from '@/lib/resources/context-window';
 
 export const SHORT_SUMMARY_CHAR_LIMIT = 6000;
 
 export function chooseSummaryModel(text: string): {
-  provider: AiProviderId;
   tier: ModelTier;
   maxInputChars: number;
   reason: string;
 } {
   return {
-    provider: 'local',
     tier: 'mini',
     maxInputChars: Math.max(SHORT_SUMMARY_CHAR_LIMIT, 12_000),
-    reason: text.length <= SHORT_SUMMARY_CHAR_LIMIT ? 'short_text_local' : 'long_text_local_bounded',
+    reason: text.length <= SHORT_SUMMARY_CHAR_LIMIT ? 'short_text' : 'long_text_bounded',
   };
 }
 
@@ -32,9 +31,15 @@ export async function summarizeWithRoutedModel({
 }) {
   const model = chooseSummaryModel(text);
   const clippedText = buildRepresentativeTextContext(text, model.maxInputChars);
+  // Whichever provider /admin has selected for "Resource Summary" — this used to be hardcoded to
+  // 'local' regardless of admin config (and since strictProvider wasn't set, the literal value was
+  // silently ignored by the gateway's default fallback chain anyway).
+  const provider = await resolveAiRoutingProvider('resourceSummary');
   const result = await gatewayChat({
-    provider: model.provider,
+    provider,
     tier: model.tier,
+    strictProvider: true,
+    routingPolicy: 'text',
     messages: [
       { role: 'system', content: system },
       { role: 'user', content: prompt(clippedText) },

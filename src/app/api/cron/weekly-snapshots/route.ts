@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { gatewayChat } from '@/lib/ai/gateway';
+import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
 
 export const runtime = 'nodejs';
 
@@ -71,6 +72,7 @@ export async function GET(req: NextRequest) {
       .in('student_id', userIds)
       .eq('status', 'approved');
     const snapshotByStudent = new Map(snapshots.map((snapshot) => [snapshot.student_id, snapshot]));
+    const weeklyReportProvider = await resolveAiRoutingProvider('studyTools');
     const reports = [];
     for (const link of links || []) {
       if (!link.student_id) continue;
@@ -79,7 +81,9 @@ export async function GET(req: NextRequest) {
       let aiNarrative = `This week: ${summary.study_minutes} study minutes, ${summary.quizzes_completed} quizzes, ${summary.xp_earned} XP.`;
       try {
         const result = await gatewayChat({
-          provider: 'gemini',
+          provider: weeklyReportProvider,
+          strictProvider: true,
+          routingPolicy: 'text',
           tier: 'mini',
           messages: [
             { role: 'system', content: 'Write a concise, supportive weekly parent report. No alarmist language. Return plain text.' },

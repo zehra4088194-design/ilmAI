@@ -7,7 +7,29 @@ import { requireSchoolContext } from '@/lib/school-erp/access';
 import { requireCollegeContext } from '@/lib/college-erp/access';
 import { syncOrganizationSchoolGrants } from '@/lib/school-erp/subscription-cascade';
 import { syncOrganizationCollegeGrants } from '@/lib/college-erp/subscription-cascade';
+import { getPlatformSettings } from '@/lib/platform-settings/server';
+import { resolveInstitutionPricing } from '@/lib/platform-settings/shared';
 import type { BillingCycle, InstitutionPaymentVerification, InstitutionType, PaymentMethod } from './types';
+
+const ENROLLMENT_TABLE: Record<InstitutionType, string> = {
+  school: 'school_enrollments',
+  college: 'college_enrollments',
+};
+
+// The volume discount is meant to reward genuinely large institutions — read
+// from real active enrollment, not an admin-configured max_students ceiling
+// (which can be set well above actual headcount and would otherwise let a
+// small institution claim a discount it doesn't qualify for).
+export async function getActiveStudentCount(institutionType: InstitutionType, organizationId: string) {
+  if (!organizationId) return 0;
+  const db = (await createAdminClient()) as any;
+  const { count } = await db
+    .from(ENROLLMENT_TABLE[institutionType])
+    .select('id', { count: 'exact', head: true })
+    .eq('organization_id', organizationId)
+    .eq('status', 'active');
+  return count || 0;
+}
 
 export type SubmitPaymentState = { success: boolean; message: string };
 
@@ -25,8 +47,6 @@ export async function submitInstitutionPaymentVerification(
   const billingCycle = (formData.get('billing_cycle') === 'annual' ? 'annual' : 'monthly') as BillingCycle;
   const method = String(formData.get('method') || '') as PaymentMethod;
   const contactEmail = String(formData.get('contact_email') || '').trim();
-  const amountUsd = Number(formData.get('amount_usd')) || 0;
-  const amountPkr = Number(formData.get('amount_pkr')) || 0;
   const notes = String(formData.get('notes') || '').trim() || null;
 
   if (!organizationId) return { success: false, message: 'Missing organization.' };
@@ -53,6 +73,18 @@ export async function submitInstitutionPaymentVerification(
   }
 
   const db = (await createAdminClient()) as any;
+
+  // Never trust a client-submitted price for a record an admin will rely on to
+  // decide whether real money actually changed hands — recompute it the exact
+  // same way the checkout UI displayed it (same global pricing + the org's own
+  // active-enrollment count), server-side, right before it's stored.
+  const settingsTable = institutionType === 'school' ? 'school_organization_plan_settings' : 'college_organization_plan_settings';
+  const [platformSettings, studentCount] = await Promise.all([
+    getPlatformSettings(),
+    getActiveStudentCount(institutionType, organizationId),
+  ]);
+  const { usd: amountUsd, pkr: amountPkr } = resolveInstitutionPricing(platformSettings, institutionType, billingCycle, studentCount);
+
   const { error } = await db.from('institution_payment_verifications').insert({
     institution_type: institutionType,
     organization_id: organizationId,
@@ -70,7 +102,6 @@ export async function submitInstitutionPaymentVerification(
   // Surface the pending claim on the plan-settings row immediately (informational
   // only — does not grant access) so the org sees "we got it" without waiting on
   // the admin, mirroring the schema's existing 'manual_review' billing_status.
-  const settingsTable = institutionType === 'school' ? 'school_organization_plan_settings' : 'college_organization_plan_settings';
   const { data: existing } = await db.from(settingsTable).select('billing_status').eq('organization_id', organizationId).maybeSingle();
   if (!existing || existing.billing_status === 'trial') {
     await db.from(settingsTable).upsert(

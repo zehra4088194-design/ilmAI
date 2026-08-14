@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { gatewayChat } from '@/lib/ai/gateway';
 import { createClient } from '@/lib/supabase/server';
+import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import {
   checkUniversityFeatureLimit,
@@ -65,8 +66,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const projectBuilderProvider = await resolveAiRoutingProvider('studyTools');
     const result = await gatewayChat({
-      provider: 'gemini',
+      provider: projectBuilderProvider,
+      strictProvider: true,
+      routingPolicy: 'text',
       tier: 'pro',
       messages: [
         {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { gatewayChat, type AiProviderId, type ModelTier } from '@/lib/ai/gateway';
+import { gatewayChat } from '@/lib/ai/gateway';
+import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
 import { checkAiMessageLimit, consumeAiCredits } from '@/lib/rate-limit';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import type { SubscriptionTier } from '@/types';
@@ -39,8 +40,6 @@ export async function POST(req: NextRequest) {
       mcqCount = 15,
       shortCount = 6,
       longCount = 3,
-      provider = 'gemini',
-      aiTier = 'medium',
     } = await req.json();
 
     const BOARD_PATTERNS: Record<string, { totalMarks: number; time: number }> = {
@@ -73,9 +72,14 @@ Return ONLY valid JSON, no markdown, no extra text:
   "longQs":[{"q":"question","marks":8,"keyPoints":["point 1","point 2","point 3","point 4","point 5"],"guide":"~200 words expected"}]
 }`;
 
+    // Provider is resolved from /admin, never trusted from the client — the request body could
+    // previously ask for any provider/tier (e.g. Claude/GPT pro) with zero server-side check.
+    const testProvider = await resolveAiRoutingProvider('studyTools');
     const result = await gatewayChat({
-      provider: provider as AiProviderId,
-      tier: aiTier as ModelTier,
+      provider: testProvider,
+      strictProvider: true,
+      routingPolicy: 'text',
+      tier: 'medium',
       messages: [
         {
           role: 'system',

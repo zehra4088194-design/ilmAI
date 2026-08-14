@@ -1,5 +1,5 @@
 export type LibraryResourceType = 'text_book' | 'notes' | 'pairing_scheme' | 'guess_paper';
-export type LibraryContentSection = 'reading' | 'mcq' | 'short' | 'long';
+export type LibraryContentSection = 'reading' | 'mcq' | 'short' | 'long' | 'numericals';
 
 export const LIBRARY_SECTIONS: Array<{
   value: LibraryContentSection;
@@ -11,7 +11,13 @@ export const LIBRARY_SECTIONS: Array<{
     value: 'reading',
     slug: 'reading',
     title: 'Chapter Reading',
-    description: 'Textbook pages, solved exercises, notes, and concept files',
+    description: 'Textbook pages, notes, and concept files',
+  },
+  {
+    value: 'numericals',
+    slug: 'numericals',
+    title: 'Numericals',
+    description: 'Numerical problems and worked solutions',
   },
   {
     value: 'mcq',

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { gatewayChat } from '@/lib/ai/gateway';
+import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
 import {
   checkAiMessageLimit,
   checkUniversityFeatureLimit,
@@ -168,8 +169,11 @@ export async function POST(req: NextRequest) {
           { status: 429 }
         );
       }
+      const suggestionProvider = await resolveAiRoutingProvider('studyTools');
       const result = await gatewayChat({
-        provider: 'gemini',
+        provider: suggestionProvider,
+        strictProvider: true,
+        routingPolicy: 'text',
         tier: 'mini',
         messages: [
           {
@@ -206,8 +210,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const pharmaProvider = await resolveAiRoutingProvider('studyTools');
     const result = await gatewayChat({
-      provider: 'gemini',
+      provider: pharmaProvider,
+      strictProvider: true,
+      routingPolicy: 'text',
       tier: 'pro',
       messages: [
         {

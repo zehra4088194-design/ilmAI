@@ -4,6 +4,7 @@ import { gatewayChat } from '@/lib/ai/gateway';
 import { checkAiMessageLimit, consumeAiCredits } from '@/lib/rate-limit';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import { fetchResourceContext, getProtectedResource, type ProtectedResourceKind } from '@/lib/resources/server';
+import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
 import { analyzeResourceSource, type ResourceAnalysis } from '@/lib/resources/source-fallback';
 import { buildRepresentativeTextContext } from '@/lib/resources/context-window';
 import { createArtifactKey, readAiArtifact, writeAiArtifact } from '@/lib/ai/artifact-cache';
@@ -58,8 +59,11 @@ export async function POST(req: NextRequest) {
     let provider = 'source-fallback';
     let fallbackUsed = false;
     try {
+      const adminProvider = await resolveAiRoutingProvider('resourceTest');
       const result = await gatewayChat({
-        provider: 'deepseek',
+        provider: adminProvider,
+        strictProvider: true,
+        routingPolicy: 'text',
         tier: 'mini',
         maxTokens: 900,
         temperature: 0.1,

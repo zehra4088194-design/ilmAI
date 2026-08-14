@@ -1,0 +1,65 @@
+[
+  {
+    "subject_slug": "biology",
+    "title": "Biology — Class 10 Full Textbook (Punjab)",
+    "book_title": "Class 10 Biology Textbook (Punjab)",
+    "key": "library/text-books/grade-10/biology-full-textbook.pdf",
+    "source": "E:\\data\\10th\\text-books\\Biology\\New 10 Biology EM Full Book Punjab 2026.pdf"
+  },
+  {
+    "subject_slug": "chemistry",
+    "title": "Chemistry — Class 10 Full Textbook (Punjab)",
+    "book_title": "Class 10 Chemistry Textbook (Punjab)",
+    "key": "library/text-books/grade-10/chemistry-full-textbook.pdf",
+    "source": "E:\\data\\10th\\text-books\\Chemistry\\New 10 Chemistry EM Full Book Punjab 2026.pdf"
+  },
+  {
+    "subject_slug": "computer-science",
+    "title": "Computer Science — Class 10 Full Textbook (Punjab)",
+    "book_title": "Class 10 Computer Science Textbook (Punjab)",
+    "key": "library/text-books/grade-10/computer-science-full-textbook.pdf",
+    "source": "E:\\data\\10th\\text-books\\Computer\\New 10 Computer EM Full Book Punjab 2026.pdf"
+  },
+  {
+    "subject_slug": "english",
+    "title": "English — Class 10 Full Textbook (Punjab)",
+    "book_title": "Class 10 English Textbook (Punjab)",
+    "key": "library/text-books/grade-10/english-full-textbook.pdf",
+    "source": "E:\\data\\10th\\text-books\\English\\New 10 English Full Book Punjab 2026.pdf"
+  },
+  {
+    "subject_slug": "mathematics",
+    "title": "Mathematics — Class 10 Full Textbook (Punjab)",
+    "book_title": "Class 10 Mathematics Textbook (Punjab)",
+    "key": "library/text-books/grade-10/mathematics-full-textbook.pdf",
+    "source": "E:\\data\\10th\\text-books\\Mathematics\\New 10 Maths EM Full Book Punjab 2026.pdf"
+  },
+  {
+    "subject_slug": "pakistan-studies",
+    "title": "Pakistan Studies — Class 10 Full Textbook (Punjab)",
+    "book_title": "Class 10 Pakistan Studies Textbook (Punjab)",
+    "key": "library/text-books/grade-10/pakistan-studies-full-textbook.pdf",
+    "source": "E:\\data\\10th\\text-books\\Pak Studies\\New 10 Pak Studies UM Full Book Punjab 2026.pdf"
+  },
+  {
+    "subject_slug": "physics",
+    "title": "Physics — Class 10 Full Textbook (Punjab)",
+    "book_title": "Class 10 Physics Textbook (Punjab)",
+    "key": "library/text-books/grade-10/physics-full-textbook.pdf",
+    "source": "E:\\data\\10th\\text-books\\Physics\\New 10 Physics EM Full Book Punjab 2026.pdf"
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "title": "Tarjuma Tul Quran — Class 10 Full Textbook (Punjab)",
+    "book_title": "Class 10 Tarjuma Tul Quran Textbook (Punjab)",
+    "key": "library/text-books/grade-10/tarjuma-tul-quran-full-textbook.pdf",
+    "source": "E:\\data\\10th\\text-books\\Tarjuma Tul Quran\\10 TarjmaTulQuran Full Book Punjab.pdf"
+  },
+  {
+    "subject_slug": "urdu",
+    "title": "Urdu — Class 10 Full Textbook (Punjab)",
+    "book_title": "Class 10 Urdu Textbook (Punjab)",
+    "key": "library/text-books/grade-10/urdu-full-textbook.pdf",
+    "source": "E:\\data\\10th\\text-books\\Urdu\\New 10 Urdu Full Book Punjab 2026.pdf"
+  }
+]
