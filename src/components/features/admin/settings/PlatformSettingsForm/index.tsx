@@ -90,6 +90,7 @@ const AI_PROVIDER_OPTIONS: Array<{ value: PlatformSettings['aiRouting'][keyof Pl
 export function PlatformSettingsForm({ initialSettings }: { initialSettings: PlatformSettings }) {
   const [settings, setSettings] = useState(() => normalizePlatformSettings(initialSettings));
   const [saving, setSaving] = useState(false);
+  const [isRefreshingRate, setIsRefreshingRate] = useState(false);
 
   const withConvertedPkrPrices = (current: PlatformSettings, usdToPkr = current.exchangeRate.usdToPkr) => ({
     ...current,
@@ -273,6 +274,31 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
               <p>{settings.exchangeRate.lastUpdated || 'Not available'}</p>
             </div>
           </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={isRefreshingRate}
+            onClick={async () => {
+              setIsRefreshingRate(true);
+              try {
+                const res = await fetch('/api/admin/settings/refresh-exchange-rate', { method: 'POST' });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Refresh failed.');
+                setSettings((current) => withConvertedPkrPrices(
+                  { ...current, exchangeRate: { ...current.exchangeRate, ...data } },
+                  data.rate
+                ));
+                toast.success(`Rate updated: 1 USD = ${data.rate} PKR`);
+              } catch (error) {
+                toast.error(error instanceof Error ? error.message : 'Could not refresh rate.');
+              } finally {
+                setIsRefreshingRate(false);
+              }
+            }}
+          >
+            {isRefreshingRate ? 'Refreshing…' : 'Refresh rate now'}
+          </Button>
         </CardContent>
       </Card>
 
