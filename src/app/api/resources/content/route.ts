@@ -12,7 +12,10 @@ import {
 } from '@/lib/resources/server';
 
 export const runtime = 'nodejs';
-export const maxDuration = 60;
+// Matches getR2ObjectStream's 90s fetch timeout with headroom — streaming the response through
+// (rather than buffering the whole file before replying) means this duration only has to cover
+// one file's worth of B2 transfer time now, not "B2 download + full re-upload to the client".
+export const maxDuration = 100;
 
 // req.nextUrl.origin is unreliable behind a reverse proxy (e.g. Traefik
 // terminates TLS and proxies over plain HTTP, so Next sees http:// while the

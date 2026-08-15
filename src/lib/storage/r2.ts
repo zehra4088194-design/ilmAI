@@ -102,7 +102,7 @@ export async function getR2Object(key: string) {
     const result = await fetch(signedUrl, {
       method: 'GET',
       cache: 'no-store',
-      signal: AbortSignal.timeout(45_000),
+      signal: AbortSignal.timeout(90_000),
     });
     if (result.status === 404) return null;
     if (!result.ok) throw new Error(`Signed object fetch failed (${result.status}).`);
@@ -111,6 +111,39 @@ export async function getR2Object(key: string) {
       body: bytes,
       contentType: result.headers.get('content-type') || 'application/octet-stream',
       contentEncoding: result.headers.get('content-encoding'),
+    };
+  } catch (error: any) {
+    const status = error?.$metadata?.httpStatusCode;
+    if (status === 404 || error?.name === 'NoSuchKey') return null;
+    throw error;
+  }
+}
+
+// Streaming counterpart to getR2Object: hands back the live response instead of buffering the
+// whole object into memory first. getR2Object fully downloads the object server-side *before*
+// sending a single byte to the browser — for a large PDF that serializes "download from B2" and
+// "upload to the reader" one after another, roughly doubling the time-to-first-byte and eating
+// the full request into one long window that a single dropped B2 connection anywhere in it turns
+// into a hard failure. Streaming through means the browser starts receiving pages within a
+// second of the request landing, and only a network drop during the (short) initial read below
+// aborts the whole thing instead of one anywhere across the entire transfer.
+export async function getR2ObjectStream(key: string, timeoutMs = 90_000) {
+  const config = getConfig();
+  if (!config) return null;
+  try {
+    const signedUrl = await getR2SignedUrl(key);
+    const result = await fetch(signedUrl, {
+      method: 'GET',
+      cache: 'no-store',
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (result.status === 404) return null;
+    if (!result.ok) throw new Error(`Signed object fetch failed (${result.status}).`);
+    if (!result.body) throw new Error('Signed object response had no body.');
+    return {
+      body: result.body,
+      contentType: result.headers.get('content-type') || 'application/octet-stream',
+      contentLength: Number(result.headers.get('content-length') || 0) || null,
     };
   } catch (error: any) {
     const status = error?.$metadata?.httpStatusCode;

@@ -13,6 +13,8 @@ import {
   RotateCw,
 } from 'lucide-react';
 import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/Page/TextLayer.css';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
 
@@ -28,18 +30,22 @@ const AUTO_SCROLL_SPEEDS = [
 
 // How far outside the visible viewport a page is allowed to mount its real canvas. Generous
 // enough that continuous scrolling never shows a blank flash, small enough that a 100+ page
-// document never tries to rasterize more than a handful of pages at once (that's what used to
-// freeze the tab). Pages that have mounted once are kept mounted — cheap to keep, and it avoids
-// re-render jank when scrolling back up.
+// document never tries to rasterize more than a handful of pages at once.
 const MOUNT_ROOT_MARGIN = '1400px 0px 1400px 0px';
-const A4_ASPECT = 210 / 297; // width / height fallback until the real page tells us its shape
+const A4_ASPECT = 210 / 297; // width / height fallback until a page tells us its real shape
 
 export function ProtectedPdfViewer({
-  url,
+  file: sourceFile,
   title,
   className,
 }: {
-  url: string;
+  // Accepts the already-downloaded Blob directly, not a blob: object URL. Handing pdf.js a
+  // blob: URL string makes it treat the document as a network resource and issue its own
+  // internal (ranged) fetch against that URL — which intermittently comes back
+  // "Unexpected server response (0)" and reads to the user as a random, unexplained load
+  // failure. The whole file is already in memory by the time this component sees it, so there's
+  // no reason to round-trip it through a URL at all.
+  file: Blob | string;
   title: string;
   className?: string;
 }) {
@@ -56,7 +62,14 @@ export function ProtectedPdfViewer({
   const [speedIndex, setSpeedIndex] = useState(1);
   const [speedMenuOpen, setSpeedMenuOpen] = useState(false);
   const [mountedPages, setMountedPages] = useState<Set<number>>(() => new Set([1]));
-  const [pageAspect, setPageAspect] = useState(A4_ASPECT);
+  // Per-page aspect ratio (width/height), keyed by 1-based page number. A single global aspect
+  // (taken from page 1 only) used to size every placeholder — mixed-orientation PDFs (a
+  // landscape diagram page inside an otherwise portrait document) would then swap from a
+  // wrongly-sized placeholder to the real canvas the moment that page mounted, snapping the
+  // scroll position and reading as a "vibration"/jitter glitch while scrolling. Tracking each
+  // page's own measured aspect (falling back to the document default only until measured) keeps
+  // every placeholder-to-canvas swap the same height, so nothing shifts under the reader.
+  const [pageAspects, setPageAspects] = useState<Record<number, number>>({});
 
   // Auto-load: the viewer starts pulling the document the moment a url is handed to it —
   // there is no "open" step for the caller to trigger beyond mounting/passing the url.
@@ -93,9 +106,9 @@ export function ProtectedPdfViewer({
     setError(null);
     setAutoScrolling(false);
     setMountedPages(new Set([1]));
-    setPageAspect(A4_ASPECT);
+    setPageAspects({});
     pageRefs.current = [];
-  }, [url]);
+  }, [sourceFile]);
 
   // Continuous auto-scroll, like a teleprompter: advances the viewport at a steady
   // pixel-per-second rate and stops itself at the bottom or when the user scrolls manually.
@@ -190,15 +203,15 @@ export function ProtectedPdfViewer({
   const fittedWidth = Math.max(240, Math.min(containerWidth - 32, 1100));
   const renderedWidth = Math.round(fittedWidth * zoom);
   const rotated90 = rotation === 90 || rotation === 270;
-  const effectiveAspect = rotated90 ? 1 / pageAspect : pageAspect;
-  const placeholderHeight = Math.max(200, Math.round(renderedWidth / effectiveAspect));
+  const documentAspect = pageAspects[1] ?? A4_ASPECT;
   const pageNumbers = useMemo(() => Array.from({ length: pages }, (_, i) => i + 1), [pages]);
-  // react-pdf reloads the whole document whenever the `file` prop's object identity changes
-  // (it only warns "consider memoizing", it doesn't dedupe for you) — an inline `{ url }` literal
-  // is a new object every render, so frequent re-renders (autoscroll, page tracking, the resize
-  // handling during fullscreen) were silently reloading the PDF from scratch mid-scroll, which is
-  // what caused the "jumps back / fails to load" behavior in fullscreen.
-  const file = useMemo(() => ({ url }), [url]);
+  // react-pdf reloads the whole document whenever the `file` prop's object identity changes (it
+  // only warns "consider memoizing", it doesn't dedupe for you). A Blob's identity is already
+  // stable across re-renders as long as the caller isn't creating a new one, but wrapping a plain
+  // `string` url the same way keeps both forms equally safe against frequent re-renders
+  // (autoscroll, page tracking, the resize handling during fullscreen) silently reloading the
+  // document from scratch mid-scroll.
+  const file = useMemo(() => sourceFile, [sourceFile]);
 
   const jumpToPage = (target: number) => {
     setPage(target);
@@ -373,52 +386,60 @@ export function ProtectedPdfViewer({
               }}
               className="mx-auto flex w-max max-w-none flex-col items-center gap-5"
             >
-              {pageNumbers.map((pageNumber) => (
-                <div
-                  key={pageNumber}
-                  ref={(node) => {
-                    pageRefs.current[pageNumber - 1] = node;
-                  }}
-                  data-page-index={pageNumber - 1}
-                  className="animate-in fade-in group relative w-max duration-300"
-                >
-                  {mountedPages.has(pageNumber) ? (
-                    <Page
-                      pageNumber={pageNumber}
-                      width={renderedWidth}
-                      rotate={rotation}
-                      renderAnnotationLayer={false}
-                      renderTextLayer
-                      onLoadSuccess={(loadedPage) => {
-                        if (pageNumber !== 1) return;
-                        const view = loadedPage.view; // [x0, y0, x1, y1] at scale 1, unrotated
-                        const [x0, y0, x1, y1] = view;
-                        if (x0 === undefined || y0 === undefined || x1 === undefined || y1 === undefined) return;
-                        const w = x1 - x0;
-                        const h = y1 - y0;
-                        if (w > 0 && h > 0) setPageAspect(w / h);
-                      }}
-                      loading={
-                        <div
-                          className="flex w-full animate-pulse items-center justify-center rounded-sm bg-white ring-1 ring-black/5"
-                          style={{ width: renderedWidth, height: placeholderHeight }}
-                        >
-                          <Loader2 className="text-primary h-7 w-7 animate-spin" />
-                        </div>
-                      }
-                      className="overflow-hidden rounded-sm bg-white shadow-xl ring-1 ring-black/5"
-                    />
-                  ) : (
-                    <div
-                      className="rounded-sm bg-white ring-1 ring-black/5"
-                      style={{ width: renderedWidth, height: placeholderHeight }}
-                    />
-                  )}
-                  <span className="pointer-events-none absolute -top-2 left-2 rounded-full bg-slate-900/70 px-2 py-0.5 text-[10px] font-semibold text-white opacity-0 shadow transition-opacity group-hover:opacity-100">
-                    {pageNumber}
-                  </span>
-                </div>
-              ))}
+              {pageNumbers.map((pageNumber) => {
+                const measuredAspect = pageAspects[pageNumber] ?? documentAspect;
+                const effectiveAspect = rotated90 ? 1 / measuredAspect : measuredAspect;
+                const placeholderHeight = Math.max(200, Math.round(renderedWidth / effectiveAspect));
+                return (
+                  <div
+                    key={pageNumber}
+                    ref={(node) => {
+                      pageRefs.current[pageNumber - 1] = node;
+                    }}
+                    data-page-index={pageNumber - 1}
+                    className="animate-in fade-in group relative w-max duration-300"
+                  >
+                    {mountedPages.has(pageNumber) ? (
+                      <Page
+                        pageNumber={pageNumber}
+                        width={renderedWidth}
+                        rotate={rotation}
+                        renderAnnotationLayer={false}
+                        renderTextLayer
+                        onLoadSuccess={(loadedPage) => {
+                          const view = loadedPage.view; // [x0, y0, x1, y1] at scale 1, unrotated
+                          const [x0, y0, x1, y1] = view;
+                          if (x0 === undefined || y0 === undefined || x1 === undefined || y1 === undefined) return;
+                          const w = x1 - x0;
+                          const h = y1 - y0;
+                          if (w <= 0 || h <= 0) return;
+                          const aspect = w / h;
+                          setPageAspects((current) =>
+                            current[pageNumber] === aspect ? current : { ...current, [pageNumber]: aspect },
+                          );
+                        }}
+                        loading={
+                          <div
+                            className="flex w-full animate-pulse items-center justify-center rounded-sm bg-white ring-1 ring-black/5"
+                            style={{ width: renderedWidth, height: placeholderHeight }}
+                          >
+                            <Loader2 className="text-primary h-7 w-7 animate-spin" />
+                          </div>
+                        }
+                        className="overflow-hidden rounded-sm bg-white shadow-xl ring-1 ring-black/5"
+                      />
+                    ) : (
+                      <div
+                        className="rounded-sm bg-white ring-1 ring-black/5"
+                        style={{ width: renderedWidth, height: placeholderHeight }}
+                      />
+                    )}
+                    <span className="pointer-events-none absolute -top-2 left-2 rounded-full bg-slate-900/70 px-2 py-0.5 text-[10px] font-semibold text-white opacity-0 shadow transition-opacity group-hover:opacity-100">
+                      {pageNumber}
+                    </span>
+                  </div>
+                );
+              })}
             </Document>
           ) : null}
         </div>

@@ -1,16 +1,63 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { CheckCircle2, Loader2, Maximize2, MessageSquareText, Minimize2, X } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
+import { CheckCircle2, Loader2, Maximize2, MessageSquareText, Minimize2, RefreshCw, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import type { ProtectedResourceKind, ResourceMode } from '@/lib/resources/server';
-import { ProtectedPdfViewer } from '@/components/features/resources/ProtectedPdfViewer';
 import { ResourceComments } from '@/components/features/resources/ResourceComments';
 import { isDarkThemeId } from '@/lib/constants/themes';
 
+// react-pdf's module scope touches browser-only globals (DOMMatrix, etc.) through pdfjs — fine in
+// the browser, but Next still evaluates 'use client' components once during SSR, which crashed
+// with "ReferenceError: DOMMatrix is not defined" every time this reader mounted. ssr: false keeps
+// the whole pdfjs stack out of the server bundle entirely.
+const ProtectedPdfViewer = dynamic(
+  () => import('@/components/features/resources/ProtectedPdfViewer').then((mod) => mod.ProtectedPdfViewer),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-slate-950 text-white/75">
+        <Loader2 className="text-primary h-8 w-8 animate-spin" />
+        <p className="text-sm">Loading the PDF...</p>
+      </div>
+    ),
+  },
+);
+
 type PdfReaderThemePreference = 'auto' | 'dark' | 'light';
+
+// Older/embedded WebViews (the Android app shell in particular) only expose the vendor-prefixed
+// Fullscreen API, or none at all. Reading through this small shim once keeps every call site
+// below from having to branch on browser quirks.
+type FullscreenDocument = Document & {
+  webkitFullscreenElement?: Element | null;
+  webkitExitFullscreen?: () => Promise<void> | void;
+};
+type FullscreenElement = HTMLElement & {
+  webkitRequestFullscreen?: () => Promise<void> | void;
+};
+
+function getFullscreenElement() {
+  const doc = document as FullscreenDocument;
+  return doc.fullscreenElement || doc.webkitFullscreenElement || null;
+}
+
+function requestFullscreen(el: HTMLElement): Promise<void> {
+  const target = el as FullscreenElement;
+  if (target.requestFullscreen) return target.requestFullscreen();
+  if (target.webkitRequestFullscreen) return Promise.resolve(target.webkitRequestFullscreen());
+  return Promise.reject(new Error('Fullscreen is not supported in this browser.'));
+}
+
+function exitFullscreen(): Promise<void> {
+  const doc = document as FullscreenDocument;
+  if (doc.exitFullscreen) return doc.exitFullscreen();
+  if (doc.webkitExitFullscreen) return Promise.resolve(doc.webkitExitFullscreen());
+  return Promise.resolve();
+}
 
 export async function fetchProtectedResourceResponse(input: {
   kind: ProtectedResourceKind;
@@ -67,9 +114,9 @@ export function ProtectedResourceReader({
   sourceUrl?: string | null;
 }) {
   const { resolvedTheme, theme } = useTheme();
-  const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [resolvedBlob, setResolvedBlob] = useState<Blob | null>(offlineBlob || null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [retryToken, setRetryToken] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [canFullscreen, setCanFullscreen] = useState(false);
   const [showComments, setShowComments] = useState(false);
@@ -95,7 +142,12 @@ export function ProtectedResourceReader({
     let cancelled = false;
     setResolvedBlob(null);
     setLoadError(null);
+    // One silent retry on transient network drops (the "Signed object fetch failed" /
+    // intermittent-load class of bug) before surfacing an error — most of those failures are a
+    // single dropped connection to storage, not a missing file, and clear themselves up
+    // immediately on a second attempt.
     void fetchProtectedResourceBlob({ kind, id: resourceId, mode: effectiveMode, purpose: 'reader' })
+      .catch(() => fetchProtectedResourceBlob({ kind, id: resourceId, mode: effectiveMode, purpose: 'reader' }))
       .then((blob) => {
         if (!cancelled) setResolvedBlob(blob);
       })
@@ -105,46 +157,49 @@ export function ProtectedResourceReader({
     return () => {
       cancelled = true;
     };
-  }, [effectiveMode, kind, offlineBlob, open, resourceId]);
+  }, [effectiveMode, kind, offlineBlob, open, resourceId, retryToken]);
 
   useEffect(() => {
-    if (!open || !resolvedBlob) {
-      setBlobUrl(null);
-      return;
-    }
-    const objectUrl = URL.createObjectURL(resolvedBlob);
-    setBlobUrl(objectUrl);
-    return () => {
-      URL.revokeObjectURL(objectUrl);
-    };
-  }, [resolvedBlob, open]);
-
-  useEffect(() => {
-    setCanFullscreen(typeof document !== 'undefined' && Boolean(document.documentElement.requestFullscreen));
+    setCanFullscreen(
+      typeof document !== 'undefined' &&
+        Boolean(document.documentElement.requestFullscreen || (document.documentElement as FullscreenElement).webkitRequestFullscreen),
+    );
     // Fullscreen the whole page (document.documentElement), not the reader's own `fixed inset-0`
     // div — requesting fullscreen on a fixed-position element fights the browser's fullscreen
     // top-layer on some Chromium/Windows builds, which is what caused the jitter/refresh-needed bug.
-    const handleFullscreenChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    const handleFullscreenChange = () => setIsFullscreen(Boolean(getFullscreenElement()));
     document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange as EventListener);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange as EventListener);
+    };
   }, []);
 
-  const toggleFullscreen = async () => {
+  const toggleFullscreen = useCallback(async () => {
     if (!canFullscreen) return;
     try {
-      if (document.fullscreenElement) {
-        await document.exitFullscreen();
+      if (getFullscreenElement()) {
+        await exitFullscreen();
       } else {
-        await document.documentElement.requestFullscreen();
+        await requestFullscreen(document.documentElement);
       }
     } catch (error) {
+      // The reader is already a full-viewport overlay regardless of whether the browser grants
+      // true Fullscreen — this only fails to hide the browser chrome, it never breaks reading.
       console.error('Fullscreen toggle failed:', error);
+      toast.error('Full screen is blocked by the browser here. The reader still fills the screen.');
     }
-  };
+  }, [canFullscreen]);
 
   const closeReader = () => {
-    if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
+    if (getFullscreenElement()) void exitFullscreen().catch(() => {});
     onClose();
+  };
+
+  const retryLoad = () => {
+    setLoadError(null);
+    setRetryToken((value) => value + 1);
   };
 
   const markAsRead = async () => {
@@ -230,18 +285,31 @@ export function ProtectedResourceReader({
       <div className="relative min-h-0 flex-1 bg-slate-950">
         <div className="grid h-full min-h-0 grid-cols-1">
           <div className="relative min-h-0 min-w-0">
-            {!blobUrl && !loadError && (
+            {!resolvedBlob && !loadError && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white/75">
                 <Loader2 className="text-primary h-8 w-8 animate-spin" />
-                <p className="text-sm">Loading offline file...</p>
+                <p className="text-sm">Loading the PDF...</p>
               </div>
             )}
             {loadError && (
-              <div className="absolute inset-0 flex items-center justify-center p-6 text-center text-white/80">
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center text-white/80">
                 <p className="max-w-lg text-sm">{loadError}</p>
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <Button type="button" variant="secondary" size="sm" onClick={retryLoad} className="gap-1.5">
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    Try again
+                  </Button>
+                  {sourceUrl && (
+                    <Button type="button" variant="outline" size="sm" asChild>
+                      <a href={sourceUrl} target="_blank" rel="noopener noreferrer">
+                        Open original file
+                      </a>
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
-            {blobUrl && <ProtectedPdfViewer url={blobUrl} title={title} className="h-full w-full" />}
+            {resolvedBlob && <ProtectedPdfViewer file={resolvedBlob} title={title} className="h-full w-full" />}
           </div>
         </div>
         {showComments && (

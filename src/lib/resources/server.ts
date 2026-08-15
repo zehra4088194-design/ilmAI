@@ -2,7 +2,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { extractGoogleDriveFileId } from '@/lib/utils/filePreview';
 import type { SubscriptionTier } from '@/types';
-import { getR2Object, getR2Text, parseR2Uri } from '@/lib/storage/r2';
+import { getR2ObjectStream, getR2Text, parseR2Uri } from '@/lib/storage/r2';
 
 export type ProtectedResourceKind = 'library' | 'past-paper' | 'college-resource';
 export type ResourceMode = 'light' | 'dark';
@@ -268,16 +268,45 @@ export async function fetchProtectedFile(resource: ProtectedResource) {
   if (resource.sourceUrl.startsWith('r2://')) {
     const key = parseR2Uri(resource.sourceUrl);
     if (!key) throw new Error('Invalid stored PDF path.');
-    const storedFile = await getR2Object(key);
+    const storedFile = await getR2ObjectStream(key);
     if (!storedFile) throw new Error('Stored PDF file is missing.');
-    if (storedFile.body.byteLength > MAX_PROTECTED_RESOURCE_BYTES) {
+    if (storedFile.contentLength && storedFile.contentLength > MAX_PROTECTED_RESOURCE_BYTES) {
       throw new Error('Resource is larger than the 125MB reader limit.');
     }
-    const signature = new TextDecoder().decode(new Uint8Array(storedFile.body).slice(0, PDF_MAGIC_BYTES.length));
-    if (resource.fileType === 'pdf' && signature !== PDF_MAGIC_BYTES) {
-      throw new Error('Stored PDF object is not a PDF file. Check the bucket object key/content.');
+    // Peek only the first chunk to confirm the PDF signature, then stream the rest straight
+    // through untouched — this is what lets the reader start receiving pages immediately instead
+    // of waiting for the entire file to land on the server first (see getR2ObjectStream).
+    const reader = storedFile.body.getReader();
+    const { done, value: firstChunk } = await reader.read();
+    if (resource.fileType === 'pdf') {
+      const signature = new TextDecoder().decode((firstChunk || new Uint8Array()).slice(0, PDF_MAGIC_BYTES.length));
+      if (signature !== PDF_MAGIC_BYTES) {
+        throw new Error('Stored PDF object is not a PDF file. Check the bucket object key/content.');
+      }
     }
-    return new Response(storedFile.body, {
+    const passthrough = new ReadableStream<Uint8Array>({
+      async start(controller) {
+        if (firstChunk) controller.enqueue(firstChunk);
+        if (done) {
+          controller.close();
+          return;
+        }
+        try {
+          while (true) {
+            const next = await reader.read();
+            if (next.done) break;
+            if (next.value) controller.enqueue(next.value);
+          }
+          controller.close();
+        } catch (error) {
+          controller.error(error);
+        }
+      },
+      cancel(reason) {
+        void reader.cancel(reason);
+      },
+    });
+    return new Response(passthrough, {
       headers: { 'content-type': storedFile.contentType || 'application/pdf' },
     });
   }
