@@ -65,10 +65,62 @@ export async function GET() {
   );
   if (questionResults.every((result: any) => result.error))
     return NextResponse.json({ status: 'error', error: 'Diagnostic questions could not be loaded.' }, { status: 500 });
-  // Diagnostic questions always come from the saved, curriculum-linked question bank.
+
+  // Also pull MCQs seeded against library resources (resource_mcq_sets) so
+  // admin-uploaded resource question banks feed the diagnostic pool too, not
+  // just manually-entered rows in `questions`.
+  const subjectNameById = new Map(scopedSubjects.map((s: any) => [s.id, s.name]));
+  const { data: mcqResources } = await db
+    .from('library_resources')
+    .select('id, subject_id, chapter_id')
+    .in('subject_id', subjectIds)
+    .eq('content_section', 'mcq');
+  const resourceById = new Map((mcqResources || []).map((r: any) => [r.id, r]));
+  const chapterIds = [...new Set((mcqResources || []).map((r: any) => r.chapter_id).filter(Boolean))];
+  const { data: chapterRows } = chapterIds.length
+    ? await db.from('chapters').select('id, name').in('id', chapterIds)
+    : { data: [] };
+  const chapterNameById = new Map((chapterRows || []).map((c: any) => [c.id, c.name]));
+  const resourceIds = [...resourceById.keys()];
+  const { data: resourceBanks } = resourceIds.length
+    ? await questionBank
+        .from('resource_mcq_sets')
+        .select('resource_id, questions, status')
+        .eq('resource_kind', 'library')
+        .eq('status', 'ready')
+        .in('resource_id', resourceIds)
+    : { data: [] };
+  const resourceQuestions = (resourceBanks || []).flatMap((bank: any) => {
+    const resource = resourceById.get(bank.resource_id);
+    if (!resource) return [];
+    return (bank.questions || []).map((raw: any, index: number) => ({
+      id: `resource:${bank.resource_id}:${index}`,
+      text: String(raw?.q || ''),
+      options: Array.isArray(raw?.opts) ? raw.opts : [],
+      subject_id: resource.subject_id,
+      chapter_id: resource.chapter_id,
+      is_verified: false,
+      subjects: { name: subjectNameById.get(resource.subject_id) },
+      chapters: { name: chapterNameById.get(resource.chapter_id) },
+    }));
+  });
+  const resourceQuestionsBySubject = new Map<string, any[]>();
+  for (const q of resourceQuestions) {
+    const list = resourceQuestionsBySubject.get(q.subject_id) || [];
+    list.push(q);
+    resourceQuestionsBySubject.set(q.subject_id, list);
+  }
+
+  // Diagnostic questions come from the saved, curriculum-linked question bank
+  // (manually entered `questions` rows plus seeded resource MCQ sets).
   // Each subject that has enough valid MCQs contributes five random questions.
-  const questions = questionResults.flatMap((result: any) => {
-    const validQuestions = (result.data || []).filter((row: any) => normalizeQuestionOptions(row.options).length >= 2);
+  const questions = subjectIds.flatMap((subjectId: string) => {
+    const result = questionResults[subjectIds.indexOf(subjectId)];
+    const fromQuestionsTable = (result?.data || []) as any[];
+    const fromResources = resourceQuestionsBySubject.get(subjectId) || [];
+    const validQuestions = [...fromQuestionsTable, ...fromResources].filter(
+      (row: any) => normalizeQuestionOptions(row.options).length >= 2
+    );
     return shuffle(validQuestions).slice(0, QUESTIONS_PER_SUBJECT);
   });
   if (questions.length < 5)
