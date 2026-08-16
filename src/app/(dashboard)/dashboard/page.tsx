@@ -15,7 +15,7 @@ import { WeaknessRadar } from '@/components/features/dashboard/WeaknessRadar';
 import { BossQuizCard } from '@/components/features/dashboard/BossQuizCard';
 import { OpportunityDeadlinesCard } from '@/components/features/dashboard/OpportunityDeadlinesCard';
 import { Button } from '@/components/ui/button';
-import { ParentQrLinkCard } from '@/components/features/parent/ParentQrScanner';
+import { ParentConnectPrompt } from '@/components/features/parent/ParentConnectPrompt';
 import { InstallAppButton } from '@/components/features/dashboard/InstallAppButton';
 
 export const metadata: Metadata = { title: 'Dashboard' };
@@ -39,7 +39,7 @@ export default async function DashboardPage() {
     return (
       <div className="space-y-6">
         <InstallAppButton />
-        {!approvedParentLink && <ParentQrLinkCard />}
+        {!approvedParentLink && <ParentConnectPrompt />}
         <UniversityDashboard profile={profile} />
       </div>
     );
@@ -148,7 +148,7 @@ export default async function DashboardPage() {
         streak={profile?.streak || 0}
         institutionName={profile?.sponsored_institution_name}
       />
-      {!approvedParentLink && <ParentQrLinkCard />}
+      {!approvedParentLink && <ParentConnectPrompt />}
       <StatsGrid
         xp={profile?.xp || 0}
         level={profile?.level || 1}

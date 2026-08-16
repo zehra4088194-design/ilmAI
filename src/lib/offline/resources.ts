@@ -1,13 +1,18 @@
 'use client';
 
 import type { ProtectedResourceKind, ResourceMode } from '@/lib/resources/server';
+import { useAuthStore } from '@/store/auth.store';
 
 const DB_NAME = 'ilm-ai-offline';
 const STORE_NAME = 'protected-resources';
 const DB_VERSION = 1;
+// Falls back to a fixed bucket only for the (practically unreachable, since every
+// save flow requires a signed-in user) case where no user is loaded yet.
+const ANONYMOUS_USER = 'anonymous';
 
 export type OfflineResource = {
   key: string;
+  userId: string;
   resourceId: string;
   kind: ProtectedResourceKind;
   mode: ResourceMode;
@@ -17,6 +22,10 @@ export type OfflineResource = {
   blob?: Blob;
   savedAt: string;
 };
+
+function currentUserId() {
+  return useAuthStore.getState().user?.id || ANONYMOUS_USER;
+}
 
 function openDatabase() {
   return new Promise<IDBDatabase>((resolve, reject) => {
@@ -55,31 +64,45 @@ async function transact<T>(mode: IDBTransactionMode, run: (store: IDBObjectStore
   });
 }
 
+/**
+ * Record key, scoped to the currently signed-in user. IndexedDB is scoped
+ * per-browser-origin, not per-app-account, so without the user-id prefix two
+ * different Ilm AI accounts sharing a device/browser would see and be able to
+ * open each other's saved offline files. Records saved before this scoping
+ * existed simply won't match any current key and stop appearing — they're
+ * re-downloadable cache data, not something that needs migrating.
+ */
 export function offlineResourceKey(kind: ProtectedResourceKind, resourceId: string, mode: ResourceMode) {
-  return `${kind}:${resourceId}:${mode}`;
+  return `${currentUserId()}:${kind}:${resourceId}:${mode}`;
 }
 
-export async function saveOfflineResource(item: Omit<OfflineResource, 'key'>) {
-  const value: OfflineResource = { ...item, key: offlineResourceKey(item.kind, item.resourceId, item.mode) };
+export async function saveOfflineResource(item: Omit<OfflineResource, 'key' | 'userId'>) {
+  const userId = currentUserId();
+  const value: OfflineResource = {
+    ...item,
+    userId,
+    key: offlineResourceKey(item.kind, item.resourceId, item.mode),
+  };
   await transact('readwrite', (store) => store.put(value));
   return value;
 }
 
 export async function saveOfflineResourceLink(
-  item: Omit<OfflineResource, 'key' | 'blob' | 'mimeType'> & { sourceUrl: string }
+  item: Omit<OfflineResource, 'key' | 'userId' | 'blob' | 'mimeType'> & { sourceUrl: string }
 ) {
   if (!item.sourceUrl) throw new Error('This file does not have a usable link.');
   return saveOfflineResource({ ...item, mimeType: 'application/pdf' });
 }
 
 export async function saveOfflineResourceResponse(
-  item: Omit<OfflineResource, 'key' | 'blob' | 'mimeType'>,
+  item: Omit<OfflineResource, 'key' | 'userId' | 'blob' | 'mimeType'>,
   response: Response
 ) {
   const mimeType = response.headers.get('content-type') || 'application/pdf';
+  const userId = currentUserId();
   const key = offlineResourceKey(item.kind, item.resourceId, item.mode);
   const blob = await response.blob();
-  const value: OfflineResource = { ...item, key, mimeType, blob };
+  const value: OfflineResource = { ...item, userId, key, mimeType, blob };
 
   try {
     await transact('readwrite', (store) => store.put(value));
@@ -94,7 +117,7 @@ export async function saveOfflineResourceResponse(
 
 /** Downloads through the authenticated same-origin proxy into app-private browser storage. */
 export async function saveProtectedResourceOffline(
-  item: Omit<OfflineResource, 'key' | 'blob' | 'mimeType' | 'sourceUrl'>
+  item: Omit<OfflineResource, 'key' | 'userId' | 'blob' | 'mimeType' | 'sourceUrl'>
 ) {
   const response = await fetch('/api/resources/content', {
     method: 'POST',
@@ -113,14 +136,27 @@ export async function getOfflineResourceBlob(item: OfflineResource) {
   throw new Error('Offline file is missing. Save it again from Library.');
 }
 
+/** Only ever returns the current user's saved items — see offlineResourceKey. */
 export async function listOfflineResources() {
-  return transact<OfflineResource[]>('readonly', (store) => store.getAll());
+  const all = await transact<OfflineResource[]>('readonly', (store) => store.getAll());
+  const userId = currentUserId();
+  return all.filter((item) => item.userId === userId);
 }
 
 export async function deleteOfflineResource(key: string) {
   await transact('readwrite', (store) => store.delete(key));
 }
 
+/** Clears only the current user's saved items, never another account's files on a shared device. */
 export async function clearOfflineResources() {
-  await transact('readwrite', (store) => store.clear());
+  const mine = await listOfflineResources();
+  await Promise.all(mine.map((item) => deleteOfflineResource(item.key)));
+}
+
+/** Total bytes used by this browser's offline storage (all origin data, not just this store) and the device quota. */
+export async function getOfflineStorageEstimate() {
+  if (typeof navigator === 'undefined' || !navigator.storage?.estimate) return null;
+  const { usage, quota } = await navigator.storage.estimate();
+  if (usage == null || quota == null) return null;
+  return { usage, quota };
 }

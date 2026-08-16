@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { enforceOnboarding } from '@/lib/supabase/enforceOnboarding';
 import { updateSession } from '@/lib/supabase/middleware';
 import { matchesRoutePrefix } from '@/lib/navigation/route-prefix';
@@ -63,6 +64,22 @@ const SCHOOL_ADMIN_PREFIXES = ['/school-admin'];
 // version, so re-verify this hash if that dependency is upgraded.
 const PDFJS_WORKER_BOOTSTRAP_HASH = "'sha256-PQNBmepyn3corN4iAcIkbTGAzPr+5/ubjCJHc7QNtUU='";
 
+// Any account that's a member of a school or college — owner/principal, admin, teacher, staff,
+// parent, or student alike — has no business ever landing on the plain consumer /dashboard. For
+// staff roles it's a dead end (no admin tools live there, and the only "school" affordance is a
+// decorative branding chip in the sidebar that links to "/" like the logo always does, not to
+// their actual portal). For student/parent roles it's the wrong portal too: /school and
+// /college/dashboard are the real institutional experience (attendance, fees, homework, PTM,
+// report cards) — /dashboard is the generic consumer AI-study app. Whichever role an email is
+// actually linked as, that's the only dashboard it should ever see.
+async function resolveInstitutionPortalHome(supabase: SupabaseClient, userId: string) {
+  const schoolRole = await resolveSchoolRole(supabase, userId);
+  if (schoolRole) return schoolAdminHomeForRole(schoolRole.role);
+  const collegeRole = await resolveCollegeRole(supabase, userId);
+  if (collegeRole) return collegeAdminHomeForRole(collegeRole.role);
+  return null;
+}
+
 function buildContentSecurityPolicy(nonce: string) {
   const developmentEval = process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : '';
   return [
@@ -100,6 +117,11 @@ export async function middleware(request: NextRequest) {
     return secure(NextResponse.rewrite(url));
   }
 
+  // Google Play policy: an app distributed via Play cannot link out to any external
+  // (non-Google-Play-billing) payment flow for digital goods — this includes the
+  // institutional/manual payment methods (JazzCash/Easypaisa/bank transfer/etc.) from the
+  // separate school/college billing work. EVERY checkout-like route, present or future,
+  // must be added to both blocks below or the Play Store app risks rejection/suspension.
   if (playConsumptionOnly && (pathname === '/checkout' || pathname === '/pricing')) {
     return secure(NextResponse.redirect(getPublicRequestUrl(request.headers, request.url, '/subscription')));
   }
@@ -202,6 +224,12 @@ export async function middleware(request: NextRequest) {
     if (!user) {
       return secure(NextResponse.redirect(`${origin}/login?redirect=${encodeURIComponent(requestedPath)}`));
     }
+    if (pathname === '/dashboard') {
+      const portalHome = await resolveInstitutionPortalHome(supabase, user.id);
+      if (portalHome) {
+        return secure(NextResponse.redirect(`${origin}${portalHome}`));
+      }
+    }
     const onboardingRedirect = await enforceOnboarding(request, supabase);
     if (onboardingRedirect) {
       return secure(onboardingRedirect);
@@ -209,9 +237,13 @@ export async function middleware(request: NextRequest) {
     return secure(response);
   }
 
-  // Auth routes - redirect logged in users to dashboard
+  // Auth routes - redirect logged in users to their real home. Any school/college member
+  // (owner, admin, teacher, staff, parent, student — whatever role the email is linked as)
+  // goes straight to its matching portal; only accounts with no institution link land on
+  // the generic consumer /dashboard.
   if (AUTH_ROUTES.includes(pathname) && user) {
-    return secure(NextResponse.redirect(`${origin}/dashboard`));
+    const portalHome = await resolveInstitutionPortalHome(supabase, user.id);
+    return secure(NextResponse.redirect(`${origin}${portalHome || '/dashboard'}`));
   }
 
   return secure(response);

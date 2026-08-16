@@ -17,7 +17,6 @@ export default function robots(): MetadataRoute.Robots {
           '/checkout',
           '/college-admin',
           '/school-admin',
-          '/parent-link',
         ],
       },
     ],

@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { FullTestSetup } from '@/components/features/quiz/FullTestEngine';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { OnlineOnlyGate } from '@/components/features/offline/OnlineOnlyGate';
 import { ClipboardList } from 'lucide-react';
 export const metadata: Metadata = { title: 'Full Test' };
 
@@ -17,7 +18,9 @@ export default async function FullTestPage() {
     <div className="max-w-3xl mx-auto space-y-6">
       <div><h1 className="text-2xl font-bold">Full Test 📋</h1><p className="text-muted-foreground">Choose a board pattern or custom test with MCQs, short questions, and long questions.</p></div>
       {(subjects || []).length > 0 ? (
-        <FullTestSetup subjects={subjects || []} defaultBoard={profile?.board || 'FBISE'} defaultGrade={profile?.grade_level || 'GRADE_10'} userTier={(profile?.subscription_tier as any) || 'FREE'} />
+        <OnlineOnlyGate feature="Full Test" description="Generating and taking a live test needs a connection.">
+          <FullTestSetup subjects={subjects || []} defaultBoard={profile?.board || 'FBISE'} defaultGrade={profile?.grade_level || 'GRADE_10'} userTier={(profile?.subscription_tier as any) || 'FREE'} />
+        </OnlineOnlyGate>
       ) : (
         <EmptyState
           icon={ClipboardList}

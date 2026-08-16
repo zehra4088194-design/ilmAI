@@ -117,6 +117,7 @@ export async function loadStudySubjectResources(
 export function countStudyResourceSections(resources: StudyCatalogResource[]) {
   const counts: Record<LibraryContentSection, number> = {
     reading: 0,
+    numericals: 0,
     mcq: 0,
     short: 0,
     long: 0,

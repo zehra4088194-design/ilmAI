@@ -27,8 +27,8 @@ export async function GET(req: NextRequest) {
   const access = await getParentLinkAccess(attachment.link_id, user.id);
   if (!access) return NextResponse.json({ error: 'This file does not belong to your account' }, { status: 403 });
 
-  const key = parseR2Uri(attachment.file_url);
-  if (!key) return NextResponse.json({ error: 'This file uses legacy storage' }, { status: 409 });
-  const signedUrl = await getR2SignedUrl(key);
+  const parsed = parseR2Uri(attachment.file_url);
+  if (!parsed) return NextResponse.json({ error: 'This file uses legacy storage' }, { status: 409 });
+  const signedUrl = await getR2SignedUrl(parsed.key, undefined, parsed.bucket);
   return NextResponse.redirect(signedUrl);
 }

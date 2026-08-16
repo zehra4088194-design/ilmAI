@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { Download, FileText, Loader2, Moon, Presentation, Sparkles, Sun } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Clock, Download, FileText, Loader2, Moon, Presentation, Sparkles, Sun } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -38,8 +38,43 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
   const [exporting, setExporting] = useState(false);
   const [deck, setDeck] = useState<PresentationDeck | null>(null);
   const [progressIndex, setProgressIndex] = useState(0);
+  const [history, setHistory] = useState<{ id: string; title: string; created_at: string }[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [activeHistoryId, setActiveHistoryId] = useState<string | null>(null);
 
   const formReady = topic.trim().length > 2;
+
+  async function loadHistory() {
+    try {
+      const res = await fetch('/api/presentation/history');
+      const json = await res.json();
+      if (json.status === 'success') setHistory(json.data.presentations);
+    } catch {
+      // Non-fatal — the builder still works without the saved list loading.
+    }
+  }
+
+  useEffect(() => {
+    void loadHistory();
+  }, []);
+
+  async function openSaved(id: string) {
+    setHistoryLoading(true);
+    try {
+      const res = await fetch(`/api/presentation/history/${id}`);
+      const json = await res.json();
+      if (json.status !== 'success') {
+        toast.error(json.error || 'This presentation could not be opened.');
+        return;
+      }
+      setDeck(json.data.deck);
+      setActiveHistoryId(id);
+    } catch {
+      toast.error('This presentation could not be opened.');
+    } finally {
+      setHistoryLoading(false);
+    }
+  }
   const progressLabel = useMemo(() => {
     if (mode === 'per-slide') {
       return `Detailed mode: generating ${slideCount} slides in small AI batches...`;
@@ -77,7 +112,9 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
         return;
       }
       setDeck(json.data.deck);
+      setActiveHistoryId(null);
       toast.success('The presentation is ready.');
+      void loadHistory(); // pick up the row /api/presentation/generate just saved
     } catch {
       toast.error('The presentation could not be generated.');
     } finally {
@@ -209,6 +246,7 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[390px_1fr]">
+        <div className="space-y-4">
         <Card className="h-fit">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
@@ -274,6 +312,39 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
             </Button>
           </CardContent>
         </Card>
+
+        {history.length > 0 && (
+          <Card className="h-fit">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Clock className="h-4 w-4 text-violet-400" />
+                Saved Presentations
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1.5">
+              {history.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  disabled={historyLoading}
+                  onClick={() => void openSaved(item.id)}
+                  className={cn(
+                    'flex w-full flex-col rounded-lg border px-3 py-2 text-left text-sm transition disabled:opacity-50',
+                    activeHistoryId === item.id
+                      ? 'border-violet-400 bg-violet-500/10'
+                      : 'border-transparent hover:bg-muted/50'
+                  )}
+                >
+                  <span className="truncate font-medium">{item.title}</span>
+                  <span className="text-muted-foreground text-xs">
+                    {new Date(item.created_at).toLocaleDateString()}
+                  </span>
+                </button>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+        </div>
 
         <div className="space-y-4">
           {!deck && !loading && (

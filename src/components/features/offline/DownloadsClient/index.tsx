@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Eye, FileText, Library, Loader2, Trash2, WifiOff } from 'lucide-react';
+import { Eye, FileText, HardDrive, Library, Loader2, Trash2, WifiOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,15 +10,29 @@ import {
   clearOfflineResources,
   deleteOfflineResource,
   getOfflineResourceBlob,
+  getOfflineStorageEstimate,
   listOfflineResources,
   type OfflineResource,
 } from '@/lib/offline/resources';
 import { ProtectedResourceReader } from '@/components/features/resources/ProtectedResourceReader';
 
+function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  const units = ['KB', 'MB', 'GB'];
+  let value = bytes / 1024;
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+  return `${value.toFixed(value >= 10 ? 0 : 1)} ${units[unitIndex]}`;
+}
+
 export function DownloadsClient({ embedded = false }: { embedded?: boolean }) {
   const [items, setItems] = useState<OfflineResource[]>([]);
   const [active, setActive] = useState<{ item: OfflineResource; blob?: Blob } | null>(null);
   const [openingKey, setOpeningKey] = useState<string | null>(null);
+  const [storageEstimate, setStorageEstimate] = useState<{ usage: number; quota: number } | null>(null);
 
   const refresh = async () => {
     try {
@@ -27,6 +41,7 @@ export function DownloadsClient({ embedded = false }: { embedded?: boolean }) {
     } catch {
       setItems([]);
     }
+    setStorageEstimate(await getOfflineStorageEstimate().catch(() => null));
   };
 
   useEffect(() => {
@@ -36,8 +51,8 @@ export function DownloadsClient({ embedded = false }: { embedded?: boolean }) {
 
   const clear = async () => {
     await clearOfflineResources();
-    setItems([]);
     setActive(null);
+    await refresh();
     toast.success('Saved links cleared.');
   };
 
@@ -75,6 +90,32 @@ export function DownloadsClient({ embedded = false }: { embedded?: boolean }) {
             to the device Downloads folder.
           </p>
         </div>
+      )}
+
+      {storageEstimate && (
+        <Card>
+          <CardContent className="flex flex-col gap-3 p-4 sm:p-5">
+            <div className="flex items-center gap-3">
+              <HardDrive className="text-primary h-5 w-5 shrink-0" />
+              <div className="min-w-0">
+                <p className="font-semibold">
+                  {formatBytes(storageEstimate.usage)} used of {formatBytes(storageEstimate.quota)} available
+                </p>
+                <p className="text-muted-foreground text-sm">
+                  Shared across this app's offline storage (Downloads, cached pages, and app data) in this browser
+                </p>
+              </div>
+            </div>
+            <div className="bg-muted h-2 w-full overflow-hidden rounded-full">
+              <div
+                className="bg-primary h-full rounded-full"
+                style={{
+                  width: `${Math.min(100, storageEstimate.quota ? (storageEstimate.usage / storageEstimate.quota) * 100 : 0)}%`,
+                }}
+              />
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       <Card>

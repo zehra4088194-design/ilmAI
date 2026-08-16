@@ -17,6 +17,7 @@ const BOOKS: { file: string; subjectSlug: string; subjectName: string }[] = [
   { file: 'New 11 Chemistry EM Full Book Punjab 2025.pdf', subjectSlug: 'chemistry', subjectName: 'Chemistry' },
   { file: 'New 11 Computer EM Full Book Punjab 2025.pdf', subjectSlug: 'computer-science', subjectName: 'Computer Science' },
   { file: 'New 11 English Full Book Punjab 2025.pdf', subjectSlug: 'english', subjectName: 'English' },
+  { file: 'New 11 Islamiat UM Full Book Punjab 2025.pdf', subjectSlug: 'islamiat', subjectName: 'Islamiat' },
   { file: 'New 11 Maths EM Full Book Punjab 2025.pdf', subjectSlug: 'mathematics', subjectName: 'Mathematics' },
   { file: 'New 11 Physics EM Full Book Punjab 2025.pdf', subjectSlug: 'physics', subjectName: 'Physics' },
   { file: 'New 11 TTQ EM Full Book Punjab 2025.pdf', subjectSlug: 'tarjuma-tul-quran', subjectName: 'Tarjuma Tul Quran' },
@@ -54,7 +55,7 @@ async function main() {
 
   if (!dryRun) {
     for (const row of rows) {
-      await putR2Object(row.key, readFileSync(row.source), { contentType: 'application/pdf', cacheControl: 'public, max-age=31536000, immutable' });
+      await putR2Object(row.key, readFileSync(row.source), { contentType: 'application/pdf', cacheControl: 'public, max-age=31536000, immutable' }, process.env.SECONDARY_STORAGE_BUCKET);
       console.log('  uploaded:', row.key);
     }
   }

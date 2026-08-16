@@ -11,6 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 import { saveProtectedResourceOffline } from '@/lib/offline/resources';
+import { useOfflineSaved } from '@/hooks/offline/useOfflineSaved';
 import { ProtectedResourceReader } from '@/components/features/resources/ProtectedResourceReader';
 import { ResourceAiTools } from '@/components/features/resources/ResourceAiTools';
 import { getGoogleDriveThumbnailUrl } from '@/lib/utils/filePreview';
@@ -48,6 +49,7 @@ export function GoogleDriveResourceCard({
   const [readerOpen, setReaderOpen] = useState(autoOpen);
   const [downloading, setDownloading] = useState(false);
   const [thumbnailFailed, setThumbnailFailed] = useState(false);
+  const { saved: savedOffline, markSaved } = useOfflineSaved('library', resource.id, mode);
   const readerSourceUrl =
     mode === 'dark'
       ? resource.darkFileUrl || resource.lightFileUrl || resource.driveUrl || null
@@ -75,6 +77,7 @@ export function GoogleDriveResourceCard({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ resource_type: 'textbook', resource_id: resource.id, device_hint: navigator.userAgent }),
       }).catch(() => undefined);
+      markSaved();
       toast.success('Saved in your Ilm AI Downloads.');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Offline save failed.');
@@ -152,9 +155,21 @@ export function GoogleDriveResourceCard({
           </Button>
         )}
         {user && canDownload ? (
-          <Button variant="outline" size="sm" className="w-full" onClick={saveForOffline} disabled={downloading}>
-            {downloading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <DownloadCloud className="h-3.5 w-3.5" />}
-            Save in app
+          <Button
+            variant={savedOffline ? 'secondary' : 'outline'}
+            size="sm"
+            className="w-full"
+            onClick={saveForOffline}
+            disabled={downloading}
+          >
+            {downloading ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : savedOffline ? (
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+            ) : (
+              <DownloadCloud className="h-3.5 w-3.5" />
+            )}
+            {savedOffline ? 'Saved offline' : 'Save in app'}
           </Button>
         ) : user ? (
           <Button asChild variant="outline" size="sm" className="w-full">

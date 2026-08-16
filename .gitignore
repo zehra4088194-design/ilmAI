@@ -11,6 +11,14 @@
 /.next-school-erp*/
 /out/
 
+# generated service worker (built by @ducanh2912/next-pwa at build time)
+/public/sw.js
+/public/sw.js.map
+/public/workbox-*.js
+/public/worker-*.js
+/public/swe-worker-*.js
+/public/fallback-*.js
+
 # production
 /build
 

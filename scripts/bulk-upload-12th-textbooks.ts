@@ -56,7 +56,7 @@ async function main() {
 
   if (!dryRun) {
     for (const row of rows) {
-      await putR2Object(row.key, readFileSync(row.source), { contentType: 'application/pdf', cacheControl: 'public, max-age=31536000, immutable' });
+      await putR2Object(row.key, readFileSync(row.source), { contentType: 'application/pdf', cacheControl: 'public, max-age=31536000, immutable' }, process.env.SECONDARY_STORAGE_BUCKET);
       console.log('  uploaded:', row.key);
     }
   }

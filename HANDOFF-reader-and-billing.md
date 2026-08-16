@@ -1,57 +1,30 @@
-# Handoff: PDF reader rebuild + Paddle checkout bug
+# Handoff: 11th/12th upload check + Parent-connect QR removal
 
-Paste this whole file as the first message to the new Claude Code session.
+Paste this whole file as the first message to the new Claude Code session
+(same repo, same Supabase MCP + B2 env already configured in `.env.local`).
 
-## Task 1 — Rebuild the library PDF reader
+## Task 0 — Finish the 11th/12th grade notes upload to B2
 
-The current PDF reader (used on `/library/...` resource pages) has recurring,
-previously-reported bugs the user wants fixed properly this time — rebuild it
-from scratch rather than patch further:
-- **Fullscreen doesn't work.**
-- **A "vibration"/jitter glitch** happens repeatedly while reading.
-- **PDFs intermittently fail to load** ("Stored PDF file is missing." or "The
-  PDF could not be loaded" / "Signed object fetch failed"). Some of this was
-  B2 bandwidth-cap exhaustion (transient, unrelated to the reader itself —
-  check Backblaze B2 → Caps & Alerts if it recurs), but the user also wants
-  the actual PDF loading path re-verified end to end once the reader is
-  rebuilt, since it's failed intermittently even with caps healthy.
+The last few attempts at this failed part-way through with B2 connection
+errors (`ETIMEDOUT`) — not a code bug, just flaky connectivity. Re-run:
+```
+npx tsx --env-file=.env.local scripts/bulk-upload-11th-library-resources.ts
+npx tsx --env-file=.env.local scripts/bulk-upload-12th-library-resources.ts
+```
+Both are idempotent (same B2 key = overwrite, no duplicates) — safe to
+re-run as many times as needed until they complete without error. Confirm
+by running to completion (11th: 286 resources, 12th: 267 resources expected
+— see console output "Discovered N resources").
 
-Find the reader component (likely under `src/components/features/library/` —
-search for "PDF reader" / the fullscreen and dark/light toggle UI) and start
-from there. Confirm current file-serving path: resources are stored in B2
-(`ilmai-storage-b2` bucket, `library/` prefix) via `src/lib/storage/r2.ts`
-(`getR2SignedUrl` / `getR2Object`), referenced from `library_resources` rows'
-`light_file_url` / `dark_file_url` (format `r2://ilmai-storage-b2/<key>`).
+## Task 1 — Parent-connect: remove QR code, code-only on both sides
 
-## Task 2 — Paddle checkout only creates a session for Pro Monthly
+The parent-connect flow currently offers two ways to link a parent to a
+student: a phone **number** field and a **QR code**. Remove the QR code
+option entirely — keep the phone number field, and replace the QR code with
+a **connect code** (text/numeric code) shown on both the parent side and the
+student side, so linking happens by exchanging that code instead of scanning
+a QR.
 
-User-reported: of the 4 subscription tiers/billing-cycles (Pro Monthly, Pro
-Annual, Elite Monthly, Elite Annual), **only Pro Monthly** actually creates a
-Paddle checkout session. The other three (Pro Annual, Elite Monthly, Elite
-Annual) do not. Not yet investigated this session — start by finding the
-Paddle checkout/price-ID wiring (likely `src/lib/billing/` or
-`src/app/api/billing/`) and comparing how each tier+cycle combination maps to
-a Paddle price ID — the bug is very likely a missing/wrong price ID for 3 of
-the 4 combinations, or a hardcoded Pro-Monthly-only code path.
-
-## Context from the previous session (library data rollout — for reference only)
-
-9th–12th grade library resources (notes + textbooks) were bulk re-uploaded to
-B2 this session after the user deleted everything except `pairing-schemes/`
-and `presentation-backgrounds/` from the bucket. Re-upload was driven by the
-existing `scripts/bulk-upload-{9th,10th,11th,12th}-library-resources.ts` and
-`scripts/bulk-upload-{9th,10th,11th,12th}-textbooks.ts` (same deterministic
-B2 keys as before, so no Supabase `library_resources` changes were needed).
-A one-off `scripts/restore-9th-biology.ts` also restored 33 pre-existing
-grade-9 Biology rows that predate those scripts and had no manifest.
-
-If any resource still shows "Stored PDF file is missing" after this session's
-re-uploads finished, spot-check with `scripts/verify-b2-keys.ts <manifest.json...>`
-(compares manifest keys against what's actually in B2 via HeadObject) — but
-note HeadObject may itself fail with permission errors unrelated to whether
-the file exists (seen this session); PUT/GET worked fine even when HEAD didn't,
-so don't trust a HEAD failure alone as proof of a missing file.
-
-`resource_mcq_sets` question-bank seeding (via web-Claude sessions, prompts
-already sent to the user for grades 9/10/11/12) is separate, ongoing, and not
-this session's concern.
+Not yet investigated. Start by finding the parent-connect UI (likely under
+`src/components/features/parent/` or similar) and whatever currently
+generates/reads the QR code, to see what backs it before changing anything.

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { DownloadCloud, Expand, Loader2 } from 'lucide-react';
+import { CheckCircle2, DownloadCloud, Expand, Loader2 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 import { saveProtectedResourceOffline } from '@/lib/offline/resources';
+import { useOfflineSaved } from '@/hooks/offline/useOfflineSaved';
 import { ResourceAiTools } from '@/components/features/resources/ResourceAiTools';
 import { ProtectedResourceReader } from '@/components/features/resources/ProtectedResourceReader';
 import { ResourcePreviewFrame } from '@/components/features/resources/ResourcePreviewFrame';
@@ -29,6 +30,7 @@ export function PastPaperDetailClient({
   const canDownload = settings.subscriptionPlans[tier].access.downloadPDF;
   const [readerOpen, setReaderOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const { saved: savedOffline, markSaved } = useOfflineSaved('past-paper', paper.id, mode);
 
   const saveOffline = async () => {
     setDownloading(true);
@@ -40,6 +42,7 @@ export function PastPaperDetailClient({
         title: paper.title,
         savedAt: new Date().toISOString(),
       });
+      markSaved();
       toast.success('Past paper saved to in-app Downloads.');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'The file could not be saved offline.');
@@ -58,9 +61,20 @@ export function PastPaperDetailClient({
             Full screen
           </Button>
           {user && canDownload ? (
-            <Button variant="outline" size="sm" onClick={() => void saveOffline()} disabled={downloading}>
-              {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <DownloadCloud className="h-4 w-4" />}Save
-              in app
+            <Button
+              variant={savedOffline ? 'secondary' : 'outline'}
+              size="sm"
+              onClick={() => void saveOffline()}
+              disabled={downloading}
+            >
+              {downloading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : savedOffline ? (
+                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+              ) : (
+                <DownloadCloud className="h-4 w-4" />
+              )}
+              {savedOffline ? 'Saved offline' : 'Save in app'}
             </Button>
           ) : user ? (
             <Button asChild variant="outline" size="sm">

@@ -43,7 +43,6 @@ import {
 import { ThemePicker } from '@/components/common/ThemePicker';
 import { useAuthStore } from '@/store/auth.store';
 import { DownloadsClient } from '@/components/features/offline/DownloadsClient';
-import { ParentQrScanner } from '@/components/features/parent/ParentQrScanner';
 import Link from 'next/link';
 import { disablePushNotifications, enablePushNotifications } from '@/lib/push/client';
 
@@ -703,14 +702,6 @@ export function SettingsTabs({
                       Link Parent
                     </Button>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="bg-border h-px flex-1" />
-                    <span className="text-muted-foreground text-[10px] font-semibold tracking-widest uppercase">
-                      or
-                    </span>
-                    <span className="bg-border h-px flex-1" />
-                  </div>
-                  <ParentQrScanner />
                   <p className="text-muted-foreground text-xs">
                     Your parent can create this code by selecting &ldquo;Generate Invite Code&rdquo; on their dashboard.
                   </p>

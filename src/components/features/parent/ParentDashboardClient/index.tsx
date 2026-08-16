@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import QRCode from 'react-qr-code';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import {
   AlertCircle,
@@ -10,10 +9,9 @@ import {
   Clock,
   Copy,
   Flame,
-  Link as LinkIcon,
+  KeyRound,
   LockKeyhole,
   Plus,
-  QrCode,
   TrendingUp,
   Users,
   Zap,
@@ -54,14 +52,8 @@ export function ParentDashboardClient({
   const [showLinkForm, setShowLinkForm] = useState(approvedLinks.length === 0);
   const [inviteCode, setInviteCode] = useState(pendingLinks[0]?.invite_code || '');
   const [creating, setCreating] = useState(false);
-  const [origin, setOrigin] = useState('');
   const router = useRouter();
   const supabase = createClient();
-  const inviteUrl = inviteCode && origin ? `${origin}/parent-link?code=${encodeURIComponent(inviteCode)}` : '';
-
-  useEffect(() => {
-    setOrigin(window.location.origin);
-  }, []);
 
   useEffect(() => {
     const channel = supabase
@@ -105,12 +97,6 @@ export function ParentDashboardClient({
     toast.success('Code copied.');
   };
 
-  const copyLink = async () => {
-    if (!inviteUrl) return;
-    await navigator.clipboard.writeText(inviteUrl);
-    toast.success('QR link copied.');
-  };
-
   const getStudentSnapshots = (studentId: string) =>
     snapshots.filter((snapshot) => snapshot.student_id === studentId).slice(0, 4);
 
@@ -130,11 +116,9 @@ export function ParentDashboardClient({
             <div className="mx-auto mt-5 max-w-md">
               <InviteBox
                 inviteCode={inviteCode}
-                inviteUrl={inviteUrl}
                 creating={creating}
                 generateInvite={generateInvite}
                 copyCode={copyCode}
-                copyLink={copyLink}
               />
             </div>
           </CardContent>
@@ -171,8 +155,8 @@ export function ParentDashboardClient({
             <div>
               <p className="font-semibold">Parent Link is connected on the Free plan</p>
               <p className="text-muted-foreground mt-1 text-sm">
-                Live progress, reports, chat, and files unlock with the student&apos;s Pro or Elite plan. QR/link setup
-                will remain connected.
+                Live progress, reports, chat, and files unlock with the student&apos;s Pro or Elite plan. The
+                connect code setup will remain connected.
               </p>
             </div>
             <Button asChild variant="gradient" className="shrink-0">
@@ -225,18 +209,16 @@ export function ParentDashboardClient({
               <p className="text-muted-foreground mt-1 text-xs">Generate a new parent code and share it with the student.</p>
             </div>
             <Button variant="gradient" onClick={() => setShowLinkForm((value) => !value)} size="sm">
-              <QrCode className="h-4 w-4" /> Generate Code
+              <KeyRound className="h-4 w-4" /> Generate Code
             </Button>
           </div>
           {showLinkForm && (
             <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mt-4 max-w-md">
               <InviteBox
                 inviteCode={inviteCode}
-                inviteUrl={inviteUrl}
                 creating={creating}
                 generateInvite={generateInvite}
                 copyCode={copyCode}
-                copyLink={copyLink}
               />
             </motion.div>
           )}
@@ -487,23 +469,19 @@ export function ParentDashboardClient({
 
 function InviteBox({
   inviteCode,
-  inviteUrl,
   creating,
   generateInvite,
   copyCode,
-  copyLink,
 }: {
   inviteCode: string;
-  inviteUrl: string;
   creating: boolean;
   generateInvite: () => void;
   copyCode: () => void;
-  copyLink: () => void;
 }) {
   if (!inviteCode) {
     return (
       <Button variant="gradient" onClick={generateInvite} loading={creating} className="w-full">
-        <QrCode className="h-4 w-4" /> Generate Parent Code
+        <KeyRound className="h-4 w-4" /> Generate Parent Code
       </Button>
     );
   }
@@ -511,30 +489,15 @@ function InviteBox({
   return (
     <div className="space-y-3">
       <p className="text-muted-foreground text-xs">
-        Ask the student to scan the QR code or share this code/link. After the QR is read, the student will press
-        &ldquo;Press to connect&rdquo; to approve the parent link.
+        Share this code with the student. They will enter it under Settings &gt; Parent Link to approve the
+        connection.
       </p>
-      {inviteUrl && (
-        <div className="rounded-xl border bg-white p-4 text-center">
-          <QRCode
-            value={inviteUrl}
-            size={224}
-            level="M"
-            bgColor="#ffffff"
-            fgColor="#000000"
-            className="mx-auto h-auto max-w-full"
-          />
-        </div>
-      )}
       <div className="flex gap-2">
         <Input value={inviteCode} readOnly className="text-center font-mono text-lg tracking-widest" />
         <Button variant="outline" onClick={copyCode}>
           <Copy className="h-4 w-4" />
         </Button>
       </div>
-      <Button variant="outline" size="sm" onClick={copyLink} disabled={!inviteUrl} className="w-full">
-        <LinkIcon className="h-4 w-4" /> Copy Scan Link
-      </Button>
       <p className="text-xs text-amber-500">This code expires after 24 hours.</p>
       <Button variant="ghost" size="sm" onClick={generateInvite} loading={creating}>
         New Code

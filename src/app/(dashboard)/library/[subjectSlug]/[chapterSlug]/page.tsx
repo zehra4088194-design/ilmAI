@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, ArrowRight, BookMarked, CheckCircle2, FileQuestion, FileText, Files, ListChecks } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookMarked, Calculator, CheckCircle2, FileQuestion, FileText, Files, ListChecks } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { Badge } from '@/components/ui/badge';
@@ -16,8 +16,12 @@ import {
   parseLibraryResourceType,
 } from '@/lib/resources/catalog';
 
+// Every LIBRARY_SECTIONS entry needs a key here, same reasoning as the /study chapter page: a
+// missing key means `Icon` is `undefined` and React throws on render for any chapter whose
+// resources include that section.
 const SECTION_ICONS = {
   reading: BookMarked,
+  numericals: Calculator,
   mcq: ListChecks,
   short: FileQuestion,
   long: FileText,

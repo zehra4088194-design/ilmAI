@@ -8,12 +8,13 @@ type R2Config = {
   bucket: string;
   endpoint: string;
   region: string;
+  forcePathStyle: boolean;
 };
 
-let client: S3Client | null = null;
+const clients = new Map<string, S3Client>();
 export const R2_SIGNED_URL_TTL_SECONDS = 18_000; // 5 hours
 
-function getConfig(): R2Config | null {
+function getPrimaryConfig(): R2Config | null {
   const accountId = process.env.R2_ACCOUNT_ID;
   const endpoint =
     process.env.OBJECT_STORAGE_ENDPOINT ||
@@ -37,50 +38,87 @@ function getConfig(): R2Config | null {
   const bucket =
     process.env.OBJECT_STORAGE_BUCKET || process.env.R2_BUCKET || process.env.S3_BUCKET || process.env.B2_BUCKET;
   const region = process.env.OBJECT_STORAGE_REGION || process.env.S3_REGION || process.env.B2_REGION || 'auto';
+  const forcePathStyle = Boolean(
+    process.env.OBJECT_STORAGE_FORCE_PATH_STYLE || process.env.S3_FORCE_PATH_STYLE || process.env.B2_FORCE_PATH_STYLE
+  );
   return endpoint && accessKeyId && secretAccessKey && bucket
-    ? { accountId, accessKeyId, secretAccessKey, bucket, endpoint, region }
+    ? { accountId, accessKeyId, secretAccessKey, bucket, endpoint, region, forcePathStyle }
     : null;
 }
 
+// Second B2 account/bucket, used for 11th/12th grade library content — a
+// different account than the primary bucket, so it needs its own
+// credentials (a B2 application key only ever grants access to buckets in
+// its own account). Same read/write helpers below transparently pick the
+// right one based on which bucket a given r2:// URI names.
+function getSecondaryConfig(): R2Config | null {
+  const endpoint = process.env.SECONDARY_STORAGE_ENDPOINT || process.env.OBJECT_STORAGE_ENDPOINT || '';
+  const accessKeyId = process.env.SECONDARY_STORAGE_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.SECONDARY_STORAGE_SECRET_ACCESS_KEY;
+  const bucket = process.env.SECONDARY_STORAGE_BUCKET;
+  const region = process.env.SECONDARY_STORAGE_REGION || process.env.OBJECT_STORAGE_REGION || 'auto';
+  const forcePathStyle = Boolean(process.env.SECONDARY_STORAGE_FORCE_PATH_STYLE || process.env.OBJECT_STORAGE_FORCE_PATH_STYLE);
+  return endpoint && accessKeyId && secretAccessKey && bucket
+    ? { accessKeyId, secretAccessKey, bucket, endpoint, region, forcePathStyle }
+    : null;
+}
+
+function allConfigs(): R2Config[] {
+  return [getPrimaryConfig(), getSecondaryConfig()].filter((c): c is R2Config => c !== null);
+}
+
+// Resolves which configured bucket to use: an explicit bucket name (from a
+// parsed r2:// URI) if given and known, otherwise the primary bucket —
+// preserving old behavior for every call site that still passes a bare key.
+function resolveConfig(bucket?: string): R2Config | null {
+  const configs = allConfigs();
+  if (bucket) return configs.find((c) => c.bucket === bucket) || null;
+  return configs[0] || null;
+}
+
 function getClient(config: R2Config) {
-  if (!client) {
-    client = new S3Client({
+  const cacheKey = `${config.endpoint}::${config.bucket}`;
+  let existing = clients.get(cacheKey);
+  if (!existing) {
+    existing = new S3Client({
       region: config.region,
       endpoint: config.endpoint,
       credentials: { accessKeyId: config.accessKeyId, secretAccessKey: config.secretAccessKey },
-      forcePathStyle: Boolean(
-        process.env.OBJECT_STORAGE_FORCE_PATH_STYLE ||
-        process.env.S3_FORCE_PATH_STYLE ||
-        process.env.B2_FORCE_PATH_STYLE
-      ),
+      forcePathStyle: config.forcePathStyle,
     });
+    clients.set(cacheKey, existing);
   }
-  return client;
+  return existing;
 }
 
 export function isR2Configured() {
-  return Boolean(getConfig());
+  return Boolean(resolveConfig());
 }
 
-export function getR2Uri(key: string) {
-  const config = getConfig();
+export function getR2Uri(key: string, bucket?: string) {
+  const config = resolveConfig(bucket);
   if (!config) throw new Error('R2 is not configured.');
   return `r2://${config.bucket}/${key}`;
 }
 
-export function parseR2Uri(uri: string) {
-  const config = getConfig();
-  if (!config || !uri.startsWith(`r2://${config.bucket}/`)) return null;
-  const key = uri.slice(`r2://${config.bucket}/`.length);
-  return key && !key.includes('..') ? key : null;
+// Returns {bucket, key} for any r2:// URI whose bucket matches a configured
+// bucket (primary or secondary) — not just the primary one.
+export function parseR2Uri(uri: string): { bucket: string; key: string } | null {
+  const match = uri.match(/^r2:\/\/([^/]+)\/(.+)$/);
+  if (!match) return null;
+  const [, bucket, key] = match;
+  if (!key || key.includes('..')) return null;
+  if (!resolveConfig(bucket)) return null;
+  return { bucket: bucket!, key };
 }
 
 export async function putR2Object(
   key: string,
   body: Uint8Array | Buffer | string,
-  options: { contentType: string; cacheControl?: string; contentEncoding?: string }
+  options: { contentType: string; cacheControl?: string; contentEncoding?: string },
+  bucket?: string
 ) {
-  const config = getConfig();
+  const config = resolveConfig(bucket);
   if (!config) throw new Error('R2 is not configured.');
   await getClient(config).send(
     new PutObjectCommand({
@@ -94,11 +132,11 @@ export async function putR2Object(
   );
 }
 
-export async function getR2Object(key: string) {
-  const config = getConfig();
+export async function getR2Object(key: string, bucket?: string) {
+  const config = resolveConfig(bucket);
   if (!config) return null;
   try {
-    const signedUrl = await getR2SignedUrl(key);
+    const signedUrl = await getR2SignedUrl(key, R2_SIGNED_URL_TTL_SECONDS, bucket);
     const result = await fetch(signedUrl, {
       method: 'GET',
       cache: 'no-store',
@@ -127,11 +165,11 @@ export async function getR2Object(key: string) {
 // into a hard failure. Streaming through means the browser starts receiving pages within a
 // second of the request landing, and only a network drop during the (short) initial read below
 // aborts the whole thing instead of one anywhere across the entire transfer.
-export async function getR2ObjectStream(key: string, timeoutMs = 90_000) {
-  const config = getConfig();
+export async function getR2ObjectStream(key: string, timeoutMs = 90_000, bucket?: string) {
+  const config = resolveConfig(bucket);
   if (!config) return null;
   try {
-    const signedUrl = await getR2SignedUrl(key);
+    const signedUrl = await getR2SignedUrl(key, R2_SIGNED_URL_TTL_SECONDS, bucket);
     const result = await fetch(signedUrl, {
       method: 'GET',
       cache: 'no-store',
@@ -152,13 +190,13 @@ export async function getR2ObjectStream(key: string, timeoutMs = 90_000) {
   }
 }
 
-export async function getR2Text(key: string) {
-  const object = await getR2Object(key);
+export async function getR2Text(key: string, bucket?: string) {
+  const object = await getR2Object(key, bucket);
   return object ? new TextDecoder().decode(object.body) : null;
 }
 
-export async function getR2SignedUrl(key: string, expiresIn = R2_SIGNED_URL_TTL_SECONDS) {
-  const config = getConfig();
+export async function getR2SignedUrl(key: string, expiresIn = R2_SIGNED_URL_TTL_SECONDS, bucket?: string) {
+  const config = resolveConfig(bucket);
   if (!config) throw new Error('R2 is not configured.');
   if (!key || key.includes('..')) throw new Error('Invalid stored object key.');
   return getSignedUrl(getClient(config), new GetObjectCommand({ Bucket: config.bucket, Key: key }), {
@@ -166,8 +204,8 @@ export async function getR2SignedUrl(key: string, expiresIn = R2_SIGNED_URL_TTL_
   });
 }
 
-export async function deleteR2Object(key: string) {
-  const config = getConfig();
+export async function deleteR2Object(key: string, bucket?: string) {
+  const config = resolveConfig(bucket);
   if (!config) return;
   await getClient(config).send(new DeleteObjectCommand({ Bucket: config.bucket, Key: key }));
 }

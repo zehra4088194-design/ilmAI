@@ -266,9 +266,9 @@ export async function getPublicResource(
 
 export async function fetchProtectedFile(resource: ProtectedResource) {
   if (resource.sourceUrl.startsWith('r2://')) {
-    const key = parseR2Uri(resource.sourceUrl);
-    if (!key) throw new Error('Invalid stored PDF path.');
-    const storedFile = await getR2ObjectStream(key);
+    const parsed = parseR2Uri(resource.sourceUrl);
+    if (!parsed) throw new Error('Invalid stored PDF path.');
+    const storedFile = await getR2ObjectStream(parsed.key, undefined, parsed.bucket);
     if (!storedFile) throw new Error('Stored PDF file is missing.');
     if (storedFile.contentLength && storedFile.contentLength > MAX_PROTECTED_RESOURCE_BYTES) {
       throw new Error('Resource is larger than the 125MB reader limit.');
@@ -349,9 +349,9 @@ export async function fetchProtectedFile(resource: ProtectedResource) {
 async function fetchCompanionContext(resource: ProtectedResource) {
   if (!resource.contextTextUrl) return null;
   if (resource.contextTextUrl.startsWith('r2://')) {
-    const key = parseR2Uri(resource.contextTextUrl);
-    if (!key) throw new Error('Invalid R2 context path.');
-    const storedText = await getR2Text(key);
+    const parsed = parseR2Uri(resource.contextTextUrl);
+    if (!parsed) throw new Error('Invalid R2 context path.');
+    const storedText = await getR2Text(parsed.key, parsed.bucket);
     if (!storedText) throw new Error('Stored R2 context file is missing.');
     const text = normalizeContextText(storedText);
     if (text.length < 50) throw new Error('Stored context file has too little readable text.');

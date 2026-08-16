@@ -237,7 +237,7 @@ const AI_CREDIT_COSTS: Record<string, number> = {
   resource_test_analyze: 2,
   resource_test_generate: 4,
   university_presentation: 8,
-  pharmapulse_drug: 4,
+  pharmapulse_drug: 5,
   pharmapulse_mcq: 2,
   university_pdf_summarizer: 2,
   university_research: 5,
@@ -448,6 +448,17 @@ export async function consumeOcrCredits(
   return { ...result, creditCost: getAiCreditCost(featureKey) };
 }
 
+// Presentation Builder is fully credit-gated: the shared AI credit pool (checked
+// separately via checkAiMessageLimit/consumeAiCredits in the route) is what governs
+// access. This used to ALSO enforce plan.limits.presentationsMonthly as an
+// independent count cap on top of credits — a user with plenty of credits left
+// could still get "The monthly presentation limit has been reached" purely because
+// they'd generated a fixed number of presentations that month, unrelated to their
+// actual credit balance. Same fix already applied to University Hub — see
+// checkUniversityFeatureLimit below for the original rationale.
+// presentationsMonthly<=0 is kept as a plan *access* gate (FREE tier doesn't get
+// the feature at all), and the slide-count cap is a per-request size limit, not a
+// usage-rate limit — neither of those is what credits are supposed to replace.
 export async function checkPresentationLimit(userId: string, tier: SubscriptionTier, slideCount: number) {
   const entitlement = await getAudiencePlanLimits(userId, tier);
   if (entitlement.limits.presentationsMonthly <= 0 || slideCount > entitlement.limits.presentationSlidesMax) {
@@ -459,19 +470,21 @@ export async function checkPresentationLimit(userId: string, tier: SubscriptionT
       audience: entitlement.audience,
     };
   }
-  const result = await checkMonthlyLimit(userId, 'presentation', entitlement.limits.presentationsMonthly);
   return {
-    ...result,
+    success: true,
+    remaining: -1,
+    reset: 0,
     maxSlides: entitlement.limits.presentationSlidesMax,
     audience: entitlement.audience,
   };
 }
 
-async function checkAudienceFileLimit(userId: string, tier: SubscriptionTier, feature: 'file_summary' | 'file_test') {
-  const entitlement = await getAudiencePlanLimits(userId, tier);
-  const limit =
-    feature === 'file_summary' ? entitlement.limits.fileSummariesMonthly : entitlement.limits.fileTestsMonthly;
-  return checkMonthlyLimit(userId, feature, limit);
+// File Summary / File Test tools: same fix as Presentation Builder above — these
+// routes already gate on the shared AI credit pool separately (checkAiMessageLimit
+// + consumeAiCredits), so the extra monthly count cap here was pure redundant
+// double-gating that could block a user with credits still remaining.
+async function checkAudienceFileLimit(_userId: string, _tier: SubscriptionTier, _feature: 'file_summary' | 'file_test') {
+  return { success: true, remaining: -1, reset: 0 };
 }
 
 export async function checkFileSummaryLimit(userId: string, tier: SubscriptionTier) {
@@ -487,36 +500,19 @@ export async function checkUniversityHubLimit(userId: string, tier: Subscription
   return checkWeeklyLimit(userId, 'university_hub', plan.limits.universityHubWeekly);
 }
 
+// University Hub is fully credit-gated: the shared AI credit pool is the only thing that governs
+// access here now. This used to ALSO enforce plan.limits.universityHubWeekly as an independent
+// cap on top of credits — a FREE user with most of their weekly credit balance untouched could
+// still get blocked with an "upgrade" message just because they'd already used a small fixed
+// number of University Hub actions that week, unrelated to how many credits they had left.
 export async function checkUniversityFeatureLimit(userId: string, tier: SubscriptionTier, featureKey: string) {
-  const plan = await getConfiguredPlan(tier);
-  const week = weekWindow();
-  const weekly = await inspectStoredWindows([
-    {
-      key: `ratelimit:university_hub:${userId}:week:${week.key}`,
-      limit: plan.limits.universityHubWeekly,
-      resetAt: week.reset,
-    },
-  ]);
-  if (!weekly.success) return { ...weekly, scope: 'weekly' as const };
   const credits = await checkSharedAiLimit(userId, tier, featureKey);
-  return {
-    success: credits.success,
-    remaining: Math.min(weekly.remaining, credits.remaining),
-    reset: Math.min(weekly.reset || Number.MAX_SAFE_INTEGER, credits.reset || Number.MAX_SAFE_INTEGER),
-    scope: credits.success ? ('weekly' as const) : ('daily' as const),
-  };
+  return { ...credits, scope: 'daily' as const };
 }
 
 export async function consumeUniversityFeatureCredits(userId: string, tier: SubscriptionTier, featureKey: string) {
-  const weekly = await checkUniversityHubLimit(userId, tier);
-  if (!weekly.success) return { ...weekly, scope: 'weekly' as const };
   const credits = await consumeSharedAiCredits(userId, tier, featureKey);
-  return {
-    success: credits.success,
-    remaining: Math.min(weekly.remaining, credits.remaining),
-    reset: Math.min(weekly.reset || Number.MAX_SAFE_INTEGER, credits.reset || Number.MAX_SAFE_INTEGER),
-    scope: credits.success ? ('weekly' as const) : ('daily' as const),
-  };
+  return { ...credits, scope: 'daily' as const };
 }
 
 export async function getUniversityLimitExceededMessage(

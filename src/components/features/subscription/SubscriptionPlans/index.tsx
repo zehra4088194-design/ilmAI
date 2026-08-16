@@ -146,7 +146,8 @@ export function SubscriptionPlans({
             ['Printed scan', 1],
             ['Handwritten scan', 3],
             ['Roadmap / flashcards / practice', 2],
-            ['Summary / PharmaPulse', 4],
+            ['Summary', 4],
+            ['PharmaPulse', 5],
             ['Full test / guess paper', 4],
             ['Presentation', 8],
           ].map(([label, cost]) => (

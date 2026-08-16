@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, ArrowRight, BookMarked, FileQuestion, FileText, ListChecks } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookMarked, Calculator, FileQuestion, FileText, ListChecks } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,8 +9,13 @@ import { LIBRARY_SECTIONS } from '@/lib/resources/catalog';
 import { loadStudyCatalogResources, loadStudySubjectResources } from '@/lib/resources/study-catalog';
 import type { Board, GradeLevel } from '@/types';
 
+// Every LIBRARY_SECTIONS entry needs a key here — LIBRARY_SECTIONS is mapped unconditionally
+// below (all sections render a card, "available" or not), so a missing key means `Icon` is
+// `undefined` and React throws immediately on render. This is what "numericals" being added to
+// LIBRARY_SECTIONS without a matching entry here crashed every /study/<subject>/<chapter> page.
 const SECTION_ICONS = {
   reading: BookMarked,
+  numericals: Calculator,
   mcq: ListChecks,
   short: FileQuestion,
   long: FileText,

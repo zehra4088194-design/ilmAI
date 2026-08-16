@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useTheme } from 'next-themes';
-import { BookOpen, FileText, Video, DownloadCloud, LockKeyhole, Loader2, Maximize2 } from 'lucide-react';
+import { BookOpen, CheckCircle2, FileText, Video, DownloadCloud, LockKeyhole, Loader2, Maximize2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,8 @@ import type { CollegeLecture, CollegeResource, CollegeResourceMetadata } from '@
 import { ProtectedResourceReader } from '@/components/features/resources/ProtectedResourceReader';
 import { ResourceAiTools } from '@/components/features/resources/ResourceAiTools';
 import { saveProtectedResourceOffline } from '@/lib/offline/resources';
+import { useOfflineSaved } from '@/hooks/offline/useOfflineSaved';
+import type { ResourceMode } from '@/lib/resources/server';
 import { toast } from 'sonner';
 import { isDarkThemeId } from '@/lib/constants/themes';
 import { resolvePdfThemeMode } from '@/lib/platform-settings/shared';
@@ -44,6 +46,38 @@ function toEmbedUrl(videoUrl: string): string {
 
 function normalize(value: string | null | undefined) {
   return value?.trim().toLowerCase() || '';
+}
+
+function CollegeResourceSaveButton({
+  resource,
+  mode,
+  downloading,
+  onSave,
+}: {
+  resource: CollegeResourceMetadata;
+  mode: ResourceMode;
+  downloading: boolean;
+  onSave: (resource: CollegeResourceMetadata, markSaved: () => void) => void;
+}) {
+  const { saved, markSaved } = useOfflineSaved('college-resource', resource.id, mode);
+  return (
+    <Button
+      size="sm"
+      variant={saved ? 'secondary' : 'outline'}
+      className="w-full"
+      onClick={() => onSave(resource, markSaved)}
+      disabled={downloading}
+    >
+      {downloading ? (
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+      ) : saved ? (
+        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+      ) : (
+        <DownloadCloud className="h-3.5 w-3.5" />
+      )}
+      {saved ? 'Saved offline' : 'Save in app for offline'}
+    </Button>
+  );
 }
 
 export function CollegeDashboardTabs({
@@ -96,7 +130,7 @@ export function CollegeDashboardTabs({
 
   const filteredLectures = lectures.filter(matchesProfileScope);
   const filteredResources = resources.filter(matchesProfileScope);
-  const saveForOffline = async (resource: CollegeResourceMetadata) => {
+  const saveForOffline = async (resource: CollegeResourceMetadata, markSaved: () => void) => {
     setDownloadingId(resource.id);
     try {
       await saveProtectedResourceOffline({
@@ -106,6 +140,7 @@ export function CollegeDashboardTabs({
         title: resource.title,
         savedAt: new Date().toISOString(),
       });
+      markSaved();
       toast.success('The college file was saved to Downloads.');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Offline save failed.');
@@ -255,20 +290,12 @@ export function CollegeDashboardTabs({
                           </div>
                           <ResourceAiTools kind="college-resource" resourceId={resource.id} />
                           {canDownload ? (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="w-full"
-                              onClick={() => saveForOffline(resource)}
-                              disabled={downloadingId === resource.id}
-                            >
-                              {downloadingId === resource.id ? (
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              ) : (
-                                <DownloadCloud className="h-3.5 w-3.5" />
-                              )}
-                              Save in app for offline
-                            </Button>
+                            <CollegeResourceSaveButton
+                              resource={resource}
+                              mode={mode}
+                              downloading={downloadingId === resource.id}
+                              onSave={saveForOffline}
+                            />
                           ) : (
                             <Button size="sm" variant="outline" className="w-full" asChild>
                               <Link href="/subscription">

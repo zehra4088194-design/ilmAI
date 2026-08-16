@@ -176,8 +176,14 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
           fileTestsMonthly: 0,
         },
         university: {
-          presentationsMonthly: 0,
-          presentationSlidesMax: 0,
+          // University Hub is fully credit-gated, not plan-gated: FREE users can use every
+          // University Hub tool (PDF Summarizer, PharmaPulse, Project Builder, etc.) as long as
+          // they have shared AI credits — Presentation Builder was the one exception, hard-locked
+          // to Pro/Elite via a 0 monthly allowance here regardless of credit balance. A modest
+          // non-zero allowance below Pro's (4/8) lets FREE's weekly credit pool (20 credits,
+          // 8 credits/presentation ≈ 2-3/week) be the real limiter instead.
+          presentationsMonthly: 3,
+          presentationSlidesMax: 6,
           fileSummariesMonthly: 0,
           fileTestsMonthly: 0,
         },
@@ -201,7 +207,7 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
         'Handwritten scan: 3 shared AI credits',
         '3 University Hub uses/week',
         'Online notes/books reading with ads',
-        'Parent Link/QR setup only',
+        'Parent Link connect-code setup only',
         'No downloads, summaries, or file tests',
       ],
     },

@@ -9,7 +9,7 @@ export async function GET() {
   let error: string | null = null;
   try {
     sampleUri = getR2Uri('test/key.txt');
-    roundTripKey = parseR2Uri(sampleUri);
+    roundTripKey = parseR2Uri(sampleUri)?.key ?? null;
   } catch (e) {
     error = e instanceof Error ? e.message : String(e);
   }

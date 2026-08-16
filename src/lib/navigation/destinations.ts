@@ -26,7 +26,7 @@ export const APP_DESTINATIONS: AppDestination[] = [
   { label: 'Generate AI Guess Paper', href: '/guess-paper', keywords: ['ai guess paper', 'generate guess paper'] },
   { label: 'Open Scan & Solve', href: '/scan', keywords: ['scan', 'photo', 'camera', 'solve image'] },
   { label: 'Open Study Buddies', href: '/student-chat', keywords: ['buddy', 'buddies', 'student chat', 'friend'] },
-  { label: 'Link Parent', href: '/settings?tab=parent-link', keywords: ['parent link', 'parent', 'qr'] },
+  { label: 'Link Parent', href: '/settings?tab=parent-link', keywords: ['parent link', 'parent', 'connect code'] },
   { label: 'Open Downloads', href: '/downloads', keywords: ['download', 'offline', 'saved'] },
   { label: 'View Plans', href: '/subscription', keywords: ['subscription', 'plan', 'pro', 'elite', 'price'] },
   { label: 'Open Settings', href: '/settings', keywords: ['setting', 'profile', 'gender', 'theme'] },
