@@ -7,35 +7,21 @@
 // stays separate per CLAUDE_CODE_MASTER_PROMPT.md's "data and portals stay separate"
 // instruction; only this generic Supabase-invite plumbing is shared.
 //
-// SECURITY: profileRole must never be 'admin' — profiles.role === 'admin' grants
-// platform-admin access via requireAdminUser() (src/lib/admin/auth.ts). Institution
-// roles (owner/admin/teacher/staff/...) are tracked entirely in
-// school_memberships/college_memberships.member_role, never on profiles.role, which
-// only reflects the generic consumer-app persona. That is why every institution
-// member — including an "owner" or institution "admin" — maps to profileRole
-// 'teacher' below, never 'admin'.
+// Server Actions must be async functions — the plain, synchronous role-mapping helper that used
+// to live here now lives in ./mapInstitutionRoleToProfileRole.ts. Callers should import
+// `mapInstitutionRoleToProfileRole` from that file directly, not from this one — re-exporting a
+// non-async function's value (as opposed to just its type) from a 'use server' file trips the
+// same "Server Actions must be async" build error this split was meant to fix.
 import { createAdminClient } from '@/lib/supabase/server';
 import { getSiteUrl } from '@/lib/utils/siteUrl';
+import type { InvitableProfileRole } from './mapInstitutionRoleToProfileRole';
 
-export type InvitableProfileRole = 'teacher' | 'student' | 'parent';
+export type { InvitableProfileRole } from './mapInstitutionRoleToProfileRole';
 
 export type InviteOrFindProfileResult = {
   id: string;
   invited: boolean;
 };
-
-/**
- * Maps an institution membership role (school_memberships.member_role /
- * college_memberships.member_role) to the generic profiles.role enum
- * (student | teacher | admin | parent). Never returns 'admin' — see file header.
- */
-export function mapInstitutionRoleToProfileRole(memberRole: string): InvitableProfileRole {
-  if (memberRole === 'parent') return 'parent';
-  if (memberRole === 'student') return 'student';
-  // owner, admin, admissions, accountant, staff, teacher all become 'teacher' —
-  // a safe non-platform-admin generic staff persona.
-  return 'teacher';
-}
 
 /**
  * Looks up a profile by email. If none exists yet, invites the email via Supabase

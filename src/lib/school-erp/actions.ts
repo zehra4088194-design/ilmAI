@@ -9,7 +9,8 @@ import type { SchoolModuleKey } from './modules';
 import { grantSchoolSubscription, isOrganizationBillingActive } from './subscription-cascade';
 import { uploadSchoolLogo } from './storage';
 import type { SchoolActionState, SchoolContext, SchoolPermission } from './types';
-import { inviteOrFindProfileId, mapInstitutionRoleToProfileRole } from '@/lib/auth/inviteOrFindProfile';
+import { inviteOrFindProfileId } from '@/lib/auth/inviteOrFindProfile';
+import { mapInstitutionRoleToProfileRole } from '@/lib/auth/mapInstitutionRoleToProfileRole';
 
 const SUCCESS: SchoolActionState = { success: true, message: 'Saved successfully.' };
 

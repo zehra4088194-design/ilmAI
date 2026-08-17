@@ -11,9 +11,9 @@ import slugify from 'slugify';
 import { requireAdminUser } from '@/lib/admin/auth';
 import { createAdminClient } from '@/lib/supabase/server';
 import { inviteOrFindProfileId } from '@/lib/auth/inviteOrFindProfile';
+import type { QuranActionState } from './action-state';
 
-export type QuranActionState = { success: boolean; message: string };
-export const INITIAL_QURAN_ACTION_STATE: QuranActionState = { success: false, message: '' };
+export type { QuranActionState } from './action-state';
 
 export async function addQuranTeacher(_state: QuranActionState, formData: FormData): Promise<QuranActionState> {
   const admin = await requireAdminUser();

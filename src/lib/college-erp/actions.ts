@@ -9,7 +9,8 @@ import type { CollegeModuleKey } from './modules';
 import { grantCollegeSubscription, isCollegeOrganizationBillingActive } from './subscription-cascade';
 import { uploadCollegeLogo } from './storage';
 import type { CollegeActionState, CollegeContext, CollegePermission } from './types';
-import { inviteOrFindProfileId, mapInstitutionRoleToProfileRole } from '@/lib/auth/inviteOrFindProfile';
+import { inviteOrFindProfileId } from '@/lib/auth/inviteOrFindProfile';
+import { mapInstitutionRoleToProfileRole } from '@/lib/auth/mapInstitutionRoleToProfileRole';
 
 // College-side mirror of src/lib/school-erp/actions.ts. Payroll and PTM (parent-teacher meeting)
 // actions are NOT ported — those operate on school-only tables from later migrations

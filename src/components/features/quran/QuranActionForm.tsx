@@ -3,7 +3,7 @@
 import { useActionState, type ReactNode } from 'react';
 import { CheckCircle2, CircleAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { INITIAL_QURAN_ACTION_STATE, type QuranActionState } from '@/lib/quran/admin-actions';
+import { INITIAL_QURAN_ACTION_STATE, type QuranActionState } from '@/lib/quran/action-state';
 
 type QuranServerAction = (state: QuranActionState, formData: FormData) => Promise<QuranActionState>;
 
