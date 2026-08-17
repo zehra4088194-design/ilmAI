@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { requireAdminUser } from '@/lib/admin/auth';
 import { createServiceClient } from '@/lib/supabase/service';
 import { gatewayChat } from '@/lib/ai/gateway';
 import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
@@ -8,10 +8,10 @@ import { parseAiJson } from '@/lib/utils/json-extract';
 export const runtime = 'nodejs';
 
 export async function POST() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user!.id).single();
-  if (profile?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  // requireAdminUser() also honors the ADMIN_EMAILS allowlist, not just
+  // profiles.role='admin' — see refresh-exchange-rate/route.ts for the same fix.
+  const user = await requireAdminUser();
+  if (!user) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const provider = await resolveAiRoutingProvider('studyTools');
   const result = await gatewayChat({
     provider,

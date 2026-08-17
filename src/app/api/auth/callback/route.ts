@@ -7,6 +7,7 @@ import { nanoid } from 'nanoid';
 import { LOCALE_COOKIE_NAME } from '@/lib/i18n/config';
 import { getRequestSiteUrl } from '@/lib/utils/siteUrl';
 import { createInstitutionalJoinRequestFromSignup } from '@/lib/school-erp/join-request-signup';
+import { resolveMembershipRedirect } from '@/lib/auth/resolveMembershipRedirect';
 
 type BoardType = Database['public']['Enums']['board_type'];
 type GradeLevel = Database['public']['Enums']['grade_level'];
@@ -266,6 +267,17 @@ export async function GET(request: NextRequest) {
         );
       }
 
+      // A school/college member (principal, teacher, staff, ...) signing in via Google/magic-link
+      // must land on their institution portal, not the generic dashboard `redirectTo` normally
+      // falls back to. This route never consulted membership at all before — only the plain
+      // password-login flow (post-login-destination) did — so an institution member using Google
+      // sign-in always ended up on the regular consumer dashboard. Only overrides the final,
+      // "nothing else applies" fallback below; parent-link, onboarding, and profile-completion
+      // redirects still take priority since those are one-time setup steps every account needs.
+      const membershipRedirect = isParentLinkRedirect
+        ? null
+        : await resolveMembershipRedirect(supabase, data.user.id, redirectTo);
+
       const destination = isParentLinkRedirect
         ? redirectTo
         : !profileForRedirect.username && !needsProfileCompletion(profileForRedirect)
@@ -276,7 +288,7 @@ export async function GET(request: NextRequest) {
               ? '/onboarding/class'
               : resolvedRole === 'parent'
                 ? '/parent'
-                : redirectTo;
+                : (membershipRedirect?.institutionType ? membershipRedirect.destination : redirectTo);
 
       const response = NextResponse.redirect(`${origin}${destination}`);
       response.cookies.set(

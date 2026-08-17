@@ -9,6 +9,7 @@ import type { CollegeModuleKey } from './modules';
 import { grantCollegeSubscription, isCollegeOrganizationBillingActive } from './subscription-cascade';
 import { uploadCollegeLogo } from './storage';
 import type { CollegeActionState, CollegeContext, CollegePermission } from './types';
+import { inviteOrFindProfileId, mapInstitutionRoleToProfileRole } from '@/lib/auth/inviteOrFindProfile';
 
 // College-side mirror of src/lib/school-erp/actions.ts. Payroll and PTM (parent-teacher meeting)
 // actions are NOT ported — those operate on school-only tables from later migrations
@@ -323,8 +324,7 @@ export async function addCollegeMember(_state: CollegeActionState, formData: For
       throw new Error('A valid registered email and role are required.');
     }
     const { db, context } = await mutationContext('people.manage', 'member', 'people');
-    const { data: profile } = await db.from('profiles').select('id').eq('email', email).maybeSingle();
-    if (!profile) throw new Error('This email must register an ilm AI account first.');
+    const profile = await inviteOrFindProfileId(email, { profileRole: mapInstitutionRoleToProfileRole(role) });
     const { data, error } = await db
       .from('college_memberships')
       .upsert(
@@ -347,7 +347,10 @@ export async function addCollegeMember(_state: CollegeActionState, formData: For
     if (await isCollegeOrganizationBillingActive(db, context.organization.id)) {
       await grantCollegeSubscription(context.organization.id, profile.id);
     }
-    return done('/college-admin/people', 'College member added.');
+    return done(
+      '/college-admin/people',
+      profile.invited ? 'College member added. An invite email was sent to set their password.' : 'College member added.'
+    );
   } catch (error) {
     return failure(error);
   }

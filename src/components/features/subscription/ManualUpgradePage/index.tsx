@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import QRCode from 'react-qr-code';
 import { ArrowLeft, CheckCircle2, Copy, CreditCard, Crown, Rocket } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -192,25 +193,34 @@ export function ManualUpgradePage({
 
           {!paymentAvailability.consumptionOnly && !hasActiveSubscription && country === 'PK' && method === 'wallet' && (
             <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5">
-              <h2 className="text-lg font-bold">Easypaisa / JazzCash</h2>
+              <h2 className="text-lg font-bold">JazzCash</h2>
               <p className="text-muted-foreground mt-2 text-sm leading-6">
                 Send exactly Rs. {formatPrice(price, 'PKR')}, then send the transaction screenshot and registered account
                 email to support. The plan will be activated by an admin after verification.
               </p>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="mt-4 space-y-3">
                 {MANUAL_PAYMENT_OPTIONS.map((option) => (
-                  <button
+                  <div
                     key={option.label}
-                    type="button"
-                    onClick={() => copy(option.number)}
-                    className="bg-background flex items-center justify-between rounded-xl border p-4 text-left transition-colors hover:border-amber-500/50"
+                    className="bg-background flex flex-col items-center gap-4 rounded-xl border p-4 text-center sm:flex-row sm:text-left"
                   >
-                    <span>
-                      <span className="block font-bold">{option.label}</span>
-                      <span className="block text-lg font-semibold">{option.number}</span>
-                    </span>
-                    <Copy className="text-muted-foreground h-4 w-4" />
-                  </button>
+                    <div className="rounded-lg bg-white p-2">
+                      <QRCode value={option.number} size={132} level="M" bgColor="#ffffff" fgColor="#000000" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-amber-600">{option.label}</p>
+                      <p className="text-lg font-bold">Rs. {formatPrice(price, 'PKR')}</p>
+                      <p className="text-muted-foreground text-sm">{option.accountName}</p>
+                      <button
+                        type="button"
+                        onClick={() => copy(option.number)}
+                        className="mt-2 inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors hover:border-amber-500/50"
+                      >
+                        {option.number}
+                        <Copy className="text-muted-foreground h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
                 ))}
               </div>
               <p className="text-muted-foreground mt-4 text-xs">

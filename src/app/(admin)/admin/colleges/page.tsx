@@ -123,13 +123,39 @@ export default async function AdminCollegesPage() {
                         </option>
                       ))}
                     </select>
-                    <select name="billing_status" className={selectClass} defaultValue={plan?.billing_status || "trial"}>
-                      {["trial", "active", "past_due", "manual_review", "suspended", "cancelled"].map((status) => (
-                        <option key={status} value={status}>
-                          {status}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="grid grid-cols-2 gap-2">
+                      <select name="billing_status" className={selectClass} defaultValue={plan?.billing_status || "trial"}>
+                        {["trial", "active", "past_due", "manual_review", "suspended", "cancelled"].map((status) => (
+                          <option key={status} value={status}>
+                            {status}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        name="grant_tier"
+                        className={selectClass}
+                        defaultValue={plan?.grant_tier || "PRO"}
+                        title="AI tier granted to every active member"
+                      >
+                        <option value="PRO">Pro</option>
+                        <option value="ELITE">Elite</option>
+                      </select>
+                    </div>
+                    <div>
+                      <Input
+                        name="trial_days"
+                        type="number"
+                        min={1}
+                        defaultValue={plan?.trial_days ?? ""}
+                        placeholder="Trial length (days) — only used when status = trial"
+                      />
+                      {plan?.billing_status === "trial" && plan?.trial_ends_at && (
+                        <p className="text-muted-foreground mt-1 text-[11px]">
+                          Current trial ends {new Date(plan.trial_ends_at).toLocaleDateString()}. Leave blank to keep it;
+                          enter a number to restart the trial from today.
+                        </p>
+                      )}
+                    </div>
                     <div className="grid grid-cols-3 gap-2">
                       <Input name="max_students" type="number" min={0} defaultValue={plan?.max_students ?? 200} placeholder="Students" />
                       <Input name="max_teachers" type="number" min={0} defaultValue={plan?.max_teachers ?? 25} placeholder="Teachers" />

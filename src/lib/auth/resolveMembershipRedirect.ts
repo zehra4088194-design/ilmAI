@@ -7,6 +7,14 @@ export type MembershipRedirectResult = {
   institutionType: 'school' | 'college' | null;
 };
 
+const SCHOOL_PORTAL_PREFIXES = ['/school-admin', '/school'];
+const COLLEGE_PORTAL_PREFIXES = ['/college-admin', '/college'];
+
+function isDeepLinkWithin(path: string | null | undefined, prefixes: string[]): path is string {
+  if (!path || !path.startsWith('/') || path.startsWith('//')) return false;
+  return prefixes.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
+}
+
 /**
  * Single shared low-level resolver used by both the school and college login-redirect flows
  * (CLAUDE_CODE_MASTER_PROMPT.md Phase 2, §3.3: "a single shared low-level helper... rather than
@@ -16,26 +24,42 @@ export type MembershipRedirectResult = {
  * then the normal consumer flow. A profile with active memberships in BOTH a school and a college
  * lands on the school portal — that ambiguity is not resolved by this function; see
  * docs/SCHOOL_COLLEGE_SEPARATION_TODO.md §5 for the open "at most one role" decision.
+ *
+ * `requestedRedirect` (optional) is whatever `?redirect=` the login/callback flow was carrying —
+ * e.g. because middleware bounced an unauthenticated visit to a protected page through
+ * `/login?redirect=<path>`. It is only honored when it's a genuine deep link into the resolved
+ * institution's OWN portal (so "I was trying to reach /school-admin/people" still works); any other
+ * value (most commonly the generic `/dashboard` fallback nearly every login flow defaults to) is
+ * ignored in favor of the institution home. This is the fix for a real bug: a school/college member
+ * logging in through a link that carried `?redirect=/dashboard` used to always land on the generic
+ * consumer dashboard instead of their portal, because callers were skipping this resolver entirely
+ * whenever an explicit redirect was present.
  */
 export async function resolveMembershipRedirect(
   supabase: SupabaseClient,
-  userId: string
+  userId: string,
+  requestedRedirect?: string | null
 ): Promise<MembershipRedirectResult> {
   const schoolContext = await getSchoolContext(supabase, userId);
   if (schoolContext) {
+    const home = schoolAdminHomeForRole(schoolContext.membership.member_role);
     return {
-      destination: schoolAdminHomeForRole(schoolContext.membership.member_role),
+      destination: isDeepLinkWithin(requestedRedirect, SCHOOL_PORTAL_PREFIXES) ? requestedRedirect : home,
       institutionType: 'school',
     };
   }
 
   const collegeContext = await getCollegeContext(supabase, userId);
   if (collegeContext) {
+    const home = collegeAdminHomeForRole(collegeContext.membership.member_role);
     return {
-      destination: collegeAdminHomeForRole(collegeContext.membership.member_role),
+      destination: isDeepLinkWithin(requestedRedirect, COLLEGE_PORTAL_PREFIXES) ? requestedRedirect : home,
       institutionType: 'college',
     };
   }
 
+  if (requestedRedirect && requestedRedirect.startsWith('/') && !requestedRedirect.startsWith('//')) {
+    return { destination: requestedRedirect, institutionType: null };
+  }
   return { destination: '/dashboard', institutionType: null };
 }

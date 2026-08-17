@@ -9,6 +9,7 @@ import type { SchoolModuleKey } from './modules';
 import { grantSchoolSubscription, isOrganizationBillingActive } from './subscription-cascade';
 import { uploadSchoolLogo } from './storage';
 import type { SchoolActionState, SchoolContext, SchoolPermission } from './types';
+import { inviteOrFindProfileId, mapInstitutionRoleToProfileRole } from '@/lib/auth/inviteOrFindProfile';
 
 const SUCCESS: SchoolActionState = { success: true, message: 'Saved successfully.' };
 
@@ -308,8 +309,7 @@ export async function addSchoolMember(_state: SchoolActionState, formData: FormD
       throw new Error('A valid registered email and role are required.');
     }
     const { db, context } = await mutationContext('people.manage', 'member', 'people');
-    const { data: profile } = await db.from('profiles').select('id').eq('email', email).maybeSingle();
-    if (!profile) throw new Error('This email must register an ilm AI account first.');
+    const profile = await inviteOrFindProfileId(email, { profileRole: mapInstitutionRoleToProfileRole(role) });
     const { data, error } = await db
       .from('school_memberships')
       .upsert(
@@ -332,7 +332,10 @@ export async function addSchoolMember(_state: SchoolActionState, formData: FormD
     if (await isOrganizationBillingActive(db, context.organization.id)) {
       await grantSchoolSubscription(context.organization.id, profile.id);
     }
-    return done('/school-admin/people', 'School member added.');
+    return done(
+      '/school-admin/people',
+      profile.invited ? 'School member added. An invite email was sent to set their password.' : 'School member added.'
+    );
   } catch (error) {
     return failure(error);
   }

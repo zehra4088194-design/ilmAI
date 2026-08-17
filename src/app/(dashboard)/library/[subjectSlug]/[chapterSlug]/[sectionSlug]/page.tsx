@@ -120,6 +120,7 @@ export default async function LibrarySectionPage({
                 id: resource.id,
                 title: resource.title,
                 description: resource.description,
+                resourceType,
                 fileType: resource.file_type,
                 bookTitle: resource.book_title,
                 hasContextText: resource.has_context_text,

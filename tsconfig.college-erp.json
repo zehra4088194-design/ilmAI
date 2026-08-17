@@ -17,6 +17,8 @@
     "src/app/colleges/**/*.tsx",
     "src/app/api/auth/post-login-destination/**/*.ts",
     "src/app/api/college-admin/**/*.ts",
+    "src/app/api/cron/expire-institution-trials/**/*.ts",
+    "src/lib/auth/inviteOrFindProfile.ts",
     "src/app/(admin)/admin/colleges/**/*.ts",
     "src/app/(admin)/admin/colleges/**/*.tsx",
     "src/components/college/**/*.tsx",

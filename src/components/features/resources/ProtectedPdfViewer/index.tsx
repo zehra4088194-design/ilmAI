@@ -38,6 +38,7 @@ export function ProtectedPdfViewer({
   file: sourceFile,
   title,
   className,
+  toolbarVisible = true,
 }: {
   // Accepts the already-downloaded Blob directly, not a blob: object URL. Handing pdf.js a
   // blob: URL string makes it treat the document as a network resource and issue its own
@@ -48,6 +49,9 @@ export function ProtectedPdfViewer({
   file: Blob | string;
   title: string;
   className?: string;
+  // Driven by the parent's fullscreen auto-hide timer — false fades this toolbar out so only the
+  // page content fills the screen. Always true outside fullscreen.
+  toolbarVisible?: boolean;
 }) {
   const frameRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -251,7 +255,15 @@ export function ProtectedPdfViewer({
       className={cn('bg-slate-200 text-slate-950 outline-none', className)}
     >
       <div className="flex h-full min-h-0 flex-col">
-        <div className="flex min-h-12 shrink-0 items-center justify-between gap-2 border-b border-slate-300 bg-white px-2 shadow-sm sm:px-3">
+        <div
+          className={cn(
+            'flex shrink-0 items-center justify-between gap-2 overflow-hidden border-slate-300 bg-white px-2 shadow-sm transition-all duration-300 ease-in-out sm:px-3',
+            // Height collapses along with opacity (not just opacity alone) so the PDF viewport
+            // below actually reclaims the toolbar's space in fullscreen instead of leaving a
+            // blank invisible strip at the top.
+            toolbarVisible ? 'min-h-12 border-b opacity-100' : 'pointer-events-none min-h-0 border-b-0 py-0 opacity-0',
+          )}
+        >
           <div className="flex min-w-0 items-center gap-1">
             <input
               type="number"

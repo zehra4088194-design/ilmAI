@@ -63,8 +63,38 @@ function getSecondaryConfig(): R2Config | null {
     : null;
 }
 
+// Third B2 account/bucket, dedicated to the Rest & Audio library (relaxing
+// playlists, spoken-word tracks, etc). Kept separate from the primary and
+// secondary buckets for the same reason as the secondary one — its own B2
+// account, its own application key — and so audio storage cost/usage stays
+// isolated and easy to reason about on its own bucket dashboard.
+function getAudioConfig(): R2Config | null {
+  const endpoint = process.env.AUDIO_STORAGE_ENDPOINT || process.env.OBJECT_STORAGE_ENDPOINT || '';
+  const accessKeyId = process.env.AUDIO_STORAGE_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.AUDIO_STORAGE_SECRET_ACCESS_KEY;
+  const bucket = process.env.AUDIO_STORAGE_BUCKET;
+  const region = process.env.AUDIO_STORAGE_REGION || process.env.OBJECT_STORAGE_REGION || 'auto';
+  const forcePathStyle = Boolean(
+    process.env.AUDIO_STORAGE_FORCE_PATH_STYLE || process.env.OBJECT_STORAGE_FORCE_PATH_STYLE
+  );
+  return endpoint && accessKeyId && secretAccessKey && bucket
+    ? { accessKeyId, secretAccessKey, bucket, endpoint, region, forcePathStyle }
+    : null;
+}
+
+// Name of the configured audio bucket, if any — for call sites (upload
+// routes) that need to pass an explicit `bucket` to putR2Object/getR2Uri
+// instead of falling through to the primary bucket.
+export function getAudioBucketName(): string | null {
+  return getAudioConfig()?.bucket || null;
+}
+
+export function isAudioStorageConfigured() {
+  return Boolean(getAudioConfig());
+}
+
 function allConfigs(): R2Config[] {
-  return [getPrimaryConfig(), getSecondaryConfig()].filter((c): c is R2Config => c !== null);
+  return [getPrimaryConfig(), getSecondaryConfig(), getAudioConfig()].filter((c): c is R2Config => c !== null);
 }
 
 // Resolves which configured bucket to use: an explicit bucket name (from a

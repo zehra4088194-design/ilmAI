@@ -318,7 +318,7 @@ function LudoBoard({ state, currentUserId, onMove }: { state: LudoState; current
             aria-label={`${player.name} token ${tokenIndex + 1}`}
             onClick={() => playable && onMove(tokenIndex)}
             disabled={!playable}
-            className={`absolute z-20 flex h-[5.8%] w-[5.8%] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white text-[9px] font-black text-white shadow-lg transition-transform ${playable ? 'cursor-pointer animate-pulse ring-4 ring-slate-900/25 hover:scale-110' : 'cursor-default'}`}
+            className={`absolute z-20 flex h-[5.8%] w-[5.8%] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white text-[9px] font-black text-white shadow-lg transition-[left,top,transform] duration-300 ease-out ${playable ? 'cursor-pointer animate-pulse ring-4 ring-slate-900/25 hover:scale-110' : 'cursor-default'}`}
             style={{ left: `${((point[1] + 0.5) / 15) * 100}%`, top: `${((point[0] + 0.5) / 15) * 100}%`, background: `radial-gradient(circle at 30% 25%, #ffffffaa, ${color.hex} 45%, #111827 160%)` }}
           >
             {tokenIndex + 1}
@@ -379,7 +379,7 @@ function MemoryMatchGame() {
           </Button>
         </div>
       </div>
-      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
         {deck.map((card, index) => {
           const visible = selected.includes(index) || matched.has(card.id);
           return (
@@ -387,13 +387,13 @@ function MemoryMatchGame() {
               key={card.cardId}
               type="button"
               onClick={() => chooseCard(index)}
-              className={`aspect-[1.15] rounded-xl border p-2 text-center transition-all ${
+              className={`aspect-[1.15] overflow-hidden rounded-xl border p-2 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition-all duration-200 ${
                 visible
-                  ? `${card.tone} shadow-sm`
-                  : 'border-border/70 bg-card hover:border-violet-400/45 hover:bg-violet-500/10'
+                  ? `${card.tone} scale-[1.02] shadow-md`
+                  : 'border-border/70 bg-card hover:-translate-y-0.5 hover:border-violet-400/45 hover:bg-violet-500/10 hover:shadow-md'
               }`}
             >
-              <span className="flex h-full items-center justify-center text-xs font-bold sm:text-sm">
+              <span className="line-clamp-4 flex h-full items-center justify-center overflow-hidden text-[11px] leading-tight font-bold break-words sm:text-xs md:text-sm">
                 {visible ? card.label : '?'}
               </span>
             </button>
@@ -740,17 +740,24 @@ export function GameRoomClient({
         <div className="grid gap-5 lg:grid-cols-[1fr,360px]">
           <Card className={game.game_type === 'live_ludo' ? 'overflow-hidden border-slate-700 bg-[#111729] text-slate-100 shadow-2xl' : 'overflow-hidden'}>
             <CardHeader className={game.game_type === 'live_ludo' ? 'border-b border-slate-700/80 bg-[#171f34] pb-4' : undefined}>
-              <CardTitle className="flex items-center justify-between">
-                <span className="flex min-w-0 items-center gap-2">
+              <CardTitle className="flex flex-wrap items-center justify-between gap-2">
+                <span className="flex min-w-0 items-center gap-2 truncate">
                   {game.game_type === 'live_ludo' ? 'Ludo Arena' : `Live Room ${joinedRoom}`}
                   {game.game_type === 'live_ludo' && (
-                    <button type="button" onClick={() => void copyRoomCode()} className="rounded-md border border-slate-600 bg-slate-800 p-1.5 text-slate-300 hover:bg-slate-700" aria-label="Copy room code" title="Copy room code">
+                    <button type="button" onClick={() => void copyRoomCode()} className="shrink-0 rounded-md border border-slate-600 bg-slate-800 p-1.5 text-slate-300 hover:bg-slate-700" aria-label="Copy room code" title="Copy room code">
                       <Copy className="h-3.5 w-3.5" />
                     </button>
                   )}
                 </span>
                 {(game.game_type === 'live_ludo' || game.game_type === 'logic_dice') && (
-                  <Button onClick={rollDice} disabled={isRolling || remaining <= 0 || (game.game_type === 'live_ludo' && !isMyLudoTurn)} variant="gradient" className={game.game_type === 'live_ludo' ? 'min-w-28 shadow-lg shadow-violet-900/40' : undefined}><Dice5 className={`h-4 w-4 ${isRolling ? 'animate-spin' : ''}`} /> {isRolling ? 'Rolling...' : 'Roll'}</Button>
+                  <Button
+                    onClick={rollDice}
+                    disabled={isRolling || remaining <= 0 || (game.game_type === 'live_ludo' && !isMyLudoTurn)}
+                    variant="gradient"
+                    className={game.game_type === 'live_ludo' ? 'min-w-28 shrink-0 shadow-lg shadow-violet-900/40' : 'shrink-0'}
+                  >
+                    <Dice5 className={`h-4 w-4 ${isRolling ? 'animate-spin' : ''}`} /> {isRolling ? 'Rolling...' : 'Roll'}
+                  </Button>
                 )}
               </CardTitle>
             </CardHeader>
@@ -791,30 +798,49 @@ export function GameRoomClient({
                     </div>
                     <LudoBoard state={ludoState} currentUserId={currentUserId} onMove={moveLudoToken} />
                   </div>
-                  <div className="rounded-xl border border-slate-700 bg-slate-800/70 px-4 py-3 text-sm text-slate-200">
-                    <span className="mr-2 inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-                    {ludoState.players.length < 2
-                      ? 'Share the room code to invite another student.'
-                      : ludoState.winnerIds.length > 0
-                        ? `${ludoState.players.find((player) => player.id === ludoState.winnerIds[0])?.name || 'A player'} has finished the match.`
-                        : ludoState.dice
-                          ? automaticTokenIndex !== null
-                            ? `${activeLudoPlayer?.name || 'Player'} has one legal move. Moving automatically...`
-                            : `${activeLudoPlayer?.name || 'Player'} rolled ${ludoState.dice}. Choose a glowing token.`
-                          : `${activeLudoPlayer?.name || 'Waiting for players'} is rolling now.`}
-                  </div>
+                  {ludoState.winnerIds.length > 0 ? (
+                    <div className="flex items-center gap-3 rounded-xl border border-amber-400/40 bg-gradient-to-r from-amber-500/20 via-amber-400/10 to-transparent px-4 py-3 text-sm text-amber-100 shadow-inner">
+                      <Trophy className="h-6 w-6 shrink-0 text-amber-300" />
+                      <span className="min-w-0 break-words">
+                        <span className="font-bold">
+                          {ludoState.players.find((player) => player.id === ludoState.winnerIds[0])?.name || 'A player'}
+                        </span>{' '}
+                        finished first! Great match — head back to a focused study block.
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/70 px-4 py-3 text-sm text-slate-200">
+                      <span className="inline-flex h-2 w-2 shrink-0 rounded-full bg-emerald-400" />
+                      <span className="min-w-0 break-words">
+                        {ludoState.players.length < 2
+                          ? 'Share the room code to invite another student.'
+                          : ludoState.dice
+                            ? automaticTokenIndex !== null
+                              ? `${activeLudoPlayer?.name || 'Player'} has one legal move. Moving automatically...`
+                              : `${activeLudoPlayer?.name || 'Player'} rolled ${ludoState.dice}. Choose a glowing token.`
+                            : `${activeLudoPlayer?.name || 'Waiting for players'} is rolling now.`}
+                      </span>
+                    </div>
+                  )}
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                    {LUDO_COLORS.map((color, index) => (
-                      <div key={color.name} className={`rounded-xl border p-2.5 transition ${ludoState.players[index]?.id === activeLudoPlayer?.id ? `${color.border} ${color.soft} ring-1 ring-white/30` : 'border-slate-700 bg-slate-800/60'}`}>
-                        <div className="flex min-w-0 items-center gap-2">
-                          <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${color.bg} text-xs font-black text-white ring-2 ring-white/30`}>
-                            {ludoState.players[index]?.name?.slice(0, 1).toUpperCase() || '+'}
-                          </span>
-                          <p className="truncate text-sm font-semibold text-white">{ludoState.players[index]?.name || `${color.name} seat`}</p>
+                    {LUDO_COLORS.map((color, index) => {
+                      const seatPlayer = ludoState.players[index];
+                      const isTurn = seatPlayer?.id === activeLudoPlayer?.id && ludoState.winnerIds.length === 0;
+                      return (
+                        <div key={color.name} className={`rounded-xl border p-2.5 transition-all duration-200 ${isTurn ? `${color.border} ${color.soft} ring-2 ring-white/40 shadow-lg` : 'border-slate-700 bg-slate-800/60'}`}>
+                          <div className="flex min-w-0 items-center gap-2">
+                            <span className={`relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${color.bg} text-xs font-black text-white ring-2 ring-white/30`}>
+                              {seatPlayer?.name?.slice(0, 1).toUpperCase() || '+'}
+                              {isTurn && <span className="absolute inset-0 animate-ping rounded-full bg-white/40" />}
+                            </span>
+                            <p className="truncate text-sm font-semibold text-white">{seatPlayer?.name || `${color.name} seat`}</p>
+                          </div>
+                          <p className="mt-2 truncate text-[11px] text-slate-400">
+                            {seatPlayer ? (ludoState.winnerIds.includes(seatPlayer.id) ? '🏆 Finished' : isTurn ? 'Playing now' : 'In room') : 'Open seat'}
+                          </p>
                         </div>
-                        <p className="mt-2 text-[11px] text-slate-400">{ludoState.players[index] ? (ludoState.winnerIds.includes(ludoState.players[index]!.id) ? 'Finished' : ludoState.players[index]?.id === activeLudoPlayer?.id ? 'Playing now' : 'In room') : 'Open seat'}</p>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </>
               )}
@@ -828,7 +854,7 @@ export function GameRoomClient({
                 {events.length === 0 && <p className="text-sm text-muted-foreground">No activity yet.</p>}
                 {events.map((event) => (
                   <div key={event.id} className="rounded-lg bg-card p-2 text-sm">
-                    <p className="font-medium">
+                    <p className="font-medium break-words">
                       {event.event_type === 'dice_roll'
                         ? `Dice: ${event.payload?.value}`
                         : event.event_type === 'quiz_answer'

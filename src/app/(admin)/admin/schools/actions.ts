@@ -7,6 +7,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { normalizeSchoolModules } from '@/lib/school-erp/modules';
 import { syncOrganizationSchoolGrants } from '@/lib/school-erp/subscription-cascade';
 import type { SchoolActionState } from '@/lib/school-erp/types';
+import { inviteOrFindProfileId } from '@/lib/auth/inviteOrFindProfile';
 
 export async function createSchoolOrganization(
   _state: SchoolActionState,
@@ -25,8 +26,12 @@ export async function createSchoolOrganization(
   }
 
   const db = (await createAdminClient()) as any;
-  const { data: owner } = await db.from('profiles').select('id').eq('email', ownerEmail).maybeSingle();
-  if (!owner) return { success: false, message: 'The owner email must register an ilm AI account first.' };
+  let owner: { id: string; invited: boolean };
+  try {
+    owner = await inviteOrFindProfileId(ownerEmail, { profileRole: 'teacher', fullNameHint: `${name} Principal` });
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : 'Could not invite the owner email.' };
+  }
 
   const { data: organization, error } = await db
     .from('school_organizations')
@@ -81,7 +86,12 @@ export async function createSchoolOrganization(
     metadata: { ownerEmail },
   });
   revalidatePath('/admin/schools');
-  return { success: true, message: `${name} created and assigned to ${ownerEmail}.` };
+  return {
+    success: true,
+    message: owner.invited
+      ? `${name} created. An invite email was sent to ${ownerEmail} to set a password — they'll land on their school dashboard as soon as they log in.`
+      : `${name} created and assigned to ${ownerEmail}.`,
+  };
 }
 
 export async function updateSchoolPlanSettings(
@@ -105,11 +115,34 @@ export async function updateSchoolPlanSettings(
     .select('*')
     .eq('id', String(formData.get('plan_tier_id') || ''))
     .maybeSingle();
+  const { data: existingPlan } = await db
+    .from('school_organization_plan_settings')
+    .select('trial_ends_at')
+    .eq('organization_id', organizationId)
+    .maybeSingle();
+
+  const billingStatus = String(formData.get('billing_status') || 'trial');
+  const grantTier = String(formData.get('grant_tier') || 'PRO') === 'ELITE' ? 'ELITE' : 'PRO';
+  const trialDaysRaw = Number(formData.get('trial_days'));
+  const trialDays = Number.isFinite(trialDaysRaw) && trialDaysRaw > 0 ? Math.floor(trialDaysRaw) : null;
+  // Only (re)compute trial_ends_at when a fresh trial_days value was submitted for
+  // a 'trial' status — this lets an admin re-save price/modules without silently
+  // resetting an already-running trial's clock. Leaving billing_status entirely
+  // clears trial_ends_at since it no longer applies.
+  const trialEndsAt =
+    billingStatus !== 'trial'
+      ? null
+      : trialDays
+        ? new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000).toISOString()
+        : existingPlan?.trial_ends_at || null;
 
   const payload = {
     organization_id: organizationId,
     plan_tier_id: tier?.id || null,
-    billing_status: String(formData.get('billing_status') || 'trial'),
+    billing_status: billingStatus,
+    grant_tier: grantTier,
+    trial_days: trialDays,
+    trial_ends_at: trialEndsAt,
     max_students: numberField('max_students', tier?.max_students || 200),
     max_teachers: numberField('max_teachers', tier?.max_teachers || 25),
     max_storage_gb: numberField('max_storage_gb', tier?.max_storage_gb || 10),
@@ -127,7 +160,9 @@ export async function updateSchoolPlanSettings(
     .upsert(payload, { onConflict: 'organization_id' });
   if (error) return { success: false, message: error.message };
 
-  await syncOrganizationSchoolGrants(organizationId, payload.billing_status === 'active');
+  const shouldGrant =
+    billingStatus === 'active' || (billingStatus === 'trial' && !!trialEndsAt && new Date(trialEndsAt) > new Date());
+  await syncOrganizationSchoolGrants(organizationId, shouldGrant);
 
   await db.from('school_audit_logs').insert({
     organization_id: organizationId,

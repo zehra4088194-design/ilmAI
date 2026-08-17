@@ -5406,41 +5406,56 @@ export type Database = {
         Row: {
           artist: string | null
           created_at: string
+          duration_seconds: number | null
+          file_size_bytes: number | null
           id: string
           is_active: boolean
+          mime_type: string | null
           order_index: number
           playlist_id: string
+          source_type: string
+          storage_url: string | null
           thumbnail_url: string | null
           title: string
           updated_at: string
-          youtube_url: string
-          youtube_video_id: string
+          youtube_url: string | null
+          youtube_video_id: string | null
         }
         Insert: {
           artist?: string | null
           created_at?: string
+          duration_seconds?: number | null
+          file_size_bytes?: number | null
           id?: string
           is_active?: boolean
+          mime_type?: string | null
           order_index?: number
           playlist_id: string
+          source_type?: string
+          storage_url?: string | null
           thumbnail_url?: string | null
           title: string
           updated_at?: string
-          youtube_url: string
-          youtube_video_id: string
+          youtube_url?: string | null
+          youtube_video_id?: string | null
         }
         Update: {
           artist?: string | null
           created_at?: string
+          duration_seconds?: number | null
+          file_size_bytes?: number | null
           id?: string
           is_active?: boolean
+          mime_type?: string | null
           order_index?: number
           playlist_id?: string
+          source_type?: string
+          storage_url?: string | null
           thumbnail_url?: string | null
           title?: string
           updated_at?: string
-          youtube_url?: string
-          youtube_video_id?: string
+          youtube_url?: string | null
+          youtube_video_id?: string | null
         }
         Relationships: [
           {

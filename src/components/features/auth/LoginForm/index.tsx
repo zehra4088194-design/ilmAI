@@ -35,7 +35,6 @@ export function LoginForm() {
   const [mfaLoading, setMfaLoading] = useState(false);
   const [mfaError, setMfaError] = useState<string | null>(null);
   const searchParams = useSearchParams();
-  const hasExplicitRedirect = searchParams.has('redirect');
   const redirect = searchParams.get('redirect') || '/dashboard';
   const supabase = createClient();
   const t = useTranslations();
@@ -49,14 +48,16 @@ export function LoginForm() {
   const finishLogin = async () => {
     toast.success('Welcome back!');
     let destination = redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/dashboard';
-    if (!hasExplicitRedirect) {
-      try {
-        const response = await fetch('/api/auth/post-login-destination');
-        const data = await response.json();
-        if (typeof data.destination === 'string') destination = data.destination;
-      } catch {
-        // Keep the default '/dashboard' destination if the lookup fails.
-      }
+    try {
+      // Always consulted, even when the URL already carried an explicit ?redirect= — a school/
+      // college member must land on their own portal regardless of what generic page (usually
+      // /dashboard) a prior redirect happened to point at. The endpoint itself only honors the
+      // explicit redirect when it's a genuine deep link into that member's own portal.
+      const response = await fetch(`/api/auth/post-login-destination?redirect=${encodeURIComponent(destination)}`);
+      const data = await response.json();
+      if (typeof data.destination === 'string') destination = data.destination;
+    } catch {
+      // Keep the fallback destination if the lookup fails.
     }
     window.location.assign(new URL(destination, getBrowserSiteUrl()).toString());
   };

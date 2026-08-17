@@ -22,6 +22,11 @@ export interface DriveResourceData {
   id: string;
   title: string;
   description?: string | null;
+  // A pairing scheme is an exam-format reference (marks per section, question counts) — there is
+  // no "content" in it to summarize or build a comprehension test from, so the AI Summary /
+  // Test-from-this-file / chapter-MCQ tools below are hidden for it and shown for every other
+  // resource type as before.
+  resourceType?: 'text_book' | 'notes' | 'pairing_scheme' | 'guess_paper';
   fileType?: string | null;
   subjectName?: string | null;
   subjectColor?: string | null;
@@ -143,7 +148,7 @@ export function GoogleDriveResourceCard({
           <Maximize2 className="h-3.5 w-3.5" />
           Read PDF
         </Button>
-        {user ? (
+        {resource.resourceType === 'pairing_scheme' ? null : user ? (
           <ResourceAiTools kind="library" resourceId={resource.id} />
         ) : (
           <Button asChild variant="outline" size="sm" className="w-full">

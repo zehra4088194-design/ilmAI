@@ -75,7 +75,7 @@ export async function GET() {
     .select('id, subject_id, chapter_id')
     .in('subject_id', subjectIds)
     .eq('content_section', 'mcq');
-  const resourceById = new Map((mcqResources || []).map((r: any) => [r.id, r]));
+  const resourceById = new Map<string, any>((mcqResources || []).map((r: any) => [r.id, r]));
   const chapterIds = [...new Set((mcqResources || []).map((r: any) => r.chapter_id).filter(Boolean))];
   const { data: chapterRows } = chapterIds.length
     ? await db.from('chapters').select('id, name').in('id', chapterIds)
@@ -169,11 +169,67 @@ export async function POST(req: NextRequest) {
 
   const db = createServiceClient() as any;
   const questionBank = createServiceClient() as any;
-  const { data: questions, error } = await questionBank
-    .from('questions')
-    .select('id, text, subject_id, chapter_id, concept_id, options, correct_answer, explanation')
-    .in('id', questionIds);
-  if (error || !questions?.length)
+
+  // The GET handler above pools two question sources into one list: real rows from the
+  // `questions` table, and MCQs seeded against library resources (resource_mcq_sets), which it
+  // gives synthetic ids like `resource:<resourceId>:<index>` since they have no row of their own
+  // in `questions`. Looking every answered id up against `questions` alone — as this used to do —
+  // silently drops every resource-sourced question, and returns nothing (this exact "answer key
+  // could not be loaded" error) whenever a diagnostic run happened to include only those.
+  const realQuestionIds: string[] = [];
+  const resourceRefs: Array<{ id: string; resourceId: string; index: number }> = [];
+  for (const id of questionIds) {
+    const match = /^resource:([^:]+):(\d+)$/.exec(id);
+    if (match) {
+      resourceRefs.push({ id, resourceId: match[1]!, index: Number(match[2]) });
+    } else {
+      realQuestionIds.push(id);
+    }
+  }
+
+  const [questionsTableResult, resolvedResourceQuestions] = await Promise.all([
+    realQuestionIds.length
+      ? questionBank
+          .from('questions')
+          .select('id, text, subject_id, chapter_id, concept_id, options, correct_answer, explanation')
+          .in('id', realQuestionIds)
+      : { data: [], error: null },
+    (async () => {
+      if (!resourceRefs.length) return [];
+      const resourceIds = [...new Set(resourceRefs.map((ref) => ref.resourceId))];
+      const [{ data: sets }, { data: resourceMeta }] = await Promise.all([
+        questionBank
+          .from('resource_mcq_sets')
+          .select('resource_id, questions')
+          .eq('resource_kind', 'library')
+          .in('resource_id', resourceIds),
+        db.from('library_resources').select('id, subject_id, chapter_id').in('id', resourceIds),
+      ]);
+      const metaById = new Map<string, any>((resourceMeta || []).map((r: any) => [r.id, r]));
+      const questionsByResource = new Map<string, any[]>(
+        (sets || []).map((s: any) => [s.resource_id, s.questions || []]),
+      );
+      return resourceRefs
+        .map((ref) => {
+          const raw = questionsByResource.get(ref.resourceId)?.[ref.index];
+          const meta = metaById.get(ref.resourceId);
+          if (!raw) return null;
+          return {
+            id: ref.id,
+            text: String(raw.q || ''),
+            subject_id: meta?.subject_id ?? null,
+            chapter_id: meta?.chapter_id ?? null,
+            concept_id: null,
+            options: Array.isArray(raw.opts) ? raw.opts : [],
+            correct_answer: raw.correct,
+            explanation: raw.exp || '',
+          };
+        })
+        .filter((q): q is NonNullable<typeof q> => q !== null);
+    })(),
+  ]);
+  const questions = [...(questionsTableResult.data || []), ...resolvedResourceQuestions];
+  if (!questions.length)
     return NextResponse.json(
       { status: 'error', error: 'The diagnostic answer key could not be loaded.' },
       { status: 500 }

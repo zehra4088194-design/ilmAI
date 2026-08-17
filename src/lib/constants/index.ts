@@ -35,8 +35,7 @@ export const CURRENCY_SYMBOLS: Record<Currency, string> = {
 };
 
 export const MANUAL_PAYMENT_OPTIONS = [
-  { label: 'Easypaisa', number: '03480049900' },
-  { label: 'JazzCash', number: '03006596490' },
+  { label: 'JazzCash', number: '03001088194', accountName: 'MUHAMMAD AHMED NOOR' },
 ] as const;
 
 /**

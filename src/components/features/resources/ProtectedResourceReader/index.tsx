@@ -123,6 +123,11 @@ export function ProtectedResourceReader({
   const [pdfThemePreference, setPdfThemePreference] = useState<PdfReaderThemePreference>('auto');
   const [marking, setMarking] = useState(false);
   const [marked, setMarked] = useState(false);
+  // Fullscreen auto-hide: both toolbars (this header, and ProtectedPdfViewer's own page/zoom bar)
+  // fade out after a couple of idle seconds so only the page fills the screen, then reappear on
+  // the next mouse/touch activity. Controls always stay visible outside fullscreen.
+  const [controlsVisible, setControlsVisible] = useState(true);
+  const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const readerRef = useRef<HTMLDivElement>(null);
   const activeAppTheme = resolvedTheme || theme || '';
   const autoMode: ResourceMode = isDarkThemeId(activeAppTheme) ? 'dark' : 'light';
@@ -176,6 +181,38 @@ export function ProtectedResourceReader({
     };
   }, []);
 
+  const scheduleControlsHide = useCallback(() => {
+    if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
+    hideTimeoutRef.current = setTimeout(() => setControlsVisible(false), 1500);
+  }, []);
+
+  // Entering fullscreen starts the idle-hide countdown; exiting it cancels any pending hide and
+  // forces the toolbars back on (so the reader never opens back up into a still-faded state).
+  useEffect(() => {
+    if (!isFullscreen) {
+      if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
+      setControlsVisible(true);
+      return;
+    }
+    scheduleControlsHide();
+    return () => {
+      if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
+    };
+  }, [isFullscreen, scheduleControlsHide]);
+
+  // Any pointer activity while fullscreen brings the toolbars back and restarts the idle timer —
+  // a no-op outside fullscreen since controls are always visible there anyway.
+  const handleReaderActivity = useCallback(() => {
+    if (!isFullscreen) return;
+    setControlsVisible(true);
+    scheduleControlsHide();
+  }, [isFullscreen, scheduleControlsHide]);
+
+  const holdControlsVisible = useCallback(() => {
+    if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
+    setControlsVisible(true);
+  }, []);
+
   const toggleFullscreen = useCallback(async () => {
     if (!canFullscreen) return;
     try {
@@ -221,10 +258,25 @@ export function ProtectedResourceReader({
     }
   };
 
+  const toolbarsVisible = !isFullscreen || controlsVisible;
+
   if (!open) return null;
   return (
-    <div ref={readerRef} className="bg-background fixed inset-0 z-[230] flex h-dvh min-h-0 flex-col">
-      <div className="border-border flex min-h-14 items-center justify-between gap-3 border-b px-3 sm:px-5">
+    <div
+      ref={readerRef}
+      className="bg-background fixed inset-0 z-[230] flex h-dvh min-h-0 flex-col"
+      onMouseMove={handleReaderActivity}
+      onTouchStart={handleReaderActivity}
+    >
+      <div
+        className={`border-border flex items-center justify-between gap-3 overflow-hidden border-b px-3 transition-all duration-300 ease-in-out sm:px-5 ${
+          toolbarsVisible ? 'min-h-14 opacity-100' : 'pointer-events-none min-h-0 border-b-0 py-0 opacity-0'
+        }`}
+        onMouseEnter={holdControlsVisible}
+        onMouseLeave={() => {
+          if (isFullscreen) scheduleControlsHide();
+        }}
+      >
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold sm:text-base">{title}</p>
           <p className="text-muted-foreground text-xs">PDF reader</p>
@@ -309,7 +361,14 @@ export function ProtectedResourceReader({
                 </div>
               </div>
             )}
-            {resolvedBlob && <ProtectedPdfViewer file={resolvedBlob} title={title} className="h-full w-full" />}
+            {resolvedBlob && (
+              <ProtectedPdfViewer
+                file={resolvedBlob}
+                title={title}
+                className="h-full w-full"
+                toolbarVisible={toolbarsVisible}
+              />
+            )}
           </div>
         </div>
         {showComments && (

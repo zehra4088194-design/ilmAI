@@ -2,19 +2,39 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { selectEffectiveSubscription } from '@/lib/payments/subscription-access';
 
 // Institutions on a paid ("active") billing status grant their active members
-// (teachers, students, staff) a PRO-tier AI subscription for as long as
-// membership + billing stay active. Grants ride the same `subscriptions`
-// table real payment providers use, so a member's own paid subscription
-// (tracked separately) is never clobbered — selectEffectiveSubscription
-// always picks the highest active tier across every row for that user.
-const SCHOOL_GRANT_TIER = 'PRO';
+// (teachers, students, staff) an AI subscription for as long as membership +
+// billing stay active. Grants ride the same `subscriptions` table real payment
+// providers use, so a member's own paid subscription (tracked separately) is
+// never clobbered — selectEffectiveSubscription always picks the highest
+// active tier across every row for that user.
 const SCHOOL_GRANT_PROVIDER = 'school_erp';
-// Far-future end date: the grant's real lifetime is governed by membership
-// status and organization billing_status, not this column.
+// Far-future end date used when billing_status is 'active' (no real expiry —
+// lifetime is governed by membership + billing_status). When billing_status is
+// 'trial', the plan row's own trial_ends_at is used instead, so trial grants
+// actually expire (see /api/cron/expire-institution-trials).
 const SCHOOL_GRANT_PERIOD_END = '2099-12-31T00:00:00.000Z';
 
 function schoolGrantSubscriptionId(organizationId: string, profileId: string) {
   return `school_erp:${organizationId}:${profileId}`;
+}
+
+/**
+ * Reads the institution's admin-configured grant tier (PRO/ELITE, default PRO
+ * for orgs with no plan row yet) and the correct subscription period_end for
+ * its current billing_status: a 'trial' with a set trial_ends_at grants only
+ * until that date; anything else (including 'active') grants until the
+ * far-future sentinel, since real expiry there is governed by billing_status
+ * itself, not this column.
+ */
+async function resolveGrantParams(db: any, organizationId: string) {
+  const { data: plan } = await db
+    .from('school_organization_plan_settings')
+    .select('grant_tier, billing_status, trial_ends_at')
+    .eq('organization_id', organizationId)
+    .maybeSingle();
+  const tier: 'PRO' | 'ELITE' = plan?.grant_tier === 'ELITE' ? 'ELITE' : 'PRO';
+  const periodEnd = plan?.billing_status === 'trial' && plan?.trial_ends_at ? plan.trial_ends_at : SCHOOL_GRANT_PERIOD_END;
+  return { tier, periodEnd };
 }
 
 async function reconcileProfileTier(db: any, profileId: string) {
@@ -29,23 +49,32 @@ async function reconcileProfileTier(db: any, profileId: string) {
 export async function isOrganizationBillingActive(db: any, organizationId: string) {
   const { data } = await db
     .from('school_organization_plan_settings')
-    .select('billing_status')
+    .select('billing_status, trial_ends_at')
     .eq('organization_id', organizationId)
     .maybeSingle();
-  return data?.billing_status === 'active';
+  if (data?.billing_status === 'active') return true;
+  // An in-progress trial also grants access — matches whatever
+  // syncOrganizationSchoolGrants(orgId, true) already did when the trial was
+  // started, so a teacher/student added mid-trial gets the same access as
+  // everyone else instead of being silently left out.
+  if (data?.billing_status === 'trial' && data?.trial_ends_at) {
+    return new Date(data.trial_ends_at).getTime() > Date.now();
+  }
+  return false;
 }
 
 export async function grantSchoolSubscription(organizationId: string, profileId: string) {
   const admin = (await createAdminClient()) as any;
+  const { tier, periodEnd } = await resolveGrantParams(admin, organizationId);
   await admin.from('subscriptions').upsert(
     {
       user_id: profileId,
       provider: SCHOOL_GRANT_PROVIDER,
       provider_subscription_id: schoolGrantSubscriptionId(organizationId, profileId),
-      tier: SCHOOL_GRANT_TIER,
+      tier,
       status: 'active',
       current_period_start: new Date().toISOString(),
-      current_period_end: SCHOOL_GRANT_PERIOD_END,
+      current_period_end: periodEnd,
       cancel_at_period_end: false,
     },
     { onConflict: 'provider_subscription_id' }
@@ -81,16 +110,17 @@ export async function syncOrganizationSchoolGrants(organizationId: string, shoul
   if (!profileIds.length) return;
 
   if (shouldGrant) {
+    const { tier, periodEnd } = await resolveGrantParams(admin, organizationId);
     const now = new Date().toISOString();
     await admin.from('subscriptions').upsert(
       profileIds.map((profileId) => ({
         user_id: profileId,
         provider: SCHOOL_GRANT_PROVIDER,
         provider_subscription_id: schoolGrantSubscriptionId(organizationId, profileId),
-        tier: SCHOOL_GRANT_TIER,
+        tier,
         status: 'active',
         current_period_start: now,
-        current_period_end: SCHOOL_GRANT_PERIOD_END,
+        current_period_end: periodEnd,
         cancel_at_period_end: false,
       })),
       { onConflict: 'provider_subscription_id' }

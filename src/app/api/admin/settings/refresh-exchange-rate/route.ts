@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { requireAdminUser } from '@/lib/admin/auth';
 import { getPlatformSettings, savePlatformSettings } from '@/lib/platform-settings/server';
 
 export const runtime = 'nodejs';
@@ -16,11 +16,13 @@ type ExchangeRateResponse = {
 // lets an admin force an update from the settings panel instead of waiting
 // for the next scheduled run.
 export async function POST() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-  if (profile?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  // requireAdminUser() also honors the ADMIN_EMAILS allowlist, not just
+  // profiles.role='admin' — this route used to check role directly and
+  // 403'd admins who only qualify via the email allowlist (they can reach
+  // /admin/settings at all through a different check, so the mismatch showed
+  // up as "Forbidden" specifically on this button).
+  const user = await requireAdminUser();
+  if (!user) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const apiKey = process.env.EXCHANGE_RATE_API_KEY;
   if (!apiKey) {

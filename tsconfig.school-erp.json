@@ -17,6 +17,8 @@
     "src/app/api/school/**/*.ts",
     "src/app/api/school-admin/**/*.ts",
     "src/app/api/cron/school-notifications/**/*.ts",
+    "src/app/api/cron/expire-institution-trials/**/*.ts",
+    "src/lib/auth/inviteOrFindProfile.ts",
     "src/app/(admin)/admin/schools/**/*.ts",
     "src/app/(admin)/admin/schools/**/*.tsx",
     "src/components/layout/AdminSidebar/index.tsx",

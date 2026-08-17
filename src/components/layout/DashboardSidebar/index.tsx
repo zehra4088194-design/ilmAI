@@ -221,23 +221,53 @@ export function DashboardSidebar({ mobileOpen: controlledMobileOpen, onMobileOpe
             </div>
           </div>
         )}
-        {(user?.role === 'teacher' || user?.role === 'admin') && (
+        {user?.role === 'teacher' && (
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/30 px-2 mb-1.5">Teacher Tools</p>
-            <Link href="/teacher/tests" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
-              className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
-                isActive('/teacher/tests') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}>
-              <FileQuestion className={cn('w-4 h-4 shrink-0', isActive('/teacher/tests') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
-              <span className="flex-1">Test Paper Studio</span>
-              <Badge className="text-[10px] bg-violet-600 text-white px-1.5 py-0 shrink-0">Teacher</Badge>
-              {isActive('/teacher/tests') && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
-            </Link>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/30 px-2 mb-1.5">Teacher Portal</p>
+            <div className="space-y-0.5">
+              <Link href="/teacher/tests" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
+                className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
+                  isActive('/teacher/tests') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}>
+                <FileQuestion className={cn('w-4 h-4 shrink-0', isActive('/teacher/tests') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
+                <span className="flex-1">Test Paper Studio</span>
+                {isActive('/teacher/tests') && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
+              </Link>
+              <Link href="/library" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
+                className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
+                  isActive('/library') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}>
+                <Library className={cn('w-4 h-4 shrink-0', isActive('/library') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
+                <span className="flex-1">Resource Library</span>
+                {isActive('/library') && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
+              </Link>
+              <Link href="/subscription" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
+                className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
+                  isActive('/subscription') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}>
+                <CreditCard className={cn('w-4 h-4 shrink-0', isActive('/subscription') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
+                <span className="flex-1">Subscription</span>
+                {isActive('/subscription') && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
+              </Link>
+              <Link href="/settings" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
+                className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
+                  isActive('/settings') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}>
+                <Settings className={cn('w-4 h-4 shrink-0', isActive('/settings') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
+                <span className="flex-1">Settings</span>
+                {isActive('/settings') && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
+              </Link>
+            </div>
           </div>
         )}
-        {/* Parents get their own trimmed nav above — the full consumer tool nav (AI tutor,
-            flashcards, games, etc.) is student/consumer-facing and must not leak into the parent
-            portal. See CLAUDE_CODE_MASTER_PROMPT.md Part 4.4 / point 12. */}
-        {user?.role !== 'parent' && NAV_GROUPS.map((group) => (
+        {/* role === 'admin' still falls through to the full generic nav below, unchanged —
+            deliberately not touched here. That value is the SAME one requireAdminUser() checks
+            for platform-admin access (src/lib/admin/auth.ts); building institution-specific
+            "principal" UI around it would conflate a security-sensitive field with a feature
+            persona. Zero live profiles carry role='admin' or 'teacher' today (verified via DB
+            query) — real principals and teachers belong to school-erp's /school-admin
+            (school_memberships-based, already correctly separate). This trim only covers the
+            individual/pending-institution teacher edge case.
+            Parents and teachers get their own trimmed nav above — the full consumer tool nav (AI
+            tutor, flashcards, games, etc.) is student/consumer-facing and must not leak into
+            either portal. See CLAUDE_CODE_MASTER_PROMPT.md Part 4.4 / point 12. */}
+        {user?.role !== 'parent' && user?.role !== 'teacher' && NAV_GROUPS.map((group) => (
           <div key={group.label}>
             <p className="text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/30 px-2 mb-1.5">{group.label}</p>
             <div className="space-y-0.5">

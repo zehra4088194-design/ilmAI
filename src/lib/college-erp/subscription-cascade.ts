@@ -6,12 +6,25 @@ import { selectEffectiveSubscription } from '@/lib/payments/subscription-access'
 // `college_erp:...` vs `school_erp:...`) rather than a shared generic "institution" cascade, per
 // CLAUDE_CODE_MASTER_PROMPT.md's "data and portals stay separate" instruction — even though the
 // logic underneath is identical in shape.
-const COLLEGE_GRANT_TIER = 'PRO';
 const COLLEGE_GRANT_PROVIDER = 'college_erp';
+// Far-future end date used when billing_status is 'active'. When billing_status
+// is 'trial', the plan row's own trial_ends_at is used instead — see
+// resolveGrantParams and /api/cron/expire-institution-trials.
 const COLLEGE_GRANT_PERIOD_END = '2099-12-31T00:00:00.000Z';
 
 function collegeGrantSubscriptionId(organizationId: string, profileId: string) {
   return `college_erp:${organizationId}:${profileId}`;
+}
+
+async function resolveGrantParams(db: any, organizationId: string) {
+  const { data: plan } = await db
+    .from('college_organization_plan_settings')
+    .select('grant_tier, billing_status, trial_ends_at')
+    .eq('organization_id', organizationId)
+    .maybeSingle();
+  const tier: 'PRO' | 'ELITE' = plan?.grant_tier === 'ELITE' ? 'ELITE' : 'PRO';
+  const periodEnd = plan?.billing_status === 'trial' && plan?.trial_ends_at ? plan.trial_ends_at : COLLEGE_GRANT_PERIOD_END;
+  return { tier, periodEnd };
 }
 
 async function reconcileProfileTier(db: any, profileId: string) {
@@ -26,23 +39,28 @@ async function reconcileProfileTier(db: any, profileId: string) {
 export async function isCollegeOrganizationBillingActive(db: any, organizationId: string) {
   const { data } = await db
     .from('college_organization_plan_settings')
-    .select('billing_status')
+    .select('billing_status, trial_ends_at')
     .eq('organization_id', organizationId)
     .maybeSingle();
-  return data?.billing_status === 'active';
+  if (data?.billing_status === 'active') return true;
+  if (data?.billing_status === 'trial' && data?.trial_ends_at) {
+    return new Date(data.trial_ends_at).getTime() > Date.now();
+  }
+  return false;
 }
 
 export async function grantCollegeSubscription(organizationId: string, profileId: string) {
   const admin = (await createAdminClient()) as any;
+  const { tier, periodEnd } = await resolveGrantParams(admin, organizationId);
   await admin.from('subscriptions').upsert(
     {
       user_id: profileId,
       provider: COLLEGE_GRANT_PROVIDER,
       provider_subscription_id: collegeGrantSubscriptionId(organizationId, profileId),
-      tier: COLLEGE_GRANT_TIER,
+      tier,
       status: 'active',
       current_period_start: new Date().toISOString(),
-      current_period_end: COLLEGE_GRANT_PERIOD_END,
+      current_period_end: periodEnd,
       cancel_at_period_end: false,
     },
     { onConflict: 'provider_subscription_id' }
@@ -75,16 +93,17 @@ export async function syncOrganizationCollegeGrants(organizationId: string, shou
   if (!profileIds.length) return;
 
   if (shouldGrant) {
+    const { tier, periodEnd } = await resolveGrantParams(admin, organizationId);
     const now = new Date().toISOString();
     await admin.from('subscriptions').upsert(
       profileIds.map((profileId) => ({
         user_id: profileId,
         provider: COLLEGE_GRANT_PROVIDER,
         provider_subscription_id: collegeGrantSubscriptionId(organizationId, profileId),
-        tier: COLLEGE_GRANT_TIER,
+        tier,
         status: 'active',
         current_period_start: now,
-        current_period_end: COLLEGE_GRANT_PERIOD_END,
+        current_period_end: periodEnd,
         cancel_at_period_end: false,
       })),
       { onConflict: 'provider_subscription_id' }
