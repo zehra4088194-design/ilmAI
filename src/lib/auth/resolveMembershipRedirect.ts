@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getSchoolContext, schoolAdminHomeForRole } from '@/lib/school-erp/access';
 import { getCollegeContext, collegeAdminHomeForRole } from '@/lib/college-erp/access';
+import { resolveKidsDashboardEligibility } from '@/lib/kids/resolveEligibility';
 
 export type MembershipRedirectResult = {
   destination: string;
@@ -58,8 +59,22 @@ export async function resolveMembershipRedirect(
     };
   }
 
-  if (requestedRedirect && requestedRedirect.startsWith('/') && !requestedRedirect.startsWith('//')) {
-    return { destination: requestedRedirect, institutionType: null };
+  const hasSpecificRedirect =
+    requestedRedirect &&
+    requestedRedirect.startsWith('/') &&
+    !requestedRedirect.startsWith('//') &&
+    requestedRedirect !== '/dashboard';
+  if (hasSpecificRedirect) {
+    return { destination: requestedRedirect!, institutionType: null };
   }
+
+  // No institution membership and no specific deep link (or just the generic
+  // /dashboard fallback most login flows default to) — check whether this is a
+  // young-child account (under 8, via profiles.date_of_birth, or a school
+  // enrollment's grade_level as a fallback signal) and route to the dedicated
+  // Kids Dashboard instead of the regular consumer dashboard.
+  const kids = await resolveKidsDashboardEligibility(supabase, userId);
+  if (kids.eligible) return { destination: '/kids', institutionType: null };
+
   return { destination: '/dashboard', institutionType: null };
 }

@@ -32,6 +32,7 @@ import { createClient } from '@/lib/supabase/client';
 import { OAuthButtons } from '@/components/features/auth/OAuthButtons';
 import { BOARDS, COUNTRY_BOARD_DEFAULTS, GRADE_LEVELS } from '@/lib/constants';
 import { EDUCATION_LEVELS, type EducationLevel } from '@/lib/constants/university';
+import { PAKISTAN_SCHOOLS, PAKISTAN_COLLEGES, PAKISTAN_UNIVERSITIES, suggestInstitutions } from '@/lib/constants/institutions';
 import { cn } from '@/lib/utils/cn';
 import { toast } from 'sonner';
 import { useLocale, useTranslations } from '@/providers/I18nProvider';
@@ -196,6 +197,7 @@ export function RegisterForm() {
   const [schoolResults, setSchoolResults] = useState<SchoolSearchResult[]>([]);
   const [searchingSchools, setSearchingSchools] = useState(false);
   const [selectedSchool, setSelectedSchool] = useState<{ id: string; name: string } | null>(null);
+  const [institutionSuggestionsOpen, setInstitutionSuggestionsOpen] = useState(false);
   const { locale, setLocale } = useLocale();
   const [preferredLanguage, setPreferredLanguage] = useState<Locale>(locale);
   const [stepIndex, setStepIndex] = useState(0);
@@ -243,6 +245,12 @@ export function RegisterForm() {
     },
   });
   const selectedGrade = watch('gradeLevel');
+  const institutionNameValue = watch('institutionName') || '';
+  const institutionSuggestionList =
+    educationLevel === 'university' ? PAKISTAN_UNIVERSITIES : educationLevel === 'college' ? PAKISTAN_COLLEGES : PAKISTAN_SCHOOLS;
+  const institutionSuggestions = institutionSuggestionsOpen
+    ? suggestInstitutions(institutionSuggestionList, institutionNameValue)
+    : [];
 
   useEffect(() => {
     fetch('/api/geo')
@@ -885,12 +893,45 @@ export function RegisterForm() {
                 <Input
                   {...register('institutionName')}
                   id="signup-institution"
-                  autoComplete="organization"
+                  autoComplete="off"
                   placeholder={`Enter your ${educationLevel} name`}
                   className="pl-10"
                   error={errors.institutionName?.message}
+                  onFocus={() => setInstitutionSuggestionsOpen(true)}
+                  onChange={(event) => {
+                    register('institutionName').onChange(event);
+                    setInstitutionSuggestionsOpen(true);
+                  }}
+                  onBlur={(event) => {
+                    register('institutionName').onBlur(event);
+                    // Delay so a suggestion click (which blurs the input first) still
+                    // registers before the list unmounts.
+                    window.setTimeout(() => setInstitutionSuggestionsOpen(false), 150);
+                  }}
                 />
               </div>
+              {institutionSuggestions.length > 0 && (
+                <div className="border-border bg-card/70 mt-2 max-h-56 divide-y overflow-y-auto rounded-xl border">
+                  {institutionSuggestions.map((name) => (
+                    <button
+                      key={name}
+                      type="button"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => {
+                        setValue('institutionName', name, { shouldValidate: true });
+                        setInstitutionSuggestionsOpen(false);
+                      }}
+                      className="hover:bg-muted/60 flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm"
+                    >
+                      <Building2 className="text-muted-foreground h-4 w-4 shrink-0" />
+                      <span className="truncate">{name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              <p className="text-muted-foreground mt-2 text-xs">
+                Not listed? Just type your {educationLevel}'s name — any name is accepted.
+              </p>
             </div>
           )}
 

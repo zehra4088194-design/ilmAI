@@ -99,6 +99,75 @@ const NAV_GROUPS = [
   },
 ];
 
+// Shown instead of NAV_GROUPS for education_level === 'university'. The board/grade-locked
+// K-12 groups (Diagnostic Test, Adaptive Practice, Games, AI Guess Paper, Full Test, board
+// Lectures/Past Papers/Library) don't apply to a university student and are mostly broken for
+// them anyway (they key off grade_level/board, which a university profile never sets) — same
+// "don't leak an irrelevant nav into a different persona" rule already applied to parents and
+// teachers above. Generic, non-board-locked tools (AI Tutor, Notes, Flashcards, Career, the
+// Tools/Progress/Account groups) are kept since they're still useful for a university student.
+const UNIVERSITY_NAV_GROUPS = [
+  {
+    label: 'University',
+    items: [
+      { icon: GraduationCap, label: 'University Hub', href: '/university-hub', badge: 'New' },
+      { icon: PenLine, label: 'Essay Assistant', href: '/university/essay-assistant', badge: 'AI' },
+      { icon: FileText, label: 'Assignment Helper', href: '/university/assignment-helper', badge: 'AI' },
+      { icon: Presentation, label: 'Presentation Builder', href: '/university/presentation-builder', badge: 'AI' },
+      { icon: Mic2, label: 'Viva Practice', href: '/university/viva-practice', badge: 'AI' },
+      { icon: FlaskConical, label: 'Research Helper', href: '/university/research-helper', badge: 'AI' },
+      { icon: Library, label: 'Project Builder', href: '/university/project-builder', badge: 'AI' },
+      { icon: Network, label: 'PDF Summarizer', href: '/university/pdf-summarizer', badge: 'AI' },
+      { icon: Pill, label: 'PharmaPulse', href: '/university/pharmapulse', badge: 'AI' },
+      { icon: Quote, label: 'Citation Generator', href: '/university/citation-generator' },
+      { icon: BriefcaseBusiness, label: 'Resume Builder', href: '/university/resume-builder', badge: 'AI' },
+      { icon: CalendarClock, label: 'Semester Planner', href: '/university/semester-planner' },
+    ],
+  },
+  {
+    label: 'Study',
+    items: [
+      { icon: Brain, label: 'AI Tutor', href: '/ai-tutor', badge: 'AI' },
+      { icon: Camera, label: 'Scan & Solve', href: '/scan', badge: 'AI' },
+      { icon: BriefcaseBusiness, label: 'Career', href: '/career', badge: 'AI' },
+      { icon: MessageCircle, label: 'Study Buddies', href: '/student-chat', badge: 'Pro' },
+    ],
+  },
+  {
+    label: 'Resources',
+    items: [
+      { icon: HardDriveDownload, label: 'Downloads', href: '/downloads', badge: 'Pro' },
+      { icon: Star, label: 'Flashcards', href: '/flashcards' },
+      { icon: StickyNote, label: 'Notes', href: '/notes' },
+      { icon: Bookmark, label: 'Bookmarks', href: '/bookmarks' },
+    ],
+  },
+  {
+    label: 'Tools',
+    items: [
+      { icon: WandSparkles, label: 'AI Humanizer', href: '/humanizer', badge: 'AI' },
+      { icon: Music2, label: 'Rest Sounds', href: '/rest', badge: 'Pro' },
+      { icon: Mic2, label: 'Speaking Practice', href: '/tutor/speaking-practice', badge: 'AI' },
+      { icon: Sparkles, label: 'Motivation', href: '/motivation', badge: 'AI' },
+      { icon: Cake, label: 'Age Counter', href: '/age-counter' },
+    ],
+  },
+  {
+    label: 'Progress',
+    items: [
+      { icon: TrendingUp, label: 'Progress', href: '/progress' },
+      { icon: Trophy, label: 'Leaderboard', href: '/leaderboard' },
+    ],
+  },
+  {
+    label: 'Account',
+    items: [
+      { icon: CreditCard, label: 'Subscription', href: '/subscription' },
+      { icon: Settings, label: 'Settings', href: '/settings' },
+    ],
+  },
+];
+
 type DashboardSidebarProps = {
   mobileOpen?: boolean;
   onMobileOpenChange?: (open: boolean) => void;
@@ -267,7 +336,9 @@ export function DashboardSidebar({ mobileOpen: controlledMobileOpen, onMobileOpe
             Parents and teachers get their own trimmed nav above — the full consumer tool nav (AI
             tutor, flashcards, games, etc.) is student/consumer-facing and must not leak into
             either portal. See CLAUDE_CODE_MASTER_PROMPT.md Part 4.4 / point 12. */}
-        {user?.role !== 'parent' && user?.role !== 'teacher' && NAV_GROUPS.map((group) => (
+        {user?.role !== 'parent' &&
+          user?.role !== 'teacher' &&
+          (user?.educationLevel === 'university' ? UNIVERSITY_NAV_GROUPS : NAV_GROUPS).map((group) => (
           <div key={group.label}>
             <p className="text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/30 px-2 mb-1.5">{group.label}</p>
             <div className="space-y-0.5">

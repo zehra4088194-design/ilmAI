@@ -92,6 +92,7 @@ export function SettingsTabs({
   const [localProfile, setLocalProfile] = useState(profile);
   const [activeTab, setActiveTab] = useState(initialTab || 'profile');
   const [fullName, setFullName] = useState(profile?.full_name || '');
+  const [dateOfBirth, setDateOfBirth] = useState(profile?.date_of_birth || '');
   const [gender, setGender] = useState<'girl' | 'boy' | null>(
     profile?.gender === 'girl' || profile?.gender === 'boy' ? profile.gender : null
   );
@@ -170,6 +171,7 @@ export function SettingsTabs({
   useEffect(() => {
     setLocalProfile(profile);
     setFullName(profile?.full_name || '');
+    setDateOfBirth(profile?.date_of_birth || '');
     setGender(profile?.gender === 'girl' || profile?.gender === 'boy' ? profile.gender : null);
     setGenderChangedAt(profile?.gender_changed_at || null);
     setBoard(profile?.board || '');
@@ -202,10 +204,10 @@ export function SettingsTabs({
 
   const handleSave = async () => {
     setSaving(true);
-    const { error } = await supabase
-      .from('profiles')
+    const { error } = await (supabase.from('profiles') as any)
       .update({
         full_name: fullName,
+        date_of_birth: dateOfBirth || null,
         board,
         education_level: educationLevel,
         updated_at: new Date().toISOString(),
@@ -216,6 +218,7 @@ export function SettingsTabs({
       setLocalProfile((current: any) => ({
         ...current,
         full_name: fullName,
+        date_of_birth: dateOfBirth || null,
         board,
         education_level: educationLevel,
         updated_at: new Date().toISOString(),
@@ -489,6 +492,13 @@ export function SettingsTabs({
               <div>
                 <label className="mb-1.5 block text-sm font-medium">Full Name</label>
                 <Input value={fullName} onChange={(e) => setFullName(e.target.value)} />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium">Date of Birth</label>
+                <Input type="date" value={dateOfBirth || ''} onChange={(e) => setDateOfBirth(e.target.value)} />
+                <p className="text-muted-foreground mt-1.5 text-xs">
+                  Used to show the Kids Dashboard automatically for accounts under 8 years old.
+                </p>
               </div>
               {localProfile?.role === 'student' && (
                 <div>

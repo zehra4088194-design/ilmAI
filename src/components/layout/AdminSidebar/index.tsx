@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Activity, LayoutDashboard, Users, BookOpen, BarChart3, FileQuestion, Settings, Shield, Library, GraduationCap, Menu, X, MessageCircleWarning, Music2, School, Images, Wallet, Fingerprint } from 'lucide-react';
+import { Activity, LayoutDashboard, Users, BookOpen, BarChart3, FileQuestion, Settings, Shield, Library, GraduationCap, Menu, X, MessageCircleWarning, Music2, School, Images, Wallet, Fingerprint, University } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils/cn';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ const ADMIN_NAV = [
   { icon: Users, label: 'Users', href: '/admin/users' },
   { icon: GraduationCap, label: 'Colleges', href: '/admin/colleges' },
   { icon: School, label: 'Schools', href: '/admin/schools' },
+  { icon: University, label: 'University Hub', href: '/admin/university' },
   { icon: Wallet, label: 'Institution Payments', href: '/admin/institution-payments' },
   { icon: Fingerprint, label: 'Biometric Devices', href: '/admin/biometric-devices' },
   { icon: BookOpen, label: 'Content', href: '/admin/content' },
