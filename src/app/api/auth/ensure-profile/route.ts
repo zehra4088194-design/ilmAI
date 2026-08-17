@@ -40,10 +40,14 @@ export async function POST() {
     : educationLevel;
   const onboardingCompleted =
     role !== 'student' || (educationLevel !== 'university' && Boolean(gender && gradeLevel && board));
+  const dateOfBirth =
+    typeof metadata.date_of_birth === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(metadata.date_of_birth)
+      ? metadata.date_of_birth
+      : null;
   const admin = (await createAdminClient()) as any;
   const { data: existing } = await admin
     .from('profiles')
-    .select('id, username, gender, grade_level, board')
+    .select('id, username, gender, grade_level, board, date_of_birth')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -55,6 +59,7 @@ export async function POST() {
       username,
       gender,
       gender_changed_at: gender ? new Date().toISOString() : null,
+      date_of_birth: dateOfBirth,
       role,
       education_level: educationLevel,
       grade_level: gradeLevel,
@@ -90,6 +95,7 @@ export async function POST() {
     }
     if (gradeLevel && !existing.grade_level) updates.grade_level = gradeLevel;
     if (board && !existing.board) updates.board = board;
+    if (dateOfBirth && !existing.date_of_birth) updates.date_of_birth = dateOfBirth;
     updates.education_level = educationLevel;
     if (onboardingCompleted) {
       updates.onboarding_completed = true;

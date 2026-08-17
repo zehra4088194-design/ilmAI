@@ -133,6 +133,23 @@ export function KidsDashboardShell({ studentName, xp, streak }: { studentName: s
                 </div>
               </div>
 
+              <Link href="/class-library" className="block">
+                <motion.div
+                  initial={{ y: 16, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.25, type: 'spring', stiffness: 220, damping: 16 }}
+                  whileTap={{ scale: 0.97 }}
+                  whileHover={{ scale: 1.02 }}
+                  className="flex items-center gap-4 rounded-[2rem] bg-gradient-to-br from-indigo-400 to-blue-500 p-5 text-left shadow-xl"
+                >
+                  <span className="text-4xl">📚</span>
+                  <span className="flex-1">
+                    <span className="block text-lg font-black text-white">My Class Library</span>
+                    <span className="text-sm font-semibold text-white/80">Books, videos, and MCQs for your class</span>
+                  </span>
+                </motion.div>
+              </Link>
+
               <p className="flex items-center justify-center gap-1.5 text-center text-sm font-semibold text-violet-500/70 dark:text-violet-300/60">
                 <SparklesIcon className="h-4 w-4" /> A special zone just for you!
               </p>

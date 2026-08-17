@@ -33,6 +33,7 @@ import { OAuthButtons } from '@/components/features/auth/OAuthButtons';
 import { BOARDS, COUNTRY_BOARD_DEFAULTS, GRADE_LEVELS } from '@/lib/constants';
 import { EDUCATION_LEVELS, type EducationLevel } from '@/lib/constants/university';
 import { PAKISTAN_SCHOOLS, PAKISTAN_COLLEGES, PAKISTAN_UNIVERSITIES, suggestInstitutions } from '@/lib/constants/institutions';
+import { calculateAge, KIDS_DASHBOARD_AGE_CUTOFF } from '@/lib/kids/eligibility';
 import { cn } from '@/lib/utils/cn';
 import { toast } from 'sonner';
 import { useLocale, useTranslations } from '@/providers/I18nProvider';
@@ -54,6 +55,7 @@ const formSchema = z.object({
   institutionName: z.string().trim().optional(),
   gradeLevel: z.string().optional(),
   board: z.string().optional(),
+  birthDate: z.string().optional(),
 });
 
 const schema = formSchema.refine((data) => data.password === data.confirmPassword, {
@@ -75,6 +77,7 @@ type SignupStepId =
   | 'email'
   | 'password'
   | 'username'
+  | 'birthdate'
   | 'gender'
   | 'education'
   | 'institution'
@@ -104,6 +107,18 @@ const ROLE_STEP: SignupStep = {
   id: 'role',
   title: 'Student or teacher?',
   description: 'Choose your role at the institution.',
+};
+
+// Asked right at the start (before name/email) for individual student signups
+// so the rest of the wizard — and the whole app afterwards — can adapt
+// immediately for a young child, rather than discovering it later. Age drives
+// the Kids Dashboard eligibility check (src/lib/kids/eligibility.ts) directly
+// from date_of_birth, so this single question also replaces the class/grade
+// question for anyone too young to pick from the normal grade list.
+const BIRTHDATE_STEP: SignupStep = {
+  id: 'birthdate',
+  title: "When's your birthday?",
+  description: 'This helps us set up the right experience for your age.',
 };
 
 const CORE_STEPS: SignupStep[] = [
@@ -166,7 +181,8 @@ export function getSignupSteps(
   membershipMode: MembershipMode,
   accountType: AccountType,
   institutionalRole: InstitutionalRole,
-  educationLevel: EducationLevel
+  educationLevel: EducationLevel,
+  isYoungChild: boolean = false
 ) {
   if (membershipMode === 'institutional') {
     if (institutionalRole === 'teacher') {
@@ -175,9 +191,14 @@ export function getSignupSteps(
     return [MODE_STEP, ROLE_STEP, ...CORE_STEPS, GENDER_STEP, SCHOOL_SEARCH_STEP, ...SCHOOL_STEPS];
   }
   if (accountType === 'parent') return [MODE_STEP, ACCOUNT_STEP, ...CORE_STEPS];
+  // Young child (under 8, per BIRTHDATE_STEP): skip gender/education/institution/
+  // grade/board entirely — none of it is needed (the Kids Dashboard doesn't
+  // personalize by any of that) and grade options only start at Grade 9 anyway.
+  if (isYoungChild) return [MODE_STEP, ACCOUNT_STEP, BIRTHDATE_STEP, ...CORE_STEPS];
   return [
     MODE_STEP,
     ACCOUNT_STEP,
+    BIRTHDATE_STEP,
     ...CORE_STEPS,
     ...STUDENT_STEPS,
     ...(educationLevel === 'university' ? [] : SCHOOL_STEPS),
@@ -212,13 +233,6 @@ export function RegisterForm() {
   // asks for it directly via the role step; individual signup keeps the
   // existing student/parent choice.
   const effectiveRole: InstitutionalRole | 'parent' = membershipMode === 'institutional' ? institutionalRole : accountType;
-  const steps = useMemo(
-    () => getSignupSteps(membershipMode, accountType, institutionalRole, educationLevel),
-    [membershipMode, accountType, institutionalRole, educationLevel]
-  );
-  const currentStep = steps[Math.min(stepIndex, steps.length - 1)]!;
-  const isFirstStep = stepIndex === 0;
-  const isLastStep = stepIndex === steps.length - 1;
 
   const {
     register,
@@ -242,6 +256,7 @@ export function RegisterForm() {
       institutionName: '',
       gradeLevel: '',
       board: '',
+      birthDate: '',
     },
   });
   const selectedGrade = watch('gradeLevel');
@@ -251,6 +266,17 @@ export function RegisterForm() {
   const institutionSuggestions = institutionSuggestionsOpen
     ? suggestInstitutions(institutionSuggestionList, institutionNameValue)
     : [];
+  const birthDateValue = watch('birthDate');
+  const isYoungChild =
+    membershipMode === 'individual' && accountType === 'student' && calculateAge(birthDateValue) !== null && (calculateAge(birthDateValue) as number) < KIDS_DASHBOARD_AGE_CUTOFF;
+
+  const steps = useMemo(
+    () => getSignupSteps(membershipMode, accountType, institutionalRole, educationLevel, isYoungChild),
+    [membershipMode, accountType, institutionalRole, educationLevel, isYoungChild]
+  );
+  const currentStep = steps[Math.min(stepIndex, steps.length - 1)]!;
+  const isFirstStep = stepIndex === 0;
+  const isLastStep = stepIndex === steps.length - 1;
 
   useEffect(() => {
     fetch('/api/geo')
@@ -274,6 +300,7 @@ export function RegisterForm() {
       institution: 'institutionName',
       grade: 'gradeLevel',
       board: 'board',
+      birthdate: 'birthDate',
     };
     const field = fieldByStep[currentStep.id];
     if (!field) return;
@@ -349,6 +376,12 @@ export function RegisterForm() {
         if (!validateField('username')) return false;
         return checkUsername();
       }
+      case 'birthdate':
+        if (!getValues('birthDate')) {
+          toast.error('Please select a date of birth.');
+          return false;
+        }
+        return true;
       case 'gender':
         if (!gender) {
           toast.error('Please select your gender.');
@@ -404,7 +437,7 @@ export function RegisterForm() {
   const onSubmit = async (data: FormData) => {
     const isInstitutional = membershipMode === 'institutional';
 
-    if (effectiveRole === 'student') {
+    if (effectiveRole === 'student' && !isYoungChild) {
       if (!gender) {
         toast.error('Please select your gender.');
         return;
@@ -456,6 +489,7 @@ export function RegisterForm() {
             effectiveRole === 'student' && !isInstitutional ? data.institutionName?.trim() || undefined : undefined,
           academic_institution_type: effectiveRole === 'student' && !isInstitutional ? educationLevel : undefined,
           gender: effectiveRole === 'student' ? gender : undefined,
+          date_of_birth: effectiveRole === 'student' && !isInstitutional ? data.birthDate || undefined : undefined,
           preferred_language: preferredLanguage,
           signup_institution_id: isInstitutional ? selectedSchool?.id : undefined,
           signup_role_requested: isInstitutional ? institutionalRole : undefined,
@@ -488,9 +522,11 @@ export function RegisterForm() {
       router.push(
         effectiveRole === 'parent'
           ? '/parent'
-          : !isInstitutional && educationLevel === 'university'
-            ? '/onboarding/complete-profile'
-            : redirect
+          : isYoungChild
+            ? '/kids'
+            : !isInstitutional && educationLevel === 'university'
+              ? '/onboarding/complete-profile'
+              : redirect
       );
       router.refresh();
       return;
@@ -507,14 +543,22 @@ export function RegisterForm() {
   });
 
   return (
-    <div>
+    <div className={cn(isYoungChild && 'rounded-3xl bg-gradient-to-b from-sky-50 via-violet-50 to-amber-50 p-4 dark:from-sky-950/40 dark:via-violet-950/40 dark:to-amber-950/40')}>
       <div className="mb-5">
         <div className="mb-2 flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold">{t('auth.register.title')}</h1>
+            <h1 className={cn('text-2xl font-bold', isYoungChild && 'text-violet-700 dark:text-violet-200')}>
+              {isYoungChild ? '🎈 ' : ''}
+              {t('auth.register.title')}
+            </h1>
             <p className="text-muted-foreground mt-1 text-sm">{currentStep.description}</p>
           </div>
-          <span className="bg-primary/10 text-primary shrink-0 rounded-full px-3 py-1 text-xs font-semibold">
+          <span
+            className={cn(
+              'shrink-0 rounded-full px-3 py-1 text-xs font-semibold',
+              isYoungChild ? 'bg-violet-500/15 text-violet-600 dark:text-violet-300' : 'bg-primary/10 text-primary'
+            )}
+          >
             {stepIndex + 1}/{steps.length}
           </span>
         </div>
@@ -524,7 +568,7 @@ export function RegisterForm() {
               key={step.id}
               className={cn(
                 'h-1.5 flex-1 rounded-full transition-colors',
-                index <= stepIndex ? 'bg-primary' : 'bg-muted'
+                index <= stepIndex ? (isYoungChild ? 'bg-violet-500' : 'bg-primary') : 'bg-muted'
               )}
             />
           ))}
@@ -818,6 +862,29 @@ export function RegisterForm() {
               <p className="text-muted-foreground mt-2 text-xs">
                 Use letters, numbers, dots, and underscores. Every username must be unique.
               </p>
+            </div>
+          )}
+
+          {currentStep.id === 'birthdate' && (
+            <div>
+              <label htmlFor="signup-birthdate" className="mb-2 block text-sm font-medium">
+                Date of birth
+              </label>
+              <Input
+                {...register('birthDate')}
+                id="signup-birthdate"
+                type="date"
+                max={new Date().toISOString().slice(0, 10)}
+                error={errors.birthDate?.message}
+              />
+              {isYoungChild && (
+                <div className="border-primary bg-primary/10 mt-3 flex items-center gap-2 rounded-xl border-2 p-3 text-sm font-semibold">
+                  <span className="text-2xl">🎈</span>
+                  <span>
+                    Yay! We&apos;ll set up a special, fun dashboard just for you — no boring grades or boards to pick.
+                  </span>
+                </div>
+              )}
             </div>
           )}
 

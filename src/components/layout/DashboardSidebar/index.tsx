@@ -6,7 +6,7 @@ import {
   Zap, StickyNote, Bookmark, Star, CreditCard, ChevronRight, X, Menu,
   Library, CalendarClock, HelpCircle, Target, LogOut, Users, PenLine, Cake,
   GraduationCap, Presentation, Mic2, FlaskConical, Quote, BriefcaseBusiness, Network, Video,
-  Camera, MessageCircle, Sparkles, WandSparkles, Gamepad2, Music2, Pill, HardDriveDownload, School, FileQuestion
+  Camera, MessageCircle, Sparkles, WandSparkles, Gamepad2, Music2, Pill, HardDriveDownload, School, FileQuestion, BookOpenText
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useAuth } from '@/hooks/auth/useAuth';
@@ -27,6 +27,7 @@ const NAV_GROUPS = [
       { icon: Target, label: 'AI Insights', href: '/insights', badge: 'AI' },
       { icon: CalendarClock, label: 'Smart Planner', href: '/planner/today', badge: 'AI' },
       { icon: BriefcaseBusiness, label: 'Career', href: '/career', badge: 'AI' },
+      { icon: BookOpenText, label: 'Quran Class', href: '/quran' },
       { icon: MessageCircle, label: 'Study Buddies', href: '/student-chat', badge: 'Pro' },
       { icon: Gamepad2, label: 'Games', href: '/games', badge: 'Pro' },
     ],
@@ -39,6 +40,7 @@ const NAV_GROUPS = [
       { icon: Network, label: 'Pairing Schemes', href: '/library?type=pairing_scheme' },
       { icon: FileQuestion, label: 'Guess Papers', href: '/library?type=guess_paper' },
       { icon: Library, label: 'Library', href: '/library' },
+      { icon: BookOpenText, label: 'Class Library', href: '/class-library' },
       { icon: HardDriveDownload, label: 'Downloads', href: '/downloads', badge: 'Pro' },
       { icon: Star, label: 'Flashcards', href: '/flashcards' },
       { icon: StickyNote, label: 'Notes', href: '/notes' },
@@ -130,6 +132,7 @@ const UNIVERSITY_NAV_GROUPS = [
       { icon: Brain, label: 'AI Tutor', href: '/ai-tutor', badge: 'AI' },
       { icon: Camera, label: 'Scan & Solve', href: '/scan', badge: 'AI' },
       { icon: BriefcaseBusiness, label: 'Career', href: '/career', badge: 'AI' },
+      { icon: BookOpenText, label: 'Quran Class', href: '/quran' },
       { icon: MessageCircle, label: 'Study Buddies', href: '/student-chat', badge: 'Pro' },
     ],
   },
@@ -307,6 +310,13 @@ export function DashboardSidebar({ mobileOpen: controlledMobileOpen, onMobileOpe
                 <Library className={cn('w-4 h-4 shrink-0', isActive('/library') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
                 <span className="flex-1">Resource Library</span>
                 {isActive('/library') && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
+              </Link>
+              <Link href="/quran" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
+                className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
+                  isActive('/quran') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}>
+                <BookOpenText className={cn('w-4 h-4 shrink-0', isActive('/quran') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
+                <span className="flex-1">Quran Class</span>
+                {isActive('/quran') && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
               </Link>
               <Link href="/subscription" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
                 className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
