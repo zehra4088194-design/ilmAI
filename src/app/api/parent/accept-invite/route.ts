@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { createNotificationIfEnabled } from '@/lib/notifications/preferences';
 import { getPlatformSettings } from '@/lib/platform-settings/server';
-import { getPlanFromSettings } from '@/lib/platform-settings/shared';
+import { getPlanFromSettings, parentChildrenCap } from '@/lib/platform-settings/shared';
 import type { SubscriptionTier } from '@/types';
 
 export async function POST(req: NextRequest) {
@@ -78,6 +78,35 @@ export async function POST(req: NextRequest) {
         },
         { status: 403 }
       );
+    }
+
+    // The PARENT's own plan (see ParentPlanSettings — profiles.subscription_tier on the parent's
+    // OWN row, unrelated to any child's tier above) caps how many children they can link at all.
+    const { data: parentProfile } = await admin
+      .from('profiles')
+      .select('subscription_tier')
+      .eq('id', invite.parent_id)
+      .single();
+    const parentTier: SubscriptionTier =
+      parentProfile?.subscription_tier === 'PRO' || parentProfile?.subscription_tier === 'ELITE'
+        ? parentProfile.subscription_tier
+        : 'FREE';
+    const childrenCap = parentChildrenCap(settings, parentTier);
+    if (childrenCap !== null) {
+      const { count: childrenCount } = await admin
+        .from('parent_student_links')
+        .select('id', { count: 'exact', head: true })
+        .eq('parent_id', invite.parent_id)
+        .eq('status', 'approved');
+      if ((childrenCount || 0) >= childrenCap) {
+        return NextResponse.json(
+          {
+            status: 'error',
+            error: `This parent account's plan allows linking up to ${childrenCap} ${childrenCap === 1 ? 'child' : 'children'}. Upgrade the parent plan to add more.`,
+          },
+          { status: 403 }
+        );
+      }
     }
 
     const { error } = await (admin.from('parent_student_links') as any)

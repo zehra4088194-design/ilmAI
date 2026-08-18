@@ -308,6 +308,81 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
         </CardContent>
       </Card>
 
+      <Card className="border-fuchsia-500/25 bg-fuchsia-500/5">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <DollarSign className="h-5 w-5 text-fuchsia-500" />
+            Parent plans
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-muted-foreground text-sm">
+            A parent account&apos;s own plan — separate from any child&apos;s subscription. Caps how many children a
+            parent can link and whether they see the full analytics dashboard.
+          </p>
+          <NumberField
+            label="Free plan: children a parent can link at no cost"
+            value={settings.parentPlans.freeChildrenMax}
+            onChange={(value) =>
+              setSettings((current) => ({
+                ...current,
+                parentPlans: { ...current.parentPlans, freeChildrenMax: Math.max(0, value) },
+              }))
+            }
+          />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <NumberField
+              label="Paid plan $/month"
+              value={settings.parentPlans.paid.priceUsdMonthly}
+              onChange={(value) =>
+                setSettings((current) => ({
+                  ...current,
+                  parentPlans: { ...current.parentPlans, paid: { ...current.parentPlans.paid, priceUsdMonthly: Math.max(0, value) } },
+                }))
+              }
+            />
+            <NumberField
+              label="Paid plan: children max"
+              value={settings.parentPlans.paid.childrenMax ?? 0}
+              onChange={(value) =>
+                setSettings((current) => ({
+                  ...current,
+                  parentPlans: {
+                    ...current.parentPlans,
+                    paid: { ...current.parentPlans.paid, childrenMax: value <= 0 ? null : Math.round(value) },
+                  },
+                }))
+              }
+            />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <NumberField
+              label="Elite plan $/month"
+              value={settings.parentPlans.elite.priceUsdMonthly}
+              onChange={(value) =>
+                setSettings((current) => ({
+                  ...current,
+                  parentPlans: { ...current.parentPlans, elite: { ...current.parentPlans.elite, priceUsdMonthly: Math.max(0, value) } },
+                }))
+              }
+            />
+            <NumberField
+              label="Elite plan: children max (0 = unlimited)"
+              value={settings.parentPlans.elite.childrenMax ?? 0}
+              onChange={(value) =>
+                setSettings((current) => ({
+                  ...current,
+                  parentPlans: {
+                    ...current.parentPlans,
+                    elite: { ...current.parentPlans.elite, childrenMax: value <= 0 ? null : Math.round(value) },
+                  },
+                }))
+              }
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       <Card className="border-lime-500/25 bg-lime-500/5">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

@@ -93,9 +93,31 @@ export type InstitutionPricingSettings = {
   volumeDiscountMinStudents: number;
 };
 
+// A parent account's OWN plan — separate from subscriptionPlans (which is about a STUDENT's own
+// AI-credit tier, and already drives the existing per-child parentDashboard/parentReports/
+// advancedParentAnalytics flags keyed off each linked CHILD's tier — see parent/page.tsx). This is
+// intentionally a distinct, additive system: how many children a parent can link, and pricing for
+// that, independent of what plan any individual child is on. Reuses profiles.subscription_tier on
+// the PARENT's own row as the flag (FREE = no parent plan purchased; PRO = 'paid' tier below;
+// ELITE = 'elite' tier below) rather than a new column, since a parent-role account never
+// otherwise consumes the student-facing AI-credit system that column exists for.
+export type ParentPlanTierSettings = {
+  priceUsdMonthly: number;
+  // null/0 means unlimited — matches how other "no cap" limits read in this codebase.
+  childrenMax: number | null;
+};
+export type ParentPlanSettings = {
+  paid: ParentPlanTierSettings;
+  elite: ParentPlanTierSettings;
+  // A parent with no purchased plan yet (subscription_tier === 'FREE') still gets this many free
+  // child links — matches the existing "4 boxes" (quiz count, score) staying free.
+  freeChildrenMax: number;
+};
+
 export type PlatformSettings = {
   pdfThemeMode: PdfThemeMode;
   subscriptionPlans: Record<SubscriptionTier, PlatformSubscriptionPlan>;
+  parentPlans: ParentPlanSettings;
   providerDailyBudgets: ProviderDailyBudgets;
   aiRouting: AiRoutingSettings;
   exchangeRate: ExchangeRateSettings;
@@ -142,6 +164,11 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
     annualDiscountPercent: 15,
     volumeDiscountPercent: 10,
     volumeDiscountMinStudents: 500,
+  },
+  parentPlans: {
+    freeChildrenMax: 1,
+    paid: { priceUsdMonthly: 1.99, childrenMax: 4 },
+    elite: { priceUsdMonthly: 3.49, childrenMax: null },
   },
   providerDailyBudgets: {
     // Conservative platform-wide caps for a free-hosted beta. Admin can tune
@@ -461,6 +488,28 @@ function normalizeInstitutionPricing(value: unknown): InstitutionPricingSettings
   };
 }
 
+function normalizeParentPlanTier(value: unknown, fallback: ParentPlanTierSettings): ParentPlanTierSettings {
+  const source = (value && typeof value === 'object' ? value : {}) as Partial<ParentPlanTierSettings>;
+  const rawChildrenMax = source.childrenMax;
+  return {
+    priceUsdMonthly: Math.max(0, numberOrFallback(source.priceUsdMonthly, fallback.priceUsdMonthly)),
+    childrenMax:
+      rawChildrenMax === null || rawChildrenMax === 0
+        ? null
+        : Math.max(1, numberOrFallback(rawChildrenMax, fallback.childrenMax ?? 1)),
+  };
+}
+
+function normalizeParentPlans(value: unknown): ParentPlanSettings {
+  const source = (value && typeof value === 'object' ? value : {}) as Partial<ParentPlanSettings>;
+  const fallback = DEFAULT_PLATFORM_SETTINGS.parentPlans;
+  return {
+    freeChildrenMax: Math.max(0, numberOrFallback(source.freeChildrenMax, fallback.freeChildrenMax)),
+    paid: normalizeParentPlanTier(source.paid, fallback.paid),
+    elite: normalizeParentPlanTier(source.elite, fallback.elite),
+  };
+}
+
 export function normalizePlatformSettings(input: unknown): PlatformSettings {
   const source = (input && typeof input === 'object' ? input : {}) as Partial<PlatformSettings>;
   const sourceProviderBudgets: Partial<ProviderDailyBudgets> =
@@ -575,6 +624,7 @@ export function normalizePlatformSettings(input: unknown): PlatformSettings {
       DEFAULT_PLATFORM_SETTINGS.dailyStudyEmailsEnabled
     ),
     institutionPricing: normalizeInstitutionPricing(source.institutionPricing),
+    parentPlans: normalizeParentPlans(source.parentPlans),
     aiRouting: normalizeAiRouting(source.aiRouting),
     exchangeRate: {
       usdToPkr,
@@ -631,6 +681,19 @@ export function getAdminAiProvider(settings: PlatformSettings, key: AiRoutingKey
 
 export function convertUsdToPkr(usd: number, settings: PlatformSettings) {
   return Math.round(Number(usd || 0) * settings.exchangeRate.usdToPkr);
+}
+
+/**
+ * How many children a parent account (identified by its OWN profiles.subscription_tier — see
+ * ParentPlanSettings' doc comment) may link. Returns null for unlimited.
+ */
+export function parentChildrenCap(
+  settings: PlatformSettings,
+  parentSubscriptionTier: SubscriptionTier
+): number | null {
+  if (parentSubscriptionTier === 'ELITE') return settings.parentPlans.elite.childrenMax;
+  if (parentSubscriptionTier === 'PRO') return settings.parentPlans.paid.childrenMax;
+  return settings.parentPlans.freeChildrenMax;
 }
 
 export function resolvePdfThemeMode(preference: PdfThemeMode, userUsesDarkTheme: boolean): 'light' | 'dark' {

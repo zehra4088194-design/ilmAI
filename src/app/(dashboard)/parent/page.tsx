@@ -3,7 +3,7 @@ import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { ParentDashboardClient } from '@/components/features/parent/ParentDashboardClient';
 import { getPlatformSettings } from '@/lib/platform-settings/server';
-import { getPlanFromSettings } from '@/lib/platform-settings/shared';
+import { getPlanFromSettings, parentChildrenCap } from '@/lib/platform-settings/shared';
 import { aiDecisionFeaturesEnabled } from '@/lib/compliance/ai-decision-features';
 import type { SubscriptionTier } from '@/types';
 
@@ -187,6 +187,24 @@ export default async function ParentDashboardPage({
   }
   const predictionByStudent = new Map(predictions.map((prediction) => [prediction.student_id, prediction]));
   const params = await searchParams;
+
+  // The parent account's OWN plan — separate from any child's tier above (see ParentPlanSettings'
+  // doc comment). Drives the upgrade banner ParentDashboardClient shows when a parent is at/near
+  // their own children-link cap.
+  const { data: parentOwnProfile } = await supabase
+    .from('profiles')
+    .select('subscription_tier')
+    .eq('id', user.id)
+    .single();
+  const parentOwnTier: SubscriptionTier =
+    parentOwnProfile?.subscription_tier === 'PRO' || parentOwnProfile?.subscription_tier === 'ELITE'
+      ? parentOwnProfile.subscription_tier
+      : 'FREE';
+  const parentPlan = {
+    tier: parentOwnTier,
+    childrenCap: parentChildrenCap(platformSettings, parentOwnTier),
+    childrenUsed: approvedStudentIds.length,
+  };
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <div>
@@ -200,6 +218,7 @@ export default async function ParentDashboardPage({
         snapshots={snapshots}
         insights={parentInsights}
         parentId={user.id}
+        parentPlan={parentPlan}
         initialLinkId={params?.linkId}
         initialView={params?.view === 'files' ? 'files' : params?.view === 'chat' ? 'chat' : undefined}
       />

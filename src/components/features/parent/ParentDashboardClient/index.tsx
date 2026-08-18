@@ -34,6 +34,9 @@ interface ParentDashboardClientProps {
   snapshots: any[];
   insights?: Record<string, Array<{ type: string; title: string; body: string; action: string }>>;
   parentId: string;
+  // The parent account's OWN plan (separate from any child's tier) — see ParentPlanSettings' doc
+  // comment in lib/platform-settings/shared.ts. childrenCap is null for unlimited.
+  parentPlan?: { tier: 'FREE' | 'PRO' | 'ELITE'; childrenCap: number | null; childrenUsed: number };
   initialLinkId?: string;
   initialView?: 'chat' | 'files';
 }
@@ -43,6 +46,7 @@ export function ParentDashboardClient({
   snapshots,
   insights = {},
   parentId,
+  parentPlan,
   initialLinkId,
   initialView,
 }: ParentDashboardClientProps) {
@@ -149,6 +153,26 @@ export function ParentDashboardClient({
 
   return (
     <div className="space-y-6">
+      {parentPlan && parentPlan.tier === 'FREE' && (
+        <Card className="border-violet-500/30 bg-violet-500/5">
+          <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="font-semibold">
+                {parentPlan.childrenCap !== null && parentPlan.childrenUsed >= parentPlan.childrenCap
+                  ? `You've linked ${parentPlan.childrenUsed} of ${parentPlan.childrenCap} free children`
+                  : 'Upgrade your parent plan'}
+              </p>
+              <p className="text-muted-foreground mt-1 text-sm">
+                Link more children and unlock full analytics — study time trends, notes read, and activity feed for
+                every child.
+              </p>
+            </div>
+            <Button asChild variant="gradient" className="shrink-0">
+              <Link href="/parent/pricing">View parent plans</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
       {dashboardLinks.length < approvedLinks.length && (
         <Card className="border-amber-500/30 bg-amber-500/5">
           <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
