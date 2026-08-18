@@ -6,7 +6,8 @@ import { getPlatformSettings } from '@/lib/platform-settings/server';
 import { getPaymentAvailability } from '@/lib/payments';
 import { generatePaymentQR } from '@/lib/payments/paymentQr';
 import { createClient } from '@/lib/supabase/server';
-import { getCurrencyForBoard, getCurrencyForCountry } from '@/lib/constants';
+import { getCurrencyForBoard, getCurrencyForCountry, TRANSACTION_FEE_USD } from '@/lib/constants';
+import { convertUsdToPkr } from '@/lib/platform-settings/shared';
 
 export const metadata: Metadata = { title: 'Upgrade Plan' };
 
@@ -48,11 +49,14 @@ export default async function UpgradePlanPage({
   // The wallet QR always encodes the PKR price (it's only shown once the
   // checkout country is Pakistan) and is generated server-side per the
   // known-working payload format in lib/payments/paymentQr.ts — never
-  // client-side, and never from a hardcoded amount.
+  // client-side, and never from a hardcoded amount. The flat transaction fee is folded into the
+  // encoded amount too, so scanning the QR asks for the real total due, matching the "send
+  // exactly Rs. X" total ManualUpgradePage displays next to it.
   const normalizedBilling = billing === 'annual' ? 'annual' : 'monthly';
   const plan = settings.subscriptionPlans[normalized as 'PRO' | 'ELITE'];
   const pkrAmount = normalizedBilling === 'annual' ? plan.price.PKR.annual : plan.price.PKR.monthly;
-  const walletQr = pkrAmount > 0 ? await generatePaymentQR(pkrAmount) : null;
+  const pkrAmountWithFee = pkrAmount > 0 ? pkrAmount + convertUsdToPkr(TRANSACTION_FEE_USD, settings) : 0;
+  const walletQr = pkrAmountWithFee > 0 ? await generatePaymentQR(pkrAmountWithFee) : null;
 
   return (
     <ManualUpgradePage

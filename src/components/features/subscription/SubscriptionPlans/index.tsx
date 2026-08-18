@@ -6,10 +6,10 @@ import { Building2, Check, Crown, Rocket, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CURRENCY_SYMBOLS, type Currency } from '@/lib/constants';
+import { CURRENCY_SYMBOLS, TRANSACTION_FEE_USD, type Currency } from '@/lib/constants';
 import { cn } from '@/lib/utils/cn';
 import { toast } from 'sonner';
-import { DEFAULT_PLATFORM_SETTINGS, type PlatformSettings } from '@/lib/platform-settings/shared';
+import { DEFAULT_PLATFORM_SETTINGS, convertUsdToPkr, type PlatformSettings } from '@/lib/platform-settings/shared';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { PaymentAvailability } from '@/lib/payments';
@@ -51,6 +51,7 @@ export function SubscriptionPlans({
   const institutionBasePrice =
     settings.subscriptionPlans[institutionPlan].price[currency][billingCycle === 'annual' ? 'annual' : 'monthly'];
   const institutionDiscountedPrice = institutionBasePrice * institutionCount * 0.5;
+  const feePkr = convertUsdToPkr(TRANSACTION_FEE_USD, settings);
 
   useEffect(() => {
     if (searchParams.get('success') === 'true') {
@@ -253,6 +254,13 @@ export function SubscriptionPlans({
                     {formatPrice(pkrDisplayPrice, 'PKR')}
                     <span className="text-xs"> {priceSuffix}</span>
                   </p>
+                  {!isFree && (
+                    <p className="text-muted-foreground mt-1 text-xs">
+                      +{usdSymbol}
+                      {TRANSACTION_FEE_USD.toFixed(2)} transaction fee ({pkrSymbol}
+                      {formatPrice(feePkr, 'PKR')})
+                    </p>
+                  )}
                   {monthlyEquivalent !== null && (
                     <p className="text-muted-foreground mt-1 text-sm">
                       {usdSymbol}
@@ -330,6 +338,11 @@ export function SubscriptionPlans({
                   {formatPrice(institutionDiscountedPrice, currency)}
                 </p>
                 <p className="text-muted-foreground text-xs">50% discounted, {billingCycle}</p>
+                <p className="text-muted-foreground mt-1 text-xs">
+                  +{usdSymbol}
+                  {TRANSACTION_FEE_USD.toFixed(2)} transaction fee ({pkrSymbol}
+                  {formatPrice(feePkr, 'PKR')})
+                </p>
               </div>
             </div>
             <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">

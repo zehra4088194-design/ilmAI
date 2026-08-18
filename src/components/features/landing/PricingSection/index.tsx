@@ -11,8 +11,9 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils/cn';
 import { useTranslations, useMessages } from '@/providers/I18nProvider';
-import { CURRENCY_SYMBOLS, type Currency } from '@/lib/constants';
+import { CURRENCY_SYMBOLS, TRANSACTION_FEE_USD, type Currency } from '@/lib/constants';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
+import { convertUsdToPkr } from '@/lib/platform-settings/shared';
 
 const PLAN_IDS = ['free', 'pro', 'elite'] as const;
 const PLAN_KEYS = { free: 'FREE', pro: 'PRO', elite: 'ELITE' } as const;
@@ -51,6 +52,7 @@ export function PricingSection({ currency }: { currency: Currency }) {
   const institutionPerStudent = settings.subscriptionPlans[institutionPlan].price[currency][billingCycle];
   const institutionListPrice = institutionPerStudent * institutionCount;
   const institutionDiscountedPrice = institutionListPrice * 0.5;
+  const feeInCurrency = currency === 'USD' ? TRANSACTION_FEE_USD : convertUsdToPkr(TRANSACTION_FEE_USD, settings);
 
   const submitInstitutionInquiry = async () => {
     if (!institutionName.trim() || institutionCount < 1) {
@@ -233,6 +235,12 @@ export function PricingSection({ currency }: { currency: Currency }) {
                           {formatPrice(annualPerMonth, currency)}/mo effective
                         </p>
                       )}
+                      {monthly > 0 && (
+                        <p className="text-muted-foreground mt-1 text-xs">
+                          +{symbol}
+                          {formatPrice(feeInCurrency, currency)} transaction fee
+                        </p>
+                      )}
                     </div>
                     <ul className="mb-8 space-y-3">
                       {(dynamicPlan.features.length ? dynamicPlan.features : plan.features).map(
@@ -390,6 +398,10 @@ export function PricingSection({ currency }: { currency: Currency }) {
                 <p className="text-muted-foreground mt-3 text-xs">
                   {symbol}
                   {formatPrice(institutionPerStudent * 0.5, currency)} per student, {billingCycle}.
+                </p>
+                <p className="text-muted-foreground mt-1 text-xs">
+                  +{symbol}
+                  {formatPrice(feeInCurrency, currency)} transaction fee
                 </p>
               </div>
 

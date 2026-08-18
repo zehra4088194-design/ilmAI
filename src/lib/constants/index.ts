@@ -38,6 +38,14 @@ export const MANUAL_PAYMENT_OPTIONS = [
   { label: 'JazzCash', number: '03001088194', accountName: 'MUHAMMAD AHMED NOOR' },
 ] as const;
 
+// Flat per-transaction processing fee added on top of every plan price shown across every
+// pricing page (consumer, institutional, parent) — in every currency shown.
+export const TRANSACTION_FEE_USD = 0.5;
+
+// WhatsApp number payers can send their manual-payment (JazzCash/Easypaisa) transaction
+// screenshot to, shown alongside the existing support email everywhere that email is offered.
+export const SUPPORT_WHATSAPP_NUMBER = '+923480049900';
+
 /**
  * Resolve a student's country from their `profiles.board` value, using the
  * same `country` field already on each BOARDS entry. Falls back to 'PK' for

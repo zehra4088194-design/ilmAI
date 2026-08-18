@@ -7,8 +7,14 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CURRENCY_SYMBOLS, MANUAL_PAYMENT_OPTIONS, type Currency } from '@/lib/constants';
-import { DEFAULT_PLATFORM_SETTINGS, type PlatformSettings } from '@/lib/platform-settings/shared';
+import {
+  CURRENCY_SYMBOLS,
+  MANUAL_PAYMENT_OPTIONS,
+  SUPPORT_WHATSAPP_NUMBER,
+  TRANSACTION_FEE_USD,
+  type Currency,
+} from '@/lib/constants';
+import { DEFAULT_PLATFORM_SETTINGS, convertUsdToPkr, type PlatformSettings } from '@/lib/platform-settings/shared';
 import type { PaymentAvailability } from '@/lib/payments';
 
 type BillingCycle = 'monthly' | 'annual';
@@ -40,6 +46,18 @@ export function ManualUpgradePage({
   const displayCurrency: Currency = country === 'PK' ? 'PKR' : 'USD';
   const price = billing === 'annual' ? plan.price[displayCurrency].annual : plan.price[displayCurrency].monthly;
   const usdPrice = billing === 'annual' ? plan.price.USD.annual : plan.price.USD.monthly;
+  // Flat processing fee, on top of every price shown — the wallet total below actually asks for
+  // price + this fee (it's a manual bank transfer, so the amount requested is the real amount
+  // due); the card price display just notes it alongside, since Paddle's own configured price is
+  // what's actually charged there.
+  const feePkr = convertUsdToPkr(TRANSACTION_FEE_USD, settings);
+  const feeDisplay =
+    displayCurrency === 'USD'
+      ? `+$${TRANSACTION_FEE_USD.toFixed(2)} transaction fee`
+      : `+Rs. ${feePkr.toLocaleString('en-US')} transaction fee`;
+  // The wallet method only ever shows when displayCurrency is already 'PKR' (country === 'PK'),
+  // so `price` here is always the PKR price — this is the actual amount to request from the payer.
+  const walletTotalPkr = price + feePkr;
   const Icon = tier === 'PRO' ? Rocket : Crown;
   const highlight = tier === 'PRO' ? 'from-violet-500 to-indigo-600' : 'from-amber-500 to-orange-600';
   const benefits = useMemo(() => plan.features.slice(0, 6), [plan.features]);
@@ -90,6 +108,7 @@ export function ManualUpgradePage({
               <p className="mt-1 text-white/85">
                 {CURRENCY_SYMBOLS[displayCurrency]}
                 {formatPrice(price, displayCurrency)} {billing === 'annual' ? '/year' : '/month'}
+                <span className="ml-2 text-sm text-white/70">{feeDisplay}</span>
               </p>
             </div>
           </div>
@@ -186,6 +205,9 @@ export function ManualUpgradePage({
               >
                 <CreditCard className="h-4 w-4" /> Pay ${formatPrice(usdPrice, 'USD')} by card
               </Button>
+              <p className="text-muted-foreground mt-2 text-xs">
+                +${TRANSACTION_FEE_USD.toFixed(2)} transaction fee applies on top of the price shown.
+              </p>
               {!paymentAvailability.paddleConfigured && (
                 <p className="text-muted-foreground mt-3 text-xs">
                   Checkout will become active after Paddle keys and matching USD price IDs are configured.
@@ -198,8 +220,9 @@ export function ManualUpgradePage({
             <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5">
               <h2 className="text-lg font-bold">JazzCash</h2>
               <p className="text-muted-foreground mt-2 text-sm leading-6">
-                Send exactly Rs. {formatPrice(price, 'PKR')}, then send the transaction screenshot and registered account
-                email to support. The plan will be activated by an admin after verification.
+                Send exactly Rs. {formatPrice(walletTotalPkr, 'PKR')} (Rs. {formatPrice(price, 'PKR')} plan price + Rs.{' '}
+                {formatPrice(feePkr, 'PKR')} transaction fee), then send the transaction screenshot and registered
+                account email to support. The plan will be activated by an admin after verification.
               </p>
               <div className="mt-4 space-y-3">
                 {MANUAL_PAYMENT_OPTIONS.map((option) => (
@@ -223,7 +246,7 @@ export function ManualUpgradePage({
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-xs font-semibold uppercase tracking-wide text-amber-600">{option.label}</p>
-                      <p className="text-lg font-bold">Rs. {formatPrice(price, 'PKR')}</p>
+                      <p className="text-lg font-bold">Rs. {formatPrice(walletTotalPkr, 'PKR')}</p>
                       <p className="text-muted-foreground text-sm">{option.accountName}</p>
                       <button
                         type="button"
@@ -238,7 +261,9 @@ export function ManualUpgradePage({
                 ))}
               </div>
               <p className="text-muted-foreground mt-4 text-xs">
-                Send proof and your registered email to `ilmai.study1@gmail.com`. Never share an OTP or wallet PIN.
+                Send proof and your registered email to `ilmai.study1@gmail.com`, or send the transaction screenshot on
+                WhatsApp: <span className="font-semibold">{SUPPORT_WHATSAPP_NUMBER}</span>. Never share an OTP or wallet
+                PIN.
               </p>
             </div>
           )}
