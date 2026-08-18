@@ -107,11 +107,19 @@ function PrintStyles({ id }: { id: string }) {
           visibility: visible !important;
         }
         #${id} {
+          /* Only 'top'/'left' are pinned (not 'inset: 0') — with 'bottom' also set and
+             'height' left auto, the box's height resolves to exactly one page (297mm)
+             regardless of content, and the article's own 'overflow-hidden' class then
+             silently clips every page after the first. Pinning only the top-left corner
+             keeps the height content-driven so a long paper actually flows onto as many
+             A4 pages as it needs, instead of truncating to one. */
           position: absolute;
-          inset: 0;
+          top: 0;
+          left: 0;
           width: 210mm;
           min-height: 297mm;
           padding: 14mm;
+          overflow: visible !important;
           print-color-adjust: exact;
           -webkit-print-color-adjust: exact;
         }
