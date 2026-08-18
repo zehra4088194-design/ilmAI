@@ -4,17 +4,30 @@ import { DashboardShell } from '@/components/layout/DashboardShell';
 import { PersonalizationModal } from '@/components/features/onboarding/PersonalizationModal';
 import { PublicResourceShell } from '@/components/layout/PublicResourceShell';
 import { resolveInstitutionBranding } from '@/lib/branding/resolveInstitutionBranding';
+import { resolveMembershipRedirect } from '@/lib/auth/resolveMembershipRedirect';
 import { headers } from 'next/headers';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  const pathname = (await headers()).get('x-invoke-path') || '';
   if (!user) {
-    const pathname = (await headers()).get('x-invoke-path') || '';
     if (pathname.startsWith('/library') || pathname.startsWith('/past-papers')) {
       return <PublicResourceShell>{children}</PublicResourceShell>;
     }
     redirect('/login');
+  }
+
+  // A school/college member (owner, admin, teacher, staff) landing on a generic consumer
+  // route — a direct URL, an old bookmark, the browser back button — used to see the
+  // "Teacher Portal" trim built for an individual consumer-app teacher, a confusing mismatch
+  // for their real institution role. /school-admin and /college-admin live in their own route
+  // groups outside (dashboard), so this never fires for the portal itself — only for exactly
+  // the stray-URL case it's meant to catch. Same shared resolver the login/callback flows use
+  // (§1's fix), so "which portal wins" logic lives in exactly one place.
+  const membershipRedirect = await resolveMembershipRedirect(supabase, user.id, pathname);
+  if (membershipRedirect.institutionType) {
+    redirect(membershipRedirect.destination);
   }
 
   const { data: profile } = await supabase

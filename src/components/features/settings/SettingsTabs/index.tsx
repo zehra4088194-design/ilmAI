@@ -82,12 +82,19 @@ export function SettingsTabs({
   initialTab,
   initialLinkId,
   initialParentView,
+  autoStartMfa,
+  continueAfterMfaHref,
 }: {
   profile: any;
   currentGradeLevel: GradeLevel | null;
   initialTab?: string;
   initialLinkId?: string;
   initialParentView?: 'chat' | 'files';
+  // Landed here from RegisterForm's "Enable 2-step verification after signup" checkbox
+  // (?tab=security&mfa=start&next=...) — auto-opens the QR enrollment instead of making the new
+  // user find and click "Enable 2FA" themselves right after creating their account.
+  autoStartMfa?: boolean;
+  continueAfterMfaHref?: string | null;
 }) {
   const [localProfile, setLocalProfile] = useState(profile);
   const [activeTab, setActiveTab] = useState(initialTab || 'profile');
@@ -135,6 +142,7 @@ export function SettingsTabs({
   const updateAuthUser = useAuthStore((state) => state.updateUser);
   const t = useTranslations();
   const { locale, setLocale } = useLocale();
+  const verifiedMfaFactor = mfaFactors.find((factor) => factor.status === 'verified');
   const profileGradeLevel = (localProfile?.grade_level || currentGradeLevel) as GradeLevel | null;
   const classSettingsGrade =
     profileGradeLevel && CLASS_SELECTION_GRADE_LEVELS.includes(profileGradeLevel as ClassSelectionGradeLevel)
@@ -398,6 +406,18 @@ export function SettingsTabs({
     }
     setMfaSaving(false);
   };
+
+  // autoStartMfa (?tab=security&mfa=start) fires this once, only after factors have actually
+  // loaded and confirmed nothing is enrolled yet — without the mfaLoading/verifiedMfaFactor guard
+  // this would also fire for someone who already has MFA and is just revisiting the link.
+  const [autoMfaStarted, setAutoMfaStarted] = useState(false);
+  useEffect(() => {
+    if (!autoStartMfa || autoMfaStarted || mfaLoading || activeTab !== 'security') return;
+    if (verifiedMfaFactor || mfaEnrollment) return;
+    setAutoMfaStarted(true);
+    void startMfaEnrollment();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoStartMfa, autoMfaStarted, mfaLoading, activeTab, verifiedMfaFactor, mfaEnrollment]);
 
   const verifyMfaEnrollment = async () => {
     if (!mfaEnrollment || mfaCode.trim().length < 6) {
@@ -797,17 +817,32 @@ export function SettingsTabs({
             </div>
           )}
           {activeTab === 'security' && (
-            <SecuritySettings
-              loading={mfaLoading}
-              saving={mfaSaving}
-              factors={mfaFactors}
-              enrollment={mfaEnrollment}
-              code={mfaCode}
-              onCodeChange={setMfaCode}
-              onStartEnrollment={startMfaEnrollment}
-              onVerifyEnrollment={verifyMfaEnrollment}
-              onDisable={disableMfa}
-            />
+            <div className="space-y-8">
+              {continueAfterMfaHref && (
+                <div className="border-primary/25 bg-primary/5 flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4">
+                  <p className="text-sm">
+                    {verifiedMfaFactor
+                      ? 'Two-step verification is set up.'
+                      : 'Set up two-step verification now, or continue and enable it later.'}
+                  </p>
+                  <Button asChild variant={verifiedMfaFactor ? 'gradient' : 'outline'} size="sm">
+                    <Link href={continueAfterMfaHref}>{verifiedMfaFactor ? 'Continue' : 'Skip for now'}</Link>
+                  </Button>
+                </div>
+              )}
+              <ChangePasswordCard email={localProfile?.email || profile?.email || ''} mfaVerified={Boolean(verifiedMfaFactor)} />
+              <SecuritySettings
+                loading={mfaLoading}
+                saving={mfaSaving}
+                factors={mfaFactors}
+                enrollment={mfaEnrollment}
+                code={mfaCode}
+                onCodeChange={setMfaCode}
+                onStartEnrollment={startMfaEnrollment}
+                onVerifyEnrollment={verifyMfaEnrollment}
+                onDisable={disableMfa}
+              />
+            </div>
           )}
           {activeTab === 'appearance' && (
             <div className="space-y-4">
@@ -867,6 +902,149 @@ export function SettingsTabs({
           )}
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+// Password change was previously only reachable through the /reset-password recovery flow —
+// there was no way to change it from an already-authenticated session. supabase.auth.updateUser
+// doesn't require the current password by default (the session alone authorizes it), which is
+// weaker than the owner wanted here, so this re-authenticates with the current password first
+// (signInWithPassword) before calling updateUser. For an MFA-enrolled account, the current
+// authenticator code is also required (mfa.challenge + mfa.verify) before the password call —
+// otherwise a stolen session alone could change the password and lock the real owner out.
+function ChangePasswordCard({ email, mfaVerified }: { email: string; mfaVerified: boolean }) {
+  const supabase = createClient();
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [mfaCode, setMfaCode] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!currentPassword) {
+      toast.error('Enter your current password.');
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast.error('New password must be at least 8 characters.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error('The new passwords do not match.');
+      return;
+    }
+    if (mfaVerified && mfaCode.trim().length < 6) {
+      toast.error('Enter the 6-digit code from your authenticator app.');
+      return;
+    }
+    setSaving(true);
+    try {
+      if (!email) {
+        toast.error('Could not verify your account email. Reload the page and try again.');
+        return;
+      }
+      const { error: reauthError } = await supabase.auth.signInWithPassword({
+        email,
+        password: currentPassword,
+      });
+      if (reauthError) {
+        toast.error('Current password is incorrect.');
+        return;
+      }
+
+      if (mfaVerified) {
+        const factors = await supabase.auth.mfa.listFactors();
+        const factorId = factors.data?.totp?.find((factor) => factor.status === 'verified')?.id;
+        if (!factorId) {
+          toast.error('Two-step verification factor could not be found. Reload the page and try again.');
+          return;
+        }
+        const challenge = await supabase.auth.mfa.challenge({ factorId });
+        if (challenge.error) {
+          toast.error(challenge.error.message);
+          return;
+        }
+        const verify = await supabase.auth.mfa.verify({
+          factorId,
+          challengeId: challenge.data.id,
+          code: mfaCode.trim(),
+        });
+        if (verify.error) {
+          toast.error('Incorrect authenticator code.');
+          return;
+        }
+      }
+
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      toast.success('Password updated.');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setMfaCode('');
+    } catch {
+      toast.error('Password could not be changed.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="border-border bg-card rounded-xl border p-4">
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-violet-500/10">
+          <KeyRound className="h-5 w-5 text-violet-400" />
+        </div>
+        <div>
+          <p className="text-sm font-semibold">Change password</p>
+          <p className="text-muted-foreground mt-1 text-xs leading-5">
+            Confirm your current password{mfaVerified ? ' and authenticator code' : ''} to set a new one.
+          </p>
+        </div>
+      </div>
+      <form onSubmit={handleSubmit} className="mt-4 space-y-3">
+        <Input
+          type="password"
+          autoComplete="current-password"
+          placeholder="Current password"
+          value={currentPassword}
+          onChange={(event) => setCurrentPassword(event.target.value)}
+        />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Input
+            type="password"
+            autoComplete="new-password"
+            placeholder="New password"
+            value={newPassword}
+            onChange={(event) => setNewPassword(event.target.value)}
+          />
+          <Input
+            type="password"
+            autoComplete="new-password"
+            placeholder="Confirm new password"
+            value={confirmPassword}
+            onChange={(event) => setConfirmPassword(event.target.value)}
+          />
+        </div>
+        {mfaVerified && (
+          <Input
+            value={mfaCode}
+            onChange={(event) => setMfaCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            placeholder="6-digit authenticator code"
+            className="font-mono tracking-widest"
+          />
+        )}
+        <Button type="submit" variant="gradient" size="sm" loading={saving}>
+          Update password
+        </Button>
+      </form>
     </div>
   );
 }

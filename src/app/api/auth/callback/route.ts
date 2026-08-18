@@ -290,7 +290,7 @@ export async function GET(request: NextRequest) {
         ? null
         : await resolveMembershipRedirect(supabase, data.user.id, redirectTo);
 
-      const destination = isParentLinkRedirect
+      const normalDestination = isParentLinkRedirect
         ? redirectTo
         : membershipRedirect?.institutionType
           ? membershipRedirect.destination
@@ -303,6 +303,19 @@ export async function GET(request: NextRequest) {
                 : resolvedRole === 'parent'
                   ? '/parent'
                   : redirectTo;
+
+      // The "Enable 2-step verification after signup" checkbox on RegisterForm can't enroll MFA
+      // directly — that needs an authenticated session, which doesn't exist during the wizard
+      // whenever email confirmation is required. The checkbox instead stamps enable_2fa=true into
+      // signUp's user_metadata, which survives to here once the confirmation link is clicked and a
+      // real session exists. Only honored for a brand-new profile (a returning user's signup
+      // metadata is irrelevant to their login) and never overrides the parent-link deep link or an
+      // institution member's portal landing.
+      const wantsMfaFromSignup = !existingProfile && userMetadata?.enable_2fa === true;
+      const destination =
+        wantsMfaFromSignup && !isParentLinkRedirect && !membershipRedirect?.institutionType
+          ? `/settings?tab=security&mfa=start&next=${encodeURIComponent(normalDestination)}`
+          : normalDestination;
 
       const response = NextResponse.redirect(`${origin}${destination}`);
       response.cookies.set(

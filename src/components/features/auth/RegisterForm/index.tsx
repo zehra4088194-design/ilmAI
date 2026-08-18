@@ -224,6 +224,11 @@ export function RegisterForm() {
   const [stepIndex, setStepIndex] = useState(0);
   const [checkingUsername, setCheckingUsername] = useState(false);
   const [detectedCountry, setDetectedCountry] = useState<string | null>(null);
+  // Offered on the password step rather than a separate wizard screen — MFA enrollment itself
+  // (QR code, verify a 6-digit code) needs an authenticated session, which doesn't exist until
+  // signUp() succeeds below. Checking this reuses the existing Settings MFA flow via a post-signup
+  // redirect instead of building a parallel enrollment UI inside the wizard.
+  const [wantsMfa, setWantsMfa] = useState(true);
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect') || '/dashboard';
@@ -493,6 +498,10 @@ export function RegisterForm() {
           preferred_language: preferredLanguage,
           signup_institution_id: isInstitutional ? selectedSchool?.id : undefined,
           signup_role_requested: isInstitutional ? institutionalRole : undefined,
+          // Read back by /api/auth/callback for the email-confirmation-required path (no session
+          // exists yet here to redirect through directly) and used below for the immediate-session
+          // path. Kept as plain signUp metadata, not a DB column, since it's a one-time signal.
+          enable_2fa: wantsMfa || undefined,
         },
         emailRedirectTo: callbackUrl.toString(),
       },
@@ -519,14 +528,20 @@ export function RegisterForm() {
         document.cookie = `${THEME_COOKIE_NAME}=${genderTheme}; Path=/; Max-Age=31536000; SameSite=Lax`;
         window.localStorage.setItem('ilm-ai-gender-theme-user', signUpData.user?.id || data.email);
       }
-      router.push(
+      const normalDestination =
         effectiveRole === 'parent'
           ? '/parent'
           : isYoungChild
             ? '/kids'
             : !isInstitutional && educationLevel === 'university'
               ? '/onboarding/complete-profile'
-              : redirect
+              : redirect;
+      // Kids accounts skip the offer entirely — a young child isn't the one setting up their own
+      // authenticator app; a parent/guardian can enable it later from Settings if they want to.
+      router.push(
+        wantsMfa && !isYoungChild
+          ? `/settings?tab=security&mfa=start&next=${encodeURIComponent(normalDestination)}`
+          : normalDestination
       );
       router.refresh();
       return;
@@ -838,6 +853,26 @@ export function RegisterForm() {
               <p className="text-muted-foreground flex items-center gap-2 text-xs">
                 <ShieldCheck className="text-primary h-4 w-4" /> Chrome password suggestions are supported.
               </p>
+              <label className="border-border bg-card/70 hover:border-primary/40 flex cursor-pointer items-start gap-3 rounded-xl border-2 p-3.5 text-sm">
+                <input
+                  type="checkbox"
+                  checked={wantsMfa}
+                  onChange={(event) => setWantsMfa(event.target.checked)}
+                  className="accent-primary mt-0.5 h-4 w-4 shrink-0"
+                />
+                <span>
+                  <span className="flex items-center gap-1.5 font-semibold">
+                    Enable 2-step verification after signup
+                    <span className="bg-primary/15 text-primary rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide">
+                      Recommended
+                    </span>
+                  </span>
+                  <span className="text-muted-foreground mt-0.5 block text-xs">
+                    You&apos;ll be taken straight to setting it up with your authenticator app right after your
+                    account is created.
+                  </span>
+                </span>
+              </label>
             </div>
           )}
 

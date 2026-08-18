@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: 'Settings' };
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ tab?: string; linkId?: string; view?: string }>;
+  searchParams?: Promise<{ tab?: string; linkId?: string; view?: string; mfa?: string; next?: string }>;
 }) {
   const supabase = await createClient();
   const {
@@ -28,6 +28,8 @@ export default async function SettingsPage({
         initialTab={params?.tab}
         initialLinkId={params?.linkId}
         initialParentView={params?.view === 'files' ? 'files' : params?.view === 'chat' ? 'chat' : undefined}
+        autoStartMfa={params?.mfa === 'start'}
+        continueAfterMfaHref={params?.next && params.next.startsWith('/') && !params.next.startsWith('//') ? params.next : null}
       />
     </div>
   );
