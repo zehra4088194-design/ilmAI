@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils/cn';
 import type { BillingCycle, InstitutionType, PaymentMethod } from '@/lib/institution-payments/types';
 import { submitInstitutionPaymentVerification, type SubmitPaymentState } from '@/lib/institution-payments/actions';
 import { ManualPaymentMethodPicker } from './ManualPaymentMethodPicker';
+import { TRANSACTION_FEE_USD } from '@/lib/constants';
 
 type CyclePrice = { usd: number; pkr: number };
 
@@ -43,6 +44,13 @@ export function InstitutionPaymentCheckout({
   });
 
   const amount = cycle === 'annual' ? annual : monthly;
+  // No settings object is available client-side here (monthly/annual arrive precomputed from the
+  // server, per this component's own doc comment) — the PKR/USD ratio already implied by those
+  // precomputed prices is the same exchangeRate.usdToPkr the admin configured, so deriving the fee
+  // from it stays consistent without threading platform settings through as a new prop.
+  const impliedPkrPerUsd = monthly.usd > 0 ? monthly.pkr / monthly.usd : 280;
+  const feePkr = Math.round(TRANSACTION_FEE_USD * impliedPkrPerUsd);
+  const amountPkrWithFee = amount.pkr + feePkr;
 
   return (
     <Card>
@@ -71,6 +79,10 @@ export function InstitutionPaymentCheckout({
             ${amount.usd.toFixed(2)} <span className="text-muted-foreground text-sm font-normal">/ {cycle}</span>
           </p>
           <p className="text-muted-foreground text-xs">≈ PKR {amount.pkr.toLocaleString()}</p>
+          <p className="text-muted-foreground mt-1 text-xs">
+            +${TRANSACTION_FEE_USD.toFixed(2)} transaction fee (≈ PKR {feePkr.toLocaleString()}) — PKR{' '}
+            {amountPkrWithFee.toLocaleString()} total for wallet payment
+          </p>
           {volumeDiscountApplied && (
             <p className="mt-1 text-xs font-semibold text-emerald-600">Volume discount applied</p>
           )}
@@ -80,6 +92,7 @@ export function InstitutionPaymentCheckout({
           method={method}
           onMethodChange={setMethod}
           whatsappMessage="Hi, I want to confirm my institution plan payment."
+          scannableAmountPkr={amountPkrWithFee}
         />
 
         <form action={formAction} className="space-y-3">
@@ -88,7 +101,9 @@ export function InstitutionPaymentCheckout({
           <input type="hidden" name="billing_cycle" value={cycle} />
           <input type="hidden" name="method" value={method} />
           <input type="hidden" name="amount_usd" value={amount.usd} />
-          <input type="hidden" name="amount_pkr" value={amount.pkr} />
+          {/* Includes the transaction fee — matches what the QR/on-screen total actually asks for,
+              so the admin's manual verification isn't short by the fee amount. */}
+          <input type="hidden" name="amount_pkr" value={amountPkrWithFee} />
           <input
             name="contact_email"
             type="email"

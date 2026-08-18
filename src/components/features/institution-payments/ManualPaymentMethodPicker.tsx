@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import QRCode from 'react-qr-code';
 import { MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
@@ -30,13 +31,46 @@ export function ManualPaymentMethodPicker({
   method,
   onMethodChange,
   whatsappMessage,
+  // Only ever passed by InstitutionPaymentCheckout (institution paying ilm AI for its own plan)
+  // — when set, jazzcash/easypaisa show the real scannable QR (amount + expiry embedded, same
+  // merchant as the consumer checkout) instead of a plain-text QR of the phone number.
+  // FeePaymentCheckout (school/college fee invoices — money goes to the INSTITUTION's own
+  // account, not ilm AI's) never passes this, so it keeps the generic text QR unchanged.
+  scannableAmountPkr,
 }: {
   method: PaymentMethod;
   onMethodChange: (method: PaymentMethod) => void;
   whatsappMessage: string;
+  scannableAmountPkr?: number;
 }) {
   const destination = methodDestination(method);
   const whatsappHref = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappMessage)}`;
+  const showScannableQr = Boolean(scannableAmountPkr) && (method === 'jazzcash' || method === 'easypaisa');
+  const [scannableQrDataUrl, setScannableQrDataUrl] = useState<string | null>(null);
+  const [scannableQrLoading, setScannableQrLoading] = useState(false);
+
+  useEffect(() => {
+    if (!showScannableQr || !scannableAmountPkr) {
+      setScannableQrDataUrl(null);
+      return;
+    }
+    let cancelled = false;
+    setScannableQrLoading(true);
+    fetch(`/api/payments/institution-qr?amount=${Math.round(scannableAmountPkr)}`)
+      .then((response) => (response.ok ? response.json() : Promise.reject()))
+      .then((json) => {
+        if (!cancelled) setScannableQrDataUrl(json.qrDataUrl || null);
+      })
+      .catch(() => {
+        if (!cancelled) setScannableQrDataUrl(null);
+      })
+      .finally(() => {
+        if (!cancelled) setScannableQrLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [showScannableQr, scannableAmountPkr]);
 
   return (
     <div className="space-y-5">
@@ -64,12 +98,26 @@ export function ManualPaymentMethodPicker({
 
       {destination && (
         <div className="flex flex-col items-center gap-3 rounded-xl border p-4 text-center sm:flex-row sm:text-left">
-          <div className="rounded-lg bg-white p-2">
-            <QRCode value={destination} size={128} level="M" bgColor="#ffffff" fgColor="#000000" />
+          <div className="flex h-[132px] w-[132px] shrink-0 items-center justify-center rounded-lg bg-white p-2">
+            {showScannableQr ? (
+              scannableQrDataUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element -- data: URL, Next/Image doesn't optimize these
+                <img src={scannableQrDataUrl} alt={`${PAYMENT_METHOD_LABELS[method]} payment QR`} width={116} height={116} />
+              ) : (
+                <span className="text-muted-foreground text-xs">
+                  {scannableQrLoading ? 'Loading QR...' : 'QR unavailable'}
+                </span>
+              )
+            ) : (
+              <QRCode value={destination} size={116} level="M" bgColor="#ffffff" fgColor="#000000" />
+            )}
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold">{PAYMENT_METHOD_LABELS[method]}</p>
             <p className="text-muted-foreground break-all text-sm">{destination}</p>
+            {showScannableQr && (
+              <p className="text-muted-foreground mt-1 text-xs">Scan to auto-fill the exact amount due.</p>
+            )}
           </div>
         </div>
       )}
