@@ -127,6 +127,14 @@ export function ProtectedPdfViewer({
     const viewport = viewportRef.current;
     if (!viewport) return;
     const pxPerSecond = AUTO_SCROLL_SPEEDS[speedIndex]?.pxPerSecond ?? 60;
+    // The viewport carries the `scroll-smooth` class (scroll-behavior: smooth) for manual page
+    // jumps. Writing `scrollTop +=` every animation frame while that's active makes iOS Safari
+    // treat each write as a brand-new smooth-scroll request that cancels the one before it ever
+    // finishes — the net visible motion is close to zero, which is exactly the "auto-scroll
+    // doesn't work on iPhone" bug. Force plain instant scrolling only for the duration of
+    // auto-scroll, then hand scroll-behavior back to the CSS class (manual jumps stay smooth).
+    const previousScrollBehavior = viewport.style.scrollBehavior;
+    viewport.style.scrollBehavior = 'auto';
     let raf = 0;
     let last = performance.now();
     const step = (now: number) => {
@@ -147,6 +155,7 @@ export function ProtectedPdfViewer({
 
     return () => {
       cancelAnimationFrame(raf);
+      viewport.style.scrollBehavior = previousScrollBehavior;
       viewport.removeEventListener('wheel', stopOnUserScroll);
       viewport.removeEventListener('touchmove', stopOnUserScroll);
     };
