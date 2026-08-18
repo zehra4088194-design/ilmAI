@@ -205,6 +205,36 @@ export default async function ParentDashboardPage({
     childrenCap: parentChildrenCap(platformSettings, parentOwnTier),
     childrenUsed: approvedStudentIds.length,
   };
+
+  // "What did they actually do" activity feed — a paid-parent-plan feature (see
+  // ParentPlanSettings), independent of any child's own tier. Recently-read files
+  // (resource_reads) and today's study sessions, per dashboard-eligible child.
+  let activityByStudent: Record<string, { reads: any[]; todayMinutes: number; todaySessions: any[] }> = {};
+  if (parentPlan.tier !== 'FREE' && dashboardStudentIds.length > 0) {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const [{ data: reads }, { data: todaySessions }] = await Promise.all([
+      supabase
+        .from('resource_reads' as any)
+        .select('user_id, resource_kind, created_at, subjects(name), chapters(name)')
+        .in('user_id', dashboardStudentIds)
+        .order('created_at', { ascending: false })
+        .limit(60),
+      supabase
+        .from('study_sessions')
+        .select('user_id, duration, type, subject_id, subjects(name)')
+        .in('user_id', dashboardStudentIds)
+        .gte('date', todayStart.toISOString().slice(0, 10)),
+    ]);
+    activityByStudent = Object.fromEntries(
+      dashboardStudentIds.map((studentId) => {
+        const studentReads = ((reads || []) as any[]).filter((row) => row.user_id === studentId).slice(0, 5);
+        const studentTodaySessions = ((todaySessions || []) as any[]).filter((row) => row.user_id === studentId);
+        const todayMinutes = studentTodaySessions.reduce((sum, row) => sum + (Number(row.duration) || 0), 0);
+        return [studentId, { reads: studentReads, todayMinutes, todaySessions: studentTodaySessions }];
+      })
+    );
+  }
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <div>
@@ -219,6 +249,7 @@ export default async function ParentDashboardPage({
         insights={parentInsights}
         parentId={user.id}
         parentPlan={parentPlan}
+        activityByStudent={activityByStudent}
         initialLinkId={params?.linkId}
         initialView={params?.view === 'files' ? 'files' : params?.view === 'chat' ? 'chat' : undefined}
       />

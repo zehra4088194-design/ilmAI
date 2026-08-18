@@ -37,6 +37,9 @@ interface ParentDashboardClientProps {
   // The parent account's OWN plan (separate from any child's tier) — see ParentPlanSettings' doc
   // comment in lib/platform-settings/shared.ts. childrenCap is null for unlimited.
   parentPlan?: { tier: 'FREE' | 'PRO' | 'ELITE'; childrenCap: number | null; childrenUsed: number };
+  // Per-student recent-reads + today's study minutes — only populated server-side when
+  // parentPlan.tier !== 'FREE' (see parent/page.tsx).
+  activityByStudent?: Record<string, { reads: any[]; todayMinutes: number; todaySessions: any[] }>;
   initialLinkId?: string;
   initialView?: 'chat' | 'files';
 }
@@ -47,6 +50,7 @@ export function ParentDashboardClient({
   insights = {},
   parentId,
   parentPlan,
+  activityByStudent,
   initialLinkId,
   initialView,
 }: ParentDashboardClientProps) {
@@ -413,6 +417,55 @@ export function ParentDashboardClient({
                       </div>
                     )}
                   </div>
+
+                  {/* "What did they actually do" — a paid parent-plan feature (see
+                      ParentPlanSettings), independent of the child's own tier. FREE parents see a
+                      locked teaser instead, mirroring the pattern used above for a FREE-tier child. */}
+                  {parentPlan && parentPlan.tier !== 'FREE' ? (
+                    <div className="border-border/70 rounded-xl border p-3">
+                      <p className="text-sm font-semibold">Recent activity</p>
+                      <p className="text-muted-foreground mb-2 text-[11px]">
+                        Studied today: {activityByStudent?.[student.id]?.todayMinutes || 0} min
+                      </p>
+                      {activityByStudent?.[student.id]?.reads?.length ? (
+                        <ul className="space-y-1.5">
+                          {(activityByStudent[student.id]?.reads || []).map((read: any, readIndex: number) => (
+                            <li
+                              key={readIndex}
+                              className="flex items-center justify-between gap-2 rounded-lg bg-violet-500/5 px-2.5 py-1.5 text-xs"
+                            >
+                              <span className="min-w-0 truncate">
+                                {read.subjects?.name || 'Resource'}
+                                {read.chapters?.name ? ` — ${read.chapters.name}` : ''}
+                              </span>
+                              <span className="text-muted-foreground shrink-0">
+                                {new Date(read.created_at).toLocaleDateString(undefined, {
+                                  month: 'short',
+                                  day: 'numeric',
+                                })}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-muted-foreground text-xs">No files read yet.</p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="relative overflow-hidden rounded-xl border p-3">
+                      <p className="text-sm font-semibold blur-sm select-none">Recent activity</p>
+                      <p className="text-muted-foreground blur-sm select-none text-xs">
+                        Studied today: 42 min — Physics, Chapter 4 read
+                      </p>
+                      <span className="bg-background/85 absolute inset-0 flex flex-col items-center justify-center text-center backdrop-blur-[2px]">
+                        <LockKeyhole className="mb-1.5 h-4 w-4 text-violet-500" />
+                        <span className="text-xs font-semibold">Unlock with a Paid or Elite parent plan</span>
+                        <Link href="/parent/pricing" className="mt-1 text-[11px] text-violet-400 underline">
+                          View parent plans
+                        </Link>
+                      </span>
+                    </div>
+                  )}
 
                   {studentSnaps.length > 0 && (
                     <div>
