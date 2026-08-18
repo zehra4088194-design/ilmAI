@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import { CheckCircle2, Loader2, Maximize2, MessageSquareText, Minimize2, RefreshCw, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
@@ -260,8 +261,17 @@ export function ProtectedResourceReader({
 
   const toolbarsVisible = !isFullscreen || controlsVisible;
 
-  if (!open) return null;
-  return (
+  // Portal to document.body: this reader is a `fixed inset-0` full-viewport overlay, but every
+  // caller mounts it inside a resource Card that has a `hover:-translate-y-*`/scale transform.
+  // Any CSS transform on an ancestor creates a new containing block for `position: fixed`
+  // descendants, so without the portal the "fullscreen" reader was sized/positioned relative to
+  // that small card instead of the viewport the instant it (or the mouse) triggered the hover —
+  // that's what caused the rapid full-size/card-size flicker as the pointer moved near the card.
+  const [portalReady, setPortalReady] = useState(false);
+  useEffect(() => setPortalReady(true), []);
+
+  if (!open || !portalReady) return null;
+  return createPortal(
     <div
       ref={readerRef}
       className="bg-background fixed inset-0 z-[230] flex h-dvh min-h-0 flex-col"
@@ -377,6 +387,7 @@ export function ProtectedResourceReader({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
