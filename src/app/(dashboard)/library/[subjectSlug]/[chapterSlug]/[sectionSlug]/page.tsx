@@ -56,7 +56,7 @@ export default async function LibrarySectionPage({
   const pdfStorage = createServiceClient();
   let resourcesQuery = (pdfStorage.from('library_resources') as any)
     .select(
-      'id, title, description, book_title, content_section, has_context_text, resource_type, drive_url, light_file_url, dark_file_url, board, grade_level, file_type, subjects(id, name, slug, color), chapters(id, name, slug, order_index)'
+      'id, title, description, book_title, content_section, has_context_text, resource_type, drive_url, drive_file_id, light_file_url, dark_file_url, board, grade_level, file_type, subjects(id, name, slug, color), chapters(id, name, slug, order_index)'
     )
     .eq('resource_type', resourceType)
     .eq('content_section', section.value)
@@ -70,7 +70,7 @@ export default async function LibrarySectionPage({
     console.warn('Structured library catalog is not migrated yet; using the safe legacy section fallback.');
     let fallbackQuery = (pdfStorage.from('library_resources') as any)
       .select(
-        'id, title, description, context_text_url, resource_type, drive_url, light_file_url, dark_file_url, board, grade_level, file_type, subjects(id, name, slug, color), chapters(id, name, slug, order_index)'
+        'id, title, description, context_text_url, resource_type, drive_url, drive_file_id, light_file_url, dark_file_url, board, grade_level, file_type, subjects(id, name, slug, color), chapters(id, name, slug, order_index)'
       )
       .eq('resource_type', resourceType)
       .order('title');
@@ -128,9 +128,20 @@ export default async function LibrarySectionPage({
                 subjectColor: resource.subjects?.color,
                 chapterName: resource.chapters?.name,
                 driveUrl: resource.drive_url,
+                driveFileId: resource.drive_file_id,
                 lightFileUrl: resource.light_file_url,
                 darkFileUrl: resource.dark_file_url,
               }}
+              // A few sibling files from the same section (e.g. a Physics MCQ file also showing
+              // Physics Shorts / other notes nearby) — capped at 4, not the full section list.
+              relatedLinks={visibleResources
+                .filter((sibling: any) => sibling.id !== resource.id)
+                .slice(0, 4)
+                .map((sibling: any) => ({
+                  id: sibling.id,
+                  title: sibling.title,
+                  href: `${catalogSearch ? `?${catalogSearch}&` : '?'}resource=${sibling.id}`,
+                }))}
             />
           ))}
         </div>

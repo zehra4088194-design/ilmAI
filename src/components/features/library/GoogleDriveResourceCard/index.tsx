@@ -2,7 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { BookOpen, CheckCircle2, DownloadCloud, Eye, FileType2, Loader2, Maximize2 } from 'lucide-react';
+import {
+  ArrowUpRight,
+  BookOpen,
+  CheckCircle2,
+  DownloadCloud,
+  Eye,
+  FileType2,
+  HardDriveDownload,
+  Loader2,
+  Maximize2,
+} from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +27,8 @@ import { ResourceAiTools } from '@/components/features/resources/ResourceAiTools
 import { getGoogleDriveThumbnailUrl } from '@/lib/utils/filePreview';
 import { isDarkThemeId } from '@/lib/constants/themes';
 import { resolvePdfThemeMode } from '@/lib/platform-settings/shared';
+import { getGoogleDriveDownloadUrl } from '@/lib/constants';
+import { ResourceMistakeReportForm } from '@/components/features/resources/ResourceMistakeReportForm';
 
 export interface DriveResourceData {
   id: string;
@@ -34,6 +46,7 @@ export interface DriveResourceData {
   bookTitle?: string | null;
   hasContextText?: boolean;
   driveUrl?: string | null;
+  driveFileId?: string | null;
   lightFileUrl?: string | null;
   darkFileUrl?: string | null;
 }
@@ -41,9 +54,12 @@ export interface DriveResourceData {
 export function GoogleDriveResourceCard({
   resource,
   autoOpen = false,
+  relatedLinks = [],
 }: {
   resource: DriveResourceData;
   autoOpen?: boolean;
+  // A few sibling files from the same subject/chapter — capped by the caller, not fetched here.
+  relatedLinks?: { id: string; title: string; href: string }[];
 }) {
   const { theme } = useTheme();
   const { user } = useAuth();
@@ -184,6 +200,32 @@ export function GoogleDriveResourceCard({
             </Link>
           </Button>
         ) : null}
+        {resource.driveFileId && (
+          <Button asChild variant="outline" size="sm" className="w-full">
+            <a href={getGoogleDriveDownloadUrl(resource.driveFileId)} target="_blank" rel="noopener noreferrer">
+              <HardDriveDownload className="h-3.5 w-3.5" />
+              Download
+            </a>
+          </Button>
+        )}
+        {relatedLinks.length > 0 && (
+          <div className="border-border/60 space-y-1.5 border-t pt-3">
+            <p className="text-muted-foreground text-[10px] font-semibold tracking-wide uppercase">More like this</p>
+            <div className="flex flex-wrap gap-1.5">
+              {relatedLinks.map((link) => (
+                <Link
+                  key={link.id}
+                  href={link.href}
+                  className="bg-primary/10 text-primary hover:bg-primary/20 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium transition-colors"
+                >
+                  {link.title}
+                  <ArrowUpRight className="h-3 w-3" />
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+        <ResourceMistakeReportForm resourceTitle={resource.title} resourceId={resource.id} />
       </CardContent>
       <ProtectedResourceReader
         open={readerOpen}

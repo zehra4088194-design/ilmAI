@@ -46,6 +46,15 @@ export const TRANSACTION_FEE_USD = 0.5;
 // screenshot to, shown alongside the existing support email everywhere that email is offered.
 export const SUPPORT_WHATSAPP_NUMBER = '+923480049900';
 
+// Where "report a mistake in this PDF" / suggestion submissions land — sent via formsubmit.co
+// (see ResourceMistakeReportForm), not a backend route of our own.
+export const RESOURCE_MISTAKE_REPORT_EMAIL = 'noorhusnain@gmail.com';
+
+/** Direct Google Drive download link for a resource's own drive_file_id column. */
+export function getGoogleDriveDownloadUrl(driveFileId: string) {
+  return `https://drive.google.com/uc?export=download&id=${driveFileId}`;
+}
+
 /**
  * Resolve a student's country from their `profiles.board` value, using the
  * same `country` field already on each BOARDS entry. Falls back to 'PK' for
