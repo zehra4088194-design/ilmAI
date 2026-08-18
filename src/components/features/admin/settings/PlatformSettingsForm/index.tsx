@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Bot, BookOpenCheck, DollarSign, Moon, Save, ShieldCheck, Sun, UserRoundCog } from 'lucide-react';
+import { Bot, BookOpenCheck, DollarSign, Mail, Moon, Save, ShieldCheck, Sun, UserRoundCog } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -78,9 +78,10 @@ const AI_ROUTING_LABELS: Array<[keyof PlatformSettings['aiRouting'], string]> = 
 ];
 
 const AI_PROVIDER_OPTIONS: Array<{ value: PlatformSettings['aiRouting'][keyof PlatformSettings['aiRouting']]; label: string }> = [
+  { value: 'advanced', label: 'OpenRouter (free auto-router → DeepSeek fallback)' },
   { value: 'groq', label: 'Groq / Assistant' },
   { value: 'gemini', label: 'Gemini Flash-Lite' },
-  { value: 'deepseek', label: 'DeepSeek' },
+  { value: 'deepseek', label: 'DeepSeek (direct)' },
   { value: 'local', label: 'Local Llama' },
   { value: 'grok', label: 'Grok' },
   { value: 'claude', label: 'Claude' },
@@ -92,11 +93,16 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
   const [saving, setSaving] = useState(false);
   const [isRefreshingRate, setIsRefreshingRate] = useState(false);
 
+  // Recomputes PKR from USD * rate for every tier EXCEPT ones the admin has
+  // hardcoded (plan.pkrManual) — those keep whatever PKR value was typed in,
+  // untouched by rate changes/refreshes, same rule normalizePlatformSettings
+  // enforces server-side.
   const withConvertedPkrPrices = (current: PlatformSettings, usdToPkr = current.exchangeRate.usdToPkr) => ({
     ...current,
     subscriptionPlans: Object.fromEntries(
       TIERS.map((tier) => {
         const plan = current.subscriptionPlans[tier];
+        if (plan.pkrManual) return [tier, plan];
         return [
           tier,
           {
@@ -430,6 +436,43 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Mail className="h-4 w-4" /> Daily study emails
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <button
+            type="button"
+            aria-pressed={settings.dailyStudyEmailsEnabled}
+            onClick={() =>
+              setSettings((current) => ({ ...current, dailyStudyEmailsEnabled: !current.dailyStudyEmailsEnabled }))
+            }
+            className={
+              settings.dailyStudyEmailsEnabled
+                ? 'border-primary bg-primary/10 ring-primary/20 flex w-full items-center justify-between rounded-xl border p-4 text-left ring-2'
+                : 'border-border bg-card/60 hover:border-primary/40 flex w-full items-center justify-between rounded-xl border p-4 text-left transition-colors'
+            }
+          >
+            <span>
+              <span className="text-sm font-semibold">
+                {settings.dailyStudyEmailsEnabled ? 'Enabled — sending every morning' : 'Disabled — not sending'}
+              </span>
+              <span className="text-muted-foreground mt-1 block text-xs leading-5">
+                Controls the daily-morning AI study email cron for every user who opted in. Off by default — no
+                emails go out until this is switched on here. Doesn&apos;t affect the accompanying in-app
+                notification, which always goes out regardless of this setting (per-user notification
+                preferences still apply).
+              </span>
+            </span>
+            <Badge variant={settings.dailyStudyEmailsEnabled ? 'default' : 'outline'}>
+              {settings.dailyStudyEmailsEnabled ? 'On' : 'Off'}
+            </Badge>
+          </button>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-5 xl:grid-cols-3">
         {TIERS.map((tier) => {
           const plan = settings.subscriptionPlans[tier];
@@ -468,6 +511,9 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
                     onChange={(value) =>
                       updatePlan(tier, (item) => {
                         const nextUsd = { ...item.price.USD, monthly: value };
+                        // A hardcoded PKR price must not get silently overwritten
+                        // just because the admin also tweaked the USD price.
+                        if (item.pkrManual) return { ...item, price: { ...item.price, USD: nextUsd } };
                         return {
                           ...item,
                           price: {
@@ -488,6 +534,7 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
                     onChange={(value) =>
                       updatePlan(tier, (item) => {
                         const nextUsd = { ...item.price.USD, annual: value };
+                        if (item.pkrManual) return { ...item, price: { ...item.price, USD: nextUsd } };
                         return {
                           ...item,
                           price: {
@@ -503,18 +550,61 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
                     }
                   />
                   <NumberField
-                    label="PKR/month (auto)"
+                    label={plan.pkrManual ? 'PKR/month (hardcoded)' : 'PKR/month (auto)'}
                     value={plan.price.PKR.monthly}
-                    onChange={() => undefined}
-                    disabled
+                    onChange={(value) =>
+                      updatePlan(tier, (item) => ({
+                        ...item,
+                        price: { ...item.price, PKR: { ...item.price.PKR, monthly: Math.max(0, value) } },
+                      }))
+                    }
+                    disabled={!plan.pkrManual}
                   />
                   <NumberField
-                    label="PKR/year (auto)"
+                    label={plan.pkrManual ? 'PKR/year (hardcoded)' : 'PKR/year (auto)'}
                     value={plan.price.PKR.annual}
-                    onChange={() => undefined}
-                    disabled
+                    onChange={(value) =>
+                      updatePlan(tier, (item) => ({
+                        ...item,
+                        price: { ...item.price, PKR: { ...item.price.PKR, annual: Math.max(0, value) } },
+                      }))
+                    }
+                    disabled={!plan.pkrManual}
                   />
                 </div>
+
+                <label className="bg-muted/20 flex items-start gap-2 rounded-lg border p-3 text-sm">
+                  <Checkbox
+                    checked={plan.pkrManual}
+                    onCheckedChange={(checked) =>
+                      updatePlan(tier, (item) => {
+                        const pkrManual = checked === true;
+                        // Switching back to auto immediately snaps PKR back to
+                        // USD * live rate instead of leaving the stale manual
+                        // value on screen until the next exchange-rate update.
+                        if (pkrManual) return { ...item, pkrManual };
+                        return {
+                          ...item,
+                          pkrManual,
+                          price: {
+                            ...item.price,
+                            PKR: {
+                              monthly: Math.round(item.price.USD.monthly * settings.exchangeRate.usdToPkr),
+                              annual: Math.round(item.price.USD.annual * settings.exchangeRate.usdToPkr),
+                            },
+                          },
+                        };
+                      })
+                    }
+                  />
+                  <span>
+                    <span className="block font-medium">Hardcode this plan&apos;s PKR price</span>
+                    <span className="text-muted-foreground block text-xs">
+                      When on, PKR/month and PKR/year above are used exactly as typed — the daily USD/PKR rate refresh
+                      (and the wallet payment QR, which reads this same value) will not override them. Off by default.
+                    </span>
+                  </span>
+                </label>
 
                 <div className="space-y-3">
                   <p className="text-sm font-semibold">Usage limits</p>

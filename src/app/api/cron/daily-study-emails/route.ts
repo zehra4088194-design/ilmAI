@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { gatewayChat } from '@/lib/ai/gateway';
-import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
+import { resolveAiRoutingProvider, getPlatformSettings } from '@/lib/platform-settings/server';
 import { isEmailConfigured, sendEmail } from '@/lib/email/send';
+import { randomMotivationalQuote } from '@/lib/constants/motivationalQuotes';
+import { createNotificationsIfEnabled } from '@/lib/notifications/preferences';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -32,7 +34,7 @@ function todayStartIso() {
   return date.toISOString();
 }
 
-async function generateStudyEmail(profile: EmailProfile) {
+async function generateStudyEmail(profile: EmailProfile, quote: string) {
   const context = [
     `Name: ${profile.full_name}`,
     `Education level: ${profile.education_level || 'school'}`,
@@ -60,7 +62,7 @@ async function generateStudyEmail(profile: EmailProfile) {
       },
       {
         role: 'user',
-        content: `Create today's study email using this profile:\n${context}\n\nRequirements:\n- Subject under 70 chars.\n- Preview under 120 chars.\n- HTML with 3 short sections: Today's focus, 25-minute task, Motivation.\n- Use professional, student-friendly English.\n- Mention ilm AI lightly.\n- Include note: "You received this because you allowed daily study emails in cookie preferences."`,
+        content: `Create today's study email using this profile:\n${context}\n\nRequirements:\n- Subject under 70 chars.\n- Preview under 120 chars.\n- HTML with 3 short sections: Today's focus, 25-minute task, Motivation.\n- Use professional, student-friendly English.\n- Mention ilm AI lightly.\n- For the Motivation section, use this exact line (do not rewrite it, translate it, or invent a different one): "${quote}"\n- Include note: "You received this because you allowed daily study emails in cookie preferences."`,
       },
     ],
     maxTokens: 900,
@@ -78,11 +80,16 @@ async function generateStudyEmail(profile: EmailProfile) {
     }
   } catch {}
 
+  // Fallback used whenever the AI call fails or returns something unparsable — this
+  // used to be one hardcoded sentence, so on days the AI call failed (which happens
+  // often enough in practice), every recipient saw the exact same "Motivation" line
+  // every time. Using the same randomly-picked `quote` passed in from the caller
+  // keeps it varied day to day even on the fallback path.
   const name = htmlEscape(profile.full_name || 'Student');
   return {
     subject: "Today's study focus - ilm AI",
     preview: 'A focused study task and motivation for today.',
-    html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827"><h2>Hello ${name}</h2><p><strong>Today's focus:</strong> Revise one weak topic for 25 minutes.</p><p><strong>Task:</strong> Solve five MCQs, then record one mistake and its correction.</p><p><strong>Motivation:</strong> Small, consistent study sessions lead to meaningful improvement.</p><p style="font-size:12px;color:#6b7280">You received this because you allowed daily study emails in cookie preferences.</p></div>`,
+    html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827"><h2>Hello ${name}</h2><p><strong>Today's focus:</strong> Revise one weak topic for 25 minutes.</p><p><strong>Task:</strong> Solve five MCQs, then record one mistake and its correction.</p><p><strong>Motivation:</strong> ${htmlEscape(quote)}</p><p style="font-size:12px;color:#6b7280">You received this because you allowed daily study emails in cookie preferences.</p></div>`,
   };
 }
 
@@ -100,9 +107,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  if (!isEmailConfigured()) {
-    return NextResponse.json({ status: 'skipped', reason: 'SMTP email service is not configured' });
-  }
+  // Email sending is admin-gated (platform_settings.dailyStudyEmailsEnabled, off by
+  // default) — the in-app notification below is deliberately NOT gated by this same
+  // switch, per the owner's explicit instruction: the app-side notification must
+  // always go out (subject only to the recipient's own notification preference),
+  // independent of whether the admin has the email itself turned on.
+  const settings = await getPlatformSettings();
+  const emailEnabled = settings.dailyStudyEmailsEnabled && isEmailConfigured();
 
   const supabase = await createAdminClient();
   const todayStart = todayStartIso();
@@ -115,20 +126,46 @@ export async function GET(req: NextRequest) {
 
   if (error) return NextResponse.json({ status: 'error', error: 'Profiles could not be loaded.' }, { status: 500 });
 
-  let sent = 0;
+  let emailsSent = 0;
+  let notificationsSent = 0;
   const failures: Array<{ id: string; error: string }> = [];
+
   for (const profile of (profiles || []) as EmailProfile[]) {
+    // One random pick per recipient per day — not the same quote sent to everyone,
+    // and not the same quote repeated day after day (see motivationalQuotes.ts).
+    const quote = randomMotivationalQuote();
     try {
-      const email = await generateStudyEmail(profile);
-      await sendStudyEmail({ to: profile.email, ...email });
+      if (emailEnabled) {
+        const email = await generateStudyEmail(profile, quote);
+        await sendStudyEmail({ to: profile.email, ...email });
+        emailsSent++;
+      }
+
+      const notificationResult = await createNotificationsIfEnabled(supabase, 'studyReminders', [
+        {
+          user_id: profile.id,
+          type: 'REMINDER',
+          title: "Today's study focus",
+          message: quote,
+          link: '/planner/today',
+        },
+      ]);
+      if (!('skipped' in notificationResult)) notificationsSent++;
+
       await (supabase.from('profiles') as any)
         .update({ study_email_last_sent_at: new Date().toISOString() })
         .eq('id', profile.id);
-      sent++;
     } catch (error) {
       failures.push({ id: profile.id, error: error instanceof Error ? error.message : 'Unknown error' });
     }
   }
 
-  return NextResponse.json({ status: 'success', sent, failed: failures.length, failures: failures.slice(0, 5) });
+  return NextResponse.json({
+    status: 'success',
+    emailEnabled,
+    emailsSent,
+    notificationsSent,
+    failed: failures.length,
+    failures: failures.slice(0, 5),
+  });
 }

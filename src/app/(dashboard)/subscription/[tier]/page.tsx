@@ -4,6 +4,7 @@ import { headers } from 'next/headers';
 import { ManualUpgradePage } from '@/components/features/subscription/ManualUpgradePage';
 import { getPlatformSettings } from '@/lib/platform-settings/server';
 import { getPaymentAvailability } from '@/lib/payments';
+import { generatePaymentQR } from '@/lib/payments/paymentQr';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrencyForBoard, getCurrencyForCountry } from '@/lib/constants';
 
@@ -43,14 +44,25 @@ export default async function UpgradePlanPage({
         .limit(1)
     : { data: [], error: null };
   const hasActiveSubscription = Boolean(activeSubscriptionLookup.error || activeSubscriptionLookup.data?.length);
+
+  // The wallet QR always encodes the PKR price (it's only shown once the
+  // checkout country is Pakistan) and is generated server-side per the
+  // known-working payload format in lib/payments/paymentQr.ts — never
+  // client-side, and never from a hardcoded amount.
+  const normalizedBilling = billing === 'annual' ? 'annual' : 'monthly';
+  const plan = settings.subscriptionPlans[normalized as 'PRO' | 'ELITE'];
+  const pkrAmount = normalizedBilling === 'annual' ? plan.price.PKR.annual : plan.price.PKR.monthly;
+  const walletQr = pkrAmount > 0 ? await generatePaymentQR(pkrAmount) : null;
+
   return (
     <ManualUpgradePage
       tier={normalized}
-      billing={billing === 'annual' ? 'annual' : 'monthly'}
+      billing={normalizedBilling}
       settings={settings}
       paymentAvailability={getPaymentAvailability(requestHeaders)}
       hasActiveSubscription={hasActiveSubscription}
       currency={currency}
+      walletQrDataUrl={walletQr?.qrDataUrl ?? null}
     />
   );
 }

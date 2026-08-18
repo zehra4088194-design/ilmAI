@@ -2,7 +2,7 @@ import type { SubscriptionTier } from '@/types';
 
 export type BillingCurrency = 'USD' | 'PKR';
 export type PdfThemeMode = 'follow-user' | 'dark' | 'light';
-export type AdminAiProvider = 'local' | 'groq' | 'gemini' | 'deepseek' | 'grok' | 'claude' | 'gpt';
+export type AdminAiProvider = 'local' | 'groq' | 'gemini' | 'deepseek' | 'advanced' | 'grok' | 'claude' | 'gpt';
 export type AiRoutingKey =
   | 'sideChat'
   | 'aiTutor'
@@ -41,6 +41,12 @@ export type PlatformSubscriptionPlan = {
   name: string;
   enabled: boolean;
   price: Record<BillingCurrency, { monthly: number; annual: number }>;
+  // When true, price.PKR is whatever the admin typed and is preserved as-is —
+  // the USD*exchangeRate auto-conversion (normally re-applied on every read/
+  // save, see normalizePlatformSettings) is skipped for this tier. Off by
+  // default so PKR keeps tracking the live USD/PKR rate unless an admin
+  // explicitly opts a plan out of that.
+  pkrManual: boolean;
   limits: {
     aiLifetimeDemoCredits: number;
     aiCreditsWeekly: number;
@@ -94,22 +100,34 @@ export type PlatformSettings = {
   aiRouting: AiRoutingSettings;
   exchangeRate: ExchangeRateSettings;
   institutionPricing: InstitutionPricingSettings;
+  // Gates the daily-morning study email cron (api/cron/daily-study-emails) — off by
+  // default so it only starts sending once an admin explicitly flips it on here. Does
+  // NOT gate the accompanying in-app notification, which is a separate, always-on
+  // delivery — see that route's own comment for why the two are decoupled.
+  dailyStudyEmailsEnabled: boolean;
 };
 
 export const SUBSCRIPTION_SETTINGS_KEY = 'subscription_plans';
 
 export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
   pdfThemeMode: 'dark',
+  dailyStudyEmailsEnabled: false,
+  // Default routing runs through OpenRouter for every text-only feature — the gateway's
+  // 'advanced' provider already tries OpenRouter's own best-available free auto-router first
+  // and falls back to DeepSeek v4 Flash (still on OpenRouter) automatically on error, so this
+  // one setting gets that whole free-tier chain without any per-route wiring. visionOcr stays
+  // on Gemini since it needs real multimodal image input, which the free OpenRouter chain
+  // doesn't reliably provide.
   aiRouting: {
-    sideChat: 'groq',
-    aiTutor: 'groq',
-    studyTools: 'deepseek',
-    grading: 'deepseek',
-    resourceTest: 'deepseek',
-    resourceSummary: 'deepseek',
-    presentation: 'gemini',
+    sideChat: 'advanced',
+    aiTutor: 'advanced',
+    studyTools: 'advanced',
+    grading: 'advanced',
+    resourceTest: 'advanced',
+    resourceSummary: 'advanced',
+    presentation: 'advanced',
     visionOcr: 'gemini',
-    studentChatModeration: 'deepseek',
+    studentChatModeration: 'advanced',
   },
   exchangeRate: {
     usdToPkr: 280,
@@ -147,6 +165,7 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
         USD: { monthly: 0, annual: 0 },
         PKR: { monthly: 0, annual: 0 },
       },
+      pkrManual: false,
       limits: {
         aiLifetimeDemoCredits: 3,
         aiCreditsWeekly: 20,
@@ -219,6 +238,7 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
         USD: { monthly: 2.99, annual: 28.7 },
         PKR: { monthly: 849, annual: 8150 },
       },
+      pkrManual: false,
       limits: {
         aiLifetimeDemoCredits: 0,
         aiCreditsWeekly: 0,
@@ -287,6 +307,7 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
         USD: { monthly: 4.99, annual: 47.9 },
         PKR: { monthly: 1399, annual: 13430 },
       },
+      pkrManual: false,
       limits: {
         aiLifetimeDemoCredits: 0,
         aiCreditsWeekly: 0,
@@ -383,6 +404,7 @@ function aiProviderOrFallback(value: unknown, fallback: AdminAiProvider): AdminA
     value === 'groq' ||
     value === 'gemini' ||
     value === 'deepseek' ||
+    value === 'advanced' ||
     value === 'grok' ||
     value === 'claude' ||
     value === 'gpt'
@@ -464,6 +486,17 @@ export function normalizePlatformSettings(input: unknown): PlatformSettings {
       >;
       const usdMonthly = numberOrFallback(incomingPrice.USD?.monthly, fallback.price.USD.monthly);
       const usdAnnual = numberOrFallback(incomingPrice.USD?.annual, fallback.price.USD.annual);
+      // pkrManual opts a plan out of the usual "PKR always = USD * live rate"
+      // recompute below — an admin who hardcodes a PKR price wants exactly what
+      // they typed to survive every settings read/save, not get silently
+      // overwritten the next time the exchange-rate cron runs.
+      const pkrManual = booleanOrFallback(incoming.pkrManual, fallback.pkrManual);
+      const pkrMonthly = pkrManual
+        ? Math.max(0, Math.round(numberOrFallback(incomingPrice.PKR?.monthly, fallback.price.PKR.monthly)))
+        : Math.round(usdMonthly * usdToPkr);
+      const pkrAnnual = pkrManual
+        ? Math.max(0, Math.round(numberOrFallback(incomingPrice.PKR?.annual, fallback.price.PKR.annual)))
+        : Math.round(usdAnnual * usdToPkr);
 
       acc[tier] = {
         tier,
@@ -475,10 +508,11 @@ export function normalizePlatformSettings(input: unknown): PlatformSettings {
             annual: usdAnnual,
           },
           PKR: {
-            monthly: Math.round(usdMonthly * usdToPkr),
-            annual: Math.round(usdAnnual * usdToPkr),
+            monthly: pkrMonthly,
+            annual: pkrAnnual,
           },
         },
+        pkrManual,
         limits: {
           aiLifetimeDemoCredits: numberOrFallback(
             incomingLimits.aiLifetimeDemoCredits,
@@ -536,6 +570,10 @@ export function normalizePlatformSettings(input: unknown): PlatformSettings {
         ? source.pdfThemeMode
         : DEFAULT_PLATFORM_SETTINGS.pdfThemeMode,
     subscriptionPlans,
+    dailyStudyEmailsEnabled: booleanOrFallback(
+      source.dailyStudyEmailsEnabled,
+      DEFAULT_PLATFORM_SETTINGS.dailyStudyEmailsEnabled
+    ),
     institutionPricing: normalizeInstitutionPricing(source.institutionPricing),
     aiRouting: normalizeAiRouting(source.aiRouting),
     exchangeRate: {

@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import QRCode from 'react-qr-code';
 import { ArrowLeft, CheckCircle2, Copy, CreditCard, Crown, Rocket } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -23,6 +22,7 @@ export function ManualUpgradePage({
   paymentAvailability,
   hasActiveSubscription,
   currency,
+  walletQrDataUrl,
 }: {
   tier: 'PRO' | 'ELITE';
   billing: BillingCycle;
@@ -30,6 +30,9 @@ export function ManualUpgradePage({
   paymentAvailability: PaymentAvailability;
   hasActiveSubscription: boolean;
   currency: Currency;
+  // Server-generated dynamic payment QR (lib/payments/paymentQr.ts) for today's
+  // PKR price — null while that amount is 0 (e.g. a misconfigured plan).
+  walletQrDataUrl?: string | null;
 }) {
   const plan = settings.subscriptionPlans[tier];
   const [country, setCountry] = useState<CheckoutCountry>(currency === 'PKR' ? 'PK' : 'OTHER');
@@ -204,8 +207,19 @@ export function ManualUpgradePage({
                     key={option.label}
                     className="bg-background flex flex-col items-center gap-4 rounded-xl border p-4 text-center sm:flex-row sm:text-left"
                   >
-                    <div className="rounded-lg bg-white p-2">
-                      <QRCode value={option.number} size={132} level="M" bgColor="#ffffff" fgColor="#000000" />
+                    {/* Server-generated dynamic payment QR (today's price + Asia/Karachi
+                        23:59 expiry, CRC recalculated every time — see
+                        lib/payments/paymentQr.ts). p-4 keeps a wide white quiet zone
+                        around the modules so an in-app scanner can lock on reliably. */}
+                    <div className="rounded-lg bg-white p-4">
+                      {walletQrDataUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- data: URL, Next/Image doesn't optimize these
+                        <img src={walletQrDataUrl} alt={`${option.label} payment QR`} width={132} height={132} />
+                      ) : (
+                        <div className="text-muted-foreground flex h-[132px] w-[132px] items-center justify-center text-center text-xs">
+                          QR unavailable
+                        </div>
+                      )}
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-xs font-semibold uppercase tracking-wide text-amber-600">{option.label}</p>
