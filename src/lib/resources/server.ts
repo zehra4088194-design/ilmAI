@@ -19,32 +19,52 @@ type ProfileScope = {
 
 const PDF_MAGIC_BYTES = '%PDF-';
 
-async function assertPdfResponse(response: Response, label = 'PDF') {
+// Peeks only the first chunk to confirm the PDF signature, then streams the rest straight through
+// untouched — same pattern the R2 branch of fetchProtectedFile already used below. This used to
+// buffer the ENTIRE file into an in-memory Blob before returning anything (a real chunk was read
+// on every loop iteration, accumulated, and only handed back once the whole response had
+// finished), which meant Drive-hosted resources (the majority of library_resources, unlike R2)
+// never actually streamed progressively — the client's "start reading pages before the whole file
+// arrives" experience was blocked here, not just in the browser. Still enforces the same
+// 125MB / signature checks, just without holding the whole file in memory first.
+function peekAndPassthroughPdf(response: Response, label = 'PDF'): ReadableStream<Uint8Array> {
   const reader = response.body?.getReader();
   if (!reader) throw new Error(`${label} stream is empty.`);
 
-  const chunks: Uint8Array[] = [];
   let totalBytes = 0;
-  let firstChunk: Uint8Array | null = null;
+  let firstChunkChecked = false;
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    if (!value) continue;
-    if (!firstChunk) firstChunk = value;
-    totalBytes += value.byteLength;
-    if (totalBytes > MAX_PROTECTED_RESOURCE_BYTES) {
-      throw new Error('Resource is larger than the 125MB reader limit.');
-    }
-    chunks.push(value);
-  }
-
-  const signature = new TextDecoder().decode((firstChunk || new Uint8Array()).slice(0, PDF_MAGIC_BYTES.length));
-  if (signature !== PDF_MAGIC_BYTES) {
-    throw new Error(`${label} response is not a PDF file. Check the stored file URL, bucket object, or Drive sharing.`);
-  }
-
-  return new Blob(chunks, { type: 'application/pdf' });
+  return new ReadableStream<Uint8Array>({
+    async start(controller) {
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          if (!value) continue;
+          if (!firstChunkChecked) {
+            firstChunkChecked = true;
+            const signature = new TextDecoder().decode(value.slice(0, PDF_MAGIC_BYTES.length));
+            if (signature !== PDF_MAGIC_BYTES) {
+              throw new Error(
+                `${label} response is not a PDF file. Check the stored file URL, bucket object, or Drive sharing.`
+              );
+            }
+          }
+          totalBytes += value.byteLength;
+          if (totalBytes > MAX_PROTECTED_RESOURCE_BYTES) {
+            throw new Error('Resource is larger than the 125MB reader limit.');
+          }
+          controller.enqueue(value);
+        }
+        controller.close();
+      } catch (error) {
+        controller.error(error);
+      }
+    },
+    cancel(reason) {
+      void reader.cancel(reason);
+    },
+  });
 }
 
 export type ProtectedResource = {
@@ -338,8 +358,12 @@ export async function fetchProtectedFile(resource: ProtectedResource) {
     throw new Error('Resource is larger than the 125MB reader limit.');
   }
   if (resource.fileType === 'pdf') {
-    const pdfBlob = await assertPdfResponse(response);
-    return new Response(pdfBlob.stream(), {
+    // Streams progressively now (see peekAndPassthroughPdf) — the one tradeoff versus the old
+    // fully-buffered version is that a bad signature/oversize error surfaces as a mid-stream abort
+    // rather than a clean pre-flight error response, since the HTTP response has already started
+    // by the time the first chunk is checked. Acceptable: that's an admin content-configuration
+    // mistake (wrong file linked), not a normal user-facing path.
+    return new Response(peekAndPassthroughPdf(response), {
       headers: { 'content-type': 'application/pdf' },
     });
   }

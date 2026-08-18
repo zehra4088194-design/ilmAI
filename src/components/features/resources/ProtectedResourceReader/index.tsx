@@ -115,7 +115,11 @@ export function ProtectedResourceReader({
   sourceUrl?: string | null;
 }) {
   const { resolvedTheme, theme } = useTheme();
-  const [resolvedBlob, setResolvedBlob] = useState<Blob | null>(offlineBlob || null);
+  // Blob for an offline-saved file (already fully downloaded); a streaming URL string for a live
+  // read — react-pdf's `file` prop accepts either, and letting it fetch the URL itself means pages
+  // render as bytes arrive instead of waiting for the whole file to download first (see the GET
+  // handler in /api/resources/content/route.ts for why this needed a server-side change too).
+  const [fileSource, setFileSource] = useState<Blob | string | null>(offlineBlob || null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [retryToken, setRetryToken] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -136,33 +140,23 @@ export function ProtectedResourceReader({
 
   useEffect(() => {
     if (!open) {
-      setResolvedBlob(null);
+      setFileSource(null);
       setLoadError(null);
       return;
     }
     if (offlineBlob) {
-      setResolvedBlob(offlineBlob);
+      setFileSource(offlineBlob);
       setLoadError(null);
       return;
     }
-    let cancelled = false;
-    setResolvedBlob(null);
     setLoadError(null);
-    // One silent retry on transient network drops (the "Signed object fetch failed" /
-    // intermittent-load class of bug) before surfacing an error — most of those failures are a
-    // single dropped connection to storage, not a missing file, and clear themselves up
-    // immediately on a second attempt.
-    void fetchProtectedResourceBlob({ kind, id: resourceId, mode: effectiveMode, purpose: 'reader' })
-      .catch(() => fetchProtectedResourceBlob({ kind, id: resourceId, mode: effectiveMode, purpose: 'reader' }))
-      .then((blob) => {
-        if (!cancelled) setResolvedBlob(blob);
-      })
-      .catch((error) => {
-        if (!cancelled) setLoadError(error instanceof Error ? error.message : 'The PDF could not be opened.');
-      });
-    return () => {
-      cancelled = true;
-    };
+    // Handed straight to react-pdf as a URL (below) — no client-side fetch here at all. pdf.js
+    // issues its own GET against this same-origin route and starts rendering pages as bytes
+    // stream in, rather than this component blocking on a full .blob() download first. `retryToken`
+    // busts react-pdf's own file-identity caching so the "Try again" button actually re-requests.
+    setFileSource(
+      `/api/resources/content?kind=${encodeURIComponent(kind)}&id=${encodeURIComponent(resourceId)}&mode=${encodeURIComponent(effectiveMode)}&retry=${retryToken}`
+    );
   }, [effectiveMode, kind, offlineBlob, open, resourceId, retryToken]);
 
   useEffect(() => {
@@ -347,7 +341,7 @@ export function ProtectedResourceReader({
       <div className="relative min-h-0 flex-1 bg-slate-950">
         <div className="grid h-full min-h-0 grid-cols-1">
           <div className="relative min-h-0 min-w-0">
-            {!resolvedBlob && !loadError && (
+            {!fileSource && !loadError && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white/75">
                 <Loader2 className="text-primary h-8 w-8 animate-spin" />
                 <p className="text-sm">Loading the PDF...</p>
@@ -371,12 +365,13 @@ export function ProtectedResourceReader({
                 </div>
               </div>
             )}
-            {resolvedBlob && (
+            {fileSource && (
               <ProtectedPdfViewer
-                file={resolvedBlob}
+                file={fileSource}
                 title={title}
                 className="h-full w-full"
                 toolbarVisible={toolbarsVisible}
+                onLoadError={(message) => setLoadError(message)}
               />
             )}
           </div>

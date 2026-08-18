@@ -39,19 +39,23 @@ export function ProtectedPdfViewer({
   title,
   className,
   toolbarVisible = true,
+  onLoadError,
 }: {
-  // Accepts the already-downloaded Blob directly, not a blob: object URL. Handing pdf.js a
-  // blob: URL string makes it treat the document as a network resource and issue its own
-  // internal (ranged) fetch against that URL — which intermittently comes back
-  // "Unexpected server response (0)" and reads to the user as a random, unexplained load
-  // failure. The whole file is already in memory by the time this component sees it, so there's
-  // no reason to round-trip it through a URL at all.
+  // Blob for an already-downloaded file (offline reads); a real same-origin https:// URL string
+  // for a live read, letting pdf.js stream + render pages as bytes arrive instead of waiting for
+  // the whole file first (see ProtectedResourceReader). This is NOT the same thing as a
+  // `URL.createObjectURL(blob)` blob: URL — pdf.js issuing its own ranged fetch against a blob:
+  // URL is what used to intermittently come back "Unexpected server response (0)"; a genuine
+  // https:// URL is pdf.js's normal, well-supported network-loading path.
   file: Blob | string;
   title: string;
   className?: string;
   // Driven by the parent's fullscreen auto-hide timer — false fades this toolbar out so only the
   // page content fills the screen. Always true outside fullscreen.
   toolbarVisible?: boolean;
+  // Bubbles a load failure up to the parent's richer error UI (retry + "open original file"),
+  // instead of only the small inline error card below.
+  onLoadError?: (message: string) => void;
 }) {
   const frameRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -497,7 +501,10 @@ export function ProtectedPdfViewer({
               }}
               onLoadError={(loadError) => {
                 console.error('Protected PDF render failed:', loadError);
-                setError('The response is not a valid PDF, or the connection was interrupted. Reopen the file and try again.');
+                const message =
+                  'The response is not a valid PDF, or the connection was interrupted. Reopen the file and try again.';
+                if (onLoadError) onLoadError(message);
+                else setError(message);
               }}
               className="mx-auto flex w-max max-w-none flex-col items-center gap-5"
             >
