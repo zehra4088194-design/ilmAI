@@ -2,39 +2,23 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { BrainCircuit, FileQuestion, Loader2, Sparkles } from 'lucide-react';
+import { FileQuestion, Loader2, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { AiAnswerRenderer } from '@/components/features/ai/AiAnswerRenderer';
 import { useAuth } from '@/hooks/auth/useAuth';
 import type { ProtectedResourceKind } from '@/lib/resources/server';
-import { cn } from '@/lib/utils/cn';
 import { toast } from 'sonner';
 
-type StoredMcq = { q?: string; opts?: string[]; correct?: number; exp?: string };
 type SourceEvidence = { title: string; excerpt: string; confidence: number; pageReference: string };
-
-type Analysis = {
-  documentType: string;
-  topics: string[];
-  detectedSections: string[];
-  available: { mcq: number; short: number; long: number };
-};
 
 export function ResourceAiTools({ kind, resourceId }: { kind: ProtectedResourceKind; resourceId: string }) {
   const { user } = useAuth();
-  const router = useRouter();
   const isPaid = user?.subscriptionTier === 'PRO' || user?.subscriptionTier === 'ELITE';
   const [summary, setSummary] = useState<string | null>(null);
   const [summaryLabel, setSummaryLabel] = useState('AI Summary');
   const [summarySource, setSummarySource] = useState<SourceEvidence | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
-  const [analysis, setAnalysis] = useState<Analysis | null>(null);
-  const [analysisLabel, setAnalysisLabel] = useState('Content analysis');
-  const [analyzing, setAnalyzing] = useState(false);
-  const [generating, setGenerating] = useState(false);
-  const [counts, setCounts] = useState({ mcq: 0, short: 0, long: 0 });
 
   const generateSummary = async () => {
     if (summary) {
@@ -62,63 +46,23 @@ export function ResourceAiTools({ kind, resourceId }: { kind: ProtectedResourceK
     }
   };
 
-  const analyzeForTest = async () => {
-    if (analysis) {
-      setAnalysis(null);
-      return;
-    }
-    setAnalyzing(true);
-    try {
-      const response = await fetch('/api/ai/resource-test/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kind, id: resourceId }),
-      });
-      const json = await response.json();
-      if (!response.ok || json.status === 'error') throw new Error(json.error || 'The file could not be analyzed.');
-      setAnalysis(json.data);
-      setAnalysisLabel(json.fallbackUsed ? 'Source-grounded analysis' : 'Content analysis');
-      if (json.fallbackUsed) toast.info('The content analysis was completed using the available source material.');
-      setCounts({
-        mcq: Math.min(30, json.data.available.mcq),
-        short: Math.min(5, json.data.available.short),
-        long: Math.min(2, json.data.available.long),
-      });
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'The file could not be analyzed.');
-    } finally {
-      setAnalyzing(false);
-    }
-  };
-
-  const generateTest = async () => {
-    if (counts.mcq + counts.short + counts.long === 0) {
-      toast.error('Select at least one question.');
-      return;
-    }
-    setGenerating(true);
-    try {
-      const response = await fetch('/api/ai/resource-test/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kind, id: resourceId, counts }),
-      });
-      const json = await response.json();
-      if (!response.ok || json.status === 'error') throw new Error(json.error || 'The test could not be generated.');
-      window.sessionStorage.setItem('ilm-ai-resource-test', JSON.stringify(json.data));
-      if (json.data.fallbackUsed) toast.info('Your test was completed using the available source content.');
-      router.push('/full-test?source=resource');
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'The test could not be generated.');
-    } finally {
-      setGenerating(false);
-    }
-  };
+  // Both the quick "Chapter MCQs" browser and the full "Test from this file" builder used to
+  // render as small inline boxes directly below the open PDF — moved to their own full pages
+  // (linked below) so taking/building a test feels like a real page, not a cramped widget.
+  const quizHref = `/resource-quiz/${kind}/${resourceId}`;
+  const testBuilderHref = `/resource-test-builder/${kind}/${resourceId}`;
 
   if (!isPaid) {
     return (
       <div className="space-y-3">
-        <ResourceMcqSet kind={kind} resourceId={resourceId} />
+        <Button asChild variant="outline" size="sm" className="w-full justify-between">
+          <Link href={quizHref}>
+            <span className="flex items-center gap-2">
+              <FileQuestion className="h-3.5 w-3.5 text-amber-500" />
+              30 Chapter MCQs
+            </span>
+          </Link>
+        </Button>
         <div className="grid gap-2">
           <Button asChild variant="outline" size="sm">
             <Link href="/subscription">
@@ -139,15 +83,24 @@ export function ResourceAiTools({ kind, resourceId }: { kind: ProtectedResourceK
 
   return (
     <div className="space-y-3">
-      <ResourceMcqSet kind={kind} resourceId={resourceId} />
+      <Button asChild variant="outline" size="sm" className="w-full justify-between">
+        <Link href={quizHref}>
+          <span className="flex items-center gap-2">
+            <FileQuestion className="h-3.5 w-3.5 text-amber-500" />
+            30 Chapter MCQs
+          </span>
+        </Link>
+      </Button>
       <div className="grid gap-2 sm:grid-cols-2">
         <Button variant="outline" size="sm" onClick={generateSummary} disabled={summaryLoading}>
           {summaryLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
           {summary ? 'Hide summary' : 'AI Summary'}
         </Button>
-        <Button variant="outline" size="sm" onClick={analyzeForTest} disabled={analyzing}>
-          {analyzing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileQuestion className="h-3.5 w-3.5" />}
-          {analysis ? 'Close test builder' : 'Test from this file'}
+        <Button asChild variant="outline" size="sm">
+          <Link href={testBuilderHref}>
+            <FileQuestion className="h-3.5 w-3.5" />
+            Test from this file
+          </Link>
         </Button>
       </div>
       {summary && <AiAnswerRenderer content={summary} label={summaryLabel} />}
@@ -168,171 +121,7 @@ export function ResourceAiTools({ kind, resourceId }: { kind: ProtectedResourceK
           </p>
         </div>
       )}
-      {analysis && (
-        <div className="border-primary/25 bg-primary/5 rounded-xl border p-3">
-          <div className="mb-3 flex items-start gap-2">
-            <BrainCircuit className="text-primary mt-0.5 h-4 w-4" />
-            <div>
-              <p className="text-sm font-semibold">{analysisLabel}</p>
-              <p className="text-muted-foreground text-xs">
-                {analysis.documentType} | {analysis.topics.slice(0, 4).join(', ') || 'General content'}
-              </p>
-            </div>
-          </div>
-          {/* Only ask about question types this file actually has. A pure-MCQ file never shows
-              short/long boxes at all — it goes straight to "how many MCQs?". */}
-          {(() => {
-            const availableTypes = (['mcq', 'short', 'long'] as const).filter((type) => analysis.available[type] > 0);
-            if (availableTypes.length === 0) {
-              return (
-                <p className="text-muted-foreground text-xs">
-                  This file doesn&apos;t have enough content to build a test from.
-                </p>
-              );
-            }
-            const typeLabel = { mcq: 'MCQs', short: 'short questions', long: 'long questions' } as const;
-            const gridColsClass =
-              availableTypes.length === 3 ? 'grid-cols-3' : availableTypes.length === 2 ? 'grid-cols-2' : 'grid-cols-1';
-            return (
-              <div className={cn('grid gap-2', gridColsClass)}>
-                {availableTypes.map((type) => (
-                  <label key={type} className="border-border bg-background/70 rounded-lg border p-2 text-xs">
-                    <span className="text-muted-foreground mb-1 block">
-                      {availableTypes.length === 1
-                        ? `How many ${typeLabel[type]}? (up to ${analysis.available[type]})`
-                        : `${typeLabel[type]} (max ${analysis.available[type]})`}
-                    </span>
-                    <input
-                      type="number"
-                      min={0}
-                      max={analysis.available[type]}
-                      value={counts[type]}
-                      onChange={(event) =>
-                        setCounts((current) => ({
-                          ...current,
-                          [type]: Math.max(0, Math.min(analysis.available[type], Number(event.target.value) || 0)),
-                        }))
-                      }
-                      className="border-input bg-background h-9 w-full rounded-md border px-2 text-sm font-semibold"
-                    />
-                  </label>
-                ))}
-              </div>
-            );
-          })()}
-          <Button className="mt-3 w-full" variant="gradient" size="sm" onClick={generateTest} disabled={generating}>
-            {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-            Generate Test
-          </Button>
-        </div>
-      )}
     </div>
   );
 }
 
-function ResourceMcqSet({ kind, resourceId }: { kind: ProtectedResourceKind; resourceId: string }) {
-  const [questions, setQuestions] = useState<StoredMcq[]>([]);
-  const [open, setOpen] = useState(false);
-  const [index, setIndex] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState<'idle' | 'processing' | 'ready' | 'error'>('idle');
-
-  const loadQuestions = async () => {
-    if (open) {
-      setOpen(false);
-      return;
-    }
-    setLoading(true);
-    try {
-      const response = await fetch(
-        `/api/resources/questions?kind=${encodeURIComponent(kind)}&id=${encodeURIComponent(resourceId)}`,
-        { cache: 'no-store' }
-      );
-      const json = await response.json();
-      if (response.status === 202) {
-        setStatus('processing');
-        toast.info('Chapter MCQs are being processed in the background. Refresh in a moment.');
-        return;
-      }
-      if (!response.ok || json.status === 'error') throw new Error(json.error || 'MCQs could not be loaded.');
-      setQuestions(Array.isArray(json.data?.questions) ? json.data.questions : []);
-      setIndex(0);
-      setStatus('ready');
-      setOpen(true);
-    } catch (error) {
-      setStatus('error');
-      toast.error(error instanceof Error ? error.message : 'MCQs could not be loaded.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const current = questions[index];
-  return (
-    <div className="min-w-0 rounded-lg border border-amber-500/25 bg-amber-500/5 p-3">
-      <Button
-        variant="outline"
-        size="sm"
-        className="w-full min-w-0 justify-between gap-2"
-        onClick={() => void loadQuestions()}
-        disabled={loading}
-      >
-        <span className="flex min-w-0 items-center gap-2">
-          <FileQuestion className="h-3.5 w-3.5 flex-none text-amber-500" />
-          <span className="truncate">30 Chapter MCQs</span>
-        </span>
-        <span className="text-muted-foreground text-xs">{loading ? 'Loading...' : open ? 'Hide' : 'Open'}</span>
-      </Button>
-      {status === 'processing' && (
-        <p className="text-muted-foreground mt-2 text-xs">
-          Source-grounded questions will appear here when content preparation is complete.
-        </p>
-      )}
-      {open && current && (
-        <div className="mt-3 space-y-3">
-          <div className="text-muted-foreground flex items-center justify-between text-xs font-semibold">
-            <span>
-              MCQ {index + 1} / {questions.length}
-            </span>
-            <span>1 mark</span>
-          </div>
-          <p className="text-sm leading-6 font-semibold break-words">{current.q || 'Question unavailable'}</p>
-          <div className="grid gap-2">
-            {(current.opts || []).map((option, optionIndex) => (
-              <div
-                key={`${index}-${optionIndex}`}
-                className="bg-background/70 flex min-w-0 items-start gap-2 rounded-lg border px-3 py-2 text-sm"
-              >
-                <span className="flex-none font-bold text-amber-600">{String.fromCharCode(65 + optionIndex)}.</span>
-                <span className="min-w-0 break-words">{option}</span>
-              </div>
-            ))}
-          </div>
-          <div className="flex items-center justify-between gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={index === 0}
-              onClick={() => setIndex((value) => Math.max(0, value - 1))}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={index >= questions.length - 1}
-              onClick={() => setIndex((value) => Math.min(questions.length - 1, value + 1))}
-            >
-              Next
-            </Button>
-          </div>
-          {current.exp && (
-            <p className="text-muted-foreground rounded-lg bg-amber-500/10 p-2 text-xs leading-5">
-              Explanation: {current.exp}
-            </p>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
