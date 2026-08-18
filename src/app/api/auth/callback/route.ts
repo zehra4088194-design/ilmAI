@@ -85,7 +85,25 @@ export async function GET(request: NextRequest) {
       const providers = data.user.app_metadata?.providers;
       const isGoogleAuth =
         data.user.app_metadata?.provider === 'google' || (Array.isArray(providers) && providers.includes('google'));
-      const metadataRole = resolveRole(userMetadata?.role) ?? redirectRole;
+
+      // Fetched early so metadataRole (below) can tell "brand-new OAuth sign-up" apart from
+      // "existing account signing in again" — see that computation for why this ordering matters.
+      const { data: existingProfile } = await (supabase
+        .from('profiles')
+        .select(
+          'id, role, username, gender, board, grade_level, education_level, university_program, university_semester, onboarding_completed, is_profile_complete, preferred_language'
+        )
+        .eq('id', data.user.id)
+        .maybeSingle() as any);
+
+      // `redirectRole` is just a URL query hint (?role=teacher on the OAuth redirect link) — real
+      // signup metadata (userMetadata.role) always wins when present. For an EXISTING profile,
+      // that URL hint must NOT be trusted at all: an admin-invited school owner/teacher signing in
+      // via Google (their profile already has role='teacher', set at invite time, with no
+      // userMetadata.role since Google never provides one) was having that hint silently reset
+      // their role back to 'student' on every single login — a real bug, found by testing an actual
+      // invited-then-Google-login account. Only a genuinely new profile falls back to the hint.
+      const metadataRole = resolveRole(userMetadata?.role) ?? (existingProfile ? null : redirectRole);
       const metadataBoard = resolveBoard(userMetadata?.board);
       const metadataGradeLevel = resolveGradeLevel(userMetadata?.grade_level);
       const metadataEducationLevel = resolveEducationLevel(userMetadata?.education_level);
@@ -109,14 +127,6 @@ export async function GET(request: NextRequest) {
           ? userMetadata.signup_role_requested
           : null;
 
-      // Ensure a profile row exists (for OAuth sign-ups that skip our register form)
-      const { data: existingProfile } = await (supabase
-        .from('profiles')
-        .select(
-          'id, role, username, gender, board, grade_level, education_level, university_program, university_semester, onboarding_completed, is_profile_complete, preferred_language'
-        )
-        .eq('id', data.user.id)
-        .maybeSingle() as any);
       const resolvedRole = metadataRole ?? existingProfile?.role ?? 'student';
       const metadataOnboardingCompleted =
         resolvedRole !== 'student' ||
@@ -268,27 +278,31 @@ export async function GET(request: NextRequest) {
       }
 
       // A school/college member (principal, teacher, staff, ...) signing in via Google/magic-link
-      // must land on their institution portal, not the generic dashboard `redirectTo` normally
-      // falls back to. This route never consulted membership at all before — only the plain
-      // password-login flow (post-login-destination) did — so an institution member using Google
-      // sign-in always ended up on the regular consumer dashboard. Only overrides the final,
-      // "nothing else applies" fallback below; parent-link, onboarding, and profile-completion
-      // redirects still take priority since those are one-time setup steps every account needs.
+      // must land on their institution portal — and skip the generic student onboarding entirely
+      // (gender/board/grade/username-selection is a K-12-consumer-app concept an institution member
+      // never needs). This used to only override the FINAL "nothing else applies" fallback, so a
+      // member whose profile had no gender/board/grade set (the normal state for anyone who arrived
+      // via an admin invite rather than the student signup wizard) got stuck on
+      // /onboarding/complete-profile forever, since that branch ran before this check ever did.
+      // Checked first (right after the parent-link deep-link case) so it wins over every onboarding
+      // branch below, matching resolveMembershipRedirect's own stated priority order.
       const membershipRedirect = isParentLinkRedirect
         ? null
         : await resolveMembershipRedirect(supabase, data.user.id, redirectTo);
 
       const destination = isParentLinkRedirect
         ? redirectTo
-        : !profileForRedirect.username && !needsProfileCompletion(profileForRedirect)
-          ? `/onboarding/username?next=${encodeURIComponent(resolvedRole === 'parent' ? '/parent' : redirectTo)}`
-          : (isGoogleAuth || metadataEducationLevel === 'university') && needsProfileCompletion(profileForRedirect)
-            ? '/onboarding/complete-profile'
-            : resolvedRole === 'student' && !profileForRedirect.onboarding_completed
-              ? '/onboarding/class'
-              : resolvedRole === 'parent'
-                ? '/parent'
-                : (membershipRedirect?.institutionType ? membershipRedirect.destination : redirectTo);
+        : membershipRedirect?.institutionType
+          ? membershipRedirect.destination
+          : !profileForRedirect.username && !needsProfileCompletion(profileForRedirect)
+            ? `/onboarding/username?next=${encodeURIComponent(resolvedRole === 'parent' ? '/parent' : redirectTo)}`
+            : (isGoogleAuth || metadataEducationLevel === 'university') && needsProfileCompletion(profileForRedirect)
+              ? '/onboarding/complete-profile'
+              : resolvedRole === 'student' && !profileForRedirect.onboarding_completed
+                ? '/onboarding/class'
+                : resolvedRole === 'parent'
+                  ? '/parent'
+                  : redirectTo;
 
       const response = NextResponse.redirect(`${origin}${destination}`);
       response.cookies.set(
