@@ -70,7 +70,12 @@ const DEFAULT_MODEL_MAP = {
     pro: 'qwen3-4b-q4',
   },
   groq: {
-    mini: 'llama-3.1-8b-instant',
+    // 'llama-3.1-8b-instant' was decommissioned on Groq's side ("model does not exist or you do
+    // not have access to it" on every mini-tier call — Free Lite quick-help chat and any other
+    // 'groq'+'mini' route). Reusing the medium/pro model here (confirmed still valid) until a
+    // cheaper current small model is picked — override per-tier anytime via GROQ_MINI_MODEL in
+    // Coolify without a redeploy (see getModel() below).
+    mini: 'llama-3.3-70b-versatile',
     medium: 'llama-3.3-70b-versatile',
     pro: 'llama-3.3-70b-versatile',
   },
