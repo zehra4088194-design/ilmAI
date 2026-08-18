@@ -141,10 +141,15 @@ export function SettingsTabs({
       ? (profileGradeLevel as ClassSelectionGradeLevel)
       : null;
 
+  // University Mode (degree/semester self-tagging) and Parent Link (student-to-parent invite
+  // code) are both purely consumer-student concepts. They make no sense for role === 'teacher'
+  // — whether that's a real individual teacher or a school/college member mapped to 'teacher'
+  // (see mapInstitutionRoleToProfileRole.ts) — so both are hidden for that role.
+  const isTeacherRole = localProfile?.role === 'teacher';
   const TABS = [
     { id: 'profile', label: t('settings.tabs.profile'), icon: User },
-    { id: 'university', label: 'University Mode', icon: GraduationCap },
-    { id: 'parent-link', label: t('settings.tabs.parentLink'), icon: Users },
+    ...(isTeacherRole ? [] : [{ id: 'university', label: 'University Mode', icon: GraduationCap }]),
+    ...(isTeacherRole ? [] : [{ id: 'parent-link', label: t('settings.tabs.parentLink'), icon: Users }]),
     { id: 'notifications', label: t('settings.tabs.notifications'), icon: Bell },
     { id: 'security', label: t('settings.tabs.security'), icon: Shield },
     { id: 'appearance', label: t('settings.tabs.appearance'), icon: Palette },
