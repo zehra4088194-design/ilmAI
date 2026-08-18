@@ -60,6 +60,12 @@ export function ProtectedPdfViewer({
   const [pages, setPages] = useState(0);
   const [page, setPage] = useState(1);
   const [zoom, setZoom] = useState(1);
+  // Mirrors `zoom` for the pinch-gesture effect below, which only attaches its listeners once
+  // (empty deps, so its closures would otherwise see the zoom value from first render forever).
+  const zoomRef = useRef(1);
+  useEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
   const [rotation, setRotation] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [autoScrolling, setAutoScrolling] = useState(false);
@@ -203,6 +209,54 @@ export function ProtectedPdfViewer({
     pageRefs.current.forEach((node) => node && observer.observe(node));
     return () => observer.disconnect();
   }, [pages]);
+
+  // Two-finger pinch inside the viewport scales the PDF's own `zoom` state instead of the
+  // browser's native page zoom. `touch-action: pan-x pan-y` on the viewport (below) already tells
+  // the browser not to handle pinch gestures there itself — without that, the pinch would zoom the
+  // whole web page (title bar, sidebar, everything) rather than just the PDF, which is exactly the
+  // reported bug. This only tracks the distance between the two touches; single-finger scrolling
+  // is untouched since normal scroll/pan still passes through pan-x/pan-y.
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    let pinchStartDistance = 0;
+    let pinchStartZoom = 1;
+
+    const distanceBetween = (touches: TouchList) => {
+      const a = touches.item(0);
+      const b = touches.item(1);
+      if (!a || !b) return 0;
+      return Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY);
+    };
+
+    const onTouchStart = (event: TouchEvent) => {
+      if (event.touches.length !== 2) return;
+      pinchStartDistance = distanceBetween(event.touches);
+      pinchStartZoom = zoomRef.current;
+    };
+
+    const onTouchMove = (event: TouchEvent) => {
+      if (event.touches.length !== 2 || !pinchStartDistance) return;
+      event.preventDefault();
+      const ratio = distanceBetween(event.touches) / pinchStartDistance;
+      setZoom(Math.min(2.25, Math.max(0.7, Number((pinchStartZoom * ratio).toFixed(2)))));
+    };
+
+    const onTouchEnd = (event: TouchEvent) => {
+      if (event.touches.length < 2) pinchStartDistance = 0;
+    };
+
+    viewport.addEventListener('touchstart', onTouchStart, { passive: true });
+    viewport.addEventListener('touchmove', onTouchMove, { passive: false });
+    viewport.addEventListener('touchend', onTouchEnd, { passive: true });
+    viewport.addEventListener('touchcancel', onTouchEnd, { passive: true });
+    return () => {
+      viewport.removeEventListener('touchstart', onTouchStart);
+      viewport.removeEventListener('touchmove', onTouchMove);
+      viewport.removeEventListener('touchend', onTouchEnd);
+      viewport.removeEventListener('touchcancel', onTouchEnd);
+    };
+  }, []);
 
   const fittedWidth = Math.max(240, Math.min(containerWidth - 32, 1100));
   const renderedWidth = Math.round(fittedWidth * zoom);
@@ -371,7 +425,11 @@ export function ProtectedPdfViewer({
 
         <div
           ref={viewportRef}
-          className="min-h-0 flex-1 overflow-auto overscroll-contain scroll-smooth p-3 [scrollbar-gutter:stable] sm:p-6"
+          // touch-action: pan-x pan-y tells the browser not to handle multi-touch (pinch) gestures
+          // here itself — otherwise a pinch zooms the whole web page instead of just the PDF (the
+          // reported bug). Single-finger panning/scrolling is unaffected; the pinch effect above
+          // handles the zoom itself.
+          className="min-h-0 flex-1 touch-pan-x touch-pan-y overflow-auto overscroll-contain scroll-smooth p-3 [scrollbar-gutter:stable] sm:p-6"
         >
           {error ? (
             <div className="mx-auto flex min-h-64 max-w-md flex-col items-center justify-center rounded-2xl bg-white p-6 text-center shadow-sm">
