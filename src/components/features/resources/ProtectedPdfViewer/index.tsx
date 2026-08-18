@@ -80,6 +80,12 @@ export function ProtectedPdfViewer({
   // page's own measured aspect (falling back to the document default only until measured) keeps
   // every placeholder-to-canvas swap the same height, so nothing shifts under the reader.
   const [pageAspects, setPageAspects] = useState<Record<number, number>>({});
+  // Auto-hides the zoom/page toolbar after 5s of inactivity — independent of the parent's
+  // fullscreen-only toolbarVisible prop below, so it fades even outside fullscreen. Reappears on:
+  // mobile — touching/scrolling the PDF; desktop — moving the mouse over the viewer. The final
+  // visible state ANDs both this and the prop, so fullscreen-fade still applies on top.
+  const [toolbarAutoVisible, setToolbarAutoVisible] = useState(true);
+  const toolbarHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Auto-load: the viewer starts pulling the document the moment a url is handed to it —
   // there is no "open" step for the caller to trigger beyond mounting/passing the url.
@@ -311,6 +317,36 @@ export function ProtectedPdfViewer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, pages]);
 
+  // Toolbar auto-hide: starts visible, fades after 5s idle, and any activity (mouse move on
+  // desktop; touch/scroll on mobile) shows it again and restarts the 5s timer.
+  useEffect(() => {
+    const frame = frameRef.current;
+    const viewport = viewportRef.current;
+    if (!frame || !viewport) return;
+    const scheduleHide = () => {
+      if (toolbarHideTimeoutRef.current) clearTimeout(toolbarHideTimeoutRef.current);
+      toolbarHideTimeoutRef.current = setTimeout(() => setToolbarAutoVisible(false), 5000);
+    };
+    const onActivity = () => {
+      setToolbarAutoVisible(true);
+      scheduleHide();
+    };
+    scheduleHide();
+    frame.addEventListener('mousemove', onActivity);
+    viewport.addEventListener('touchstart', onActivity, { passive: true });
+    viewport.addEventListener('touchmove', onActivity, { passive: true });
+    viewport.addEventListener('scroll', onActivity, { passive: true });
+    return () => {
+      if (toolbarHideTimeoutRef.current) clearTimeout(toolbarHideTimeoutRef.current);
+      frame.removeEventListener('mousemove', onActivity);
+      viewport.removeEventListener('touchstart', onActivity);
+      viewport.removeEventListener('touchmove', onActivity);
+      viewport.removeEventListener('scroll', onActivity);
+    };
+  }, []);
+
+  const toolbarShown = toolbarVisible && toolbarAutoVisible;
+
   return (
     <div
       ref={frameRef}
@@ -324,7 +360,7 @@ export function ProtectedPdfViewer({
             // Height collapses along with opacity (not just opacity alone) so the PDF viewport
             // below actually reclaims the toolbar's space in fullscreen instead of leaving a
             // blank invisible strip at the top.
-            toolbarVisible ? 'min-h-12 border-b opacity-100' : 'pointer-events-none min-h-0 border-b-0 py-0 opacity-0',
+            toolbarShown ? 'min-h-12 border-b opacity-100' : 'pointer-events-none min-h-0 border-b-0 py-0 opacity-0',
           )}
         >
           <div className="flex min-w-0 items-center gap-1">
