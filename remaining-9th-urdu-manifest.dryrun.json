@@ -1,0 +1,324 @@
+[
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g9-nazam-hamad",
+    "chapter_id": "6cac4540-e848-4985-93f4-c6c1620d22e3",
+    "content_section": "reading",
+    "title": "Urdu — Chapter 1: Nazam Hamad — Notes",
+    "book_title": "Class 9 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g9-nazam-hamad/reading/nazam-hamad-notes.dark.pdf",
+    "dark_key": "library/urdu/g9-nazam-hamad/reading/nazam-hamad-notes.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\9th-urdu\\chapters\\ch-1_notes_dark.pdf"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g9-nazam-naat",
+    "chapter_id": "aeb98d51-6108-41c3-b4a8-c4d4456947e2",
+    "content_section": "reading",
+    "title": "Urdu — Chapter 2: Nazam Naat — Notes",
+    "book_title": "Class 9 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g9-nazam-naat/reading/nazam-naat-notes.dark.pdf",
+    "dark_key": "library/urdu/g9-nazam-naat/reading/nazam-naat-notes.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\9th-urdu\\chapters\\ch-2_notes_dark.pdf"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g9-akhlaq-e-hasna",
+    "chapter_id": "51f70767-f384-44e3-a117-b40eb6577c76",
+    "content_section": "reading",
+    "title": "Urdu — Chapter 3: Akhlaq e Hasna — Notes",
+    "book_title": "Class 9 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g9-akhlaq-e-hasna/reading/akhlaq-e-hasna-notes.dark.pdf",
+    "dark_key": "library/urdu/g9-akhlaq-e-hasna/reading/akhlaq-e-hasna-notes.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\9th-urdu\\chapters\\ch-3_notes_dark.pdf"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g9-apni-madad-aap",
+    "chapter_id": "31283998-b92d-4ad1-a0cb-28003f4cc69a",
+    "content_section": "reading",
+    "title": "Urdu — Chapter 4: Apni Madad Aap — Notes",
+    "book_title": "Class 9 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g9-apni-madad-aap/reading/apni-madad-aap-notes.dark.pdf",
+    "dark_key": "library/urdu/g9-apni-madad-aap/reading/apni-madad-aap-notes.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\9th-urdu\\chapters\\ch-4_notes_dark.pdf"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g9-kaleem-aur-mirza-zahir-dar-baig",
+    "chapter_id": "4e146192-af07-4127-8a2e-dbbd7ba3cf74",
+    "content_section": "reading",
+    "title": "Urdu — Chapter 5: Kaleem aur Mirza Zahir Dar Baig — Notes",
+    "book_title": "Class 9 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g9-kaleem-aur-mirza-zahir-dar-baig/reading/kaleem-aur-mirza-zahir-dar-baig-notes.dark.pdf",
+    "dark_key": "library/urdu/g9-kaleem-aur-mirza-zahir-dar-baig/reading/kaleem-aur-mirza-zahir-dar-baig-notes.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\9th-urdu\\chapters\\ch-5_notes_dark.pdf"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g9-naam-dev-maali",
+    "chapter_id": "87068c45-ed0e-4627-94de-35912632302f",
+    "content_section": "reading",
+    "title": "Urdu — Chapter 6: Naam Dev Maali — Notes",
+    "book_title": "Class 9 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g9-naam-dev-maali/reading/naam-dev-maali-notes.dark.pdf",
+    "dark_key": "library/urdu/g9-naam-dev-maali/reading/naam-dev-maali-notes.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\9th-urdu\\chapters\\ch-6_notes_dark.pdf"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g9-araam-o-sukoon",
+    "chapter_id": "eaacff16-f176-4558-a394-fdaa6f6c068b",
+    "content_section": "reading",
+    "title": "Urdu — Chapter 7: Araam o Sukoon — Notes",
+    "book_title": "Class 9 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g9-araam-o-sukoon/reading/araam-o-sukoon-notes.light.pdf",
+    "dark_key": "library/urdu/g9-araam-o-sukoon/reading/araam-o-sukoon-notes.dark.pdf",
+    "context_key": "library/urdu/g9-araam-o-sukoon/reading/araam-o-sukoon-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\9th-urdu\\chapters\\ch-7_notes-dark.pdf",
+      "light": "E:\\remaining-data\\9th-urdu\\chapters\\ch-7_notes-light.pdf",
+      "txt": "E:\\remaining-data\\9th-urdu\\chapters\\ch-7_notes-content.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g9-katba",
+    "chapter_id": "6cc44f92-f467-4697-a89d-face119a9f32",
+    "content_section": "reading",
+    "title": "Urdu — Chapter 8: Katba — Notes",
+    "book_title": "Class 9 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g9-katba/reading/katba-notes.light.pdf",
+    "dark_key": "library/urdu/g9-katba/reading/katba-notes.dark.pdf",
+    "context_key": "library/urdu/g9-katba/reading/katba-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\9th-urdu\\chapters\\ch-8_notes-dark.pdf",
+      "light": "E:\\remaining-data\\9th-urdu\\chapters\\ch-8_notes-light.pdf",
+      "txt": "E:\\remaining-data\\9th-urdu\\chapters\\ch-8_notes-content.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g9-ibtidai-hisab",
+    "chapter_id": "41585759-9eee-4cf4-af2a-f824ec4fbec4",
+    "content_section": "reading",
+    "title": "Urdu — Chapter 9: Ibtidai Hisab — Notes",
+    "book_title": "Class 9 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g9-ibtidai-hisab/reading/ibtidai-hisab-notes.light.pdf",
+    "dark_key": "library/urdu/g9-ibtidai-hisab/reading/ibtidai-hisab-notes.dark.pdf",
+    "context_key": "library/urdu/g9-ibtidai-hisab/reading/ibtidai-hisab-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\9th-urdu\\chapters\\ch-9_notes-dark.pdf",
+      "light": "E:\\remaining-data\\9th-urdu\\chapters\\ch-9_notes-light.pdf",
+      "txt": "E:\\remaining-data\\9th-urdu\\chapters\\ch-9_notes.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g9-lari-main-paroye-huvay-manazr",
+    "chapter_id": "6a97f1ca-7aae-4535-b35d-248e51b872ae",
+    "content_section": "reading",
+    "title": "Urdu — Chapter 10: Lari Main Paroye Huvay Manazr — Notes",
+    "book_title": "Class 9 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g9-lari-main-paroye-huvay-manazr/reading/lari-main-paroye-huvay-manazr-notes.light.pdf",
+    "dark_key": "library/urdu/g9-lari-main-paroye-huvay-manazr/reading/lari-main-paroye-huvay-manazr-notes.dark.pdf",
+    "context_key": "library/urdu/g9-lari-main-paroye-huvay-manazr/reading/lari-main-paroye-huvay-manazr-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\9th-urdu\\chapters\\ch-10_notes-dark.pdf",
+      "light": "E:\\remaining-data\\9th-urdu\\chapters\\ch-10_notes-light.pdf",
+      "txt": "E:\\remaining-data\\9th-urdu\\chapters\\ch-10_notes.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g9-bhairiya",
+    "chapter_id": "3c862356-9bb4-472f-9190-b8f2f7cef3d2",
+    "content_section": "reading",
+    "title": "Urdu — Chapter 11: Bhairiya — Notes",
+    "book_title": "Class 9 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g9-bhairiya/reading/bhairiya-notes.dark.pdf",
+    "dark_key": "library/urdu/g9-bhairiya/reading/bhairiya-notes.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\9th-urdu\\chapters\\ch-11_urdu-notes_dark.pdf"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g9-nazam-mehnat-ki-barkaat",
+    "chapter_id": "c8b9a776-74f8-4ab4-8f37-aa957732b18d",
+    "content_section": "reading",
+    "title": "Urdu — Chapter 12: Nazam Mehnat Ki Barkaat — Notes",
+    "book_title": "Class 9 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g9-nazam-mehnat-ki-barkaat/reading/nazam-mehnat-ki-barkaat-notes.light.pdf",
+    "dark_key": "library/urdu/g9-nazam-mehnat-ki-barkaat/reading/nazam-mehnat-ki-barkaat-notes.dark.pdf",
+    "context_key": "library/urdu/g9-nazam-mehnat-ki-barkaat/reading/nazam-mehnat-ki-barkaat-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\9th-urdu\\nazam\\nazam-1_notes-dark.pdf",
+      "light": "E:\\remaining-data\\9th-urdu\\nazam\\nazam-1_notes-light.pdf",
+      "txt": "E:\\remaining-data\\9th-urdu\\nazam\\nazam-1_notes-content.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g9-nazam-javed-ke-naam",
+    "chapter_id": "748cd4a7-2fc2-4700-9c27-7313a9bfe66f",
+    "content_section": "reading",
+    "title": "Urdu — Chapter 13: Nazam Javed Ke Naam — Notes",
+    "book_title": "Class 9 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g9-nazam-javed-ke-naam/reading/nazam-javed-ke-naam-notes.light.pdf",
+    "dark_key": "library/urdu/g9-nazam-javed-ke-naam/reading/nazam-javed-ke-naam-notes.dark.pdf",
+    "context_key": "library/urdu/g9-nazam-javed-ke-naam/reading/nazam-javed-ke-naam-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\9th-urdu\\nazam\\nazam-2_notes-dark.pdf",
+      "light": "E:\\remaining-data\\9th-urdu\\nazam\\nazam-2_notes-light.pdf",
+      "txt": "E:\\remaining-data\\9th-urdu\\nazam\\nazam-2_notes-content.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g9-nazam-payam-e-latif",
+    "chapter_id": "ec8c2a15-bf3b-4a83-8d23-e51a0233872c",
+    "content_section": "reading",
+    "title": "Urdu — Chapter 14: Nazam Payam e Latif — Notes",
+    "book_title": "Class 9 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g9-nazam-payam-e-latif/reading/nazam-payam-e-latif-notes.light.pdf",
+    "dark_key": "library/urdu/g9-nazam-payam-e-latif/reading/nazam-payam-e-latif-notes.dark.pdf",
+    "context_key": "library/urdu/g9-nazam-payam-e-latif/reading/nazam-payam-e-latif-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\9th-urdu\\nazam\\nazam-3_-notes-dark.pdf",
+      "light": "E:\\remaining-data\\9th-urdu\\nazam\\nazam-3_-notes-light.pdf",
+      "txt": "E:\\remaining-data\\9th-urdu\\nazam\\nazam-3_-notes.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g9-nazam-cricket-aur-mushaira",
+    "chapter_id": "885173e1-3ecb-4d76-99c9-0db07896b896",
+    "content_section": "reading",
+    "title": "Urdu — Chapter 15: Nazam Cricket Aur Mushaira — Notes",
+    "book_title": "Class 9 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g9-nazam-cricket-aur-mushaira/reading/nazam-cricket-aur-mushaira-notes.light.pdf",
+    "dark_key": "library/urdu/g9-nazam-cricket-aur-mushaira/reading/nazam-cricket-aur-mushaira-notes.dark.pdf",
+    "context_key": "library/urdu/g9-nazam-cricket-aur-mushaira/reading/nazam-cricket-aur-mushaira-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\9th-urdu\\nazam\\nazam-4_-notes-dark.pdf",
+      "light": "E:\\remaining-data\\9th-urdu\\nazam\\nazam-4_-notes-light.pdf",
+      "txt": "E:\\remaining-data\\9th-urdu\\nazam\\nazam-4_-notes.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g9-hosla-na-haro-aage-barho",
+    "chapter_id": "9d9af51c-a0be-46f3-b662-3c40edb6dd6a",
+    "content_section": "reading",
+    "title": "Urdu — Chapter 20: Hosla Na Haro Aage Barho — Notes",
+    "book_title": "Class 9 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g9-hosla-na-haro-aage-barho/reading/hosla-na-haro-aage-barho-notes.light.pdf",
+    "dark_key": "library/urdu/g9-hosla-na-haro-aage-barho/reading/hosla-na-haro-aage-barho-notes.dark.pdf",
+    "context_key": "library/urdu/g9-hosla-na-haro-aage-barho/reading/hosla-na-haro-aage-barho-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\9th-urdu\\nazam\\nazam-5_notes-dark.pdf",
+      "light": "E:\\remaining-data\\9th-urdu\\nazam\\nazam-5_notes-light.pdf",
+      "txt": "E:\\remaining-data\\9th-urdu\\nazam\\nazam-5_notes.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g9-shuhdaye-pishawar-ke-liye-ek-nazam",
+    "chapter_id": "5be4ccc5-f9f9-4bf4-8a3f-2585ec19b4cb",
+    "content_section": "reading",
+    "title": "Urdu — Chapter 21: Shuhdaye Pishawar Ke Liye Ek Nazam — Notes",
+    "book_title": "Class 9 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g9-shuhdaye-pishawar-ke-liye-ek-nazam/reading/shuhdaye-pishawar-ke-liye-ek-nazam-notes.light.pdf",
+    "dark_key": "library/urdu/g9-shuhdaye-pishawar-ke-liye-ek-nazam/reading/shuhdaye-pishawar-ke-liye-ek-nazam-notes.dark.pdf",
+    "context_key": "library/urdu/g9-shuhdaye-pishawar-ke-liye-ek-nazam/reading/shuhdaye-pishawar-ke-liye-ek-nazam-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\9th-urdu\\nazam\\nazam-6_notes-dark.pdf",
+      "light": "E:\\remaining-data\\9th-urdu\\nazam\\nazam-6_notes-light.pdf",
+      "txt": "E:\\remaining-data\\9th-urdu\\nazam\\nazam-6_notes.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g9-ghazal-faqirana-aae-sada-kar-chale",
+    "chapter_id": "78e7b720-844f-47e6-a679-09f3235ea6fb",
+    "content_section": "reading",
+    "title": "Urdu — Chapter 16: Ghazal Faqirana Aae Sada Kar Chale — Notes",
+    "book_title": "Class 9 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g9-ghazal-faqirana-aae-sada-kar-chale/reading/ghazal-faqirana-aae-sada-kar-chale-notes.light.pdf",
+    "dark_key": "library/urdu/g9-ghazal-faqirana-aae-sada-kar-chale/reading/ghazal-faqirana-aae-sada-kar-chale-notes.dark.pdf",
+    "context_key": "library/urdu/g9-ghazal-faqirana-aae-sada-kar-chale/reading/ghazal-faqirana-aae-sada-kar-chale-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\9th-urdu\\ghazal\\ghazal-1_notes-dark.pdf",
+      "light": "E:\\remaining-data\\9th-urdu\\ghazal\\ghazal-1_notes-light.pdf",
+      "txt": "E:\\remaining-data\\9th-urdu\\ghazal\\ghazal-1_notes.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g9-ghazal-sun-to-sahi-jahaan-mein-hai-tera-fasana",
+    "chapter_id": "92ef900b-5285-4be1-9328-7f616870bb10",
+    "content_section": "reading",
+    "title": "Urdu — Chapter 17: Ghazal Sun To Sahi Jahaan Mein Hai Tera Fasana — Notes",
+    "book_title": "Class 9 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g9-ghazal-sun-to-sahi-jahaan-mein-hai-tera-fasana/reading/ghazal-sun-to-sahi-jahaan-mein-hai-tera-fasana-notes.light.pdf",
+    "dark_key": "library/urdu/g9-ghazal-sun-to-sahi-jahaan-mein-hai-tera-fasana/reading/ghazal-sun-to-sahi-jahaan-mein-hai-tera-fasana-notes.dark.pdf",
+    "context_key": "library/urdu/g9-ghazal-sun-to-sahi-jahaan-mein-hai-tera-fasana/reading/ghazal-sun-to-sahi-jahaan-mein-hai-tera-fasana-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\9th-urdu\\ghazal\\ghazal-2_notes-dark.pdf",
+      "light": "E:\\remaining-data\\9th-urdu\\ghazal\\ghazal-2_notes-light.pdf",
+      "txt": "E:\\remaining-data\\9th-urdu\\ghazal\\ghazal-2_notes.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g9-ghazal-gham-hai-ya-khushi-hai-tu",
+    "chapter_id": "07c49e51-fba4-43b7-9a4b-8f0b97038a02",
+    "content_section": "reading",
+    "title": "Urdu — Chapter 18: Ghazal Gham Hai Ya Khushi Hai Tu — Notes",
+    "book_title": "Class 9 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g9-ghazal-gham-hai-ya-khushi-hai-tu/reading/ghazal-gham-hai-ya-khushi-hai-tu-notes.light.pdf",
+    "dark_key": "library/urdu/g9-ghazal-gham-hai-ya-khushi-hai-tu/reading/ghazal-gham-hai-ya-khushi-hai-tu-notes.dark.pdf",
+    "context_key": "library/urdu/g9-ghazal-gham-hai-ya-khushi-hai-tu/reading/ghazal-gham-hai-ya-khushi-hai-tu-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\9th-urdu\\ghazal\\ghazal-3_notes-dark.pdf",
+      "light": "E:\\remaining-data\\9th-urdu\\ghazal\\ghazal-3_notes-light.pdf",
+      "txt": "E:\\remaining-data\\9th-urdu\\ghazal\\ghazal-3_notes.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g9-ghazal-kash-taufaan-mein-safeene-ko-utara-hota",
+    "chapter_id": "ba5fe4f4-6cde-4c3c-af35-7828e7382862",
+    "content_section": "reading",
+    "title": "Urdu — Chapter 19: Ghazal Kash Taufaan Mein Safeene Ko Utara Hota — Notes",
+    "book_title": "Class 9 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g9-ghazal-kash-taufaan-mein-safeene-ko-utara-hota/reading/ghazal-kash-taufaan-mein-safeene-ko-utara-hota-notes.light.pdf",
+    "dark_key": "library/urdu/g9-ghazal-kash-taufaan-mein-safeene-ko-utara-hota/reading/ghazal-kash-taufaan-mein-safeene-ko-utara-hota-notes.dark.pdf",
+    "context_key": "library/urdu/g9-ghazal-kash-taufaan-mein-safeene-ko-utara-hota/reading/ghazal-kash-taufaan-mein-safeene-ko-utara-hota-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\9th-urdu\\ghazal\\ghazal-4_notes-dark.pdf",
+      "light": "E:\\remaining-data\\9th-urdu\\ghazal\\ghazal-4_notes-light.pdf",
+      "txt": "E:\\remaining-data\\9th-urdu\\ghazal\\ghazal-4_notes.txt"
+    }
+  }
+]

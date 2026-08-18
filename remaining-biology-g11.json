@@ -1,0 +1,578 @@
+[
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-biodiversity-classification",
+    "chapter_id": "282a7e20-b5a8-4b1c-a489-d4821a93949d",
+    "content_section": "mcq",
+    "title": "Biology — Chapter 1: Biodiversity & Classification — MCQs",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-biodiversity-classification/mcq/biodiversity-and-classification-mcqs.light.pdf",
+    "dark_key": "library/biology/g11-biodiversity-classification/mcq/biodiversity-and-classification-mcqs.dark.pdf",
+    "context_key": "library/biology/g11-biodiversity-classification/mcq/biodiversity-and-classification-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch1_mcq_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch1_mcq_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch1_mcq.txt"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-biodiversity-classification",
+    "chapter_id": "282a7e20-b5a8-4b1c-a489-d4821a93949d",
+    "content_section": "long",
+    "title": "Biology — Chapter 1: Biodiversity & Classification — Long Questions",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-biodiversity-classification/long/biodiversity-and-classification-long-questions.light.pdf",
+    "dark_key": "library/biology/g11-biodiversity-classification/long/biodiversity-and-classification-long-questions.dark.pdf",
+    "context_key": "library/biology/g11-biodiversity-classification/long/biodiversity-and-classification-long-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch1_long_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch1_long_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch1_long.txt"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-biodiversity-classification",
+    "chapter_id": "282a7e20-b5a8-4b1c-a489-d4821a93949d",
+    "content_section": "short",
+    "title": "Biology — Chapter 1: Biodiversity & Classification — Short Questions",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-biodiversity-classification/short/biodiversity-and-classification-short-questions.light.pdf",
+    "dark_key": "library/biology/g11-biodiversity-classification/short/biodiversity-and-classification-short-questions.dark.pdf",
+    "context_key": "library/biology/g11-biodiversity-classification/short/biodiversity-and-classification-short-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch1_short_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch1_short_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch1_short.txt"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-bacteria-and-viruses",
+    "chapter_id": "4e860eac-38be-4a6e-81d5-228264eb58c2",
+    "content_section": "mcq",
+    "title": "Biology — Chapter 2: Bacteria and Viruses — MCQs",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-bacteria-and-viruses/mcq/bacteria-and-viruses-mcqs.light.pdf",
+    "dark_key": "library/biology/g11-bacteria-and-viruses/mcq/bacteria-and-viruses-mcqs.dark.pdf",
+    "context_key": "library/biology/g11-bacteria-and-viruses/mcq/bacteria-and-viruses-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch2_mcq_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch2_mcq_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch2_mcq_light.txt"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-bacteria-and-viruses",
+    "chapter_id": "4e860eac-38be-4a6e-81d5-228264eb58c2",
+    "content_section": "long",
+    "title": "Biology — Chapter 2: Bacteria and Viruses — Long Questions",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-bacteria-and-viruses/long/bacteria-and-viruses-long-questions.light.pdf",
+    "dark_key": "library/biology/g11-bacteria-and-viruses/long/bacteria-and-viruses-long-questions.dark.pdf",
+    "context_key": "library/biology/g11-bacteria-and-viruses/long/bacteria-and-viruses-long-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch2_long_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch2_long_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch2_long_light.txt"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-bacteria-and-viruses",
+    "chapter_id": "4e860eac-38be-4a6e-81d5-228264eb58c2",
+    "content_section": "short",
+    "title": "Biology — Chapter 2: Bacteria and Viruses — Short Questions",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-bacteria-and-viruses/short/bacteria-and-viruses-short-questions.light.pdf",
+    "dark_key": "library/biology/g11-bacteria-and-viruses/short/bacteria-and-viruses-short-questions.dark.pdf",
+    "context_key": "library/biology/g11-bacteria-and-viruses/short/bacteria-and-viruses-short-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch2_short_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch2_short_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch2_short_light.txt"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-cells-subcellular-organelles",
+    "chapter_id": "41d43287-db9c-4163-a46e-4ff94caa9263",
+    "content_section": "mcq",
+    "title": "Biology — Chapter 3: Cells & Subcellular Organelles — MCQs",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-cells-subcellular-organelles/mcq/cells-and-subcellular-organelles-mcqs.light.pdf",
+    "dark_key": "library/biology/g11-cells-subcellular-organelles/mcq/cells-and-subcellular-organelles-mcqs.dark.pdf",
+    "context_key": "library/biology/g11-cells-subcellular-organelles/mcq/cells-and-subcellular-organelles-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch3_mcq_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch3_mcq_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch3_mcq.txt"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-cells-subcellular-organelles",
+    "chapter_id": "41d43287-db9c-4163-a46e-4ff94caa9263",
+    "content_section": "long",
+    "title": "Biology — Chapter 3: Cells & Subcellular Organelles — Long Questions",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-cells-subcellular-organelles/long/cells-and-subcellular-organelles-long-questions.light.pdf",
+    "dark_key": "library/biology/g11-cells-subcellular-organelles/long/cells-and-subcellular-organelles-long-questions.dark.pdf",
+    "context_key": "library/biology/g11-cells-subcellular-organelles/long/cells-and-subcellular-organelles-long-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch3_longq_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch3_longq_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch3_longq.txt"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-cells-subcellular-organelles",
+    "chapter_id": "41d43287-db9c-4163-a46e-4ff94caa9263",
+    "content_section": "short",
+    "title": "Biology — Chapter 3: Cells & Subcellular Organelles — Short Questions",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-cells-subcellular-organelles/short/cells-and-subcellular-organelles-short-questions.light.pdf",
+    "dark_key": "library/biology/g11-cells-subcellular-organelles/short/cells-and-subcellular-organelles-short-questions.dark.pdf",
+    "context_key": "library/biology/g11-cells-subcellular-organelles/short/cells-and-subcellular-organelles-short-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch3_shortq_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch3_shortq_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch3_shortq.txt"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-biomolecules",
+    "chapter_id": "2fc15816-8a03-4081-850f-4e17d35f0c28",
+    "content_section": "mcq",
+    "title": "Biology — Chapter 4: Biomolecules — MCQs",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-biomolecules/mcq/biomolecules-mcqs.light.pdf",
+    "dark_key": "library/biology/g11-biomolecules/mcq/biomolecules-mcqs.dark.pdf",
+    "context_key": "library/biology/g11-biomolecules/mcq/biomolecules-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch4_mcq_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch4_mcq_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch4_mcq.txt"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-biomolecules",
+    "chapter_id": "2fc15816-8a03-4081-850f-4e17d35f0c28",
+    "content_section": "long",
+    "title": "Biology — Chapter 4: Biomolecules — Long Questions",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-biomolecules/long/biomolecules-long-questions.light.pdf",
+    "dark_key": "library/biology/g11-biomolecules/long/biomolecules-long-questions.dark.pdf",
+    "context_key": "library/biology/g11-biomolecules/long/biomolecules-long-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch4_long_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch4_long_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch4_long.txt"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-biomolecules",
+    "chapter_id": "2fc15816-8a03-4081-850f-4e17d35f0c28",
+    "content_section": "short",
+    "title": "Biology — Chapter 4: Biomolecules — Short Questions",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-biomolecules/short/biomolecules-short-questions.light.pdf",
+    "dark_key": "library/biology/g11-biomolecules/short/biomolecules-short-questions.dark.pdf",
+    "context_key": "library/biology/g11-biomolecules/short/biomolecules-short-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch4_short_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch4_short_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch4_short.txt"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-enzymes",
+    "chapter_id": "e63694f4-4bb2-473b-b393-b49457fdcf73",
+    "content_section": "mcq",
+    "title": "Biology — Chapter 5: Enzymes — MCQs",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-enzymes/mcq/enzymes-mcqs.light.pdf",
+    "dark_key": "library/biology/g11-enzymes/mcq/enzymes-mcqs.dark.pdf",
+    "context_key": "library/biology/g11-enzymes/mcq/enzymes-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch5_mcq_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch5_mcq_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch5_mcq.txt"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-enzymes",
+    "chapter_id": "e63694f4-4bb2-473b-b393-b49457fdcf73",
+    "content_section": "long",
+    "title": "Biology — Chapter 5: Enzymes — Long Questions",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-enzymes/long/enzymes-long-questions.light.pdf",
+    "dark_key": "library/biology/g11-enzymes/long/enzymes-long-questions.dark.pdf",
+    "context_key": "library/biology/g11-enzymes/long/enzymes-long-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch5_long_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch5_long_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch5_long.txt"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-enzymes",
+    "chapter_id": "e63694f4-4bb2-473b-b393-b49457fdcf73",
+    "content_section": "short",
+    "title": "Biology — Chapter 5: Enzymes — Short Questions",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-enzymes/short/enzymes-short-questions.light.pdf",
+    "dark_key": "library/biology/g11-enzymes/short/enzymes-short-questions.dark.pdf",
+    "context_key": "library/biology/g11-enzymes/short/enzymes-short-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch5_short_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch5_short_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch5_short.txt"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-bioenergetics",
+    "chapter_id": "f1fb0235-1f91-48dc-9abf-23799e83757a",
+    "content_section": "mcq",
+    "title": "Biology — Chapter 6: Bioenergetics — MCQs",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-bioenergetics/mcq/bioenergetics-mcqs.light.pdf",
+    "dark_key": "library/biology/g11-bioenergetics/mcq/bioenergetics-mcqs.dark.pdf",
+    "context_key": "library/biology/g11-bioenergetics/mcq/bioenergetics-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch6_mcq_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch6_mcq_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch6_mcq.txt"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-bioenergetics",
+    "chapter_id": "f1fb0235-1f91-48dc-9abf-23799e83757a",
+    "content_section": "long",
+    "title": "Biology — Chapter 6: Bioenergetics — Long Questions",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-bioenergetics/long/bioenergetics-long-questions.light.pdf",
+    "dark_key": "library/biology/g11-bioenergetics/long/bioenergetics-long-questions.dark.pdf",
+    "context_key": "library/biology/g11-bioenergetics/long/bioenergetics-long-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch6_longq_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch6_longq_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch6_longq.txt"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-bioenergetics",
+    "chapter_id": "f1fb0235-1f91-48dc-9abf-23799e83757a",
+    "content_section": "short",
+    "title": "Biology — Chapter 6: Bioenergetics — Short Questions",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-bioenergetics/short/bioenergetics-short-questions.light.pdf",
+    "dark_key": "library/biology/g11-bioenergetics/short/bioenergetics-short-questions.dark.pdf",
+    "context_key": "library/biology/g11-bioenergetics/short/bioenergetics-short-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch6_shortq_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch6_shortq_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch6_shortq.txt"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-structural-and-computational-biology",
+    "chapter_id": "38bcd266-a52f-4849-a826-a324479d88d1",
+    "content_section": "mcq",
+    "title": "Biology — Chapter 7: Structural and Computational Biology — MCQs",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-structural-and-computational-biology/mcq/structural-and-computational-biology-mcqs.light.pdf",
+    "dark_key": "library/biology/g11-structural-and-computational-biology/mcq/structural-and-computational-biology-mcqs.dark.pdf",
+    "context_key": "library/biology/g11-structural-and-computational-biology/mcq/structural-and-computational-biology-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch7_mcq_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch7_mcq_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch7_mcq.txt"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-structural-and-computational-biology",
+    "chapter_id": "38bcd266-a52f-4849-a826-a324479d88d1",
+    "content_section": "long",
+    "title": "Biology — Chapter 7: Structural and Computational Biology — Long Questions",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-structural-and-computational-biology/long/structural-and-computational-biology-long-questions.light.pdf",
+    "dark_key": "library/biology/g11-structural-and-computational-biology/long/structural-and-computational-biology-long-questions.dark.pdf",
+    "context_key": "library/biology/g11-structural-and-computational-biology/long/structural-and-computational-biology-long-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch7_long_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch7_long_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch7_long.txt"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-structural-and-computational-biology",
+    "chapter_id": "38bcd266-a52f-4849-a826-a324479d88d1",
+    "content_section": "short",
+    "title": "Biology — Chapter 7: Structural and Computational Biology — Short Questions",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-structural-and-computational-biology/short/structural-and-computational-biology-short-questions.light.pdf",
+    "dark_key": "library/biology/g11-structural-and-computational-biology/short/structural-and-computational-biology-short-questions.dark.pdf",
+    "context_key": "library/biology/g11-structural-and-computational-biology/short/structural-and-computational-biology-short-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch7_short_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch7_short_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch7_short.txt"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-plant-physiology",
+    "chapter_id": "d22970eb-fad5-4b66-b29d-785617739f95",
+    "content_section": "mcq",
+    "title": "Biology — Chapter 8: Plant Physiology — MCQs",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-plant-physiology/mcq/plant-physiology-mcqs.light.pdf",
+    "dark_key": "library/biology/g11-plant-physiology/mcq/plant-physiology-mcqs.dark.pdf",
+    "context_key": "library/biology/g11-plant-physiology/mcq/plant-physiology-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch8_mcq_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch8_mcq_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch8_mcq.txt"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-plant-physiology",
+    "chapter_id": "d22970eb-fad5-4b66-b29d-785617739f95",
+    "content_section": "long",
+    "title": "Biology — Chapter 8: Plant Physiology — Long Questions",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-plant-physiology/long/plant-physiology-long-questions.light.pdf",
+    "dark_key": "library/biology/g11-plant-physiology/long/plant-physiology-long-questions.dark.pdf",
+    "context_key": "library/biology/g11-plant-physiology/long/plant-physiology-long-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch8_long_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch8_long_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch8_long.txt"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-plant-physiology",
+    "chapter_id": "d22970eb-fad5-4b66-b29d-785617739f95",
+    "content_section": "short",
+    "title": "Biology — Chapter 8: Plant Physiology — Short Questions",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-plant-physiology/short/plant-physiology-short-questions.light.pdf",
+    "dark_key": "library/biology/g11-plant-physiology/short/plant-physiology-short-questions.dark.pdf",
+    "context_key": "library/biology/g11-plant-physiology/short/plant-physiology-short-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch8_short_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch8_short_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch8_short.txt"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-human-digestive-system",
+    "chapter_id": "65bccfd5-7975-437b-b356-8ab392f1083d",
+    "content_section": "mcq",
+    "title": "Biology — Chapter 9: Human Digestive System — MCQs",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-human-digestive-system/mcq/human-digestive-system-mcqs.light.pdf",
+    "dark_key": "library/biology/g11-human-digestive-system/mcq/human-digestive-system-mcqs.dark.pdf",
+    "context_key": "library/biology/g11-human-digestive-system/mcq/human-digestive-system-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch9_mcq_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch9_mcq_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch9_mcq.txt"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-human-digestive-system",
+    "chapter_id": "65bccfd5-7975-437b-b356-8ab392f1083d",
+    "content_section": "long",
+    "title": "Biology — Chapter 9: Human Digestive System — Long Questions",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-human-digestive-system/long/human-digestive-system-long-questions.light.pdf",
+    "dark_key": "library/biology/g11-human-digestive-system/long/human-digestive-system-long-questions.dark.pdf",
+    "context_key": "library/biology/g11-human-digestive-system/long/human-digestive-system-long-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch9_long_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch9_long_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch9_long.txt"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-human-digestive-system",
+    "chapter_id": "65bccfd5-7975-437b-b356-8ab392f1083d",
+    "content_section": "short",
+    "title": "Biology — Chapter 9: Human Digestive System — Short Questions",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-human-digestive-system/short/human-digestive-system-short-questions.light.pdf",
+    "dark_key": "library/biology/g11-human-digestive-system/short/human-digestive-system-short-questions.dark.pdf",
+    "context_key": "library/biology/g11-human-digestive-system/short/human-digestive-system-short-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch9_short_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch9_short_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch9_short.txt"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-human-respiratory-system",
+    "chapter_id": "3476029e-8d1c-456d-ac1d-bb068644ce0a",
+    "content_section": "mcq",
+    "title": "Biology — Chapter 10: Human Respiratory System — MCQs",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-human-respiratory-system/mcq/human-respiratory-system-mcqs.light.pdf",
+    "dark_key": "library/biology/g11-human-respiratory-system/mcq/human-respiratory-system-mcqs.dark.pdf",
+    "context_key": "library/biology/g11-human-respiratory-system/mcq/human-respiratory-system-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch10_mcq_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch10_mcq_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch10_mcq.txt"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-human-respiratory-system",
+    "chapter_id": "3476029e-8d1c-456d-ac1d-bb068644ce0a",
+    "content_section": "long",
+    "title": "Biology — Chapter 10: Human Respiratory System — Long Questions",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-human-respiratory-system/long/human-respiratory-system-long-questions.light.pdf",
+    "dark_key": "library/biology/g11-human-respiratory-system/long/human-respiratory-system-long-questions.dark.pdf",
+    "context_key": "library/biology/g11-human-respiratory-system/long/human-respiratory-system-long-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch10_long_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch10_long_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch10_long.txt"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-human-respiratory-system",
+    "chapter_id": "3476029e-8d1c-456d-ac1d-bb068644ce0a",
+    "content_section": "short",
+    "title": "Biology — Chapter 10: Human Respiratory System — Short Questions",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-human-respiratory-system/short/human-respiratory-system-short-questions.light.pdf",
+    "dark_key": "library/biology/g11-human-respiratory-system/short/human-respiratory-system-short-questions.dark.pdf",
+    "context_key": "library/biology/g11-human-respiratory-system/short/human-respiratory-system-short-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch10_short_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch10_short_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch10_short.txt"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-human-circulatory-system",
+    "chapter_id": "bc06ab37-c0f6-46d6-8c26-3a2e4f05fa0a",
+    "content_section": "mcq",
+    "title": "Biology — Chapter 11: Human Circulatory System — MCQs",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-human-circulatory-system/mcq/human-circulatory-system-mcqs.light.pdf",
+    "dark_key": "library/biology/g11-human-circulatory-system/mcq/human-circulatory-system-mcqs.dark.pdf",
+    "context_key": "library/biology/g11-human-circulatory-system/mcq/human-circulatory-system-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch11_mcq_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch11_mcq_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch11_mcq_source.txt"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-human-circulatory-system",
+    "chapter_id": "bc06ab37-c0f6-46d6-8c26-3a2e4f05fa0a",
+    "content_section": "long",
+    "title": "Biology — Chapter 11: Human Circulatory System — Long Questions",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-human-circulatory-system/long/human-circulatory-system-long-questions.light.pdf",
+    "dark_key": "library/biology/g11-human-circulatory-system/long/human-circulatory-system-long-questions.dark.pdf",
+    "context_key": "library/biology/g11-human-circulatory-system/long/human-circulatory-system-long-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch11_longq_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch11_longq_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch11_longq_source.txt"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-human-circulatory-system",
+    "chapter_id": "bc06ab37-c0f6-46d6-8c26-3a2e4f05fa0a",
+    "content_section": "short",
+    "title": "Biology — Chapter 11: Human Circulatory System — Short Questions",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-human-circulatory-system/short/human-circulatory-system-short-questions.light.pdf",
+    "dark_key": "library/biology/g11-human-circulatory-system/short/human-circulatory-system-short-questions.dark.pdf",
+    "context_key": "library/biology/g11-human-circulatory-system/short/human-circulatory-system-short-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch11_shortq_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch11_shortq_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch11_shortq_source.txt"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-human-skeletal-and-muscular-systems",
+    "chapter_id": "9fa5c4b3-5515-42f0-8f72-a74fb41311ca",
+    "content_section": "mcq",
+    "title": "Biology — Chapter 12: Human Skeletal and Muscular Systems — MCQs",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-human-skeletal-and-muscular-systems/mcq/human-skeletal-and-muscular-systems-mcqs.light.pdf",
+    "dark_key": "library/biology/g11-human-skeletal-and-muscular-systems/mcq/human-skeletal-and-muscular-systems-mcqs.dark.pdf",
+    "context_key": "library/biology/g11-human-skeletal-and-muscular-systems/mcq/human-skeletal-and-muscular-systems-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch12_mcq_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch12_mcq_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch12_mcq.txt"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-human-skeletal-and-muscular-systems",
+    "chapter_id": "9fa5c4b3-5515-42f0-8f72-a74fb41311ca",
+    "content_section": "long",
+    "title": "Biology — Chapter 12: Human Skeletal and Muscular Systems — Long Questions",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-human-skeletal-and-muscular-systems/long/human-skeletal-and-muscular-systems-long-questions.light.pdf",
+    "dark_key": "library/biology/g11-human-skeletal-and-muscular-systems/long/human-skeletal-and-muscular-systems-long-questions.dark.pdf",
+    "context_key": "library/biology/g11-human-skeletal-and-muscular-systems/long/human-skeletal-and-muscular-systems-long-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch12_longq_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch12_longq_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch12_longq.txt"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "chapter_slug": "g11-human-skeletal-and-muscular-systems",
+    "chapter_id": "9fa5c4b3-5515-42f0-8f72-a74fb41311ca",
+    "content_section": "short",
+    "title": "Biology — Chapter 12: Human Skeletal and Muscular Systems — Short Questions",
+    "book_title": "Class 11 Biology Notes (Punjab)",
+    "light_key": "library/biology/g11-human-skeletal-and-muscular-systems/short/human-skeletal-and-muscular-systems-short-questions.light.pdf",
+    "dark_key": "library/biology/g11-human-skeletal-and-muscular-systems/short/human-skeletal-and-muscular-systems-short-questions.dark.pdf",
+    "context_key": "library/biology/g11-human-skeletal-and-muscular-systems/short/human-skeletal-and-muscular-systems-short-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-bio\\ch12_shortq_dark.pdf",
+      "light": "E:\\remaining-data\\11th-bio\\ch12_shortq_light.pdf",
+      "txt": "E:\\remaining-data\\11th-bio\\ch12_shortq.txt"
+    }
+  }
+]

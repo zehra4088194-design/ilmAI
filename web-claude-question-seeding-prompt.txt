@@ -1,0 +1,97 @@
+REUSABLE PROMPT — use this exact text for every (grade, subject) combination.
+Fill in GRADE_LEVEL (e.g. GRADE_9, GRADE_10, GRADE_11, GRADE_12) and SUBJECT
+NAME (e.g. Chemistry, Biology, Physics, Mathematics, English, Urdu, Computer
+Science, Pakistan Studies, Tarjuma Tul Quran) at the top before sending, and
+attach ONLY that grade+subject's .txt source files in the same message.
+
+===========================================================================
+
+You have the Supabase MCP tools connected, project "ilm AI"
+(bvbipddsowwivuynuuuu). This task is scoped to ONE grade and ONE subject
+only — do not touch any other grade or subject's rows.
+
+GRADE_LEVEL = <fill in, e.g. GRADE_11>
+SUBJECT = <fill in, e.g. Chemistry>
+
+I am attaching .txt files in this chat — each one is the full, already-
+extracted verbatim text of one library resource's MCQ/Short/Long question
+content (source of truth — do not use any other source, do not invent
+content).
+
+STEP 1 — Find the matching resource rows.
+Run:
+```sql
+select id, title, subject_id, chapter_id, content_section
+from public.library_resources
+where grade_level = '<GRADE_LEVEL>'
+  and subject_id = (select id from public.subjects where name = '<SUBJECT>')
+  and content_section in ('mcq','short','long');
+```
+Match each attached file to exactly one row by title (the filename/title
+should make the chapter + section obvious — e.g. "...MCQs..." -> a row with
+content_section='mcq'). If a file doesn't clearly match exactly one row,
+STOP and ask me instead of guessing.
+
+STEP 2 — Extract questions verbatim, then verify each one before using it.
+For each attached file:
+- Read it fully.
+- Transcribe every question **word-for-word** from the file. Nothing
+  paraphrased, nothing invented, nothing filled in from general knowledge.
+- MCQs need exactly 4 options and a correct answer. Only keep an MCQ if the
+  file's own answer key clearly marks the correct option — if there's no
+  answer key for a question, DROP that question rather than guessing.
+- Short/Long questions: keep the question text, and a model answer /
+  explanation ONLY if the file actually provides one (don't write your own).
+- After drafting the list, re-read the source file a second time and check
+  each transcribed question against it one more time — question wording,
+  option wording, and the correct answer all have to match exactly. Drop
+  anything you can't verify with full confidence. Zero tolerance for a wrong
+  answer key or a garbled question making it into the database — when in
+  doubt, drop it, don't push it.
+
+STEP 3 — Upsert into public.resource_mcq_sets (per-resource question bank).
+```sql
+insert into public.resource_mcq_sets
+  (resource_kind, resource_id, questions, short_questions, long_questions, status, generated_at, updated_at)
+values
+  ('library', '<library_resources.id from Step 1>',
+   '<mcq array as [{"q":"...","opts":["...","...","...","..."],"correct":<0-3>,"exp":"..."}]>'::jsonb,
+   '<short array as [{"q":"...","marks":<n>,"keyPoints":["..."],"modelAnswer":"..."}]>'::jsonb,
+   '<long array, same shape as short>'::jsonb,
+   'ready', now(), now())
+on conflict (resource_kind, resource_id) do update set
+  questions = excluded.questions,
+  short_questions = excluded.short_questions,
+  long_questions = excluded.long_questions,
+  status = 'ready',
+  generated_at = now(),
+  updated_at = now();
+```
+A resource's content_section tells you which ONE of the three arrays to
+fill — leave the other two as `[]`.
+
+STEP 4 — Insert the SAME verified questions into public.questions too (the
+manually-curated question bank — this is what the diagnostic test and other
+question-bank features read directly, separately from resource_mcq_sets).
+For every MCQ you kept in Step 2/3, also run:
+```sql
+insert into public.questions
+  (chapter_id, subject_id, type, difficulty, text, options, correct_answer, explanation, marks, is_verified, is_demo_eligible, source_kind, source_id, tags, metadata)
+values
+  ('<chapter_id from Step 1>', '<subject_id from Step 1>', 'MCQ', 'MEDIUM',
+   '<question text>', '["opt A","opt B","opt C","opt D"]'::jsonb, '<correct index 0-3>'::jsonb,
+   '<explanation or null>', 1, true, false, 'library', '<library_resources.id>', '{}', '{}');
+```
+For SHORT/LONG questions, same insert but `type` = 'SHORT' or 'LONG',
+`options` = null, `correct_answer` = the model answer text as a jsonb string,
+`marks` = the actual marks (default 3 for short, 8 for long if the source
+doesn't state one).
+Do NOT set `is_verified: true` unless you actually completed the Step 2
+re-check for that specific question — this flag is trusted elsewhere in the
+app.
+
+STEP 5 — Report back: resource title + id for each attached file, how many
+MCQ/short/long questions were kept vs dropped and why (no answer key,
+ambiguous match, couldn't verify, etc.). Move to the next file. Do NOT touch
+resource_processing_jobs, library_resources.drive_url, or any row outside
+GRADE_LEVEL + SUBJECT in this task.

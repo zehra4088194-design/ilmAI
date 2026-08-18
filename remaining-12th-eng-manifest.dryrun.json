@@ -1,0 +1,82 @@
+[
+  {
+    "subject_slug": "english",
+    "chapter_slug": "general",
+    "chapter_id": null,
+    "content_section": "reading",
+    "title": "English — Correction of Sentences",
+    "book_title": "Class 12 English Notes (Punjab)",
+    "light_key": "library/english/general/reading/correction-of-sentences.light.pdf",
+    "dark_key": "library/english/general/reading/correction-of-sentences.dark.pdf",
+    "context_key": "library/english/general/reading/correction-of-sentences.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-eng\\12th_English_Correction_of_Sentences_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-eng\\12th_English_Correction_of_Sentences_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-eng\\12th_English_Correction_of_Sentences.txt"
+    }
+  },
+  {
+    "subject_slug": "english",
+    "chapter_slug": "general",
+    "chapter_id": null,
+    "content_section": "reading",
+    "title": "English — Essays",
+    "book_title": "Class 12 English Notes (Punjab)",
+    "light_key": "library/english/general/reading/essays.light.pdf",
+    "dark_key": "library/english/general/reading/essays.dark.pdf",
+    "context_key": "library/english/general/reading/essays.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-eng\\12th_English_Essays_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-eng\\12th_English_Essays_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-eng\\12th_English_Essays.txt"
+    }
+  },
+  {
+    "subject_slug": "english",
+    "chapter_slug": "general",
+    "chapter_id": null,
+    "content_section": "reading",
+    "title": "English — Idioms and Phrasal Verbs",
+    "book_title": "Class 12 English Notes (Punjab)",
+    "light_key": "library/english/general/reading/idioms-and-phrasal-verbs.light.pdf",
+    "dark_key": "library/english/general/reading/idioms-and-phrasal-verbs.dark.pdf",
+    "context_key": "library/english/general/reading/idioms-and-phrasal-verbs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-eng\\12th_English_Idioms_and_Phrasal_Verbs_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-eng\\12th_English_Idioms_and_Phrasal_Verbs_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-eng\\12th_English_Idioms_and_Phrasal_Verbs.txt"
+    }
+  },
+  {
+    "subject_slug": "english",
+    "chapter_slug": "general",
+    "chapter_id": null,
+    "content_section": "reading",
+    "title": "English — Paragraphs",
+    "book_title": "Class 12 English Notes (Punjab)",
+    "light_key": "library/english/general/reading/paragraphs.light.pdf",
+    "dark_key": "library/english/general/reading/paragraphs.dark.pdf",
+    "context_key": "library/english/general/reading/paragraphs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-eng\\12th_English_Paragraphs_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-eng\\12th_English_Paragraphs_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-eng\\12th_English_Paragraphs.txt"
+    }
+  },
+  {
+    "subject_slug": "english",
+    "chapter_slug": "general",
+    "chapter_id": null,
+    "content_section": "reading",
+    "title": "English — Preposition",
+    "book_title": "Class 12 English Notes (Punjab)",
+    "light_key": "library/english/general/reading/preposition.light.pdf",
+    "dark_key": "library/english/general/reading/preposition.dark.pdf",
+    "context_key": "library/english/general/reading/preposition.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-eng\\12th_English_Preposition_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-eng\\12th_English_Preposition_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-eng\\12th_English_Preposition.txt"
+    }
+  }
+]

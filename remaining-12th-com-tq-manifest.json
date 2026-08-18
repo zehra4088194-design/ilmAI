@@ -1,0 +1,1200 @@
+[
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-data-basics",
+    "chapter_id": "dfdba44c-3d9c-4862-86de-9e0d5bf716f6",
+    "content_section": "mcq",
+    "title": "Computer Science — Chapter 1: Data Basics — MCQs",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-data-basics/mcq/data-basics-mcqs.light.pdf",
+    "dark_key": "library/computer-science/g12-data-basics/mcq/data-basics-mcqs.dark.pdf",
+    "context_key": "library/computer-science/g12-data-basics/mcq/data-basics-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch1_DataBasics_MCQs_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch1_DataBasics_MCQs_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch1_DataBasics_MCQs.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-data-basics",
+    "chapter_id": "dfdba44c-3d9c-4862-86de-9e0d5bf716f6",
+    "content_section": "long",
+    "title": "Computer Science — Chapter 1: Data Basics — Long Questions",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-data-basics/long/data-basics-long-questions.light.pdf",
+    "dark_key": "library/computer-science/g12-data-basics/long/data-basics-long-questions.dark.pdf",
+    "context_key": "library/computer-science/g12-data-basics/long/data-basics-long-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch1_DataBasics_LongQ_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch1_DataBasics_LongQ_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch1_DataBasics_LongQ.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-data-basics",
+    "chapter_id": "dfdba44c-3d9c-4862-86de-9e0d5bf716f6",
+    "content_section": "short",
+    "title": "Computer Science — Chapter 1: Data Basics — Short Questions",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-data-basics/short/data-basics-short-questions.light.pdf",
+    "dark_key": "library/computer-science/g12-data-basics/short/data-basics-short-questions.dark.pdf",
+    "context_key": "library/computer-science/g12-data-basics/short/data-basics-short-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch1_DataBasics_ShortQ_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch1_DataBasics_ShortQ_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch1_DataBasics_ShortQ.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-basic-concepts-and-terminology-of-databases",
+    "chapter_id": "569bfd25-217a-4534-b4dc-91b22526983e",
+    "content_section": "mcq",
+    "title": "Computer Science — Chapter 2: Basic Concepts and Terminology of Databases — MCQs",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-basic-concepts-and-terminology-of-databases/mcq/basic-concepts-and-terminology-of-databases-mcqs.light.pdf",
+    "dark_key": "library/computer-science/g12-basic-concepts-and-terminology-of-databases/mcq/basic-concepts-and-terminology-of-databases-mcqs.dark.pdf",
+    "context_key": "library/computer-science/g12-basic-concepts-and-terminology-of-databases/mcq/basic-concepts-and-terminology-of-databases-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch2_DatabaseConcepts_MCQs_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch2_DatabaseConcepts_MCQs_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch2_DatabaseConcepts_MCQs.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-basic-concepts-and-terminology-of-databases",
+    "chapter_id": "569bfd25-217a-4534-b4dc-91b22526983e",
+    "content_section": "long",
+    "title": "Computer Science — Chapter 2: Basic Concepts and Terminology of Databases — Long Questions",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-basic-concepts-and-terminology-of-databases/long/basic-concepts-and-terminology-of-databases-long-questions.light.pdf",
+    "dark_key": "library/computer-science/g12-basic-concepts-and-terminology-of-databases/long/basic-concepts-and-terminology-of-databases-long-questions.dark.pdf",
+    "context_key": "library/computer-science/g12-basic-concepts-and-terminology-of-databases/long/basic-concepts-and-terminology-of-databases-long-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch2_DatabaseConcepts_LongQ_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch2_DatabaseConcepts_LongQ_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch2_DatabaseConcepts_LongQ.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-basic-concepts-and-terminology-of-databases",
+    "chapter_id": "569bfd25-217a-4534-b4dc-91b22526983e",
+    "content_section": "short",
+    "title": "Computer Science — Chapter 2: Basic Concepts and Terminology of Databases — Short Questions",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-basic-concepts-and-terminology-of-databases/short/basic-concepts-and-terminology-of-databases-short-questions.light.pdf",
+    "dark_key": "library/computer-science/g12-basic-concepts-and-terminology-of-databases/short/basic-concepts-and-terminology-of-databases-short-questions.dark.pdf",
+    "context_key": "library/computer-science/g12-basic-concepts-and-terminology-of-databases/short/basic-concepts-and-terminology-of-databases-short-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch2_DatabaseConcepts_ShortQ_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch2_DatabaseConcepts_ShortQ_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch2_DatabaseConcepts_ShortQ.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-database-design-process",
+    "chapter_id": "80a20fcc-bacf-4def-b363-a6f5410652a8",
+    "content_section": "mcq",
+    "title": "Computer Science — Chapter 3: Database Design Process — MCQs",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-database-design-process/mcq/database-design-process-mcqs.light.pdf",
+    "dark_key": "library/computer-science/g12-database-design-process/mcq/database-design-process-mcqs.dark.pdf",
+    "context_key": "library/computer-science/g12-database-design-process/mcq/database-design-process-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch3_MCQs_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch3_MCQs_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch3_MCQs.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-database-design-process",
+    "chapter_id": "80a20fcc-bacf-4def-b363-a6f5410652a8",
+    "content_section": "long",
+    "title": "Computer Science — Chapter 3: Database Design Process — Long Questions",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-database-design-process/long/database-design-process-long-questions.light.pdf",
+    "dark_key": "library/computer-science/g12-database-design-process/long/database-design-process-long-questions.dark.pdf",
+    "context_key": "library/computer-science/g12-database-design-process/long/database-design-process-long-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch3_LongQ_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch3_LongQ_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch3_LongQ.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-database-design-process",
+    "chapter_id": "80a20fcc-bacf-4def-b363-a6f5410652a8",
+    "content_section": "short",
+    "title": "Computer Science — Chapter 3: Database Design Process — Short Questions",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-database-design-process/short/database-design-process-short-questions.light.pdf",
+    "dark_key": "library/computer-science/g12-database-design-process/short/database-design-process-short-questions.dark.pdf",
+    "context_key": "library/computer-science/g12-database-design-process/short/database-design-process-short-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch3_ShortQ_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch3_ShortQ_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch3_ShortQ.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-data-integrity-and-normalization",
+    "chapter_id": "0c5b788b-425b-4667-bdf3-dcbdfa9dffc8",
+    "content_section": "mcq",
+    "title": "Computer Science — Chapter 4: Data Integrity and Normalization — MCQs",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-data-integrity-and-normalization/mcq/data-integrity-and-normalization-mcqs.light.pdf",
+    "dark_key": "library/computer-science/g12-data-integrity-and-normalization/mcq/data-integrity-and-normalization-mcqs.dark.pdf",
+    "context_key": "library/computer-science/g12-data-integrity-and-normalization/mcq/data-integrity-and-normalization-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch4_MCQs_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch4_MCQs_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch4_MCQs.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-data-integrity-and-normalization",
+    "chapter_id": "0c5b788b-425b-4667-bdf3-dcbdfa9dffc8",
+    "content_section": "long",
+    "title": "Computer Science — Chapter 4: Data Integrity and Normalization — Long Questions",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-data-integrity-and-normalization/long/data-integrity-and-normalization-long-questions.light.pdf",
+    "dark_key": "library/computer-science/g12-data-integrity-and-normalization/long/data-integrity-and-normalization-long-questions.dark.pdf",
+    "context_key": "library/computer-science/g12-data-integrity-and-normalization/long/data-integrity-and-normalization-long-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch4_LongQ_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch4_LongQ_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch4_LongQ.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-data-integrity-and-normalization",
+    "chapter_id": "0c5b788b-425b-4667-bdf3-dcbdfa9dffc8",
+    "content_section": "short",
+    "title": "Computer Science — Chapter 4: Data Integrity and Normalization — Short Questions",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-data-integrity-and-normalization/short/data-integrity-and-normalization-short-questions.light.pdf",
+    "dark_key": "library/computer-science/g12-data-integrity-and-normalization/short/data-integrity-and-normalization-short-questions.dark.pdf",
+    "context_key": "library/computer-science/g12-data-integrity-and-normalization/short/data-integrity-and-normalization-short-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch4_ShortQ_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch4_ShortQ_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch4_ShortQ.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-introduction-to-microsoft-access",
+    "chapter_id": "bd444802-38a0-43c4-9e2d-a9408d69e1e6",
+    "content_section": "mcq",
+    "title": "Computer Science — Chapter 5: Introduction to Microsoft Access — MCQs",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-introduction-to-microsoft-access/mcq/introduction-to-microsoft-access-mcqs.light.pdf",
+    "dark_key": "library/computer-science/g12-introduction-to-microsoft-access/mcq/introduction-to-microsoft-access-mcqs.dark.pdf",
+    "context_key": "library/computer-science/g12-introduction-to-microsoft-access/mcq/introduction-to-microsoft-access-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch5_MSAccess_MCQs_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch5_MSAccess_MCQs_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch5_MSAccess_MCQs.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-introduction-to-microsoft-access",
+    "chapter_id": "bd444802-38a0-43c4-9e2d-a9408d69e1e6",
+    "content_section": "long",
+    "title": "Computer Science — Chapter 5: Introduction to Microsoft Access — Long Questions",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-introduction-to-microsoft-access/long/introduction-to-microsoft-access-long-questions.light.pdf",
+    "dark_key": "library/computer-science/g12-introduction-to-microsoft-access/long/introduction-to-microsoft-access-long-questions.dark.pdf",
+    "context_key": "library/computer-science/g12-introduction-to-microsoft-access/long/introduction-to-microsoft-access-long-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch5_MSAccess_LongQ_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch5_MSAccess_LongQ_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch5_MSAccess_LongQ.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-introduction-to-microsoft-access",
+    "chapter_id": "bd444802-38a0-43c4-9e2d-a9408d69e1e6",
+    "content_section": "short",
+    "title": "Computer Science — Chapter 5: Introduction to Microsoft Access — Short Questions",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-introduction-to-microsoft-access/short/introduction-to-microsoft-access-short-questions.light.pdf",
+    "dark_key": "library/computer-science/g12-introduction-to-microsoft-access/short/introduction-to-microsoft-access-short-questions.dark.pdf",
+    "context_key": "library/computer-science/g12-introduction-to-microsoft-access/short/introduction-to-microsoft-access-short-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch5_MSAccess_ShortQ_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch5_MSAccess_ShortQ_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch5_MSAccess_ShortQ.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-table-and-query",
+    "chapter_id": "daaa1470-d13c-4f1e-906b-ee028bc8f2c2",
+    "content_section": "mcq",
+    "title": "Computer Science — Chapter 6: Table and Query — MCQs",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-table-and-query/mcq/table-and-query-mcqs.light.pdf",
+    "dark_key": "library/computer-science/g12-table-and-query/mcq/table-and-query-mcqs.dark.pdf",
+    "context_key": "library/computer-science/g12-table-and-query/mcq/table-and-query-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch6_TableQuery_MCQs_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch6_TableQuery_MCQs_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch6_TableQuery_MCQs.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-table-and-query",
+    "chapter_id": "daaa1470-d13c-4f1e-906b-ee028bc8f2c2",
+    "content_section": "long",
+    "title": "Computer Science — Chapter 6: Table and Query — Long Questions",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-table-and-query/long/table-and-query-long-questions.light.pdf",
+    "dark_key": "library/computer-science/g12-table-and-query/long/table-and-query-long-questions.dark.pdf",
+    "context_key": "library/computer-science/g12-table-and-query/long/table-and-query-long-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch6_TableQuery_LongQ_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch6_TableQuery_LongQ_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch6_TableQuery_LongQ.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-table-and-query",
+    "chapter_id": "daaa1470-d13c-4f1e-906b-ee028bc8f2c2",
+    "content_section": "short",
+    "title": "Computer Science — Chapter 6: Table and Query — Short Questions",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-table-and-query/short/table-and-query-short-questions.light.pdf",
+    "dark_key": "library/computer-science/g12-table-and-query/short/table-and-query-short-questions.dark.pdf",
+    "context_key": "library/computer-science/g12-table-and-query/short/table-and-query-short-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch6_TableQuery_ShortQ_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch6_TableQuery_ShortQ_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch6_TableQuery_ShortQ.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-microsoft-access-forms-and-reports",
+    "chapter_id": "be023c5e-2441-48e0-9d65-27b7f999ff9f",
+    "content_section": "mcq",
+    "title": "Computer Science — Chapter 7: Microsoft Access Forms and Reports — MCQs",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-microsoft-access-forms-and-reports/mcq/microsoft-access-forms-and-reports-mcqs.light.pdf",
+    "dark_key": "library/computer-science/g12-microsoft-access-forms-and-reports/mcq/microsoft-access-forms-and-reports-mcqs.dark.pdf",
+    "context_key": "library/computer-science/g12-microsoft-access-forms-and-reports/mcq/microsoft-access-forms-and-reports-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch7_MSAccessFormsReports_MCQs_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch7_MSAccessFormsReports_MCQs_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch7_MSAccessFormsReports_MCQs.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-microsoft-access-forms-and-reports",
+    "chapter_id": "be023c5e-2441-48e0-9d65-27b7f999ff9f",
+    "content_section": "long",
+    "title": "Computer Science — Chapter 7: Microsoft Access Forms and Reports — Long Questions",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-microsoft-access-forms-and-reports/long/microsoft-access-forms-and-reports-long-questions.light.pdf",
+    "dark_key": "library/computer-science/g12-microsoft-access-forms-and-reports/long/microsoft-access-forms-and-reports-long-questions.dark.pdf",
+    "context_key": "library/computer-science/g12-microsoft-access-forms-and-reports/long/microsoft-access-forms-and-reports-long-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch7_MSAccessFormsReports_LongQ_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch7_MSAccessFormsReports_LongQ_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch7_MSAccessFormsReports_LongQ.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-microsoft-access-forms-and-reports",
+    "chapter_id": "be023c5e-2441-48e0-9d65-27b7f999ff9f",
+    "content_section": "short",
+    "title": "Computer Science — Chapter 7: Microsoft Access Forms and Reports — Short Questions",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-microsoft-access-forms-and-reports/short/microsoft-access-forms-and-reports-short-questions.light.pdf",
+    "dark_key": "library/computer-science/g12-microsoft-access-forms-and-reports/short/microsoft-access-forms-and-reports-short-questions.dark.pdf",
+    "context_key": "library/computer-science/g12-microsoft-access-forms-and-reports/short/microsoft-access-forms-and-reports-short-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch7_MSAccessFormsReports_ShortQ_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch7_MSAccessFormsReports_ShortQ_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch7_MSAccessFormsReports_ShortQ.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-getting-started-with-c",
+    "chapter_id": "98743aec-c754-4584-8105-d1d03703353e",
+    "content_section": "mcq",
+    "title": "Computer Science — Chapter 8: Getting Started with C — MCQs",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-getting-started-with-c/mcq/getting-started-with-c-mcqs.light.pdf",
+    "dark_key": "library/computer-science/g12-getting-started-with-c/mcq/getting-started-with-c-mcqs.dark.pdf",
+    "context_key": "library/computer-science/g12-getting-started-with-c/mcq/getting-started-with-c-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch8_GettingStartedWithC_MCQs_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch8_GettingStartedWithC_MCQs_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch8_GettingStartedWithC_MCQs.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-getting-started-with-c",
+    "chapter_id": "98743aec-c754-4584-8105-d1d03703353e",
+    "content_section": "long",
+    "title": "Computer Science — Chapter 8: Getting Started with C — Long Questions",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-getting-started-with-c/long/getting-started-with-c-long-questions.light.pdf",
+    "dark_key": "library/computer-science/g12-getting-started-with-c/long/getting-started-with-c-long-questions.dark.pdf",
+    "context_key": "library/computer-science/g12-getting-started-with-c/long/getting-started-with-c-long-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch8_GettingStartedWithC_LongQ_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch8_GettingStartedWithC_LongQ_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch8_GettingStartedWithC_LongQ.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-getting-started-with-c",
+    "chapter_id": "98743aec-c754-4584-8105-d1d03703353e",
+    "content_section": "short",
+    "title": "Computer Science — Chapter 8: Getting Started with C — Short Questions",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-getting-started-with-c/short/getting-started-with-c-short-questions.light.pdf",
+    "dark_key": "library/computer-science/g12-getting-started-with-c/short/getting-started-with-c-short-questions.dark.pdf",
+    "context_key": "library/computer-science/g12-getting-started-with-c/short/getting-started-with-c-short-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch8_GettingStartedWithC_ShortQ_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch8_GettingStartedWithC_ShortQ_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch8_GettingStartedWithC_ShortQ.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-elements-of-c",
+    "chapter_id": "3a437894-da7a-440f-94a7-34ff4405c2fe",
+    "content_section": "mcq",
+    "title": "Computer Science — Chapter 9: Elements of C — MCQs",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-elements-of-c/mcq/elements-of-c-mcqs.light.pdf",
+    "dark_key": "library/computer-science/g12-elements-of-c/mcq/elements-of-c-mcqs.dark.pdf",
+    "context_key": "library/computer-science/g12-elements-of-c/mcq/elements-of-c-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch9_ElementsOfC_MCQs_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch9_ElementsOfC_MCQs_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch9_ElementsOfC_MCQs.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-elements-of-c",
+    "chapter_id": "3a437894-da7a-440f-94a7-34ff4405c2fe",
+    "content_section": "long",
+    "title": "Computer Science — Chapter 9: Elements of C — Long Questions",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-elements-of-c/long/elements-of-c-long-questions.light.pdf",
+    "dark_key": "library/computer-science/g12-elements-of-c/long/elements-of-c-long-questions.dark.pdf",
+    "context_key": "library/computer-science/g12-elements-of-c/long/elements-of-c-long-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch9_ElementsOfC_LongQ_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch9_ElementsOfC_LongQ_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch9_ElementsOfC_LongQ.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-elements-of-c",
+    "chapter_id": "3a437894-da7a-440f-94a7-34ff4405c2fe",
+    "content_section": "short",
+    "title": "Computer Science — Chapter 9: Elements of C — Short Questions",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-elements-of-c/short/elements-of-c-short-questions.light.pdf",
+    "dark_key": "library/computer-science/g12-elements-of-c/short/elements-of-c-short-questions.dark.pdf",
+    "context_key": "library/computer-science/g12-elements-of-c/short/elements-of-c-short-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch9_ElementsOfC_ShortQ_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch9_ElementsOfC_ShortQ_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch9_ElementsOfC_ShortQ.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-inputoutput",
+    "chapter_id": "68f3881a-6813-4cf5-b5a3-4521f6be0f92",
+    "content_section": "mcq",
+    "title": "Computer Science — Chapter 10: Input/Output — MCQs",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-inputoutput/mcq/input-output-mcqs.light.pdf",
+    "dark_key": "library/computer-science/g12-inputoutput/mcq/input-output-mcqs.dark.pdf",
+    "context_key": "library/computer-science/g12-inputoutput/mcq/input-output-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch10_InputOutput_MCQs_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch10_InputOutput_MCQs_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch10_InputOutput_MCQs.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-inputoutput",
+    "chapter_id": "68f3881a-6813-4cf5-b5a3-4521f6be0f92",
+    "content_section": "long",
+    "title": "Computer Science — Chapter 10: Input/Output — Long Questions",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-inputoutput/long/input-output-long-questions.light.pdf",
+    "dark_key": "library/computer-science/g12-inputoutput/long/input-output-long-questions.dark.pdf",
+    "context_key": "library/computer-science/g12-inputoutput/long/input-output-long-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch10_InputOutput_LongQ_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch10_InputOutput_LongQ_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch10_InputOutput_LongQ.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-inputoutput",
+    "chapter_id": "68f3881a-6813-4cf5-b5a3-4521f6be0f92",
+    "content_section": "short",
+    "title": "Computer Science — Chapter 10: Input/Output — Short Questions",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-inputoutput/short/input-output-short-questions.light.pdf",
+    "dark_key": "library/computer-science/g12-inputoutput/short/input-output-short-questions.dark.pdf",
+    "context_key": "library/computer-science/g12-inputoutput/short/input-output-short-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch10_InputOutput_ShortQ_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch10_InputOutput_ShortQ_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch10_InputOutput_ShortQ.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-decision-constructs",
+    "chapter_id": "e1df634e-fb4f-4a6f-b44e-d9b057178786",
+    "content_section": "mcq",
+    "title": "Computer Science — Chapter 11: Decision Constructs — MCQs",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-decision-constructs/mcq/decision-constructs-mcqs.light.pdf",
+    "dark_key": "library/computer-science/g12-decision-constructs/mcq/decision-constructs-mcqs.dark.pdf",
+    "context_key": "library/computer-science/g12-decision-constructs/mcq/decision-constructs-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch11_DecisionConstructs_MCQs_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch11_DecisionConstructs_MCQs_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch11_DecisionConstructs_MCQs.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-decision-constructs",
+    "chapter_id": "e1df634e-fb4f-4a6f-b44e-d9b057178786",
+    "content_section": "long",
+    "title": "Computer Science — Chapter 11: Decision Constructs — Long Questions",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-decision-constructs/long/decision-constructs-long-questions.light.pdf",
+    "dark_key": "library/computer-science/g12-decision-constructs/long/decision-constructs-long-questions.dark.pdf",
+    "context_key": "library/computer-science/g12-decision-constructs/long/decision-constructs-long-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch11_DecisionConstructs_LongQ_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch11_DecisionConstructs_LongQ_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch11_DecisionConstructs_LongQ.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-decision-constructs",
+    "chapter_id": "e1df634e-fb4f-4a6f-b44e-d9b057178786",
+    "content_section": "short",
+    "title": "Computer Science — Chapter 11: Decision Constructs — Short Questions",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-decision-constructs/short/decision-constructs-short-questions.light.pdf",
+    "dark_key": "library/computer-science/g12-decision-constructs/short/decision-constructs-short-questions.dark.pdf",
+    "context_key": "library/computer-science/g12-decision-constructs/short/decision-constructs-short-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch11_DecisionConstructs_ShortQ_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch11_DecisionConstructs_ShortQ_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch11_DecisionConstructs_ShortQ.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-loop-constructs",
+    "chapter_id": "8b041a91-5fd3-4248-b707-6aa17247214d",
+    "content_section": "mcq",
+    "title": "Computer Science — Chapter 12: Loop Constructs — MCQs",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-loop-constructs/mcq/loop-constructs-mcqs.light.pdf",
+    "dark_key": "library/computer-science/g12-loop-constructs/mcq/loop-constructs-mcqs.dark.pdf",
+    "context_key": "library/computer-science/g12-loop-constructs/mcq/loop-constructs-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch12_LoopConstructs_MCQs_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch12_LoopConstructs_MCQs_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch12_LoopConstructs_MCQs.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-loop-constructs",
+    "chapter_id": "8b041a91-5fd3-4248-b707-6aa17247214d",
+    "content_section": "long",
+    "title": "Computer Science — Chapter 12: Loop Constructs — Long Questions",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-loop-constructs/long/loop-constructs-long-questions.light.pdf",
+    "dark_key": "library/computer-science/g12-loop-constructs/long/loop-constructs-long-questions.dark.pdf",
+    "context_key": "library/computer-science/g12-loop-constructs/long/loop-constructs-long-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch12_LoopConstructs_LongQ_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch12_LoopConstructs_LongQ_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch12_LoopConstructs_LongQ.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-loop-constructs",
+    "chapter_id": "8b041a91-5fd3-4248-b707-6aa17247214d",
+    "content_section": "short",
+    "title": "Computer Science — Chapter 12: Loop Constructs — Short Questions",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-loop-constructs/short/loop-constructs-short-questions.light.pdf",
+    "dark_key": "library/computer-science/g12-loop-constructs/short/loop-constructs-short-questions.dark.pdf",
+    "context_key": "library/computer-science/g12-loop-constructs/short/loop-constructs-short-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch12_LoopConstructs_ShortQ_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch12_LoopConstructs_ShortQ_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch12_LoopConstructs_ShortQ.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-functions-in-c",
+    "chapter_id": "46a56baf-5209-4d25-bf94-e496f438e15d",
+    "content_section": "mcq",
+    "title": "Computer Science — Chapter 13: Functions in C — MCQs",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-functions-in-c/mcq/functions-in-c-mcqs.light.pdf",
+    "dark_key": "library/computer-science/g12-functions-in-c/mcq/functions-in-c-mcqs.dark.pdf",
+    "context_key": "library/computer-science/g12-functions-in-c/mcq/functions-in-c-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch13_Functions_MCQs_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch13_Functions_MCQs_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch13_Functions_MCQs.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-functions-in-c",
+    "chapter_id": "46a56baf-5209-4d25-bf94-e496f438e15d",
+    "content_section": "long",
+    "title": "Computer Science — Chapter 13: Functions in C — Long Questions",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-functions-in-c/long/functions-in-c-long-questions.light.pdf",
+    "dark_key": "library/computer-science/g12-functions-in-c/long/functions-in-c-long-questions.dark.pdf",
+    "context_key": "library/computer-science/g12-functions-in-c/long/functions-in-c-long-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch13_Functions_LongQuestions_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch13_Functions_LongQuestions_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch13_Functions_LongQuestions.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-functions-in-c",
+    "chapter_id": "46a56baf-5209-4d25-bf94-e496f438e15d",
+    "content_section": "short",
+    "title": "Computer Science — Chapter 13: Functions in C — Short Questions",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-functions-in-c/short/functions-in-c-short-questions.light.pdf",
+    "dark_key": "library/computer-science/g12-functions-in-c/short/functions-in-c-short-questions.dark.pdf",
+    "context_key": "library/computer-science/g12-functions-in-c/short/functions-in-c-short-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch13_Functions_ShortQuestions_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch13_Functions_ShortQuestions_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch13_Functions_ShortQuestions.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-file-handling-in-c",
+    "chapter_id": "5ee69cdd-572c-4d77-8d2f-66731a765196",
+    "content_section": "mcq",
+    "title": "Computer Science — Chapter 14: File Handling in C — MCQs",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-file-handling-in-c/mcq/file-handling-in-c-mcqs.light.pdf",
+    "dark_key": "library/computer-science/g12-file-handling-in-c/mcq/file-handling-in-c-mcqs.dark.pdf",
+    "context_key": "library/computer-science/g12-file-handling-in-c/mcq/file-handling-in-c-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch14_FileHandling_MCQs_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch14_FileHandling_MCQs_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch14_FileHandling_MCQs.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-file-handling-in-c",
+    "chapter_id": "5ee69cdd-572c-4d77-8d2f-66731a765196",
+    "content_section": "long",
+    "title": "Computer Science — Chapter 14: File Handling in C — Long Questions",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-file-handling-in-c/long/file-handling-in-c-long-questions.light.pdf",
+    "dark_key": "library/computer-science/g12-file-handling-in-c/long/file-handling-in-c-long-questions.dark.pdf",
+    "context_key": "library/computer-science/g12-file-handling-in-c/long/file-handling-in-c-long-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch14_FileHandling_LongQuestions_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch14_FileHandling_LongQuestions_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch14_FileHandling_LongQuestions.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-file-handling-in-c",
+    "chapter_id": "5ee69cdd-572c-4d77-8d2f-66731a765196",
+    "content_section": "short",
+    "title": "Computer Science — Chapter 14: File Handling in C — Short Questions",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-file-handling-in-c/short/file-handling-in-c-short-questions.light.pdf",
+    "dark_key": "library/computer-science/g12-file-handling-in-c/short/file-handling-in-c-short-questions.dark.pdf",
+    "context_key": "library/computer-science/g12-file-handling-in-c/short/file-handling-in-c-short-questions.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-com\\Ch14_FileHandling_ShortQuestions_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-com\\Ch14_FileHandling_ShortQuestions_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-com\\Ch14_FileHandling_ShortQuestions.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-an-nisa",
+    "chapter_id": "3756975c-541f-44c5-a6d1-eb7b0660ffe6",
+    "content_section": "mcq",
+    "title": "Tarjuma Tul Quran — Chapter 1: Surah An-Nisa — MCQs",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-an-nisa/mcq/surah-an-nisa-mcqs.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-an-nisa/mcq/surah-an-nisa-mcqs.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-an-nisa/mcq/surah-an-nisa-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-T_Q\\1_An-Nisa_MCQs50_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-T_Q\\1_An-Nisa_MCQs50_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-T_Q\\1_An-Nisa_MCQs50.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-an-nisa",
+    "chapter_id": "3756975c-541f-44c5-a6d1-eb7b0660ffe6",
+    "content_section": "reading",
+    "title": "Tarjuma Tul Quran — Chapter 1: Surah An-Nisa — Notes",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-an-nisa/reading/surah-an-nisa-notes.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-an-nisa/reading/surah-an-nisa-notes.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-an-nisa/reading/surah-an-nisa-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-T_Q\\1_An-Nisa_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-T_Q\\1_An-Nisa_Notes_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-T_Q\\1_An-Nisa_Notes.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-al-maidah",
+    "chapter_id": "5644379e-710c-4fb0-bcb8-4734b7304c97",
+    "content_section": "mcq",
+    "title": "Tarjuma Tul Quran — Chapter 2: Surah Al-Ma'idah — MCQs",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-al-maidah/mcq/surah-al-ma-idah-mcqs.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-al-maidah/mcq/surah-al-ma-idah-mcqs.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-al-maidah/mcq/surah-al-ma-idah-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-T_Q\\2_Al-Maidah_MCQs50_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-T_Q\\2_Al-Maidah_MCQs50_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-T_Q\\2_Al-Maidah_MCQs50.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-al-maidah",
+    "chapter_id": "5644379e-710c-4fb0-bcb8-4734b7304c97",
+    "content_section": "reading",
+    "title": "Tarjuma Tul Quran — Chapter 2: Surah Al-Ma'idah — Notes",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-al-maidah/reading/surah-al-ma-idah-notes.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-al-maidah/reading/surah-al-ma-idah-notes.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-al-maidah/reading/surah-al-ma-idah-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-T_Q\\2_Al-Maidah_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-T_Q\\2_Al-Maidah_Notes_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-T_Q\\2_Al-Maidah_Notes.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-an-nur",
+    "chapter_id": "01155e48-8257-43fe-923d-4f3fd8358fbd",
+    "content_section": "mcq",
+    "title": "Tarjuma Tul Quran — Chapter 3: Surah An-Nur — MCQs",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-an-nur/mcq/surah-an-nur-mcqs.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-an-nur/mcq/surah-an-nur-mcqs.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-an-nur/mcq/surah-an-nur-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-T_Q\\3_An-Nur_MCQs50_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-T_Q\\3_An-Nur_MCQs50_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-T_Q\\3_An-Nur_MCQs50.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-an-nur",
+    "chapter_id": "01155e48-8257-43fe-923d-4f3fd8358fbd",
+    "content_section": "reading",
+    "title": "Tarjuma Tul Quran — Chapter 3: Surah An-Nur — Notes",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-an-nur/reading/surah-an-nur-notes.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-an-nur/reading/surah-an-nur-notes.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-an-nur/reading/surah-an-nur-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-T_Q\\3_An-Nur_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-T_Q\\3_An-Nur_Notes_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-T_Q\\3_An-Nur_Notes.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-al-ahzab",
+    "chapter_id": "2151de96-1a35-4638-8779-419b2cab220c",
+    "content_section": "mcq",
+    "title": "Tarjuma Tul Quran — Chapter 4: Surah Al-Ahzab — MCQs",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-al-ahzab/mcq/surah-al-ahzab-mcqs.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-al-ahzab/mcq/surah-al-ahzab-mcqs.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\12th-T_Q\\4_Al-Ahzab_MCQs50_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-T_Q\\4_Al-Ahzab_MCQs50_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-al-ahzab",
+    "chapter_id": "2151de96-1a35-4638-8779-419b2cab220c",
+    "content_section": "reading",
+    "title": "Tarjuma Tul Quran — Chapter 4: Surah Al-Ahzab — Notes",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-al-ahzab/reading/surah-al-ahzab-notes.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-al-ahzab/reading/surah-al-ahzab-notes.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\12th-T_Q\\4_Al-Ahzab_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-T_Q\\4_Al-Ahzab_Notes_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-muhammad",
+    "chapter_id": "03cc0022-2765-44ca-927e-c9b9fddeb0c3",
+    "content_section": "mcq",
+    "title": "Tarjuma Tul Quran — Chapter 5: Surah Muhammad — MCQs",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-muhammad/mcq/surah-muhammad-mcqs.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-muhammad/mcq/surah-muhammad-mcqs.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\12th-T_Q\\5_Muhammad_MCQs50_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-T_Q\\5_Muhammad_MCQs50_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-muhammad",
+    "chapter_id": "03cc0022-2765-44ca-927e-c9b9fddeb0c3",
+    "content_section": "reading",
+    "title": "Tarjuma Tul Quran — Chapter 5: Surah Muhammad — Notes",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-muhammad/reading/surah-muhammad-notes.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-muhammad/reading/surah-muhammad-notes.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\12th-T_Q\\5_Muhammad_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-T_Q\\5_Muhammad_Notes_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-al-fath",
+    "chapter_id": "6834aa3e-816e-4f60-83cd-a7872cc9bfbf",
+    "content_section": "mcq",
+    "title": "Tarjuma Tul Quran — Chapter 6: Surah Al-Fath — MCQs",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-al-fath/mcq/surah-al-fath-mcqs.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-al-fath/mcq/surah-al-fath-mcqs.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\12th-T_Q\\6_Al-Fath_MCQs50_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-T_Q\\6_Al-Fath_MCQs50_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-al-fath",
+    "chapter_id": "6834aa3e-816e-4f60-83cd-a7872cc9bfbf",
+    "content_section": "reading",
+    "title": "Tarjuma Tul Quran — Chapter 6: Surah Al-Fath — Notes",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-al-fath/reading/surah-al-fath-notes.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-al-fath/reading/surah-al-fath-notes.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\12th-T_Q\\6_Al-Fath_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-T_Q\\6_Al-Fath_Notes_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-al-hujurat",
+    "chapter_id": "47c7c3d4-04ad-473d-a36b-01f67022e4ec",
+    "content_section": "mcq",
+    "title": "Tarjuma Tul Quran — Chapter 7: Surah Al-Hujurat — MCQs",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-al-hujurat/mcq/surah-al-hujurat-mcqs.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-al-hujurat/mcq/surah-al-hujurat-mcqs.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\12th-T_Q\\7_AlHujurat_MCQs50_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-T_Q\\7_AlHujurat_MCQs50_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-al-hujurat",
+    "chapter_id": "47c7c3d4-04ad-473d-a36b-01f67022e4ec",
+    "content_section": "reading",
+    "title": "Tarjuma Tul Quran — Chapter 7: Surah Al-Hujurat — Notes",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-al-hujurat/reading/surah-al-hujurat-notes.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-al-hujurat/reading/surah-al-hujurat-notes.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\12th-T_Q\\7_AlHujurat_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-T_Q\\7_AlHujurat_Notes_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-al-hadid",
+    "chapter_id": "01d6106b-5d0d-475b-a900-16241749c078",
+    "content_section": "mcq",
+    "title": "Tarjuma Tul Quran — Chapter 8: Surah Al-Hadid — MCQs",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-al-hadid/mcq/surah-al-hadid-mcqs.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-al-hadid/mcq/surah-al-hadid-mcqs.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\12th-T_Q\\8_AlHadeed_MCQs50_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-T_Q\\8_AlHadeed_MCQs50_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-al-hadid",
+    "chapter_id": "01d6106b-5d0d-475b-a900-16241749c078",
+    "content_section": "reading",
+    "title": "Tarjuma Tul Quran — Chapter 8: Surah Al-Hadid — Notes",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-al-hadid/reading/surah-al-hadid-notes.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-al-hadid/reading/surah-al-hadid-notes.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\12th-T_Q\\8_AlHadeed_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-T_Q\\8_AlHadeed_Notes_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-al-mujadila",
+    "chapter_id": "0ded1616-bf80-4f29-9b87-28d7858961b3",
+    "content_section": "mcq",
+    "title": "Tarjuma Tul Quran — Chapter 9: Surah Al-Mujadila — MCQs",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-al-mujadila/mcq/surah-al-mujadila-mcqs.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-al-mujadila/mcq/surah-al-mujadila-mcqs.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\12th-T_Q\\9_AlMujadila_MCQs50_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-T_Q\\9_AlMujadila_MCQs50_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-al-mujadila",
+    "chapter_id": "0ded1616-bf80-4f29-9b87-28d7858961b3",
+    "content_section": "reading",
+    "title": "Tarjuma Tul Quran — Chapter 9: Surah Al-Mujadila — Notes",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-al-mujadila/reading/surah-al-mujadila-notes.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-al-mujadila/reading/surah-al-mujadila-notes.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\12th-T_Q\\9_AlMujadila_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-T_Q\\9_AlMujadila_Notes_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-al-hashr",
+    "chapter_id": "a8a93593-d782-41b3-8fde-8ea79e952e3b",
+    "content_section": "mcq",
+    "title": "Tarjuma Tul Quran — Chapter 10: Surah Al-Hashr — MCQs",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-al-hashr/mcq/surah-al-hashr-mcqs.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-al-hashr/mcq/surah-al-hashr-mcqs.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\12th-T_Q\\10_AlHashr_MCQs50_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-T_Q\\10_AlHashr_MCQs50_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-al-hashr",
+    "chapter_id": "a8a93593-d782-41b3-8fde-8ea79e952e3b",
+    "content_section": "reading",
+    "title": "Tarjuma Tul Quran — Chapter 10: Surah Al-Hashr — Notes",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-al-hashr/reading/surah-al-hashr-notes.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-al-hashr/reading/surah-al-hashr-notes.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\12th-T_Q\\10_AlHashr_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-T_Q\\10_AlHashr_Notes_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-al-mumtahanah",
+    "chapter_id": "d8c906d5-ae30-4bdb-b603-816fb71b227f",
+    "content_section": "mcq",
+    "title": "Tarjuma Tul Quran — Chapter 11: Surah Al-Mumtahanah — MCQs",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-al-mumtahanah/mcq/surah-al-mumtahanah-mcqs.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-al-mumtahanah/mcq/surah-al-mumtahanah-mcqs.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\12th-T_Q\\11_AlMumtahanah_MCQs50_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-T_Q\\11_AlMumtahanah_MCQs50_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-al-mumtahanah",
+    "chapter_id": "d8c906d5-ae30-4bdb-b603-816fb71b227f",
+    "content_section": "reading",
+    "title": "Tarjuma Tul Quran — Chapter 11: Surah Al-Mumtahanah — Notes",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-al-mumtahanah/reading/surah-al-mumtahanah-notes.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-al-mumtahanah/reading/surah-al-mumtahanah-notes.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\12th-T_Q\\11_AlMumtahanah_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-T_Q\\11_AlMumtahanah_Notes_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-as-saf",
+    "chapter_id": "30a97538-ae76-4a5b-a5b3-75effb1a03ad",
+    "content_section": "mcq",
+    "title": "Tarjuma Tul Quran — Chapter 12: Surah As-Saf — MCQs",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-as-saf/mcq/surah-as-saf-mcqs.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-as-saf/mcq/surah-as-saf-mcqs.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\12th-T_Q\\12_AsSaff_MCQs50_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-T_Q\\12_AsSaff_MCQs50_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-as-saf",
+    "chapter_id": "30a97538-ae76-4a5b-a5b3-75effb1a03ad",
+    "content_section": "reading",
+    "title": "Tarjuma Tul Quran — Chapter 12: Surah As-Saf — Notes",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-as-saf/reading/surah-as-saf-notes.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-as-saf/reading/surah-as-saf-notes.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\12th-T_Q\\12_AsSaff_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-T_Q\\12_AsSaff_Notes_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-al-jumuah",
+    "chapter_id": "4e52048e-a049-4410-8aee-cbd13c65f7ad",
+    "content_section": "mcq",
+    "title": "Tarjuma Tul Quran — Chapter 13: Surah Al-Jumu'ah — MCQs",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-al-jumuah/mcq/surah-al-jumu-ah-mcqs.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-al-jumuah/mcq/surah-al-jumu-ah-mcqs.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-al-jumuah/mcq/surah-al-jumu-ah-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-T_Q\\13_Al-Jumuah_MCQs50_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-T_Q\\13_Al-Jumuah_MCQs50_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-T_Q\\13_Al-Jumuah_MCQs50.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-al-jumuah",
+    "chapter_id": "4e52048e-a049-4410-8aee-cbd13c65f7ad",
+    "content_section": "reading",
+    "title": "Tarjuma Tul Quran — Chapter 13: Surah Al-Jumu'ah — Notes",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-al-jumuah/reading/surah-al-jumu-ah-notes.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-al-jumuah/reading/surah-al-jumu-ah-notes.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-al-jumuah/reading/surah-al-jumu-ah-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-T_Q\\13_Al-Jumuah_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-T_Q\\13_Al-Jumuah_Notes_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-T_Q\\13_Al-Jumuah_Notes.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-al-munafiqun",
+    "chapter_id": "ae252c5b-5e7b-43fb-bd9b-43e7cb6fdc93",
+    "content_section": "mcq",
+    "title": "Tarjuma Tul Quran — Chapter 14: Surah Al-Munafiqun — MCQs",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-al-munafiqun/mcq/surah-al-munafiqun-mcqs.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-al-munafiqun/mcq/surah-al-munafiqun-mcqs.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-al-munafiqun/mcq/surah-al-munafiqun-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-T_Q\\14_Al-Munafiqun_MCQs50_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-T_Q\\14_Al-Munafiqun_MCQs50_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-T_Q\\14_Al-Munafiqun_MCQs50.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-al-munafiqun",
+    "chapter_id": "ae252c5b-5e7b-43fb-bd9b-43e7cb6fdc93",
+    "content_section": "reading",
+    "title": "Tarjuma Tul Quran — Chapter 14: Surah Al-Munafiqun — Notes",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-al-munafiqun/reading/surah-al-munafiqun-notes.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-al-munafiqun/reading/surah-al-munafiqun-notes.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-al-munafiqun/reading/surah-al-munafiqun-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-T_Q\\14_Al-Munafiqun_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-T_Q\\14_Al-Munafiqun_Notes_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-T_Q\\14_Al-Munafiqun_Notes.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-at-taghabun",
+    "chapter_id": "156a42af-d4ba-487f-8270-ad34b21bb187",
+    "content_section": "mcq",
+    "title": "Tarjuma Tul Quran — Chapter 15: Surah At-Taghabun — MCQs",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-at-taghabun/mcq/surah-at-taghabun-mcqs.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-at-taghabun/mcq/surah-at-taghabun-mcqs.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-at-taghabun/mcq/surah-at-taghabun-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-T_Q\\15_At-Taghabun_MCQs50_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-T_Q\\15_At-Taghabun_MCQs50_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-T_Q\\15_At-Taghabun_MCQs50.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-at-taghabun",
+    "chapter_id": "156a42af-d4ba-487f-8270-ad34b21bb187",
+    "content_section": "reading",
+    "title": "Tarjuma Tul Quran — Chapter 15: Surah At-Taghabun — Notes",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-at-taghabun/reading/surah-at-taghabun-notes.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-at-taghabun/reading/surah-at-taghabun-notes.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-at-taghabun/reading/surah-at-taghabun-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-T_Q\\15_At-Taghabun_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-T_Q\\15_At-Taghabun_Notes_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-T_Q\\15_At-Taghabun_Notes.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-at-talaq",
+    "chapter_id": "08dc188d-d03c-451e-93e4-55fca513dcd7",
+    "content_section": "mcq",
+    "title": "Tarjuma Tul Quran — Chapter 16: Surah At-Talaq — MCQs",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-at-talaq/mcq/surah-at-talaq-mcqs.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-at-talaq/mcq/surah-at-talaq-mcqs.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-at-talaq/mcq/surah-at-talaq-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-T_Q\\16_At-Talaq_MCQs50_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-T_Q\\16_At-Talaq_MCQs50_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-T_Q\\16_At-Talaq_MCQs50.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-at-talaq",
+    "chapter_id": "08dc188d-d03c-451e-93e4-55fca513dcd7",
+    "content_section": "reading",
+    "title": "Tarjuma Tul Quran — Chapter 16: Surah At-Talaq — Notes",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-at-talaq/reading/surah-at-talaq-notes.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-at-talaq/reading/surah-at-talaq-notes.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-at-talaq/reading/surah-at-talaq-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-T_Q\\16_At-Talaq_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-T_Q\\16_At-Talaq_Notes_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-T_Q\\16_At-Talaq_Notes.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-at-tahrim",
+    "chapter_id": "0161270e-6433-4606-8f5f-83b44c34ef0a",
+    "content_section": "mcq",
+    "title": "Tarjuma Tul Quran — Chapter 17: Surah At-Tahrim — MCQs",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-at-tahrim/mcq/surah-at-tahrim-mcqs.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-at-tahrim/mcq/surah-at-tahrim-mcqs.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-at-tahrim/mcq/surah-at-tahrim-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-T_Q\\17_At-Tahrim_MCQs50_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-T_Q\\17_At-Tahrim_MCQs50_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-T_Q\\17_At-Tahrim_MCQs50.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-at-tahrim",
+    "chapter_id": "0161270e-6433-4606-8f5f-83b44c34ef0a",
+    "content_section": "reading",
+    "title": "Tarjuma Tul Quran — Chapter 17: Surah At-Tahrim — Notes",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-at-tahrim/reading/surah-at-tahrim-notes.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-at-tahrim/reading/surah-at-tahrim-notes.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-at-tahrim/reading/surah-at-tahrim-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\12th-T_Q\\17_At-Tahrim_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\12th-T_Q\\17_At-Tahrim_Notes_Light.pdf",
+      "txt": "E:\\remaining-data\\12th-T_Q\\17_At-Tahrim_Notes.txt"
+    }
+  }
+]
