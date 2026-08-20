@@ -1,4 +1,4 @@
-import type { SubscriptionTier } from '@/types';
+﻿import type { SubscriptionTier } from '@/types';
 
 export type BillingCurrency = 'USD' | 'PKR';
 export type PdfThemeMode = 'follow-user' | 'dark' | 'light';
@@ -41,7 +41,7 @@ export type PlatformSubscriptionPlan = {
   name: string;
   enabled: boolean;
   price: Record<BillingCurrency, { monthly: number; annual: number }>;
-  // When true, price.PKR is whatever the admin typed and is preserved as-is —
+  // When true, price.PKR is whatever the admin typed and is preserved as-is â€”
   // the USD*exchangeRate auto-conversion (normally re-applied on every read/
   // save, see normalizePlatformSettings) is skipped for this tier. Off by
   // default so PKR keeps tracking the live USD/PKR rate unless an admin
@@ -80,7 +80,7 @@ export type PlatformSubscriptionPlan = {
 };
 
 // Master prompt Part 6.1: a single global base monthly USD price per institution
-// type, plus admin-set discount percentages — the annual/volume $ amounts are
+// type, plus admin-set discount percentages â€” the annual/volume $ amounts are
 // always computed from these (monthly * 12 * (1 - discount%)), never hand-entered,
 // per the master prompt's explicit "never entered manually" instruction.
 export type InstitutionPricingSettings = {
@@ -89,13 +89,13 @@ export type InstitutionPricingSettings = {
   annualDiscountPercent: number;
   volumeDiscountPercent: number;
   // An institution's plan-settings max_students at/above this qualifies for the
-  // volume discount — a simple single-tier stand-in for "by student-count tier".
+  // volume discount â€” a simple single-tier stand-in for "by student-count tier".
   volumeDiscountMinStudents: number;
 };
 
-// A parent account's OWN plan — separate from subscriptionPlans (which is about a STUDENT's own
+// A parent account's OWN plan â€” separate from subscriptionPlans (which is about a STUDENT's own
 // AI-credit tier, and already drives the existing per-child parentDashboard/parentReports/
-// advancedParentAnalytics flags keyed off each linked CHILD's tier — see parent/page.tsx). This is
+// advancedParentAnalytics flags keyed off each linked CHILD's tier â€” see parent/page.tsx). This is
 // intentionally a distinct, additive system: how many children a parent can link, and pricing for
 // that, independent of what plan any individual child is on. Reuses profiles.subscription_tier on
 // the PARENT's own row as the flag (FREE = no parent plan purchased; PRO = 'paid' tier below;
@@ -103,14 +103,14 @@ export type InstitutionPricingSettings = {
 // otherwise consumes the student-facing AI-credit system that column exists for.
 export type ParentPlanTierSettings = {
   priceUsdMonthly: number;
-  // null/0 means unlimited — matches how other "no cap" limits read in this codebase.
+  // null/0 means unlimited â€” matches how other "no cap" limits read in this codebase.
   childrenMax: number | null;
 };
 export type ParentPlanSettings = {
   paid: ParentPlanTierSettings;
   elite: ParentPlanTierSettings;
   // A parent with no purchased plan yet (subscription_tier === 'FREE') still gets this many free
-  // child links — matches the existing "4 boxes" (quiz count, score) staying free.
+  // child links â€” matches the existing "4 boxes" (quiz count, score) staying free.
   freeChildrenMax: number;
 };
 
@@ -146,10 +146,10 @@ export type PlatformSettings = {
   aiRouting: AiRoutingSettings;
   exchangeRate: ExchangeRateSettings;
   institutionPricing: InstitutionPricingSettings;
-  // Gates the daily-morning study email cron (api/cron/daily-study-emails) — off by
+  // Gates the daily-morning study email cron (api/cron/daily-study-emails) â€” off by
   // default so it only starts sending once an admin explicitly flips it on here. Does
   // NOT gate the accompanying in-app notification, which is a separate, always-on
-  // delivery — see that route's own comment for why the two are decoupled.
+  // delivery â€” see that route's own comment for why the two are decoupled.
   dailyStudyEmailsEnabled: boolean;
 };
 
@@ -158,7 +158,7 @@ export const SUBSCRIPTION_SETTINGS_KEY = 'subscription_plans';
 export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
   pdfThemeMode: 'dark',
   dailyStudyEmailsEnabled: false,
-  // Default routing runs through OpenRouter for every text-only feature — the gateway's
+  // Default routing runs through OpenRouter for every text-only feature â€” the gateway's
   // 'advanced' provider already tries OpenRouter's own best-available free auto-router first
   // and falls back to DeepSeek v4 Flash (still on OpenRouter) automatically on error, so this
   // one setting gets that whole free-tier chain without any per-route wiring. visionOcr stays
@@ -258,10 +258,10 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
         university: {
           // University Hub is fully credit-gated, not plan-gated: FREE users can use every
           // University Hub tool (PDF Summarizer, PharmaPulse, Project Builder, etc.) as long as
-          // they have shared AI credits — Presentation Builder was the one exception, hard-locked
+          // they have shared AI credits â€” Presentation Builder was the one exception, hard-locked
           // to Pro/Elite via a 0 monthly allowance here regardless of credit balance. A modest
           // non-zero allowance below Pro's (4/8) lets FREE's weekly credit pool (20 credits,
-          // 8 credits/presentation ≈ 2-3/week) be the real limiter instead.
+          // 8 credits/presentation â‰ˆ 2-3/week) be the real limiter instead.
           presentationsMonthly: 3,
           presentationSlidesMax: 6,
           fileSummariesMonthly: 0,
@@ -544,6 +544,97 @@ function normalizeParentPlans(value: unknown): ParentPlanSettings {
   };
 }
 
+
+/**
+ * Environment variable helper - reads pricing from env vars if set.
+ * Format: NEXT_PUBLIC_<PLAN>_<TIER>_<FIELD>
+ * Examples:
+ *   NEXT_PUBLIC_PARENT_PLAN_FREE_CHILDREN=2
+ *   NEXT_PUBLIC_PARENT_PLAN_PAID_PRICE_USD=2.99
+ *   NEXT_PUBLIC_PARENT_PLAN_ELITE_CHILDREN=null
+ *   NEXT_PUBLIC_UNIVERSITY_PLAN_FREE_PRICE_USD=0
+ *   NEXT_PUBLIC_UNIVERSITY_PLAN_PAID_CREDITS=200
+ *   NEXT_PUBLIC_TEACHER_PLAN_PAID_PRICE_USD=3.99
+ *   NEXT_PUBLIC_TEACHER_PLAN_ELITE_CLASSROOMS=null
+ */
+function loadPricingFromEnv(): Partial<PlatformSettings> {
+  const env = typeof process !== 'undefined' ? process.env : {};
+  
+  const result: Partial<PlatformSettings> = {};
+
+  // Parent Plans
+  const parentFreeChildren = env.NEXT_PUBLIC_PARENT_PLAN_FREE_CHILDREN;
+  const parentPaidPrice = env.NEXT_PUBLIC_PARENT_PLAN_PAID_PRICE_USD;
+  const parentPaidChildren = env.NEXT_PUBLIC_PARENT_PLAN_PAID_CHILDREN;
+  const parentElitePrice = env.NEXT_PUBLIC_PARENT_PLAN_ELITE_PRICE_USD;
+  const parentEliteChildren = env.NEXT_PUBLIC_PARENT_PLAN_ELITE_CHILDREN;
+
+  if (parentFreeChildren || parentPaidPrice || parentElitePrice) {
+    result.parentPlans = {
+      freeChildrenMax: parentFreeChildren ? parseInt(parentFreeChildren) : undefined,
+      paid: {
+        priceUsdMonthly: parentPaidPrice ? parseFloat(parentPaidPrice) : undefined,
+        childrenMax: parentPaidChildren ? parseInt(parentPaidChildren) : undefined,
+      },
+      elite: {
+        priceUsdMonthly: parentElitePrice ? parseFloat(parentElitePrice) : undefined,
+        childrenMax: parentEliteChildren ? parseInt(parentEliteChildren) : undefined,
+      },
+    } as any;
+  }
+
+  // University Plans
+  const univFreePriceUsd = env.NEXT_PUBLIC_UNIVERSITY_PLAN_FREE_PRICE_USD;
+  const univFreeCredits = env.NEXT_PUBLIC_UNIVERSITY_PLAN_FREE_CREDITS;
+  const univPaidPriceUsd = env.NEXT_PUBLIC_UNIVERSITY_PLAN_PAID_PRICE_USD;
+  const univPaidCredits = env.NEXT_PUBLIC_UNIVERSITY_PLAN_PAID_CREDITS;
+  const univElitePriceUsd = env.NEXT_PUBLIC_UNIVERSITY_PLAN_ELITE_PRICE_USD;
+  const univEliteCredits = env.NEXT_PUBLIC_UNIVERSITY_PLAN_ELITE_CREDITS;
+
+  if (univFreePriceUsd || univPaidPriceUsd || univElitePriceUsd) {
+    result.universityPlans = {
+      free: {
+        priceUsdMonthly: univFreePriceUsd ? parseFloat(univFreePriceUsd) : undefined,
+        aiCreditsMonthly: univFreeCredits ? parseInt(univFreeCredits) : undefined,
+      },
+      paid: {
+        priceUsdMonthly: univPaidPriceUsd ? parseFloat(univPaidPriceUsd) : undefined,
+        aiCreditsMonthly: univPaidCredits ? parseInt(univPaidCredits) : undefined,
+      },
+      elite: {
+        priceUsdMonthly: univElitePriceUsd ? parseFloat(univElitePriceUsd) : undefined,
+        aiCreditsMonthly: univEliteCredits ? parseInt(univEliteCredits) : undefined,
+      },
+    } as any;
+  }
+
+  // Teacher Plans
+  const teachFreePriceUsd = env.NEXT_PUBLIC_TEACHER_PLAN_FREE_PRICE_USD;
+  const teachFreeClassrooms = env.NEXT_PUBLIC_TEACHER_PLAN_FREE_CLASSROOMS;
+  const teachPaidPriceUsd = env.NEXT_PUBLIC_TEACHER_PLAN_PAID_PRICE_USD;
+  const teachPaidClassrooms = env.NEXT_PUBLIC_TEACHER_PLAN_PAID_CLASSROOMS;
+  const teachElitePriceUsd = env.NEXT_PUBLIC_TEACHER_PLAN_ELITE_PRICE_USD;
+  const teachEliteClassrooms = env.NEXT_PUBLIC_TEACHER_PLAN_ELITE_CLASSROOMS;
+
+  if (teachFreePriceUsd || teachPaidPriceUsd || teachElitePriceUsd) {
+    result.teacherPlans = {
+      free: {
+        priceUsdMonthly: teachFreePriceUsd ? parseFloat(teachFreePriceUsd) : undefined,
+        classroomsMax: teachFreeClassrooms ? parseInt(teachFreeClassrooms) : undefined,
+      },
+      paid: {
+        priceUsdMonthly: teachPaidPriceUsd ? parseFloat(teachPaidPriceUsd) : undefined,
+        classroomsMax: teachPaidClassrooms ? parseInt(teachPaidClassrooms) : undefined,
+      },
+      elite: {
+        priceUsdMonthly: teachElitePriceUsd ? parseFloat(teachElitePriceUsd) : undefined,
+        classroomsMax: teachEliteClassrooms ? parseInt(teachEliteClassrooms) : undefined,
+      },
+    } as any;
+  }
+
+  return result;
+}
 function normalizeUniversityPlanTier(value: unknown, fallback: UniversityPlanTierSettings): UniversityPlanTierSettings {
   const source = (value && typeof value === 'object' ? value : {}) as Partial<UniversityPlanTierSettings>;
   return {
@@ -585,7 +676,10 @@ function normalizeTeacherPlans(value: unknown): TeacherPlanSettings {
 }
 
 export function normalizePlatformSettings(input: unknown): PlatformSettings {
-  const source = (input && typeof input === 'object' ? input : {}) as Partial<PlatformSettings>;
+  // Load overrides from environment variables
+  const envOverrides = loadPricingFromEnv();
+  const merged = { ...input, ...envOverrides };
+  const source = (merged && typeof merged === 'object' ? merged : {}) as Partial<PlatformSettings>;
   const sourceProviderBudgets: Partial<ProviderDailyBudgets> =
     source.providerDailyBudgets && typeof source.providerDailyBudgets === 'object' ? source.providerDailyBudgets : {};
   const sourcePlans = (
@@ -610,7 +704,7 @@ export function normalizePlatformSettings(input: unknown): PlatformSettings {
       const usdMonthly = numberOrFallback(incomingPrice.USD?.monthly, fallback.price.USD.monthly);
       const usdAnnual = numberOrFallback(incomingPrice.USD?.annual, fallback.price.USD.annual);
       // pkrManual opts a plan out of the usual "PKR always = USD * live rate"
-      // recompute below — an admin who hardcodes a PKR price wants exactly what
+      // recompute below â€” an admin who hardcodes a PKR price wants exactly what
       // they typed to survive every settings read/save, not get silently
       // overwritten the next time the exchange-rate cron runs.
       const pkrManual = booleanOrFallback(incoming.pkrManual, fallback.pkrManual);
@@ -760,7 +854,7 @@ export function convertUsdToPkr(usd: number, settings: PlatformSettings) {
 }
 
 /**
- * How many children a parent account (identified by its OWN profiles.subscription_tier — see
+ * How many children a parent account (identified by its OWN profiles.subscription_tier â€” see
  * ParentPlanSettings' doc comment) may link. Returns null for unlimited.
  */
 export function parentChildrenCap(
@@ -802,3 +896,5 @@ export function resolveInstitutionPricing(
     volumeDiscountApplied: volumeEligible,
   };
 }
+
+
