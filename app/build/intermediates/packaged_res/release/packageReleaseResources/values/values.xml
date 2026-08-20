@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="display_override">
+    
+      
+        <item>window-controls-overlay</item>
+      
+    
+      
+        <item>standalone</item>
+      
+    
+      
+        <item>minimal-ui</item>
+      
+    
+    </string-array>
+    <bool name="enableNotification">true</bool>
+    <bool name="enableSiteSettingsShortcut">true</bool>
+    <color name="backgroundColor">#0A0118</color>
+    <color name="colorPrimary">#7C3AED</color>
+    <color name="colorPrimaryDark">#000000</color>
+    <color name="navigationColor">#000000</color>
+    <color name="navigationColorDark">#000000</color>
+    <color name="navigationDividerColor">#000000</color>
+    <color name="navigationDividerColorDark">#000000</color>
+    <color name="shortcut_background">#F5F5F5</color>
+    <integer name="splashScreenFadeOutDuration">300</integer>
+    <string name="appName" translatable="false">ilm AI</string>
+    <string name="assetStatements">
+    [{
+        \"relation\": [\"delegate_permission/common.handle_all_urls\"],
+        \"target\": {
+            \"namespace\": \"web\",
+            \"site\": \"https://ilmai.study\"
+        }
+    }]
+    
+  </string>
+    <string name="fallbackType" translatable="false">customtabs</string>
+    <string name="fullScopeUrl" translatable="false">https://ilmai.study/</string>
+    <string name="generatorApp" translatable="false">bubblewrap-cli</string>
+    <string name="hostName" translatable="false">ilmai.study</string>
+    <string name="launchUrl" translatable="false">https://ilmai.study/dashboard?source=pwa</string>
+    <string name="launcherName" translatable="false">ilm AI</string>
+    <string name="orientation" translatable="false">any</string>
+    <string name="providerAuthority" translatable="false">study.ilmai.twa.fileprovider</string>
+    <string name="shortcut_name_0" translatable="false">AI Tutor</string>
+    <string name="shortcut_name_1" translatable="false">Library</string>
+    <string name="shortcut_name_2" translatable="false">Scan Notes</string>
+    <string name="shortcut_short_name_0" translatable="false">Tutor</string>
+    <string name="shortcut_short_name_1" translatable="false">Library</string>
+    <string name="shortcut_short_name_2" translatable="false">Scan</string>
+    <string name="webManifestUrl" translatable="false">https://ilmai.study/manifest.json</string>
+</resources>

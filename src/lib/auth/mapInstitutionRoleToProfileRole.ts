@@ -11,17 +11,19 @@
 // member — including an "owner" or institution "admin" — maps to profileRole
 // 'teacher' below, never 'admin'.
 
-export type InvitableProfileRole = 'teacher' | 'student' | 'parent';
+export type InvitableProfileRole = 'teacher' | 'student' | 'parent' | 'principal';
 
 /**
  * Maps an institution membership role (school_memberships.member_role /
  * college_memberships.member_role) to the generic profiles.role enum
- * (student | teacher | admin | parent). Never returns 'admin' — see file header.
+ * (student | teacher | admin | parent | principal). Never returns 'admin' — see file header.
  */
 export function mapInstitutionRoleToProfileRole(memberRole: string): InvitableProfileRole {
   if (memberRole === 'parent') return 'parent';
   if (memberRole === 'student') return 'student';
-  // owner, admin, admissions, accountant, staff, teacher all become 'teacher' —
+  // owner, principal map to institution-level principal persona
+  if (memberRole === 'owner' || memberRole === 'principal') return 'principal';
+  // admissions, accountant, staff, teacher all become 'teacher' —
   // a safe non-platform-admin generic staff persona.
   return 'teacher';
 }

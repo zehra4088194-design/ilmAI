@@ -66,12 +66,11 @@ const schema = formSchema.refine((data) => data.password === data.confirmPasswor
 type FormData = z.infer<typeof schema>;
 type AccountType = 'student' | 'parent';
 type MembershipMode = 'individual' | 'institutional';
-type InstitutionalRole = 'student' | 'teacher';
+type InstitutionalRole = 'student' | 'teacher' | 'principal';
 type Gender = 'girl' | 'boy';
+type SignupIdentity = 'parent' | 'university' | 'school-college' | 'institutional';
 type SignupStepId =
-  | 'mode'
-  | 'account'
-  | 'role'
+  | 'identity'
   | 'language'
   | 'name'
   | 'email'
@@ -83,7 +82,8 @@ type SignupStepId =
   | 'institution'
   | 'school'
   | 'grade'
-  | 'board';
+  | 'board'
+  | 'role';
 
 type SignupStep = {
   id: SignupStepId;
@@ -91,22 +91,16 @@ type SignupStep = {
   description: string;
 };
 
-const MODE_STEP: SignupStep = {
-  id: 'mode',
-  title: 'How will you use ilm AI?',
-  description: 'A personal account, or one linked to your school/college on ilm AI?',
+const IDENTITY_STEP: SignupStep = {
+  id: 'identity',
+  title: 'Who are you?',
+  description: 'Tell us about yourself so we can personalize your experience.',
 };
 
-const ACCOUNT_STEP: SignupStep = {
-  id: 'account',
-  title: 'Student or parent?',
-  description: 'Choose your account type once to personalise signup.',
-};
-
-const ROLE_STEP: SignupStep = {
+const INSTITUTIONAL_ROLE_STEP: SignupStep = {
   id: 'role',
-  title: 'Student or teacher?',
-  description: 'Choose your role at the institution.',
+  title: 'What is your role?',
+  description: 'Choose your role at your school or college.',
 };
 
 // Asked right at the start (before name/email) for individual student signups
@@ -172,43 +166,87 @@ const SCHOOL_SEARCH_STEP: SignupStep = {
   description: 'Search for your school on ilm AI. Its admin approves your request before you get access.',
 };
 
+// Generates signup steps based on the user's chosen identity. Each path is a self-contained flow.
 // `institutional` skips the free `institution`/`education` text fields in
 // favour of SCHOOL_SEARCH_STEP, which looks up a real school_organizations
 // row and (post-signup) files a school_join_requests approval request
 // instead of just storing a label on the profile — see
 // src/lib/school-erp/join-requests.ts.
 export function getSignupSteps(
-  membershipMode: MembershipMode,
-  accountType: AccountType,
-  institutionalRole: InstitutionalRole,
-  educationLevel: EducationLevel,
+  identity: SignupIdentity,
+  institutionalRole?: InstitutionalRole,
   isYoungChild: boolean = false
-) {
-  if (membershipMode === 'institutional') {
-    if (institutionalRole === 'teacher') {
-      return [MODE_STEP, ROLE_STEP, ...CORE_STEPS, SCHOOL_SEARCH_STEP];
-    }
-    return [MODE_STEP, ROLE_STEP, ...CORE_STEPS, GENDER_STEP, SCHOOL_SEARCH_STEP, ...SCHOOL_STEPS];
+): SignupStep[] {
+  // Parent pathway: no education/institution questions
+  if (identity === 'parent') {
+    return [IDENTITY_STEP, ...CORE_STEPS];
   }
-  if (accountType === 'parent') return [MODE_STEP, ACCOUNT_STEP, ...CORE_STEPS];
-  // Young child (under 8, per BIRTHDATE_STEP): skip gender/education/institution/
-  // grade/board entirely — none of it is needed (the Kids Dashboard doesn't
-  // personalize by any of that) and grade options only start at Grade 9 anyway.
-  if (isYoungChild) return [MODE_STEP, ACCOUNT_STEP, BIRTHDATE_STEP, ...CORE_STEPS];
-  return [
-    MODE_STEP,
-    ACCOUNT_STEP,
-    BIRTHDATE_STEP,
-    ...CORE_STEPS,
-    ...STUDENT_STEPS,
-    ...(educationLevel === 'university' ? [] : SCHOOL_STEPS),
-  ];
+
+  // University student pathway: no grade/board/education picker (pre-selected as 'university')
+  if (identity === 'university') {
+    if (isYoungChild) return [IDENTITY_STEP, BIRTHDATE_STEP, ...CORE_STEPS];
+    return [
+      IDENTITY_STEP,
+      BIRTHDATE_STEP,
+      ...CORE_STEPS,
+      GENDER_STEP,
+      {
+        id: 'institution',
+        title: 'University name',
+        description: 'Enter the name of your university.',
+      },
+    ];
+  }
+
+  // School/College student pathway: education/institution/grade/board questions
+  if (identity === 'school-college') {
+    if (isYoungChild) return [IDENTITY_STEP, BIRTHDATE_STEP, ...CORE_STEPS];
+    return [
+      IDENTITY_STEP,
+      BIRTHDATE_STEP,
+      ...CORE_STEPS,
+      GENDER_STEP,
+      {
+        id: 'education',
+        title: 'Where do you study?',
+        description: 'Select your school or college level.',
+      },
+      {
+        id: 'institution',
+        title: 'Institution name',
+        description: 'Enter the name of your school or college.',
+      },
+      { id: 'grade', title: 'Your class', description: 'Lectures, notes, and papers for this class will be shown.' },
+      {
+        id: 'board',
+        title: 'Your board',
+        description: 'The final step. Board-specific content will be filtered using this choice.',
+      },
+    ];
+  }
+
+  // Institutional (school/college invite) pathway: role picker → institution search → role-specific steps
+  // institutionalRole must be 'student', 'teacher', or 'principal'
+  if (identity === 'institutional') {
+    if (institutionalRole === 'teacher') {
+      return [IDENTITY_STEP, INSTITUTIONAL_ROLE_STEP, ...CORE_STEPS, SCHOOL_SEARCH_STEP];
+    }
+    if (institutionalRole === 'principal') {
+      return [IDENTITY_STEP, INSTITUTIONAL_ROLE_STEP, ...CORE_STEPS, SCHOOL_SEARCH_STEP];
+    }
+    // Student in institutional context
+    return [IDENTITY_STEP, INSTITUTIONAL_ROLE_STEP, ...CORE_STEPS, GENDER_STEP, SCHOOL_SEARCH_STEP, ...SCHOOL_STEPS];
+  }
+
+  return [IDENTITY_STEP, ...CORE_STEPS];
 }
 
 type SchoolSearchResult = { id: string; name: string; organization_type: string };
 
 export function RegisterForm() {
   const [showPass, setShowPass] = useState(false);
+  const [identity, setIdentity] = useState<SignupIdentity | null>(null);
+  // These are derived from identity but kept for backward compatibility with existing logic
   const [membershipMode, setMembershipMode] = useState<MembershipMode>('individual');
   const [accountType, setAccountType] = useState<AccountType>('student');
   const [institutionalRole, setInstitutionalRole] = useState<InstitutionalRole>('student');
@@ -234,10 +272,8 @@ export function RegisterForm() {
   const redirect = searchParams.get('redirect') || '/dashboard';
   const supabase = createClient();
   const t = useTranslations();
-  // The account's identity (drives profiles.role): institutional signup
-  // asks for it directly via the role step; individual signup keeps the
-  // existing student/parent choice.
-  const effectiveRole: InstitutionalRole | 'parent' = membershipMode === 'institutional' ? institutionalRole : accountType;
+  // The account's identity (drives profiles.role): derived from the identity choice
+  const effectiveRole: InstitutionalRole | 'parent' = identity === 'parent' ? 'parent' : identity === 'institutional' ? institutionalRole : 'student';
 
   const {
     register,
@@ -267,18 +303,24 @@ export function RegisterForm() {
   const selectedGrade = watch('gradeLevel');
   const institutionNameValue = watch('institutionName') || '';
   const institutionSuggestionList =
-    educationLevel === 'university' ? PAKISTAN_UNIVERSITIES : educationLevel === 'college' ? PAKISTAN_COLLEGES : PAKISTAN_SCHOOLS;
+    identity === 'university' ? PAKISTAN_UNIVERSITIES :
+    identity === 'school-college' ? (educationLevel === 'university' ? PAKISTAN_UNIVERSITIES : educationLevel === 'college' ? PAKISTAN_COLLEGES : PAKISTAN_SCHOOLS) :
+    educationLevel === 'university' ? PAKISTAN_UNIVERSITIES :
+    educationLevel === 'college' ? PAKISTAN_COLLEGES :
+    PAKISTAN_SCHOOLS;
   const institutionSuggestions = institutionSuggestionsOpen
     ? suggestInstitutions(institutionSuggestionList, institutionNameValue)
     : [];
   const birthDateValue = watch('birthDate');
   const isYoungChild =
-    membershipMode === 'individual' && accountType === 'student' && calculateAge(birthDateValue) !== null && (calculateAge(birthDateValue) as number) < KIDS_DASHBOARD_AGE_CUTOFF;
+    identity && ['parent', 'university', 'school-college'].includes(identity) &&
+    calculateAge(birthDateValue) !== null &&
+    (calculateAge(birthDateValue) as number) < KIDS_DASHBOARD_AGE_CUTOFF;
 
-  const steps = useMemo(
-    () => getSignupSteps(membershipMode, accountType, institutionalRole, educationLevel, isYoungChild),
-    [membershipMode, accountType, institutionalRole, educationLevel, isYoungChild]
-  );
+  const steps = useMemo(() => {
+    if (!identity) return [];
+    return getSignupSteps(identity, institutionalRole, isYoungChild);
+  }, [identity, institutionalRole, isYoungChild]);
   const currentStep = steps[Math.min(stepIndex, steps.length - 1)]!;
   const isFirstStep = stepIndex === 0;
   const isLastStep = stepIndex === steps.length - 1;
@@ -364,6 +406,18 @@ export function RegisterForm() {
     };
 
     switch (currentStep.id) {
+      case 'identity':
+        if (!identity) {
+          toast.error('Please select your role.');
+          return false;
+        }
+        return true;
+      case 'role':
+        if (!institutionalRole) {
+          toast.error('Please select your role.');
+          return false;
+        }
+        return true;
       case 'name':
         return validateField('fullName');
       case 'email':
@@ -462,7 +516,7 @@ export function RegisterForm() {
       }
     }
 
-    if (effectiveRole === 'teacher' && !selectedSchool) {
+    if ((effectiveRole === 'teacher' || effectiveRole === 'principal') && !selectedSchool) {
       toast.error('Search and select your institution first.');
       return;
     }
@@ -619,43 +673,87 @@ export function RegisterForm() {
         <div className="min-h-36">
           <h2 className="mb-4 text-xl font-bold">{currentStep.title}</h2>
 
-          {currentStep.id === 'mode' && (
-            <div className="grid gap-3 sm:grid-cols-2">
+          {currentStep.id === 'identity' && (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <button
                 type="button"
-                onClick={() => changeMembershipMode('individual')}
-                aria-pressed={membershipMode === 'individual'}
+                onClick={() => {
+                  setIdentity('parent');
+                  setMembershipMode('individual');
+                  setAccountType('parent');
+                }}
+                aria-pressed={identity === 'parent'}
                 className={cn(
-                  'flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border-2 p-4 text-center text-sm font-semibold transition-all',
-                  membershipMode === 'individual'
+                  'flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border-2 p-3 text-center text-sm font-semibold transition-all',
+                  identity === 'parent'
                     ? 'border-primary bg-primary/15 text-primary'
                     : 'border-border bg-card/80 text-muted-foreground hover:border-primary/40'
                 )}
               >
-                <User className="h-6 w-6" /> Individual
-                <span className="text-muted-foreground text-xs font-normal">Personal account, learn at your own pace</span>
+                <Users className="h-6 w-6" /> Parent
+                <span className="text-muted-foreground text-xs font-normal">Manage your children's learning</span>
               </button>
               <button
                 type="button"
-                onClick={() => changeMembershipMode('institutional')}
-                aria-pressed={membershipMode === 'institutional'}
+                onClick={() => {
+                  setIdentity('university');
+                  setMembershipMode('individual');
+                  setAccountType('student');
+                  setEducationLevel('university');
+                }}
+                aria-pressed={identity === 'university'}
                 className={cn(
-                  'flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border-2 p-4 text-center text-sm font-semibold transition-all',
-                  membershipMode === 'institutional'
+                  'flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border-2 p-3 text-center text-sm font-semibold transition-all',
+                  identity === 'university'
+                    ? 'border-primary bg-primary/15 text-primary'
+                    : 'border-border bg-card/80 text-muted-foreground hover:border-primary/40'
+                )}
+              >
+                <GraduationCap className="h-6 w-6" /> University Student
+                <span className="text-muted-foreground text-xs font-normal">Higher education tools and resources</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIdentity('school-college');
+                  setMembershipMode('individual');
+                  setAccountType('student');
+                  setEducationLevel('school');
+                }}
+                aria-pressed={identity === 'school-college'}
+                className={cn(
+                  'flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border-2 p-3 text-center text-sm font-semibold transition-all',
+                  identity === 'school-college'
+                    ? 'border-primary bg-primary/15 text-primary'
+                    : 'border-border bg-card/80 text-muted-foreground hover:border-primary/40'
+                )}
+              >
+                <School className="h-6 w-6" /> School/College Student
+                <span className="text-muted-foreground text-xs font-normal">Classes, boards and grades setup</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIdentity('institutional');
+                  setMembershipMode('institutional');
+                  setInstitutionalRole('student');
+                }}
+                aria-pressed={identity === 'institutional'}
+                className={cn(
+                  'flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border-2 p-3 text-center text-sm font-semibold transition-all',
+                  identity === 'institutional'
                     ? 'border-primary bg-primary/15 text-primary'
                     : 'border-border bg-card/80 text-muted-foreground hover:border-primary/40'
                 )}
               >
                 <Building2 className="h-6 w-6" /> Institutional
-                <span className="text-muted-foreground text-xs font-normal">
-                  Join your school or college as a student or teacher
-                </span>
+                <span className="text-muted-foreground text-xs font-normal">Join your school or college</span>
               </button>
             </div>
           )}
 
           {currentStep.id === 'role' && (
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-3">
               <button
                 type="button"
                 onClick={() => setInstitutionalRole('student')}
@@ -668,7 +766,7 @@ export function RegisterForm() {
                 )}
               >
                 <GraduationCap className="h-6 w-6" /> Student
-                <span className="text-muted-foreground text-xs font-normal">Attend classes, view results and fees</span>
+                <span className="text-muted-foreground text-xs font-normal">Attend classes and take exams</span>
               </button>
               <button
                 type="button"
@@ -682,40 +780,21 @@ export function RegisterForm() {
                 )}
               >
                 <Presentation className="h-6 w-6" /> Teacher
-                <span className="text-muted-foreground text-xs font-normal">Manage classes, attendance and exams</span>
+                <span className="text-muted-foreground text-xs font-normal">Manage classes and exams</span>
               </button>
-            </div>
-          )}
-
-          {currentStep.id === 'account' && (
-            <div className="grid gap-3 sm:grid-cols-2">
               <button
                 type="button"
-                onClick={() => changeAccountType('student')}
-                aria-pressed={accountType === 'student'}
+                onClick={() => setInstitutionalRole('principal')}
+                aria-pressed={institutionalRole === 'principal'}
                 className={cn(
                   'flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border-2 p-4 text-center text-sm font-semibold transition-all',
-                  accountType === 'student'
+                  institutionalRole === 'principal'
                     ? 'border-primary bg-primary/15 text-primary'
                     : 'border-border bg-card/80 text-muted-foreground hover:border-primary/40'
                 )}
               >
-                <GraduationCap className="h-6 w-6" /> {t('auth.register.student')}
-                <span className="text-muted-foreground text-xs font-normal">Classes, board and practice setup</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => changeAccountType('parent')}
-                aria-pressed={accountType === 'parent'}
-                className={cn(
-                  'flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border-2 p-4 text-center text-sm font-semibold transition-all',
-                  accountType === 'parent'
-                    ? 'border-primary bg-primary/15 text-primary'
-                    : 'border-border bg-card/80 text-muted-foreground hover:border-primary/40'
-                )}
-              >
-                <Users className="h-6 w-6" /> {t('auth.register.parent')}
-                <span className="text-muted-foreground text-xs font-normal">Link and support your student</span>
+                <Building2 className="h-6 w-6" /> Principal
+                <span className="text-muted-foreground text-xs font-normal">Oversee the entire institution</span>
               </button>
             </div>
           )}

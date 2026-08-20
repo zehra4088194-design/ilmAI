@@ -1640,7 +1640,7 @@ export type Database = {
       session_status: "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED" | "ABANDONED"
       session_type: "READING" | "QUIZ" | "FLASHCARD" | "AI_CHAT" | "PAST_PAPER"
       subscription_tier: "FREE" | "PRO" | "ELITE"
-      user_role: "student" | "teacher" | "admin" | "parent"
+      user_role: "student" | "teacher" | "admin" | "parent" | "principal"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1802,7 +1802,7 @@ export const Constants = {
       session_status: ["NOT_STARTED", "IN_PROGRESS", "COMPLETED", "ABANDONED"],
       session_type: ["READING", "QUIZ", "FLASHCARD", "AI_CHAT", "PAST_PAPER"],
       subscription_tier: ["FREE", "PRO", "ELITE"],
-      user_role: ["student", "teacher", "admin", "parent"],
+      user_role: ["student", "teacher", "admin", "parent", "principal"],
     },
   },
 } as const

@@ -1,0 +1,70 @@
+{
+  "packageId": "study.ilmai.twa",
+  "host": "ilmai.study",
+  "name": "ilm AI",
+  "launcherName": "ilm AI",
+  "display": "standalone",
+  "themeColor": "#7C3AED",
+  "themeColorDark": "#000000",
+  "navigationColor": "#000000",
+  "navigationColorDark": "#000000",
+  "navigationDividerColor": "#000000",
+  "navigationDividerColorDark": "#000000",
+  "backgroundColor": "#0A0118",
+  "enableNotifications": true,
+  "startUrl": "/dashboard?source=pwa",
+  "iconUrl": "https://ilmai.study/icons/icon-512.png",
+  "maskableIconUrl": "https://ilmai.study/icons/icon-maskable-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "E:\\studyverse-ai - Copy\\android.keystore",
+    "alias": "android"
+  },
+  "appVersionName": "1",
+  "appVersionCode": 1,
+  "shortcuts": [
+    {
+      "name": "AI Tutor",
+      "shortName": "Tutor",
+      "url": "https://ilmai.study/ai-tutor?source=shortcut",
+      "chosenIconUrl": "https://ilmai.study/icons/shortcut-icon-96.png"
+    },
+    {
+      "name": "Library",
+      "shortName": "Library",
+      "url": "https://ilmai.study/library?source=shortcut",
+      "chosenIconUrl": "https://ilmai.study/icons/shortcut-icon-96.png"
+    },
+    {
+      "name": "Scan Notes",
+      "shortName": "Scan",
+      "url": "https://ilmai.study/scan?source=shortcut",
+      "chosenIconUrl": "https://ilmai.study/icons/shortcut-icon-96.png"
+    }
+  ],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://ilmai.study/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://ilmai.study/",
+  "minSdkVersion": 21,
+  "orientation": "any",
+  "fingerprints": [],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": [],
+  "protocolHandlers": [],
+  "fileHandlers": [],
+  "launchHandlerClientMode": "",
+  "displayOverride": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui"
+  ],
+  "appVersion": "1"
+}
