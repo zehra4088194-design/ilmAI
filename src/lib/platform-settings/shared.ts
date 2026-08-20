@@ -114,10 +114,34 @@ export type ParentPlanSettings = {
   freeChildrenMax: number;
 };
 
+// University student pricing: separate tier structure for higher education students
+export type UniversityPlanTierSettings = {
+  priceUsdMonthly: number;
+  aiCreditsMonthly: number;
+};
+export type UniversityPlanSettings = {
+  free: UniversityPlanTierSettings;
+  paid: UniversityPlanTierSettings;
+  elite: UniversityPlanTierSettings;
+};
+
+// Teacher pricing: separate tier structure for institutional teachers
+export type TeacherPlanTierSettings = {
+  priceUsdMonthly: number;
+  classroomsMax: number | null;
+};
+export type TeacherPlanSettings = {
+  free: TeacherPlanTierSettings;
+  paid: TeacherPlanTierSettings;
+  elite: TeacherPlanTierSettings;
+};
+
 export type PlatformSettings = {
   pdfThemeMode: PdfThemeMode;
   subscriptionPlans: Record<SubscriptionTier, PlatformSubscriptionPlan>;
   parentPlans: ParentPlanSettings;
+  universityPlans: UniversityPlanSettings;
+  teacherPlans: TeacherPlanSettings;
   providerDailyBudgets: ProviderDailyBudgets;
   aiRouting: AiRoutingSettings;
   exchangeRate: ExchangeRateSettings;
@@ -169,6 +193,16 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
     freeChildrenMax: 1,
     paid: { priceUsdMonthly: 1.99, childrenMax: 4 },
     elite: { priceUsdMonthly: 3.49, childrenMax: null },
+  },
+  universityPlans: {
+    free: { priceUsdMonthly: 0, aiCreditsMonthly: 20 },
+    paid: { priceUsdMonthly: 4.99, aiCreditsMonthly: 200 },
+    elite: { priceUsdMonthly: 9.99, aiCreditsMonthly: 1000 },
+  },
+  teacherPlans: {
+    free: { priceUsdMonthly: 0, classroomsMax: 1 },
+    paid: { priceUsdMonthly: 2.99, classroomsMax: 5 },
+    elite: { priceUsdMonthly: 6.99, classroomsMax: null },
   },
   providerDailyBudgets: {
     // Conservative platform-wide caps for a free-hosted beta. Admin can tune
@@ -510,6 +544,46 @@ function normalizeParentPlans(value: unknown): ParentPlanSettings {
   };
 }
 
+function normalizeUniversityPlanTier(value: unknown, fallback: UniversityPlanTierSettings): UniversityPlanTierSettings {
+  const source = (value && typeof value === 'object' ? value : {}) as Partial<UniversityPlanTierSettings>;
+  return {
+    priceUsdMonthly: Math.max(0, numberOrFallback(source.priceUsdMonthly, fallback.priceUsdMonthly)),
+    aiCreditsMonthly: Math.max(0, numberOrFallback(source.aiCreditsMonthly, fallback.aiCreditsMonthly)),
+  };
+}
+
+function normalizeUniversityPlans(value: unknown): UniversityPlanSettings {
+  const source = (value && typeof value === 'object' ? value : {}) as Partial<UniversityPlanSettings>;
+  const fallback = DEFAULT_PLATFORM_SETTINGS.universityPlans;
+  return {
+    free: normalizeUniversityPlanTier(source.free, fallback.free),
+    paid: normalizeUniversityPlanTier(source.paid, fallback.paid),
+    elite: normalizeUniversityPlanTier(source.elite, fallback.elite),
+  };
+}
+
+function normalizeTeacherPlanTier(value: unknown, fallback: TeacherPlanTierSettings): TeacherPlanTierSettings {
+  const source = (value && typeof value === 'object' ? value : {}) as Partial<TeacherPlanTierSettings>;
+  const rawClassroomsMax = source.classroomsMax;
+  return {
+    priceUsdMonthly: Math.max(0, numberOrFallback(source.priceUsdMonthly, fallback.priceUsdMonthly)),
+    classroomsMax:
+      rawClassroomsMax === null || rawClassroomsMax === 0
+        ? null
+        : Math.max(1, numberOrFallback(rawClassroomsMax, fallback.classroomsMax ?? 1)),
+  };
+}
+
+function normalizeTeacherPlans(value: unknown): TeacherPlanSettings {
+  const source = (value && typeof value === 'object' ? value : {}) as Partial<TeacherPlanSettings>;
+  const fallback = DEFAULT_PLATFORM_SETTINGS.teacherPlans;
+  return {
+    free: normalizeTeacherPlanTier(source.free, fallback.free),
+    paid: normalizeTeacherPlanTier(source.paid, fallback.paid),
+    elite: normalizeTeacherPlanTier(source.elite, fallback.elite),
+  };
+}
+
 export function normalizePlatformSettings(input: unknown): PlatformSettings {
   const source = (input && typeof input === 'object' ? input : {}) as Partial<PlatformSettings>;
   const sourceProviderBudgets: Partial<ProviderDailyBudgets> =
@@ -625,6 +699,8 @@ export function normalizePlatformSettings(input: unknown): PlatformSettings {
     ),
     institutionPricing: normalizeInstitutionPricing(source.institutionPricing),
     parentPlans: normalizeParentPlans(source.parentPlans),
+    universityPlans: normalizeUniversityPlans(source.universityPlans),
+    teacherPlans: normalizeTeacherPlans(source.teacherPlans),
     aiRouting: normalizeAiRouting(source.aiRouting),
     exchangeRate: {
       usdToPkr,
