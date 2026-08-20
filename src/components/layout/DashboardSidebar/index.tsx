@@ -342,30 +342,51 @@ export function DashboardSidebar({ mobileOpen: controlledMobileOpen, onMobileOpe
               <Link href="/school-admin" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
                 className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
                   isActive('/school-admin') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}>
-                <Building2 className={cn('w-4 h-4 shrink-0', isActive('/school-admin') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
-                <span className="flex-1">School Dashboard</span>
+                <LayoutDashboard className={cn('w-4 h-4 shrink-0', isActive('/school-admin') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
+                <span className="flex-1">Dashboard</span>
                 {isActive('/school-admin') && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
               </Link>
-              <Link href="/library" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
+              <Link href="/school-admin/teachers" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
                 className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
-                  isActive('/library') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}>
-                <Library className={cn('w-4 h-4 shrink-0', isActive('/library') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
-                <span className="flex-1">Resource Library</span>
-                {isActive('/library') && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
+                  isActive('/school-admin/teachers') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}>
+                <Presentation className={cn('w-4 h-4 shrink-0', isActive('/school-admin/teachers') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
+                <span className="flex-1">Teachers</span>
+                {isActive('/school-admin/teachers') && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
               </Link>
-              <Link href="/subscription" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
+              <Link href="/school-admin/classes" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
                 className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
-                  isActive('/subscription') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}>
-                <CreditCard className={cn('w-4 h-4 shrink-0', isActive('/subscription') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
-                <span className="flex-1">Subscription</span>
-                {isActive('/subscription') && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
+                  isActive('/school-admin/classes') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}>
+                <School className={cn('w-4 h-4 shrink-0', isActive('/school-admin/classes') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
+                <span className="flex-1">Classes</span>
+                {isActive('/school-admin/classes') && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
               </Link>
-              <Link href="/settings" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
+              <Link href="/school-admin/students" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
                 className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
-                  isActive('/settings') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}>
-                <Settings className={cn('w-4 h-4 shrink-0', isActive('/settings') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
-                <span className="flex-1">Settings</span>
-                {isActive('/settings') && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
+                  isActive('/school-admin/students') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}>
+                <Users className={cn('w-4 h-4 shrink-0', isActive('/school-admin/students') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
+                <span className="flex-1">Students</span>
+                {isActive('/school-admin/students') && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
+              </Link>
+              <Link href="/school-admin/invoices" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
+                className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
+                  isActive('/school-admin/invoices') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}>
+                <FileText className={cn('w-4 h-4 shrink-0', isActive('/school-admin/invoices') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
+                <span className="flex-1">Invoices & Fees</span>
+                {isActive('/school-admin/invoices') && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
+              </Link>
+              <Link href="/school-admin/payroll" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
+                className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
+                  isActive('/school-admin/payroll') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}>
+                <CreditCard className={cn('w-4 h-4 shrink-0', isActive('/school-admin/payroll') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
+                <span className="flex-1">Payroll</span>
+                {isActive('/school-admin/payroll') && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
+              </Link>
+              <Link href="/school-admin/settings" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
+                className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
+                  isActive('/school-admin/settings') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}>
+                <Settings className={cn('w-4 h-4 shrink-0', isActive('/school-admin/settings') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
+                <span className="flex-1">School Settings</span>
+                {isActive('/school-admin/settings') && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
               </Link>
             </div>
           </div>
