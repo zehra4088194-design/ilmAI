@@ -1,7 +1,7 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
-import { Bot, BookOpenCheck, DollarSign, Mail, Moon, Save, ShieldCheck, Sun, UserRoundCog } from 'lucide-react';
+import { Bot, BookOpenCheck, DollarSign, GraduationCap, Mail, Moon, Presentation, Save, ShieldCheck, Sun, UserRoundCog, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -78,7 +78,7 @@ const AI_ROUTING_LABELS: Array<[keyof PlatformSettings['aiRouting'], string]> = 
 ];
 
 const AI_PROVIDER_OPTIONS: Array<{ value: PlatformSettings['aiRouting'][keyof PlatformSettings['aiRouting']]; label: string }> = [
-  { value: 'advanced', label: 'OpenRouter (free auto-router → DeepSeek fallback)' },
+  { value: 'advanced', label: 'OpenRouter (free auto-router â†’ DeepSeek fallback)' },
   { value: 'groq', label: 'Groq / Assistant' },
   { value: 'gemini', label: 'Gemini Flash-Lite' },
   { value: 'deepseek', label: 'DeepSeek (direct)' },
@@ -94,7 +94,7 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
   const [isRefreshingRate, setIsRefreshingRate] = useState(false);
 
   // Recomputes PKR from USD * rate for every tier EXCEPT ones the admin has
-  // hardcoded (plan.pkrManual) — those keep whatever PKR value was typed in,
+  // hardcoded (plan.pkrManual) â€” those keep whatever PKR value was typed in,
   // untouched by rate changes/refreshes, same rule normalizePlatformSettings
   // enforces server-side.
   const withConvertedPkrPrices = (current: PlatformSettings, usdToPkr = current.exchangeRate.usdToPkr) => ({
@@ -303,7 +303,7 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
               }
             }}
           >
-            {isRefreshingRate ? 'Refreshing…' : 'Refresh rate now'}
+            {isRefreshingRate ? 'Refreshingâ€¦' : 'Refresh rate now'}
           </Button>
         </CardContent>
       </Card>
@@ -317,7 +317,7 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-muted-foreground text-sm">
-            A parent account&apos;s own plan — separate from any child&apos;s subscription. Caps how many children a
+            A parent account&apos;s own plan â€” separate from any child&apos;s subscription. Caps how many children a
             parent can link and whether they see the full analytics dashboard.
           </p>
           <NumberField
@@ -393,7 +393,7 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
         <CardContent className="space-y-3">
           <p className="text-muted-foreground text-sm">
             One base monthly USD price per institution type. Annual and volume-tier prices are always computed
-            from this + the discount percentages below — never entered by hand on the checkout screen.
+            from this + the discount percentages below â€” never entered by hand on the checkout screen.
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <NumberField
@@ -532,10 +532,10 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
           >
             <span>
               <span className="text-sm font-semibold">
-                {settings.dailyStudyEmailsEnabled ? 'Enabled — sending every morning' : 'Disabled — not sending'}
+                {settings.dailyStudyEmailsEnabled ? 'Enabled â€” sending every morning' : 'Disabled â€” not sending'}
               </span>
               <span className="text-muted-foreground mt-1 block text-xs leading-5">
-                Controls the daily-morning AI study email cron for every user who opted in. Off by default — no
+                Controls the daily-morning AI study email cron for every user who opted in. Off by default â€” no
                 emails go out until this is switched on here. Doesn&apos;t affect the accompanying in-app
                 notification, which always goes out regardless of this setting (per-user notification
                 preferences still apply).
@@ -675,7 +675,7 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
                   <span>
                     <span className="block font-medium">Hardcode this plan&apos;s PKR price</span>
                     <span className="text-muted-foreground block text-xs">
-                      When on, PKR/month and PKR/year above are used exactly as typed — the daily USD/PKR rate refresh
+                      When on, PKR/month and PKR/year above are used exactly as typed â€” the daily USD/PKR rate refresh
                       (and the wallet payment QR, which reads this same value) will not override them. Off by default.
                     </span>
                   </span>
@@ -770,6 +770,162 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
         })}
       </div>
 
+      {/* Parent Pricing */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-pink-400" />
+            Parent Plans
+          </CardTitle>
+          <CardDescription>Manage parent subscription pricing (child linking limits)</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <NumberField
+            label="Free tier - max children"
+            value={settings.parentPlans.freeChildrenMax}
+            onChange={(value) =>
+              setSettings((current) => ({
+                ...current,
+                parentPlans: { ...current.parentPlans, freeChildrenMax: Math.max(0, value) },
+              }))
+            }
+          />
+          <div className="space-y-4">
+            <h4 className="font-semibold">Paid Tier</h4>
+            <NumberField
+              label="Monthly price (USD)"
+              value={settings.parentPlans.paid.priceUsdMonthly}
+              onChange={(value) =>
+                setSettings((current) => ({
+                  ...current,
+                  parentPlans: { ...current.parentPlans, paid: { ...current.parentPlans.paid, priceUsdMonthly: Math.max(0, value) } },
+                }))
+              }
+            />
+            <NumberField
+              label="Max children (null = unlimited)"
+              value={settings.parentPlans.paid.childrenMax ?? -1}
+              onChange={(value) =>
+                setSettings((current) => ({
+                  ...current,
+                  parentPlans: { ...current.parentPlans, paid: { ...current.parentPlans.paid, childrenMax: value < 0 ? null : value } },
+                }))
+              }
+            />
+          </div>
+          <div className="space-y-4">
+            <h4 className="font-semibold">Elite Tier</h4>
+            <NumberField
+              label="Monthly price (USD)"
+              value={settings.parentPlans.elite.priceUsdMonthly}
+              onChange={(value) =>
+                setSettings((current) => ({
+                  ...current,
+                  parentPlans: { ...current.parentPlans, elite: { ...current.parentPlans.elite, priceUsdMonthly: Math.max(0, value) } },
+                }))
+              }
+            />
+            <NumberField
+              label="Max children (null = unlimited)"
+              value={settings.parentPlans.elite.childrenMax ?? -1}
+              onChange={(value) =>
+                setSettings((current) => ({
+                  ...current,
+                  parentPlans: { ...current.parentPlans, elite: { ...current.parentPlans.elite, childrenMax: value < 0 ? null : value } },
+                }))
+              }
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* University Student Pricing */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <GraduationCap className="h-5 w-5 text-blue-400" />
+            University Student Plans
+          </CardTitle>
+          <CardDescription>Manage university student AI credits and pricing</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {['free', 'paid', 'elite'].map((tier) => (
+            <div key={tier} className="space-y-4 border-t pt-4 first:border-t-0 first:pt-0">
+              <h4 className="font-semibold capitalize">{tier} Tier</h4>
+              <NumberField
+                label="Monthly price (USD)"
+                value={settings.universityPlans[tier].priceUsdMonthly}
+                onChange={(value) =>
+                  setSettings((current) => ({
+                    ...current,
+                    universityPlans: {
+                      ...current.universityPlans,
+                      [tier]: { ...current.universityPlans[tier], priceUsdMonthly: Math.max(0, value) },
+                    },
+                  }))
+                }
+              />
+              <NumberField
+                label="AI credits/month"
+                value={settings.universityPlans[tier].aiCreditsMonthly}
+                onChange={(value) =>
+                  setSettings((current) => ({
+                    ...current,
+                    universityPlans: {
+                      ...current.universityPlans,
+                      [tier]: { ...current.universityPlans[tier], aiCreditsMonthly: Math.max(0, value) },
+                    },
+                  }))
+                }
+              />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      {/* Teacher Pricing */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Presentation className="h-5 w-5 text-green-400" />
+            Teacher Plans
+          </CardTitle>
+          <CardDescription>Manage institutional teacher classroom limits</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {['free', 'paid', 'elite'].map((tier) => (
+            <div key={tier} className="space-y-4 border-t pt-4 first:border-t-0 first:pt-0">
+              <h4 className="font-semibold capitalize">{tier} Tier</h4>
+              <NumberField
+                label="Monthly price (USD)"
+                value={settings.teacherPlans[tier].priceUsdMonthly}
+                onChange={(value) =>
+                  setSettings((current) => ({
+                    ...current,
+                    teacherPlans: {
+                      ...current.teacherPlans,
+                      [tier]: { ...current.teacherPlans[tier], priceUsdMonthly: Math.max(0, value) },
+                    },
+                  }))
+                }
+              />
+              <NumberField
+                label="Max classrooms (null = unlimited)"
+                value={settings.teacherPlans[tier].classroomsMax ?? -1}
+                onChange={(value) =>
+                  setSettings((current) => ({
+                    ...current,
+                    teacherPlans: {
+                      ...current.teacherPlans,
+                      [tier]: { ...current.teacherPlans[tier], classroomsMax: value < 0 ? null : value },
+                    },
+                  }))
+                }
+              />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
       <Card>
         <CardContent className="text-muted-foreground flex items-start gap-3 p-5 text-sm">
           <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" />
@@ -807,3 +963,5 @@ function NumberField({
     </label>
   );
 }
+
+
