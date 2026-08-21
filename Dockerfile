@@ -72,6 +72,18 @@ ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL \
 
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY . .
+# TEMP DIAGNOSTIC — proves whether src/app is actually present in the build
+# context at the exact moment `next build` runs. Remove once root-caused.
+RUN echo "=== DEBUG: src/app tree ===" \
+    && pwd \
+    && ls -la . \
+    && ls -la src \
+    && find src/app -maxdepth 1 \
+    && echo "=== DEBUG: src/app/api/health ===" \
+    && cat src/app/api/health/route.ts \
+    && echo "=== DEBUG: next.config resolved ===" \
+    && cat next.config.ts \
+    && echo "=== END DEBUG ==="
 RUN /bin/bash -lc 'npm run build 2>&1 | tee /tmp/next-build.log; status=${PIPESTATUS[0]}; if [ "$status" -ne 0 ]; then echo "---- Next.js build failed: last 200 log lines ----"; tail -n 200 /tmp/next-build.log; exit "$status"; fi'
 
 FROM node:22-bookworm-slim AS runner
