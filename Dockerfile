@@ -12,7 +12,6 @@ FROM node:22-bookworm-slim AS builder
 WORKDIR /app
 ENV CI=1 \
     NEXT_TELEMETRY_DISABLED=1 \
-    NEXT_PRIVATE_BUILD_WORKER=1 \
     NODE_OPTIONS=--max-old-space-size=2048
 
 ARG NEXT_PUBLIC_SUPABASE_URL
