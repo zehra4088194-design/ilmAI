@@ -419,9 +419,16 @@ function discoverUrdu() {
 // is Sets and Functions, etc.) — so units are matched by POSITION only here,
 // never by the folder's own (unreliable) topic text.
 function extractMathExerciseKey(filename: string): string | null {
-  const numMatch = filename.match(/(\d+\.\d+)/);
-  if (numMatch) return numMatch[1]!;
-  if (/review/i.test(filename)) return 'review';
+  // Most units: "Exercise_2.1.pdf" / "Ch5_Ex5.2_..." → decimal "N.M".
+  // Units 11-13 use a different naming scheme instead: "ex11_1_solved.pdf",
+  // "ex12_2_mcqs.pdf" (underscore, not dot) — without this, every file in
+  // those two units failed to match ANY key and got silently dropped, so the
+  // whole chapter came up with zero resources.
+  const dotMatch = filename.match(/(\d+\.\d+)/);
+  if (dotMatch) return dotMatch[1]!;
+  const underscoreMatch = filename.match(/ex\d+_(\d+)/i);
+  if (underscoreMatch) return underscoreMatch[1]!;
+  if (/rev(iew)?/i.test(filename)) return 'review';
   return null;
 }
 

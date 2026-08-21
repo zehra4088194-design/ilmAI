@@ -20,8 +20,8 @@
     "path": "E:\\studyverse-ai - Copy\\android.keystore",
     "alias": "android"
   },
-  "appVersionName": "1",
-  "appVersionCode": 1,
+  "appVersionName": "1.0.1",
+  "appVersionCode": 3,
   "shortcuts": [
     {
       "name": "AI Tutor",
@@ -66,5 +66,5 @@
     "standalone",
     "minimal-ui"
   ],
-  "appVersion": "1"
+  "appVersion": "1.0.1"
 }

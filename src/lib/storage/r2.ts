@@ -100,9 +100,20 @@ function allConfigs(): R2Config[] {
 // Resolves which configured bucket to use: an explicit bucket name (from a
 // parsed r2:// URI) if given and known, otherwise the primary bucket —
 // preserving old behavior for every call site that still passes a bare key.
+//
+// Secondary bucket temporarily DISABLED (single-bucket setup): any call site
+// that still names the secondary bucket (env var SECONDARY_STORAGE_BUCKET, or
+// an old r2:// URI pointing at it) is transparently redirected to the primary
+// bucket here instead — one central switch instead of touching every script
+// and call site that used to route 11th/12th grade content to a second B2
+// account/bucket.
 function resolveConfig(bucket?: string): R2Config | null {
   const configs = allConfigs();
-  if (bucket) return configs.find((c) => c.bucket === bucket) || null;
+  const primary = getPrimaryConfig();
+  if (bucket) {
+    if (bucket === process.env.SECONDARY_STORAGE_BUCKET) return primary;
+    return configs.find((c) => c.bucket === bucket) || primary;
+  }
   return configs[0] || null;
 }
 
@@ -142,12 +153,26 @@ export function parseR2Uri(uri: string): { bucket: string; key: string } | null 
   return { bucket: bucket!, key };
 }
 
+// LOCAL_LIBRARY_STAGING_DIR (admin script escape hatch): when set, putR2Object
+// writes the file to <dir>/<key> on local disk instead of uploading to B2 —
+// used to build an exact-mirror local folder tree of everything that WOULD be
+// uploaded, for a human to bulk-upload themselves via a more reliable tool
+// (rclone/b2 CLI sync) than one-file-at-a-time Node uploads over a flaky link.
+async function writeLocalStagingFile(key: string, body: Uint8Array | Buffer | string) {
+  const { mkdir, writeFile } = await import('node:fs/promises');
+  const path = await import('node:path');
+  const dest = path.join(process.env.LOCAL_LIBRARY_STAGING_DIR!, key);
+  await mkdir(path.dirname(dest), { recursive: true });
+  await writeFile(dest, body as any);
+}
+
 export async function putR2Object(
   key: string,
   body: Uint8Array | Buffer | string,
   options: { contentType: string; cacheControl?: string; contentEncoding?: string },
   bucket?: string
 ) {
+  if (process.env.LOCAL_LIBRARY_STAGING_DIR) return writeLocalStagingFile(key, body);
   const config = resolveConfig(bucket);
   if (!config) throw new Error('R2 is not configured.');
   await getClient(config).send(

@@ -12,7 +12,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { putR2Object } from '../src/lib/storage/r2';
 
-const KEY_PREFIX = 'library/text-books/';
+const KEY_PREFIX = 'library/text-books/grade-9/';
 
 const BOOKS: { folder: string; file: string; subjectSlug: string; subjectName: string }[] = [
   { folder: 'Pak.studies', file: 'New 9 Pak Study UM Full Book Punjab.pdf', subjectSlug: 'pakistan-studies', subjectName: 'Pakistan Studies' },

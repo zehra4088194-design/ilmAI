@@ -1,0 +1,167 @@
+REUSABLE PROMPT FOR CHATGPT (Supabase-connected) — use this exact text for
+ANY class + ANY subject. Fill in CLASS and SUBJECT at the top, then attach
+THREE things in the same message:
+1. A ZIP of that ENTIRE subject's resource files for that class — every
+   .txt file (primary source) plus every light-theme PDF (fallback for
+   when a .txt is garbled).
+2. This class's Drive-IDs JSON (produced separately by a Claude session
+   with Drive connected — one JSON per class, covers all subjects).
+3. Nothing else needed — your Supabase connection handles the rest.
+
+You do BOTH extraction AND the database push yourself in this same
+session — there is no handoff to another AI. Work through the zip fully;
+if it's too large for one pass, say so and continue in the largest clean
+batches you can (e.g. by chapter), never silently skipping files partway
+through.
+
+===========================================================================
+
+CLASS = <fill in, e.g. 9th / 10th / 11th / 12th>
+SUBJECT = <fill in, e.g. Chemistry, Biology, Physics, Mathematics, English,
+Urdu, Computer Science, Pakistan Studies, Tarjuma Tul Quran, Islamiat>
+
+I am attaching a ZIP containing ALL resource files for this class + subject
+— .txt files (read these as the primary source) and light-theme PDFs (only
+open a resource's PDF when its .txt is garbled/unreadable for a specific
+question — bad OCR spacing, missing characters, broken option list — then
+read just that question from the PDF instead of guessing). I am also
+attaching a Drive-IDs JSON for this whole class, listing every resource's
+Drive file links across all subjects.
+
+STEP 1 — Find the matching resource rows, using your Supabase connection.
+```sql
+select id, title, subject_id, chapter_id, content_section
+from public.library_resources
+where grade_level = 'GRADE_<CLASS NUMBER>'
+  and subject_id = (select id from public.subjects where name = '<SUBJECT>')
+  and content_section in ('mcq','short','long','numericals');
+```
+Titles embed the original filename (pattern "Subject — Chapter Name —
+Topic — Section", e.g. "Chemistry — Energetics — Ch5 Energetics MCQs —
+Mcq" for a file based "Ch5_Energetics_MCQs"). Match each resource file in
+the zip to exactly one row this way. If a file doesn't clearly match
+exactly one row, skip it and list it separately in your final report
+instead of guessing.
+
+STEP 2 — Extract questions verbatim, then verify. For each resource file:
+- Read its .txt file fully. Transcribe every question **word-for-word** —
+  nothing paraphrased, nothing invented, nothing filled in from general
+  knowledge, no fixing what looks like a source typo.
+- If any single question's text is unreadable/garbled in the .txt, open
+  that resource's light-theme PDF and re-read just that question from
+  there instead — still verbatim, never reconstructed from memory.
+- Most files contain ONLY one type (MCQ/Short/Long/Numerical) — but some
+  (e.g. "exercises" files) genuinely mix types; classify each question
+  individually into the right bucket in that case, don't force the whole
+  file into one type.
+- MCQs need exactly 4 options and a correct answer. Only keep an MCQ if the
+  source's own answer key clearly marks the correct option — if there's no
+  answer key for a question, DROP it rather than guessing the answer.
+- Short/Long/Numerical: keep the question text, and a model answer/worked
+  solution ONLY if the source actually provides one. For numericals,
+  preserve the full worked solution steps exactly as shown (all working,
+  not just the final answer), including given values, formulas, and units.
+- Preserve special notation faithfully: chemical formulas, math
+  expressions/exponents/fractions, Urdu/Arabic script (original script,
+  never transliterated or translated), diagram references (note
+  "[diagram: description]" where you can't reproduce a figure in text).
+- Re-check every question against the source a second time before pushing
+  it to Supabase (wording, options, and correct answer must match exactly).
+  When in doubt about a specific question, drop that one question — don't
+  drop the whole file and don't guess.
+
+STEP 3 — Push into public.resource_mcq_sets (per-resource question bank),
+using your Supabase connection.
+```sql
+insert into public.resource_mcq_sets
+  (resource_kind, resource_id, questions, short_questions, long_questions, status, generated_at, updated_at)
+values
+  ('library', '<library_resources.id from Step 1>',
+   '<mcq array as [{"q":"...","opts":["...","...","...","..."],"correct":<0-3>,"exp":"..."}]>'::jsonb,
+   '<short/numerical array as [{"q":"...","marks":<n>,"keyPoints":["..."],"modelAnswer":"..."}]>'::jsonb,
+   '<long array, same shape as short>'::jsonb,
+   'ready', now(), now())
+on conflict (resource_kind, resource_id) do update set
+  questions = excluded.questions,
+  short_questions = excluded.short_questions,
+  long_questions = excluded.long_questions,
+  status = 'ready',
+  generated_at = now(),
+  updated_at = now();
+```
+A resource's content_section tells you which ONE of the three arrays to
+fill — leave the other two as `[]`. "numericals" resources go in
+short_questions (if brief) or long_questions (if a full worked solution).
+
+STEP 4 — Update the resource's Drive link, using the attached Drive-IDs
+JSON (match by base_filename — no Drive lookup needed, it's already in the
+JSON I gave you).
+```sql
+update public.library_resources
+set drive_url = '<dark_link from the matching Drive-IDs JSON entry, or
+                  light_link if dark is null — never leave both null if
+                  either exists in the JSON>'
+where id = '<library_resources.id from Step 1>';
+```
+Skip this update for a resource whose Drive-IDs JSON entry has both links
+null — don't guess or fabricate a link, and don't overwrite an existing
+drive_url with a null one.
+
+STEP 5 — ALSO push the same verified MCQs into the public.questions table
+(the main/public question bank — used by the diagnostic test and other
+question-bank features, independent of resource_mcq_sets). For every MCQ
+you kept in Step 2/3:
+```sql
+insert into public.questions
+  (chapter_id, subject_id, type, difficulty, text, options, correct_answer, explanation, marks, is_verified, is_demo_eligible, source_kind, source_id, tags, metadata)
+values
+  ('<chapter_id from Step 1>', '<subject_id from Step 1>', 'MCQ', 'MEDIUM',
+   '<question text>', '["opt A","opt B","opt C","opt D"]'::jsonb, '<correct index 0-3>'::jsonb,
+   '<explanation or null>', 1, true, false, 'library', '<library_resources.id>', '{}', '{}');
+```
+For Short/Long questions, same insert but `type` = 'SHORT' or 'LONG',
+`options` = null, `correct_answer` = the model answer text as a jsonb
+string, `marks` = the actual marks stated in the source (default 3 for
+short, 8 for long if not stated). Only set `is_verified: true` when you
+actually completed the Step 2 re-check for that specific question. If a
+resource's chapter_id is NULL (a chapter-less "general" resource, e.g.
+writing-skill drills), pass NULL for chapter_id here too — never guess a
+chapter to attach it to.
+
+STEP 6 — ALSO push the same verified MCQs into class_library_questions (a
+SEPARATE, simpler system — the "Class Library" nav section — already
+seeded with matching classes/subjects/resources; questions there are
+subject-level only, no chapter/resource link). Find the matching subject:
+```sql
+select cls.id
+from class_library_subjects cls
+join class_library_classes cc on cc.id = cls.class_id
+where cc.slug = 'class-<CLASS NUMBER>' and cls.name = '<SUBJECT>';
+```
+Then for every MCQ you kept:
+```sql
+insert into class_library_questions
+  (subject_id, text, options, correct_answer, explanation, difficulty, marks)
+values
+  ('<class_library_subjects.id from above>', '<question text>',
+   '[{"id":"a","text":"<opt A>"},{"id":"b","text":"<opt B>"},{"id":"c","text":"<opt C>"},{"id":"d","text":"<opt D>"}]'::jsonb,
+   '<the correct option's id — "a"/"b"/"c"/"d", matching Step 2's correct index>',
+   '<explanation or null>', 'MEDIUM', 1);
+```
+Skip Short/Long/Numerical questions here — class_library_questions is MCQ-
+only. Skip this step entirely for a question whose 'correct' was null.
+
+STEP 7 — Move to the next resource file in the zip and repeat Steps 1-6.
+Batch your inserts in reasonable chunks rather than one row at a time where
+your Supabase connection allows it.
+
+STEP 8 — Final report: for every resource file processed, its matched
+title + id, whether its Drive link was updated or left as-is (and why, if
+skipped), and how many MCQ/short/long/numerical questions were kept vs
+dropped and why (no answer key, ambiguous match, unreadable even in the
+PDF, etc.) — including how many MCQs made it into class_library_questions.
+List separately any resource file that couldn't be matched to a row at
+all, and any Drive-IDs JSON entry that had no matching file in the zip.
+Do NOT touch resource_processing_jobs, or any row outside GRADE_LEVEL +
+SUBJECT in this task — library_resources.drive_url is the ONE field on
+that table you update, only via Step 4's exact match.

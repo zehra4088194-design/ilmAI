@@ -27,6 +27,7 @@ import { RoutineTestsWidget } from '@/components/ui/RoutineTestsWidget';
 import { useTranslations, useLocale } from '@/providers/I18nProvider';
 import { LOCALES, LOCALE_LABELS, type Locale } from '@/lib/i18n/config';
 import { ClassSettingsCard } from '@/components/features/settings/ClassSettingsCard';
+import Link from 'next/link';
 import {
   CLASS_SELECTION_GRADE_LEVELS,
   type GradeLevel,
@@ -43,7 +44,6 @@ import {
 import { ThemePicker } from '@/components/common/ThemePicker';
 import { useAuthStore } from '@/store/auth.store';
 import { DownloadsClient } from '@/components/features/offline/DownloadsClient';
-import Link from 'next/link';
 import { disablePushNotifications, enablePushNotifications } from '@/lib/push/client';
 
 const DEFAULT_NOTIFICATION_PREFERENCES = {
@@ -163,6 +163,7 @@ export function SettingsTabs({
     { id: 'appearance', label: t('settings.tabs.appearance'), icon: Palette },
     { id: 'downloads', label: 'Downloads', icon: HardDriveDownload },
     { id: 'language', label: t('settings.tabs.language'), icon: Languages },
+    { id: 'delete-account', label: 'Delete Account', icon: Trash2 },
   ];
 
   // Check if this student already has an approved parent link — if so, show
@@ -898,6 +899,40 @@ export function SettingsTabs({
                   </button>
                 ))}
               </div>
+            </div>
+          )}
+          {activeTab === 'delete-account' && (
+            <div className="space-y-4">
+              <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-4">
+                <div className="flex gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-500/10">
+                    <Trash2 className="h-5 w-5 text-red-500" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-red-600 dark:text-red-400">Delete Your Account</p>
+                    <p className="text-muted-foreground mt-1 text-xs leading-5">
+                      Permanently delete your ilm AI account and all associated data. This action cannot be undone.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-sm">
+                  If you decide to delete your account, we'll permanently remove:
+                </p>
+                <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+                  <li>Your profile and personal information</li>
+                  <li>All study progress and marks</li>
+                  <li>Flashcard decks and notes</li>
+                  <li>Quiz attempts and game progress</li>
+                  <li>All messages and conversations</li>
+                </ul>
+              </div>
+
+              <Button asChild variant="destructive">
+                <Link href="/settings/delete-account">Proceed to Delete Account</Link>
+              </Button>
             </div>
           )}
         </CardContent>

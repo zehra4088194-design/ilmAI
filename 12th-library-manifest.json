@@ -1121,6 +1121,54 @@
   },
   {
     "subject_slug": "computer-science",
+    "chapter_slug": "g12-elements-of-c",
+    "chapter_id": "3a437894-da7a-440f-94a7-34ff4405c2fe",
+    "content_section": "mcq",
+    "title": "Computer Science — Chapter 9: Elements of C — MCQs",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-elements-of-c/mcq/elements-of-c-mcqs.light.pdf",
+    "dark_key": "library/computer-science/g12-elements-of-c/mcq/elements-of-c-mcqs.dark.pdf",
+    "context_key": "library/computer-science/g12-elements-of-c/mcq/elements-of-c-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\data\\12th\\notes\\com\\Ch9_ElementsOfC_MCQs_Dark.pdf",
+      "light": "E:\\data\\12th\\notes\\com\\Ch9_ElementsOfC_MCQs_Light.pdf",
+      "txt": "E:\\data\\12th\\notes\\com\\Ch9_ElementsOfC_MCQs.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-elements-of-c",
+    "chapter_id": "3a437894-da7a-440f-94a7-34ff4405c2fe",
+    "content_section": "long",
+    "title": "Computer Science — Chapter 9: Elements of C — Long Questions",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-elements-of-c/long/elements-of-c-long-questions.light.pdf",
+    "dark_key": "library/computer-science/g12-elements-of-c/long/elements-of-c-long-questions.dark.pdf",
+    "context_key": "library/computer-science/g12-elements-of-c/long/elements-of-c-long-questions.context.txt",
+    "source": {
+      "dark": "E:\\data\\12th\\notes\\com\\Ch9_ElementsOfC_LongQ_Dark.pdf",
+      "light": "E:\\data\\12th\\notes\\com\\Ch9_ElementsOfC_LongQ_Light.pdf",
+      "txt": "E:\\data\\12th\\notes\\com\\Ch9_ElementsOfC_LongQ.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "chapter_slug": "g12-elements-of-c",
+    "chapter_id": "3a437894-da7a-440f-94a7-34ff4405c2fe",
+    "content_section": "short",
+    "title": "Computer Science — Chapter 9: Elements of C — Short Questions",
+    "book_title": "Class 12 Computer Science Notes (Punjab)",
+    "light_key": "library/computer-science/g12-elements-of-c/short/elements-of-c-short-questions.light.pdf",
+    "dark_key": "library/computer-science/g12-elements-of-c/short/elements-of-c-short-questions.dark.pdf",
+    "context_key": "library/computer-science/g12-elements-of-c/short/elements-of-c-short-questions.context.txt",
+    "source": {
+      "dark": "E:\\data\\12th\\notes\\com\\Ch9_ElementsOfC_ShortQ_Dark.pdf",
+      "light": "E:\\data\\12th\\notes\\com\\Ch9_ElementsOfC_ShortQ_Light.pdf",
+      "txt": "E:\\data\\12th\\notes\\com\\Ch9_ElementsOfC_ShortQ.txt"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
     "chapter_slug": "g12-inputoutput",
     "chapter_id": "68f3881a-6813-4cf5-b5a3-4521f6be0f92",
     "content_section": "mcq",
@@ -3553,6 +3601,198 @@
   },
   {
     "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-al-ahzab",
+    "chapter_id": "2151de96-1a35-4638-8779-419b2cab220c",
+    "content_section": "mcq",
+    "title": "Tarjuma Tul Quran — Surah Al-Ahzab — MCQs",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-al-ahzab/mcq/surah-al-ahzab-mcqs.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-al-ahzab/mcq/surah-al-ahzab-mcqs.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-al-ahzab/mcq/surah-al-ahzab-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\data\\12th\\notes\\T_Q\\4_Al-Ahzab_MCQs50_Dark.pdf",
+      "light": "E:\\data\\12th\\notes\\T_Q\\4_Al-Ahzab_MCQs50_Light.pdf",
+      "txt": "E:\\data\\12th\\notes\\T_Q\\Al-Ahzab_MCQs50.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-al-ahzab",
+    "chapter_id": "2151de96-1a35-4638-8779-419b2cab220c",
+    "content_section": "reading",
+    "title": "Tarjuma Tul Quran — Surah Al-Ahzab — Notes",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-al-ahzab/reading/surah-al-ahzab-notes.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-al-ahzab/reading/surah-al-ahzab-notes.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-al-ahzab/reading/surah-al-ahzab-notes.context.txt",
+    "source": {
+      "dark": "E:\\data\\12th\\notes\\T_Q\\4_Al-Ahzab_Notes_Dark.pdf",
+      "light": "E:\\data\\12th\\notes\\T_Q\\4_Al-Ahzab_Notes_Light.pdf",
+      "txt": "E:\\data\\12th\\notes\\T_Q\\Al-Ahzab_Notes.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-muhammad",
+    "chapter_id": "03cc0022-2765-44ca-927e-c9b9fddeb0c3",
+    "content_section": "mcq",
+    "title": "Tarjuma Tul Quran — Surah Muhammad — MCQs",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-muhammad/mcq/surah-muhammad-mcqs.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-muhammad/mcq/surah-muhammad-mcqs.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-muhammad/mcq/surah-muhammad-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\data\\12th\\notes\\T_Q\\5_Muhammad_MCQs50_Dark.pdf",
+      "light": "E:\\data\\12th\\notes\\T_Q\\5_Muhammad_MCQs50_Light.pdf",
+      "txt": "E:\\data\\12th\\notes\\T_Q\\Muhammad_MCQs50.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-muhammad",
+    "chapter_id": "03cc0022-2765-44ca-927e-c9b9fddeb0c3",
+    "content_section": "reading",
+    "title": "Tarjuma Tul Quran — Surah Muhammad — Notes",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-muhammad/reading/surah-muhammad-notes.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-muhammad/reading/surah-muhammad-notes.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-muhammad/reading/surah-muhammad-notes.context.txt",
+    "source": {
+      "dark": "E:\\data\\12th\\notes\\T_Q\\5_Muhammad_Notes_Dark.pdf",
+      "light": "E:\\data\\12th\\notes\\T_Q\\5_Muhammad_Notes_Light.pdf",
+      "txt": "E:\\data\\12th\\notes\\T_Q\\Muhammad_Notes.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-al-fath",
+    "chapter_id": "6834aa3e-816e-4f60-83cd-a7872cc9bfbf",
+    "content_section": "mcq",
+    "title": "Tarjuma Tul Quran — Surah Al-Fath — MCQs",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-al-fath/mcq/surah-al-fath-mcqs.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-al-fath/mcq/surah-al-fath-mcqs.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-al-fath/mcq/surah-al-fath-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\data\\12th\\notes\\T_Q\\6_Al-Fath_MCQs50_Dark.pdf",
+      "light": "E:\\data\\12th\\notes\\T_Q\\6_Al-Fath_MCQs50_Light.pdf",
+      "txt": "E:\\data\\12th\\notes\\T_Q\\Al-Fath_MCQs50.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-al-fath",
+    "chapter_id": "6834aa3e-816e-4f60-83cd-a7872cc9bfbf",
+    "content_section": "reading",
+    "title": "Tarjuma Tul Quran — Surah Al-Fath — Notes",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-al-fath/reading/surah-al-fath-notes.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-al-fath/reading/surah-al-fath-notes.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-al-fath/reading/surah-al-fath-notes.context.txt",
+    "source": {
+      "dark": "E:\\data\\12th\\notes\\T_Q\\6_Al-Fath_Notes_Dark.pdf",
+      "light": "E:\\data\\12th\\notes\\T_Q\\6_Al-Fath_Notes_Light.pdf",
+      "txt": "E:\\data\\12th\\notes\\T_Q\\Al-Fath_Notes.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-al-hujurat",
+    "chapter_id": "47c7c3d4-04ad-473d-a36b-01f67022e4ec",
+    "content_section": "mcq",
+    "title": "Tarjuma Tul Quran — Surah Al-Hujurat — MCQs",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-al-hujurat/mcq/surah-al-hujurat-mcqs.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-al-hujurat/mcq/surah-al-hujurat-mcqs.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-al-hujurat/mcq/surah-al-hujurat-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\data\\12th\\notes\\T_Q\\7_AlHujurat_MCQs50_Dark.pdf",
+      "light": "E:\\data\\12th\\notes\\T_Q\\7_AlHujurat_MCQs50_Light.pdf",
+      "txt": "E:\\data\\12th\\notes\\T_Q\\7_Al-Hujurat_MCQs50.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-al-hujurat",
+    "chapter_id": "47c7c3d4-04ad-473d-a36b-01f67022e4ec",
+    "content_section": "reading",
+    "title": "Tarjuma Tul Quran — Surah Al-Hujurat — Notes",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-al-hujurat/reading/surah-al-hujurat-notes.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-al-hujurat/reading/surah-al-hujurat-notes.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-al-hujurat/reading/surah-al-hujurat-notes.context.txt",
+    "source": {
+      "dark": "E:\\data\\12th\\notes\\T_Q\\7_AlHujurat_Notes_Dark.pdf",
+      "light": "E:\\data\\12th\\notes\\T_Q\\7_AlHujurat_Notes_Light.pdf",
+      "txt": "E:\\data\\12th\\notes\\T_Q\\7_Al-Hujurat_Notes.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-al-hadid",
+    "chapter_id": "01d6106b-5d0d-475b-a900-16241749c078",
+    "content_section": "mcq",
+    "title": "Tarjuma Tul Quran — Surah Al-Hadid — MCQs",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-al-hadid/mcq/surah-al-hadid-mcqs.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-al-hadid/mcq/surah-al-hadid-mcqs.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-al-hadid/mcq/surah-al-hadid-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\data\\12th\\notes\\T_Q\\8_AlHadeed_MCQs50_Dark.pdf",
+      "light": "E:\\data\\12th\\notes\\T_Q\\8_AlHadeed_MCQs50_Light.pdf",
+      "txt": "E:\\data\\12th\\notes\\T_Q\\8_Al-Hadeed_MCQs50.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-al-hadid",
+    "chapter_id": "01d6106b-5d0d-475b-a900-16241749c078",
+    "content_section": "reading",
+    "title": "Tarjuma Tul Quran — Surah Al-Hadid — Notes",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-al-hadid/reading/surah-al-hadid-notes.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-al-hadid/reading/surah-al-hadid-notes.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-al-hadid/reading/surah-al-hadid-notes.context.txt",
+    "source": {
+      "dark": "E:\\data\\12th\\notes\\T_Q\\8_AlHadeed_Notes_Dark.pdf",
+      "light": "E:\\data\\12th\\notes\\T_Q\\8_AlHadeed_Notes_Light.pdf",
+      "txt": "E:\\data\\12th\\notes\\T_Q\\8_Al-Hadeed_Notes.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-al-mujadila",
+    "chapter_id": "0ded1616-bf80-4f29-9b87-28d7858961b3",
+    "content_section": "mcq",
+    "title": "Tarjuma Tul Quran — Surah Al-Mujadila — MCQs",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-al-mujadila/mcq/surah-al-mujadila-mcqs.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-al-mujadila/mcq/surah-al-mujadila-mcqs.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-al-mujadila/mcq/surah-al-mujadila-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\data\\12th\\notes\\T_Q\\9_AlMujadila_MCQs50_Dark.pdf",
+      "light": "E:\\data\\12th\\notes\\T_Q\\9_AlMujadila_MCQs50_Light.pdf",
+      "txt": "E:\\data\\12th\\notes\\T_Q\\9_Al-Mujadila_MCQs50.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-al-mujadila",
+    "chapter_id": "0ded1616-bf80-4f29-9b87-28d7858961b3",
+    "content_section": "reading",
+    "title": "Tarjuma Tul Quran — Surah Al-Mujadila — Notes",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-al-mujadila/reading/surah-al-mujadila-notes.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-al-mujadila/reading/surah-al-mujadila-notes.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-al-mujadila/reading/surah-al-mujadila-notes.context.txt",
+    "source": {
+      "dark": "E:\\data\\12th\\notes\\T_Q\\9_AlMujadila_Notes_Dark.pdf",
+      "light": "E:\\data\\12th\\notes\\T_Q\\9_AlMujadila_Notes_Light.pdf",
+      "txt": "E:\\data\\12th\\notes\\T_Q\\9_Al-Mujadila_Notes.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
     "chapter_slug": "g12-surah-al-hashr",
     "chapter_id": "a8a93593-d782-41b3-8fde-8ea79e952e3b",
     "content_section": "mcq",
@@ -3645,6 +3885,166 @@
       "dark": "E:\\data\\12th\\notes\\T_Q\\12_AsSaff_Notes_Dark.pdf",
       "light": "E:\\data\\12th\\notes\\T_Q\\12_AsSaff_Notes_Light.pdf",
       "txt": "E:\\data\\12th\\notes\\T_Q\\AsSaff_Notes.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-al-jumuah",
+    "chapter_id": "4e52048e-a049-4410-8aee-cbd13c65f7ad",
+    "content_section": "mcq",
+    "title": "Tarjuma Tul Quran — Surah Al-Jumu'ah — MCQs",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-al-jumuah/mcq/surah-al-jumu-ah-mcqs.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-al-jumuah/mcq/surah-al-jumu-ah-mcqs.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-al-jumuah/mcq/surah-al-jumu-ah-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\data\\12th\\notes\\T_Q\\13_Al-Jumuah_MCQs50_Dark.pdf",
+      "light": "E:\\data\\12th\\notes\\T_Q\\13_Al-Jumuah_MCQs50_Light.pdf",
+      "txt": "E:\\data\\12th\\notes\\T_Q\\13_Al-Jumuah_MCQs50.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-al-jumuah",
+    "chapter_id": "4e52048e-a049-4410-8aee-cbd13c65f7ad",
+    "content_section": "reading",
+    "title": "Tarjuma Tul Quran — Surah Al-Jumu'ah — Notes",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-al-jumuah/reading/surah-al-jumu-ah-notes.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-al-jumuah/reading/surah-al-jumu-ah-notes.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-al-jumuah/reading/surah-al-jumu-ah-notes.context.txt",
+    "source": {
+      "dark": "E:\\data\\12th\\notes\\T_Q\\13_Al-Jumuah_Notes_Dark.pdf",
+      "light": "E:\\data\\12th\\notes\\T_Q\\13_Al-Jumuah_Notes_Light.pdf",
+      "txt": "E:\\data\\12th\\notes\\T_Q\\13_Al-Jumuah_Notes.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-al-munafiqun",
+    "chapter_id": "ae252c5b-5e7b-43fb-bd9b-43e7cb6fdc93",
+    "content_section": "mcq",
+    "title": "Tarjuma Tul Quran — Surah Al-Munafiqun — MCQs",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-al-munafiqun/mcq/surah-al-munafiqun-mcqs.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-al-munafiqun/mcq/surah-al-munafiqun-mcqs.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-al-munafiqun/mcq/surah-al-munafiqun-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\data\\12th\\notes\\T_Q\\14_Al-Munafiqun_MCQs50_Dark.pdf",
+      "light": "E:\\data\\12th\\notes\\T_Q\\14_Al-Munafiqun_MCQs50_Light.pdf",
+      "txt": "E:\\data\\12th\\notes\\T_Q\\14_Al-Munafiqun_MCQs50.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-al-munafiqun",
+    "chapter_id": "ae252c5b-5e7b-43fb-bd9b-43e7cb6fdc93",
+    "content_section": "reading",
+    "title": "Tarjuma Tul Quran — Surah Al-Munafiqun — Notes",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-al-munafiqun/reading/surah-al-munafiqun-notes.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-al-munafiqun/reading/surah-al-munafiqun-notes.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-al-munafiqun/reading/surah-al-munafiqun-notes.context.txt",
+    "source": {
+      "dark": "E:\\data\\12th\\notes\\T_Q\\14_Al-Munafiqun_Notes_Dark.pdf",
+      "light": "E:\\data\\12th\\notes\\T_Q\\14_Al-Munafiqun_Notes_Light.pdf",
+      "txt": "E:\\data\\12th\\notes\\T_Q\\14_Al-Munafiqun_Notes.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-at-taghabun",
+    "chapter_id": "156a42af-d4ba-487f-8270-ad34b21bb187",
+    "content_section": "mcq",
+    "title": "Tarjuma Tul Quran — Surah At-Taghabun — MCQs",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-at-taghabun/mcq/surah-at-taghabun-mcqs.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-at-taghabun/mcq/surah-at-taghabun-mcqs.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-at-taghabun/mcq/surah-at-taghabun-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\data\\12th\\notes\\T_Q\\15_At-Taghabun_MCQs50_Dark.pdf",
+      "light": "E:\\data\\12th\\notes\\T_Q\\15_At-Taghabun_MCQs50_Light.pdf",
+      "txt": "E:\\data\\12th\\notes\\T_Q\\15_At-Taghabun_MCQs50.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-at-taghabun",
+    "chapter_id": "156a42af-d4ba-487f-8270-ad34b21bb187",
+    "content_section": "reading",
+    "title": "Tarjuma Tul Quran — Surah At-Taghabun — Notes",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-at-taghabun/reading/surah-at-taghabun-notes.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-at-taghabun/reading/surah-at-taghabun-notes.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-at-taghabun/reading/surah-at-taghabun-notes.context.txt",
+    "source": {
+      "dark": "E:\\data\\12th\\notes\\T_Q\\15_At-Taghabun_Notes_Dark.pdf",
+      "light": "E:\\data\\12th\\notes\\T_Q\\15_At-Taghabun_Notes_Light.pdf",
+      "txt": "E:\\data\\12th\\notes\\T_Q\\15_At-Taghabun_Notes.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-at-talaq",
+    "chapter_id": "08dc188d-d03c-451e-93e4-55fca513dcd7",
+    "content_section": "mcq",
+    "title": "Tarjuma Tul Quran — Surah At-Talaq — MCQs",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-at-talaq/mcq/surah-at-talaq-mcqs.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-at-talaq/mcq/surah-at-talaq-mcqs.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-at-talaq/mcq/surah-at-talaq-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\data\\12th\\notes\\T_Q\\16_At-Talaq_MCQs50_Dark.pdf",
+      "light": "E:\\data\\12th\\notes\\T_Q\\16_At-Talaq_MCQs50_Light.pdf",
+      "txt": "E:\\data\\12th\\notes\\T_Q\\16_At-Talaq_MCQs50.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-at-talaq",
+    "chapter_id": "08dc188d-d03c-451e-93e4-55fca513dcd7",
+    "content_section": "reading",
+    "title": "Tarjuma Tul Quran — Surah At-Talaq — Notes",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-at-talaq/reading/surah-at-talaq-notes.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-at-talaq/reading/surah-at-talaq-notes.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-at-talaq/reading/surah-at-talaq-notes.context.txt",
+    "source": {
+      "dark": "E:\\data\\12th\\notes\\T_Q\\16_At-Talaq_Notes_Dark.pdf",
+      "light": "E:\\data\\12th\\notes\\T_Q\\16_At-Talaq_Notes_Light.pdf",
+      "txt": "E:\\data\\12th\\notes\\T_Q\\16_At-Talaq_Notes.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-at-tahrim",
+    "chapter_id": "0161270e-6433-4606-8f5f-83b44c34ef0a",
+    "content_section": "mcq",
+    "title": "Tarjuma Tul Quran — Surah At-Tahrim — MCQs",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-at-tahrim/mcq/surah-at-tahrim-mcqs.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-at-tahrim/mcq/surah-at-tahrim-mcqs.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-at-tahrim/mcq/surah-at-tahrim-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\data\\12th\\notes\\T_Q\\17_At-Tahrim_MCQs50_Dark.pdf",
+      "light": "E:\\data\\12th\\notes\\T_Q\\17_At-Tahrim_MCQs50_Light.pdf",
+      "txt": "E:\\data\\12th\\notes\\T_Q\\17_At-Tahrim_MCQs50.txt"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "chapter_slug": "g12-surah-at-tahrim",
+    "chapter_id": "0161270e-6433-4606-8f5f-83b44c34ef0a",
+    "content_section": "reading",
+    "title": "Tarjuma Tul Quran — Surah At-Tahrim — Notes",
+    "book_title": "Class 12 Tarjuma Tul Quran Notes (Punjab)",
+    "light_key": "library/tarjuma-tul-quran/g12-surah-at-tahrim/reading/surah-at-tahrim-notes.light.pdf",
+    "dark_key": "library/tarjuma-tul-quran/g12-surah-at-tahrim/reading/surah-at-tahrim-notes.dark.pdf",
+    "context_key": "library/tarjuma-tul-quran/g12-surah-at-tahrim/reading/surah-at-tahrim-notes.context.txt",
+    "source": {
+      "dark": "E:\\data\\12th\\notes\\T_Q\\17_At-Tahrim_Notes_Dark.pdf",
+      "light": "E:\\data\\12th\\notes\\T_Q\\17_At-Tahrim_Notes_Light.pdf",
+      "txt": "E:\\data\\12th\\notes\\T_Q\\17_At-Tahrim_Notes.txt"
     }
   },
   {

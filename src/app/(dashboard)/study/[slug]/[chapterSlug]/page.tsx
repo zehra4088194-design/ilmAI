@@ -143,30 +143,25 @@ export default async function ChapterDetailPage({
       )}
 
       <div className="grid grid-cols-2 gap-3">
-        {LIBRARY_SECTIONS.map((section) => {
+        {LIBRARY_SECTIONS.filter(
+          (section) => studyResources.filter((resource) => resource.content_section === section.value).length > 0
+        ).map((section) => {
           const Icon = SECTION_ICONS[section.value];
           const files = studyResources.filter((resource) => resource.content_section === section.value);
-          const available = files.length > 0;
           const card = (
-            <Card
-              className={`border-border/60 bg-card/80 h-full transition-colors ${
-                available ? 'group-hover:border-violet-500/40' : 'opacity-55'
-              }`}
-            >
+            <Card className="border-border/60 bg-card/80 h-full transition-colors group-hover:border-violet-500/40">
               <CardContent className="flex min-h-32 flex-col p-4">
                 <Icon className="h-6 w-6 text-violet-300" />
                 <h2 className="mt-3 font-semibold">{section.title}</h2>
                 <p className="text-muted-foreground mt-1 text-xs">
-                  {available ? `${files.length} ${files.length === 1 ? 'file' : 'files'}` : 'Not available'}
+                  {files.length} {files.length === 1 ? 'file' : 'files'}
                 </p>
-                {available && (
-                  <ArrowRight className="mt-auto h-4 w-4 self-end text-violet-300 transition-transform group-hover:translate-x-1" />
-                )}
+                <ArrowRight className="mt-auto h-4 w-4 self-end text-violet-300 transition-transform group-hover:translate-x-1" />
               </CardContent>
             </Card>
           );
 
-          return available ? (
+          return (
             <Link
               key={section.value}
               href={`/library/${subject.slug}/${chapter.slug}/${section.slug}?type=notes`}
@@ -174,8 +169,6 @@ export default async function ChapterDetailPage({
             >
               {card}
             </Link>
-          ) : (
-            <div key={section.value}>{card}</div>
           );
         })}
       </div>
