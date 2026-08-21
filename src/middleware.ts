@@ -111,6 +111,15 @@ export async function middleware(request: NextRequest) {
   const origin = getRequestSiteUrl(request);
   const playConsumptionOnly = isPlayConsumptionOnlyHost(getRequestHost(request.headers));
 
+  // Docker/Coolify healthcheck must never depend on Supabase (or any other network
+  // call) being reachable — updateSession() below does an uncached auth.getUser()
+  // round-trip on every request, and if Supabase is slow/unreachable that hangs
+  // indefinitely, which hangs /api/health, which fails the container healthcheck
+  // and takes the whole deployment down even though the app itself is fine.
+  if (pathname === '/api/health' || pathname.startsWith('/api/health/')) {
+    return NextResponse.next();
+  }
+
   if (pathname.startsWith('/principal-') && pathname.length > '/principal-'.length) {
     const url = request.nextUrl.clone();
     url.pathname = `/principal/${pathname.slice('/principal-'.length)}`;
