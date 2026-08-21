@@ -1,6 +1,5 @@
 'use client';
 import dynamic from 'next/dynamic';
-import Script from 'next/script';
 import { ThemeProvider } from 'next-themes';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
@@ -48,7 +47,6 @@ export function Providers({
   initialTheme?: AppThemeId;
   nonce?: string;
 }) {
-  const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY?.trim();
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -71,14 +69,6 @@ export function Providers({
         >
           <ThemeRuntime />
           {children}
-          {recaptchaSiteKey && (
-            <Script
-              id="google-recaptcha-v3"
-              src={`https://www.google.com/recaptcha/api.js?render=${encodeURIComponent(recaptchaSiteKey)}&trustedtypes=true`}
-              strategy="afterInteractive"
-              nonce={nonce}
-            />
-          )}
           <AdSenseScript nonce={nonce} />
           <PostHogClient />
           <ServiceWorkerRegister />

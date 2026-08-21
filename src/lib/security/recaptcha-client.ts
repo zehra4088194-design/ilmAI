@@ -15,9 +15,23 @@ declare global {
 
 const SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY?.trim() || '';
 const LOAD_TIMEOUT_MS = 10_000;
+const SCRIPT_ID = 'google-recaptcha-v3';
+
+function loadRecaptchaScript() {
+  if (!SITE_KEY || typeof document === 'undefined') return;
+  if (document.getElementById(SCRIPT_ID)) return;
+
+  const script = document.createElement('script');
+  script.id = SCRIPT_ID;
+  script.src = `https://www.google.com/recaptcha/api.js?render=${encodeURIComponent(SITE_KEY)}&trustedtypes=true`;
+  script.async = true;
+  script.defer = true;
+  document.head.appendChild(script);
+}
 
 function waitForRecaptcha() {
   return new Promise<GoogleRecaptcha>((resolve, reject) => {
+    loadRecaptchaScript();
     const startedAt = Date.now();
     const check = () => {
       if (window.grecaptcha) {
