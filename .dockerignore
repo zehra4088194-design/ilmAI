@@ -4,6 +4,7 @@
 .vercel
 oracle-keys
 node_modules
+app
 coverage
 tests
 *.log
