@@ -318,12 +318,12 @@ export function RegisterForm() {
     (calculateAge(birthDateValue) as number) < KIDS_DASHBOARD_AGE_CUTOFF;
 
   const steps = useMemo(() => {
-    if (!identity) return [];
+    if (!identity) return [IDENTITY_STEP];
     return getSignupSteps(identity, institutionalRole, isYoungChild);
   }, [identity, institutionalRole, isYoungChild]);
   const currentStep = steps[Math.min(stepIndex, steps.length - 1)]!;
   const isFirstStep = stepIndex === 0;
-  const isLastStep = stepIndex === steps.length - 1;
+  const isLastStep = Boolean(identity) && stepIndex === steps.length - 1;
 
   useEffect(() => {
     fetch('/api/geo')
