@@ -582,7 +582,7 @@ export function RegisterForm() {
         document.cookie = `${THEME_COOKIE_NAME}=${genderTheme}; Path=/; Max-Age=31536000; SameSite=Lax`;
         window.localStorage.setItem('ilm-ai-gender-theme-user', signUpData.user?.id || data.email);
       }
-      const normalDestination =
+      let normalDestination =
         effectiveRole === 'parent'
           ? '/parent'
           : isYoungChild
@@ -590,6 +590,23 @@ export function RegisterForm() {
             : !isInstitutional && educationLevel === 'university'
               ? '/onboarding/complete-profile'
               : redirect;
+      // A school/college member (principal/owner, teacher, staff, ...) can already have an active
+      // school_memberships/college_memberships row at signup time — e.g. an admin pre-added their
+      // email as a school owner before they ever signed up themselves. Without this check, that
+      // person's own /register wizard would send them straight to `redirect` (usually /dashboard)
+      // and generic student onboarding, completely bypassing their institution portal — the exact
+      // membership check LoginForm's finishLogin() already does via post-login-destination.
+      if (!isYoungChild && effectiveRole !== 'parent') {
+        try {
+          const destinationResponse = await fetch(
+            `/api/auth/post-login-destination?redirect=${encodeURIComponent(normalDestination)}`
+          );
+          const destinationData = await destinationResponse.json();
+          if (typeof destinationData.destination === 'string') normalDestination = destinationData.destination;
+        } catch {
+          // Keep the computed fallback destination if the lookup fails.
+        }
+      }
       // Kids accounts skip the offer entirely — a young child isn't the one setting up their own
       // authenticator app; a parent/guardian can enable it later from Settings if they want to.
       router.push(
