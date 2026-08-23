@@ -59,6 +59,9 @@ export function ProtectedPdfViewer({
 }) {
   const frameRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
+  // Wraps the whole page stack — this is what the live pinch gesture transforms (see the pinch
+  // effect below) instead of touching react-pdf's own rendering during the gesture.
+  const pinchScaleRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<Array<HTMLDivElement | null>>([]);
   const [containerWidth, setContainerWidth] = useState(0);
   const [pages, setPages] = useState(0);
@@ -229,17 +232,24 @@ export function ProtectedPdfViewer({
     return () => observer.disconnect();
   }, [pages]);
 
-  // Two-finger pinch inside the viewport scales the PDF's own `zoom` state instead of the
-  // browser's native page zoom. `touch-action: pan-x pan-y` on the viewport (below) already tells
-  // the browser not to handle pinch gestures there itself — without that, the pinch would zoom the
-  // whole web page (title bar, sidebar, everything) rather than just the PDF, which is exactly the
-  // reported bug. This only tracks the distance between the two touches; single-finger scrolling
-  // is untouched since normal scroll/pan still passes through pan-x/pan-y.
+  // Two-finger pinch inside the viewport scales the PDF like iOS's native PDF viewer: the live
+  // gesture is a plain CSS transform on the whole page stack (instant, 60fps, no react-pdf work),
+  // and only on release does it commit to `zoom` state — which triggers the real re-render at the
+  // new resolution once, instead of react-pdf reflowing/re-rasterizing every mounted page on every
+  // touchmove tick (what made pinching feel slow/stuttery before; a canvas re-render per frame
+  // can't keep up with a fast pinch). `touch-action: pan-x pan-y` on the viewport (below) already
+  // tells the browser not to handle pinch gestures there itself — without that, the pinch would
+  // zoom the whole web page (title bar, sidebar, everything) rather than just the PDF. The
+  // transform's origin tracks the pinch midpoint so the content zooms toward the fingers, the same
+  // way iOS anchors the zoom, rather than always scaling from the top-left corner.
   useEffect(() => {
     const viewport = viewportRef.current;
-    if (!viewport) return;
+    const pinchTarget = pinchScaleRef.current;
+    if (!viewport || !pinchTarget) return;
     let pinchStartDistance = 0;
     let pinchStartZoom = 1;
+    let liveScale = 1;
+    let active = false;
 
     const distanceBetween = (touches: TouchList) => {
       const a = touches.item(0);
@@ -248,21 +258,48 @@ export function ProtectedPdfViewer({
       return Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY);
     };
 
+    const midpointOrigin = (touches: TouchList) => {
+      const a = touches.item(0);
+      const b = touches.item(1);
+      if (!a || !b) return '50% 50%';
+      const rect = pinchTarget.getBoundingClientRect();
+      const midX = (a.clientX + b.clientX) / 2 - rect.left + viewport.scrollLeft;
+      const midY = (a.clientY + b.clientY) / 2 - rect.top + viewport.scrollTop;
+      return `${midX}px ${midY}px`;
+    };
+
     const onTouchStart = (event: TouchEvent) => {
       if (event.touches.length !== 2) return;
+      active = true;
       pinchStartDistance = distanceBetween(event.touches);
       pinchStartZoom = zoomRef.current;
+      liveScale = 1;
+      pinchTarget.style.transformOrigin = midpointOrigin(event.touches);
+      pinchTarget.style.transition = 'none';
     };
 
     const onTouchMove = (event: TouchEvent) => {
-      if (event.touches.length !== 2 || !pinchStartDistance) return;
+      if (!active || event.touches.length !== 2 || !pinchStartDistance) return;
       event.preventDefault();
-      const ratio = distanceBetween(event.touches) / pinchStartDistance;
-      setZoom(Math.min(2.25, Math.max(0.7, Number((pinchStartZoom * ratio).toFixed(2)))));
+      const targetZoom = Math.min(2.25, Math.max(0.7, pinchStartZoom * (distanceBetween(event.touches) / pinchStartDistance)));
+      liveScale = targetZoom / pinchStartZoom;
+      pinchTarget.style.transform = `scale(${liveScale})`;
+    };
+
+    const commit = () => {
+      if (!active) return;
+      active = false;
+      pinchStartDistance = 0;
+      const finalZoom = Number((pinchStartZoom * liveScale).toFixed(2));
+      // Snap the transform back to identity in the same tick `zoom` state updates, so the brief
+      // moment between "release the transform" and "react-pdf re-renders at the new width" never
+      // shows a double-scaled or unscaled flash.
+      pinchTarget.style.transform = 'none';
+      setZoom(finalZoom);
     };
 
     const onTouchEnd = (event: TouchEvent) => {
-      if (event.touches.length < 2) pinchStartDistance = 0;
+      if (event.touches.length < 2) commit();
     };
 
     viewport.addEventListener('touchstart', onTouchStart, { passive: true });
@@ -487,7 +524,8 @@ export function ProtectedPdfViewer({
               <p className="mt-2 text-sm text-slate-600">{error}</p>
             </div>
           ) : containerWidth > 0 ? (
-            <Document
+            <div ref={pinchScaleRef} className="mx-auto w-max">
+              <Document
               file={file}
               loading={
                 <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-slate-600">
@@ -562,7 +600,8 @@ export function ProtectedPdfViewer({
                   </div>
                 );
               })}
-            </Document>
+              </Document>
+            </div>
           ) : null}
         </div>
 
