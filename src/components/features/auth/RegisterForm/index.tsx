@@ -523,6 +523,27 @@ export function RegisterForm() {
 
     if (!(await checkUsername())) return;
 
+    const normalizedEmail = data.email.trim().toLowerCase();
+    try {
+      const emailResponse = await fetch(`/api/auth/check-email?email=${encodeURIComponent(normalizedEmail)}`);
+      const emailJson = await emailResponse.json().catch(() => ({ available: true }));
+      if (emailResponse.ok && emailJson.available === false) {
+        toast.error(
+          <span>
+            An account with this email already exists.{' '}
+            <Link href={`/login?redirect=${encodeURIComponent(redirect)}`} className="underline">
+              Log in instead
+            </Link>
+            .
+          </span>
+        );
+        return;
+      }
+    } catch {
+      // If the check itself fails, fall through to signUp() — Supabase's own
+      // "already registered" handling is the fallback safety net.
+    }
+
     try {
       await verifyAuthRecaptcha('auth_signup');
     } catch (error) {
