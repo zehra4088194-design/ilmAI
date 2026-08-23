@@ -2,13 +2,15 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { UniversityActionForm } from '@/components/features/university-hub/UniversityActionForm';
-import { getUniversityAdminTree } from '@/lib/university-hub/queries';
+import { ResourceCoverageBadges } from '@/components/features/admin/content/ResourceCoverageBadges';
+import { getUniversityAdminTree, getUniversityAdminStats } from '@/lib/university-hub/queries';
+import { UNIVERSITY_RESOURCE_TYPES } from '@/lib/university-hub/types';
 import { createUniversityProgram, createUniversitySubject, deleteUniversitySubject } from '@/lib/university-hub/admin-actions';
 
 export const metadata = { title: 'University Hub | Admin | ilm AI' };
 
 export default async function AdminUniversityPage() {
-  const programs = await getUniversityAdminTree();
+  const [programs, stats] = await Promise.all([getUniversityAdminTree(), getUniversityAdminStats()]);
 
   return (
     <div className="space-y-6">
@@ -53,16 +55,23 @@ export default async function AdminUniversityPage() {
                     <p className="mb-2 text-sm font-semibold">{year.label}</p>
                     <div className="space-y-1.5">
                       {year.subjects.map((subject: any) => (
-                        <div key={subject.id} className="flex items-center justify-between gap-2">
-                          <Link
-                            href={`/admin/university/subjects/${subject.id}`}
-                            className="text-primary truncate text-xs font-medium hover:underline"
-                          >
-                            {subject.name}
-                          </Link>
-                          <UniversityActionForm action={deleteUniversitySubject} submitLabel="Remove" className="shrink-0">
-                            <input type="hidden" name="subject_id" value={subject.id} />
-                          </UniversityActionForm>
+                        <div key={subject.id} className="border-border/60 space-y-1 border-b pb-1.5 last:border-0 last:pb-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <Link
+                              href={`/admin/university/subjects/${subject.id}`}
+                              className="text-primary truncate text-xs font-medium hover:underline"
+                            >
+                              {subject.name}
+                            </Link>
+                            <UniversityActionForm action={deleteUniversitySubject} submitLabel="Remove" className="shrink-0">
+                              <input type="hidden" name="subject_id" value={subject.id} />
+                            </UniversityActionForm>
+                          </div>
+                          <ResourceCoverageBadges
+                            resourceTypes={UNIVERSITY_RESOURCE_TYPES}
+                            resourceCounts={stats[subject.id]?.resourceCounts}
+                            questionCount={stats[subject.id]?.questionCount}
+                          />
                         </div>
                       ))}
                       {year.subjects.length === 0 && (

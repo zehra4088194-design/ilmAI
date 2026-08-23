@@ -2,13 +2,15 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ClassLibraryActionForm } from '@/components/features/class-library/ClassLibraryActionForm';
-import { getClassLibraryAdminTree } from '@/lib/class-library/queries';
+import { ResourceCoverageBadges } from '@/components/features/admin/content/ResourceCoverageBadges';
+import { getClassLibraryAdminTree, getClassLibraryAdminStats } from '@/lib/class-library/queries';
+import { CLASS_LIBRARY_RESOURCE_TYPES } from '@/lib/class-library/types';
 import { createClassLibraryClass, createClassLibrarySubject, deleteClassLibrarySubject } from '@/lib/class-library/admin-actions';
 
 export const metadata = { title: 'Class Library | Admin | ilm AI' };
 
 export default async function AdminClassLibraryPage() {
-  const classes = await getClassLibraryAdminTree();
+  const [classes, stats] = await Promise.all([getClassLibraryAdminTree(), getClassLibraryAdminStats()]);
 
   return (
     <div className="space-y-6">
@@ -41,16 +43,23 @@ export default async function AdminClassLibraryPage() {
               </div>
               <div className="space-y-1.5">
                 {klass.subjects.map((subject: any) => (
-                  <div key={subject.id} className="flex items-center justify-between gap-2">
-                    <Link
-                      href={`/admin/class-library/subjects/${subject.id}`}
-                      className="text-primary truncate text-xs font-medium hover:underline"
-                    >
-                      {subject.name}
-                    </Link>
-                    <ClassLibraryActionForm action={deleteClassLibrarySubject} submitLabel="Remove" className="shrink-0">
-                      <input type="hidden" name="subject_id" value={subject.id} />
-                    </ClassLibraryActionForm>
+                  <div key={subject.id} className="border-border/60 space-y-1 border-b pb-1.5 last:border-0 last:pb-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <Link
+                        href={`/admin/class-library/subjects/${subject.id}`}
+                        className="text-primary truncate text-xs font-medium hover:underline"
+                      >
+                        {subject.name}
+                      </Link>
+                      <ClassLibraryActionForm action={deleteClassLibrarySubject} submitLabel="Remove" className="shrink-0">
+                        <input type="hidden" name="subject_id" value={subject.id} />
+                      </ClassLibraryActionForm>
+                    </div>
+                    <ResourceCoverageBadges
+                      resourceTypes={CLASS_LIBRARY_RESOURCE_TYPES}
+                      resourceCounts={stats[subject.id]?.resourceCounts}
+                      questionCount={stats[subject.id]?.questionCount}
+                    />
                   </div>
                 ))}
                 {klass.subjects.length === 0 && <p className="text-muted-foreground text-xs">No subjects yet.</p>}

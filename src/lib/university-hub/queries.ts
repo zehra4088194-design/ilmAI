@@ -79,6 +79,40 @@ export async function getUniversityQuestions(subjectId: string) {
   return data || [];
 }
 
+// Coverage stats for the admin overview — mirrors getClassLibraryAdminStats()
+// exactly (same shape, same reasoning: two count-only aggregate queries instead
+// of N+1 per subject) so a resource-type gap is visible without opening every
+// subject page.
+export type UniversitySubjectStats = {
+  resourceCounts: Partial<Record<import('./types').UniversityResourceType, number>>;
+  totalResources: number;
+  questionCount: number;
+};
+
+export async function getUniversityAdminStats(): Promise<Record<string, UniversitySubjectStats>> {
+  const supabase = (await createClient()) as any;
+  const [{ data: resources }, { data: questions }] = await Promise.all([
+    supabase.from('university_subject_resources').select('subject_id, resource_type'),
+    supabase.from('university_questions').select('subject_id'),
+  ]);
+
+  const stats: Record<string, UniversitySubjectStats> = {};
+  const ensure = (subjectId: string) =>
+    (stats[subjectId] ||= { resourceCounts: {}, totalResources: 0, questionCount: 0 });
+
+  for (const row of resources || []) {
+    const entry = ensure(row.subject_id);
+    entry.resourceCounts[row.resource_type as import('./types').UniversityResourceType] =
+      (entry.resourceCounts[row.resource_type as import('./types').UniversityResourceType] || 0) + 1;
+    entry.totalResources += 1;
+  }
+  for (const row of questions || []) {
+    ensure(row.subject_id).questionCount += 1;
+  }
+
+  return stats;
+}
+
 // Admin-page tree fetch: every program with its years and subjects, one round
 // trip per level (small dataset — programs/years/subjects are catalog-sized, not
 // per-user data) rather than N+1 per program.

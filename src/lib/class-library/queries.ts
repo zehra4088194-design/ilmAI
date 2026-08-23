@@ -67,6 +67,40 @@ export async function getClassLibraryQuestions(subjectId: string) {
   return data || [];
 }
 
+// Coverage stats for the admin overview: per subject, how many resources exist for
+// each resource type (so a gap — e.g. "no video lectures for Class 9 Physics" — is
+// visible without opening every subject page) plus its MCQ bank size. Two small
+// aggregate queries (counts only, no row payloads) rather than N+1 per subject.
+export type ClassLibrarySubjectStats = {
+  resourceCounts: Partial<Record<import('./types').ClassLibraryResourceType, number>>;
+  totalResources: number;
+  questionCount: number;
+};
+
+export async function getClassLibraryAdminStats(): Promise<Record<string, ClassLibrarySubjectStats>> {
+  const supabase = (await createClient()) as any;
+  const [{ data: resources }, { data: questions }] = await Promise.all([
+    supabase.from('class_library_subject_resources').select('subject_id, resource_type'),
+    supabase.from('class_library_questions').select('subject_id'),
+  ]);
+
+  const stats: Record<string, ClassLibrarySubjectStats> = {};
+  const ensure = (subjectId: string) =>
+    (stats[subjectId] ||= { resourceCounts: {}, totalResources: 0, questionCount: 0 });
+
+  for (const row of resources || []) {
+    const entry = ensure(row.subject_id);
+    entry.resourceCounts[row.resource_type as import('./types').ClassLibraryResourceType] =
+      (entry.resourceCounts[row.resource_type as import('./types').ClassLibraryResourceType] || 0) + 1;
+    entry.totalResources += 1;
+  }
+  for (const row of questions || []) {
+    ensure(row.subject_id).questionCount += 1;
+  }
+
+  return stats;
+}
+
 // Admin-page tree fetch: every class with its subjects, small catalog-sized dataset.
 export async function getClassLibraryAdminTree() {
   const supabase = (await createClient()) as any;
