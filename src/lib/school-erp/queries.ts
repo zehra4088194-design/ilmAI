@@ -124,7 +124,7 @@ export async function getTodayAbsences(supabase: SupabaseClient, context: School
     db
       .from('school_attendance_records')
       .select(
-        'id, status, student_id, profiles!school_attendance_records_student_id_fkey(id, full_name), school_sections(name, school_classes(name))'
+        'id, status, student_id, profiles!school_attendance_records_student_id_fkey(id, full_name), school_sections!school_attendance_records_section_id_fkey(name, school_classes!school_sections_class_id_fkey(name))'
       )
       .eq('organization_id', organizationId)
       .eq('attendance_date', today)
@@ -210,7 +210,7 @@ export async function getSchoolPtm(supabase: SupabaseClient, context: SchoolCont
       db
         .from('school_enrollments')
         .select(
-          'student_id, roll_number, profiles!school_enrollments_student_id_fkey(id, full_name), school_sections(name, school_classes(name))'
+          'student_id, roll_number, profiles!school_enrollments_student_id_fkey(id, full_name), school_sections!school_enrollments_section_id_fkey(name, school_classes!school_sections_class_id_fkey(name))'
         )
         .eq('organization_id', organizationId)
         .eq('status', 'active')
@@ -262,14 +262,14 @@ export async function getSchoolAcademicSetup(supabase: SupabaseClient, context: 
     rows(
       db
         .from('school_sections')
-        .select('*, school_classes(name), profiles!school_sections_homeroom_teacher_id_fkey(full_name)')
+        .select('*, school_classes!school_sections_class_id_fkey(name), profiles!school_sections_homeroom_teacher_id_fkey(full_name)')
         .eq('organization_id', organizationId)
         .order('name')
     ),
     rows(
       db
         .from('school_subject_offerings')
-        .select('*, school_sections(name), profiles!school_subject_offerings_teacher_id_fkey(full_name)')
+        .select('*, school_sections!school_subject_offerings_section_id_fkey(name), profiles!school_subject_offerings_teacher_id_fkey(full_name)')
         .eq('organization_id', organizationId)
         .order('subject_name')
     ),
@@ -301,7 +301,7 @@ export async function getSchoolPeople(supabase: SupabaseClient, context: SchoolC
       db
         .from('school_enrollments')
         .select(
-          '*, profiles!school_enrollments_student_id_fkey(id, full_name, email), school_sections(name, school_classes(name))'
+          '*, profiles!school_enrollments_student_id_fkey(id, full_name, email), school_sections!school_enrollments_section_id_fkey(name, school_classes!school_sections_class_id_fkey(name))'
         )
         .eq('organization_id', organizationId)
         .order('created_at', { ascending: false })
@@ -317,7 +317,7 @@ export async function getSchoolPeople(supabase: SupabaseClient, context: SchoolC
     rows(
       db
         .from('school_sections')
-        .select('id, name, school_classes(name)')
+        .select('id, name, school_classes!school_sections_class_id_fkey(name)')
         .eq('organization_id', organizationId)
         .eq('is_active', true)
     ),
@@ -366,7 +366,7 @@ export async function getSchoolAttendance(supabase: SupabaseClient, context: Sch
     rows(
       db
         .from('school_sections')
-        .select('id, name, school_classes(name)')
+        .select('id, name, school_classes!school_sections_class_id_fkey(name)')
         .eq('organization_id', organizationId)
         .eq('is_active', true)
     ),
@@ -437,7 +437,7 @@ export async function getSchoolExams(supabase: SupabaseClient, context: SchoolCo
     rows(
       db
         .from('school_exam_schedules')
-        .select('*, school_exams(name), school_sections(name, school_classes(name))')
+        .select('*, school_exams!school_exam_schedules_exam_id_fkey(name), school_sections!school_exam_schedules_section_id_fkey(name, school_classes!school_sections_class_id_fkey(name))')
         .eq('organization_id', organizationId)
         .order('exam_date')
     ),
@@ -452,7 +452,7 @@ export async function getSchoolExams(supabase: SupabaseClient, context: SchoolCo
     rows(
       db
         .from('school_sections')
-        .select('id, name, school_classes(name)')
+        .select('id, name, school_classes!school_sections_class_id_fkey(name)')
         .eq('organization_id', organizationId)
         .eq('is_active', true)
     ),
@@ -488,7 +488,7 @@ export async function getSchoolFees(supabase: SupabaseClient, context: SchoolCon
     rows(
       db
         .from('school_fee_structures')
-        .select('*, school_classes(name)')
+        .select('*, school_classes!school_fee_structures_class_id_fkey(name)')
         .eq('organization_id', organizationId)
         .order('created_at', { ascending: false })
     ),
@@ -576,7 +576,7 @@ export async function getSchoolAcademics(supabase: SupabaseClient, context: Scho
     rows(
       db
         .from('school_homework')
-        .select('*, school_sections(name, school_classes(name))')
+        .select('*, school_sections!school_homework_section_id_fkey(name, school_classes!school_sections_class_id_fkey(name))')
         .eq('organization_id', organizationId)
         .order('due_at', { ascending: false })
         .limit(200)
@@ -585,7 +585,7 @@ export async function getSchoolAcademics(supabase: SupabaseClient, context: Scho
       db
         .from('school_timetable_entries')
         .select(
-          '*, school_sections(name, school_classes(name)), profiles!school_timetable_entries_teacher_id_fkey(full_name)'
+          '*, school_sections!school_timetable_entries_section_id_fkey(name, school_classes!school_sections_class_id_fkey(name)), profiles!school_timetable_entries_teacher_id_fkey(full_name)'
         )
         .eq('organization_id', organizationId)
         .order('day_of_week')
@@ -594,7 +594,7 @@ export async function getSchoolAcademics(supabase: SupabaseClient, context: Scho
     rows(
       db
         .from('school_lesson_plans')
-        .select('*, school_subject_offerings(subject_name)')
+        .select('*, school_subject_offerings!school_lesson_plans_subject_offering_id_fkey(subject_name)')
         .eq('organization_id', organizationId)
         .order('lesson_date', { ascending: false })
         .limit(200)
@@ -610,7 +610,7 @@ export async function getSchoolAcademics(supabase: SupabaseClient, context: Scho
     rows(
       db
         .from('school_sections')
-        .select('id, name, school_classes(name)')
+        .select('id, name, school_classes!school_sections_class_id_fkey(name)')
         .eq('organization_id', organizationId)
         .eq('is_active', true)
     ),
@@ -800,7 +800,7 @@ export async function getSchoolPortalData(supabase: SupabaseClient, context: Sch
       ? rows(
           db
             .from('school_timetable_entries')
-            .select('*, school_sections(name, school_classes(name))')
+            .select('*, school_sections!school_timetable_entries_section_id_fkey(name, school_classes!school_sections_class_id_fkey(name))')
             .eq('organization_id', organizationId)
             .in('section_id', sectionIds)
             .order('day_of_week')
@@ -811,7 +811,7 @@ export async function getSchoolPortalData(supabase: SupabaseClient, context: Sch
       ? rows(
           db
             .from('school_homework')
-            .select('*, school_sections(name, school_classes(name))')
+            .select('*, school_sections!school_homework_section_id_fkey(name, school_classes!school_sections_class_id_fkey(name))')
             .eq('organization_id', organizationId)
             .in('section_id', sectionIds)
             .order('due_at', { ascending: false })
@@ -833,7 +833,7 @@ export async function getSchoolPortalData(supabase: SupabaseClient, context: Sch
       ? rows(
           db
             .from('school_report_cards')
-            .select('*, school_exams(name)')
+            .select('*, school_exams!school_report_cards_exam_id_fkey(name)')
             .eq('organization_id', organizationId)
             .in('student_id', studentIds)
             .not('published_at', 'is', null)
@@ -954,7 +954,7 @@ export async function getPendingStudentAdditions(
   const db = supabase as any;
   const { data, error } = await db
     .from('school_pending_student_additions')
-    .select('id, section_id, extracted_name, extracted_roll_number, status, created_at, school_sections(name, school_classes(name))')
+    .select('id, section_id, extracted_name, extracted_roll_number, status, created_at, school_sections!school_pending_student_additions_section_id_fkey(name, school_classes!school_sections_class_id_fkey(name))')
     .eq('organization_id', organizationId)
     .eq('status', 'pending_principal_approval')
     .order('created_at', { ascending: true });

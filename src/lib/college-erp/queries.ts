@@ -100,7 +100,7 @@ export async function getCollegeTodayAbsences(supabase: SupabaseClient, context:
   const records = await rows(
     db
       .from('college_attendance_records')
-      .select('id, status, student_id, profiles!college_attendance_records_student_id_fkey(id, full_name), college_sections(name, college_semesters(name))')
+      .select('id, status, student_id, profiles!college_attendance_records_student_id_fkey(id, full_name), college_sections!college_attendance_records_section_id_fkey(name, college_semesters!college_sections_semester_id_fkey(name))')
       .eq('organization_id', organizationId)
       .eq('attendance_date', today)
       .in('status', ['absent', 'late'])
@@ -154,7 +154,7 @@ export async function getCollegeAcademicSetup(supabase: SupabaseClient, context:
     rows(
       db
         .from('college_semesters')
-        .select('*, college_academic_departments(name), college_academic_years(name)')
+        .select('*, college_academic_departments!college_semesters_department_id_fkey(name), college_academic_years!college_semesters_academic_year_id_fkey(name)')
         .eq('organization_id', organizationId)
         .order('display_order')
         .order('name')
@@ -162,14 +162,14 @@ export async function getCollegeAcademicSetup(supabase: SupabaseClient, context:
     rows(
       db
         .from('college_sections')
-        .select('*, college_semesters(name), profiles!college_sections_advisor_id_fkey(full_name)')
+        .select('*, college_semesters!college_sections_semester_id_fkey(name), profiles!college_sections_advisor_id_fkey(full_name)')
         .eq('organization_id', organizationId)
         .order('name')
     ),
     rows(
       db
         .from('college_course_offerings')
-        .select('*, college_sections(name), profiles!college_course_offerings_teacher_id_fkey(full_name)')
+        .select('*, college_sections!college_course_offerings_section_id_fkey(name), profiles!college_course_offerings_teacher_id_fkey(full_name)')
         .eq('organization_id', organizationId)
         .order('course_name')
     ),
@@ -200,7 +200,7 @@ export async function getCollegePeople(supabase: SupabaseClient, context: Colleg
     rows(
       db
         .from('college_enrollments')
-        .select('*, profiles!college_enrollments_student_id_fkey(id, full_name, email), college_sections(name, college_semesters(name))')
+        .select('*, profiles!college_enrollments_student_id_fkey(id, full_name, email), college_sections!college_enrollments_section_id_fkey(name, college_semesters!college_sections_semester_id_fkey(name))')
         .eq('organization_id', organizationId)
         .order('created_at', { ascending: false })
     ),
@@ -210,7 +210,7 @@ export async function getCollegePeople(supabase: SupabaseClient, context: Colleg
         .select('*, student:profiles!college_guardians_student_id_fkey(full_name), guardian:profiles!college_guardians_guardian_id_fkey(full_name, email)')
         .eq('organization_id', organizationId)
     ),
-    rows(db.from('college_sections').select('id, name, college_semesters(name)').eq('organization_id', organizationId).eq('is_active', true)),
+    rows(db.from('college_sections').select('id, name, college_semesters!college_sections_semester_id_fkey(name)').eq('organization_id', organizationId).eq('is_active', true)),
     rows(db.from('college_academic_years').select('id, name').eq('organization_id', organizationId).order('starts_on', { ascending: false })),
     rows(db.from('college_organization_plan_settings').select('*').eq('organization_id', organizationId).limit(1)),
     db.from('college_enrollments').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId).eq('status', 'active'),
@@ -241,7 +241,7 @@ export async function getCollegeAttendance(supabase: SupabaseClient, context: Co
   const db = supabase as any;
   const organizationId = context.organization.id;
   const [sections, enrollments, records, leaves, staffMembers, staffRecords] = await Promise.all([
-    rows(db.from('college_sections').select('id, name, college_semesters(name)').eq('organization_id', organizationId).eq('is_active', true)),
+    rows(db.from('college_sections').select('id, name, college_semesters!college_sections_semester_id_fkey(name)').eq('organization_id', organizationId).eq('is_active', true)),
     rows(
       db
         .from('college_enrollments')
@@ -297,7 +297,7 @@ export async function getCollegeExams(supabase: SupabaseClient, context: College
     rows(
       db
         .from('college_exam_schedules')
-        .select('*, college_exams(name), college_sections(name, college_semesters(name))')
+        .select('*, college_exams!college_exam_schedules_exam_id_fkey(name), college_sections!college_exam_schedules_section_id_fkey(name, college_semesters!college_sections_semester_id_fkey(name))')
         .eq('organization_id', organizationId)
         .order('exam_date')
     ),
@@ -309,7 +309,7 @@ export async function getCollegeExams(supabase: SupabaseClient, context: College
         .order('entered_at', { ascending: false })
         .limit(500)
     ),
-    rows(db.from('college_sections').select('id, name, college_semesters(name)').eq('organization_id', organizationId).eq('is_active', true)),
+    rows(db.from('college_sections').select('id, name, college_semesters!college_sections_semester_id_fkey(name)').eq('organization_id', organizationId).eq('is_active', true)),
     rows(db.from('college_academic_years').select('id, name').eq('organization_id', organizationId).order('starts_on', { ascending: false })),
     rows(db.from('college_course_offerings').select('id, section_id, course_name').eq('organization_id', organizationId).order('course_name')),
     rows(
@@ -327,7 +327,7 @@ export async function getCollegeFees(supabase: SupabaseClient, context: CollegeC
   const db = supabase as any;
   const organizationId = context.organization.id;
   const [structures, invoices, payments, years, semesters, students] = await Promise.all([
-    rows(db.from('college_fee_structures').select('*, college_semesters(name)').eq('organization_id', organizationId).order('created_at', { ascending: false })),
+    rows(db.from('college_fee_structures').select('*, college_semesters!college_fee_structures_semester_id_fkey(name)').eq('organization_id', organizationId).order('created_at', { ascending: false })),
     rows(
       db
         .from('college_fee_invoices')
@@ -364,7 +364,7 @@ export async function getCollegeAcademics(supabase: SupabaseClient, context: Col
     rows(
       db
         .from('college_assignments')
-        .select('*, college_sections(name, college_semesters(name))')
+        .select('*, college_sections!college_assignments_section_id_fkey(name, college_semesters!college_sections_semester_id_fkey(name))')
         .eq('organization_id', organizationId)
         .order('due_at', { ascending: false })
         .limit(200)
@@ -372,7 +372,7 @@ export async function getCollegeAcademics(supabase: SupabaseClient, context: Col
     rows(
       db
         .from('college_timetable_slots')
-        .select('*, college_sections(name, college_semesters(name)), profiles!college_timetable_slots_teacher_id_fkey(full_name)')
+        .select('*, college_sections!college_timetable_slots_section_id_fkey(name, college_semesters!college_sections_semester_id_fkey(name)), profiles!college_timetable_slots_teacher_id_fkey(full_name)')
         .eq('organization_id', organizationId)
         .order('day_of_week')
         .order('starts_at')
@@ -380,13 +380,13 @@ export async function getCollegeAcademics(supabase: SupabaseClient, context: Col
     rows(
       db
         .from('college_lesson_plans')
-        .select('*, college_course_offerings(course_name)')
+        .select('*, college_course_offerings!college_lesson_plans_course_offering_id_fkey(course_name)')
         .eq('organization_id', organizationId)
         .order('lesson_date', { ascending: false })
         .limit(200)
     ),
     rows(db.from('college_calendar_events').select('*').eq('organization_id', organizationId).order('starts_at', { ascending: false }).limit(200)),
-    rows(db.from('college_sections').select('id, name, college_semesters(name)').eq('organization_id', organizationId).eq('is_active', true)),
+    rows(db.from('college_sections').select('id, name, college_semesters!college_sections_semester_id_fkey(name)').eq('organization_id', organizationId).eq('is_active', true)),
     rows(db.from('college_course_offerings').select('id, section_id, course_name, teacher_id').eq('organization_id', organizationId).order('course_name')),
   ]);
   return { assignments, timetable, lessonPlans, events, sections, offerings };
@@ -487,7 +487,7 @@ export async function getCollegePortalData(supabase: SupabaseClient, context: Co
       ? rows(
           db
             .from('college_timetable_slots')
-            .select('*, college_sections(name, college_semesters(name))')
+            .select('*, college_sections!college_timetable_slots_section_id_fkey(name, college_semesters!college_sections_semester_id_fkey(name))')
             .eq('organization_id', organizationId)
             .in('section_id', sectionIds)
             .order('day_of_week')
@@ -498,7 +498,7 @@ export async function getCollegePortalData(supabase: SupabaseClient, context: Co
       ? rows(
           db
             .from('college_assignments')
-            .select('*, college_sections(name, college_semesters(name))')
+            .select('*, college_sections!college_assignments_section_id_fkey(name, college_semesters!college_sections_semester_id_fkey(name))')
             .eq('organization_id', organizationId)
             .in('section_id', sectionIds)
             .order('due_at', { ascending: false })
@@ -520,7 +520,7 @@ export async function getCollegePortalData(supabase: SupabaseClient, context: Co
       ? rows(
           db
             .from('college_report_cards')
-            .select('*, college_exams(name)')
+            .select('*, college_exams!college_report_cards_exam_id_fkey(name)')
             .eq('organization_id', organizationId)
             .in('student_id', studentIds)
             .not('published_at', 'is', null)
@@ -577,7 +577,7 @@ export async function getPendingCollegeStudentAdditions(
   const db = supabase as any;
   const { data, error } = await db
     .from('college_pending_student_additions')
-    .select('id, section_id, extracted_name, extracted_roll_number, status, created_at, college_sections(name, college_semesters(name))')
+    .select('id, section_id, extracted_name, extracted_roll_number, status, created_at, college_sections!college_pending_student_additions_section_id_fkey(name, college_semesters!college_sections_semester_id_fkey(name))')
     .eq('organization_id', organizationId)
     .eq('status', 'pending_principal_approval')
     .order('created_at', { ascending: true });
