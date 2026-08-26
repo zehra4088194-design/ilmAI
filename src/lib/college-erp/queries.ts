@@ -231,7 +231,7 @@ export async function getCollegeAdmissions(supabase: SupabaseClient, context: Co
   return rows(
     db
       .from('college_admissions')
-      .select('*, college_campuses!college_admissions_campus_id_fkey(name), college_academic_years(name), college_admission_documents(id, document_type, file_name, verification_status)')
+      .select('*, college_campuses!college_admissions_campus_id_fkey(name), college_academic_years!college_admissions_academic_year_id_fkey(name), college_admission_documents!college_admission_documents_admission_id_fkey(id, document_type, file_name, verification_status)')
       .eq('organization_id', context.organization.id)
       .order('created_at', { ascending: false })
   );
@@ -331,7 +331,7 @@ export async function getCollegeFees(supabase: SupabaseClient, context: CollegeC
     rows(
       db
         .from('college_fee_invoices')
-        .select('*, profiles!college_fee_invoices_student_id_fkey(full_name), college_fee_structures(name)')
+        .select('*, profiles!college_fee_invoices_student_id_fkey(full_name), college_fee_structures!college_fee_invoices_fee_structure_id_fkey(name)')
         .eq('organization_id', organizationId)
         .order('due_date', { ascending: false })
         .limit(500)
@@ -339,7 +339,7 @@ export async function getCollegeFees(supabase: SupabaseClient, context: CollegeC
     rows(
       db
         .from('college_fee_payments')
-        .select('*, college_fee_invoices(voucher_number), profiles!college_fee_payments_received_by_fkey(full_name)')
+        .select('*, college_fee_invoices!college_fee_payments_invoice_id_fkey(voucher_number), profiles!college_fee_payments_received_by_fkey(full_name)')
         .eq('organization_id', organizationId)
         .order('paid_at', { ascending: false })
         .limit(500)

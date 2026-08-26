@@ -254,7 +254,7 @@ export async function getSchoolAcademicSetup(supabase: SupabaseClient, context: 
     rows(
       db
         .from('school_classes')
-        .select('*, school_campuses!school_classes_campus_id_fkey(name), school_academic_years(name)')
+        .select('*, school_campuses!school_classes_campus_id_fkey(name), school_academic_years!school_classes_academic_year_id_fkey(name)')
         .eq('organization_id', organizationId)
         .order('display_order')
         .order('name')
@@ -352,7 +352,7 @@ export async function getSchoolAdmissions(supabase: SupabaseClient, context: Sch
     db
       .from('school_admissions')
       .select(
-        '*, school_campuses!school_admissions_campus_id_fkey(name), school_academic_years(name), school_admission_documents(id, document_type, file_name, verification_status)'
+        '*, school_campuses!school_admissions_campus_id_fkey(name), school_academic_years!school_admissions_academic_year_id_fkey(name), school_admission_documents!school_admission_documents_admission_id_fkey(id, document_type, file_name, verification_status)'
       )
       .eq('organization_id', context.organization.id)
       .order('created_at', { ascending: false })
@@ -495,7 +495,7 @@ export async function getSchoolFees(supabase: SupabaseClient, context: SchoolCon
     rows(
       db
         .from('school_fee_invoices')
-        .select('*, profiles!school_fee_invoices_student_id_fkey(full_name), school_fee_structures(name)')
+        .select('*, profiles!school_fee_invoices_student_id_fkey(full_name), school_fee_structures!school_fee_invoices_fee_structure_id_fkey(name)')
         .eq('organization_id', organizationId)
         .order('due_date', { ascending: false })
         .limit(500)
@@ -503,7 +503,7 @@ export async function getSchoolFees(supabase: SupabaseClient, context: SchoolCon
     rows(
       db
         .from('school_fee_payments')
-        .select('*, school_fee_invoices(voucher_number), profiles!school_fee_payments_received_by_fkey(full_name)')
+        .select('*, school_fee_invoices!school_fee_payments_invoice_id_fkey(voucher_number), profiles!school_fee_payments_received_by_fkey(full_name)')
         .eq('organization_id', organizationId)
         .order('paid_at', { ascending: false })
         .limit(500)
