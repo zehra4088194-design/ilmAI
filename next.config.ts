@@ -34,6 +34,20 @@ const withPWA = withPWAInit({
     document: '/offline.html',
   },
   workboxOptions: {
+    // Without these, a newly-deployed service worker installs but sits "waiting" until every
+    // open tab is closed — real users routinely leave a tab open for days, so the OLD worker
+    // (running whatever runtime-caching rules existed when IT was built) stays in control
+    // indefinitely. That's how the /api/* NetworkOnly rule above stopped applying for anyone
+    // whose browser had installed the service worker from before this rule existed: their old
+    // worker kept serving a stale cached post-login-destination response forever, sending
+    // school/college members to the generic dashboard no matter what the current code says.
+    // skipWaiting + clientsClaim make a new deploy take over on its very next activation instead
+    // of waiting for a full browser restart; cleanupOutdatedCaches drops runtime cache buckets
+    // left behind by a previous config so a rule change (like this one) can't get stuck replaying
+    // forever once cache entries were already written under the old rules.
+    skipWaiting: true,
+    clientsClaim: true,
+    cleanupOutdatedCaches: true,
     runtimeCaching: [
       {
         urlPattern: ({ url, sameOrigin }) => sameOrigin && url.pathname.startsWith('/api/'),

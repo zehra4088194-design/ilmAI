@@ -68,23 +68,6 @@ const NAV_GROUPS = [
     ],
   },
   {
-    label: 'University',
-    items: [
-      { icon: GraduationCap, label: 'University Hub', href: '/university' },
-      { icon: PenLine, label: 'Essay Assistant', href: '/university/essay-assistant', badge: 'AI' },
-      { icon: FileText, label: 'Assignment Helper', href: '/university/assignment-helper', badge: 'AI' },
-      { icon: Presentation, label: 'Presentation Builder', href: '/university/presentation-builder', badge: 'AI' },
-      { icon: Mic2, label: 'Viva Practice', href: '/university/viva-practice', badge: 'AI' },
-      { icon: FlaskConical, label: 'Research Helper', href: '/university/research-helper', badge: 'AI' },
-      { icon: Library, label: 'Project Builder', href: '/university/project-builder', badge: 'AI' },
-      { icon: Network, label: 'PDF Summarizer', href: '/university/pdf-summarizer', badge: 'AI' },
-      { icon: Pill, label: 'PharmaPulse', href: '/university/pharmapulse', badge: 'AI' },
-      { icon: Quote, label: 'Citation Generator', href: '/university/citation-generator' },
-      { icon: BriefcaseBusiness, label: 'Resume Builder', href: '/university/resume-builder', badge: 'AI' },
-      { icon: CalendarClock, label: 'Semester Planner', href: '/university/semester-planner' },
-    ],
-  },
-  {
     label: 'Progress',
     items: [
       { icon: TrendingUp, label: 'Progress', href: '/progress' },
@@ -100,6 +83,11 @@ const NAV_GROUPS = [
     ],
   },
 ];
+// The full "University" tools group (Essay Assistant, PharmaPulse, Semester Planner, ...) — and
+// the University Hub link itself — belong only to UNIVERSITY_NAV_GROUPS below, shown when
+// education_level === 'university'. They used to also appear here in the generic NAV_GROUPS every
+// school/college K-12 student sees, which is exactly the "leaking an irrelevant nav into a
+// different persona" problem the comment on UNIVERSITY_NAV_GROUPS already warns against.
 
 // Shown instead of NAV_GROUPS for education_level === 'university'. The board/grade-locked
 // K-12 groups (Diagnostic Test, Adaptive Practice, Games, AI Guess Paper, Full Test, board
