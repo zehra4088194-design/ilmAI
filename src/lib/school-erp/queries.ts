@@ -254,7 +254,7 @@ export async function getSchoolAcademicSetup(supabase: SupabaseClient, context: 
     rows(
       db
         .from('school_classes')
-        .select('*, school_campuses(name), school_academic_years(name)')
+        .select('*, school_campuses!school_classes_campus_id_fkey(name), school_academic_years(name)')
         .eq('organization_id', organizationId)
         .order('display_order')
         .order('name')
@@ -352,7 +352,7 @@ export async function getSchoolAdmissions(supabase: SupabaseClient, context: Sch
     db
       .from('school_admissions')
       .select(
-        '*, school_campuses(name), school_academic_years(name), school_admission_documents(id, document_type, file_name, verification_status)'
+        '*, school_campuses!school_admissions_campus_id_fkey(name), school_academic_years(name), school_admission_documents(id, document_type, file_name, verification_status)'
       )
       .eq('organization_id', context.organization.id)
       .order('created_at', { ascending: false })
@@ -632,7 +632,7 @@ export async function getSchoolCommunication(supabase: SupabaseClient, context: 
     rows(
       db
         .from('school_announcements')
-        .select('*, school_campuses(name)')
+        .select('*, school_campuses!school_announcements_campus_id_fkey(name)')
         .eq('organization_id', organizationId)
         .order('created_at', { ascending: false })
         .limit(200)

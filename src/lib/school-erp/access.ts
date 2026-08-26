@@ -150,7 +150,14 @@ export async function getSchoolContext(
   let query = db
     .from('school_memberships')
     .select(
-      'id, organization_id, campus_id, profile_id, member_role, permissions, employee_code, designation, status, school_organizations(id, name, slug, organization_type, status, timezone, currency, email, phone, address, logo_url), school_campuses(id, name, code)'
+      // school_campuses is named explicitly by FK constraint (!school_memberships_campus_id_fkey)
+      // because a second FK (school_memberships_campus_tenant_fk, a tenant-isolation constraint on
+      // (campus_id, organization_id)) makes the embed ambiguous — PostgREST then refuses the whole
+      // query with a PGRST201 error instead of guessing, which getSchoolContext below swallows as
+      // "no membership" (`if (error || !data?.length) return null`). That's what was silently
+      // breaking EVERY school-portal redirect for EVERY role (owner/principal, teacher, staff, ...)
+      // — the membership data was always correct, this query just never returned it.
+      'id, organization_id, campus_id, profile_id, member_role, permissions, employee_code, designation, status, school_organizations(id, name, slug, organization_type, status, timezone, currency, email, phone, address, logo_url), school_campuses!school_memberships_campus_id_fkey(id, name, code)'
     )
     .eq('profile_id', userId)
     .eq('status', 'active');
