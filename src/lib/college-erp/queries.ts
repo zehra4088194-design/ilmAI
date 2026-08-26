@@ -231,7 +231,7 @@ export async function getCollegeAdmissions(supabase: SupabaseClient, context: Co
   return rows(
     db
       .from('college_admissions')
-      .select('*, college_campuses(name), college_academic_years(name), college_admission_documents(id, document_type, file_name, verification_status)')
+      .select('*, college_campuses!college_admissions_campus_id_fkey(name), college_academic_years(name), college_admission_documents(id, document_type, file_name, verification_status)')
       .eq('organization_id', context.organization.id)
       .order('created_at', { ascending: false })
   );
@@ -396,7 +396,7 @@ export async function getCollegeCommunication(supabase: SupabaseClient, context:
   const db = supabase as any;
   const organizationId = context.organization.id;
   const [announcements, deliveries, campuses, messages] = await Promise.all([
-    rows(db.from('college_announcements').select('*, college_campuses(name)').eq('organization_id', organizationId).order('created_at', { ascending: false }).limit(200)),
+    rows(db.from('college_announcements').select('*, college_campuses!college_announcements_campus_id_fkey(name)').eq('organization_id', organizationId).order('created_at', { ascending: false }).limit(200)),
     rows(
       db
         .from('college_notification_deliveries')

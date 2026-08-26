@@ -155,7 +155,10 @@ export async function getCollegeContext(
   let query = db
     .from('college_memberships')
     .select(
-      'id, organization_id, campus_id, profile_id, member_role, permissions, employee_code, designation, status, college_organizations(id, name, slug, organization_type, status, timezone, currency, email, phone, address, logo_url), college_campuses(id, name, code)'
+      // college_campuses named explicitly (!college_memberships_campus_id_fkey) — see the matching
+      // comment in school-erp/access.ts's getSchoolContext for why: a second, composite tenant FK
+      // on this table makes an unqualified embed ambiguous, which PostgREST rejects outright.
+      'id, organization_id, campus_id, profile_id, member_role, permissions, employee_code, designation, status, college_organizations(id, name, slug, organization_type, status, timezone, currency, email, phone, address, logo_url), college_campuses!college_memberships_campus_id_fkey(id, name, code)'
     )
     .eq('profile_id', userId)
     .eq('status', 'active');
