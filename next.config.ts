@@ -83,6 +83,14 @@ const nextConfig: NextConfig = {
     ppr: false,
     reactCompiler: false,
     optimizePackageImports: ['lucide-react', 'recharts'],
+    // Next's own Server Action body parser defaults to 1MB and rejects anything larger before the
+    // action's own code (and its try/catch) ever runs — that's an unhandled request-level failure,
+    // not a caught app error, so it surfaces as the generic error boundary. Several school/college
+    // logo, avatar, and resource-upload actions accept files up to 4-10MB (see MAX_LOGO_BYTES in
+    // school-erp/storage.ts and its college-erp mirror), which this default silently broke for any
+    // upload past 1MB — this is what made "upload a logo, hit save" crash instead of failing with
+    // a real error message.
+    serverActions: { bodySizeLimit: '10mb' },
   },
   images: {
     remotePatterns: [
