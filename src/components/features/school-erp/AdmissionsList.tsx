@@ -39,7 +39,19 @@ export function AdmissionsList({
       <div className="grid gap-4">
         {filtered.map((item: any) => (
           <Card key={item.id}>
-            <CardContent className="grid gap-4 p-4 lg:grid-cols-[1fr_240px] lg:items-center">
+            <CardContent className="grid gap-4 p-4 lg:grid-cols-[auto_1fr_240px] lg:items-center">
+              {item.student_photo_url ? (
+                // eslint-disable-next-line @next/next/no-img-element -- applicant-supplied photo, storage-hosted
+                <img
+                  src={item.student_photo_url}
+                  alt={item.applicant_name}
+                  className="h-16 w-16 shrink-0 rounded-lg object-cover"
+                />
+              ) : (
+                <div className="bg-muted text-muted-foreground hidden h-16 w-16 shrink-0 items-center justify-center rounded-lg text-xs lg:flex">
+                  No photo
+                </div>
+              )}
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="font-semibold">{item.applicant_name}</h2>
@@ -50,6 +62,13 @@ export function AdmissionsList({
                 <p className="text-muted-foreground mt-1 text-sm">
                   {item.application_number} - {item.applying_for_class} - {item.guardian_name} - {item.guardian_phone}
                 </p>
+                {(item.b_form_number || item.guardian_cnic) && (
+                  <p className="text-muted-foreground mt-1 text-xs">
+                    {item.b_form_number && `B-Form: ${item.b_form_number}`}
+                    {item.b_form_number && item.guardian_cnic && ' · '}
+                    {item.guardian_cnic && `Guardian CNIC: ${item.guardian_cnic}`}
+                  </p>
+                )}
                 <p className="text-muted-foreground mt-2 text-xs">
                   {(item.school_admission_documents || []).length} documents - Submitted {new Date(item.submitted_at).toLocaleDateString()}
                 </p>

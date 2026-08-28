@@ -7,7 +7,7 @@ import { checkDailyLimit } from '@/lib/rate-limit';
 import { getActiveSchoolOrganizationId, getSchoolContext, hasSchoolModule, hasSchoolPermission } from './access';
 import type { SchoolModuleKey } from './modules';
 import { grantSchoolSubscription, isOrganizationBillingActive } from './subscription-cascade';
-import { uploadSchoolLogo } from './storage';
+import { uploadSchoolLogo, uploadStudentPhoto } from './storage';
 import type { SchoolActionState, SchoolContext, SchoolPermission } from './types';
 import { inviteOrFindProfileId } from '@/lib/auth/inviteOrFindProfile';
 import { mapInstitutionRoleToProfileRole } from '@/lib/auth/mapInstitutionRoleToProfileRole';
@@ -575,6 +575,9 @@ export async function createAdmission(_state: SchoolActionState, formData: FormD
     }
     const { db, context } = await mutationContext('admissions.manage', 'admission', 'admissions');
     const applicationNumber = text(formData, 'application_number') || `APP-${Date.now().toString(36).toUpperCase()}`;
+    const photoFile = formData.get('student_photo');
+    const studentPhotoUrl =
+      photoFile instanceof File && photoFile.size > 0 ? await uploadStudentPhoto(db, context.organization.id, photoFile) : null;
     const { data, error } = await db
       .from('school_admissions')
       .insert({
@@ -586,9 +589,12 @@ export async function createAdmission(_state: SchoolActionState, formData: FormD
         date_of_birth: dateValue(formData, 'date_of_birth') || null,
         gender: optionalText(formData, 'gender'),
         applying_for_class: applyingForClass,
+        b_form_number: optionalText(formData, 'b_form_number'),
+        student_photo_url: studentPhotoUrl,
         guardian_name: guardianName,
         guardian_email: optionalText(formData, 'guardian_email'),
         guardian_phone: guardianPhone,
+        guardian_cnic: optionalText(formData, 'guardian_cnic'),
         previous_school: optionalText(formData, 'previous_school'),
         notes: optionalText(formData, 'notes'),
         status: 'submitted',

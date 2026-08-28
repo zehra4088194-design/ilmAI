@@ -37,8 +37,14 @@ export default async function SchoolAdmissionsPage() {
               <Input name="applying_for_class" placeholder="Applying for class" required />
               <Input name="date_of_birth" type="date" />
               <select name="gender" className={selectClass}><option value="">Gender</option><option value="girl">Girl</option><option value="boy">Boy</option></select>
-              <Input name="guardian_name" placeholder="Guardian name" required />
-              <Input name="guardian_phone" placeholder="Guardian phone" required />
+              <Input name="b_form_number" placeholder="Student B-Form number" />
+              <div className="flex flex-col gap-1">
+                <label htmlFor="student_photo" className="text-muted-foreground text-xs">Student photo</label>
+                <input id="student_photo" name="student_photo" type="file" accept="image/*" className="text-xs" />
+              </div>
+              <Input name="guardian_name" placeholder="Guardian name (mother or father)" required />
+              <Input name="guardian_phone" placeholder="Guardian phone (mother or father)" required />
+              <Input name="guardian_cnic" placeholder="Guardian CNIC number" />
               <Input name="guardian_email" type="email" placeholder="Guardian email" />
               <Input name="previous_school" placeholder="Previous school" />
               <select name="campus_id" className={selectClass}><option value="">Campus</option>{setup.campuses.map((item: any) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>
