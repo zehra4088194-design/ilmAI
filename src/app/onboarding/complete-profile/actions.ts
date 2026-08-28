@@ -1,7 +1,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
+import { nanoid } from 'nanoid';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import type { Database } from '@/lib/supabase/database.types';
 import { BOARDS, GRADE_LEVELS } from '@/lib/constants';
@@ -11,6 +12,7 @@ import {
   type PreferredOutputStyle,
   type UniversityStream,
 } from '@/lib/constants/university';
+import { createInstitutionalJoinRequestFromSignup } from '@/lib/school-erp/join-request-signup';
 
 type BoardType = Database['public']['Enums']['board_type'];
 type GradeLevel = Database['public']['Enums']['grade_level'];
@@ -223,6 +225,120 @@ export async function completeUniversityProfile(input: {
   if (error) {
     console.error('[completeUniversityProfile] Update failed:', error);
     return { success: false, error: 'Could not save your university profile. Please try again.' };
+  }
+
+  revalidatePath('/', 'layout');
+  return { success: true };
+}
+
+// Google sign-in never carries a role choice the way the email/password RegisterForm wizard does
+// — every brand-new Google account defaults to role='student', which is why this "one more step"
+// page used to only ever ask student/university details. This is the parent branch of the "I am
+// a..." choice now shown first: skips all the education fields entirely and mirrors
+// ensureParentInvite() from api/auth/callback/route.ts (same pending parent_student_links row) so
+// a Google-signed-up parent gets the same "connect a child" flow an email-signup parent gets.
+export async function completeParentProfile(username: string): Promise<ActionResult> {
+  const normalizedUsername = username.trim().toLowerCase();
+  if (!USERNAME_REGEX.test(normalizedUsername)) {
+    return { success: false, error: 'Username must be 3-30 characters and use only letters, numbers, dots, or underscores.' };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError || !user) return { success: false, error: 'You must be signed in to continue.' };
+
+  const { data: usernameOwner } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('username', normalizedUsername)
+    .neq('id', user.id)
+    .maybeSingle();
+  if (usernameOwner) return { success: false, error: 'This username is already taken.' };
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      role: 'parent',
+      username: normalizedUsername,
+      is_profile_complete: true,
+      onboarding_completed: true,
+    })
+    .eq('id', user.id);
+  if (error) {
+    console.error('[completeParentProfile] Update failed:', error);
+    return { success: false, error: 'Could not save your profile. Please try again.' };
+  }
+
+  try {
+    const admin = (await createAdminClient()) as any;
+    const { data: existingInvite } = await admin
+      .from('parent_student_links')
+      .select('id')
+      .eq('parent_id', user.id)
+      .eq('status', 'pending')
+      .is('student_id', null)
+      .gt('invite_expires_at', new Date().toISOString())
+      .maybeSingle();
+    if (!existingInvite) {
+      await admin.from('parent_student_links').insert({
+        id: crypto.randomUUID(),
+        parent_id: user.id,
+        student_id: null,
+        status: 'pending',
+        invite_code: `SV-${nanoid(6).toUpperCase()}`,
+        invite_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      });
+    }
+  } catch (inviteError) {
+    // Non-fatal — the parent account itself saved fine; they can still generate a connect code
+    // later from /parent. Matches how ensureParentInvite() in the callback route also swallows this.
+    console.error('[completeParentProfile] Parent invite auto-create failed:', inviteError);
+  }
+
+  revalidatePath('/', 'layout');
+  return { success: true };
+}
+
+// The other branch of "I am a..." — someone whose school/college already exists in ilm AI and
+// they just need to join it as a teacher. Reuses the exact same school_join_requests flow the
+// email/password institutional signup wizard uses (createInstitutionalJoinRequestFromSignup),
+// just triggered directly from an already-authenticated Google session instead of from signUp()
+// metadata. A brand-new school (with its owner/principal) is still created by a platform admin via
+// /admin/schools — that path doesn't change; this is only for staff joining an existing one.
+export async function requestSchoolJoin(institutionId: string, fullName: string): Promise<ActionResult> {
+  if (!institutionId.trim()) return { success: false, error: 'Search for and select your school first.' };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError || !user) return { success: false, error: 'You must be signed in to continue.' };
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ role: 'teacher', is_profile_complete: true, onboarding_completed: true })
+    .eq('id', user.id);
+  if (error) {
+    console.error('[requestSchoolJoin] Profile update failed:', error);
+    return { success: false, error: 'Could not save your profile. Please try again.' };
+  }
+
+  try {
+    const admin = (await createAdminClient()) as any;
+    await createInstitutionalJoinRequestFromSignup(
+      admin,
+      user.id,
+      institutionId,
+      'teacher',
+      fullName.trim() || user.email?.split('@')[0] || 'A new user'
+    );
+  } catch (joinError) {
+    console.error('[requestSchoolJoin] Join request failed:', joinError);
+    return { success: false, error: 'Could not send the join request. Please try again.' };
   }
 
   revalidatePath('/', 'layout');
