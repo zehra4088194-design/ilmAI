@@ -1,14 +1,14 @@
 'use client';
 
+import { useState } from 'react';
 import { Check, Crown, Rocket, Sparkles } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils/cn';
 import { CURRENCY_SYMBOLS, type Currency } from '@/lib/constants';
 import { convertUsdToPkr, type PlatformSettings } from '@/lib/platform-settings/shared';
-
-const SUPPORT_EMAIL = 'ilmai.study1@gmail.com';
 
 export type RolePlanTierCard = {
   key: 'FREE' | 'PRO' | 'ELITE';
@@ -17,19 +17,25 @@ export type RolePlanTierCard = {
   limitLabel: string;
 };
 
+export type RolePlanFamilyKey = 'parent' | 'teacher' | 'university';
+
 // Parent/teacher/university plan pricing only has a single admin-configured monthly USD price per
 // tier (no annual option, no native PKR figure the way the student subscriptionPlans do) — so this
 // intentionally skips the monthly/annual toggle and per-currency price object SubscriptionPlans
-// uses. Checkout for these families isn't wired to a payment gateway yet (their pricing doesn't
-// define an annual rate, which the existing /subscription/[tier] checkout requires), so the CTA
-// points at support instead of a broken/mispriced checkout link.
+// uses. Checkout goes through the same /api/payments/create-session route the student plans use,
+// with planFamily set so paddle.ts picks the right price id (PADDLE_PRICE_ID_<FAMILY>_<TIER> — see
+// that file's FAMILY_PRICE_IDS map) — always monthly, since that's all these families' pricing
+// defines. If that env var isn't set yet, the API call fails cleanly with a toast instead of
+// silently charging the wrong amount.
 export function RolePlanCards({
+  familyKey,
   familyLabel,
   tiers,
   currentTier,
   currency,
   settings,
 }: {
+  familyKey: RolePlanFamilyKey;
   familyLabel: string;
   tiers: RolePlanTierCard[];
   currentTier: string;
@@ -39,6 +45,24 @@ export function RolePlanCards({
   const symbol = CURRENCY_SYMBOLS[currency];
   const usdSymbol = CURRENCY_SYMBOLS.USD;
   const pkrSymbol = CURRENCY_SYMBOLS.PKR;
+  const [checkingOutTier, setCheckingOutTier] = useState<string | null>(null);
+
+  async function startCheckout(tierKey: 'PRO' | 'ELITE') {
+    setCheckingOutTier(tierKey);
+    try {
+      const response = await fetch('/api/payments/create-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tier: tierKey, billingCycle: 'monthly', planFamily: familyKey }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.url) throw new Error(data.error || 'Could not start checkout.');
+      window.location.assign(data.url);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not start checkout.');
+      setCheckingOutTier(null);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -110,10 +134,14 @@ export function RolePlanCards({
                     {isCurrent ? 'Current Plan' : 'Free Plan'}
                   </Button>
                 ) : (
-                  <Button asChild className="w-full" variant="gradient">
-                    <a href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(`Upgrade to ${tier.name} (${familyLabel})`)}`}>
-                      Contact us to upgrade
-                    </a>
+                  <Button
+                    className="w-full"
+                    variant="gradient"
+                    loading={checkingOutTier === tier.key}
+                    disabled={checkingOutTier !== null}
+                    onClick={() => startCheckout(tier.key as 'PRO' | 'ELITE')}
+                  >
+                    Checkout {tier.name}
                   </Button>
                 )}
               </CardContent>

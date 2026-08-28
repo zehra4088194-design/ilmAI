@@ -58,6 +58,7 @@ export default async function SubscriptionPage() {
         </div>
       ) : planFamily === 'parent' ? (
         <RolePlanCards
+          familyKey="parent"
           familyLabel="Parent"
           currentTier={currentTier}
           currency={currency}
@@ -66,6 +67,7 @@ export default async function SubscriptionPage() {
         />
       ) : planFamily === 'teacher' ? (
         <RolePlanCards
+          familyKey="teacher"
           familyLabel="Teacher"
           currentTier={currentTier}
           currency={currency}
@@ -74,6 +76,7 @@ export default async function SubscriptionPage() {
         />
       ) : planFamily === 'university' ? (
         <RolePlanCards
+          familyKey="university"
           familyLabel="University"
           currentTier={currentTier}
           currency={currency}

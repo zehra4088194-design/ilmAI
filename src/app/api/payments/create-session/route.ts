@@ -10,7 +10,7 @@ import {
 import { getSiteUrl } from '@/lib/utils/siteUrl';
 
 export async function POST(req: NextRequest) {
-  let checkoutContext: { tier?: string; billingCycle?: string; region?: PaymentRegion } = {};
+  let checkoutContext: { tier?: string; billingCycle?: string; region?: PaymentRegion; planFamily?: string } = {};
 
   try {
     const supabase = await createClient();
@@ -52,15 +52,28 @@ export async function POST(req: NextRequest) {
       tier: 'PRO' | 'ELITE';
       billingCycle?: 'monthly' | 'annual';
       provider?: 'paddle' | 'paypro';
+      planFamily?: 'parent' | 'teacher' | 'university';
     };
     const { tier } = body;
-    const billingCycle = body.billingCycle === 'annual' ? 'annual' : body.billingCycle === 'monthly' ? 'monthly' : null;
+    const planFamily =
+      body.planFamily === 'parent' || body.planFamily === 'teacher' || body.planFamily === 'university'
+        ? body.planFamily
+        : undefined;
+    // parent/teacher/university plans only have one admin-configured monthly price each — no
+    // annual rate — so a planFamily checkout is always monthly regardless of what's sent.
+    const billingCycle = planFamily
+      ? 'monthly'
+      : body.billingCycle === 'annual'
+        ? 'annual'
+        : body.billingCycle === 'monthly'
+          ? 'monthly'
+          : null;
     // PayPro currently does not support automatic recurring subscriptions for
     // the local wallet flow. Keep automated checkout on Paddle; Easypaisa and
     // JazzCash remain manual verification flows from the upgrade page.
     const region: PaymentRegion = 'GLOBAL';
     const currency = 'USD';
-    checkoutContext = { tier, billingCycle: billingCycle || undefined, region };
+    checkoutContext = { tier, billingCycle: billingCycle || undefined, region, planFamily };
 
     if (tier !== 'PRO' && tier !== 'ELITE') {
       return NextResponse.json({ status: 'error', error: 'Invalid plan selected' }, { status: 400 });
@@ -86,6 +99,7 @@ export async function POST(req: NextRequest) {
       userEmail: user.email || '',
       tier,
       billingCycle,
+      planFamily,
       region,
       currency,
       successUrl: `${appUrl}/subscription?success=true`,

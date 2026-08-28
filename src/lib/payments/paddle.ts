@@ -22,6 +22,24 @@ const PRICE_IDS = {
   },
 } as const;
 
+// Parent/Teacher/University plans (see RolePlanCards) only ever have one admin-configured monthly
+// USD price per tier — no annual rate — so each family needs just 2 Paddle price ids (PRO, ELITE),
+// not the 4-way monthly/annual matrix student plans use above.
+const FAMILY_PRICE_IDS = {
+  parent: {
+    PRO: process.env.PADDLE_PRICE_ID_PARENT_PRO,
+    ELITE: process.env.PADDLE_PRICE_ID_PARENT_ELITE,
+  },
+  teacher: {
+    PRO: process.env.PADDLE_PRICE_ID_TEACHER_PRO,
+    ELITE: process.env.PADDLE_PRICE_ID_TEACHER_ELITE,
+  },
+  university: {
+    PRO: process.env.PADDLE_PRICE_ID_UNIVERSITY_PRO,
+    ELITE: process.env.PADDLE_PRICE_ID_UNIVERSITY_ELITE,
+  },
+} as const;
+
 export class PaddleRequestError extends Error {
   constructor(
     message: string,
@@ -42,6 +60,13 @@ function getCheckoutUrl(successUrl: string) {
 }
 
 function getPriceId(params: CreateCheckoutParams) {
+  if (params.planFamily && params.planFamily !== 'student') {
+    const priceId = FAMILY_PRICE_IDS[params.planFamily][params.tier];
+    if (!priceId) {
+      throw new Error(`Missing Paddle price id for ${params.planFamily} ${params.tier}`);
+    }
+    return priceId;
+  }
   const priceId = PRICE_IDS[params.tier][params.billingCycle];
   if (!priceId) {
     throw new Error(`Missing Paddle price id for ${params.tier} (${params.billingCycle})`);
@@ -110,6 +135,7 @@ export const paddleProvider: PaymentProvider = {
           user_email: params.userEmail,
           tier: params.tier,
           billing_cycle: params.billingCycle,
+          plan_family: params.planFamily || 'student',
           region: params.region,
           currency: params.currency,
           success_url: params.successUrl,

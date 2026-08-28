@@ -51,15 +51,38 @@ type PaddleSubscriptionData = {
   }>;
 };
 
+// Includes the parent/teacher/university price ids (see paddle.ts's FAMILY_PRICE_IDS) alongside
+// the original student ones — every plan family still just resolves to PRO/ELITE on
+// profiles.subscription_tier (see RolePlanCards' comment for why one column serves every account
+// type), so the webhook only needs to recognize the price id, not which family it belongs to.
 const PRICE_IDS = {
-  PRO: new Set([process.env.PADDLE_PRICE_ID_PRO_MONTHLY, process.env.PADDLE_PRICE_ID_PRO_ANNUAL].filter(Boolean)),
-  ELITE: new Set([process.env.PADDLE_PRICE_ID_ELITE_MONTHLY, process.env.PADDLE_PRICE_ID_ELITE_ANNUAL].filter(Boolean)),
+  PRO: new Set(
+    [
+      process.env.PADDLE_PRICE_ID_PRO_MONTHLY,
+      process.env.PADDLE_PRICE_ID_PRO_ANNUAL,
+      process.env.PADDLE_PRICE_ID_PARENT_PRO,
+      process.env.PADDLE_PRICE_ID_TEACHER_PRO,
+      process.env.PADDLE_PRICE_ID_UNIVERSITY_PRO,
+    ].filter(Boolean)
+  ),
+  ELITE: new Set(
+    [
+      process.env.PADDLE_PRICE_ID_ELITE_MONTHLY,
+      process.env.PADDLE_PRICE_ID_ELITE_ANNUAL,
+      process.env.PADDLE_PRICE_ID_PARENT_ELITE,
+      process.env.PADDLE_PRICE_ID_TEACHER_ELITE,
+      process.env.PADDLE_PRICE_ID_UNIVERSITY_ELITE,
+    ].filter(Boolean)
+  ),
 };
 
 function resolveTier(priceId?: string | null, fallback?: string | null): PaddleTier {
   if (priceId && PRICE_IDS.ELITE.has(priceId)) return 'ELITE';
   if (priceId && PRICE_IDS.PRO.has(priceId)) return 'PRO';
-  if (!priceId && (fallback === 'PRO' || fallback === 'ELITE')) return fallback;
+  // Unrecognized price id (e.g. this webhook's env vars haven't caught up with a newly-added
+  // family price yet) still falls back to custom_data.tier — set unconditionally in
+  // paddleProvider.createCheckout — rather than silently downgrading the purchase to FREE.
+  if (fallback === 'PRO' || fallback === 'ELITE') return fallback;
   return 'FREE';
 }
 
