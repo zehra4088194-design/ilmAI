@@ -13,3 +13,11 @@
 0 3 * * * curl -fsS --retry 3 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/weak-subjects"
 0 4 * * * curl -fsS --retry 3 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/study-reminders"
 30 4 * * * curl -fsS --retry 3 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/storage-cleanup"
+# Was missing entirely from this file — /api/cron/usd-pkr-rate existed and worked fine (the admin
+# settings "Refresh rate now" button calls the same underlying logic), but nothing here ever
+# scheduled it, so it only ever ran when an admin clicked that button by hand. .github/workflows/
+# free-cron.yml (the free-hosted-deployment fallback this file's header comment mentions) already
+# calls this job — this self-hosted crontab just never matched it.
+0 5 * * * curl -fsS --retry 3 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/usd-pkr-rate"
+# Also missing from this file the same way — present in free-cron.yml but never scheduled here.
+30 5 * * * curl -fsS --retry 3 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/expire-institution-trials"

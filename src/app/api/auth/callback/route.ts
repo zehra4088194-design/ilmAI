@@ -8,6 +8,7 @@ import { LOCALE_COOKIE_NAME } from '@/lib/i18n/config';
 import { getRequestSiteUrl } from '@/lib/utils/siteUrl';
 import { createInstitutionalJoinRequestFromSignup } from '@/lib/school-erp/join-request-signup';
 import { resolveMembershipRedirect } from '@/lib/auth/resolveMembershipRedirect';
+import { decodeSessionIdFromJwt, enforceSessionLimit } from '@/lib/auth/enforceSessionLimit';
 
 type BoardType = Database['public']['Enums']['board_type'];
 type GradeLevel = Database['public']['Enums']['grade_level'];
@@ -81,6 +82,9 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient();
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error && data.user) {
+      const currentSessionId = data.session?.access_token ? decodeSessionIdFromJwt(data.session.access_token) : null;
+      await enforceSessionLimit(data.user.id, currentSessionId);
+
       const userMetadata = data.user.user_metadata;
       const providers = data.user.app_metadata?.providers;
       const isGoogleAuth =
