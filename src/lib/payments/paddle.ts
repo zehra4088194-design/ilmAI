@@ -22,21 +22,23 @@ const PRICE_IDS = {
   },
 } as const;
 
-// Parent/Teacher/University plans (see RolePlanCards) only ever have one admin-configured monthly
-// USD price per tier — no annual rate — so each family needs just 2 Paddle price ids (PRO, ELITE),
-// not the 4-way monthly/annual matrix student plans use above.
+// Parent/Teacher/University plans (see RolePlanCards) — same monthly/annual matrix as the student
+// PRO_IDS above, just one set per family. Admin settings only store a monthly USD price per tier;
+// the annual price is always that monthly price × 12 at a fixed 20% discount (RolePlanCards
+// computes and displays it the same way), so there's no separate "annual price" admin field — but
+// Paddle still needs its own real price object per billing interval, hence 2 ids per tier here too.
 const FAMILY_PRICE_IDS = {
   parent: {
-    PRO: process.env.PADDLE_PRICE_ID_PARENT_PRO,
-    ELITE: process.env.PADDLE_PRICE_ID_PARENT_ELITE,
+    PRO: { monthly: process.env.PADDLE_PRICE_ID_PARENT_PRO_MONTHLY, annual: process.env.PADDLE_PRICE_ID_PARENT_PRO_ANNUAL },
+    ELITE: { monthly: process.env.PADDLE_PRICE_ID_PARENT_ELITE_MONTHLY, annual: process.env.PADDLE_PRICE_ID_PARENT_ELITE_ANNUAL },
   },
   teacher: {
-    PRO: process.env.PADDLE_PRICE_ID_TEACHER_PRO,
-    ELITE: process.env.PADDLE_PRICE_ID_TEACHER_ELITE,
+    PRO: { monthly: process.env.PADDLE_PRICE_ID_TEACHER_PRO_MONTHLY, annual: process.env.PADDLE_PRICE_ID_TEACHER_PRO_ANNUAL },
+    ELITE: { monthly: process.env.PADDLE_PRICE_ID_TEACHER_ELITE_MONTHLY, annual: process.env.PADDLE_PRICE_ID_TEACHER_ELITE_ANNUAL },
   },
   university: {
-    PRO: process.env.PADDLE_PRICE_ID_UNIVERSITY_PRO,
-    ELITE: process.env.PADDLE_PRICE_ID_UNIVERSITY_ELITE,
+    PRO: { monthly: process.env.PADDLE_PRICE_ID_UNIVERSITY_PRO_MONTHLY, annual: process.env.PADDLE_PRICE_ID_UNIVERSITY_PRO_ANNUAL },
+    ELITE: { monthly: process.env.PADDLE_PRICE_ID_UNIVERSITY_ELITE_MONTHLY, annual: process.env.PADDLE_PRICE_ID_UNIVERSITY_ELITE_ANNUAL },
   },
 } as const;
 
@@ -61,9 +63,9 @@ function getCheckoutUrl(successUrl: string) {
 
 function getPriceId(params: CreateCheckoutParams) {
   if (params.planFamily && params.planFamily !== 'student') {
-    const priceId = FAMILY_PRICE_IDS[params.planFamily][params.tier];
+    const priceId = FAMILY_PRICE_IDS[params.planFamily][params.tier][params.billingCycle];
     if (!priceId) {
-      throw new Error(`Missing Paddle price id for ${params.planFamily} ${params.tier}`);
+      throw new Error(`Missing Paddle price id for ${params.planFamily} ${params.tier} (${params.billingCycle})`);
     }
     return priceId;
   }

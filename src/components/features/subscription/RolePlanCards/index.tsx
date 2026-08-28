@@ -19,14 +19,15 @@ export type RolePlanTierCard = {
 
 export type RolePlanFamilyKey = 'parent' | 'teacher' | 'university';
 
-// Parent/teacher/university plan pricing only has a single admin-configured monthly USD price per
-// tier (no annual option, no native PKR figure the way the student subscriptionPlans do) — so this
-// intentionally skips the monthly/annual toggle and per-currency price object SubscriptionPlans
-// uses. Checkout goes through the same /api/payments/create-session route the student plans use,
-// with planFamily set so paddle.ts picks the right price id (PADDLE_PRICE_ID_<FAMILY>_<TIER> — see
-// that file's FAMILY_PRICE_IDS map) — always monthly, since that's all these families' pricing
-// defines. If that env var isn't set yet, the API call fails cleanly with a toast instead of
-// silently charging the wrong amount.
+// Parent/teacher/university plan pricing only has a single admin-configured MONTHLY USD price per
+// tier — there's no separate "annual price" admin field. Annual here is always that monthly price
+// × 12 at a fixed 20% discount, same math as the "Save 20%" badge on the student plans, computed
+// client-side rather than stored. Checkout goes through the same /api/payments/create-session route
+// the student plans use, with planFamily set so paddle.ts picks the right price id
+// (PADDLE_PRICE_ID_<FAMILY>_<TIER>_<CYCLE> — see that file's FAMILY_PRICE_IDS map). If that env var
+// isn't set yet, the API call fails cleanly with a toast instead of silently charging the wrong amount.
+const ANNUAL_DISCOUNT = 0.2;
+
 export function RolePlanCards({
   familyKey,
   familyLabel,
@@ -45,6 +46,7 @@ export function RolePlanCards({
   const symbol = CURRENCY_SYMBOLS[currency];
   const usdSymbol = CURRENCY_SYMBOLS.USD;
   const pkrSymbol = CURRENCY_SYMBOLS.PKR;
+  const [isAnnual, setIsAnnual] = useState(false);
   const [checkingOutTier, setCheckingOutTier] = useState<string | null>(null);
 
   async function startCheckout(tierKey: 'PRO' | 'ELITE') {
@@ -53,7 +55,11 @@ export function RolePlanCards({
       const response = await fetch('/api/payments/create-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tier: tierKey, billingCycle: 'monthly', planFamily: familyKey }),
+        body: JSON.stringify({
+          tier: tierKey,
+          billingCycle: isAnnual ? 'annual' : 'monthly',
+          planFamily: familyKey,
+        }),
       });
       const data = await response.json();
       if (!response.ok || !data.url) throw new Error(data.error || 'Could not start checkout.');
@@ -73,11 +79,40 @@ export function RolePlanCards({
         </p>
       </div>
 
+      <div className="border-border bg-background/70 inline-flex items-center gap-3 rounded-full border p-1.5">
+        <button
+          type="button"
+          onClick={() => setIsAnnual(false)}
+          className={cn(
+            'rounded-full px-4 py-2 text-sm font-medium transition-all',
+            !isAnnual ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
+          )}
+        >
+          Monthly
+        </button>
+        <button
+          type="button"
+          onClick={() => setIsAnnual(true)}
+          className={cn(
+            'rounded-full px-4 py-2 text-sm font-medium transition-all',
+            isAnnual ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
+          )}
+        >
+          Yearly
+          <Badge variant="success" className="ml-2 text-[10px]">
+            20% Off
+          </Badge>
+        </button>
+      </div>
+
       <div className="grid gap-6 md:grid-cols-3">
         {tiers.map((tier) => {
           const isCurrent = currentTier === tier.key;
           const isFree = tier.key === 'FREE';
-          const pkrPriceMonthly = isFree ? 0 : convertUsdToPkr(tier.priceUsdMonthly, settings);
+          const annualUsdMonthlyEquivalent = tier.priceUsdMonthly * (1 - ANNUAL_DISCOUNT);
+          const displayUsdMonthly = isAnnual ? annualUsdMonthlyEquivalent : tier.priceUsdMonthly;
+          const usdTotal = isAnnual ? displayUsdMonthly * 12 : displayUsdMonthly;
+          const pkrTotal = isFree ? 0 : convertUsdToPkr(usdTotal, settings);
           const Icon = tier.key === 'FREE' ? Sparkles : tier.key === 'PRO' ? Rocket : Crown;
           const iconBg =
             tier.key === 'FREE'
@@ -94,6 +129,20 @@ export function RolePlanCards({
                     Current Plan
                   </Badge>
                 )}
+                {isAnnual && !isFree && (
+                  <div className="mb-3">
+                    <Badge
+                      className={cn(
+                        'rounded-full border-0 px-3 py-1 text-[11px] font-semibold tracking-[0.18em] text-white uppercase',
+                        tier.key === 'ELITE'
+                          ? 'bg-gradient-to-r from-amber-500 to-orange-600'
+                          : 'bg-gradient-to-r from-violet-500 to-indigo-600'
+                      )}
+                    >
+                      20% Off
+                    </Badge>
+                  </div>
+                )}
                 <div
                   className={`mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${iconBg} shadow-lg`}
                 >
@@ -103,19 +152,27 @@ export function RolePlanCards({
                 <div className="mb-4">
                   <p className="text-3xl font-bold">
                     {usdSymbol}
-                    {formatPrice(tier.priceUsdMonthly)}
-                    <span className="text-muted-foreground text-sm font-normal">/mo</span>
+                    {formatPrice(usdTotal)}
+                    <span className="text-muted-foreground text-sm font-normal">{isAnnual ? '/year' : '/mo'}</span>
                   </p>
                   {!isFree && (
                     <p className="text-muted-foreground mt-1 text-sm">
                       = {pkrSymbol}
-                      {formatPrice(pkrPriceMonthly)}/mo
+                      {formatPrice(pkrTotal)}
+                      {isAnnual ? '/year' : '/mo'}
+                    </p>
+                  )}
+                  {isAnnual && !isFree && (
+                    <p className="text-muted-foreground mt-1 text-xs">
+                      {usdSymbol}
+                      {formatPrice(displayUsdMonthly)}/mo effective
                     </p>
                   )}
                   {currency !== 'USD' && currency !== 'PKR' && (
                     <p className="text-muted-foreground mt-1 text-xs">
                       {symbol}
-                      {formatPrice(tier.priceUsdMonthly)}/mo
+                      {formatPrice(usdTotal)}
+                      {isAnnual ? '/year' : '/mo'}
                     </p>
                   )}
                 </div>

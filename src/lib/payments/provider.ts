@@ -28,10 +28,10 @@ export interface CreateCheckoutParams {
   billingCycle: 'monthly' | 'annual';
   /**
    * Which pricing family this checkout is for. Omitted (or 'student') keeps the original
-   * behavior — subscriptionPlans pricing, monthly or annual. 'parent'/'teacher'/'university' use
-   * their own Paddle prices (see PARENT/TEACHER/UNIVERSITY price id env vars in paddle.ts) — those
-   * plan families only have a single admin-configured monthly USD price each (no annual rate), so
-   * billingCycle is ignored and treated as monthly whenever planFamily is set. The tier written to
+   * behavior — subscriptionPlans pricing. 'parent'/'teacher'/'university' use their own Paddle
+   * prices (see FAMILY_PRICE_IDS in paddle.ts) — same monthly/annual shape as the student plans,
+   * with the annual price always a fixed 20% off monthly × 12 (RolePlanCards computes and displays
+   * it the same way; there's no separate admin-configured annual field). The tier written to
    * profiles.subscription_tier is still just PRO/ELITE either way — see RolePlanCards' comment for
    * why one column safely serves every account type.
    */

@@ -59,15 +59,7 @@ export async function POST(req: NextRequest) {
       body.planFamily === 'parent' || body.planFamily === 'teacher' || body.planFamily === 'university'
         ? body.planFamily
         : undefined;
-    // parent/teacher/university plans only have one admin-configured monthly price each — no
-    // annual rate — so a planFamily checkout is always monthly regardless of what's sent.
-    const billingCycle = planFamily
-      ? 'monthly'
-      : body.billingCycle === 'annual'
-        ? 'annual'
-        : body.billingCycle === 'monthly'
-          ? 'monthly'
-          : null;
+    const billingCycle = body.billingCycle === 'annual' ? 'annual' : body.billingCycle === 'monthly' ? 'monthly' : null;
     // PayPro currently does not support automatic recurring subscriptions for
     // the local wallet flow. Keep automated checkout on Paddle; Easypaisa and
     // JazzCash remain manual verification flows from the upgrade page.
