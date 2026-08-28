@@ -91,6 +91,17 @@ export async function POST(req: NextRequest) {
       short: Math.max(0, Math.min(15, Number(parsed.available?.short) || 0)),
       long: Math.max(0, Math.min(8, Number(parsed.available?.long) || 0)),
     };
+    // A resource whose declared content is strictly MCQ (content_section
+    // 'mcq') must stay MCQ-only here — the AI analyzer above judges purely
+    // from the text and will happily claim short/long "could" be generated
+    // from an MCQ file's content, which is exactly the "test from this
+    // file" showing short/long sliders for an MCQ-only file. The reverse
+    // isn't restricted: a short/long file legitimately CAN offer AI-
+    // generated MCQs alongside its own questions.
+    if (resource.contentSection === 'mcq') {
+      parsed.available.short = 0;
+      parsed.available.long = 0;
+    }
     await writeAiArtifact(artifactKey, { parsed, provider, fallbackUsed });
     await consumeAiCredits(user.id, resource.tier, 'resource_test_analyze');
     return NextResponse.json({ status: 'success', data: parsed, provider, fallbackUsed, cached: false });

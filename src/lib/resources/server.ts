@@ -75,6 +75,12 @@ export type ProtectedResource = {
   sourceUrl: string;
   contextTextUrl: string | null;
   tier: SubscriptionTier;
+  // Only set for kind 'library' — the resource's declared content type
+  // ('mcq' | 'short' | 'long' | 'numericals' | 'reading'). Used to keep a
+  // strictly-MCQ source file's "test from this file" MCQ-only, instead of
+  // trusting the AI content-analyzer's own guess at what "could" be
+  // generated from the text.
+  contentSection?: string | null;
 };
 
 const MAX_PROTECTED_RESOURCE_BYTES = 125 * 1024 * 1024;
@@ -161,7 +167,9 @@ export async function getProtectedResource(
   if (kind === 'library') {
     const { data: resource } = await pdfAdmin
       .from('library_resources')
-      .select('id, title, board, grade_level, drive_url, light_file_url, dark_file_url, file_type, context_text_url')
+      .select(
+        'id, title, board, grade_level, drive_url, light_file_url, dark_file_url, file_type, context_text_url, content_section'
+      )
       .eq('id', resourceId)
       .maybeSingle();
     if (!resource || !isVisibleForProfile(resource, profile)) return null;
@@ -178,6 +186,7 @@ export async function getProtectedResource(
       sourceUrl,
       contextTextUrl: resource.context_text_url || null,
       tier: (profile.subscription_tier as SubscriptionTier) || 'FREE',
+      contentSection: resource.content_section || null,
     };
   }
 

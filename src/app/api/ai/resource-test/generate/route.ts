@@ -65,8 +65,14 @@ export async function POST(req: NextRequest) {
       );
     }
     const mcqCount = count(body.counts?.mcq, 30);
-    const shortCount = count(body.counts?.short, 15);
-    const longCount = count(body.counts?.long, 8);
+    // A resource whose declared content is strictly MCQ (content_section
+    // 'mcq') must stay MCQ-only — the client's own counts are trusted for
+    // everything else, but never for asking for short/long out of an
+    // MCQ-only source (the /analyze endpoint already hides those sliders,
+    // this is the hard guarantee in case a stale request still asks anyway).
+    const isMcqOnlySource = resource.contentSection === 'mcq';
+    const shortCount = isMcqOnlySource ? 0 : count(body.counts?.short, 15);
+    const longCount = isMcqOnlySource ? 0 : count(body.counts?.long, 8);
     if (mcqCount + shortCount + longCount === 0) {
       return NextResponse.json({ status: 'error', error: 'Select at least one question.' }, { status: 400 });
     }

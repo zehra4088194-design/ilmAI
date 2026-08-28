@@ -1,17 +1,23 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowLeft, Rocket, Type, Calculator, Sparkles as SparklesIcon } from 'lucide-react';
+import { ArrowLeft, Rocket, Type, Calculator, Shapes, Sparkles as SparklesIcon } from 'lucide-react';
 import { LetterMatchGame } from './LetterMatchGame';
 import { CountAndTapGame } from './CountAndTapGame';
 import { SimpleMathGame } from './SimpleMathGame';
 import { SpellingPopGame } from './SpellingPopGame';
+import { NumberWordMatchGame } from './NumberWordMatchGame';
+import { UrduAddSubtractGame } from './UrduAddSubtractGame';
+import { ShapeColorMatchGame } from './ShapeColorMatchGame';
 
 const GAMES = [
   { key: 'letters', title: 'Letter Match', emoji: '🔤', color: 'from-violet-400 to-fuchsia-500', Icon: Type, Component: LetterMatchGame },
   { key: 'counting', title: 'Count & Tap', emoji: '🔢', color: 'from-sky-400 to-cyan-500', Icon: Calculator, Component: CountAndTapGame },
   { key: 'math', title: 'Simple Math', emoji: '➕', color: 'from-emerald-400 to-teal-500', Icon: Calculator, Component: SimpleMathGame },
   { key: 'spelling', title: 'Spelling Pop', emoji: '📖', color: 'from-fuchsia-400 to-pink-500', Icon: Type, Component: SpellingPopGame },
+  { key: 'urdu-numbers', title: 'گنتی • Ginti', emoji: '🔢', color: 'from-teal-400 to-cyan-600', Icon: Calculator, Component: NumberWordMatchGame },
+  { key: 'urdu-math', title: 'حساب • Hisaab', emoji: '➕', color: 'from-indigo-400 to-blue-600', Icon: Calculator, Component: UrduAddSubtractGame },
+  { key: 'shapes-colors', title: 'رنگ و شکل • Shapes', emoji: '🔺', color: 'from-fuchsia-400 to-purple-600', Icon: Shapes, Component: ShapeColorMatchGame },
 ] as const;
 
 /**

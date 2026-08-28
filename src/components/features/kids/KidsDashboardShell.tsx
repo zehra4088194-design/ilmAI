@@ -8,12 +8,18 @@ import { LetterMatchGame } from '@/components/features/school-erp/kids-zone/Lett
 import { CountAndTapGame } from '@/components/features/school-erp/kids-zone/CountAndTapGame';
 import { SimpleMathGame } from '@/components/features/school-erp/kids-zone/SimpleMathGame';
 import { SpellingPopGame } from '@/components/features/school-erp/kids-zone/SpellingPopGame';
+import { NumberWordMatchGame } from '@/components/features/school-erp/kids-zone/NumberWordMatchGame';
+import { UrduAddSubtractGame } from '@/components/features/school-erp/kids-zone/UrduAddSubtractGame';
+import { ShapeColorMatchGame } from '@/components/features/school-erp/kids-zone/ShapeColorMatchGame';
 
 const GAMES = [
   { key: 'letters', title: 'Letter Match', emoji: '🔤', color: 'from-violet-400 to-fuchsia-500', Component: LetterMatchGame },
   { key: 'counting', title: 'Count & Tap', emoji: '🔢', color: 'from-sky-400 to-cyan-500', Component: CountAndTapGame },
   { key: 'math', title: 'Simple Math', emoji: '➕', color: 'from-emerald-400 to-teal-500', Component: SimpleMathGame },
   { key: 'spelling', title: 'Spelling Pop', emoji: '📖', color: 'from-fuchsia-400 to-pink-500', Component: SpellingPopGame },
+  { key: 'urdu-numbers', title: 'گنتی • Ginti', emoji: '🔢', color: 'from-teal-400 to-cyan-600', Component: NumberWordMatchGame },
+  { key: 'urdu-math', title: 'حساب • Hisaab', emoji: '➕', color: 'from-indigo-400 to-blue-600', Component: UrduAddSubtractGame },
+  { key: 'shapes-colors', title: 'رنگ و شکل • Shapes', emoji: '🔺', color: 'from-fuchsia-400 to-purple-600', Component: ShapeColorMatchGame },
 ] as const;
 
 const FLOATERS = ['🎈', '⭐', '🌈', '🚀', '🎨'];

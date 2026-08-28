@@ -1,0 +1,142 @@
+PROMPT FOR A NEW CLAUDE CODE SESSION (this machine, local filesystem +
+Supabase MCP access — not web-Claude with manual file attachments). Paste
+this whole thing as your first message in the new session.
+
+===========================================================================
+
+You have Supabase MCP connected to project "ilm AI" (bvbipddsowwivuynuuuu),
+and direct filesystem access to E:\library\library\ on this machine (local
+folder structure mirrors the B2 bucket exactly: library/{subject-slug}/
+{chapter-slug}/{section}/{title}.dark.pdf / .light.pdf / .context.txt).
+
+SCOPE — process ONLY these subject folders, in this order:
+  1. E:\library\library\islamiat
+  2. E:\library\library\mathematics
+  3. E:\library\library\pakistan-studies
+  4. E:\library\library\physics
+  5. E:\library\library\tarjuma-tul-quran
+  6. E:\library\library\urdu
+
+Do NOT touch English, Biology, Computer Science, or Chemistry — those are
+being handled separately. Do NOT touch any table/row outside what's
+described below.
+
+For EACH subject folder, walk it fully: E:\library\library\{subject}\
+{chapter-slug}\{section}\{title}.context.txt is the primary source for that
+resource; its matching .light.pdf (same {title} base, same folder) is the
+fallback ONLY when the .txt is garbled/unreadable for a specific question —
+read just that question from the PDF then, never guess from broken text.
+Never invent, paraphrase, or pull in outside content — everything must come
+verbatim from one of these two files. If a resource has no .context.txt at
+all (some don't), read directly from its .light.pdf instead.
+
+Process resources in reasonably sized batches (e.g. one chapter's worth,
+~10-20 files, at a time) rather than trying to hold an entire subject's
+files in context at once — work through each subject's folder tree
+systematically until every resource in it has been handled, checking off
+folders as you go so a later resume in this same session doesn't redo work.
+
+STEP 1 — Match each local file to its Supabase row.
+For a file at E:\library\library\{subject}\{chapter-slug}\{section}\
+{title}.context.txt, find its row with:
+```sql
+select id, title, subject_id, chapter_id, content_section
+from public.library_resources
+where subject_id = (select id from public.subjects where name ilike '<subject display name, e.g. Islamiat, Mathematics, Pakistan Studies, Physics, Tarjuma Tul Quran, Urdu>')
+  and content_section = '<section from folder: mcq/short/long/numericals/reading>'
+order by title;
+```
+Titles embed the original filename/topic — match {title} (the file's base
+name) against the returned rows' titles to find the one exact match. If a
+file doesn't clearly match exactly one row, skip it, note it, and move on —
+never guess.
+
+STEP 2 — Extract questions verbatim, then verify (same rules throughout):
+- Read the .context.txt fully. Transcribe every question word-for-word —
+  nothing paraphrased, nothing invented, nothing filled in from general
+  knowledge or Urdu/Islamiat subject knowledge you happen to have.
+- Preserve Urdu/Arabic script exactly as written — do not transliterate or
+  translate it.
+- Most files are ONE type throughout (matches their content_section), but
+  some "numericals"/"exercises" files mix short and long content — classify
+  each question individually in that case.
+- MCQs need exactly 4 options and a correct answer, ONLY if the source's
+  own answer key clearly marks it — otherwise drop that MCQ, don't guess.
+- Short/Long/Numerical: keep the question, and a model answer/worked
+  solution ONLY if the source actually has one.
+- Re-check every question against the source once more before finalizing.
+  When in doubt about one question, drop that question — not the whole
+  file, and never guess.
+
+STEP 3 — Push into public.resource_mcq_sets (per-resource question bank):
+```sql
+insert into public.resource_mcq_sets
+  (resource_kind, resource_id, questions, short_questions, long_questions, status, generated_at, updated_at)
+values
+  ('library', '<library_resources.id from Step 1>',
+   '<mcq array as [{"q":"...","opts":["...","...","...","..."],"correct":<0-3>,"exp":"..."}]>'::jsonb,
+   '<short/numerical array as [{"q":"...","marks":<n>,"keyPoints":["..."],"modelAnswer":"..."}]>'::jsonb,
+   '<long array, same shape as short>'::jsonb,
+   'ready', now(), now())
+on conflict (resource_kind, resource_id) do update set
+  questions = excluded.questions, short_questions = excluded.short_questions,
+  long_questions = excluded.long_questions, status = 'ready',
+  generated_at = now(), updated_at = now();
+```
+The row's content_section tells you which ONE of the three arrays to fill —
+leave the other two `[]`. "numericals" goes in short_questions (brief) or
+long_questions (full worked solution) depending on actual content length.
+
+STEP 4 — ALSO push the same verified MCQs into public.questions (the main
+public question bank — used by the diagnostic test, independent of
+resource_mcq_sets):
+```sql
+insert into public.questions
+  (chapter_id, subject_id, type, difficulty, text, options, correct_answer, explanation, marks, is_verified, is_demo_eligible, source_kind, source_id, tags, metadata)
+values
+  ('<chapter_id from Step 1>', '<subject_id from Step 1>', 'MCQ', 'MEDIUM',
+   '<question text>', '["opt A","opt B","opt C","opt D"]'::jsonb, '<correct index 0-3>'::jsonb,
+   '<explanation or null>', 1, true, false, 'library', '<library_resources.id>', '{}', '{}');
+```
+Same insert for Short/Long but `type`='SHORT'/'LONG', `options`=null,
+`correct_answer`=the model answer text as a jsonb string, `marks`= the
+actual marks stated in the source (default 3 short / 8 long if unstated).
+`is_verified: true` ONLY when you actually did the Step 2 re-check for that
+specific question. If chapter_id is NULL (a chapter-less "general"
+resource), pass NULL here too — never guess a chapter.
+
+STEP 5 — ALSO push the same verified MCQs into class_library_questions (a
+separate, simpler system — the "Class Library" nav section, already seeded
+with matching classes/subjects; questions there are subject-level only, no
+chapter/resource link, MCQ-only). Find the subject once per (grade,
+subject) pair you're working through:
+```sql
+select cls.id
+from class_library_subjects cls
+join class_library_classes cc on cc.id = cls.class_id
+where cc.slug = 'class-<9|10|11|12, from the resource's grade_level>'
+  and cls.name = '<subject display name>';
+```
+Then for every MCQ kept:
+```sql
+insert into class_library_questions
+  (subject_id, text, options, correct_answer, explanation, difficulty, marks)
+values
+  ('<class_library_subjects.id from above>', '<question text>',
+   '[{"id":"a","text":"<opt A>"},{"id":"b","text":"<opt B>"},{"id":"c","text":"<opt C>"},{"id":"d","text":"<opt D>"}]'::jsonb,
+   '<correct option id, "a"/"b"/"c"/"d">', '<explanation or null>', 'MEDIUM', 1);
+```
+Skip Short/Long/Numerical here — MCQ-only. Skip any MCQ whose correct
+answer was null.
+
+STEP 6 — Batch your inserts in reasonable chunks (e.g. per chapter) rather
+than one row at a time, where your Supabase connection allows it. Move
+through each subject's folders systematically until fully covered, then
+move to the next subject in the SCOPE list above.
+
+STEP 7 — Running report as you go, and a final summary at the end: per
+subject, how many resources processed, how many MCQ/short/long/numerical
+questions kept vs dropped and why (no answer key, ambiguous match,
+unreadable even in the PDF, etc.), and any file that couldn't be matched to
+a row at all. Do NOT touch resource_processing_jobs, library_resources.
+drive_url, or any row/table outside what's described above.
