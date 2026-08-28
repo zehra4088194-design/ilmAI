@@ -144,6 +144,7 @@ export function UserManagementTable() {
                 <th className="p-4">Username</th>
                 <th className="p-4">Name</th>
                 <th className="p-4">Email</th>
+                <th className="p-4">Signed up</th>
                 <th className="p-4">Sponsor</th>
                 <th className="p-4">Plan</th>
                 <th className="p-4">Expires</th>
@@ -153,13 +154,13 @@ export function UserManagementTable() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="text-muted-foreground p-6 text-center">
+                  <td colSpan={8} className="text-muted-foreground p-6 text-center">
                     Loading...
                   </td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-muted-foreground p-6 text-center">
+                  <td colSpan={8} className="text-muted-foreground p-6 text-center">
                     No users found.
                   </td>
                 </tr>
@@ -171,6 +172,18 @@ export function UserManagementTable() {
                       <td className="p-4 font-medium">{user.username ? `@${user.username}` : 'Not set'}</td>
                       <td className="p-4">{user.full_name || '—'}</td>
                       <td className="text-muted-foreground p-4">{user.email}</td>
+                      <td className="text-muted-foreground p-4 text-xs whitespace-nowrap">
+                        {new Date(user.created_at).toLocaleDateString(undefined, {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                        <br />
+                        {new Date(user.created_at).toLocaleTimeString(undefined, {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </td>
                       <td className="text-muted-foreground p-4 text-xs">
                         {user.sponsored_institution_name
                           ? `${user.sponsored_institution_name} (${user.sponsored_institution_type || 'institution'})`
