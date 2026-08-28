@@ -17,7 +17,8 @@
 # settings "Refresh rate now" button calls the same underlying logic), but nothing here ever
 # scheduled it, so it only ever ran when an admin clicked that button by hand. .github/workflows/
 # free-cron.yml (the free-hosted-deployment fallback this file's header comment mentions) already
-# calls this job — this self-hosted crontab just never matched it.
-0 5 * * * curl -fsS --retry 3 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/usd-pkr-rate"
+# calls this job — this self-hosted crontab just never matched it. 20:00 UTC = 1:00 AM Pakistan
+# time (UTC+5), as requested.
+0 20 * * * curl -fsS --retry 3 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/usd-pkr-rate"
 # Also missing from this file the same way — present in free-cron.yml but never scheduled here.
-30 5 * * * curl -fsS --retry 3 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/expire-institution-trials"
+30 20 * * * curl -fsS --retry 3 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/expire-institution-trials"

@@ -20,6 +20,15 @@ export type ExchangeRateSettings = {
   target: 'PKR';
   lastUpdated: string | null;
   fetchedAt: string | null;
+  // 'auto' (default): the daily cron and "Refresh rate now" overwrite usdToPkr with whatever the
+  // API returns. 'manual': usdToPkr is only ever what an admin typed and saved — the cron/refresh
+  // still run and record what they fetched (fetchedRate/fetchedAt/lastUpdated below, for display),
+  // they just never touch usdToPkr itself. Replaces the old per-plan "hardcode this plan's PKR
+  // price" checkbox with one switch for the whole rate instead of one per FREE/PRO/ELITE card.
+  mode: 'auto' | 'manual';
+  // The API's last-fetched rate, kept even in 'manual' mode so the admin can see what auto would
+  // apply without it actually overwriting usdToPkr.
+  fetchedRate: number | null;
 };
 
 export type ProviderBudgetKey =
@@ -181,6 +190,8 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
     target: 'PKR',
     lastUpdated: null,
     fetchedAt: null,
+    mode: 'auto',
+    fetchedRate: null,
   },
   institutionPricing: {
     school: { monthlyUsd: 10 },
@@ -806,6 +817,11 @@ export function normalizePlatformSettings(input: unknown): PlatformSettings {
           : null,
       fetchedAt:
         typeof sourceExchangeRate.fetchedAt === 'string' && sourceExchangeRate.fetchedAt ? sourceExchangeRate.fetchedAt : null,
+      mode: sourceExchangeRate.mode === 'manual' ? 'manual' : 'auto',
+      fetchedRate:
+        typeof sourceExchangeRate.fetchedRate === 'number' && Number.isFinite(sourceExchangeRate.fetchedRate)
+          ? sourceExchangeRate.fetchedRate
+          : null,
     },
     providerDailyBudgets: {
       groqFast: Math.max(

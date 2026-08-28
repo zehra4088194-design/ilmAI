@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { normalizePlatformSettings, type PlatformSettings } from '@/lib/platform-settings/shared';
 import type { SubscriptionTier } from '@/types';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils/cn';
 
 const TIERS: SubscriptionTier[] = ['FREE', 'PRO', 'ELITE'];
 
@@ -252,12 +253,39 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-muted-foreground text-sm">
-            Set plan prices in USD below. The cron updates this rate and recalculates PKR prices automatically.
+            Set plan prices in USD below. Auto: the daily cron (and this page's refresh button) keep the rate below in
+            sync with the live API. Hardcode: your typed rate is used exactly as-is and never overwritten — the fetched
+            rate still shows below for reference, it just doesn&apos;t apply automatically.
           </p>
+
+          <div className="border-border bg-background inline-flex items-center gap-1 rounded-full border p-1">
+            <button
+              type="button"
+              onClick={() => setSettings((current) => ({ ...current, exchangeRate: { ...current.exchangeRate, mode: 'auto' } }))}
+              className={cn(
+                'rounded-full px-4 py-1.5 text-sm font-medium transition-all',
+                settings.exchangeRate.mode === 'auto' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
+              )}
+            >
+              Auto
+            </button>
+            <button
+              type="button"
+              onClick={() => setSettings((current) => ({ ...current, exchangeRate: { ...current.exchangeRate, mode: 'manual' } }))}
+              className={cn(
+                'rounded-full px-4 py-1.5 text-sm font-medium transition-all',
+                settings.exchangeRate.mode === 'manual' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
+              )}
+            >
+              Hardcode
+            </button>
+          </div>
+
           <div className="grid gap-3 sm:grid-cols-3">
             <NumberField
-              label="USD = PKR"
+              label={settings.exchangeRate.mode === 'manual' ? 'USD = PKR (your rate)' : 'USD = PKR'}
               value={settings.exchangeRate.usdToPkr}
+              disabled={settings.exchangeRate.mode !== 'manual'}
               onChange={(value) =>
                 setSettings((current) => {
                   const usdToPkr = Math.max(1, value);
@@ -272,8 +300,11 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
               }
             />
             <div className="text-muted-foreground rounded-lg border p-3 text-xs">
-              <p className="font-semibold text-foreground">Last API update</p>
-              <p>{settings.exchangeRate.fetchedAt ? new Date(settings.exchangeRate.fetchedAt).toLocaleString() : 'Not fetched yet'}</p>
+              <p className="font-semibold text-foreground">Fetched rate (API)</p>
+              <p>{settings.exchangeRate.fetchedRate ?? 'Not fetched yet'}</p>
+              <p className="mt-1">
+                {settings.exchangeRate.fetchedAt ? new Date(settings.exchangeRate.fetchedAt).toLocaleString() : 'Not fetched yet'}
+              </p>
             </div>
             <div className="text-muted-foreground rounded-lg border p-3 text-xs">
               <p className="font-semibold text-foreground">Provider timestamp</p>
@@ -295,7 +326,11 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
                   { ...current, exchangeRate: { ...current.exchangeRate, ...data } },
                   data.rate
                 ));
-                toast.success(`Rate updated: 1 USD = ${data.rate} PKR`);
+                toast.success(
+                  data.mode === 'manual'
+                    ? `Fetched 1 USD = ${data.fetchedRate} PKR — your hardcoded rate (${data.rate}) still applies.`
+                    : `Rate updated: 1 USD = ${data.rate} PKR`
+                );
               } catch (error) {
                 toast.error(error instanceof Error ? error.message : 'Could not refresh rate.');
               } finally {
@@ -586,9 +621,6 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
                     onChange={(value) =>
                       updatePlan(tier, (item) => {
                         const nextUsd = { ...item.price.USD, monthly: value };
-                        // A hardcoded PKR price must not get silently overwritten
-                        // just because the admin also tweaked the USD price.
-                        if (item.pkrManual) return { ...item, price: { ...item.price, USD: nextUsd } };
                         return {
                           ...item,
                           price: {
@@ -609,7 +641,6 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
                     onChange={(value) =>
                       updatePlan(tier, (item) => {
                         const nextUsd = { ...item.price.USD, annual: value };
-                        if (item.pkrManual) return { ...item, price: { ...item.price, USD: nextUsd } };
                         return {
                           ...item,
                           price: {
@@ -624,62 +655,11 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
                       })
                     }
                   />
-                  <NumberField
-                    label={plan.pkrManual ? 'PKR/month (hardcoded)' : 'PKR/month (auto)'}
-                    value={plan.price.PKR.monthly}
-                    onChange={(value) =>
-                      updatePlan(tier, (item) => ({
-                        ...item,
-                        price: { ...item.price, PKR: { ...item.price.PKR, monthly: Math.max(0, value) } },
-                      }))
-                    }
-                    disabled={!plan.pkrManual}
-                  />
-                  <NumberField
-                    label={plan.pkrManual ? 'PKR/year (hardcoded)' : 'PKR/year (auto)'}
-                    value={plan.price.PKR.annual}
-                    onChange={(value) =>
-                      updatePlan(tier, (item) => ({
-                        ...item,
-                        price: { ...item.price, PKR: { ...item.price.PKR, annual: Math.max(0, value) } },
-                      }))
-                    }
-                    disabled={!plan.pkrManual}
-                  />
+                  {/* Read-only — computed as USD x the USD/PKR rate set in the "USD to PKR rate"
+                      card below (which has its own Auto/Hardcode switch for the rate itself). */}
+                  <NumberField label="PKR/month (auto)" value={plan.price.PKR.monthly} onChange={() => {}} disabled />
+                  <NumberField label="PKR/year (auto)" value={plan.price.PKR.annual} onChange={() => {}} disabled />
                 </div>
-
-                <label className="bg-muted/20 flex items-start gap-2 rounded-lg border p-3 text-sm">
-                  <Checkbox
-                    checked={plan.pkrManual}
-                    onCheckedChange={(checked) =>
-                      updatePlan(tier, (item) => {
-                        const pkrManual = checked === true;
-                        // Switching back to auto immediately snaps PKR back to
-                        // USD * live rate instead of leaving the stale manual
-                        // value on screen until the next exchange-rate update.
-                        if (pkrManual) return { ...item, pkrManual };
-                        return {
-                          ...item,
-                          pkrManual,
-                          price: {
-                            ...item.price,
-                            PKR: {
-                              monthly: Math.round(item.price.USD.monthly * settings.exchangeRate.usdToPkr),
-                              annual: Math.round(item.price.USD.annual * settings.exchangeRate.usdToPkr),
-                            },
-                          },
-                        };
-                      })
-                    }
-                  />
-                  <span>
-                    <span className="block font-medium">Hardcode this plan&apos;s PKR price</span>
-                    <span className="text-muted-foreground block text-xs">
-                      When on, PKR/month and PKR/year above are used exactly as typed â€” the daily USD/PKR rate refresh
-                      (and the wallet payment QR, which reads this same value) will not override them. Off by default.
-                    </span>
-                  </span>
-                </label>
 
                 <div className="space-y-3">
                   <p className="text-sm font-semibold">Usage limits</p>

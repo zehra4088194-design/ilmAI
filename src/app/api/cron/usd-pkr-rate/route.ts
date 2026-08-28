@@ -34,22 +34,28 @@ export async function GET(req: NextRequest) {
     }
 
     const settings = await getPlatformSettings();
+    const fetchedRate = Number(data.conversion_rate);
+    // 'manual' mode: the admin's typed usdToPkr is never overwritten by this cron — only
+    // fetchedRate/fetchedAt/lastUpdated update, so /admin/settings can still show "here's what
+    // auto would apply" without it silently taking effect overnight.
     const saved = await savePlatformSettings({
       ...settings,
       exchangeRate: {
-        usdToPkr: Number(data.conversion_rate),
-        base: 'USD',
-        target: 'PKR',
+        ...settings.exchangeRate,
+        usdToPkr: settings.exchangeRate.mode === 'manual' ? settings.exchangeRate.usdToPkr : fetchedRate,
         lastUpdated: data.time_last_update_utc || null,
         fetchedAt: new Date().toISOString(),
+        fetchedRate,
       },
     });
 
     return NextResponse.json({
       status: 'success',
       rate: saved.exchangeRate.usdToPkr,
+      fetchedRate: saved.exchangeRate.fetchedRate,
       fetchedAt: saved.exchangeRate.fetchedAt,
       lastUpdated: saved.exchangeRate.lastUpdated,
+      mode: saved.exchangeRate.mode,
     });
   } catch (error) {
     console.error('USD/PKR rate cron failed:', error);

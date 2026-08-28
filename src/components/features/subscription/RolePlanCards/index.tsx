@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Check, Crown, Rocket, Sparkles } from 'lucide-react';
-import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -22,10 +22,10 @@ export type RolePlanFamilyKey = 'parent' | 'teacher' | 'university';
 // Parent/teacher/university plan pricing only has a single admin-configured MONTHLY USD price per
 // tier — there's no separate "annual price" admin field. Annual here is always that monthly price
 // × 12 at a fixed 20% discount, same math as the "Save 20%" badge on the student plans, computed
-// client-side rather than stored. Checkout goes through the same /api/payments/create-session route
-// the student plans use, with planFamily set so paddle.ts picks the right price id
-// (PADDLE_PRICE_ID_<FAMILY>_<TIER>_<CYCLE> — see that file's FAMILY_PRICE_IDS map). If that env var
-// isn't set yet, the API call fails cleanly with a toast instead of silently charging the wrong amount.
+// client-side rather than stored. "Checkout" is a plain link into the same /subscription/[tier]
+// page (with ?family= added) the student plans use — that page shows both the Paddle card option
+// and the JazzCash/Easypaisa QR option, same full checkout experience students get, not a
+// stripped-down parent/teacher/university-only flow.
 const ANNUAL_DISCOUNT = 0.2;
 
 export function RolePlanCards({
@@ -47,28 +47,6 @@ export function RolePlanCards({
   const usdSymbol = CURRENCY_SYMBOLS.USD;
   const pkrSymbol = CURRENCY_SYMBOLS.PKR;
   const [isAnnual, setIsAnnual] = useState(false);
-  const [checkingOutTier, setCheckingOutTier] = useState<string | null>(null);
-
-  async function startCheckout(tierKey: 'PRO' | 'ELITE') {
-    setCheckingOutTier(tierKey);
-    try {
-      const response = await fetch('/api/payments/create-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tier: tierKey,
-          billingCycle: isAnnual ? 'annual' : 'monthly',
-          planFamily: familyKey,
-        }),
-      });
-      const data = await response.json();
-      if (!response.ok || !data.url) throw new Error(data.error || 'Could not start checkout.');
-      window.location.assign(data.url);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Could not start checkout.');
-      setCheckingOutTier(null);
-    }
-  }
 
   return (
     <div className="space-y-6">
@@ -191,14 +169,12 @@ export function RolePlanCards({
                     {isCurrent ? 'Current Plan' : 'Free Plan'}
                   </Button>
                 ) : (
-                  <Button
-                    className="w-full"
-                    variant="gradient"
-                    loading={checkingOutTier === tier.key}
-                    disabled={checkingOutTier !== null}
-                    onClick={() => startCheckout(tier.key as 'PRO' | 'ELITE')}
-                  >
-                    Checkout {tier.name}
+                  <Button asChild className="w-full" variant="gradient">
+                    <Link
+                      href={`/subscription/${tier.key.toLowerCase()}?billing=${isAnnual ? 'annual' : 'monthly'}&family=${familyKey}`}
+                    >
+                      Checkout {tier.name}
+                    </Link>
                   </Button>
                 )}
               </CardContent>

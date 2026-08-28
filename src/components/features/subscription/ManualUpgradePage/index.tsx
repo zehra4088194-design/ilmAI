@@ -21,6 +21,17 @@ type BillingCycle = 'monthly' | 'annual';
 type CheckoutCountry = 'PK' | 'OTHER';
 type CheckoutMethod = 'card' | 'wallet';
 
+// The generic student plan (settings.subscriptionPlans[tier]) has a full shape — per-currency
+// price object, features list, name — that parent/teacher/university plans don't (they're just
+// {priceUsdMonthly, a limit field} in admin settings). `overridePlan` lets a caller synthesize that
+// same shape from whichever family's settings apply, so this page/component doesn't need a second
+// copy of the card/QR/Paddle UI — see /subscription/[tier]/page.tsx for how it's built.
+type OverridePlan = {
+  name: string;
+  price: { USD: { monthly: number; annual: number }; PKR: { monthly: number; annual: number } };
+  features: string[];
+};
+
 export function ManualUpgradePage({
   tier,
   billing,
@@ -29,6 +40,8 @@ export function ManualUpgradePage({
   hasActiveSubscription,
   currency,
   walletQrDataUrl,
+  planFamily,
+  overridePlan,
 }: {
   tier: 'PRO' | 'ELITE';
   billing: BillingCycle;
@@ -39,8 +52,13 @@ export function ManualUpgradePage({
   // Server-generated dynamic payment QR (lib/payments/paymentQr.ts) for today's
   // PKR price — null while that amount is 0 (e.g. a misconfigured plan).
   walletQrDataUrl?: string | null;
+  // Set together: planFamily tells /api/payments/create-session which Paddle price id to use
+  // (FAMILY_PRICE_IDS in paddle.ts); overridePlan supplies that family's price/name/features
+  // instead of the generic student plan.
+  planFamily?: 'parent' | 'teacher' | 'university';
+  overridePlan?: OverridePlan;
 }) {
-  const plan = settings.subscriptionPlans[tier];
+  const plan = overridePlan ?? settings.subscriptionPlans[tier];
   const [country, setCountry] = useState<CheckoutCountry>(currency === 'PKR' ? 'PK' : 'OTHER');
   const [method, setMethod] = useState<CheckoutMethod>('card');
   const displayCurrency: Currency = country === 'PK' ? 'PKR' : 'USD';
@@ -74,7 +92,7 @@ export function ManualUpgradePage({
       const response = await fetch('/api/payments/create-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tier, billingCycle: billing, provider }),
+        body: JSON.stringify({ tier, billingCycle: billing, provider, planFamily }),
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok || !payload.url) throw new Error(payload.error || 'Checkout could not be started.');
