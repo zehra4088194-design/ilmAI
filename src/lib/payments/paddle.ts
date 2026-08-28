@@ -272,3 +272,79 @@ export const paddleProvider: PaymentProvider = {
     }
   },
 };
+
+// Institution (school/college) billing doesn't fit the FREE/PRO/ELITE catalog-price model the
+// PaymentProvider interface above assumes — the amount is a per-student rate with volume/annual
+// discounts computed server-side by resolveInstitutionPricing(), so there's no fixed price to
+// pre-create in Paddle's catalog per tier. Paddle's non-catalog pricing (an inline `price` object
+// instead of a `price_id`, attached to one existing Product) handles this without needing dozens
+// of pre-created prices: PADDLE_INSTITUTION_PRODUCT_ID is the one Product every institution
+// transaction attaches to; the actual amount/interval is set fresh per checkout, straight from
+// whatever resolveInstitutionPricing already computed and displayed to the principal.
+export type InstitutionCheckoutParams = {
+  organizationId: string;
+  institutionType: 'school' | 'college';
+  billingCycle: 'monthly' | 'annual';
+  /** Per-student total for this billing cycle, in whole USD (e.g. 8.50) — already discounted. */
+  amountUsd: number;
+  userId: string;
+  userEmail: string;
+  successUrl: string;
+  cancelUrl: string;
+};
+
+export async function createInstitutionCheckout(params: InstitutionCheckoutParams): Promise<CheckoutSession> {
+  const productId = process.env.PADDLE_INSTITUTION_PRODUCT_ID;
+  if (!productId) {
+    throw new Error('PADDLE_INSTITUTION_PRODUCT_ID is not configured');
+  }
+  if (!(params.amountUsd > 0)) {
+    throw new Error('Invalid institution checkout amount');
+  }
+
+  const checkoutUrl = getCheckoutUrl(params.successUrl);
+  // Paddle wants the unit price in the currency's smallest unit (cents for USD) as a string.
+  const unitPriceCents = String(Math.round(params.amountUsd * 100));
+
+  const response = await paddleRequest<{
+    data?: { id: string };
+  }>('/transactions', {
+    method: 'POST',
+    body: JSON.stringify({
+      collection_mode: 'automatic',
+      items: [
+        {
+          price: {
+            product_id: productId,
+            description: `Ilm AI ${params.institutionType} plan (${params.billingCycle})`,
+            unit_price: { amount: unitPriceCents, currency_code: 'USD' },
+            billing_cycle: { interval: params.billingCycle === 'annual' ? 'year' : 'month', frequency: 1 },
+          },
+          quantity: 1,
+        },
+      ],
+      checkout: { url: checkoutUrl },
+      custom_data: {
+        organization_id: params.organizationId,
+        institution_type: params.institutionType,
+        billing_cycle: params.billingCycle,
+        user_id: params.userId,
+        user_email: params.userEmail,
+        success_url: params.successUrl,
+        cancel_url: params.cancelUrl,
+      },
+    }),
+  });
+
+  const transactionId = response.data?.id;
+  if (!transactionId) {
+    throw new Error('Paddle transaction id missing from response');
+  }
+
+  const redirectUrl = new URL(checkoutUrl);
+  redirectUrl.searchParams.set('transaction_id', transactionId);
+  redirectUrl.searchParams.set('success_url', params.successUrl);
+  redirectUrl.searchParams.set('cancel_url', params.cancelUrl);
+
+  return { url: redirectUrl.toString(), providerSessionId: transactionId };
+}

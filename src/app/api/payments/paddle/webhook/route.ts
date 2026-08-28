@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPaymentProviderById } from '@/lib/payments';
 import { createAdminClient } from '@/lib/supabase/server';
 import { selectEffectiveSubscription } from '@/lib/payments/subscription-access';
+import { syncOrganizationSchoolGrants } from '@/lib/school-erp/subscription-cascade';
+import { syncOrganizationCollegeGrants } from '@/lib/college-erp/subscription-cascade';
 
 type PaddleBillingCycle = 'monthly' | 'annual';
 type PaddleTier = 'FREE' | 'PRO' | 'ELITE';
@@ -164,6 +166,45 @@ async function syncProfileTier({
   }
 }
 
+// Institution transactions (see createInstitutionCheckout / create-institution-session route)
+// carry organization_id + institution_type instead of a user tier — there's no profiles row to
+// update; activating the plan means flipping this organization's plan-settings row to
+// billing_status: 'active' with a fresh renews_on date, then cascading that access to every
+// active member the same way the admin's own updateSchoolPlanSettings action does.
+async function activateInstitutionBilling({
+  supabase,
+  organizationId,
+  institutionType,
+  billingCycle,
+  periodEnd,
+}: {
+  supabase: Awaited<ReturnType<typeof createAdminClient>>;
+  organizationId: string;
+  institutionType: 'school' | 'college';
+  billingCycle: PaddleBillingCycle;
+  periodEnd: string;
+}) {
+  const table = institutionType === 'school' ? 'school_organization_plan_settings' : 'college_organization_plan_settings';
+  const { error } = await (supabase.from(table) as any).upsert(
+    {
+      organization_id: organizationId,
+      billing_status: 'active',
+      renews_on: periodEnd.slice(0, 10),
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'organization_id' }
+  );
+  if (error) {
+    throw new Error(`Paddle institution billing sync failed: ${error.message}`);
+  }
+
+  if (institutionType === 'school') {
+    await syncOrganizationSchoolGrants(organizationId, true);
+  } else {
+    await syncOrganizationCollegeGrants(organizationId, true);
+  }
+}
+
 async function reconcileProfileAccess(supabase: Awaited<ReturnType<typeof createAdminClient>>, userId: string) {
   const { data, error } = await (supabase.from('subscriptions') as any)
     .select('tier, status, current_period_end')
@@ -199,6 +240,26 @@ export async function POST(req: NextRequest) {
       const payload = result.payload as PaddleWebhookEnvelope<PaddleTransactionData>;
       const transaction = payload.data;
       const customData = transaction?.custom_data || {};
+
+      // Institution (school/college) payments carry organization_id/institution_type instead of a
+      // user tier — see createInstitutionCheckout. Handled entirely separately from the
+      // profile-tier flow below since there's no profiles row involved.
+      const organizationId = typeof customData.organization_id === 'string' ? customData.organization_id : null;
+      const institutionType =
+        customData.institution_type === 'school' || customData.institution_type === 'college'
+          ? customData.institution_type
+          : null;
+      if (organizationId && institutionType) {
+        const billingCycle = resolveBillingCycle(
+          transaction?.items?.[0]?.price?.billing_cycle?.interval,
+          typeof customData.billing_cycle === 'string' ? customData.billing_cycle : null
+        );
+        const periodStart = transaction?.billed_at || transaction?.created_at || new Date().toISOString();
+        const periodEnd = addBillingPeriod(periodStart, billingCycle);
+        await activateInstitutionBilling({ supabase, organizationId, institutionType, billingCycle, periodEnd });
+        break;
+      }
+
       const userId = typeof customData.user_id === 'string' ? customData.user_id : null;
       const priceId = transaction?.items?.[0]?.price?.id;
       const tier = resolveTier(priceId, typeof customData.tier === 'string' ? customData.tier : null);

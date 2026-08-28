@@ -1,6 +1,8 @@
 'use client';
 
 import { useActionState, useState } from 'react';
+import { CreditCard } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils/cn';
@@ -37,6 +39,7 @@ export function InstitutionPaymentCheckout({
 }: Props) {
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const [method, setMethod] = useState<PaymentMethod>('jazzcash');
+  const [payingNow, setPayingNow] = useState(false);
   const boundAction = submitInstitutionPaymentVerification.bind(null, institutionType);
   const [state, formAction, pending] = useActionState<SubmitPaymentState, FormData>(boundAction, {
     success: false,
@@ -44,6 +47,27 @@ export function InstitutionPaymentCheckout({
   });
 
   const amount = cycle === 'annual' ? annual : monthly;
+
+  // Real, automatic checkout — Paddle charges the card immediately and the webhook activates the
+  // plan itself, no admin review needed. This is separate from ManualPaymentMethodPicker's "card"
+  // option below, which (per its own comment) still only files a manual claim for an admin to
+  // verify — until this existed, "pay by card" for an institution never actually charged anything.
+  const payNowWithCard = async () => {
+    setPayingNow(true);
+    try {
+      const response = await fetch('/api/payments/create-institution-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ billingCycle: cycle }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.url) throw new Error(data.error || 'Could not start checkout.');
+      window.location.assign(data.url);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not start checkout.');
+      setPayingNow(false);
+    }
+  };
   // No settings object is available client-side here (monthly/annual arrive precomputed from the
   // server, per this component's own doc comment) — the PKR/USD ratio already implied by those
   // precomputed prices is the same exchangeRate.usdToPkr the admin configured, so deriving the fee
@@ -87,6 +111,13 @@ export function InstitutionPaymentCheckout({
             <p className="mt-1 text-xs font-semibold text-emerald-600">Volume discount applied</p>
           )}
         </div>
+
+        <Button type="button" variant="gradient" className="w-full" loading={payingNow} onClick={payNowWithCard}>
+          <CreditCard className="h-4 w-4" /> Pay ${amount.usd.toFixed(2)} now by card — activates instantly
+        </Button>
+        <p className="text-muted-foreground -mt-2 text-center text-xs">
+          Or send payment manually below and an admin will verify and activate it.
+        </p>
 
         <ManualPaymentMethodPicker
           method={method}
