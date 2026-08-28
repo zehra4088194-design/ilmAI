@@ -22,7 +22,31 @@ import { getAdminAiProvider } from '@/lib/platform-settings/shared';
 export const runtime = 'nodejs';
 export const maxDuration = 30;
 
-function buildSystemPrompt(subject?: string, source?: string, subjectContext?: string | null) {
+// Human-readable "who's asking" line for the side-chat system prompt — grade 9/10/11/12 student,
+// university student, teacher, parent, or principal — built from profiles.role/grade_level/
+// education_level rather than trusted from the client, same as subscription_tier just above.
+function describeAsker(profile: { role?: string | null; grade_level?: string | null; education_level?: string | null }) {
+  const gradeNumber = (value?: string | null) => {
+    const match = value?.match(/(\d{1,2})/);
+    return match ? match[1] : null;
+  };
+  if (profile.role === 'parent') return 'a parent';
+  if (profile.role === 'teacher') return 'a teacher (or school/college staff member)';
+  if (profile.role === 'admin') return 'a principal or institution admin';
+  if (profile.education_level === 'university') return 'a university student';
+  const grade = gradeNumber(profile.grade_level);
+  if (profile.education_level === 'college' || (grade && Number(grade) >= 11)) {
+    return grade ? `a Grade ${grade} (intermediate/college) student` : 'an intermediate/college student';
+  }
+  return grade ? `a Grade ${grade} student` : 'a student';
+}
+
+function buildSystemPrompt(
+  subject?: string,
+  source?: string,
+  subjectContext?: string | null,
+  askerContext?: { pageLabel?: string; asker?: string }
+) {
   const navigationCatalog = `
 App navigation (use only these exact internal links when the student asks where a feature is):
 - Dashboard: /dashboard
@@ -56,6 +80,7 @@ Side chat mode:
 - Answer the student's exact question directly
 - Keep it compact unless the student asks for detail
 - If the message is just "hi/hello", greet warmly in one short line and ask what subject they need help with
+${askerContext?.asker || askerContext?.pageLabel ? `- You're talking to ${askerContext.asker || 'a user'}${askerContext.pageLabel ? `, currently on the "${askerContext.pageLabel}" page in the app` : ''} — tailor tone, depth, and examples accordingly (e.g. simpler language for a younger grade, institution/admin framing for a principal or teacher, practical guidance for a parent). Don't just repeat this back to them.` : ''}
 ${navigationCatalog}`
       : '';
   return `You are ilm AI, an expert tutor for Pakistani students (Grades 9-12, O/A Levels, FBISE & provincial boards).${subject ? `\nThe student has chosen to focus this session on: ${subject}. Keep your answers scoped to that subject unless they explicitly ask about something else.` : ''}
@@ -90,10 +115,14 @@ export async function POST(req: NextRequest) {
       return new Response(JSON.stringify({ error: 'Login is required.' }), { status: 401 });
     }
 
-    const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('subscription_tier, role, grade_level, education_level')
+      .eq('id', user.id)
+      .single();
     const userTier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
 
-    const { message, history = [], provider: requestedProvider, subject, subjectId, source } = await req.json();
+    const { message, history = [], provider: requestedProvider, subject, subjectId, source, pageLabel } = await req.json();
     if (!message || typeof message !== 'string') {
       return new Response(JSON.stringify({ error: 'A message is required.' }), { status: 400 });
     }
@@ -161,7 +190,10 @@ export async function POST(req: NextRequest) {
     const messages = [
       {
         role: 'system' as const,
-        content: buildSystemPrompt(typeof subject === 'string' ? subject : undefined, source, subjectContext),
+        content: buildSystemPrompt(typeof subject === 'string' ? subject : undefined, source, subjectContext, {
+          pageLabel: typeof pageLabel === 'string' ? pageLabel : undefined,
+          asker: profile ? describeAsker(profile) : undefined,
+        }),
       },
       ...history
         .filter((m: { role: string; content: string }) => m.content)

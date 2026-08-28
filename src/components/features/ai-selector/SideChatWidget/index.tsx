@@ -13,6 +13,7 @@ import type { AiProviderId, ModelTier } from '@/lib/ai/gateway';
 import { nanoid } from 'nanoid';
 import { cn } from '@/lib/utils/cn';
 import { getDestinationSuggestions } from '@/lib/navigation/destinations';
+import { derivePageLabel } from '@/lib/navigation/pageLabel';
 
 interface SideChatMessage {
   id: string;
@@ -182,7 +183,14 @@ export function SideChatWidget() {
       const res = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, history: messages.slice(-6), provider, tier, source: 'side_chat' }),
+        body: JSON.stringify({
+          message: text,
+          history: messages.slice(-6),
+          provider,
+          tier,
+          source: 'side_chat',
+          pageLabel: derivePageLabel(pathname),
+        }),
       });
       if (!res.ok) {
         const err = await res.json();
