@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireSchoolContext } from '@/lib/school-erp/access';
 import { requireCollegeContext } from '@/lib/college-erp/access';
+import { createAdminClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 
@@ -27,7 +28,12 @@ export async function GET(req: NextRequest) {
   const q = (req.nextUrl.searchParams.get('q') || '').trim();
   if (q.length < 2) return NextResponse.json({ status: 'success', data: { results: [] } });
 
-  const db = supabase as any;
+  // school_organizations/college_organizations RLS ("visible to members") deliberately only lets
+  // a caller see their OWN institution — correct for every other read in the app, but this search
+  // needs to look up OTHER institutions by name, which that policy always blocks regardless of
+  // query correctness. Uses the admin client instead, scoped by the owner/admin gate above and by
+  // only ever selecting the public-safe allowlist (name/slug/logo/campuses) already used here.
+  const db = (await createAdminClient()) as any;
   const [schoolMatches, collegeMatches] = await Promise.all([
     db
       .from('school_organizations')

@@ -21,6 +21,7 @@ export default async function SchoolAdminLayout({ children }: { children: React.
       <SchoolAdminSidebar
         organizationName={context.organization.name}
         organizationId={context.organization.id}
+        organizationLogoUrl={context.organization.logo_url}
         organizations={organizations}
         role={context.membership.member_role}
         permissions={context.permissions}

@@ -42,11 +42,13 @@ const ITEMS: Array<{ href: string; label: string; icon: typeof LayoutDashboard; 
 
 export function CollegeAdminSidebar({
   organizationName,
+  organizationLogoUrl,
   role,
   permissions,
   enabledModules,
 }: {
   organizationName: string;
+  organizationLogoUrl?: string | null;
   role: CollegeRole;
   permissions: CollegePermission[];
   enabledModules: CollegeModuleKey[] | null;
@@ -59,9 +61,18 @@ export function CollegeAdminSidebar({
     <div className="flex h-full flex-col">
       <div className="border-sidebar-border border-b p-5">
         <Link href="/college-admin" className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-white">
-            <Building2 className="h-4 w-4" />
-          </span>
+          {organizationLogoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- institution-supplied logo, arbitrary remote host
+            <img
+              src={organizationLogoUrl}
+              alt={organizationName}
+              className="h-8 w-8 shrink-0 rounded-lg object-cover"
+            />
+          ) : (
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-white">
+              <Building2 className="h-4 w-4" />
+            </span>
+          )}
           <span className="min-w-0">
             <span className="text-sidebar-foreground block truncate text-sm font-bold">{organizationName}</span>
             <span className="text-sidebar-foreground/50 block text-[11px] capitalize">{role.replace('_', ' ')}</span>

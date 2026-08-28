@@ -33,6 +33,7 @@ export default async function CollegeAdminLayout({ children }: { children: React
       <div className="bg-background min-h-screen">
         <CollegeAdminSidebar
           organizationName={newContext.organization.name}
+          organizationLogoUrl={newContext.organization.logo_url}
           role={newContext.membership.member_role}
           permissions={newContext.permissions}
           enabledModules={newContext.enabledModules}
