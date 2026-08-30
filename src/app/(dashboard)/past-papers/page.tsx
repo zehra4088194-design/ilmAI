@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { PastPapersGrid } from '@/components/features/past-papers/PastPapersGrid';
-import { AdSenseBanner } from '@/components/features/ads/AdSenseBanner';
+import { HouseAdBanner } from '@/components/features/ads/HouseAdBanner';
 export const metadata: Metadata = {
   title: 'Past Papers',
   description: 'Browse past papers by board, grade, subject, and chapter for structured exam practice.',
@@ -32,7 +32,7 @@ export default async function PastPapersPage() {
         <h1 className="text-2xl font-bold sm:text-3xl">Past Papers</h1>
         <p className="text-muted-foreground mt-1">Select a subject, chapter, and then the exact paper.</p>
       </div>
-      <AdSenseBanner slot="inline" className="mx-auto max-w-5xl" />
+      <HouseAdBanner slot="content_inline" className="mx-auto max-w-5xl" />
       <PastPapersGrid
         papers={(papers || []) as any}
         board={profile?.board || undefined}

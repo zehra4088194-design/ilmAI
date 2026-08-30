@@ -35,7 +35,7 @@ export default function CookiesPage() {
           bullets: [
             'Necessary: authentication, security, selected locale, theme, and basic session continuity.',
             'Analytics: optional product-usage measurement used to understand and improve the platform.',
-            'Marketing and advertising: optional Google AdSense tags, advertising cookies, ad delivery, and measurement on eligible pages.',
+            'Marketing and advertising: optional in-house promotional banners for ilmai.study\'s own products, with first-party click and view counts used only to measure those promotions.',
             'Study emails: an optional preference that allows learning reminders; it does not enable advertising cookies.',
           ],
         },
@@ -51,22 +51,10 @@ export default function CookiesPage() {
           ],
         },
         {
-          title: 'Google AdSense cookies',
+          title: 'In-house promotional banners',
           paragraphs: [
-            'When advertising is enabled, third-party vendors including Google may use cookies to serve and measure ads based on a visitor’s prior visits to ilm AI or other websites. Advertising cookies may use Google or DoubleClick domains.',
-            'Visitors can decline marketing cookies in ilm AI Cookie Settings. Depending on location, a separate Google-certified consent message may also appear for the choices required by advertising regulations.',
-          ],
-          links: [
-            {
-              href: 'https://adssettings.google.com/',
-              label: 'Manage personalized ads in Google Ads Settings',
-              external: true,
-            },
-            {
-              href: 'https://policies.google.com/technologies/ads',
-              label: 'Read Google’s advertising technology information',
-              external: true,
-            },
+            'ilm AI no longer uses Google AdSense. Promotional banners shown on free content pages link to ilmai.store, ilm AI\'s own e-commerce site, and are served entirely from ilm AI\'s own systems — no third-party advertising network or advertising cookie is involved.',
+            'A click on a banner is logged with an unguessable reference id so a resulting purchase can be attributed back to that click; this reference (and, if you are logged in, your account id) may be shared with ilmai.store for that purpose. Visitors can decline marketing cookies in ilm AI Cookie Settings to stop these banners from loading.',
           ],
         },
         {

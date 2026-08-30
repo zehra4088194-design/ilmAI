@@ -401,7 +401,42 @@ export async function getSchoolAttendance(supabase: SupabaseClient, context: Sch
       db.from('school_staff_attendance').select('*').eq('organization_id', organizationId).eq('attendance_date', date)
     ),
   ]);
-  return { sections, enrollments, records, leaves, staffMembers, staffRecords, date };
+
+  // Phase 7a — WhatsApp quick-link for today's absentees, same guardian-phone lookup pattern as
+  // getSchoolFees.
+  const absentStudentIds = Array.from(
+    new Set(records.filter((r: any) => r.status === 'absent').map((r: any) => r.student_id))
+  );
+  const absentees: Array<{ studentId: string; fullName: string; guardianPhone: string | null }> = [];
+  if (absentStudentIds.length) {
+    const [guardianLinks, absentStudentProfiles] = await Promise.all([
+      rows(
+        db
+          .from('school_guardians')
+          .select('student_id, is_primary, profiles!school_guardians_guardian_id_fkey(phone)')
+          .eq('organization_id', organizationId)
+          .in('student_id', absentStudentIds)
+          .order('is_primary', { ascending: false })
+      ),
+      rows(db.from('profiles').select('id, full_name').in('id', absentStudentIds)),
+    ]);
+    const phoneByStudent = new Map<string, string>();
+    for (const link of guardianLinks) {
+      if (phoneByStudent.has(link.student_id)) continue;
+      const phone = (Array.isArray(link.profiles) ? link.profiles[0] : link.profiles)?.phone;
+      if (phone) phoneByStudent.set(link.student_id, phone);
+    }
+    const nameByStudent = new Map(absentStudentProfiles.map((p: any) => [p.id, p.full_name]));
+    for (const studentId of absentStudentIds) {
+      absentees.push({
+        studentId,
+        fullName: nameByStudent.get(studentId) || 'Student',
+        guardianPhone: phoneByStudent.get(studentId) || null,
+      });
+    }
+  }
+
+  return { sections, enrollments, records, leaves, staffMembers, staffRecords, date, absentees };
 }
 
 // Bulk fetch for the report-card template gallery (/school-admin/exams/report-cards/[examId]).
@@ -524,7 +559,32 @@ export async function getSchoolFees(supabase: SupabaseClient, context: SchoolCon
         .eq('status', 'active')
     ),
   ]);
-  return { structures, invoices, payments, years, classes, students };
+
+  // Phase 7a — WhatsApp quick-link reminders need a phone number to prefill wa.me with; guardian
+  // phone lives on school_guardians -> profiles, not on the invoice/student row itself.
+  const invoiceStudentIds = Array.from(new Set(invoices.map((item: any) => item.student_id).filter(Boolean)));
+  const guardianPhoneByStudentId = new Map<string, string>();
+  if (invoiceStudentIds.length) {
+    const guardianLinks = await rows(
+      db
+        .from('school_guardians')
+        .select('student_id, is_primary, profiles!school_guardians_guardian_id_fkey(phone)')
+        .eq('organization_id', organizationId)
+        .in('student_id', invoiceStudentIds)
+        .order('is_primary', { ascending: false })
+    );
+    for (const link of guardianLinks) {
+      if (guardianPhoneByStudentId.has(link.student_id)) continue;
+      const phone = (Array.isArray(link.profiles) ? link.profiles[0] : link.profiles)?.phone;
+      if (phone) guardianPhoneByStudentId.set(link.student_id, phone);
+    }
+  }
+  const invoicesWithPhone = invoices.map((item: any) => ({
+    ...item,
+    guardianPhone: guardianPhoneByStudentId.get(item.student_id) || null,
+  }));
+
+  return { structures, invoices: invoicesWithPhone, payments, years, classes, students };
 }
 
 export async function getSchoolPayroll(supabase: SupabaseClient, context: SchoolContext) {
@@ -625,6 +685,31 @@ export async function getSchoolAcademics(supabase: SupabaseClient, context: Scho
   return { homework, timetable, lessonPlans, events, sections, offerings };
 }
 
+// Phase 6c — per-announcement read-receipt stats. Joins school_notification_deliveries (in_app
+// channel only — email/SMS/WhatsApp/push have no equivalent "read" concept in this app) to
+// notifications.is_read via the notification_id link added alongside this feature.
+export async function getAnnouncementReadStats(supabase: SupabaseClient, organizationId: string, announcementIds: string[]) {
+  if (!announcementIds.length) return new Map<string, { delivered: number; read: number }>();
+  const db = supabase as any;
+  const { data } = await db
+    .from('school_notification_deliveries')
+    .select('announcement_id, notifications(is_read)')
+    .eq('organization_id', organizationId)
+    .eq('channel', 'in_app')
+    .not('notification_id', 'is', null)
+    .in('announcement_id', announcementIds);
+
+  const stats = new Map<string, { delivered: number; read: number }>();
+  for (const row of data || []) {
+    const current = stats.get(row.announcement_id) || { delivered: 0, read: 0 };
+    current.delivered += 1;
+    const notification = Array.isArray(row.notifications) ? row.notifications[0] : row.notifications;
+    if (notification?.is_read) current.read += 1;
+    stats.set(row.announcement_id, current);
+  }
+  return stats;
+}
+
 export async function getSchoolCommunication(supabase: SupabaseClient, context: SchoolContext) {
   const db = supabase as any;
   const organizationId = context.organization.id;
@@ -678,9 +763,11 @@ export async function getSchoolReports(supabase: SupabaseClient, context: School
     rows(
       db
         .from('school_report_cards')
-        .select('percentage, grade, gpa, published_at')
+        .select('id, student_id, percentage, grade, gpa, published_at, profiles!school_report_cards_student_id_fkey(full_name)')
         .eq('organization_id', organizationId)
         .not('published_at', 'is', null)
+        .order('published_at', { ascending: false })
+        .limit(200)
     ),
     rows(db.from('school_admissions').select('status, created_at').eq('organization_id', organizationId)),
     rows(
@@ -972,4 +1059,261 @@ export async function getPendingStudentAdditions(
       section: section ? { name: section.name, className: klass?.name || null } : null,
     };
   });
+}
+
+// Phase 2c: who a teacher is allowed to open a direct_conversations thread with. Deliberately
+// scoped as broadly as the existing PTM feature already scopes the reverse direction — a parent
+// can already request a PTM meeting with ANY teacher in the org (see ptmTeachers in
+// getSchoolPortalData below, not just their child's actual subject teachers) — so a teacher's
+// messaging contact list here is "every guardian in the org", the same breadth, rather than a new
+// narrower rule. The parent side of this feature reuses that existing ptmTeacherOptions list
+// directly (see src/app/school/page.tsx) instead of a second query.
+// get_or_create_direct_conversation (the direct-messaging migration) still independently enforces
+// "one parent + one teacher, same organization" server-side regardless of what this list offers.
+export async function getTeacherMessagingContacts(supabase: SupabaseClient, context: SchoolContext) {
+  const db = supabase as any;
+  const { data: guardians } = await db
+    .from('school_guardians')
+    .select('guardian_id, profiles!school_guardians_guardian_id_fkey(id, full_name, avatar_url)')
+    .eq('organization_id', context.organization.id);
+
+  const seen = new Map<string, any>();
+  for (const link of guardians || []) {
+    const profile = Array.isArray(link.profiles) ? link.profiles[0] : link.profiles;
+    if (!profile || seen.has(profile.id)) continue;
+    seen.set(profile.id, { profileId: profile.id, fullName: profile.full_name, avatarUrl: profile.avatar_url });
+  }
+  return Array.from(seen.values());
+}
+
+// Phase 6d — substitute teacher auto-suggestion. Pure aggregation over school_timetable_entries +
+// school_staff_attendance + school_memberships: for each teacher marked absent on `date`, find
+// their periods that day and which other active teachers have no clashing period at that time and
+// aren't themselves absent. No new tracking table — this is computed fresh each time the admin
+// views the page.
+export async function getSubstituteSuggestions(supabase: SupabaseClient, context: SchoolContext, date: string) {
+  const db = supabase as any;
+  const organizationId = context.organization.id;
+  const dayOfWeek = ((new Date(`${date}T12:00:00Z`).getUTCDay() + 6) % 7) + 1; // 1=Monday..7=Sunday, matches school_timetable_entries convention
+
+  const [teachers, absentRows, timetable] = await Promise.all([
+    rows(
+      db
+        .from('school_memberships')
+        .select('id, profile_id, profiles(full_name)')
+        .eq('organization_id', organizationId)
+        .eq('member_role', 'teacher')
+        .eq('status', 'active')
+    ),
+    rows(
+      db
+        .from('school_staff_attendance')
+        .select('membership_id')
+        .eq('organization_id', organizationId)
+        .eq('attendance_date', date)
+        .eq('status', 'absent')
+    ),
+    rows(
+      db
+        .from('school_timetable_entries')
+        .select('id, section_id, subject_name, teacher_id, starts_at, ends_at, school_sections(name)')
+        .eq('organization_id', organizationId)
+        .eq('day_of_week', dayOfWeek)
+    ),
+  ]);
+  if (!teachers.length || !timetable.length) return [];
+
+  const teacherByMembershipId = new Map(teachers.map((t: any) => [t.id, t]));
+  const absentTeacherIds = new Set(
+    absentRows.map((row: any) => teacherByMembershipId.get(row.membership_id)?.profile_id).filter(Boolean)
+  );
+  if (!absentTeacherIds.size) return [];
+
+  const overlaps = (aStart: string, aEnd: string, bStart: string, bEnd: string) => aStart < bEnd && bStart < aEnd;
+  const teacherNameByProfileId = new Map(
+    teachers.map((t: any) => [t.profile_id, (Array.isArray(t.profiles) ? t.profiles[0] : t.profiles)?.full_name || 'Teacher'])
+  );
+
+  return timetable
+    .filter((period: any) => absentTeacherIds.has(period.teacher_id))
+    .map((period: any) => {
+      const section = Array.isArray(period.school_sections) ? period.school_sections[0] : period.school_sections;
+      const suggestions = teachers
+        .filter((teacher: any) => teacher.profile_id !== period.teacher_id && !absentTeacherIds.has(teacher.profile_id))
+        .filter(
+          (teacher: any) =>
+            !timetable.some(
+              (other: any) =>
+                other.teacher_id === teacher.profile_id && overlaps(period.starts_at, period.ends_at, other.starts_at, other.ends_at)
+            )
+        )
+        .map((teacher: any) => ({ profileId: teacher.profile_id, fullName: teacherNameByProfileId.get(teacher.profile_id) }));
+      return {
+        periodId: period.id,
+        sectionName: section?.name || 'Section',
+        subjectName: period.subject_name,
+        startsAt: period.starts_at,
+        endsAt: period.ends_at,
+        absentTeacherId: period.teacher_id,
+        absentTeacherName: teacherNameByProfileId.get(period.teacher_id) || 'Teacher',
+        suggestions: suggestions.slice(0, 3),
+      };
+    });
+}
+
+// Phase 6a — principal-facing teacher performance insights. Pure aggregation over existing
+// tables, no new tracking table. "Completion rate" is reported as a raw count of distinct days
+// with an attendance mark in the window (not a true percentage) because there is no existing
+// "expected school day" calendar table to divide by — an honest simplification rather than a
+// fabricated denominator.
+export async function getTeacherPerformanceInsights(supabase: SupabaseClient, context: SchoolContext) {
+  const db = supabase as any;
+  const organizationId = context.organization.id;
+  const since = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+  const sinceTs = new Date(Date.now() - 30 * 86400000).toISOString();
+
+  const teachers = await rows(
+    db
+      .from('school_memberships')
+      .select('profile_id, profiles(full_name)')
+      .eq('organization_id', organizationId)
+      .eq('member_role', 'teacher')
+      .eq('status', 'active')
+  );
+  if (!teachers.length) return [];
+  const teacherIds = teachers.map((t: any) => t.profile_id);
+
+  const [attendanceRows, testRows] = await Promise.all([
+    rows(
+      db
+        .from('school_attendance_records')
+        .select('marked_by, attendance_date')
+        .eq('organization_id', organizationId)
+        .gte('attendance_date', since)
+        .in('marked_by', teacherIds)
+    ),
+    rows(db.from('teacher_generated_tests').select('created_by, created_at').in('created_by', teacherIds).gte('created_at', sinceTs)),
+  ]);
+
+  const attendanceDaysByTeacher = new Map<string, Set<string>>();
+  for (const row of attendanceRows) {
+    const set = attendanceDaysByTeacher.get(row.marked_by) || new Set<string>();
+    set.add(row.attendance_date);
+    attendanceDaysByTeacher.set(row.marked_by, set);
+  }
+  const testCountByTeacher = new Map<string, number>();
+  for (const row of testRows) {
+    testCountByTeacher.set(row.created_by, (testCountByTeacher.get(row.created_by) || 0) + 1);
+  }
+
+  return teachers
+    .map((teacher: any) => {
+      const profile = Array.isArray(teacher.profiles) ? teacher.profiles[0] : teacher.profiles;
+      return {
+        profileId: teacher.profile_id,
+        fullName: profile?.full_name || 'Teacher',
+        attendanceDaysMarked: attendanceDaysByTeacher.get(teacher.profile_id)?.size || 0,
+        testsCreated: testCountByTeacher.get(teacher.profile_id) || 0,
+      };
+    })
+    .sort((a, b) => b.attendanceDaysMarked - a.attendanceDaysMarked);
+}
+
+// Phase 6f — dropout-risk early warning. A simple additive score (0-100, higher = more at risk)
+// combining three existing signals, sorted highest-risk first. Deliberately linear/transparent
+// (not a trained model) so a principal can see WHY a student scored high.
+export async function getDropoutRiskScores(supabase: SupabaseClient, context: SchoolContext) {
+  const db = supabase as any;
+  const organizationId = context.organization.id;
+  const since60 = new Date(Date.now() - 60 * 86400000).toISOString().slice(0, 10);
+
+  const enrollments = await rows(
+    db
+      .from('school_enrollments')
+      .select('student_id, profiles!school_enrollments_student_id_fkey(full_name)')
+      .eq('organization_id', organizationId)
+      .eq('status', 'active')
+  );
+  if (!enrollments.length) return [];
+  const studentIds = enrollments.map((e: any) => e.student_id);
+
+  const [attendanceRows, invoiceRows, quizRows] = await Promise.all([
+    rows(
+      db
+        .from('school_attendance_records')
+        .select('student_id, status')
+        .eq('organization_id', organizationId)
+        .gte('attendance_date', since60)
+        .in('student_id', studentIds)
+    ),
+    rows(
+      db
+        .from('school_fee_invoices')
+        .select('student_id, status, due_date')
+        .eq('organization_id', organizationId)
+        .in('student_id', studentIds)
+    ),
+    rows(
+      db
+        .from('quiz_sessions')
+        .select('user_id, score, started_at')
+        .eq('status', 'COMPLETED')
+        .in('user_id', studentIds)
+        .order('started_at', { ascending: true })
+        .limit(2000)
+    ),
+  ]);
+
+  const attendanceByStudent = new Map<string, { present: number; total: number }>();
+  for (const row of attendanceRows) {
+    const current = attendanceByStudent.get(row.student_id) || { present: 0, total: 0 };
+    current.total += 1;
+    if (row.status === 'present' || row.status === 'late') current.present += 1;
+    attendanceByStudent.set(row.student_id, current);
+  }
+
+  const overdueByStudent = new Map<string, number>();
+  for (const row of invoiceRows) {
+    if (row.status === 'overdue') overdueByStudent.set(row.student_id, (overdueByStudent.get(row.student_id) || 0) + 1);
+  }
+
+  const scoresByStudent = new Map<string, number[]>();
+  for (const row of quizRows) {
+    if (row.score == null) continue;
+    const list = scoresByStudent.get(row.user_id) || [];
+    list.push(Number(row.score));
+    scoresByStudent.set(row.user_id, list);
+  }
+
+  return enrollments
+    .map((enrollment: any) => {
+      const profile = Array.isArray(enrollment.profiles) ? enrollment.profiles[0] : enrollment.profiles;
+      const attendance = attendanceByStudent.get(enrollment.student_id);
+      const attendanceRate = attendance && attendance.total > 0 ? attendance.present / attendance.total : 1;
+      const overdueInvoices = overdueByStudent.get(enrollment.student_id) || 0;
+      const scores = scoresByStudent.get(enrollment.student_id) || [];
+      const half = Math.floor(scores.length / 2);
+      const firstHalfAvg = half > 0 ? scores.slice(0, half).reduce((a, b) => a + b, 0) / half : null;
+      const secondHalfAvg = half > 0 ? scores.slice(half).reduce((a, b) => a + b, 0) / (scores.length - half) : null;
+      const decliningTrend = firstHalfAvg !== null && secondHalfAvg !== null && secondHalfAvg < firstHalfAvg - 10;
+
+      // Additive risk score: attendance is the strongest signal (up to 50), fee default next (up
+      // to 30), a declining quiz trend last (20) — weights are a simplification, not calibrated
+      // against real dropout outcomes; treat as a triage sort order, not a certainty.
+      let riskScore = Math.round((1 - attendanceRate) * 50);
+      riskScore += Math.min(30, overdueInvoices * 15);
+      if (decliningTrend) riskScore += 20;
+      riskScore = Math.min(100, riskScore);
+
+      return {
+        studentId: enrollment.student_id,
+        fullName: profile?.full_name || 'Student',
+        riskScore,
+        attendanceRate: Math.round(attendanceRate * 100),
+        overdueInvoices,
+        decliningQuizTrend: decliningTrend,
+      };
+    })
+    .filter((s) => s.riskScore > 0)
+    .sort((a, b) => b.riskScore - a.riskScore);
 }

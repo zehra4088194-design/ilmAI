@@ -312,10 +312,11 @@ export function RegisterForm() {
     ? suggestInstitutions(institutionSuggestionList, institutionNameValue)
     : [];
   const birthDateValue = watch('birthDate');
-  const isYoungChild =
+  const isYoungChild = Boolean(
     identity && ['parent', 'university', 'school-college'].includes(identity) &&
     calculateAge(birthDateValue) !== null &&
-    (calculateAge(birthDateValue) as number) < KIDS_DASHBOARD_AGE_CUTOFF;
+    (calculateAge(birthDateValue) as number) < KIDS_DASHBOARD_AGE_CUTOFF
+  );
 
   const steps = useMemo(() => {
     if (!identity) return [IDENTITY_STEP];
@@ -597,6 +598,16 @@ export function RegisterForm() {
           ? `Account created. Your request to join ${selectedSchool.name} has been sent for approval.`
           : 'Account created successfully.'
       );
+      // Phase 7b — best-effort, never blocks signup: if this page was reached via
+      // /register?ref=CODE, record the referral now that the profile definitely exists.
+      const referralCode = searchParams.get('ref');
+      if (referralCode) {
+        fetch('/api/referral/redeem', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: referralCode }),
+        }).catch(() => {});
+      }
       if (effectiveRole === 'student' && gender) {
         const genderTheme = gender === 'girl' ? 'theme-pink-light' : 'theme-midnight-dark';
         window.localStorage.setItem('theme', genderTheme);

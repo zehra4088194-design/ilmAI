@@ -14,7 +14,7 @@ export type EliteBrandingInput = {
 export type ResolvedBranding = {
   /** Whether the "ilm AI" watermark/footer must be shown regardless of teacher preference. */
   forceIlmAiWatermark: boolean;
-  /** Whether an AdSense-style ad must be acknowledged before generating (FREE only). */
+  /** Whether a house ad must be acknowledged before generating (FREE only). */
   requiresAdGate: boolean;
   /** Header line shown under the ilm AI logo (school/teacher line), if any. */
   customHeader: string | null;

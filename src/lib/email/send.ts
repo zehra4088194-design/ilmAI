@@ -32,6 +32,9 @@ export async function sendEmail(params: {
   html: string;
   text?: string;
   replyTo?: string;
+  // Phase 6b — lets a report card PDF (or any future generated file) ride along on an existing
+  // email, instead of a separate attachment-sending code path.
+  attachments?: Array<{ filename: string; content: Buffer; contentType?: string }>;
 }) {
   const from = process.env.EMAIL_FROM;
   if (!from) throw new Error('EMAIL_FROM is not configured');

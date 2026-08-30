@@ -30,6 +30,7 @@ async function main() {
   const mode = process.argv[2]; // 'textbooks' | 'pairing'
   const manifestPath = process.argv[3];
   const gradeLevel = process.argv[4]; // only needed for textbooks (pairing already carries its own grade)
+  if (!manifestPath) throw new Error('Usage: run-simple-inserts.ts <mode> <manifestPath> [gradeLevel]');
 
   const rows = JSON.parse(readFileSync(manifestPath, 'utf8'));
   console.log(`Loaded ${rows.length} rows (${mode})`);

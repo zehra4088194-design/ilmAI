@@ -1,10 +1,18 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
+import { Radio } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { createClassAssignment, createClassLecture, createClassQuizTemplate, markClassAttendance } from '../../actions';
+import {
+  createClassAssignment,
+  createClassLecture,
+  createClassQuizTemplate,
+  markClassAttendance,
+  startLiveSession,
+} from '../../actions';
+import { getActiveLiveSession } from '@/lib/live-classes/access';
 
 export const metadata: Metadata = { title: 'Class' };
 
@@ -12,7 +20,12 @@ export default async function TeacherClassPage({ params }: { params: Promise<{ i
   const { id } = await params;
   const supabase = await createClient();
   const db = supabase as any;
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const { data: klass } = await db.from('teacher_classes').select('*').eq('id', id).single();
+  const isTeacher = Boolean(user && klass && user.id === (klass as any).teacher_id);
+  const activeLiveSession = await getActiveLiveSession(supabase, id);
   const [{ data: enrollments }, { data: assignments }, { data: lectures }, { data: attendance }, { data: chapters }, { data: quizTemplates }] = await Promise.all([
     db.from('class_enrollments').select('student_id, profiles(full_name, xp)').eq('class_id', id),
     db.from('class_assignments').select('*').eq('class_id', id).order('created_at', { ascending: false }),
@@ -52,7 +65,10 @@ export default async function TeacherClassPage({ params }: { params: Promise<{ i
   }
   return (
     <div className="mx-auto max-w-6xl space-y-6">
-      <div><p className="text-sm text-violet-400">Join code {klass?.join_code}</p><h1 className="text-2xl font-bold">{klass?.name}</h1></div>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div><p className="text-sm text-violet-400">Join code {klass?.join_code}</p><h1 className="text-2xl font-bold">{klass?.name}</h1></div>
+        <LiveClassPanel classId={id} isTeacher={isTeacher} activeSession={activeLiveSession} />
+      </div>
       <div className="grid gap-6 lg:grid-cols-3">
         <section className="glass rounded-xl p-5">
           <h2 className="mb-3 font-bold">Students ({students.length})</h2>
@@ -137,5 +153,37 @@ export default async function TeacherClassPage({ params }: { params: Promise<{ i
         </div>
       </section>
     </div>
+  );
+}
+
+/** Teacher: "Go Live" trigger or a "rejoin" link if already live. Student: a "🔴 Live now" join banner. */
+function LiveClassPanel({
+  classId,
+  isTeacher,
+  activeSession,
+}: {
+  classId: string;
+  isTeacher: boolean;
+  activeSession: { id: string; title: string } | null;
+}) {
+  if (activeSession) {
+    return (
+      <Link
+        href={`/live-class/${activeSession.id}`}
+        className="flex items-center gap-2 rounded-full border border-red-500/40 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-500"
+      >
+        <Radio className="h-4 w-4 animate-pulse" /> Live now — {isTeacher ? 'Rejoin' : 'Join'}
+      </Link>
+    );
+  }
+  if (!isTeacher) return null;
+  return (
+    <form action={startLiveSession} className="flex items-center gap-2">
+      <input type="hidden" name="class_id" value={classId} />
+      <Input name="title" placeholder="Today's live class topic" className="h-9 w-56" />
+      <Button size="sm" variant="gradient">
+        <Radio className="h-4 w-4" /> Go Live
+      </Button>
+    </form>
   );
 }

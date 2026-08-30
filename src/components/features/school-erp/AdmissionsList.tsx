@@ -10,17 +10,34 @@ import { SchoolActionForm } from './SchoolActionForm';
 import type { SchoolActionState } from '@/lib/school-erp/types';
 
 const selectClass = 'border-input bg-background h-10 w-full rounded-lg border px-3 text-sm';
-const STATUSES = ['submitted', 'under_review', 'waitlisted', 'approved', 'rejected', 'enrolled', 'withdrawn'];
+// Phase 6e: inquiry/visit_scheduled/entry_test_scheduled are the pre-application funnel stages —
+// same school_admissions table/status column, just widened (see the admission-funnel migration).
+const STATUSES = [
+  'inquiry',
+  'visit_scheduled',
+  'entry_test_scheduled',
+  'submitted',
+  'under_review',
+  'waitlisted',
+  'approved',
+  'rejected',
+  'enrolled',
+  'withdrawn',
+];
 
 // Search-enabled admissions list — name-search rollout (master prompt point 15).
 export function AdmissionsList({
   applications,
   canManage,
   updateAdmissionStatus,
+  sections = [],
+  years = [],
 }: {
   applications: any[];
   canManage: boolean;
   updateAdmissionStatus: (state: SchoolActionState, formData: FormData) => Promise<SchoolActionState>;
+  sections?: any[];
+  years?: any[];
 }) {
   const getSearchableText = useMemo(
     () => (item: any) => `${item.applicant_name} ${item.application_number} ${item.guardian_name}`,
@@ -88,12 +105,31 @@ export function AdmissionsList({
                 )}
               </div>
               {canManage && (
-                <SchoolActionForm action={updateAdmissionStatus} submitLabel="Update" className="flex items-end gap-2">
+                <SchoolActionForm action={updateAdmissionStatus} submitLabel="Update" className="flex flex-col gap-2">
                   <input type="hidden" name="id" value={item.id} />
                   <select name="status" defaultValue={item.status} className={selectClass}>
                     {STATUSES.map((status) => (
                       <option key={status} value={status}>
                         {status.replace('_', ' ')}
+                      </option>
+                    ))}
+                  </select>
+                  {/* Phase 6e: only used if "enrolled" is chosen above — auto-enrolls the
+                      applicant (matched by their applicant_email) into this section/year. */}
+                  <select name="section_id" defaultValue="" className={selectClass} title="Only used if status is set to 'enrolled'">
+                    <option value="">If enrolling: section</option>
+                    {sections.map((section: any) => (
+                      <option key={section.id} value={section.id}>
+                        {section.school_classes?.name ? `${section.school_classes.name} - ` : ''}
+                        {section.name}
+                      </option>
+                    ))}
+                  </select>
+                  <select name="academic_year_id" defaultValue="" className={selectClass} title="Only used if status is set to 'enrolled'">
+                    <option value="">If enrolling: year</option>
+                    {years.map((year: any) => (
+                      <option key={year.id} value={year.id}>
+                        {year.name}
                       </option>
                     ))}
                   </select>

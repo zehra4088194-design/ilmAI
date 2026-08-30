@@ -104,7 +104,7 @@ export function CookieConsent() {
                   />
                   <PreferenceRow
                     label="Marketing ads"
-                    description="AdSense advertising for free-plan users."
+                    description="In-house promotional banners for ilmai.study."
                     checked={prefs.marketing}
                     onChange={(checked) => setPrefs((current) => ({ ...current, marketing: checked }))}
                   />

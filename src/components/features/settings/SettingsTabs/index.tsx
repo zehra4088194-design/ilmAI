@@ -1,6 +1,7 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTheme } from 'next-themes';
+import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,7 @@ import {
   KeyRound,
   Smartphone,
   Trash2,
+  Camera,
 } from 'lucide-react';
 import { ParentMessageThread } from '@/components/ui/ParentMessageThread';
 import { ParentAttachments } from '@/components/ui/ParentAttachments';
@@ -119,6 +121,8 @@ export function SettingsTabs({
     profile?.preferred_output_style || 'simple'
   );
   const [saving, setSaving] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   const [inviteCode, setInviteCode] = useState('');
   const [linking, setLinking] = useState(false);
   const [approvedLink, setApprovedLink] = useState<{ id: string; parent_id: string } | null>(null);
@@ -240,6 +244,34 @@ export function SettingsTabs({
       toast.success('Profile updated.');
     }
     setSaving(false);
+  };
+
+  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Select an image file.');
+      return;
+    }
+    setAvatarUploading(true);
+    try {
+      const body = new FormData();
+      body.set('file', file);
+      const response = await fetch('/api/profile/avatar', { method: 'POST', body });
+      const json = await response.json();
+      if (!response.ok || json.status === 'error') {
+        toast.error(json.error || 'Could not update your profile picture.');
+        return;
+      }
+      setLocalProfile((current: any) => ({ ...current, avatar_url: json.data.avatarUrl }));
+      updateAuthUser({ avatarUrl: json.data.avatarUrl });
+      toast.success('Profile picture updated.');
+    } catch {
+      toast.error('Could not update your profile picture.');
+    } finally {
+      setAvatarUploading(false);
+    }
   };
 
   const handleGenderChange = async (nextGender: 'girl' | 'boy') => {
@@ -515,6 +547,39 @@ export function SettingsTabs({
         <CardContent className="p-6">
           {activeTab === 'profile' && (
             <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={avatarUploading}
+                  className="group border-border bg-muted relative h-16 w-16 shrink-0 overflow-hidden rounded-full border disabled:opacity-60"
+                  aria-label="Change profile picture"
+                >
+                  {localProfile?.avatar_url ? (
+                    <Image src={localProfile.avatar_url} alt="" fill sizes="64px" className="object-cover" />
+                  ) : (
+                    <span className="text-muted-foreground flex h-full w-full items-center justify-center text-lg font-bold uppercase">
+                      {(localProfile?.full_name || '?').charAt(0)}
+                    </span>
+                  )}
+                  <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                    <Camera className="h-5 w-5 text-white" />
+                  </span>
+                </button>
+                <div>
+                  <Button type="button" variant="outline" size="sm" onClick={() => avatarInputRef.current?.click()} loading={avatarUploading}>
+                    Change profile picture
+                  </Button>
+                  <p className="text-muted-foreground mt-1 text-xs">PNG, JPG, WEBP or GIF, up to 4MB.</p>
+                </div>
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleAvatarChange}
+                />
+              </div>
               <div>
                 <label className="mb-1.5 block text-sm font-medium">Full Name</label>
                 <Input value={fullName} onChange={(e) => setFullName(e.target.value)} />

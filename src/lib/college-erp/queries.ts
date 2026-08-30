@@ -596,3 +596,38 @@ export async function getPendingCollegeStudentAdditions(
     };
   });
 }
+
+// Phase 2c (college portal parity) — mirrors getTeacherMessagingContacts /
+// school/page.tsx's ptmTeacherOptions reuse on the school side. College has no PTM feature to
+// reuse a contact list from, so both directions here are freshly written, kept at the same
+// "everyone in org" breadth as the school side for consistency.
+export async function getCollegeTeacherMessagingContacts(supabase: SupabaseClient, context: CollegeContext) {
+  const db = supabase as any;
+  const { data: guardians } = await db
+    .from('college_guardians')
+    .select('guardian_id, profiles!college_guardians_guardian_id_fkey(id, full_name, avatar_url)')
+    .eq('organization_id', context.organization.id);
+
+  const seen = new Map<string, any>();
+  for (const link of guardians || []) {
+    const profile = Array.isArray(link.profiles) ? link.profiles[0] : link.profiles;
+    if (!profile || seen.has(profile.id)) continue;
+    seen.set(profile.id, { profileId: profile.id, fullName: profile.full_name, avatarUrl: profile.avatar_url });
+  }
+  return Array.from(seen.values());
+}
+
+export async function getCollegeParentMessagingContacts(supabase: SupabaseClient, context: CollegeContext) {
+  const db = supabase as any;
+  const { data: teachers } = await db
+    .from('college_memberships')
+    .select('profile_id, profiles(full_name, avatar_url)')
+    .eq('organization_id', context.organization.id)
+    .eq('member_role', 'teacher')
+    .eq('status', 'active');
+
+  return (teachers || []).map((teacher: any) => {
+    const profile = Array.isArray(teacher.profiles) ? teacher.profiles[0] : teacher.profiles;
+    return { profileId: teacher.profile_id, fullName: profile?.full_name || 'Teacher', avatarUrl: profile?.avatar_url || null };
+  });
+}

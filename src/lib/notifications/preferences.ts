@@ -5,7 +5,9 @@ export type NotificationPreferenceKey =
   | 'parentMessages'
   | 'studentChat'
   | 'achievements'
-  | 'schoolJoinRequests';
+  | 'schoolJoinRequests'
+  | 'directMessages'
+  | 'attendanceAlerts';
 
 const DEFAULT_NOTIFICATION_PREFERENCES: Record<NotificationPreferenceKey, boolean> = {
   studyReminders: true,
@@ -15,6 +17,13 @@ const DEFAULT_NOTIFICATION_PREFERENCES: Record<NotificationPreferenceKey, boolea
   studentChat: true,
   achievements: true,
   schoolJoinRequests: true,
+  // Generic direct_conversations messaging (Phase 1a) — parent<->teacher today,
+  // reused by future 1:1 relationship types (see the direct_conversations migration).
+  directMessages: true,
+  // Real-time guardian absence alert (Phase 2a) — separate from the nightly digest's
+  // 'attendance_alert' category in school_notification_deliveries, which stays as the WhatsApp/
+  // retry backstop.
+  attendanceAlerts: true,
 };
 
 export type NotificationInsert = {
@@ -45,6 +54,8 @@ const DEFAULT_LINKS: Record<NotificationPreferenceKey, string> = {
   studentChat: '/student-chat',
   achievements: '/achievements',
   schoolJoinRequests: '/school-admin/requests',
+  directMessages: '/messages',
+  attendanceAlerts: '/school',
 };
 
 function withDestination(key: NotificationPreferenceKey, notification: NotificationInsert) {

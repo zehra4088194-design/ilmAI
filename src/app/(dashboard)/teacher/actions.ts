@@ -2,11 +2,14 @@
 
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
+import { nanoid } from 'nanoid';
+import slugify from 'slugify';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { gatewayChat } from '@/lib/ai/gateway';
 import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
 import { createNotificationsIfEnabled } from '@/lib/notifications/preferences';
+import { getLiveClassRoomServiceClient } from '@/lib/live-classes/livekit';
 
 function code() {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
@@ -149,6 +152,79 @@ export async function gradeSubmission(formData: FormData) {
     graded_at: new Date().toISOString(),
   }).eq('id', submissionId);
   revalidatePath(`/teacher/classes/${classId}`);
+}
+
+/** Starts a PW-style live class for one of the teacher's own classes and notifies every enrolled student. */
+export async function startLiveSession(formData: FormData) {
+  const supabase = await createClient();
+  const db = supabase as any;
+  const service = createServiceClient() as any;
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
+
+  const classId = String(formData.get('class_id') || '');
+  const title = String(formData.get('title') || '').trim() || 'Live class';
+  const { data: klass } = await db.from('teacher_classes').select('id, name, teacher_id').eq('id', classId).maybeSingle();
+  if (!klass || klass.teacher_id !== user.id) redirect(`/teacher/classes/${classId}`);
+
+  const roomName = `class-${slugify(klass.name, { lower: true, strict: true }).slice(0, 40)}-${nanoid(6)}`;
+  const { data: session, error } = await db
+    .from('class_live_sessions')
+    .insert({ class_id: classId, title, livekit_room_name: roomName, created_by: user.id, status: 'live' })
+    .select('id')
+    .single();
+  if (error || !session) redirect(`/teacher/classes/${classId}?error=live-start-failed`);
+
+  const { data: enrollments } = await db.from('class_enrollments').select('student_id').eq('class_id', classId);
+  if (enrollments?.length) {
+    await createNotificationsIfEnabled(
+      service,
+      'studyReminders',
+      enrollments.map((row: { student_id: string }) => ({
+        user_id: row.student_id,
+        type: 'SYSTEM',
+        title: `🔴 ${klass.name} is live now`,
+        message: title,
+        link: `/live-class/${session.id}`,
+      }))
+    );
+  }
+
+  revalidatePath(`/teacher/classes/${classId}`);
+  redirect(`/live-class/${session.id}`);
+}
+
+/** Force-ends a live class for everyone — kicks all connected participants off the LiveKit room too. */
+export async function endLiveSession(formData: FormData) {
+  const supabase = await createClient();
+  const db = supabase as any;
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
+
+  const sessionId = String(formData.get('session_id') || '');
+  const classId = String(formData.get('class_id') || '');
+  const { data: session } = await db
+    .from('class_live_sessions')
+    .select('id, livekit_room_name, teacher_classes(teacher_id)')
+    .eq('id', sessionId)
+    .maybeSingle();
+  const klass = Array.isArray(session?.teacher_classes) ? session.teacher_classes[0] : session?.teacher_classes;
+  if (!session || klass?.teacher_id !== user.id) redirect(`/teacher/classes/${classId}`);
+
+  await db.from('class_live_sessions').update({ status: 'ended', ended_at: new Date().toISOString() }).eq('id', sessionId);
+  try {
+    await getLiveClassRoomServiceClient().deleteRoom(session.livekit_room_name);
+  } catch {
+    // Room may already be empty/gone — the DB status flip is what matters; clients
+    // watching class_live_sessions via Realtime will redirect themselves either way.
+  }
+
+  revalidatePath(`/teacher/classes/${classId}`);
+  redirect(`/teacher/classes/${classId}`);
 }
 
 export async function draftAiSubmissionFeedback(formData: FormData) {

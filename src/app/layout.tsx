@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, Geist_Mono } from 'next/font/google';
-import { cookies, headers } from 'next/headers';
+import { cookies } from 'next/headers';
 import '@/styles/globals.css';
 import 'katex/dist/katex.min.css';
 import { Providers } from '@/providers';
@@ -12,8 +12,6 @@ import { createClient } from '@/lib/supabase/server';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
 const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono', display: 'swap' });
 const siteUrl = getSiteUrl();
-const adsenseClientId =
-  process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID?.match(/^ca-pub-\d{16}$/)?.[0] || 'ca-pub-4877865173601332';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -36,9 +34,6 @@ export const metadata: Metadata = {
   creator: 'ilm AI',
   publisher: 'ilm AI',
   category: 'education',
-  other: {
-    'google-adsense-account': adsenseClientId,
-  },
   openGraph: {
     type: 'website',
     locale: 'en_PK',
@@ -63,8 +58,7 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const [cookieStore, requestHeaders] = await Promise.all([cookies(), headers()]);
-  const nonce = requestHeaders.get('x-nonce') || undefined;
+  const cookieStore = await cookies();
   const initialTheme = parseAppTheme(cookieStore.get(THEME_COOKIE_NAME)?.value);
   const savedLocale = cookieStore.get(LOCALE_COOKIE_NAME)?.value;
   let initialLocale: Locale = isValidLocale(savedLocale) ? savedLocale : DEFAULT_LOCALE;
@@ -100,7 +94,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
       </head>
       <body className={`${inter.variable} ${geistMono.variable} font-sans antialiased`}>
-        <Providers locale={initialLocale} initialTheme={initialTheme.className} nonce={nonce}>
+        <Providers locale={initialLocale} initialTheme={initialTheme.className}>
           {children}
         </Providers>
       </body>

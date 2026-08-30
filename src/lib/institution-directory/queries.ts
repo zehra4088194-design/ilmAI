@@ -1,5 +1,3 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
-
 export type InstitutionDirectoryMessage = {
   id: string;
   direction: 'received' | 'sent';
@@ -16,7 +14,7 @@ export type InstitutionDirectoryMessage = {
  * migration's header comment for why — so PostgREST can't embed them automatically).
  */
 export async function getInstitutionDirectoryMessages(
-  supabase: SupabaseClient,
+  supabase: any,
   institutionType: 'school' | 'college',
   organizationId: string
 ): Promise<InstitutionDirectoryMessage[]> {

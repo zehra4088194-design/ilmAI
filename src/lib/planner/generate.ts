@@ -101,11 +101,22 @@ export async function generateStudyPlanSessions(db: PlannerDb, input: GenerateSt
     .filter(([key]) => input.focusSubjectIds.length === 0 || input.focusSubjectIds.includes(key.split(':')[0] || ''))
     .map(([key]) => key);
 
+  // Phase 4b: real past-mistake chapters (set by generateAutoRevisionPlan for an exam-countdown
+  // plan) take priority over the digital-twin-derived weakKeys above, including in the non-AI
+  // fallback path if gatewayChat fails.
+  const pastMistakeChapterIds = Array.isArray((input.constraints as any)?.pastMistakeChapterIds)
+    ? ((input.constraints as any).pastMistakeChapterIds as string[])
+    : [];
+  if (pastMistakeChapterIds.length) {
+    const mistakeKeys = pastMistakeChapterIds.map((chapterId) => `${input.focusSubjectIds[0] || ''}:${chapterId}`);
+    weakKeys.unshift(...mistakeKeys.filter((key) => !weakKeys.includes(key)));
+  }
+
   const prompt = `Create a study plan from today through exam_date.
 Return only JSON array: [{"date":"YYYY-MM-DD","subject_id":"uuid or null","chapter_id":"uuid or null","type":"study|revision|mock_test|break","duration_minutes":45}]
 Student data:
 ${JSON.stringify({ ...input, preferredStudyTime: twin?.preferred_study_time, weakKeys })}
-Rules: stay within dailyAvailableHours, prioritize weakKeys, respect constraint windows by avoiding overloaded days.`;
+Rules: stay within dailyAvailableHours, prioritize weakKeys, respect constraint windows by avoiding overloaded days. If constraints.pastMistakeChapterIds is present, treat those chapter_ids as the HIGHEST priority — they are chapters the student has actually answered incorrectly before, so schedule revision/mock_test sessions on them first, ahead of weakKeys.`;
 
   let aiSessions: AiPlanSession[] = [];
   try {

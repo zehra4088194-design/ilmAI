@@ -569,7 +569,7 @@ function normalizeParentPlans(value: unknown): ParentPlanSettings {
  *   NEXT_PUBLIC_TEACHER_PLAN_ELITE_CLASSROOMS=null
  */
 function loadPricingFromEnv(): Partial<PlatformSettings> {
-  const env = typeof process !== 'undefined' ? process.env : {};
+  const env: Record<string, string | undefined> = typeof process !== 'undefined' ? process.env : {};
   
   const result: Partial<PlatformSettings> = {};
 
@@ -689,7 +689,8 @@ function normalizeTeacherPlans(value: unknown): TeacherPlanSettings {
 export function normalizePlatformSettings(input: unknown): PlatformSettings {
   // Load overrides from environment variables
   const envOverrides = loadPricingFromEnv();
-  const merged = { ...input, ...envOverrides };
+  const inputObject = input && typeof input === 'object' ? (input as Record<string, unknown>) : {};
+  const merged = { ...inputObject, ...envOverrides };
   const source = (merged && typeof merged === 'object' ? merged : {}) as Partial<PlatformSettings>;
   const sourceProviderBudgets: Partial<ProviderDailyBudgets> =
     source.providerDailyBudgets && typeof source.providerDailyBudgets === 'object' ? source.providerDailyBudgets : {};

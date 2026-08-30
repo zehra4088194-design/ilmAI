@@ -13,7 +13,7 @@ export type AiProvider = 'groq' | 'anthropic' | 'openai' | 'gemini' | 'deepseek'
 export type ConversationRole = 'user' | 'assistant' | 'system';
 
 export type AiProviderId = 'local' | 'groq' | 'grok' | 'claude' | 'gpt' | 'gemini' | 'deepseek' | 'advanced';
-export type UserRole = 'student' | 'parent' | 'teacher' | 'admin';
+export type UserRole = 'student' | 'parent' | 'teacher' | 'principal' | 'admin';
 export type Gender = 'girl' | 'boy';
 export type EducationLevel = 'school' | 'college' | 'university';
 export type PreferredOutputStyle = 'simple' | 'academic' | 'professional' | 'detailed';
@@ -159,6 +159,10 @@ export interface QuizSession {
   incorrectCount: number;
   skippedCount: number;
   mode: 'PRACTICE' | 'TEST' | 'REVIEW' | 'EXAM';
+  // Set client-side at submit time (see quiz.store.ts submitQuiz) so a completion queued while
+  // offline (src/lib/offline/sync-queue.ts) can be replayed without double-awarding XP/coins if
+  // it's ever sent more than once.
+  clientIdempotencyKey?: string;
 }
 
 export interface QuizQuestion extends Question {

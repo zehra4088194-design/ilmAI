@@ -90,5 +90,13 @@ export function useAuth() {
     if (error) toast.error(error.message);
   };
 
-  return { user, isLoading, isAuthenticated: !!user, signOut, signInWithGoogle, fetchProfile };
+  const signInWithFacebook = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'facebook',
+      options: { redirectTo: `${window.location.origin}/api/auth/callback` },
+    });
+    if (error) toast.error(error.message);
+  };
+
+  return { user, isLoading, isAuthenticated: !!user, signOut, signInWithGoogle, signInWithFacebook, fetchProfile };
 }

@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { selectEffectiveSubscription } from '@/lib/payments/subscription-access';
 import { syncOrganizationSchoolGrants } from '@/lib/school-erp/subscription-cascade';
 import { syncOrganizationCollegeGrants } from '@/lib/college-erp/subscription-cascade';
+import { processReferralConversion } from '@/lib/referral/convert';
 
 type PaddleBillingCycle = 'monthly' | 'annual';
 type PaddleTier = 'FREE' | 'PRO' | 'ELITE';
@@ -287,6 +288,9 @@ export async function POST(req: NextRequest) {
         cancelAtPeriodEnd: false,
       });
       await reconcileProfileAccess(supabase, userId);
+      // Phase 7b — this fires on every successful transaction, not just the first, but
+      // processReferralConversion no-ops instantly once a referral is already converted.
+      await processReferralConversion(userId);
       break;
     }
 

@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { LibraryGrid } from '@/components/features/library/LibraryGrid';
-import { AdSenseBanner } from '@/components/features/ads/AdSenseBanner';
+import { HouseAdBanner } from '@/components/features/ads/HouseAdBanner';
 import { isCatalogResourceVisible, normalizeLegacyCatalogResource } from '@/lib/resources/catalog';
 
 export const metadata: Metadata = {
@@ -46,7 +46,7 @@ export default async function LibraryPage() {
           Choose textbooks, notes, pairing schemes, or guess papers, then open the relevant subject and file.
         </p>
       </div>
-      <AdSenseBanner slot="inline" className="mx-auto max-w-5xl" />
+      <HouseAdBanner slot="content_inline" className="mx-auto max-w-5xl" />
       <LibraryGrid resources={visibleResources as any} />
     </div>
   );

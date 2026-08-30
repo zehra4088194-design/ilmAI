@@ -10,6 +10,9 @@ export const publicAdmissionSchema = z.object({
   applyingForClass: z.string().trim().min(1).max(80),
   guardianName: z.string().trim().min(2).max(120),
   guardianEmail: z.string().trim().email().max(254).optional().or(z.literal('')),
+  // Phase 6e: the applicant's own email, if they already have an ilm AI account — lets the school
+  // auto-enroll them later when this application is marked 'enrolled' (see updateAdmissionStatus).
+  applicantEmail: z.string().trim().email().max(254).optional().or(z.literal('')),
   guardianPhone: z.string().trim().min(7).max(30),
   previousSchool: z.string().trim().max(160).optional().or(z.literal('')),
   notes: z.string().trim().max(1000).optional().or(z.literal('')),

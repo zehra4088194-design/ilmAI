@@ -17,6 +17,8 @@ import { OpportunityDeadlinesCard } from '@/components/features/dashboard/Opport
 import { Button } from '@/components/ui/button';
 import { ParentConnectPrompt } from '@/components/features/parent/ParentConnectPrompt';
 import { InstallAppButton } from '@/components/features/dashboard/InstallAppButton';
+import { StudyBuddyCard } from '@/components/features/dashboard/StudyBuddyCard';
+import { ReferralCard } from '@/components/features/dashboard/ReferralCard';
 
 export const metadata: Metadata = { title: 'Dashboard' };
 
@@ -149,6 +151,8 @@ export default async function DashboardPage() {
         institutionName={profile?.sponsored_institution_name}
       />
       {!approvedParentLink && <ParentConnectPrompt />}
+      <StudyBuddyCard myStreak={profile?.streak || 0} />
+      <ReferralCard />
       <StatsGrid
         xp={profile?.xp || 0}
         level={profile?.level || 1}

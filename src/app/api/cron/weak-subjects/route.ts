@@ -55,7 +55,11 @@ export async function GET(req: NextRequest) {
       const subject = subjects?.find((s) => s.id === g.subjectId);
       if (!subject) continue;
 
-      const linkUrl = `/practice?subject=${subject.slug}`;
+      // Phase 4a: clicking through now injects a 7-day mini revision plan directly into the
+      // planner (see generateAutoRevisionPlan / planner/today/page.tsx) instead of just linking to
+      // /practice — the dedupe check below still keys off this exact link string, so it also
+      // prevents re-generating the same mini plan more than once a week for the same subject.
+      const linkUrl = `/planner/today?autoRevision=weak_subject&subjectId=${g.subjectId}`;
       const { data: recent } = await supabase
         .from('notifications')
         .select('id')

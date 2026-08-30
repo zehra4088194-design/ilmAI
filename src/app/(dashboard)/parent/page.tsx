@@ -5,6 +5,8 @@ import { ParentDashboardClient } from '@/components/features/parent/ParentDashbo
 import { getPlatformSettings } from '@/lib/platform-settings/server';
 import { getPlanFromSettings, parentChildrenCap } from '@/lib/platform-settings/shared';
 import { aiDecisionFeaturesEnabled } from '@/lib/compliance/ai-decision-features';
+import { getMultiChildSubjectComparison } from '@/lib/parent/comparison';
+import { MultiChildComparison } from '@/components/features/parent/MultiChildComparison';
 import type { SubscriptionTier } from '@/types';
 
 export const metadata: Metadata = { title: 'Parent Dashboard' };
@@ -139,6 +141,29 @@ export default async function ParentDashboardPage({
     for (const row of (masteryRows || []) as any[]) {
       if (!weakByStudent.has(row.student_id)) weakByStudent.set(row.student_id, row);
     }
+    // Phase 7d — AI-suggested conversation starters, generated only for children with an
+    // identified weak chapter (the same signal the 'weak_chapter' insight below already uses),
+    // cached 7 days per student (see getGuardianConversationStarters).
+    const conversationStartersByStudent = new Map<string, string[]>();
+    if (dashboardStudentIds.some((id) => weakByStudent.has(id))) {
+      const { getGuardianConversationStarters } = await import('@/lib/parent/conversation-starters');
+      const insightAdmin = await createAdminClient();
+      await Promise.all(
+        dashboardStudentIds
+          .filter((id) => weakByStudent.has(id))
+          .map(async (studentId) => {
+            const weak = weakByStudent.get(studentId);
+            const questions = await getGuardianConversationStarters(
+              insightAdmin,
+              studentId,
+              weak.chapters?.subjects?.name || 'their studies',
+              weak.chapters?.name || ''
+            );
+            conversationStartersByStudent.set(studentId, questions);
+          })
+      );
+    }
+
     parentInsights = Object.fromEntries(
       dashboardStudentIds.map((studentId) => {
         const studentSnapshots = (data || [])
@@ -154,6 +179,7 @@ export default async function ParentDashboardPage({
             title: `${weak.chapters?.subjects?.name || 'Subject'} needs attention`,
             body: `${weak.chapters?.name || 'A chapter'} is at ${Math.round(Number(weak.mastery) || 0)}% mastery.`,
             action: 'Assign 15 minutes of practice today.',
+            conversationStarters: conversationStartersByStudent.get(studentId) || [],
           });
         }
         const dueCount = dueRevisionCount.get(studentId) || 0;
@@ -186,6 +212,9 @@ export default async function ParentDashboardPage({
     );
   }
   const predictionByStudent = new Map(predictions.map((prediction) => [prediction.student_id, prediction]));
+  // Phase 7c — only meaningful for a parent with 2+ dashboard-eligible children.
+  const multiChildComparison =
+    dashboardStudentIds.length >= 2 ? await getMultiChildSubjectComparison(supabase, dashboardStudentIds) : null;
   const params = await searchParams;
 
   // The parent account's OWN plan — separate from any child's tier above (see ParentPlanSettings'
@@ -253,6 +282,12 @@ export default async function ParentDashboardPage({
         initialLinkId={params?.linkId}
         initialView={params?.view === 'files' ? 'files' : params?.view === 'chat' ? 'chat' : undefined}
       />
+      {multiChildComparison && (
+        <MultiChildComparison
+          comparison={multiChildComparison}
+          students={normalizedStudents.filter((s) => dashboardStudentIds.includes(s.id))}
+        />
+      )}
       {reports.length > 0 && (
         <section className="glass rounded-xl p-5">
           <h2 className="mb-3 font-bold">Weekly Reports</h2>

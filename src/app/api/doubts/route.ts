@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { nanoid } from 'nanoid';
 import { checkAiMessageLimit, consumeAiCredits } from '@/lib/rate-limit';
 import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
@@ -66,7 +67,12 @@ export async function POST(req: NextRequest) {
         .limit(1)
         .single();
       if (aiTeacher) {
-        const { error: replyError } = await supabase.from('doubt_replies').insert({
+        // Pre-existing bug fixed in passing: this insert's teacher_id is the AI profile, not the
+        // asking student (auth.uid()) — RLS's "auth.uid() = teacher_id" check could never pass on
+        // the request-scoped client, so the AI reply was silently failing every time. Service role
+        // bypasses RLS the same way every other system-authored insert in this app does.
+        const serviceDb = createServiceClient() as any;
+        const { error: replyError } = await serviceDb.from('doubt_replies').insert({
           id: nanoid(),
           doubt_id: id,
           teacher_id: aiTeacher.id,

@@ -9,10 +9,6 @@ import type { Locale } from '@/lib/i18n/config';
 import { APP_THEME_IDS, DEFAULT_THEME_ID, type AppThemeId } from '@/lib/constants/themes';
 import { ThemeRuntime } from '@/components/common/ThemeRuntime';
 
-const AdSenseScript = dynamic(
-  () => import('@/components/features/ads/AdSenseScript').then((module) => module.AdSenseScript),
-  { ssr: false }
-);
 const CookieConsent = dynamic(
   () => import('@/components/features/cookies/CookieConsent').then((module) => module.CookieConsent),
   { ssr: false }
@@ -29,6 +25,10 @@ const ServiceWorkerRegister = dynamic(
   () => import('@/components/features/offline/ServiceWorkerRegister').then((module) => module.ServiceWorkerRegister),
   { ssr: false }
 );
+const OfflineSyncManager = dynamic(
+  () => import('@/components/features/offline/OfflineSyncManager').then((module) => module.OfflineSyncManager),
+  { ssr: false }
+);
 const ReactQueryDevtools =
   process.env.NODE_ENV === 'development'
     ? dynamic(() => import('@tanstack/react-query-devtools').then((module) => module.ReactQueryDevtools), {
@@ -40,12 +40,10 @@ export function Providers({
   children,
   locale,
   initialTheme = DEFAULT_THEME_ID,
-  nonce,
 }: {
   children: ReactNode;
   locale: Locale;
   initialTheme?: AppThemeId;
-  nonce?: string;
 }) {
   const [queryClient] = useState(
     () =>
@@ -69,9 +67,9 @@ export function Providers({
         >
           <ThemeRuntime />
           {children}
-          <AdSenseScript nonce={nonce} />
           <PostHogClient />
           <ServiceWorkerRegister />
+          <OfflineSyncManager />
           <GlobalSpeechControls />
           <CookieConsent />
           <Toaster

@@ -155,7 +155,7 @@ function discover(root: string, chapters: Chapter[], grade: 9 | 10 | 11): Row[] 
       const idx = dirParts.findIndex((p) => /^dark$/i.test(p));
       if (idx >= 0) {
         const lightParts = [...dirParts];
-        lightParts[idx] = dirParts[idx] === 'dark' ? 'light' : dirParts[idx] === 'Dark' ? 'Light' : dirParts[idx];
+        lightParts[idx] = dirParts[idx] === 'dark' ? 'light' : dirParts[idx] === 'Dark' ? 'Light' : dirParts[idx] || '';
         const lightDir = lightParts.join(path.sep);
         const candidate = path.join(lightDir, path.basename(straight));
         if (existsSync(candidate)) return candidate;

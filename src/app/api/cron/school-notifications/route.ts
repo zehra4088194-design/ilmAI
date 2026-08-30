@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { isEmailConfigured, sendEmail } from '@/lib/email/send';
 import { sendPushNotification } from '@/lib/push/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { alertRecipients, referenceLink, reminderChannels, type QueuedReminder } from '@/lib/school-erp/notification-queue';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -17,6 +18,8 @@ type Delivery = {
   title: string | null;
   body: string | null;
   category: string | null;
+  reference_type: string | null;
+  reference_id: string | null;
   school_announcements: { title: string; body: string; priority: string } | null;
   profiles: { email: string | null; phone: string | null } | null;
 };
@@ -60,17 +63,19 @@ async function deliver(db: any, delivery: Delivery) {
   const body = announcement?.body || delivery.body || '';
   if (!title || !body) throw new Error('This notification no longer has any content to send');
 
+  const link = referenceLink(delivery.reference_type, delivery.reference_id);
+
   if (delivery.channel === 'in_app') {
     if (!delivery.recipient_id) return { skipped: true as const, reason: 'Recipient is missing' };
-    const { error } = await db.from('notifications').insert({
-      user_id: delivery.recipient_id,
-      type: 'SYSTEM',
-      title,
-      message: body,
-      link: '/school',
-    });
+    // Phase 6c: capture the inserted notification's id so the delivery row can be linked to it
+    // (notification_id) — that link is what lets read-receipt stats join back to notifications.is_read.
+    const { data: inserted, error } = await db
+      .from('notifications')
+      .insert({ user_id: delivery.recipient_id, type: 'SYSTEM', title, message: body, link })
+      .select('id')
+      .single();
     if (error) throw new Error(error.message);
-    return {};
+    return { notificationId: inserted?.id as string | undefined };
   }
   if (delivery.channel === 'push') {
     if (!delivery.recipient_id) return { skipped: true as const, reason: 'Recipient is missing' };
@@ -78,7 +83,7 @@ async function deliver(db: any, delivery: Delivery) {
       userId: delivery.recipient_id,
       title,
       message: body,
-      link: '/school',
+      link,
     });
     if ('skipped' in result) {
       return { skipped: true as const, reason: 'Firebase or push subscription is unavailable' };
@@ -160,40 +165,6 @@ async function sendPtmReminders(db: any) {
 // ---------------------------------------------------------------
 const REMINDER_DAYS_BEFORE_DUE = 3;
 
-type QueuedReminder = {
-  organization_id: string;
-  recipient_id: string;
-  channel: 'in_app' | 'whatsapp';
-  category: string;
-  dedupe_key: string;
-  title: string;
-  body: string;
-};
-
-function reminderChannels(): Array<'in_app' | 'whatsapp'> {
-  // WhatsApp only when a provider webhook is actually configured, otherwise
-  // every row would queue just to be skipped.
-  return process.env.SCHOOL_WHATSAPP_WEBHOOK_URL ? ['in_app', 'whatsapp'] : ['in_app'];
-}
-
-/** Guardians who opted into alerts, plus the student, for each student id. */
-async function alertRecipients(db: any, organizationId: string, studentIds: string[]) {
-  const map = new Map<string, Set<string>>();
-  if (!studentIds.length) return map;
-  const { data: guardians } = await db
-    .from('school_guardians')
-    .select('student_id, guardian_id')
-    .eq('organization_id', organizationId)
-    .eq('receives_alerts', true)
-    .in('student_id', studentIds);
-
-  for (const studentId of studentIds) map.set(studentId, new Set([studentId]));
-  for (const link of guardians || []) {
-    map.get(String(link.student_id))?.add(String(link.guardian_id));
-  }
-  return map;
-}
-
 async function queueFeeReminders(db: any, today: string) {
   const dueSoon = new Date(Date.now() + REMINDER_DAYS_BEFORE_DUE * 86_400_000).toISOString().slice(0, 10);
   const { data: invoices } = await db
@@ -223,9 +194,11 @@ async function queueFeeReminders(db: any, today: string) {
       if (outstanding <= 0) continue;
       const overdue = invoice.due_date < today;
       const title = overdue ? 'School fee is overdue' : 'School fee due soon';
+      // Phase 2b: "Pay Now" deep link straight into FeePaymentCheckout with this invoice
+      // pre-loaded (/school/fees/[invoiceId]) instead of a generic reminder with no action.
       const body = overdue
-        ? `Voucher ${invoice.voucher_number} of ${outstanding.toLocaleString()} was due on ${invoice.due_date} and is still unpaid.`
-        : `Voucher ${invoice.voucher_number} of ${outstanding.toLocaleString()} is due on ${invoice.due_date}.`;
+        ? `Voucher ${invoice.voucher_number} of ${outstanding.toLocaleString()} was due on ${invoice.due_date} and is still unpaid. Pay now: /school/fees/${invoice.id}`
+        : `Voucher ${invoice.voucher_number} of ${outstanding.toLocaleString()} is due on ${invoice.due_date}. Pay now: /school/fees/${invoice.id}`;
       // Overdue reminders repeat monthly; due-soon reminders send once.
       const stage = overdue ? `overdue:${today.slice(0, 7)}` : 'due';
       for (const recipientId of recipients.get(String(invoice.student_id)) || []) {
@@ -238,6 +211,8 @@ async function queueFeeReminders(db: any, today: string) {
             dedupe_key: `fee:${stage}:${invoice.id}:${recipientId}`,
             title,
             body,
+            reference_type: 'fee_invoice',
+            reference_id: invoice.id,
           });
         }
       }
@@ -326,7 +301,7 @@ export async function GET(request: NextRequest) {
   const { data, error } = await db
     .from('school_notification_deliveries')
     .select(
-      'id, recipient_id, recipient_address, channel, attempts, title, body, category, school_announcements(title, body, priority), profiles!school_notification_deliveries_recipient_id_fkey(email, phone)'
+      'id, recipient_id, recipient_address, channel, attempts, title, body, category, reference_type, reference_id, school_announcements(title, body, priority), profiles!school_notification_deliveries_recipient_id_fkey(email, phone)'
     )
     .in('status', ['queued', 'failed'])
     .lte('scheduled_for', new Date().toISOString())
@@ -355,6 +330,7 @@ export async function GET(request: NextRequest) {
         .update({
           status: skipped ? 'skipped' : 'sent',
           provider_reference: 'providerReference' in result ? result.providerReference : null,
+          notification_id: 'notificationId' in result ? result.notificationId || null : null,
           last_error: skipped && 'reason' in result ? result.reason : null,
           sent_at: skipped ? null : new Date().toISOString(),
         })

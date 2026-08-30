@@ -32,7 +32,10 @@ import { useRouter } from 'next/navigation';
 interface ParentDashboardClientProps {
   links: any[];
   snapshots: any[];
-  insights?: Record<string, Array<{ type: string; title: string; body: string; action: string }>>;
+  insights?: Record<
+    string,
+    Array<{ type: string; title: string; body: string; action: string; conversationStarters?: string[] }>
+  >;
   parentId: string;
   // The parent account's OWN plan (separate from any child's tier) — see ParentPlanSettings' doc
   // comment in lib/platform-settings/shared.ts. childrenCap is null for unlimited.
@@ -372,6 +375,17 @@ export function ParentDashboardClient({
                               <p className="text-sm font-semibold">{insight.title}</p>
                               <p className="text-muted-foreground mt-1 text-xs">{insight.body}</p>
                               <p className="mt-2 text-xs font-medium text-violet-300">{insight.action}</p>
+                              {/* Phase 7d */}
+                              {(insight.conversationStarters?.length ?? 0) > 0 && (
+                                <div className="mt-2 space-y-1 border-t border-violet-500/20 pt-2">
+                                  <p className="text-[11px] font-semibold text-violet-300">Ask your child this week:</p>
+                                  {(insight.conversationStarters ?? []).map((question: string) => (
+                                    <p key={question} className="text-muted-foreground text-xs italic">
+                                      &ldquo;{question}&rdquo;
+                                    </p>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>

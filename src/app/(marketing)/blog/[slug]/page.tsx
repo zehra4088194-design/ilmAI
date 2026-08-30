@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { Navbar } from '@/components/features/landing/Navbar';
 import { LandingFooter } from '@/components/features/landing/Footer';
-import { AdSenseBanner } from '@/components/features/ads/AdSenseBanner';
+import { HouseAdBanner } from '@/components/features/ads/HouseAdBanner';
 import { BLOG_POSTS, BLOG_POSTS_BY_SLUG } from '@/content/blog-posts';
 import { getSiteUrl } from '@/lib/utils/siteUrl';
 
@@ -161,7 +161,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                 </ul>
               </aside>
 
-              <AdSenseBanner slot="inline" className="my-10" />
+              <HouseAdBanner slot="content_inline" className="my-10" />
 
               <div className="space-y-12">
                 {post.sections.map((section) => (

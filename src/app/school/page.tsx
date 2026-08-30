@@ -17,6 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { SchoolActionForm } from '@/components/features/school-erp/SchoolActionForm';
 import { SchoolMetric } from '@/components/features/school-erp/SchoolMetric';
 import { SchoolOrganizationSwitcher } from '@/components/features/school-erp/SchoolOrganizationSwitcher';
+import { ParentTeacherMessenger } from '@/components/features/school-erp/ParentTeacherMessenger';
 import { cancelPtmRequest, createLeaveRequest, createSchoolContactMessage, requestPtm } from '@/lib/school-erp/actions';
 import { getSchoolContexts, requireSchoolContext } from '@/lib/school-erp/access';
 import { getSchoolPortalData } from '@/lib/school-erp/queries';
@@ -57,6 +58,15 @@ export default async function SchoolPortalPage() {
     0
   );
   const kidsZone = role === 'student' ? await getStudentKidsZoneEligibility(supabase, context) : { eligible: false };
+  // Phase 2c: reuses the exact same "every teacher in the org" contact list the PTM request form
+  // (below) already fetches for a parent — no separate query for this.
+  const messagingContacts =
+    role === 'parent'
+      ? data.ptmTeacherOptions.map((item: any) => {
+          const profile = Array.isArray(item.profiles) ? item.profiles[0] : item.profiles;
+          return { profileId: item.profile_id, fullName: profile?.full_name || 'Teacher' };
+        })
+      : [];
 
   return (
     <main className="bg-background min-h-screen">
@@ -376,6 +386,20 @@ export default async function SchoolPortalPage() {
             </div>
           </CardContent>
         </Card>
+        {role === 'parent' && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Message a teacher</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ParentTeacherMessenger
+                contacts={messagingContacts}
+                organizationId={context.organization.id}
+                currentUserId={context.userId}
+              />
+            </CardContent>
+          </Card>
+        )}
         {['student', 'parent'].includes(role) && (
           <Card>
             <CardHeader>

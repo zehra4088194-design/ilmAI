@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import type { QuizSession, QuizQuestion } from '@/types';
+import { enqueueOfflineItem } from '@/lib/offline/sync-queue';
 
 interface QuizState {
   session: QuizSession | null;
@@ -60,15 +61,23 @@ export const useQuizStore = create<QuizState>()(
         state.session.status = 'COMPLETED';
         state.session.completedAt = new Date().toISOString();
         state.session.score = Math.round((state.session.correctCount / state.session.questions.length) * 100);
+        state.session.clientIdempotencyKey =
+          typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `quiz-${Date.now()}`;
         completedSession = state.session as QuizSession;
       });
 
       if (completedSession) {
         sessionStorage.setItem('current-quiz', JSON.stringify(completedSession));
-        void fetch('/api/quiz/complete', {
+        // Offline-first (Phase 1b): if this fetch fails outright (no connection), the completed
+        // session is queued and replayed via /api/offline/sync once back online, through the same
+        // ledger logic (src/lib/quiz/complete.ts) — see src/lib/offline/sync-queue.ts. A successful
+        // HTTP response (even a 4xx/5xx from the server) is NOT queued, only a network failure is.
+        fetch('/api/quiz/complete', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(completedSession),
+        }).catch(() => {
+          void enqueueOfflineItem('quiz_complete', completedSession);
         });
       }
     },

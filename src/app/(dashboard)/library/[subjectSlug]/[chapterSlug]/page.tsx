@@ -6,7 +6,7 @@ import { createServiceClient } from '@/lib/supabase/service';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { AdSenseBanner } from '@/components/features/ads/AdSenseBanner';
+import { HouseAdBanner } from '@/components/features/ads/HouseAdBanner';
 import {
   buildCatalogSearch,
   getLibraryResourceTypeLabel,
@@ -119,7 +119,7 @@ export default async function LibraryChapterPage({
         <h1 className="mt-4 text-2xl font-bold sm:text-3xl">{chapter?.name || 'General Files'}</h1>
         <p className="text-muted-foreground mt-2">The next page will open only files from the section you select.</p>
       </div>
-      <AdSenseBanner slot="inline" className="mx-auto max-w-5xl" />
+      <HouseAdBanner slot="content_inline" className="mx-auto max-w-5xl" />
 
       {availableSections.length ? (
         <div className="grid gap-4 sm:grid-cols-2">

@@ -829,7 +829,7 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
           <CardDescription>Manage university student AI credits and pricing</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {['free', 'paid', 'elite'].map((tier) => (
+          {(['free', 'paid', 'elite'] as const).map((tier) => (
             <div key={tier} className="space-y-4 border-t pt-4 first:border-t-0 first:pt-0">
               <h4 className="font-semibold capitalize">{tier} Tier</h4>
               <NumberField
@@ -873,7 +873,7 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
           <CardDescription>Manage institutional teacher classroom limits</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {['free', 'paid', 'elite'].map((tier) => (
+          {(['free', 'paid', 'elite'] as const).map((tier) => (
             <div key={tier} className="space-y-4 border-t pt-4 first:border-t-0 first:pt-0">
               <h4 className="font-semibold capitalize">{tier} Tier</h4>
               <NumberField

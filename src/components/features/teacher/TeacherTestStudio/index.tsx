@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { AdSenseBanner } from '@/components/features/ads/AdSenseBanner';
+import { HouseAdBanner } from '@/components/features/ads/HouseAdBanner';
 import { TestPaper } from './TestPaper';
 import {
   formatGrade,
@@ -364,7 +364,7 @@ export function TeacherTestStudio({
           {planTier === 'FREE' && (
             <div className="space-y-3 rounded-lg border border-dashed p-4 lg:col-span-2">
               <p className="text-sm font-semibold">Free plan: view a quick ad to unlock each paper.</p>
-              <AdSenseBanner slot="inline" />
+              <HouseAdBanner slot="teacher_test_gate" />
               <label className="flex items-center gap-2 text-sm">
                 <Checkbox checked={adAcknowledged} onCheckedChange={(v) => setAdAcknowledged(v === true)} />
                 I&apos;ve viewed the ad above — unlock generation

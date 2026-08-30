@@ -58,28 +58,11 @@ export default function PrivacyPage() {
           ],
         },
         {
-          title: 'Google advertising and third-party cookies',
+          title: 'In-house promotional banners',
           paragraphs: [
-            'Some free, content-based pages may use Google AdSense. Third-party vendors, including Google, use cookies or similar storage to serve and measure ads based on a visitor’s prior visits to this website or other websites.',
-            'Google’s use of advertising cookies enables Google and its partners to serve ads based on visits to ilm AI and other sites on the Internet. Other third-party advertising vendors or networks selected through AdSense may also use cookies where permitted.',
-            'Advertising storage is not loaded through our site preference controls until the visitor allows marketing cookies. Additional consent messages may be provided by a Google-certified consent management platform where required.',
-          ],
-          links: [
-            {
-              href: 'https://adssettings.google.com/',
-              label: 'Manage or opt out of personalized advertising in Google Ads Settings',
-              external: true,
-            },
-            {
-              href: 'https://policies.google.com/technologies/partner-sites',
-              label: 'How Google uses information from partner sites',
-              external: true,
-            },
-            {
-              href: 'https://www.aboutads.info/choices/',
-              label: 'Opt out of some participating third-party vendors at YourAdChoices',
-              external: true,
-            },
+            'ilm AI does not use Google AdSense or any third-party advertising network. Free, content-based pages may show promotional banners for ilmai.store, ilm AI\'s own e-commerce site, served and hosted entirely on ilm AI\'s own systems.',
+            'When a banner is clicked, we log an unguessable reference id (and, if you are logged in, your account id) so a resulting purchase can be attributed back to that click. That reference id, and whether it led to a purchase, is shared with ilmai.store for attribution — no browsing history or advertising cookie is shared with any outside party.',
+            'These banners are not loaded until the visitor allows marketing cookies in Cookie Settings.',
           ],
         },
         {

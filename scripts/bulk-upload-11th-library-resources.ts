@@ -261,7 +261,7 @@ function discoverChapterModeFirst(subjectSlug: 'chemistry' | 'physics', folderNa
           title: `Physics — Chapter ${chapter.order}: ${chapter.name} — Notes`,
           darkAbs: path.join(darkBase, folder, baseFile),
           lightAbs: path.join(ROOT, folderName, 'light', folder, lightFile),
-          txtAbs: path.join(ROOT, folderName, 'txt', folder, txtFile),
+          txtAbs: path.join(ROOT, folderName, 'txt', folder, txtFile || ''),
           titleSlug: `${slugify(chapter.name)}-notes`,
         });
       }

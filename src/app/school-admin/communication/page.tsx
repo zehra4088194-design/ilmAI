@@ -6,9 +6,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { SchoolActionForm } from '@/components/features/school-erp/SchoolActionForm';
 import { SchoolPageHeader } from '@/components/features/school-erp/SchoolPageHeader';
 import { PrincipalDirectoryMessenger } from '@/components/features/school-erp/PrincipalDirectoryMessenger';
+import { ParentTeacherMessenger } from '@/components/features/school-erp/ParentTeacherMessenger';
 import { createAnnouncement, publishAnnouncement, respondSchoolContactMessage } from '@/lib/school-erp/actions';
 import { hasSchoolPermission, requireSchoolContext } from '@/lib/school-erp/access';
-import { getSchoolCommunication } from '@/lib/school-erp/queries';
+import { getAnnouncementReadStats, getSchoolCommunication, getTeacherMessagingContacts } from '@/lib/school-erp/queries';
 import { getInstitutionDirectoryMessages } from '@/lib/institution-directory/queries';
 
 const selectClass = 'border-input bg-background h-10 w-full rounded-lg border px-3 text-sm';
@@ -23,6 +24,13 @@ export default async function SchoolCommunicationPage() {
     ? await getInstitutionDirectoryMessages(supabase, 'school', context.organization.id)
     : [];
   const canRespond = ['owner', 'admin', 'admissions', 'teacher', 'accountant'].includes(context.membership.member_role);
+  const isTeacher = context.membership.member_role === 'teacher';
+  const messagingContacts = isTeacher ? await getTeacherMessagingContacts(supabase, context) : [];
+  const readStats = await getAnnouncementReadStats(
+    supabase,
+    context.organization.id,
+    data.announcements.map((item: any) => item.id)
+  );
   const deliveryCounts = data.deliveries.reduce((result: Record<string, number>, item: any) => {
     result[`${item.channel}:${item.status}`] = (result[`${item.channel}:${item.status}`] || 0) + 1;
     return result;
@@ -58,7 +66,10 @@ export default async function SchoolCommunicationPage() {
         <Card>
           <CardHeader><CardTitle className="text-base">Announcements</CardTitle></CardHeader>
           <CardContent className="space-y-3">
-            {data.announcements.map((item: any) => <article key={item.id} className="border-border rounded-lg border p-3"><div className="flex flex-wrap items-center gap-2"><h2 className="text-sm font-semibold">{item.title}</h2><Badge variant={item.priority === 'urgent' ? 'destructive' : 'outline'}>{item.priority}</Badge><Badge variant="secondary">{item.published_at ? 'published' : 'draft'}</Badge></div><p className="text-muted-foreground mt-2 whitespace-pre-wrap text-sm">{item.body}</p><div className="mt-2 flex items-end justify-between gap-3"><p className="text-muted-foreground text-[11px]">{(item.audience_roles || []).join(', ')}</p>{canManage && !item.published_at && <SchoolActionForm action={publishAnnouncement} submitLabel="Publish" className=""><input type="hidden" name="id" value={item.id} /></SchoolActionForm>}</div></article>)}
+            {data.announcements.map((item: any) => {
+              const stat = readStats.get(item.id);
+              return <article key={item.id} className="border-border rounded-lg border p-3"><div className="flex flex-wrap items-center gap-2"><h2 className="text-sm font-semibold">{item.title}</h2><Badge variant={item.priority === 'urgent' ? 'destructive' : 'outline'}>{item.priority}</Badge><Badge variant="secondary">{item.published_at ? 'published' : 'draft'}</Badge>{stat && stat.delivered > 0 && <Badge variant="outline">{Math.round((stat.read / stat.delivered) * 100)}% viewed ({stat.read}/{stat.delivered})</Badge>}</div><p className="text-muted-foreground mt-2 whitespace-pre-wrap text-sm">{item.body}</p><div className="mt-2 flex items-end justify-between gap-3"><p className="text-muted-foreground text-[11px]">{(item.audience_roles || []).join(', ')}</p>{canManage && !item.published_at && <SchoolActionForm action={publishAnnouncement} submitLabel="Publish" className=""><input type="hidden" name="id" value={item.id} /></SchoolActionForm>}</div></article>;
+            })}
           </CardContent>
         </Card>
         <Card>
@@ -70,6 +81,18 @@ export default async function SchoolCommunicationPage() {
           </CardContent>
         </Card>
       </div>
+      {isTeacher && (
+        <Card>
+          <CardHeader><CardTitle className="text-base">Message a parent</CardTitle></CardHeader>
+          <CardContent>
+            <ParentTeacherMessenger
+              contacts={messagingContacts}
+              organizationId={context.organization.id}
+              currentUserId={context.userId}
+            />
+          </CardContent>
+        </Card>
+      )}
       <Card>
         <CardHeader><CardTitle className="text-base">School inbox</CardTitle></CardHeader>
         <CardContent className="space-y-3">

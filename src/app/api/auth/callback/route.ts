@@ -87,8 +87,13 @@ export async function GET(request: NextRequest) {
 
       const userMetadata = data.user.user_metadata;
       const providers = data.user.app_metadata?.providers;
-      const isGoogleAuth =
-        data.user.app_metadata?.provider === 'google' || (Array.isArray(providers) && providers.includes('google'));
+      // Google and Facebook are both "one-click" OAuth signups that skip the full RegisterForm
+      // wizard entirely — neither hands us board/grade_level/education_level, so both need the
+      // same needsProfileCompletion() catch-all below (see isSocialOAuthSignIn's usage).
+      const isSocialOAuthSignIn =
+        data.user.app_metadata?.provider === 'google' ||
+        data.user.app_metadata?.provider === 'facebook' ||
+        (Array.isArray(providers) && (providers.includes('google') || providers.includes('facebook')));
 
       // Fetched early so metadataRole (below) can tell "brand-new OAuth sign-up" apart from
       // "existing account signing in again" — see that computation for why this ordering matters.
@@ -103,10 +108,10 @@ export async function GET(request: NextRequest) {
       // `redirectRole` is just a URL query hint (?role=teacher on the OAuth redirect link) — real
       // signup metadata (userMetadata.role) always wins when present. For an EXISTING profile,
       // that URL hint must NOT be trusted at all: an admin-invited school owner/teacher signing in
-      // via Google (their profile already has role='teacher', set at invite time, with no
-      // userMetadata.role since Google never provides one) was having that hint silently reset
-      // their role back to 'student' on every single login — a real bug, found by testing an actual
-      // invited-then-Google-login account. Only a genuinely new profile falls back to the hint.
+      // via Google/Facebook (their profile already has role='teacher', set at invite time, with no
+      // userMetadata.role since neither OAuth provider supplies one) was having that hint silently
+      // reset their role back to 'student' on every single login — a real bug, found by testing an
+      // actual invited-then-Google-login account. Only a genuinely new profile falls back to the hint.
       const metadataRole = resolveRole(userMetadata?.role) ?? (existingProfile ? null : redirectRole);
       const metadataBoard = resolveBoard(userMetadata?.board);
       const metadataGradeLevel = resolveGradeLevel(userMetadata?.grade_level);
@@ -300,7 +305,7 @@ export async function GET(request: NextRequest) {
           ? membershipRedirect.destination
           : !profileForRedirect.username && !needsProfileCompletion(profileForRedirect)
             ? `/onboarding/username?next=${encodeURIComponent(resolvedRole === 'parent' ? '/parent' : redirectTo)}`
-            : (isGoogleAuth || metadataEducationLevel === 'university') && needsProfileCompletion(profileForRedirect)
+            : (isSocialOAuthSignIn || metadataEducationLevel === 'university') && needsProfileCompletion(profileForRedirect)
               ? '/onboarding/complete-profile'
               : resolvedRole === 'student' && !profileForRedirect.onboarding_completed
                 ? '/onboarding/class'

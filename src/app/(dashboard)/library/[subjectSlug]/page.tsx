@@ -6,7 +6,7 @@ import { createServiceClient } from '@/lib/supabase/service';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { AdSenseBanner } from '@/components/features/ads/AdSenseBanner';
+import { HouseAdBanner } from '@/components/features/ads/HouseAdBanner';
 import {
   buildCatalogSearch,
   getLibraryResourceTypeLabel,
@@ -130,7 +130,7 @@ export default async function LibraryBookPage({
           </div>
         </div>
       </section>
-      <AdSenseBanner slot="inline" className="mx-auto max-w-5xl" />
+      <HouseAdBanner slot="content_inline" className="mx-auto max-w-5xl" />
 
       {chapters.length ? (
         <div className="grid gap-4 md:grid-cols-2">

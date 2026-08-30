@@ -137,6 +137,10 @@ export function PublicAdmissionForm({
           <Input name="guardian_email" type="email" maxLength={254} />
         </label>
         <label className="space-y-1.5 text-sm font-medium">
+          Applicant&apos;s own email (optional, if they already use ilm AI)
+          <Input name="applicant_email" type="email" maxLength={254} />
+        </label>
+        <label className="space-y-1.5 text-sm font-medium">
           Previous school
           <Input name="previous_school" maxLength={160} />
         </label>

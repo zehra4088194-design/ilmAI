@@ -205,6 +205,20 @@ Before deploying to Coolify:
 
 ---
 
+## 📣 House Ads — ilmai.store Conversion Tracking
+
+House ads (the self-served banners that replaced Google AdSense) track clicks through to
+ilmai.store via a server-to-server callback. One secret, shared between both apps:
+
+```env
+# Bearer secret ilmai.store's server sends on POST /api/ads/conversion. Generate a long random
+# value and set this EXACT same value in ilmai.store's own environment — it verifies the
+# `Authorization: Bearer <value>` header the same way CRON_SECRET is checked on /api/cron/* here.
+AD_TRACKING_SECRET=
+```
+
+---
+
 ## 📞 Support
 
 For questions about:

@@ -1,12 +1,13 @@
 'use client';
 
 import { useActionState, useCallback, useMemo, useState } from 'react';
-import { CheckCircle2, CircleAlert, Save } from 'lucide-react';
+import { CheckCircle2, CircleAlert, Save, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PersonSearchInput } from './PersonSearchInput';
 import { useNameSearch } from '@/lib/hooks/useNameSearch';
 import { saveAttendance } from '@/lib/school-erp/actions';
 import { INITIAL_SCHOOL_ACTION_STATE } from '@/lib/school-erp/types';
+import { enqueueOfflineItem } from '@/lib/offline/sync-queue';
 
 const STATUSES = [
   {
@@ -70,6 +71,7 @@ export function AttendanceRegister({
   );
   const [answers, setAnswers] = useState<Record<string, string>>(initial);
   const [state, action, pending] = useActionState(saveAttendance, INITIAL_SCHOOL_ACTION_STATE);
+  const [offlineSaved, setOfflineSaved] = useState(false);
   const students = enrollments.filter((enrollment) => enrollment.section_id === sectionId);
   // Submitted regardless of the search box below — search only narrows what's displayed, marking
   // stays possible for the whole section so a filtered-out student's status isn't silently dropped.
@@ -161,7 +163,25 @@ export function AttendanceRegister({
       </div>
 
       {canManage && students.length > 0 && (
-        <form action={action} className="flex flex-wrap items-center gap-3">
+        <form
+          action={action}
+          // Offline-first (Phase 1b): a form action is a network request under the hood, so it
+          // fails outright with no connection. When the browser reports it's offline, this queues
+          // the same {sectionId, attendanceDate, entries} payload saveAttendance() would receive
+          // (see src/lib/offline/sync-queue.ts + /api/offline/sync) instead of letting the action
+          // fail, and skips submitting — the queued item replays automatically once back online.
+          onSubmit={(event) => {
+            if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+              event.preventDefault();
+              enqueueOfflineItem('attendance', { sectionId, attendanceDate, entries }).then(() => {
+                setOfflineSaved(true);
+              });
+            } else {
+              setOfflineSaved(false);
+            }
+          }}
+          className="flex flex-wrap items-center gap-3"
+        >
           <input type="hidden" name="section_id" value={sectionId} />
           <input type="hidden" name="attendance_date" value={attendanceDate} />
           <input type="hidden" name="entries" value={JSON.stringify(entries)} />
@@ -169,7 +189,13 @@ export function AttendanceRegister({
             <Save className="h-4 w-4" />
             {pending ? 'Saving...' : 'Save attendance'}
           </Button>
-          {state.message && (
+          {offlineSaved && (
+            <span className="flex items-center gap-1.5 text-xs text-amber-600">
+              <WifiOff className="h-3.5 w-3.5" />
+              Saved offline — will sync automatically once you&apos;re back online.
+            </span>
+          )}
+          {!offlineSaved && state.message && (
             <span
               className={`flex items-center gap-1.5 text-xs ${state.success ? 'text-emerald-600' : 'text-destructive'}`}
             >

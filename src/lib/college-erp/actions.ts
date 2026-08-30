@@ -357,6 +357,58 @@ export async function addCollegeMember(_state: CollegeActionState, formData: For
   }
 }
 
+// Shared by enrollCollegeStudent (manual, email-driven) and updateCollegeAdmissionStatus's
+// enrollment auto-link (Phase 6e — an admission marked 'enrolled' creates the actual enrollment
+// instead of the status change being purely cosmetic). Both need the exact same
+// membership+enrollment+billing sequence.
+async function createCollegeEnrollmentRecord(
+  db: any,
+  context: CollegeContext,
+  input: { profileId: string; sectionId: string; academicYearId: string; registrationNumber: string; rollNumber?: string | null }
+) {
+  const { data: existingActive } = await db
+    .from('college_enrollments')
+    .select('id')
+    .eq('organization_id', context.organization.id)
+    .eq('student_id', input.profileId)
+    .eq('status', 'active')
+    .maybeSingle();
+  if (!existingActive) await assertStudentLimit(db, context.organization.id);
+  await db.from('college_memberships').upsert(
+    {
+      organization_id: context.organization.id,
+      profile_id: input.profileId,
+      member_role: 'student',
+      status: 'active',
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'organization_id,profile_id,member_role' }
+  );
+  const { data, error } = await db
+    .from('college_enrollments')
+    .upsert(
+      {
+        organization_id: context.organization.id,
+        academic_year_id: input.academicYearId,
+        section_id: input.sectionId,
+        student_id: input.profileId,
+        registration_number: input.registrationNumber,
+        roll_number: input.rollNumber || null,
+        status: 'active',
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'organization_id,academic_year_id,student_id' }
+    )
+    .select('id')
+    .single();
+  if (error) throw new Error(error.message);
+  await audit(db, context, 'upsert', 'enrollment', data.id, { studentId: input.profileId });
+  if (await isCollegeOrganizationBillingActive(db, context.organization.id)) {
+    await grantCollegeSubscription(context.organization.id, input.profileId);
+  }
+  return data;
+}
+
 export async function enrollCollegeStudent(_state: CollegeActionState, formData: FormData): Promise<CollegeActionState> {
   try {
     const studentEmail = text(formData, 'student_email').toLowerCase();
@@ -369,46 +421,13 @@ export async function enrollCollegeStudent(_state: CollegeActionState, formData:
     const { db, context } = await mutationContext('admissions.manage', 'enrollment', 'people');
     const { data: profile } = await db.from('profiles').select('id').eq('email', studentEmail).maybeSingle();
     if (!profile) throw new Error('The student must register an ilm AI account first.');
-    const { data: existingActive } = await db
-      .from('college_enrollments')
-      .select('id')
-      .eq('organization_id', context.organization.id)
-      .eq('student_id', profile.id)
-      .eq('status', 'active')
-      .maybeSingle();
-    if (!existingActive) await assertStudentLimit(db, context.organization.id);
-    await db.from('college_memberships').upsert(
-      {
-        organization_id: context.organization.id,
-        profile_id: profile.id,
-        member_role: 'student',
-        status: 'active',
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'organization_id,profile_id,member_role' }
-    );
-    const { data, error } = await db
-      .from('college_enrollments')
-      .upsert(
-        {
-          organization_id: context.organization.id,
-          academic_year_id: academicYearId,
-          section_id: sectionId,
-          student_id: profile.id,
-          registration_number: registrationNumber,
-          roll_number: optionalText(formData, 'roll_number'),
-          status: 'active',
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'organization_id,academic_year_id,student_id' }
-      )
-      .select('id')
-      .single();
-    if (error) throw new Error(error.message);
-    await audit(db, context, 'upsert', 'enrollment', data.id, { studentId: profile.id });
-    if (await isCollegeOrganizationBillingActive(db, context.organization.id)) {
-      await grantCollegeSubscription(context.organization.id, profile.id);
-    }
+    await createCollegeEnrollmentRecord(db, context, {
+      profileId: profile.id,
+      sectionId,
+      academicYearId,
+      registrationNumber,
+      rollNumber: optionalText(formData, 'roll_number'),
+    });
     return done('/college-admin/people', 'Student enrolled.');
   } catch (error) {
     return failure(error);
@@ -482,9 +501,15 @@ export async function createCollegeAdmission(_state: CollegeActionState, formDat
         guardian_name: guardianName,
         guardian_email: optionalText(formData, 'guardian_email'),
         guardian_phone: guardianPhone,
+        // Phase 6e: the applicant's OWN email (if they already have an ilm AI account) — lets
+        // updateCollegeAdmissionStatus auto-enroll them when this application is later marked
+        // 'enrolled', instead of the status change being purely cosmetic.
+        applicant_email: optionalText(formData, 'applicant_email'),
         previous_institution: optionalText(formData, 'previous_institution'),
         notes: optionalText(formData, 'notes'),
-        status: 'submitted',
+        // Phase 6e: an internal "Log inquiry" quick-add can start the funnel earlier than a full
+        // application (status defaults to 'submitted' when this field is not sent).
+        status: optionalText(formData, 'status') || 'submitted',
       })
       .select('id')
       .single();
@@ -500,7 +525,18 @@ export async function updateCollegeAdmissionStatus(_state: CollegeActionState, f
   try {
     const id = text(formData, 'id');
     const status = text(formData, 'status');
-    const statuses = ['submitted', 'under_review', 'waitlisted', 'approved', 'rejected', 'enrolled', 'withdrawn'];
+    const statuses = [
+      'inquiry',
+      'visit_scheduled',
+      'entry_test_scheduled',
+      'submitted',
+      'under_review',
+      'waitlisted',
+      'approved',
+      'rejected',
+      'enrolled',
+      'withdrawn',
+    ];
     if (!id || !statuses.includes(status)) throw new Error('Application and valid status are required.');
     const { db, context, user } = await mutationContext('admissions.manage', 'admission-status', 'admissions');
     const { error } = await db
@@ -510,6 +546,42 @@ export async function updateCollegeAdmissionStatus(_state: CollegeActionState, f
       .eq('organization_id', context.organization.id);
     if (error) throw new Error(error.message);
     await audit(db, context, 'status_change', 'admission', id, { status });
+
+    // Phase 6e: marking an application 'enrolled' now actually enrolls the student — not just a
+    // label change — when the admin supplied a section/year to enroll into AND the applicant's own
+    // email (captured at application time) matches an existing ilm AI account.
+    const sectionId = optionalText(formData, 'section_id');
+    const academicYearId = optionalText(formData, 'academic_year_id');
+    if (status === 'enrolled' && sectionId && academicYearId) {
+      const { data: admission } = await db
+        .from('college_admissions')
+        .select('applicant_email, applying_for_program, application_number')
+        .eq('id', id)
+        .eq('organization_id', context.organization.id)
+        .maybeSingle();
+      const applicantEmail = admission?.applicant_email?.toLowerCase();
+      if (applicantEmail) {
+        const { data: profile } = await db.from('profiles').select('id').eq('email', applicantEmail).maybeSingle();
+        if (profile) {
+          await createCollegeEnrollmentRecord(db, context, {
+            profileId: profile.id,
+            sectionId,
+            academicYearId,
+            registrationNumber: admission.application_number,
+          });
+          return done('/college-admin/admissions', 'Application marked enrolled and the student was added to the section.');
+        }
+        return done(
+          '/college-admin/admissions',
+          'Status set to enrolled, but no ilm AI account exists yet for the applicant email on file — enroll manually from People once they register.'
+        );
+      }
+      return done(
+        '/college-admin/admissions',
+        'Status set to enrolled. No applicant email was on file, so enroll the student manually from People once they have an account.'
+      );
+    }
+
     return done('/college-admin/admissions', 'Admission status updated.');
   } catch (error) {
     return failure(error);

@@ -7,9 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { SchoolMetric } from '@/components/features/school-erp/SchoolMetric';
 import { CollegeActionForm } from '@/components/features/college-erp/CollegeActionForm';
+import { ParentTeacherMessenger } from '@/components/features/school-erp/ParentTeacherMessenger';
 import { createCollegeContactMessage, createCollegeLeaveRequest } from '@/lib/college-erp/actions';
 import { requireCollegeContext } from '@/lib/college-erp/access';
-import { getCollegePortalData } from '@/lib/college-erp/queries';
+import { getCollegeParentMessagingContacts, getCollegePortalData } from '@/lib/college-erp/queries';
 
 // Mirrors src/app/school/page.tsx, minus the PTM (parent-teacher meeting) section — that subsystem
 // was never ported for college (see docs/SCHOOL_COLLEGE_SEPARATION_TODO.md).
@@ -24,6 +25,7 @@ export default async function CollegePortalPage() {
   if (!context) redirect('/dashboard');
   const data = await getCollegePortalData(supabase, context);
   const role = context.membership.member_role;
+  const messagingContacts = role === 'parent' ? await getCollegeParentMessagingContacts(supabase, context) : [];
   // No org-switcher UI yet for college (school's SchoolOrganizationSwitcher wasn't ported) — a
   // member of more than one college organization only sees their highest-priority one for now.
   const absent = data.attendance.filter((item: any) => item.status === 'absent').length;
@@ -144,6 +146,19 @@ export default async function CollegePortalPage() {
             </CardContent>
           </Card>
         </div>
+        {role === 'parent' && (
+          <Card>
+            <CardHeader><CardTitle className="text-base">Message a teacher</CardTitle></CardHeader>
+            <CardContent>
+              <ParentTeacherMessenger
+                contacts={messagingContacts}
+                organizationId={context.organization.id}
+                currentUserId={context.userId}
+                contextType="college"
+              />
+            </CardContent>
+          </Card>
+        )}
         {['student', 'parent'].includes(role) && (
           <Card>
             <CardHeader><CardTitle className="text-base">Contact college</CardTitle></CardHeader>

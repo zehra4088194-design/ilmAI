@@ -205,7 +205,9 @@ export type DailyLimitFeature =
   | 'parent_attachment_bytes'
   | `erp_mutation:${string}`
   | `provider:${ProviderBudgetKey}`
-  | `ai_tool:${string}`;
+  | `ai_tool:${string}`
+  // Phase 5c — one poke per buddy pair per day, keyed by the buddy_links row id.
+  | `poke:${string}`;
 
 export const AI_DAILY_LIMITS = {
   FREE_SIDE_CHAT: 3,

@@ -17,7 +17,7 @@ const MIME_EXTENSIONS: Record<string, string> = {
   'image/webp': 'webp',
 };
 
-import type { PresentationBackground } from './types';
+import type { PresentationBackground, PresentationTheme } from './types';
 
 type BackgroundRow = {
   storage_path: string;
@@ -53,7 +53,7 @@ function cleanCategory(value: unknown) {
 // Every background predates 'mode' having a value other than 'dark' — that was
 // the only visual treatment (dark scrim + white text) applied before the
 // dark/light theme split, so anything else defaults to it too.
-function cleanMode(value: unknown) {
+function cleanMode(value: unknown): PresentationTheme {
   return value === 'light' ? 'light' : 'dark';
 }
 

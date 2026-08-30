@@ -5,9 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { CollegeActionForm } from '@/components/features/college-erp/CollegeActionForm';
 import { PrincipalDirectoryMessenger } from '@/components/features/school-erp/PrincipalDirectoryMessenger';
+import { ParentTeacherMessenger } from '@/components/features/school-erp/ParentTeacherMessenger';
 import { createCollegeAnnouncement, publishCollegeAnnouncement, respondCollegeContactMessage } from '@/lib/college-erp/actions';
 import { hasCollegePermission, requireCollegeContext } from '@/lib/college-erp/access';
-import { getCollegeCommunication } from '@/lib/college-erp/queries';
+import { getCollegeCommunication, getCollegeTeacherMessagingContacts } from '@/lib/college-erp/queries';
 import { getInstitutionDirectoryMessages } from '@/lib/institution-directory/queries';
 
 const selectClass = 'border-input bg-background h-10 w-full rounded-lg border px-3 text-sm';
@@ -20,6 +21,8 @@ export default async function CollegeCommunicationPage() {
   const canRespond = ['owner', 'admin', 'admissions', 'teacher', 'accountant'].includes(context.membership.member_role);
   const isPrincipal = ['owner', 'admin'].includes(context.membership.member_role);
   const directoryMessages = isPrincipal ? await getInstitutionDirectoryMessages(supabase, 'college', context.organization.id) : [];
+  const isTeacher = context.membership.member_role === 'teacher';
+  const messagingContacts = isTeacher ? await getCollegeTeacherMessagingContacts(supabase, context) : [];
   const deliveryCounts = data.deliveries.reduce((result: Record<string, number>, item: any) => {
     result[`${item.channel}:${item.status}`] = (result[`${item.channel}:${item.status}`] || 0) + 1;
     return result;
@@ -69,6 +72,19 @@ export default async function CollegeCommunicationPage() {
           </CardContent>
         </Card>
       </div>
+      {isTeacher && (
+        <Card>
+          <CardHeader><CardTitle className="text-base">Message a parent</CardTitle></CardHeader>
+          <CardContent>
+            <ParentTeacherMessenger
+              contacts={messagingContacts}
+              organizationId={context.organization.id}
+              currentUserId={context.userId}
+              contextType="college"
+            />
+          </CardContent>
+        </Card>
+      )}
       <Card>
         <CardHeader><CardTitle className="text-base">College inbox</CardTitle></CardHeader>
         <CardContent className="space-y-3">

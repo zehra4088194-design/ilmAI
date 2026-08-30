@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     });
 
     // FREE teachers must trigger the ad flow client-side first; the client
-    // sends adAcknowledged once the AdSense unit has been shown/interacted with.
+    // sends adAcknowledged once the house ad banner has been shown/interacted with.
     if (branding.requiresAdGate && body.adAcknowledged !== true) {
       return NextResponse.json(
         { error: 'AD_REQUIRED', message: 'Watch the ad to generate a free test paper.' },
