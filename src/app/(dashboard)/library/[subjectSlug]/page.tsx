@@ -15,6 +15,23 @@ import {
   parseLibraryResourceType,
 } from '@/lib/resources/catalog';
 
+// Search engines need a distinct, keyword-matching title/description per subject to ever surface
+// this page for a real query ("class 9 biology notes") — without this every subject page shared
+// the parent layout's generic title, which is exactly why Search Console had nothing worth
+// showing for library content despite the pages being crawlable.
+export async function generateMetadata({ params }: { params: Promise<{ subjectSlug: string }> }) {
+  const { subjectSlug } = await params;
+  if (subjectSlug === 'general') return { title: 'Library | ilm AI' };
+  const supabase = await createClient();
+  const { data: subject } = await supabase.from('subjects').select('name').eq('slug', subjectSlug).maybeSingle();
+  const name = subject?.name || subjectSlug;
+  return {
+    title: `${name} Notes, Textbooks & Past Papers | ilm AI Library`,
+    description: `Free ${name} notes, textbooks, MCQs, and past papers organized by chapter — read online, no sign-up needed.`,
+    alternates: { canonical: `/library/${subjectSlug}` },
+  };
+}
+
 export default async function LibraryBookPage({
   params,
   searchParams,

@@ -27,6 +27,26 @@ const SECTION_ICONS = {
   long: FileText,
 };
 
+// Same reasoning as the subject-level page's generateMetadata — a chapter page is the actual
+// landing target for a specific search ("class 9 biology chapter 3 mcqs"), so it needs its own
+// title/description naming the subject AND chapter, not the parent's generic one.
+export async function generateMetadata({ params }: { params: Promise<{ subjectSlug: string; chapterSlug: string }> }) {
+  const { subjectSlug, chapterSlug } = await params;
+  if (subjectSlug === 'general' || chapterSlug === 'general') return { title: 'Library | ilm AI' };
+  const supabase = await createClient();
+  const { data: subject } = await supabase.from('subjects').select('id, name').eq('slug', subjectSlug).maybeSingle();
+  const { data: chapter } = subject
+    ? await supabase.from('chapters').select('name').eq('subject_id', subject.id).eq('slug', chapterSlug).maybeSingle()
+    : { data: null };
+  const subjectName = subject?.name || subjectSlug;
+  const chapterName = chapter?.name || chapterSlug;
+  return {
+    title: `${subjectName} — ${chapterName}: Notes, MCQs & Past Papers | ilm AI`,
+    description: `Free ${subjectName} ${chapterName} notes, MCQs, short and long questions, and past papers — read online, no sign-up needed.`,
+    alternates: { canonical: `/library/${subjectSlug}/${chapterSlug}` },
+  };
+}
+
 export default async function LibraryChapterPage({
   params,
   searchParams,

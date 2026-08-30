@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { BLOG_POSTS } from '@/content/blog-posts';
 import { getSiteUrl } from '@/lib/utils/siteUrl';
+import { createServiceClient } from '@/lib/supabase/service';
 
 const STATIC_ROUTES = [
   { path: '', priority: 1, changeFrequency: 'weekly' as const },
@@ -24,7 +25,51 @@ const STATIC_ROUTES = [
   { path: '/status', priority: 0.5, changeFrequency: 'daily' as const },
 ];
 
-export default function sitemap(): MetadataRoute.Sitemap {
+// Library (and Past Papers, once it has content) are public, no-signup-required, read-only
+// pages — see the middleware comment on PROTECTED_PREFIXES: they're deliberately left out of the
+// auth-gated route list for exactly this reason. Before this, only the generic top-level
+// `/library` URL was in the sitemap; Google Search Console had nothing to actually index for a
+// student's real search ("class 9 biology chapter 3 mcqs") because the per-subject and
+// per-chapter pages that content lives on were never listed anywhere for a crawler to discover.
+async function getLibraryEntries(baseUrl: string): Promise<MetadataRoute.Sitemap> {
+  const supabase = createServiceClient();
+  const [{ data: subjects }, { data: resources }] = await Promise.all([
+    supabase.from('subjects').select('slug').not('slug', 'is', null),
+    (supabase.from('library_resources') as any)
+      .select('subject_id, chapter_id, subjects(slug), chapters(slug)')
+      .not('subject_id', 'is', null)
+      .not('chapter_id', 'is', null),
+  ]);
+
+  const subjectEntries: MetadataRoute.Sitemap = (subjects || []).map((subject: { slug: string }) => ({
+    url: `${baseUrl}/library/${subject.slug}`,
+    changeFrequency: 'weekly' as const,
+    priority: 0.7,
+  }));
+
+  // Resources are seeded MANY-per-chapter (one row per MCQ set, short questions, long questions,
+  // reading, etc.) — dedupe down to one sitemap entry per subject+chapter combination, which is
+  // the actual page URL (query params like ?type=mcqs pick a view within it, not a separate page).
+  const seenChapters = new Set<string>();
+  const chapterEntries: MetadataRoute.Sitemap = [];
+  for (const resource of resources || []) {
+    const subjectSlug = resource.subjects?.slug;
+    const chapterSlug = resource.chapters?.slug;
+    if (!subjectSlug || !chapterSlug) continue;
+    const key = `${subjectSlug}/${chapterSlug}`;
+    if (seenChapters.has(key)) continue;
+    seenChapters.add(key);
+    chapterEntries.push({
+      url: `${baseUrl}/library/${subjectSlug}/${chapterSlug}`,
+      changeFrequency: 'monthly' as const,
+      priority: 0.6,
+    });
+  }
+
+  return [...subjectEntries, ...chapterEntries];
+}
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = getSiteUrl();
   const staticLastModified = new Date('2026-08-02T00:00:00Z');
 
@@ -42,5 +87,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.8,
   }));
 
-  return [...staticEntries, ...articleEntries];
+  // Best-effort — a DB hiccup here should never take down the whole sitemap (and every other
+  // static/blog URL with it), it should just mean this run has fewer library URLs than usual.
+  const libraryEntries = await getLibraryEntries(baseUrl).catch((error) => {
+    console.error('[sitemap] Failed to load library entries:', error);
+    return [];
+  });
+
+  return [...staticEntries, ...articleEntries, ...libraryEntries];
 }
