@@ -4,7 +4,7 @@ import { extractGoogleDriveFileId } from '@/lib/utils/filePreview';
 import type { SubscriptionTier } from '@/types';
 import { getR2ObjectStream, getR2Text, parseR2Uri } from '@/lib/storage/r2';
 
-export type ProtectedResourceKind = 'library' | 'past-paper' | 'college-resource';
+export type ProtectedResourceKind = 'library' | 'past-paper' | 'college-resource' | 'class-library';
 export type ResourceMode = 'light' | 'dark';
 
 type ProfileScope = {
@@ -153,6 +153,11 @@ export async function getProtectedResource(
   resourceId: string,
   mode: ResourceMode
 ): Promise<ProtectedResource | null> {
+  // Class Library is open, platform-wide content — no board/grade/subscription scoping and no
+  // profile lookup needed at all (its RLS already "grants SELECT to everyone"), unlike every
+  // other kind below. Handled first so it never depends on the signed-in user having a profile row.
+  if (kind === 'class-library') return getClassLibraryProtectedResource(resourceId);
+
   const admin = (await createAdminClient()) as any;
   const pdfAdmin = createServiceClient() as any;
   const { data: profile } = await admin
@@ -246,13 +251,37 @@ export async function getProtectedResource(
   };
 }
 
+// Shared by getProtectedResource (signed-in) and getPublicResource (logged-out) — Class Library
+// has exactly one access rule ("anyone"), so both entry points resolve identically.
+async function getClassLibraryProtectedResource(resourceId: string): Promise<ProtectedResource | null> {
+  const supabase = createServiceClient() as any;
+  const { data: resource } = await supabase
+    .from('class_library_subject_resources')
+    .select('id, resource_type, title, url')
+    .eq('id', resourceId)
+    .maybeSingle();
+  // video_lecture rows are YouTube/embed links, never a document — the reader never requests
+  // these (the UI keeps them as a plain external link), but guard here too in case it ever does.
+  if (!resource?.url || resource.resource_type === 'video_lecture') return null;
+  return {
+    id: resource.id,
+    kind: 'class-library',
+    title: resource.title,
+    fileType: 'pdf',
+    sourceUrl: resource.url,
+    contextTextUrl: null,
+    tier: 'FREE',
+  };
+}
+
 /** Public read-only catalog access. No profile scope, downloads, or college files. */
 export async function getPublicResource(
-  kind: Extract<ProtectedResourceKind, 'library' | 'past-paper'>,
+  kind: Extract<ProtectedResourceKind, 'library' | 'past-paper' | 'class-library'>,
   resourceId: string,
   mode: ResourceMode
 ): Promise<ProtectedResource | null> {
   const pdfAdmin = createServiceClient() as any;
+  if (kind === 'class-library') return getClassLibraryProtectedResource(resourceId);
   if (kind === 'library') {
     const { data: resource } = await pdfAdmin
       .from('library_resources')
@@ -464,6 +493,9 @@ export async function getResourceForProcessing(
   kind: ProtectedResourceKind,
   resourceId: string
 ): Promise<ProtectedResource | null> {
+  // Class Library has no AI-context/background-processing pipeline (no context_text_url column
+  // at all) — this function exists for the other three kinds' AI tools queue only.
+  if (kind === 'class-library') return null;
   const pdfAdmin = createServiceClient() as any;
   if (kind === 'library') {
     const { data } = await pdfAdmin

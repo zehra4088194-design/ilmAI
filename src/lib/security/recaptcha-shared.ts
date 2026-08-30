@@ -7,6 +7,7 @@ export const RECAPTCHA_ACTIONS = [
   'contact_submit',
   'demo_start',
   'school_admission',
+  'college_admission',
 ] as const;
 
 export type RecaptchaAction = (typeof RECAPTCHA_ACTIONS)[number];

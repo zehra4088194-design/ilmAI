@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Building2, Check, Crown, Rocket, Sparkles } from 'lucide-react';
+import { Check, Crown, Rocket, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,14 +10,10 @@ import { CURRENCY_SYMBOLS, TRANSACTION_FEE_USD, type Currency } from '@/lib/cons
 import { cn } from '@/lib/utils/cn';
 import { toast } from 'sonner';
 import { DEFAULT_PLATFORM_SETTINGS, convertUsdToPkr, type PlatformSettings } from '@/lib/platform-settings/shared';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { PaymentAvailability } from '@/lib/payments';
 
 type BillingCycle = 'monthly' | 'annual';
 type TierKey = 'FREE' | 'PRO' | 'ELITE';
-type InstitutionType = 'school' | 'college';
-type InstitutionPlan = 'PRO' | 'ELITE';
 const PLAN_KEYS: TierKey[] = ['FREE', 'PRO', 'ELITE'];
 
 export function SubscriptionPlans({
@@ -32,14 +28,6 @@ export function SubscriptionPlans({
   settings?: PlatformSettings;
 }) {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
-  const [institutionType, setInstitutionType] = useState<InstitutionType>('college');
-  const [institutionPlan, setInstitutionPlan] = useState<InstitutionPlan>('PRO');
-  const [studentCount, setStudentCount] = useState('50');
-  const [institutionName, setInstitutionName] = useState('');
-  const [contactName, setContactName] = useState('');
-  const [contactEmail, setContactEmail] = useState('');
-  const [institutionMessage, setInstitutionMessage] = useState('');
-  const [inquiryLoading, setInquiryLoading] = useState(false);
   const searchParams = useSearchParams();
   const symbol = CURRENCY_SYMBOLS[currency];
   const usdSymbol = CURRENCY_SYMBOLS.USD;
@@ -47,10 +35,6 @@ export function SubscriptionPlans({
   const free = settings.subscriptionPlans.FREE;
   const pro = settings.subscriptionPlans.PRO;
   const elite = settings.subscriptionPlans.ELITE;
-  const institutionCount = Math.max(0, Number(studentCount) || 0);
-  const institutionBasePrice =
-    settings.subscriptionPlans[institutionPlan].price[currency][billingCycle === 'annual' ? 'annual' : 'monthly'];
-  const institutionDiscountedPrice = institutionBasePrice * institutionCount * 0.5;
   const feePkr = convertUsdToPkr(TRANSACTION_FEE_USD, settings);
 
   useEffect(() => {
@@ -60,75 +44,6 @@ export function SubscriptionPlans({
       toast.info('Checkout was cancelled.');
     }
   }, [searchParams]);
-
-  useEffect(() => {
-    const rawDraft = window.sessionStorage.getItem('ilm-ai-institution-inquiry-draft');
-    if (!rawDraft) return;
-
-    try {
-      const draft = JSON.parse(rawDraft) as {
-        institutionName?: string;
-        institutionType?: InstitutionType;
-        studentCount?: number;
-        planTier?: InstitutionPlan;
-        billingCycle?: BillingCycle;
-        contactName?: string;
-        contactEmail?: string;
-        message?: string;
-      };
-      if (draft.institutionName) setInstitutionName(draft.institutionName);
-      if (draft.institutionType === 'school' || draft.institutionType === 'college') {
-        setInstitutionType(draft.institutionType);
-      }
-      if (draft.studentCount && draft.studentCount > 0) setStudentCount(String(draft.studentCount));
-      if (draft.planTier === 'PRO' || draft.planTier === 'ELITE') setInstitutionPlan(draft.planTier);
-      if (draft.billingCycle === 'monthly' || draft.billingCycle === 'annual') {
-        setBillingCycle(draft.billingCycle);
-      }
-      if (draft.contactName) setContactName(draft.contactName);
-      if (draft.contactEmail) setContactEmail(draft.contactEmail);
-      if (draft.message) setInstitutionMessage(draft.message);
-      window.setTimeout(
-        () => document.getElementById('institution-plans')?.scrollIntoView({ behavior: 'smooth' }),
-        100
-      );
-    } catch {
-      window.sessionStorage.removeItem('ilm-ai-institution-inquiry-draft');
-    }
-  }, []);
-
-  const submitInstitutionInquiry = async () => {
-    if (!institutionName.trim() || institutionCount < 1) {
-      toast.error('Enter the school/college name and number of students.');
-      return;
-    }
-    setInquiryLoading(true);
-    try {
-      const response = await fetch('/api/institution-plan-inquiry', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          institutionName,
-          institutionType,
-          studentCount: institutionCount,
-          planTier: institutionPlan,
-          billingCycle,
-          contactName,
-          contactEmail,
-          message: institutionMessage,
-        }),
-      });
-      const json = await response.json();
-      if (!response.ok) throw new Error(json.error || 'Inquiry could not be sent.');
-      toast.success('School/college inquiry sent to admin.');
-      window.sessionStorage.removeItem('ilm-ai-institution-inquiry-draft');
-      setInstitutionMessage('');
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Inquiry could not be sent.');
-    } finally {
-      setInquiryLoading(false);
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -314,114 +229,12 @@ export function SubscriptionPlans({
         })}
       </div>
 
-      {!paymentAvailability.consumptionOnly && (
-        <Card
-          id="institution-plans"
-          className="border-primary/25 from-primary/10 via-card to-accent/10 scroll-mt-24 overflow-hidden bg-gradient-to-br"
-        >
-          <CardContent className="p-6">
-            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-              <div>
-                <Badge className="bg-primary text-primary-foreground mb-3">Schools and Colleges</Badge>
-                <h2 className="flex items-center gap-2 text-xl font-bold">
-                  <Building2 className="text-primary h-5 w-5" /> Institutional plans
-                </h2>
-                <p className="text-muted-foreground mt-2 max-w-2xl text-sm">
-                  Select the number of students in your school or college. Pro and Elite are available at a 50%
-                  per-student discount with a direct admin inquiry.
-                </p>
-              </div>
-              <div className="border-primary/20 bg-background/60 rounded-xl border px-4 py-3 text-right">
-                <p className="text-muted-foreground text-xs">Estimated total</p>
-                <p className="text-primary text-2xl font-bold">
-                  {symbol}
-                  {formatPrice(institutionDiscountedPrice, currency)}
-                </p>
-                <p className="text-muted-foreground text-xs">50% discounted, {billingCycle}</p>
-                <p className="text-muted-foreground mt-1 text-xs">
-                  +{usdSymbol}
-                  {TRANSACTION_FEE_USD.toFixed(2)} transaction fee ({pkrSymbol}
-                  {formatPrice(feePkr, 'PKR')})
-                </p>
-              </div>
-            </div>
-            <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <div>
-                <label className="mb-2 block text-sm font-medium">Institution type</label>
-                <Select value={institutionType} onValueChange={(value) => setInstitutionType(value as InstitutionType)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="school">School</SelectItem>
-                    <SelectItem value="college">College</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="mb-2 block text-sm font-medium">Paid plan</label>
-                <Select value={institutionPlan} onValueChange={(value) => setInstitutionPlan(value as InstitutionPlan)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PRO">Pro</SelectItem>
-                    <SelectItem value="ELITE">Elite</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="mb-2 block text-sm font-medium">Billing</label>
-                <Select value={billingCycle} onValueChange={(value) => setBillingCycle(value as BillingCycle)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                    <SelectItem value="annual">Yearly</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="mb-2 block text-sm font-medium">Number of students</label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={100000}
-                  value={studentCount}
-                  onChange={(event) => setStudentCount(event.target.value)}
-                />
-              </div>
-            </div>
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <Input
-                value={institutionName}
-                onChange={(event) => setInstitutionName(event.target.value)}
-                placeholder="School / college name"
-              />
-              <Input
-                value={contactName}
-                onChange={(event) => setContactName(event.target.value)}
-                placeholder="Contact person name"
-              />
-              <Input
-                type="email"
-                value={contactEmail}
-                onChange={(event) => setContactEmail(event.target.value)}
-                placeholder="Contact email"
-              />
-              <Input
-                value={institutionMessage}
-                onChange={(event) => setInstitutionMessage(event.target.value)}
-                placeholder="Message or preferred contact time (optional)"
-              />
-            </div>
-            <Button className="mt-5" variant="gradient" onClick={submitInstitutionInquiry} loading={inquiryLoading}>
-              Send inquiry to admin
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+      {/* Institutional plans (school/college inquiry) are intentionally NOT shown here — an
+          individual student/parent/teacher account has nothing to do with buying a school-wide
+          plan. That inquiry form still lives on the public marketing pricing page
+          (PricingSection) for prospective institution buyers, and real institution owners/admins
+          get the actual working checkout at /school-admin/settings or /college-admin/settings
+          (InstitutionPaymentCheckout) — not this generic per-user page. */}
     </div>
   );
 }

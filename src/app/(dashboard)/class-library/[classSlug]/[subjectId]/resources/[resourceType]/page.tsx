@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, ExternalLink, FileText } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { ArrowLeft, FileText } from 'lucide-react';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ClassLibraryResourceRow } from '@/components/features/class-library/ClassLibraryResourceRow';
 import { CLASS_LIBRARY_RESOURCE_TYPES, type ClassLibraryResourceType } from '@/lib/class-library/types';
 import { getClassLibraryClassBySlug, getClassLibrarySubjectById, getClassLibrarySubjectResources } from '@/lib/class-library/queries';
 
@@ -46,21 +46,13 @@ export default async function ClassLibraryResourceListPage({
       ) : (
         <div className="space-y-2">
           {resources.map((resource: any) => (
-            <Card key={resource.id}>
-              <CardContent className="flex items-center justify-between gap-3 p-4">
-                <span className="truncate text-sm font-medium">{resource.title}</span>
-                {resource.url && (
-                  <a
-                    href={resource.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-primary inline-flex shrink-0 items-center gap-1 text-xs font-semibold hover:underline"
-                  >
-                    Open <ExternalLink className="h-3.5 w-3.5" />
-                  </a>
-                )}
-              </CardContent>
-            </Card>
+            <ClassLibraryResourceRow
+              key={resource.id}
+              id={resource.id}
+              title={resource.title}
+              url={resource.url}
+              resourceType={resource.resource_type}
+            />
           ))}
         </div>
       )}

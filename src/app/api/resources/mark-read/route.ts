@@ -6,7 +6,10 @@ import type { ProtectedResourceKind } from '@/lib/resources/server';
 
 const KINDS = new Set<ProtectedResourceKind>(['library', 'past-paper', 'college-resource']);
 
-const RESOURCE_TABLES: Record<ProtectedResourceKind, string> = {
+// Class Library intentionally has no entry here — it has no resource_reads tracking or
+// "want to test yourself?" prompt wired up (its table has no subject_id/chapter_id to scope a
+// test from), so KINDS above never lets a 'class-library' kind reach this far.
+const RESOURCE_TABLES: Partial<Record<ProtectedResourceKind, string>> = {
   library: 'library_resources',
   'past-paper': 'past_papers',
   'college-resource': 'college_resources',
@@ -28,6 +31,9 @@ export async function POST(req: NextRequest) {
 
   const admin = createServiceClient() as any;
   const table = RESOURCE_TABLES[kind];
+  if (!table) {
+    return NextResponse.json({ status: 'error', error: 'The resource reference is invalid' }, { status: 400 });
+  }
   // Column shape differs per kind: college_resources has no subject_id/chapter_id
   // (scoped by stream/degree/semester instead), past_papers has no title.
   const selectColumns =

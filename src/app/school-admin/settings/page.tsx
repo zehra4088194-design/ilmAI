@@ -96,6 +96,11 @@ export default async function SchoolSettingsPage() {
             annualDiscountPercent={platformSettings.institutionPricing.annualDiscountPercent}
             volumeDiscountApplied={monthlyPricing.volumeDiscountApplied}
             defaultContactEmail={context.organization.email || ''}
+            currentStudentCount={studentCount}
+            volumeDiscountMinStudents={platformSettings.institutionPricing.volumeDiscountMinStudents}
+            volumeDiscountPercent={platformSettings.institutionPricing.volumeDiscountPercent}
+            baseMonthlyUsd={platformSettings.institutionPricing.school.monthlyUsd}
+            usdToPkr={platformSettings.exchangeRate.usdToPkr}
           />
         </CardContent>
       </Card>

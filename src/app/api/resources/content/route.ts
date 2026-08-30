@@ -43,13 +43,16 @@ async function respondWithResource(
   const kind = kindRaw as ProtectedResourceKind;
   const mode: ResourceMode = modeRaw === 'dark' ? 'dark' : 'light';
   const purpose = purposeRaw === 'offline' ? 'offline' : 'reader';
-  if ((kind !== 'library' && kind !== 'past-paper' && kind !== 'college-resource') || typeof idRaw !== 'string') {
+  if (
+    (kind !== 'library' && kind !== 'past-paper' && kind !== 'college-resource' && kind !== 'class-library') ||
+    typeof idRaw !== 'string'
+  ) {
     return NextResponse.json({ error: 'Invalid resource request.' }, { status: 400 });
   }
 
   const resource = user
     ? await getProtectedResource(user.id, kind, idRaw, mode)
-    : kind === 'library' || kind === 'past-paper'
+    : kind === 'library' || kind === 'past-paper' || kind === 'class-library'
       ? await getPublicResource(kind, idRaw, mode)
       : null;
   if (!resource) return NextResponse.json({ error: 'Resource is not available.' }, { status: 404 });

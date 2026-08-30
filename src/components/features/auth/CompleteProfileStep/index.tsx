@@ -124,16 +124,33 @@ function SchoolJoinStep({ onDone }: { onDone: () => void }) {
   );
 }
 
-export function CompleteProfileStep({ initialGender }: { initialGender: 'girl' | 'boy' | null }) {
+export function CompleteProfileStep({
+  initialGender,
+  skipWhoAmI = false,
+  initialUsername = '',
+  initialEducationLevel = 'school',
+  initialBoard = '',
+  initialGradeLevel = '',
+}: {
+  initialGender: 'girl' | 'boy' | null;
+  // True for anyone who signed up via the email/password RegisterForm wizard (role was an
+  // explicit choice there) — only a Google/OAuth sign-in (no role metadata at all) still needs to
+  // pick "who are you" here. See complete-profile/page.tsx for the exact detection.
+  skipWhoAmI?: boolean;
+  initialUsername?: string;
+  initialEducationLevel?: EducationLevel;
+  initialBoard?: string;
+  initialGradeLevel?: string;
+}) {
   const router = useRouter();
   const { setTheme } = useTheme();
   const [isPending, startTransition] = useTransition();
-  const [whoAmI, setWhoAmI] = useState<WhoAmI | null>(null);
-  const [educationLevel, setEducationLevel] = useState<EducationLevel>('school');
-  const [username, setUsername] = useState('');
+  const [whoAmI, setWhoAmI] = useState<WhoAmI | null>(skipWhoAmI ? 'student' : null);
+  const [educationLevel, setEducationLevel] = useState<EducationLevel>(initialEducationLevel);
+  const [username, setUsername] = useState(initialUsername);
   const [gender, setGender] = useState<'girl' | 'boy' | null>(initialGender);
-  const [board, setBoard] = useState('');
-  const [gradeLevel, setGradeLevel] = useState('');
+  const [board, setBoard] = useState(initialBoard);
+  const [gradeLevel, setGradeLevel] = useState(initialGradeLevel);
   const [scienceGroup, setScienceGroup] = useState<ScienceGroup | null>(null);
   const [stream, setStream] = useState<UniversityStream>('engineering');
   const [program, setProgram] = useState('');

@@ -66,9 +66,18 @@ export function HouseAdBanner({ slot, className = '' }: HouseAdBannerProps) {
   return (
     <div className={`overflow-hidden ${className}`}>
       <p className="text-[10px] text-muted-foreground text-center mb-1 select-none">Promoted</p>
-      <a href={banner.clickHref} className="block overflow-hidden rounded-lg" aria-label={banner.title}>
+      <a
+        href={banner.clickHref}
+        className="bg-muted/30 flex items-center justify-center overflow-hidden rounded-lg"
+        aria-label={banner.title}
+      >
+        {/* Capped height so a tall/square admin-uploaded image (a school logo, a portrait poster)
+            can never balloon into a huge block — it was rendered at `w-full` with no height limit
+            at all, so its NATURAL aspect ratio at full container width decided the height, and a
+            near-square image ended up hundreds of pixels tall. object-contain (not cover) keeps
+            the whole image visible either way, just letterboxed instead of stretched or cropped. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={banner.imageUrl} alt={banner.title} className="w-full object-cover" />
+        <img src={banner.imageUrl} alt={banner.title} className="max-h-28 w-full object-contain sm:max-h-36" />
       </a>
     </div>
   );

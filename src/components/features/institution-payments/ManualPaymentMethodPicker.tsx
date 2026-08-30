@@ -6,7 +6,13 @@ import { MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { PAYMENT_METHOD_LABELS, type PaymentMethod } from '@/lib/institution-payments/types';
 
-const METHODS: PaymentMethod[] = ['jazzcash', 'easypaisa', 'bank_transfer', 'card'];
+// Only JazzCash (scannable QR) and Card are actually offered — Easypaisa and
+// bank transfer were configured but never actually staffed/monitored, so they
+// were removed from every manual-payment screen (student/parent/teacher/
+// university plans, institution plans, and per-invoice fees) that shares this
+// component, rather than leaving dead options a payer could pick and then wait
+// forever for a claim that nobody reviews.
+const METHODS: PaymentMethod[] = ['jazzcash', 'card'];
 
 // Payment destination numbers/details are env-driven (master prompt Part 6.2
 // explicit ask: "do not hardcode literal numbers in source"), exposed via

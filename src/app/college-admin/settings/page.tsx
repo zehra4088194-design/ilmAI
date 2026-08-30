@@ -91,6 +91,11 @@ export default async function CollegeAdminSettingsPage() {
               annualDiscountPercent={platformSettings.institutionPricing.annualDiscountPercent}
               volumeDiscountApplied={monthlyPricing.volumeDiscountApplied}
               defaultContactEmail={newContext.organization.email || ''}
+              currentStudentCount={studentCount}
+              volumeDiscountMinStudents={platformSettings.institutionPricing.volumeDiscountMinStudents}
+              volumeDiscountPercent={platformSettings.institutionPricing.volumeDiscountPercent}
+              baseMonthlyUsd={platformSettings.institutionPricing.college.monthlyUsd}
+              usdToPkr={platformSettings.exchangeRate.usdToPkr}
             />
           </CardContent>
         </Card>
