@@ -15,8 +15,11 @@ export type BannerStats = {
  * One rollup pass over every banner: two queries total (impressions, clicks), aggregated in
  * memory — not one query per banner — so the admin dashboard never N+1s as the banner count grows.
  */
-export async function listBannersWithStats(range?: { from?: string; to?: string }): Promise<BannerStats[]> {
-  const banners = await listAllBanners();
+export async function listBannersWithStats(
+  range?: { from?: string; to?: string },
+  createdBy?: string
+): Promise<BannerStats[]> {
+  const banners = await listAllBanners(createdBy);
   if (!banners.length) return [];
 
   const supabase = createServiceClient();

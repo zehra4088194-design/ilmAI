@@ -45,7 +45,7 @@ export default async function PastPaperSubjectPage({ params }: { params: Promise
     <div className="mx-auto max-w-5xl space-y-6">
       <Link href="/past-papers" className="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 text-sm font-medium"><ArrowLeft className="h-4 w-4" />Back to subjects</Link>
       <section className="border-border/70 from-primary/15 via-card to-cyan-500/10 rounded-3xl border bg-gradient-to-br p-5 sm:p-7"><Badge>{subject?.name || 'General Papers'}</Badge><h1 className="mt-4 text-3xl font-bold">Choose a chapter or syllabus</h1><p className="text-muted-foreground mt-2">The next page will show paper files from the selected group only.</p></section>
-      <HouseAdBanner slot="content_inline" className="mx-auto max-w-5xl" />
+      <HouseAdBanner slot="content_inline" className="mx-auto max-w-5xl" categoryContext={subject?.name} />
       <div className="grid gap-4 sm:grid-cols-2">
         {[...groups.values()].map((group) => (
           <Link key={group.id} href={`/past-papers/${subjectSlug}/${group.slug}`} className="group block"><Card className="border-border/70 hover:border-primary/40 h-full transition-all group-hover:-translate-y-0.5 group-hover:shadow-lg"><CardContent className="flex items-center gap-4 p-5"><span className="bg-primary/10 text-primary flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"><Files className="h-5 w-5" /></span><div className="min-w-0 flex-1"><h2 className="font-semibold sm:text-lg">{group.name}</h2><p className="text-muted-foreground mt-1 text-sm">{group.papers.length} paper files</p></div><ArrowRight className="text-primary h-4 w-4 transition-transform group-hover:translate-x-1" /></CardContent></Card></Link>

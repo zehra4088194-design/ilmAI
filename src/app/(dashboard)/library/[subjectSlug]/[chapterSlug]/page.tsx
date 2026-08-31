@@ -139,7 +139,7 @@ export default async function LibraryChapterPage({
         <h1 className="mt-4 text-2xl font-bold sm:text-3xl">{chapter?.name || 'General Files'}</h1>
         <p className="text-muted-foreground mt-2">The next page will open only files from the section you select.</p>
       </div>
-      <HouseAdBanner slot="content_inline" className="mx-auto max-w-5xl" />
+      <HouseAdBanner slot="content_inline" className="mx-auto max-w-5xl" categoryContext={subject?.name} />
 
       {availableSections.length ? (
         <div className="grid gap-4 sm:grid-cols-2">

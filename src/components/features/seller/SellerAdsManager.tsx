@@ -9,17 +9,15 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AD_PLACEMENTS, AD_PLACEMENT_LABELS, AD_TARGET_AUDIENCES, type AdPlacement, type AdTargetAudience } from '@/lib/ads/constants';
-import { SellerEmailsCard } from './SellerEmailsCard';
-import { AdCategoriesCard } from './AdCategoriesCard';
+import {
+  AD_PLACEMENTS,
+  AD_PLACEMENT_LABELS,
+  AD_TARGET_AUDIENCES,
+  type AdPlacement,
+  type AdTargetAudience,
+} from '@/lib/ads/constants';
 import { CategoryPicker } from '@/components/features/ads/CategoryPicker';
 
 type AdBanner = {
@@ -37,8 +35,6 @@ type AdBanner = {
   createdAt: string;
   updatedAt: string;
 };
-
-type PlacementSetting = { placement: AdPlacement; isEnabled: boolean };
 
 type BannerStats = {
   banner: AdBanner;
@@ -60,12 +56,7 @@ const SORT_COLUMNS: { key: SortKey; label: string }[] = [
   { key: 'conversionRate', label: 'Conv. Rate' },
 ];
 
-// <input type="datetime-local"> has no timezone info — it's a naive wall-clock string. Reading
-// and writing it via `new Date(...)`/`getTimezoneOffset()` here (in the browser, where the
-// admin's actual local timezone is known) rather than sending/parsing it raw is what keeps
-// "Starts" 9:00 AM meaning 9:00 AM in the admin's own timezone. If the raw string were sent
-// as-is, the server (pinned to UTC in production) would parse "09:00" as 9 AM UTC instead —
-// silently shifting the schedule by the admin's UTC offset.
+// See the identical helpers in HouseAdsManager for why this conversion happens in the browser.
 function isoToDatetimeLocalValue(isoString: string): string {
   const date = new Date(isoString);
   if (Number.isNaN(date.getTime())) return '';
@@ -91,7 +82,12 @@ const EMPTY_FORM = {
   endsAt: '',
 };
 
-export function HouseAdsManager() {
+/**
+ * The /seller counterpart to HouseAdsManager — deliberately a separate, trimmed component rather
+ * than a shared one: no Placements toggles, no Sellers list, nothing platform-wide. Talks only to
+ * /api/seller/ads*, which itself only ever reads/writes banners this seller created.
+ */
+export function SellerAdsManager() {
   const [stats, setStats] = useState<BannerStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [from, setFrom] = useState('');
@@ -105,16 +101,13 @@ export function HouseAdsManager() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const [placements, setPlacements] = useState<PlacementSetting[]>([]);
-  const [placementsLoading, setPlacementsLoading] = useState(true);
-
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
       if (from) params.set('from', from);
       if (to) params.set('to', to);
-      const response = await fetch(`/api/admin/ads?${params.toString()}`);
+      const response = await fetch(`/api/seller/ads?${params.toString()}`);
       const json = await response.json();
       if (!response.ok) throw new Error(json.error || 'Banners could not be loaded.');
       setStats(json.banners || []);
@@ -125,44 +118,9 @@ export function HouseAdsManager() {
     }
   }, [from, to]);
 
-  const loadPlacements = useCallback(async () => {
-    setPlacementsLoading(true);
-    try {
-      const response = await fetch('/api/admin/ads/placements');
-      const json = await response.json();
-      if (!response.ok) throw new Error(json.error || 'Placements could not be loaded.');
-      setPlacements(json.placements || []);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Placements could not be loaded.');
-    } finally {
-      setPlacementsLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
     void load();
   }, [load]);
-
-  useEffect(() => {
-    void loadPlacements();
-  }, [loadPlacements]);
-
-  async function togglePlacement(placement: AdPlacement) {
-    const next = !placements.find((p) => p.placement === placement)?.isEnabled;
-    setPlacements((current) => current.map((p) => (p.placement === placement ? { ...p, isEnabled: next } : p)));
-    try {
-      const response = await fetch('/api/admin/ads/placements', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ placement, isEnabled: next }),
-      });
-      if (!response.ok) throw new Error();
-      toast.success(`${AD_PLACEMENT_LABELS[placement]} ${next ? 'enabled' : 'disabled'}.`);
-    } catch {
-      setPlacements((current) => current.map((p) => (p.placement === placement ? { ...p, isEnabled: !next } : p)));
-      toast.error('Placement could not be updated.');
-    }
-  }
 
   const sorted = useMemo(() => {
     const copy = [...stats];
@@ -218,8 +176,6 @@ export function HouseAdsManager() {
       body.set('title', form.title.trim());
       body.set('targetUrl', form.targetUrl.trim());
       body.set('placement', form.placement);
-      // A blank sentinel first — filtered out server-side — so the 'categories' key is always
-      // present, even when clearing every category down to none on an edit.
       body.append('categories', '');
       form.categories.forEach((category) => body.append('categories', category));
       body.set('targetAudience', form.targetAudience);
@@ -229,7 +185,7 @@ export function HouseAdsManager() {
       body.set('endsAt', datetimeLocalValueToIso(form.endsAt));
       if (imageFile) body.set('image', imageFile);
 
-      const response = await fetch(editing ? `/api/admin/ads/${editing.id}` : '/api/admin/ads', {
+      const response = await fetch(editing ? `/api/seller/ads/${editing.id}` : '/api/seller/ads', {
         method: editing ? 'PATCH' : 'POST',
         body,
       });
@@ -248,7 +204,7 @@ export function HouseAdsManager() {
 
   async function toggleActive(banner: AdBanner) {
     try {
-      const response = await fetch(`/api/admin/ads/${banner.id}`, {
+      const response = await fetch(`/api/seller/ads/${banner.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isActive: !banner.isActive }),
@@ -266,7 +222,7 @@ export function HouseAdsManager() {
   async function remove(banner: AdBanner) {
     if (!confirm(`Delete "${banner.title}"? Its click and impression history will also be deleted.`)) return;
     try {
-      const response = await fetch(`/api/admin/ads/${banner.id}`, { method: 'DELETE' });
+      const response = await fetch(`/api/seller/ads/${banner.id}`, { method: 'DELETE' });
       if (!response.ok) throw new Error('Delete failed.');
       setStats((current) => current.filter((row) => row.banner.id !== banner.id));
       toast.success('Banner deleted.');
@@ -277,35 +233,9 @@ export function HouseAdsManager() {
 
   return (
     <div className="space-y-6">
-      <SellerEmailsCard />
-      <AdCategoriesCard />
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Placements</CardTitle>
-          <p className="text-muted-foreground text-sm">
-            Turn a page&apos;s ad slot on or off without touching any code. A new page always ships enabled.
-          </p>
-        </CardHeader>
-        <CardContent>
-          {placementsLoading ? (
-            <p className="text-muted-foreground text-sm">Loading…</p>
-          ) : (
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {placements.map(({ placement, isEnabled }) => (
-                <label key={placement} className="border-border flex items-center gap-2 rounded-lg border p-2.5 text-sm">
-                  <Checkbox checked={isEnabled} onCheckedChange={() => void togglePlacement(placement)} />
-                  {AD_PLACEMENT_LABELS[placement]}
-                </label>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
       <Card>
         <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3">
-          <CardTitle>Banners</CardTitle>
+          <CardTitle>Your Banners</CardTitle>
           <div className="flex flex-wrap items-center gap-2">
             <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-9 w-auto" aria-label="From date" />
             <span className="text-muted-foreground text-sm">to</span>
@@ -408,13 +338,13 @@ export function HouseAdsManager() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="ad-title">Title (internal label)</Label>
-              <Input id="ad-title" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="e.g. ilmai.store back-to-school sale" />
+              <Label htmlFor="seller-ad-title">Title (internal label)</Label>
+              <Input id="seller-ad-title" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="e.g. Back-to-school sale" />
             </div>
             <div>
-              <Label htmlFor="ad-target-url">Target URL on ilmai.store</Label>
+              <Label htmlFor="seller-ad-target-url">Target URL on ilmai.store</Label>
               <Input
-                id="ad-target-url"
+                id="seller-ad-target-url"
                 value={form.targetUrl}
                 onChange={(e) => setForm((f) => ({ ...f, targetUrl: e.target.value }))}
                 placeholder="/promo/back-to-school or https://ilmai.store/promo/back-to-school"
@@ -426,9 +356,9 @@ export function HouseAdsManager() {
             <CategoryPicker selected={form.categories} onChange={(next) => setForm((f) => ({ ...f, categories: next }))} />
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <Label htmlFor="ad-placement">Placement</Label>
+                <Label htmlFor="seller-ad-placement">Placement</Label>
                 <Select value={form.placement} onValueChange={(value) => setForm((f) => ({ ...f, placement: value as AdPlacement }))}>
-                  <SelectTrigger id="ad-placement">
+                  <SelectTrigger id="seller-ad-placement">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -441,12 +371,12 @@ export function HouseAdsManager() {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="ad-audience">Audience</Label>
+                <Label htmlFor="seller-ad-audience">Audience</Label>
                 <Select
                   value={form.targetAudience || 'everyone'}
                   onValueChange={(value) => setForm((f) => ({ ...f, targetAudience: value === 'everyone' ? '' : (value as AdTargetAudience) }))}
                 >
-                  <SelectTrigger id="ad-audience">
+                  <SelectTrigger id="seller-ad-audience">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -462,16 +392,16 @@ export function HouseAdsManager() {
             </div>
             <div className="grid gap-4 sm:grid-cols-3">
               <div>
-                <Label htmlFor="ad-weight">Weight</Label>
-                <Input id="ad-weight" type="number" min={1} value={form.weight} onChange={(e) => setForm((f) => ({ ...f, weight: e.target.value }))} />
+                <Label htmlFor="seller-ad-weight">Weight</Label>
+                <Input id="seller-ad-weight" type="number" min={1} value={form.weight} onChange={(e) => setForm((f) => ({ ...f, weight: e.target.value }))} />
               </div>
               <div>
-                <Label htmlFor="ad-starts">Starts (optional)</Label>
-                <Input id="ad-starts" type="datetime-local" value={form.startsAt} onChange={(e) => setForm((f) => ({ ...f, startsAt: e.target.value }))} />
+                <Label htmlFor="seller-ad-starts">Starts (optional)</Label>
+                <Input id="seller-ad-starts" type="datetime-local" value={form.startsAt} onChange={(e) => setForm((f) => ({ ...f, startsAt: e.target.value }))} />
               </div>
               <div>
-                <Label htmlFor="ad-ends">Ends (optional)</Label>
-                <Input id="ad-ends" type="datetime-local" value={form.endsAt} onChange={(e) => setForm((f) => ({ ...f, endsAt: e.target.value }))} />
+                <Label htmlFor="seller-ad-ends">Ends (optional)</Label>
+                <Input id="seller-ad-ends" type="datetime-local" value={form.endsAt} onChange={(e) => setForm((f) => ({ ...f, endsAt: e.target.value }))} />
               </div>
             </div>
             <label className="flex items-center gap-2 text-sm">

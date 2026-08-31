@@ -147,7 +147,7 @@ export default async function LibraryBookPage({
           </div>
         </div>
       </section>
-      <HouseAdBanner slot="content_inline" className="mx-auto max-w-5xl" />
+      <HouseAdBanner slot="content_inline" className="mx-auto max-w-5xl" categoryContext={subject?.name} />
 
       {chapters.length ? (
         <div className="grid gap-4 md:grid-cols-2">

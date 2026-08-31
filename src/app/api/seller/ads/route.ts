@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdminUser } from '@/lib/admin/auth';
+import { requireSellerUser } from '@/lib/ads/seller-auth';
 import { createServiceClient } from '@/lib/supabase/service';
 import { listBannersWithStats } from '@/lib/ads/admin-queries';
 import { saveAdBannerImage, deleteAdBannerImage } from '@/lib/ads/storage';
@@ -25,24 +25,26 @@ function parseDate(value: FormDataEntryValue | null) {
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
-// Up to 3 — admin/seller pick from the managed ad_categories list, never free-type; the DB check
-// constraint enforces the cap too, this just avoids a wasted round trip for an over-long list.
+// Sellers pick from the admin-managed ad_categories list, never free-type — up to 3.
 function parseCategories(form: FormData) {
   return [...new Set(form.getAll('categories').map((v) => String(v).trim()).filter(Boolean))].slice(0, 3);
 }
 
+// Everything here is scoped to the seller's own banners only (created_by = seller.id) — a seller
+// never sees another seller's, or the platform's own, banners or stats.
 export async function GET(req: NextRequest) {
-  if (!(await requireAdminUser())) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  const seller = await requireSellerUser();
+  if (!seller) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const from = req.nextUrl.searchParams.get('from') || undefined;
   const to = req.nextUrl.searchParams.get('to') || undefined;
-  const stats = await listBannersWithStats({ from, to });
+  const stats = await listBannersWithStats({ from, to }, seller.id);
   return NextResponse.json({ banners: stats });
 }
 
 export async function POST(req: NextRequest) {
-  const admin = await requireAdminUser();
-  if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  const seller = await requireSellerUser();
+  if (!seller) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   try {
     const form = await req.formData();
@@ -84,7 +86,7 @@ export async function POST(req: NextRequest) {
         is_active: isActive,
         starts_at: startsAt,
         ends_at: endsAt,
-        created_by: admin.id,
+        created_by: seller.id,
       })
       .select('*')
       .single();

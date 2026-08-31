@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import type { QuizSession } from '@/types';
 import { useAuthStore } from '@/store/auth.store';
+import { HouseAdBanner } from '@/components/features/ads/HouseAdBanner';
 
 export function QuizResult({ session, onRetry }: { session: QuizSession; onRetry: () => void }) {
   const updateUser = useAuthStore((state) => state.updateUser);
@@ -64,6 +65,7 @@ export function QuizResult({ session, onRetry }: { session: QuizSession; onRetry
           </CardContent>
         </Card>
       </div>
+      <HouseAdBanner slot="quiz_results" className="mx-auto mb-6 max-w-md" />
       <div className="flex justify-center gap-3">
         <Button variant="outline" onClick={onRetry}>
           <RotateCcw className="h-4 w-4" />

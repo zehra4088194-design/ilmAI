@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import type { ProtectedResourceKind } from '@/lib/resources/server';
+import { HouseAdBanner } from '@/components/features/ads/HouseAdBanner';
 
 type StoredMcq = { q?: string; opts?: string[]; correct?: number; exp?: string };
 
@@ -65,6 +66,7 @@ export function ResourceQuizClient({ kind, resourceId }: { kind: ProtectedResour
       <Button variant="ghost" size="sm" onClick={() => router.back()}>
         <ArrowLeft className="h-4 w-4" /> Back to file
       </Button>
+      <HouseAdBanner slot="test_taking" />
 
       {loading ? (
         <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3">

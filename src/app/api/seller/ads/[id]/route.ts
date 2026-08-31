@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdminUser } from '@/lib/admin/auth';
+import { requireSellerUser } from '@/lib/ads/seller-auth';
 import { createServiceClient } from '@/lib/supabase/service';
 import { saveAdBannerImage, deleteAdBannerImage } from '@/lib/ads/storage';
 import { AD_PLACEMENTS, AD_TARGET_AUDIENCES, isAdPlacement } from '@/lib/ads/constants';
@@ -23,16 +23,17 @@ function parseCategoriesField(values: unknown[]) {
   return [...new Set(values.map((v) => String(v).trim()).filter(Boolean))].slice(0, 3);
 }
 
-// Accepts either multipart/form-data (full edit, optionally replacing the image) or JSON (quick
-// actions like pause/resume or a weight tweak) — both land on the same partial-update shape.
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  if (!(await requireAdminUser())) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  const seller = await requireSellerUser();
+  if (!seller) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const { id } = await params;
   const supabase = createServiceClient();
 
   const { data: existing, error: fetchError } = await supabase.from('ad_banners').select('*').eq('id', id).maybeSingle();
   if (fetchError) return NextResponse.json({ error: fetchError.message }, { status: 400 });
   if (!existing) return NextResponse.json({ error: 'Banner not found.' }, { status: 404 });
+  // A seller can only ever touch a banner they created — never another seller's or admin's.
+  if (existing.created_by !== seller.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const contentType = req.headers.get('content-type') || '';
   const updates: Record<string, unknown> = {};
@@ -106,8 +107,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  // Replaced image — the old file is now orphaned in storage; clean it up now that the row
-  // committed to the new one.
   if (newImageUrl && existing.image_url && existing.image_url !== newImageUrl) {
     await deleteAdBannerImage(existing.image_url);
   }
@@ -116,14 +115,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  if (!(await requireAdminUser())) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  const seller = await requireSellerUser();
+  if (!seller) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const { id } = await params;
   const supabase = createServiceClient();
 
-  const { data: existing } = await supabase.from('ad_banners').select('image_url').eq('id', id).maybeSingle();
+  const { data: existing } = await supabase.from('ad_banners').select('created_by, image_url').eq('id', id).maybeSingle();
+  if (!existing) return NextResponse.json({ error: 'Banner not found.' }, { status: 404 });
+  if (existing.created_by !== seller.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
   const { error } = await supabase.from('ad_banners').delete().eq('id', id);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
-  if (existing?.image_url) await deleteAdBannerImage(existing.image_url);
+  if (existing.image_url) await deleteAdBannerImage(existing.image_url);
   return NextResponse.json({ success: true });
 }

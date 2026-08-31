@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { selectActiveBanner } from '@/lib/ads/queries';
+import { isPlacementEnabled, selectActiveBanners } from '@/lib/ads/queries';
 import { isAdPlacement } from '@/lib/ads/constants';
 
 export const runtime = 'nodejs';
@@ -11,6 +11,10 @@ export async function GET(req: NextRequest) {
   const slot = req.nextUrl.searchParams.get('slot');
   if (!isAdPlacement(slot)) {
     return NextResponse.json({ error: 'Unknown ad placement.' }, { status: 400 });
+  }
+
+  if (!(await isPlacementEnabled(slot))) {
+    return NextResponse.json({ banners: [] });
   }
 
   const supabase = await createClient();
@@ -29,22 +33,22 @@ export async function GET(req: NextRequest) {
     // wasted space for a paying user. A guest (no profile at all) is treated as FREE, same as
     // every other FREE-gated feature in the app.
     if (profile?.subscription_tier === 'PRO' || profile?.subscription_tier === 'ELITE') {
-      return NextResponse.json({ banner: null });
+      return NextResponse.json({ banners: [] });
     }
     audience = profile?.role || null;
   }
 
-  const banner = await selectActiveBanner(slot, audience);
-  if (!banner) return NextResponse.json({ banner: null });
+  const category = req.nextUrl.searchParams.get('category');
+  const banners = await selectActiveBanners(slot, audience, category);
 
-  // Only the fields the banner needs to render — target_url stays server-side; the client
+  // Only the fields the carousel needs to render — target_url stays server-side; the client
   // always links through /api/ads/click/[id] so a click_id can be minted before redirecting.
   return NextResponse.json({
-    banner: {
+    banners: banners.map((banner) => ({
       id: banner.id,
       title: banner.title,
       imageUrl: banner.imageUrl,
       clickHref: `/api/ads/click/${banner.id}`,
-    },
+    })),
   });
 }

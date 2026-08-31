@@ -32,7 +32,12 @@ async function respondWithResource(
   kindRaw: unknown,
   idRaw: unknown,
   modeRaw: unknown,
-  purposeRaw: unknown
+  purposeRaw: unknown,
+  // Forwarded verbatim from the incoming request's Range header (GET/reader path only — see
+  // below). Passing it all the way down to fetchProtectedFile is what lets pdf.js pull just the
+  // bytes of the page it needs from B2/Drive on a page jump, instead of always streaming the
+  // file from byte 0 — the on-demand, Google-Drive-style loading this route exists for.
+  range?: string | null
 ) {
   if (!sameOrigin(req)) return NextResponse.json({ error: 'Invalid request origin.' }, { status: 403 });
   const supabase = await createClient();
@@ -63,14 +68,21 @@ async function respondWithResource(
     }
   }
 
-  const remote = await fetchProtectedFile(resource);
+  const remote = await fetchProtectedFile(resource, range);
   if (!remote.body) throw new Error('Resource stream is empty.');
   const remoteContentType = remote.headers.get('content-type')?.toLowerCase() || '';
   const contentType =
     resource.fileType === 'pdf' && (!remoteContentType || remoteContentType === 'application/octet-stream')
       ? 'application/pdf'
       : remoteContentType || 'application/octet-stream';
+  const contentLength = remote.headers.get('content-length');
+  const contentRange = remote.headers.get('content-range');
+  const isPartial = remote.status === 206 && Boolean(contentRange);
   return new NextResponse(remote.body, {
+    // 206 + Content-Range only when the upstream (B2/Drive) actually honored our Range request —
+    // fetchProtectedFile already falls back to a plain 200/full-body Response otherwise, so this
+    // just mirrors whatever it decided rather than re-deciding it here.
+    status: isPartial ? 206 : 200,
     headers: {
       'Content-Type': contentType,
       'Content-Disposition': 'inline',
@@ -78,6 +90,12 @@ async function respondWithResource(
       Pragma: 'no-cache',
       'X-Content-Type-Options': 'nosniff',
       'X-Frame-Options': 'SAMEORIGIN',
+      // Advertised on every response (not just partial ones) so pdf.js's network transport knows
+      // up front that a follow-up range request is worth trying, instead of assuming a plain
+      // sequential-only server and downloading start-to-finish regardless of which page is needed.
+      'Accept-Ranges': 'bytes',
+      ...(contentLength ? { 'Content-Length': contentLength } : {}),
+      ...(isPartial && contentRange ? { 'Content-Range': contentRange } : {}),
     },
   });
 }
@@ -110,7 +128,8 @@ export async function GET(req: NextRequest) {
       searchParams.get('kind'),
       searchParams.get('id'),
       searchParams.get('mode'),
-      'reader'
+      'reader',
+      req.headers.get('range')
     );
   } catch (error) {
     console.error('Protected resource stream failed:', error);

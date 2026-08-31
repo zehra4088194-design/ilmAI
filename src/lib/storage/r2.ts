@@ -250,12 +250,44 @@ async function fetchWithRetry(url: string, timeoutMs: number) {
   throw lastError;
 }
 
-export async function getR2ObjectStream(key: string, timeoutMs = 90_000, bucket?: string) {
+// `range` is a raw HTTP Range header value (e.g. "bytes=1048576-2097151"), forwarded verbatim to
+// the presigned URL fetch — B2/R2 (S3-compatible) honors Range on GetObject exactly like any other
+// HTTP file server, responding 206 Partial Content with Content-Range when it's satisfiable. This
+// is what lets pdf.js fetch just the bytes of the page(s) it needs (its xref/page-lookup fetches
+// first, then only the requested page's object bytes) instead of always pulling the whole file —
+// the on-demand, jump-to-any-page behavior this was built for. fetchWithRetry's blanket "retry
+// unless 404/403/ok" already treats 206 as ok (response.ok is true for any 2xx), so no change
+// needed there.
+async function fetchWithRetryRanged(url: string, timeoutMs: number, range?: string) {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= R2_FETCH_RETRIES; attempt++) {
+    try {
+      const result = await fetch(url, {
+        method: 'GET',
+        cache: 'no-store',
+        headers: range ? { Range: range } : undefined,
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+      if (result.status === 404 || result.status === 403 || result.ok) return result;
+      lastError = new Error(`Signed object fetch failed (${result.status}).`);
+    } catch (error) {
+      lastError = error;
+    }
+    if (attempt < R2_FETCH_RETRIES) {
+      await new Promise((resolve) => setTimeout(resolve, R2_FETCH_RETRY_DELAY_MS * (attempt + 1)));
+    }
+  }
+  throw lastError;
+}
+
+export async function getR2ObjectStream(key: string, timeoutMs = 90_000, bucket?: string, range?: string) {
   const config = resolveConfig(bucket);
   if (!config) return null;
   try {
     const signedUrl = await getR2SignedUrl(key, R2_SIGNED_URL_TTL_SECONDS, bucket);
-    const result = await fetchWithRetry(signedUrl, timeoutMs);
+    const result = range
+      ? await fetchWithRetryRanged(signedUrl, timeoutMs, range)
+      : await fetchWithRetry(signedUrl, timeoutMs);
     if (result.status === 404 || result.status === 403) return null;
     if (!result.ok) throw new Error(`Signed object fetch failed (${result.status}).`);
     if (!result.body) throw new Error('Signed object response had no body.');
@@ -263,6 +295,12 @@ export async function getR2ObjectStream(key: string, timeoutMs = 90_000, bucket?
       body: result.body,
       contentType: result.headers.get('content-type') || 'application/octet-stream',
       contentLength: Number(result.headers.get('content-length') || 0) || null,
+      // 206 only when B2 actually honored our Range header — a range request against a backend
+      // that ignores Range silently comes back 200 with the full body, and the caller needs to
+      // know that happened (it can't treat the body as "just the requested slice" in that case).
+      status: result.status,
+      contentRange: result.headers.get('content-range'),
+      acceptRanges: result.headers.get('accept-ranges'),
     };
   } catch (error: any) {
     const status = error?.$metadata?.httpStatusCode;

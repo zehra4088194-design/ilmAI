@@ -19,6 +19,7 @@ import { ParentConnectPrompt } from '@/components/features/parent/ParentConnectP
 import { InstallAppButton } from '@/components/features/dashboard/InstallAppButton';
 import { StudyBuddyCard } from '@/components/features/dashboard/StudyBuddyCard';
 import { ReferralCard } from '@/components/features/dashboard/ReferralCard';
+import { HouseAdBanner } from '@/components/features/ads/HouseAdBanner';
 
 export const metadata: Metadata = { title: 'Dashboard' };
 
@@ -41,6 +42,7 @@ export default async function DashboardPage() {
     return (
       <div className="space-y-6">
         <InstallAppButton />
+        <HouseAdBanner slot="dashboard_top" />
         {!approvedParentLink && <ParentConnectPrompt />}
         <UniversityDashboard profile={profile} />
       </div>
@@ -145,6 +147,7 @@ export default async function DashboardPage() {
           </Button>
         </div>
       )}
+      <HouseAdBanner slot="dashboard_top" />
       <WelcomeSection
         name={profile?.full_name || 'Student'}
         streak={profile?.streak || 0}

@@ -322,21 +322,36 @@ export async function getPublicResource(
   };
 }
 
-export async function fetchProtectedFile(resource: ProtectedResource) {
+// True only for a Range header that starts at byte 0 (or is absent entirely) — the only case
+// where the response body's first bytes are actually the file's first bytes, so the "%PDF-"
+// signature check below is meaningful. A range like "bytes=524288-1048575" (pdf.js fetching a
+// page in the middle of the document) starts mid-file; there is nothing to check a signature
+// against, and treating those bytes as if they should start with "%PDF-" would reject every
+// valid mid-file range request.
+function rangeStartsAtZero(range?: string | null) {
+  if (!range) return true;
+  const match = range.match(/^bytes=0-/);
+  return Boolean(match);
+}
+
+export async function fetchProtectedFile(resource: ProtectedResource, range?: string | null) {
   if (resource.sourceUrl.startsWith('r2://')) {
     const parsed = parseR2Uri(resource.sourceUrl);
     if (!parsed) throw new Error('Invalid stored PDF path.');
-    const storedFile = await getR2ObjectStream(parsed.key, undefined, parsed.bucket);
+    const storedFile = await getR2ObjectStream(parsed.key, undefined, parsed.bucket, range || undefined);
     if (!storedFile) throw new Error('Stored PDF file is missing.');
     if (storedFile.contentLength && storedFile.contentLength > MAX_PROTECTED_RESOURCE_BYTES) {
       throw new Error('Resource is larger than the 125MB reader limit.');
     }
+    const isPartial = storedFile.status === 206 && Boolean(storedFile.contentRange);
     // Peek only the first chunk to confirm the PDF signature, then stream the rest straight
     // through untouched — this is what lets the reader start receiving pages immediately instead
-    // of waiting for the entire file to land on the server first (see getR2ObjectStream).
+    // of waiting for the entire file to land on the server first (see getR2ObjectStream). Skipped
+    // for a range that doesn't start at byte 0 — see rangeStartsAtZero.
     const reader = storedFile.body.getReader();
+    const shouldCheckSignature = resource.fileType === 'pdf' && rangeStartsAtZero(isPartial ? range : null);
     const { done, value: firstChunk } = await reader.read();
-    if (resource.fileType === 'pdf') {
+    if (shouldCheckSignature) {
       const signature = new TextDecoder().decode((firstChunk || new Uint8Array()).slice(0, PDF_MAGIC_BYTES.length));
       if (signature !== PDF_MAGIC_BYTES) {
         throw new Error('Stored PDF object is not a PDF file. Check the bucket object key/content.');
@@ -365,25 +380,38 @@ export async function fetchProtectedFile(resource: ProtectedResource) {
       },
     });
     return new Response(passthrough, {
-      headers: { 'content-type': storedFile.contentType || 'application/pdf' },
+      status: isPartial ? 206 : 200,
+      headers: {
+        'content-type': storedFile.contentType || 'application/pdf',
+        'accept-ranges': 'bytes',
+        ...(storedFile.contentLength ? { 'content-length': String(storedFile.contentLength) } : {}),
+        ...(isPartial && storedFile.contentRange ? { 'content-range': storedFile.contentRange } : {}),
+      },
     });
   }
 
   const requestInit: RequestInit = {
     redirect: 'follow',
     cache: 'no-store',
-    headers: { 'user-agent': 'ilm-ai-protected-reader/1.0' },
+    headers: {
+      'user-agent': 'ilm-ai-protected-reader/1.0',
+      // Best-effort — Google's Drive download servers generally honor Range too, so a page-jump
+      // in a Drive-hosted PDF gets the same on-demand fetch instead of always pulling the whole
+      // file. If Drive (or a redirect target that isn't Drive) ignores it, the response just
+      // comes back 200 with the full body and the code below falls back to that transparently.
+      ...(range ? { range } : {}),
+    },
     signal: AbortSignal.timeout(45_000),
   };
   let response = await fetch(safeRemoteUrl(resource.sourceUrl), requestInit);
-  if (!response.ok) throw new Error(`Resource fetch failed (${response.status}).`);
+  if (!response.ok && response.status !== 206) throw new Error(`Resource fetch failed (${response.status}).`);
 
   const contentType = response.headers.get('content-type')?.toLowerCase() || '';
   if (contentType.includes('text/html') && isGoogleDriveDownloadUrl(response.url)) {
     const confirmationUrl = getGoogleDriveConfirmationUrl(response, await response.text());
     if (!confirmationUrl) throw new Error('Google Drive requires a download confirmation that could not be resolved.');
     response = await fetch(confirmationUrl, requestInit);
-    if (!response.ok) throw new Error(`Resource fetch failed (${response.status}).`);
+    if (!response.ok && response.status !== 206) throw new Error(`Resource fetch failed (${response.status}).`);
   }
 
   if (response.headers.get('content-type')?.toLowerCase().includes('text/html')) {
@@ -395,14 +423,23 @@ export async function fetchProtectedFile(resource: ProtectedResource) {
   if (contentLength > MAX_PROTECTED_RESOURCE_BYTES) {
     throw new Error('Resource is larger than the 125MB reader limit.');
   }
+  const isPartial = response.status === 206 && Boolean(response.headers.get('content-range'));
   if (resource.fileType === 'pdf') {
     // Streams progressively now (see peekAndPassthroughPdf) — the one tradeoff versus the old
     // fully-buffered version is that a bad signature/oversize error surfaces as a mid-stream abort
     // rather than a clean pre-flight error response, since the HTTP response has already started
     // by the time the first chunk is checked. Acceptable: that's an admin content-configuration
-    // mistake (wrong file linked), not a normal user-facing path.
-    return new Response(peekAndPassthroughPdf(response), {
-      headers: { 'content-type': 'application/pdf' },
+    // mistake (wrong file linked), not a normal user-facing path. Skipped entirely for a
+    // mid-file range response — see rangeStartsAtZero.
+    const body = rangeStartsAtZero(isPartial ? range : null) ? peekAndPassthroughPdf(response) : response.body!;
+    return new Response(body, {
+      status: isPartial ? 206 : 200,
+      headers: {
+        'content-type': 'application/pdf',
+        'accept-ranges': 'bytes',
+        ...(contentLength ? { 'content-length': String(contentLength) } : {}),
+        ...(isPartial ? { 'content-range': response.headers.get('content-range')! } : {}),
+      },
     });
   }
   return response;
