@@ -412,6 +412,7 @@ async function createCollegeEnrollmentRecord(
 export async function enrollCollegeStudent(_state: CollegeActionState, formData: FormData): Promise<CollegeActionState> {
   try {
     const studentEmail = text(formData, 'student_email').toLowerCase();
+    const studentName = optionalText(formData, 'student_name');
     const sectionId = text(formData, 'section_id');
     const academicYearId = text(formData, 'academic_year_id');
     const registrationNumber = text(formData, 'registration_number');
@@ -419,8 +420,12 @@ export async function enrollCollegeStudent(_state: CollegeActionState, formData:
       throw new Error('Student email, section, academic year, and registration number are required.');
     }
     const { db, context } = await mutationContext('admissions.manage', 'enrollment', 'people');
-    const { data: profile } = await db.from('profiles').select('id').eq('email', studentEmail).maybeSingle();
-    if (!profile) throw new Error('The student must register an ilm AI account first.');
+    // Same reasoning as school-erp's enrollStudent — a new admission has never touched ilm AI
+    // yet, so this invites them instead of requiring them to self-register first.
+    const profile = await inviteOrFindProfileId(studentEmail, {
+      fullNameHint: studentName || undefined,
+      profileRole: 'student',
+    });
     await createCollegeEnrollmentRecord(db, context, {
       profileId: profile.id,
       sectionId,
@@ -428,7 +433,10 @@ export async function enrollCollegeStudent(_state: CollegeActionState, formData:
       registrationNumber,
       rollNumber: optionalText(formData, 'roll_number'),
     });
-    return done('/college-admin/people', 'Student enrolled.');
+    return done(
+      '/college-admin/people',
+      profile.invited ? `Student enrolled — an invite email was sent to ${studentEmail}.` : 'Student enrolled.'
+    );
   } catch (error) {
     return failure(error);
   }

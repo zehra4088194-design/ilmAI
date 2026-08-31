@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Upload } from 'lucide-react';
+import { GraduationCap, Upload, UserPlus, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { SchoolActionForm } from '@/components/features/school-erp/SchoolActionForm';
@@ -43,35 +43,49 @@ export default async function SchoolPeoplePage() {
       {(canManage || canEnroll) && (
         <div className="grid gap-5 xl:grid-cols-3">
           {canManage && (
-            <Card>
+            <Card className="border-violet-500/25 bg-violet-500/5">
               <CardHeader>
-                <CardTitle className="text-base">Add member</CardTitle>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/15 text-violet-500">
+                    <UserPlus className="h-4 w-4" />
+                  </span>
+                  Add teacher / staff
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <SchoolActionForm action={addSchoolMember} submitLabel="Add member">
-                  <Input name="email" type="email" placeholder="Registered account email" required />
+                <SchoolActionForm action={addSchoolMember} submitLabel="Add teacher / staff">
+                  <Input name="email" type="email" placeholder="Their email address" required />
                   <select name="member_role" className={selectClass} required>
                     <option value="">Role</option>
-                    {['admin', 'admissions', 'teacher', 'staff', 'accountant'].map((role) => (
-                      <option key={role} value={role}>
+                    {['teacher', 'staff', 'accountant', 'admissions', 'admin'].map((role) => (
+                      <option key={role} value={role} className="capitalize">
                         {role}
                       </option>
                     ))}
                   </select>
-                  <Input name="designation" placeholder="Designation" />
-                  <Input name="employee_code" placeholder="Employee code" />
+                  <Input name="designation" placeholder="Designation (optional)" />
+                  <Input name="employee_code" placeholder="Employee code (optional)" />
                 </SchoolActionForm>
+                <p className="text-muted-foreground mt-3 text-xs">
+                  No account yet? They&apos;ll get an email to set a password — no need to sign up first.
+                </p>
               </CardContent>
             </Card>
           )}
           {canEnroll && (
-            <Card>
+            <Card className="border-emerald-500/25 bg-emerald-500/5">
               <CardHeader>
-                <CardTitle className="text-base">Enroll student</CardTitle>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-500">
+                    <GraduationCap className="h-4 w-4" />
+                  </span>
+                  Add student
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <SchoolActionForm action={enrollStudent} submitLabel="Enroll student">
-                  <Input name="student_email" type="email" placeholder="Registered student email" required />
+                <SchoolActionForm action={enrollStudent} submitLabel="Add student">
+                  <Input name="student_name" placeholder="Student's full name" />
+                  <Input name="student_email" type="email" placeholder="Their email address" required />
                   <select name="academic_year_id" className={selectClass} required>
                     <option value="">Academic year</option>
                     {data.years.map((item: any) => (
@@ -81,7 +95,7 @@ export default async function SchoolPeoplePage() {
                     ))}
                   </select>
                   <select name="section_id" className={selectClass} required>
-                    <option value="">Section</option>
+                    <option value="">Class / section</option>
                     {data.sections.map((item: any) => (
                       <option key={item.id} value={item.id}>
                         {item.school_classes?.name} - {item.name}
@@ -90,16 +104,25 @@ export default async function SchoolPeoplePage() {
                   </select>
                   <div className="grid grid-cols-2 gap-3">
                     <Input name="admission_number" placeholder="Admission no." required />
-                    <Input name="roll_number" placeholder="Roll no." />
+                    <Input name="roll_number" placeholder="Roll no. (optional)" />
                   </div>
                 </SchoolActionForm>
+                <p className="text-muted-foreground mt-3 text-xs">
+                  New to ilm AI? That&apos;s fine — an account is created automatically and they get an email to set
+                  a password.
+                </p>
               </CardContent>
             </Card>
           )}
           {canManage && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Link guardian</CardTitle>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <span className="bg-muted text-muted-foreground flex h-8 w-8 items-center justify-center rounded-lg">
+                    <Users className="h-4 w-4" />
+                  </span>
+                  Link guardian
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <SchoolActionForm action={linkGuardian} submitLabel="Link guardian">

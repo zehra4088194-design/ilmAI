@@ -397,6 +397,7 @@ async function createEnrollmentRecord(
 export async function enrollStudent(_state: SchoolActionState, formData: FormData): Promise<SchoolActionState> {
   try {
     const studentEmail = text(formData, 'student_email').toLowerCase();
+    const studentName = optionalText(formData, 'student_name');
     const sectionId = text(formData, 'section_id');
     const academicYearId = text(formData, 'academic_year_id');
     const admissionNumber = text(formData, 'admission_number');
@@ -404,8 +405,15 @@ export async function enrollStudent(_state: SchoolActionState, formData: FormDat
       throw new Error('Student email, section, academic year, and admission number are required.');
     }
     const { db, context } = await mutationContext('admissions.manage', 'enrollment', 'people');
-    const { data: profile } = await db.from('profiles').select('id').eq('email', studentEmail).maybeSingle();
-    if (!profile) throw new Error('The student must register an ilm AI account first.');
+    // A brand-new admission has never touched ilm AI before — used to require the student to
+    // self-register FIRST with this exact email before a principal could enroll them at all,
+    // which is backwards for how a school actually admits students. Same invite-or-find pattern
+    // addSchoolMember already uses for staff: an unrecognized email gets a real account created
+    // and a "set your password" email sent immediately, so enrollment never blocks on that.
+    const profile = await inviteOrFindProfileId(studentEmail, {
+      fullNameHint: studentName || undefined,
+      profileRole: 'student',
+    });
     await createEnrollmentRecord(db, context, {
       profileId: profile.id,
       sectionId,
@@ -413,7 +421,10 @@ export async function enrollStudent(_state: SchoolActionState, formData: FormDat
       admissionNumber,
       rollNumber: optionalText(formData, 'roll_number'),
     });
-    return done('/school-admin/people', 'Student enrolled.');
+    return done(
+      '/school-admin/people',
+      profile.invited ? `Student enrolled — an invite email was sent to ${studentEmail}.` : 'Student enrolled.'
+    );
   } catch (error) {
     return failure(error);
   }

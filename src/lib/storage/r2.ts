@@ -193,7 +193,11 @@ export async function getR2Object(key: string, bucket?: string) {
   try {
     const signedUrl = await getR2SignedUrl(key, R2_SIGNED_URL_TTL_SECONDS, bucket);
     const result = await fetchWithRetry(signedUrl, 90_000);
-    if (result.status === 404) return null;
+    // B2 (our R2-compatible backend) returns 403, not 404, for a presigned URL pointing at a key
+    // that no longer exists — it doesn't reveal object existence to an unauthenticated signed
+    // request the way S3 does. Without this, every stale reference (a deleted/rotated ad banner,
+    // a since-removed upload) surfaced as an unhandled 500 instead of the "not found" it actually is.
+    if (result.status === 404 || result.status === 403) return null;
     if (!result.ok) throw new Error(`Signed object fetch failed (${result.status}).`);
     const bytes = await result.arrayBuffer();
     return {
@@ -231,9 +235,10 @@ async function fetchWithRetry(url: string, timeoutMs: number) {
   for (let attempt = 0; attempt <= R2_FETCH_RETRIES; attempt++) {
     try {
       const result = await fetch(url, { method: 'GET', cache: 'no-store', signal: AbortSignal.timeout(timeoutMs) });
-      // A 404 is a real "the file isn't there" answer, not a transient failure — retrying it
-      // wastes time and can never succeed, so it's returned immediately instead of retried.
-      if (result.status === 404 || result.ok) return result;
+      // A 404 (or a 403, which is what B2 returns for a presigned URL over a key that no longer
+      // exists — see getR2Object) is a real "the file isn't there" answer, not a transient
+      // failure — retrying it wastes time and can never succeed, so it's returned immediately.
+      if (result.status === 404 || result.status === 403 || result.ok) return result;
       lastError = new Error(`Signed object fetch failed (${result.status}).`);
     } catch (error) {
       lastError = error;
@@ -251,7 +256,7 @@ export async function getR2ObjectStream(key: string, timeoutMs = 90_000, bucket?
   try {
     const signedUrl = await getR2SignedUrl(key, R2_SIGNED_URL_TTL_SECONDS, bucket);
     const result = await fetchWithRetry(signedUrl, timeoutMs);
-    if (result.status === 404) return null;
+    if (result.status === 404 || result.status === 403) return null;
     if (!result.ok) throw new Error(`Signed object fetch failed (${result.status}).`);
     if (!result.body) throw new Error('Signed object response had no body.');
     return {

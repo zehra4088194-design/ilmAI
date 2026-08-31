@@ -35,7 +35,13 @@ export function SpeakingPracticeClient() {
   };
 
   const start = async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      toast.error('Microphone access was denied. Allow microphone permission in your browser to record.');
+      return;
+    }
     chunksRef.current = [];
     const recorder = new MediaRecorder(stream);
     recorder.ondataavailable = (event) => event.data.size && chunksRef.current.push(event.data);

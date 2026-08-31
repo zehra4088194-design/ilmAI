@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Upload } from 'lucide-react';
+import { GraduationCap, Upload, UserPlus, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { CollegeActionForm } from '@/components/features/college-erp/CollegeActionForm';
@@ -42,29 +42,47 @@ export default async function CollegePeoplePage() {
       {(canManage || canEnroll) && (
         <div className="grid gap-5 xl:grid-cols-3">
           {canManage && (
-            <Card>
-              <CardHeader><CardTitle className="text-base">Add member</CardTitle></CardHeader>
+            <Card className="border-violet-500/25 bg-violet-500/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/15 text-violet-500">
+                    <UserPlus className="h-4 w-4" />
+                  </span>
+                  Add teacher / staff
+                </CardTitle>
+              </CardHeader>
               <CardContent>
-                <CollegeActionForm action={addCollegeMember} submitLabel="Add member">
-                  <Input name="email" type="email" placeholder="Registered account email" required />
+                <CollegeActionForm action={addCollegeMember} submitLabel="Add teacher / staff">
+                  <Input name="email" type="email" placeholder="Their email address" required />
                   <select name="member_role" className={selectClass} required>
                     <option value="">Role</option>
-                    {['admin', 'admissions', 'teacher', 'staff', 'accountant'].map((role) => (
-                      <option key={role} value={role}>{role}</option>
+                    {['teacher', 'staff', 'accountant', 'admissions', 'admin'].map((role) => (
+                      <option key={role} value={role} className="capitalize">{role}</option>
                     ))}
                   </select>
-                  <Input name="designation" placeholder="Designation" />
-                  <Input name="employee_code" placeholder="Employee code" />
+                  <Input name="designation" placeholder="Designation (optional)" />
+                  <Input name="employee_code" placeholder="Employee code (optional)" />
                 </CollegeActionForm>
+                <p className="text-muted-foreground mt-3 text-xs">
+                  No account yet? They&apos;ll get an email to set a password — no need to sign up first.
+                </p>
               </CardContent>
             </Card>
           )}
           {canEnroll && (
-            <Card>
-              <CardHeader><CardTitle className="text-base">Enroll student</CardTitle></CardHeader>
+            <Card className="border-emerald-500/25 bg-emerald-500/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-500">
+                    <GraduationCap className="h-4 w-4" />
+                  </span>
+                  Add student
+                </CardTitle>
+              </CardHeader>
               <CardContent>
-                <CollegeActionForm action={enrollCollegeStudent} submitLabel="Enroll student">
-                  <Input name="student_email" type="email" placeholder="Registered student email" required />
+                <CollegeActionForm action={enrollCollegeStudent} submitLabel="Add student">
+                  <Input name="student_name" placeholder="Student's full name" />
+                  <Input name="student_email" type="email" placeholder="Their email address" required />
                   <select name="academic_year_id" className={selectClass} required>
                     <option value="">Academic year</option>
                     {data.years.map((item: any) => (<option key={item.id} value={item.id}>{item.name}</option>))}
@@ -77,15 +95,26 @@ export default async function CollegePeoplePage() {
                   </select>
                   <div className="grid grid-cols-2 gap-3">
                     <Input name="registration_number" placeholder="Registration no." required />
-                    <Input name="roll_number" placeholder="Roll no." />
+                    <Input name="roll_number" placeholder="Roll no. (optional)" />
                   </div>
                 </CollegeActionForm>
+                <p className="text-muted-foreground mt-3 text-xs">
+                  New to ilm AI? That&apos;s fine — an account is created automatically and they get an email to set
+                  a password.
+                </p>
               </CardContent>
             </Card>
           )}
           {canManage && (
             <Card>
-              <CardHeader><CardTitle className="text-base">Link guardian</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <span className="bg-muted text-muted-foreground flex h-8 w-8 items-center justify-center rounded-lg">
+                    <Users className="h-4 w-4" />
+                  </span>
+                  Link guardian
+                </CardTitle>
+              </CardHeader>
               <CardContent>
                 <CollegeActionForm action={linkCollegeGuardian} submitLabel="Link guardian">
                   <select name="student_id" className={selectClass} required>
