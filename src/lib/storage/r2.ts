@@ -192,11 +192,7 @@ export async function getR2Object(key: string, bucket?: string) {
   if (!config) return null;
   try {
     const signedUrl = await getR2SignedUrl(key, R2_SIGNED_URL_TTL_SECONDS, bucket);
-    const result = await fetch(signedUrl, {
-      method: 'GET',
-      cache: 'no-store',
-      signal: AbortSignal.timeout(90_000),
-    });
+    const result = await fetchWithRetry(signedUrl, 90_000);
     if (result.status === 404) return null;
     if (!result.ok) throw new Error(`Signed object fetch failed (${result.status}).`);
     const bytes = await result.arrayBuffer();
@@ -220,16 +216,41 @@ export async function getR2Object(key: string, bucket?: string) {
 // into a hard failure. Streaming through means the browser starts receiving pages within a
 // second of the request landing, and only a network drop during the (short) initial read below
 // aborts the whole thing instead of one anywhere across the entire transfer.
+// B2/R2 occasionally drops or resets a connection with no server-side error at all — the signed
+// URL itself is still valid, a second attempt just works. Previously a single flaky connection
+// anywhere (cold connection, transient network blip) surfaced as a hard "Failed to load PDF file"
+// to the student with no automatic recovery, even though the file was never actually missing —
+// this is what was showing up across many otherwise-fine library/class-library PDFs. One retry
+// with a short backoff before giving up costs nothing on the common case (first attempt succeeds)
+// and turns most of those transient failures into an invisible extra second of load time instead.
+const R2_FETCH_RETRIES = 2;
+const R2_FETCH_RETRY_DELAY_MS = 400;
+
+async function fetchWithRetry(url: string, timeoutMs: number) {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= R2_FETCH_RETRIES; attempt++) {
+    try {
+      const result = await fetch(url, { method: 'GET', cache: 'no-store', signal: AbortSignal.timeout(timeoutMs) });
+      // A 404 is a real "the file isn't there" answer, not a transient failure — retrying it
+      // wastes time and can never succeed, so it's returned immediately instead of retried.
+      if (result.status === 404 || result.ok) return result;
+      lastError = new Error(`Signed object fetch failed (${result.status}).`);
+    } catch (error) {
+      lastError = error;
+    }
+    if (attempt < R2_FETCH_RETRIES) {
+      await new Promise((resolve) => setTimeout(resolve, R2_FETCH_RETRY_DELAY_MS * (attempt + 1)));
+    }
+  }
+  throw lastError;
+}
+
 export async function getR2ObjectStream(key: string, timeoutMs = 90_000, bucket?: string) {
   const config = resolveConfig(bucket);
   if (!config) return null;
   try {
     const signedUrl = await getR2SignedUrl(key, R2_SIGNED_URL_TTL_SECONDS, bucket);
-    const result = await fetch(signedUrl, {
-      method: 'GET',
-      cache: 'no-store',
-      signal: AbortSignal.timeout(timeoutMs),
-    });
+    const result = await fetchWithRetry(signedUrl, timeoutMs);
     if (result.status === 404) return null;
     if (!result.ok) throw new Error(`Signed object fetch failed (${result.status}).`);
     if (!result.body) throw new Error('Signed object response had no body.');

@@ -355,13 +355,19 @@ export function ProtectedResourceReader({
                     <RefreshCw className="h-3.5 w-3.5" />
                     Try again
                   </Button>
-                  {sourceUrl && (
-                    <Button type="button" variant="outline" size="sm" asChild>
-                      <a href={sourceUrl} target="_blank" rel="noopener noreferrer">
-                        Open original file
-                      </a>
-                    </Button>
-                  )}
+                  <Button type="button" variant="outline" size="sm" asChild>
+                    {/* Always the servable content route, never the raw sourceUrl prop — that can
+                        be an internal r2://bucket/key reference (meaningless to a browser tab) or
+                        an unauthenticated Drive link; this route is what actually resolves either
+                        one server-side into real PDF bytes, so "open in a new tab" really works. */}
+                    <a
+                      href={`/api/resources/content?kind=${encodeURIComponent(kind)}&id=${encodeURIComponent(resourceId)}&mode=${encodeURIComponent(effectiveMode)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Open original file
+                    </a>
+                  </Button>
                 </div>
               </div>
             )}
