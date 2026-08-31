@@ -11,11 +11,13 @@ import {
   GraduationCap,
   ListChecks,
   LayoutDashboard,
+  LogOut,
   Menu,
   MessageSquareText,
   ReceiptText,
   Settings2,
   Sparkles,
+  UserCircle,
   UserPlus,
   Users2,
   WalletCards,
@@ -27,6 +29,8 @@ import { cn } from '@/lib/utils/cn';
 import { switchSchoolOrganization } from '@/lib/school-erp/context-actions';
 import { isSchoolModuleEnabled, type SchoolModuleKey } from '@/lib/school-erp/modules';
 import type { SchoolPermission, SchoolRole } from '@/lib/school-erp/types';
+import { useAuth } from '@/hooks/auth/useAuth';
+import { ThemeToggle } from '@/components/common/ThemeToggle';
 
 const ITEMS: Array<{
   href: string;
@@ -118,6 +122,7 @@ export function SchoolAdminSidebar({
   enabledModules: SchoolModuleKey[] | null;
 }) {
   const pathname = usePathname();
+  const { signOut } = useAuth();
   const [open, setOpen] = useState(false);
   const items = ITEMS.filter(
     (item) => permissions.includes(item.permission) && isSchoolModuleEnabled(enabledModules, item.module)
@@ -189,7 +194,7 @@ export function SchoolAdminSidebar({
           );
         })}
       </nav>
-      <div className="border-sidebar-border border-t p-3">
+      <div className="border-sidebar-border space-y-1 border-t p-3">
         <Link
           href="/school"
           className="text-sidebar-foreground/60 hover:bg-sidebar-accent flex items-center gap-2 rounded-lg px-3 py-2 text-xs"
@@ -197,6 +202,24 @@ export function SchoolAdminSidebar({
           <BookOpenCheck className="h-4 w-4" />
           Open member portal
         </Link>
+        <Link
+          href="/settings"
+          className="text-sidebar-foreground/60 hover:bg-sidebar-accent flex items-center gap-2 rounded-lg px-3 py-2 text-xs"
+        >
+          <UserCircle className="h-4 w-4" />
+          My account
+        </Link>
+        <div className="flex items-center justify-between gap-2 px-1">
+          <button
+            type="button"
+            onClick={signOut}
+            className="text-sidebar-foreground/60 hover:bg-sidebar-accent flex items-center gap-2 rounded-lg px-2 py-2 text-xs"
+          >
+            <LogOut className="h-4 w-4" />
+            Logout
+          </button>
+          <ThemeToggle />
+        </div>
       </div>
     </div>
   );
