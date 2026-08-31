@@ -802,49 +802,50 @@ export function RegisterForm() {
           )}
 
           {currentStep.id === 'role' && (
-            <div className="grid gap-3 sm:grid-cols-3">
-              <button
-                type="button"
-                onClick={() => setInstitutionalRole('student')}
-                aria-pressed={institutionalRole === 'student'}
-                className={cn(
-                  'flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border-2 p-4 text-center text-sm font-semibold transition-all',
-                  institutionalRole === 'student'
-                    ? 'border-primary bg-primary/15 text-primary'
-                    : 'border-border bg-card/80 text-muted-foreground hover:border-primary/40'
-                )}
-              >
-                <GraduationCap className="h-6 w-6" /> Student
-                <span className="text-muted-foreground text-xs font-normal">Attend classes and take exams</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setInstitutionalRole('teacher')}
-                aria-pressed={institutionalRole === 'teacher'}
-                className={cn(
-                  'flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border-2 p-4 text-center text-sm font-semibold transition-all',
-                  institutionalRole === 'teacher'
-                    ? 'border-primary bg-primary/15 text-primary'
-                    : 'border-border bg-card/80 text-muted-foreground hover:border-primary/40'
-                )}
-              >
-                <Presentation className="h-6 w-6" /> Teacher
-                <span className="text-muted-foreground text-xs font-normal">Manage classes and exams</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setInstitutionalRole('principal')}
-                aria-pressed={institutionalRole === 'principal'}
-                className={cn(
-                  'flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border-2 p-4 text-center text-sm font-semibold transition-all',
-                  institutionalRole === 'principal'
-                    ? 'border-primary bg-primary/15 text-primary'
-                    : 'border-border bg-card/80 text-muted-foreground hover:border-primary/40'
-                )}
-              >
-                <Building2 className="h-6 w-6" /> Principal
-                <span className="text-muted-foreground text-xs font-normal">Oversee the entire institution</span>
-              </button>
+            <div className="space-y-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => setInstitutionalRole('student')}
+                  aria-pressed={institutionalRole === 'student'}
+                  className={cn(
+                    'flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border-2 p-4 text-center text-sm font-semibold transition-all',
+                    institutionalRole === 'student'
+                      ? 'border-primary bg-primary/15 text-primary'
+                      : 'border-border bg-card/80 text-muted-foreground hover:border-primary/40'
+                  )}
+                >
+                  <GraduationCap className="h-6 w-6" /> Student
+                  <span className="text-muted-foreground text-xs font-normal">Attend classes and take exams</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInstitutionalRole('teacher')}
+                  aria-pressed={institutionalRole === 'teacher'}
+                  className={cn(
+                    'flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border-2 p-4 text-center text-sm font-semibold transition-all',
+                    institutionalRole === 'teacher'
+                      ? 'border-primary bg-primary/15 text-primary'
+                      : 'border-border bg-card/80 text-muted-foreground hover:border-primary/40'
+                  )}
+                >
+                  <Presentation className="h-6 w-6" /> Teacher
+                  <span className="text-muted-foreground text-xs font-normal">Manage classes and exams</span>
+                </button>
+              </div>
+              {/* No self-service "Principal" option on purpose — a new school/principal account is
+                  always platform-admin-provisioned via /admin/schools (see
+                  lib/school-erp/join-request-signup.ts: SchoolJoinRole is only 'student' | 'teacher'
+                  — a join request can never be filed as principal). This used to offer a "Principal"
+                  button that searched for and requested to join an existing school, but that request
+                  was silently dropped (auth/callback's role resolver doesn't accept 'principal'
+                  either), leaving the person's account created with role defaulted all the way down
+                  to 'student' — no join request sent, no admin notified, and they'd then be asked
+                  student-only grade/board questions despite having said "I run this school." */}
+              <p className="text-muted-foreground rounded-xl border border-dashed p-3 text-center text-xs">
+                Setting up a brand-new school or college, or already run one? Contact ilm AI&apos;s admin team to get
+                it set up — this page is only for joining a school already on ilm AI.
+              </p>
             </div>
           )}
 

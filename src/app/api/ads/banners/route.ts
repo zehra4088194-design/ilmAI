@@ -20,7 +20,17 @@ export async function GET(req: NextRequest) {
 
   let audience: string | null = null;
   if (user) {
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, subscription_tier')
+      .eq('id', user.id)
+      .maybeSingle();
+    // Same rule AdSense enforced: PRO/ELITE never see promotional banners — no layout shift, no
+    // wasted space for a paying user. A guest (no profile at all) is treated as FREE, same as
+    // every other FREE-gated feature in the app.
+    if (profile?.subscription_tier === 'PRO' || profile?.subscription_tier === 'ELITE') {
+      return NextResponse.json({ banner: null });
+    }
     audience = profile?.role || null;
   }
 
