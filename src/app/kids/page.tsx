@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import { KIDS_NAV } from '@/components/features/kids/KidsShell';
+import { KIDS_NAV } from '@/components/features/kids/kidsNav';
 import { TodaysLearningStrip } from '@/components/features/kids/TodaysLearningStrip';
 import { computeDailyMissionStatus } from '@/lib/kids/dailyMission';
 

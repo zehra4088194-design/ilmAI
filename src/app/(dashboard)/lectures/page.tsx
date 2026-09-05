@@ -143,7 +143,7 @@ export default async function LecturesPage({ searchParams }: { searchParams: Pro
           ))}
         </div>
       ) : (
-        <Card className="border-dashed"><CardContent className="flex min-h-72 flex-col items-center justify-center p-8 text-center"><PlayCircle className="text-primary mb-4 h-10 w-10" /><h2 className="text-lg font-semibold">No lectures found</h2><p className="text-muted-foreground mt-2 text-sm">Chapter-tagged lectures added by an admin will appear here in an organized format.</p><Link href="/study" className="text-primary mt-5 inline-flex items-center gap-2 text-sm font-semibold"><BookOpen className="h-4 w-4" />Open subjects</Link></CardContent></Card>
+        <Card className="border-dashed"><CardContent className="flex min-h-72 flex-col items-center justify-center p-8 text-center"><PlayCircle className="text-primary mb-4 h-10 w-10" /><h2 className="text-lg font-semibold">Lectures are on their way! 🎬</h2><p className="text-muted-foreground mt-2 text-sm">We're adding video lectures chapter by chapter — check back soon.</p><Link href="/study" className="text-primary mt-5 inline-flex items-center gap-2 text-sm font-semibold"><BookOpen className="h-4 w-4" />Open subjects</Link></CardContent></Card>
       )}
 
       <p className="text-muted-foreground text-center text-xs">{totalLectures} visible lectures across {subjectCards.length} subjects</p>
