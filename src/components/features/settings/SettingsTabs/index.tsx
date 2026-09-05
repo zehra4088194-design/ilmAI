@@ -22,6 +22,7 @@ import {
   Smartphone,
   Trash2,
   Camera,
+  ArrowLeftRight,
 } from 'lucide-react';
 import { ParentMessageThread } from '@/components/ui/ParentMessageThread';
 import { ParentAttachments } from '@/components/ui/ParentAttachments';
@@ -29,6 +30,7 @@ import { RoutineTestsWidget } from '@/components/ui/RoutineTestsWidget';
 import { useTranslations, useLocale } from '@/providers/I18nProvider';
 import { LOCALES, LOCALE_LABELS, type Locale } from '@/lib/i18n/config';
 import { ClassSettingsCard } from '@/components/features/settings/ClassSettingsCard';
+import { SwitchProfileCard } from '@/components/features/settings/SwitchProfileCard';
 import Link from 'next/link';
 import {
   CLASS_SELECTION_GRADE_LEVELS,
@@ -169,10 +171,13 @@ export function SettingsTabs({
   // — whether that's a real individual teacher or a school/college member mapped to 'teacher'
   // (see mapInstitutionRoleToProfileRole.ts) — so both are hidden for that role.
   const isTeacherRole = localProfile?.role === 'teacher';
+  // Switch Profile is deliberately unavailable to principal accounts — see SwitchProfileCard.
+  const canSwitchProfile = localProfile?.role !== 'principal';
   const TABS = [
     { id: 'profile', label: t('settings.tabs.profile'), icon: User },
     ...(isTeacherRole ? [] : [{ id: 'university', label: 'University Mode', icon: GraduationCap }]),
     ...(isTeacherRole ? [] : [{ id: 'parent-link', label: t('settings.tabs.parentLink'), icon: Users }]),
+    ...(canSwitchProfile ? [{ id: 'switch-profile', label: 'Switch Profile', icon: ArrowLeftRight }] : []),
     { id: 'notifications', label: t('settings.tabs.notifications'), icon: Bell },
     { id: 'security', label: t('settings.tabs.security'), icon: Shield },
     { id: 'appearance', label: t('settings.tabs.appearance'), icon: Palette },
@@ -865,6 +870,7 @@ export function SettingsTabs({
               )}
             </div>
           )}
+          {activeTab === 'switch-profile' && canSwitchProfile && <SwitchProfileCard />}
           {activeTab === 'notifications' && (
             <div className="space-y-5">
               <div>

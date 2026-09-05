@@ -6,7 +6,7 @@ import {
   Zap, StickyNote, Bookmark, Star, CreditCard, ChevronRight, X, Menu,
   Library, CalendarClock, HelpCircle, Target, LogOut, Users, PenLine, Cake,
   GraduationCap, Presentation, Mic2, FlaskConical, Quote, BriefcaseBusiness, Network, Video,
-  Camera, MessageCircle, Sparkles, WandSparkles, Gamepad2, Music2, Pill, HardDriveDownload, School, FileQuestion, BookOpenText, ShoppingBag, Medal
+  Camera, MessageCircle, Sparkles, WandSparkles, Gamepad2, Music2, Pill, HardDriveDownload, School, FileQuestion, BookOpenText, ShoppingBag, Medal, ArrowLeftRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useAuth } from '@/hooks/auth/useAuth';
@@ -430,6 +430,15 @@ export function DashboardSidebar({ mobileOpen: controlledMobileOpen, onMobileOpe
               <p className="text-xs font-semibold text-sidebar-foreground truncate">{user.fullName || 'Student'}</p>
               <p className="text-[10px] text-sidebar-foreground/40 truncate">{user.subscriptionTier} · ⚡{user.xp} XP</p>
             </div>
+            {user.role !== 'principal' && (
+              <Link
+                href="/settings?tab=switch-profile"
+                className="text-sidebar-foreground/30 hover:text-sidebar-foreground transition-colors"
+                title="Switch Profile"
+              >
+                <ArrowLeftRight className="w-4 h-4" />
+              </Link>
+            )}
             <button onClick={signOut} className="text-sidebar-foreground/30 hover:text-destructive transition-colors" title="Logout">
               <LogOut className="w-4 h-4" />
             </button>

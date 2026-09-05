@@ -3047,6 +3047,7 @@ export type Database = {
           created_at: string
           ends_on: string
           id: string
+          notified_at: string | null
           organization_id: string
           reason: string
           requester_id: string
@@ -3060,6 +3061,7 @@ export type Database = {
           created_at?: string
           ends_on: string
           id?: string
+          notified_at?: string | null
           organization_id: string
           reason: string
           requester_id: string
@@ -3073,6 +3075,7 @@ export type Database = {
           created_at?: string
           ends_on?: string
           id?: string
+          notified_at?: string | null
           organization_id?: string
           reason?: string
           requester_id?: string
@@ -3315,47 +3318,65 @@ export type Database = {
         Row: {
           announcement_id: string | null
           attempts: number
+          body: string | null
+          category: string
           channel: string
           created_at: string
+          dedupe_key: string | null
           id: string
           last_error: string | null
           organization_id: string
           provider_reference: string | null
           recipient_address: string | null
           recipient_id: string | null
+          reference_id: string | null
+          reference_type: string | null
           scheduled_for: string
           sent_at: string | null
           status: string
+          title: string | null
         }
         Insert: {
           announcement_id?: string | null
           attempts?: number
+          body?: string | null
+          category?: string
           channel: string
           created_at?: string
+          dedupe_key?: string | null
           id?: string
           last_error?: string | null
           organization_id: string
           provider_reference?: string | null
           recipient_address?: string | null
           recipient_id?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
           scheduled_for?: string
           sent_at?: string | null
           status?: string
+          title?: string | null
         }
         Update: {
           announcement_id?: string | null
           attempts?: number
+          body?: string | null
+          category?: string
           channel?: string
           created_at?: string
+          dedupe_key?: string | null
           id?: string
           last_error?: string | null
           organization_id?: string
           provider_reference?: string | null
           recipient_address?: string | null
           recipient_id?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
           scheduled_for?: string
           sent_at?: string | null
           status?: string
+          title?: string | null
         }
         Relationships: [
           {
@@ -5846,6 +5867,69 @@ export type Database = {
             columns: ["subject_id"]
             isOneToOne: false
             referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      linked_accounts: {
+        Row: {
+          created_at: string
+          failed_attempts: number
+          id: string
+          last_switched_at: string | null
+          linked_full_name: string | null
+          linked_masked_email: string
+          linked_profile_id: string
+          linked_role: Database["public"]["Enums"]["user_role"]
+          locked_until: string | null
+          owner_full_name: string | null
+          owner_masked_email: string
+          owner_profile_id: string
+          owner_role: Database["public"]["Enums"]["user_role"]
+        }
+        Insert: {
+          created_at?: string
+          failed_attempts?: number
+          id?: string
+          last_switched_at?: string | null
+          linked_full_name?: string | null
+          linked_masked_email: string
+          linked_profile_id: string
+          linked_role: Database["public"]["Enums"]["user_role"]
+          locked_until?: string | null
+          owner_full_name?: string | null
+          owner_masked_email: string
+          owner_profile_id: string
+          owner_role: Database["public"]["Enums"]["user_role"]
+        }
+        Update: {
+          created_at?: string
+          failed_attempts?: number
+          id?: string
+          last_switched_at?: string | null
+          linked_full_name?: string | null
+          linked_masked_email?: string
+          linked_profile_id?: string
+          linked_role?: Database["public"]["Enums"]["user_role"]
+          locked_until?: string | null
+          owner_full_name?: string | null
+          owner_masked_email?: string
+          owner_profile_id?: string
+          owner_role?: Database["public"]["Enums"]["user_role"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "linked_accounts_linked_profile_id_fkey"
+            columns: ["linked_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "linked_accounts_owner_profile_id_fkey"
+            columns: ["owner_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -9633,6 +9717,7 @@ export type Database = {
           created_at: string
           ends_on: string
           id: string
+          notified_at: string | null
           organization_id: string
           reason: string
           requester_id: string
@@ -9646,6 +9731,7 @@ export type Database = {
           created_at?: string
           ends_on: string
           id?: string
+          notified_at?: string | null
           organization_id: string
           reason: string
           requester_id: string
@@ -9659,6 +9745,7 @@ export type Database = {
           created_at?: string
           ends_on?: string
           id?: string
+          notified_at?: string | null
           organization_id?: string
           reason?: string
           requester_id?: string
@@ -12511,6 +12598,45 @@ export type Database = {
           },
         ]
       }
+      university_program_year_subjects: {
+        Row: {
+          created_at: string
+          id: string
+          program_year_id: string
+          sort_order: number
+          subject_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          program_year_id: string
+          sort_order?: number
+          subject_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          program_year_id?: string
+          sort_order?: number
+          subject_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "university_program_year_subjects_program_year_id_fkey"
+            columns: ["program_year_id"]
+            isOneToOne: false
+            referencedRelation: "university_program_years"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "university_program_year_subjects_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "university_subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       university_program_years: {
         Row: {
           created_at: string
@@ -12688,45 +12814,6 @@ export type Database = {
             columns: ["program_year_id"]
             isOneToOne: false
             referencedRelation: "university_program_years"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      university_program_year_subjects: {
-        Row: {
-          created_at: string
-          id: string
-          program_year_id: string
-          sort_order: number
-          subject_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          program_year_id: string
-          sort_order?: number
-          subject_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          program_year_id?: string
-          sort_order?: number
-          subject_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "university_program_year_subjects_program_year_id_fkey"
-            columns: ["program_year_id"]
-            isOneToOne: false
-            referencedRelation: "university_program_years"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "university_program_year_subjects_subject_id_fkey"
-            columns: ["subject_id"]
-            isOneToOne: false
-            referencedRelation: "university_subjects"
             referencedColumns: ["id"]
           },
         ]
@@ -13182,6 +13269,30 @@ export type Database = {
       kick_atomic_mcq: { Args: never; Returns: number }
       kick_basic_mcq: { Args: never; Returns: number }
       kick_http_get: { Args: { u: string }; Returns: number }
+      linked_accounts_record_switch_attempt: {
+        Args: { p_link_id: string; p_success: boolean }
+        Returns: {
+          created_at: string
+          failed_attempts: number
+          id: string
+          last_switched_at: string | null
+          linked_full_name: string | null
+          linked_masked_email: string
+          linked_profile_id: string
+          linked_role: Database["public"]["Enums"]["user_role"]
+          locked_until: string | null
+          owner_full_name: string | null
+          owner_masked_email: string
+          owner_profile_id: string
+          owner_role: Database["public"]["Enums"]["user_role"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "linked_accounts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       queue_chem_key_probe: { Args: never; Returns: number }
       queue_chem_parser_test: { Args: never; Returns: number }
       queue_chem_pdf_test: { Args: never; Returns: number }

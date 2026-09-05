@@ -13,7 +13,7 @@ function shuffle<T>(items: T[]): T[] {
 }
 
 function makeRound() {
-  let a = 1 + Math.floor(Math.random() * 20);
+  const a = 1 + Math.floor(Math.random() * 20);
   let b = 1 + Math.floor(Math.random() * 20);
   while (b === a) b = 1 + Math.floor(Math.random() * 20); // never a tie
   const askBigger = Math.random() > 0.5;
