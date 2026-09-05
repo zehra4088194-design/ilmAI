@@ -7,9 +7,11 @@ import { getPlanFromSettings, parentChildrenCap } from '@/lib/platform-settings/
 import { aiDecisionFeaturesEnabled } from '@/lib/compliance/ai-decision-features';
 import { getMultiChildSubjectComparison } from '@/lib/parent/comparison';
 import { MultiChildComparison } from '@/components/features/parent/MultiChildComparison';
+import { getFamilyErpData } from '@/lib/parent/erp-bridge';
+import { getFamilyQuranData } from '@/lib/parent/quran-bridge';
 import type { SubscriptionTier } from '@/types';
 
-export const metadata: Metadata = { title: 'Parent Dashboard' };
+export const metadata: Metadata = { title: 'Ilmai Family' };
 
 export default async function ParentDashboardPage({
   searchParams,
@@ -264,12 +266,40 @@ export default async function ParentDashboardPage({
       })
     );
   }
+  // Ilmai Family — Homework/Attendance bridge for children who are also school/college
+  // enrolled (school_guardians / college_guardians), plus achievements and family goals.
+  const admin = await createAdminClient();
+  let erpData: Record<string, any> = {};
+  let earnedAchievements: any[] = [];
+  let allAchievements: any[] = [];
+  let familyGoals: any[] = [];
+  let familyQuran: Record<string, any> = {};
+  if (dashboardStudentIds.length > 0) {
+    const [erpResult, earnedResult, achievementsResult, goalsResult, quranResult] = await Promise.all([
+      getFamilyErpData(admin, user.id, dashboardStudentIds),
+      admin.from('user_achievements').select('user_id, achievement_id, earned_at').in('user_id', dashboardStudentIds),
+      admin.from('achievements').select('id, name, description, icon_url').order('condition_value', { ascending: true }),
+      admin
+        .from('parent_family_goals' as any)
+        .select('*')
+        .eq('parent_id', user.id)
+        .in('student_id', dashboardStudentIds)
+        .order('created_at', { ascending: false }),
+      getFamilyQuranData(admin, dashboardStudentIds),
+    ]);
+    erpData = erpResult;
+    earnedAchievements = (earnedResult.data || []) as any[];
+    allAchievements = (achievementsResult.data || []) as any[];
+    familyGoals = (goalsResult.data || []) as any[];
+    familyQuran = quranResult;
+  }
+
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Parent Dashboard</h1>
+        <h1 className="text-2xl font-bold">Ilmai Family</h1>
         <p className="text-muted-foreground">
-          Manage linked student progress, chat, and routine schedules here.
+          Progress, homework, attendance, achievements, and communication for every linked child in one place.
         </p>
       </div>
       <ParentDashboardClient
@@ -281,54 +311,25 @@ export default async function ParentDashboardPage({
         activityByStudent={activityByStudent}
         initialLinkId={params?.linkId}
         initialView={params?.view === 'files' ? 'files' : params?.view === 'chat' ? 'chat' : undefined}
+        erpData={erpData as any}
+        familyQuran={familyQuran as any}
+        achievements={allAchievements}
+        earnedAchievements={earnedAchievements}
+        familyGoals={familyGoals}
+        multiChildComparison={
+          multiChildComparison ? (
+            <MultiChildComparison
+              comparison={multiChildComparison}
+              students={normalizedStudents.filter((s) => dashboardStudentIds.includes(s.id))}
+            />
+          ) : null
+        }
+        weeklyReports={reports.map((report) => ({
+          ...report,
+          predictionSignal: showAiDecisionFeatures ? predictionByStudent.get(report.student_id) : null,
+        }))}
+        showAiDecisionFeatures={showAiDecisionFeatures}
       />
-      {multiChildComparison && (
-        <MultiChildComparison
-          comparison={multiChildComparison}
-          students={normalizedStudents.filter((s) => dashboardStudentIds.includes(s.id))}
-        />
-      )}
-      {reports.length > 0 && (
-        <section className="glass rounded-xl p-5">
-          <h2 className="mb-3 font-bold">Weekly Reports</h2>
-          <div className="grid gap-3 md:grid-cols-2">
-            {reports.map((report) => (
-              <div key={report.id} className="rounded-lg border p-3">
-                <p className="text-muted-foreground text-xs">{report.week_start_date}</p>
-                <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
-                  <span className="bg-muted rounded p-2">
-                    XP {report.summary?.xp_earned ?? report.summary?.xp_gained ?? 0}
-                  </span>
-                  <span className="bg-muted rounded p-2">
-                    Quizzes {report.summary?.quizzes_completed ?? report.summary?.quizzes_taken ?? 0}
-                  </span>
-                  <span className="bg-muted rounded p-2">Study {report.summary?.study_minutes ?? 0}m</span>
-                </div>
-                {report.ai_narrative && (
-                  <>
-                    <p className="mt-3 text-sm">{report.ai_narrative}</p>
-                    <ul className="text-muted-foreground mt-2 list-inside list-disc text-sm">
-                      {(report.suggested_actions || []).map((action: string) => (
-                        <li key={action}>{action}</li>
-                      ))}
-                    </ul>
-                  </>
-                )}
-                {showAiDecisionFeatures && predictionByStudent.get(report.student_id) && (
-                  <div className="mt-3 rounded-lg border border-violet-500/30 p-2 text-xs">
-                    <p>
-                      Study continuity signal: {Math.round(predictionByStudent.get(report.student_id).dropout_risk_score || 0)}%
-                    </p>
-                    <p>
-                      Study load signal: {Math.round(predictionByStudent.get(report.student_id).burnout_risk_score || 0)}%
-                    </p>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
     </div>
   );
 }

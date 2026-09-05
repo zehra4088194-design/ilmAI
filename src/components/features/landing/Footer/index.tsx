@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useMemo } from 'react';
-import { BookOpen, Heart } from 'lucide-react';
+import { BookOpen, Heart, Phone } from 'lucide-react';
 import { openCookieSettings } from '@/lib/utils/cookieConsent';
 import { PRIMARY_SITE_LINKS } from '@/lib/seo/study-tools';
 
@@ -53,6 +53,17 @@ export function LandingFooter() {
                     </Link>
                   </li>
                 ))}
+                {heading === 'Support' && (
+                  <li>
+                    <a
+                      href="/api/support/contact?via=whatsapp"
+                      className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 text-sm transition-colors"
+                    >
+                      <Phone className="h-3.5 w-3.5" />
+                      WhatsApp us
+                    </a>
+                  </li>
+                )}
               </ul>
             </div>
           ))}
@@ -70,8 +81,7 @@ export function LandingFooter() {
               Cookie Settings
             </button>
             <p className="text-muted-foreground flex items-center gap-1.5 text-sm">
-              Made with <Heart className="h-3.5 w-3.5 fill-red-500 text-red-500" /> by{' '}
-              <span className="text-foreground font-semibold">Hafiz M. Husnain Noor</span>
+              Made with <Heart className="h-3.5 w-3.5 fill-red-500 text-red-500" /> for students in Pakistan
             </p>
           </div>
         </div>

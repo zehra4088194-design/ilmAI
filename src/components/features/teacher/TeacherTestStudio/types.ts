@@ -1,5 +1,5 @@
 export type Subject = { id: string; name: string; grade_levels: string[] };
-export type Chapter = { id: string; subject_id: string; name: string };
+export type Chapter = { id: string; subject_id: string; name: string; grade_levels?: string[] | null };
 export type PlanTier = 'FREE' | 'PRO' | 'ELITE';
 export type PaperTheme = 'classic' | 'modern' | 'minimal';
 export type DifficultyChoice = 'MIXED' | 'EASY' | 'MEDIUM' | 'HARD' | 'EXPERT';

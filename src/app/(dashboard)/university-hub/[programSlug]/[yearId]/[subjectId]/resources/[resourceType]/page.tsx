@@ -4,7 +4,11 @@ import { ArrowLeft, ExternalLink, FileText } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { UNIVERSITY_RESOURCE_TYPES, type UniversityResourceType } from '@/lib/university-hub/types';
-import { getUniversitySubjectById, getUniversitySubjectResources } from '@/lib/university-hub/queries';
+import {
+  getUniversitySubjectById,
+  getUniversitySubjectResources,
+  resolveUniversityResourceUrl,
+} from '@/lib/university-hub/queries';
 
 export default async function UniversityResourceListPage({
   params,
@@ -14,11 +18,18 @@ export default async function UniversityResourceListPage({
   const { programSlug, yearId, subjectId, resourceType } = await params;
   const typeMeta = UNIVERSITY_RESOURCE_TYPES.find((type) => type.key === resourceType);
   if (!typeMeta) notFound();
-  const subject = await getUniversitySubjectById(subjectId);
-  if (!subject || subject.program_year_id !== yearId) notFound();
+  const subject = await getUniversitySubjectById(subjectId, yearId);
+  if (!subject) notFound();
 
-  const resources = (await getUniversitySubjectResources(subjectId)).filter(
+  const matchingResources = (await getUniversitySubjectResources(subjectId)).filter(
     (resource: any) => resource.resource_type === (resourceType as UniversityResourceType)
+  );
+  // Uploaded notes are stored as an r2://<bucket>/<key> URI (ilmai-uni-bucket for University
+  // Hub) — resolved to a short-lived signed HTTPS URL here so the "Open" link below always gets
+  // something a browser can actually fetch. External links (Drive, YouTube, a direct PDF URL)
+  // pass through unchanged.
+  const resources = await Promise.all(
+    matchingResources.map(async (resource: any) => ({ ...resource, openUrl: await resolveUniversityResourceUrl(resource.url) }))
   );
 
   return (
@@ -47,9 +58,9 @@ export default async function UniversityResourceListPage({
             <Card key={resource.id}>
               <CardContent className="flex items-center justify-between gap-3 p-4">
                 <span className="truncate text-sm font-medium">{resource.title}</span>
-                {resource.url && (
+                {resource.openUrl && (
                   <a
-                    href={resource.url}
+                    href={resource.openUrl}
                     target="_blank"
                     rel="noreferrer"
                     className="text-primary inline-flex shrink-0 items-center gap-1 text-xs font-semibold hover:underline"

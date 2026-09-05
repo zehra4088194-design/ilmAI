@@ -13,14 +13,14 @@ export function BossQuizCard({ bossQuiz }: { bossQuiz: { id: string; xp_reward: 
         <>
           <p className="text-sm text-muted-foreground">Win for {bossQuiz.xp_reward} XP and {bossQuiz.coin_reward} coins.</p>
           <Button asChild variant="gradient" className="mt-4 w-full">
-            <Link href="/practice">Start Adaptive Practice</Link>
+            <Link href={`/competitions/subject/${bossQuiz.id}`}>Enter Championship</Link>
           </Button>
         </>
       ) : (
         <>
-          <p className="text-sm text-muted-foreground">No weekly boss quiz generated yet. Practice mode is ready meanwhile.</p>
+          <p className="text-sm text-muted-foreground">No weekly boss quiz generated yet. Check the Competition Portal for what's live.</p>
           <Button asChild variant="outline" className="mt-4 w-full">
-            <Link href="/practice">Practice</Link>
+            <Link href="/competitions">Competition Portal</Link>
           </Button>
         </>
       )}

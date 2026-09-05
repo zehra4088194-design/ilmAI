@@ -12,6 +12,7 @@ import {
   createCollegeSemester,
   createCourseOffering,
   updateCollegeLogo,
+  updateCollegePrincipalSignature,
   updateCollegeOrganization,
 } from '@/lib/college-erp/actions';
 import { requireCollegeContext } from '@/lib/college-erp/access';
@@ -69,6 +70,24 @@ export default async function CollegeAdminSettingsPage() {
               </p>
               <CollegeActionForm action={updateCollegeLogo} submitLabel="Upload logo" className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <Input name="logo" type="file" accept="image/*" required />
+              </CollegeActionForm>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle className="text-base">Principal signature</CardTitle></CardHeader>
+          <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-start">
+            {newContext.organization.principal_signature_url && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={newContext.organization.principal_signature_url} alt="Principal signature" className="h-16 w-32 shrink-0 rounded-lg border border-border bg-white object-contain p-1" />
+            )}
+            <div className="flex-1">
+              <p className="text-muted-foreground mb-2 text-xs">
+                Printed on Student ID Cards. Upload a scanned or photographed signature on a plain background.
+              </p>
+              <CollegeActionForm action={updateCollegePrincipalSignature} submitLabel="Save" className="grid gap-2 sm:grid-cols-2">
+                <Input name="principal_name" placeholder="Principal's name" defaultValue={newContext.organization.principal_name || ''} />
+                <Input name="signature" type="file" accept="image/*" />
               </CollegeActionForm>
             </div>
           </CardContent>

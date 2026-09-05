@@ -22,7 +22,7 @@ function makeRound() {
 }
 
 /** Match the big capital letter to its lowercase twin — for pre-readers/early readers. */
-export function LetterMatchGame() {
+export function LetterMatchGame({ onCorrect }: { onCorrect?: () => void } = {}) {
   const [round, setRound] = useState(makeRound);
   const [score, setScore] = useState(0);
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
@@ -36,6 +36,7 @@ export function LetterMatchGame() {
     if (letter === round.target) {
       setFeedback('correct');
       setScore((s) => s + 1);
+      onCorrect?.();
       setTimeout(() => {
         setRound(makeRound());
         setFeedback(null);

@@ -28,9 +28,9 @@ export default async function CollegePeoplePage() {
         </div>
         <div className="flex items-center gap-3">
           {canManage && (
-            <Link href="#" className="border-border hover:bg-muted pointer-events-none inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium opacity-50">
+            <Link href="/college-admin/people/import" className="border-border hover:bg-muted inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium">
               <Upload className="h-3.5 w-3.5" />
-              Bulk import (not ported yet)
+              Bulk import
             </Link>
           )}
           <div className="border-border bg-card rounded-lg border px-4 py-2 text-right">

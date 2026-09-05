@@ -157,7 +157,7 @@ export async function getSchoolContext(
       // "no membership" (`if (error || !data?.length) return null`). That's what was silently
       // breaking EVERY school-portal redirect for EVERY role (owner/principal, teacher, staff, ...)
       // — the membership data was always correct, this query just never returned it.
-      'id, organization_id, campus_id, profile_id, member_role, permissions, employee_code, designation, status, school_organizations(id, name, slug, organization_type, status, timezone, currency, email, phone, address, logo_url), school_campuses!school_memberships_campus_id_fkey(id, name, code)'
+      'id, organization_id, campus_id, profile_id, member_role, permissions, employee_code, designation, status, school_organizations(id, name, slug, organization_type, status, timezone, currency, email, phone, address, logo_url, principal_name, principal_signature_url), school_campuses!school_memberships_campus_id_fkey(id, name, code)'
     )
     .eq('profile_id', userId)
     .eq('status', 'active');

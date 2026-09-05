@@ -19,7 +19,8 @@ export async function GET() {
   const optionalProviders = {
     redis: Boolean(process.env.REDIS_URL),
     posthog: Boolean(process.env.NEXT_PUBLIC_POSTHOG_KEY),
-    smtp: Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD),
+    brevo_email: Boolean(process.env.BREVO_API_KEY && process.env.EMAIL_FROM),
+    brevo_whatsapp: Boolean(process.env.BREVO_API_KEY && process.env.BREVO_WHATSAPP_SENDER),
     sentry: Boolean(process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN),
     firebase_push: Boolean(process.env.FIREBASE_PROJECT_ID && process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID),
     r2: Boolean(

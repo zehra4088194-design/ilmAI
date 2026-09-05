@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isEmailConfigured, sendEmail } from '@/lib/email/send';
 import { sendPushNotification } from '@/lib/push/server';
+import { sendBrevoWhatsApp, type WhatsAppTemplateKind } from '@/lib/whatsapp/brevo';
 import { createAdminClient } from '@/lib/supabase/server';
-import { alertRecipients, referenceLink, reminderChannels, type QueuedReminder } from '@/lib/school-erp/notification-queue';
+import {
+  alertRecipients,
+  referenceLink,
+  reminderChannels,
+  queueWeeklyReports,
+  queueLeaveNotifications,
+  type QueuedReminder,
+} from '@/lib/school-erp/notification-queue';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -35,13 +43,12 @@ function escapeHtml(value: string) {
   );
 }
 
-async function sendWebhook(channel: 'sms' | 'whatsapp', delivery: Delivery, title: string, body: string) {
-  const prefix = channel === 'sms' ? 'SCHOOL_SMS' : 'SCHOOL_WHATSAPP';
-  const url = process.env[`${prefix}_WEBHOOK_URL`];
-  const token = process.env[`${prefix}_WEBHOOK_TOKEN`];
+async function sendSmsWebhook(delivery: Delivery, title: string, body: string) {
+  const url = process.env.SCHOOL_SMS_WEBHOOK_URL;
+  const token = process.env.SCHOOL_SMS_WEBHOOK_TOKEN;
   const address = delivery.recipient_address || related(delivery.profiles)?.phone;
   if (!url || !address) {
-    return { skipped: true as const, reason: `${channel} provider or recipient address is not configured` };
+    return { skipped: true as const, reason: 'sms provider or recipient address is not configured' };
   }
   const response = await fetch(url, {
     method: 'POST',
@@ -49,12 +56,34 @@ async function sendWebhook(channel: 'sms' | 'whatsapp', delivery: Delivery, titl
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: JSON.stringify({ to: address, title, message: body, channel }),
+    body: JSON.stringify({ to: address, title, message: body, channel: 'sms' }),
     signal: AbortSignal.timeout(10_000),
   });
-  if (!response.ok) throw new Error(`${channel} provider returned ${response.status}`);
+  if (!response.ok) throw new Error(`sms provider returned ${response.status}`);
   const result = await response.json().catch(() => ({}));
   return { providerReference: String(result.id || result.messageId || '') || null };
+}
+
+// Maps a delivery's category (fee_reminder / attendance_alert / weekly_report / leave_update /
+// announcement) to which approved Brevo WhatsApp template to send it through. Unmapped categories
+// (e.g. a plain announcement) skip WhatsApp — they still deliver via in_app/push/email.
+const WHATSAPP_TEMPLATE_BY_CATEGORY: Record<string, WhatsAppTemplateKind> = {
+  fee_reminder: 'fee_reminder',
+  attendance_alert: 'absence_alert',
+  weekly_report: 'weekly_report',
+  leave_update: 'leave_update',
+  announcement: 'announcement',
+};
+
+async function sendWhatsApp(delivery: Delivery, title: string, body: string) {
+  const address = delivery.recipient_address || related(delivery.profiles)?.phone;
+  const kind = WHATSAPP_TEMPLATE_BY_CATEGORY[delivery.category || ''];
+  if (!address || !kind) {
+    return { skipped: true as const, reason: 'No WhatsApp template is configured for this notification type' };
+  }
+  const result = await sendBrevoWhatsApp({ to: address, kind, templateParams: [title, body] });
+  if ('skipped' in result) return result;
+  return { providerReference: result.messageId };
 }
 
 async function deliver(db: any, delivery: Delivery) {
@@ -104,7 +133,8 @@ async function deliver(db: any, delivery: Delivery) {
     });
     return { providerReference: result.messageId };
   }
-  return sendWebhook(delivery.channel, delivery, title, body);
+  if (delivery.channel === 'whatsapp') return sendWhatsApp(delivery, title, body);
+  return sendSmsWebhook(delivery, title, body);
 }
 
 // PTM reminders: notify the teacher, parent, and any linked guardians ~24h
@@ -265,8 +295,16 @@ async function queueAbsenceReminders(db: any, today: string) {
 }
 
 async function queueSchoolReminders(db: any) {
-  const today = new Date().toISOString().slice(0, 10);
-  const queued = [...(await queueFeeReminders(db, today)), ...(await queueAbsenceReminders(db, today))];
+  const now = new Date();
+  const today = now.toISOString().slice(0, 10);
+  const queued = [
+    ...(await queueFeeReminders(db, today)),
+    ...(await queueAbsenceReminders(db, today)),
+    ...(await queueLeaveNotifications(db)),
+    // Weekly digest — only queued on Mondays even though this cron runs twice daily, so it
+    // actually behaves like a weekly report instead of firing on every run.
+    ...(now.getDay() === 1 ? await queueWeeklyReports(db, today) : []),
+  ];
   if (!queued.length) return { remindersQueued: 0 };
 
   // ignoreDuplicates + the dedupe unique index makes this safely re-runnable.

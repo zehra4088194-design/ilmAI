@@ -4,11 +4,13 @@ import { ArrowLeft } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { UniversityActionForm } from '@/components/features/university-hub/UniversityActionForm';
+import { UniversityResourceUrlField } from '@/components/features/university-hub/UniversityResourceUrlField';
 import { UNIVERSITY_RESOURCE_TYPES } from '@/lib/university-hub/types';
 import {
   getUniversitySubjectById,
   getUniversitySubjectResources,
   getUniversityQuestions,
+  resolveUniversityResourceUrl,
 } from '@/lib/university-hub/queries';
 import {
   createUniversityResource,
@@ -24,10 +26,15 @@ export default async function AdminUniversitySubjectPage({ params }: { params: P
   const subject = await getUniversitySubjectById(subjectId);
   if (!subject) notFound();
 
-  const [resources, questions] = await Promise.all([
+  const [rawResources, questions] = await Promise.all([
     getUniversitySubjectResources(subjectId),
     getUniversityQuestions(subjectId),
   ]);
+  // Resolve r2:// upload URIs (ilmai-uni-bucket included) to a signed HTTPS URL the "open" link
+  // below can actually load — see resolveUniversityResourceUrl. External links pass through as-is.
+  const resources = await Promise.all(
+    rawResources.map(async (resource: any) => ({ ...resource, openUrl: await resolveUniversityResourceUrl(resource.url) }))
+  );
 
   return (
     <div className="space-y-6">
@@ -58,7 +65,7 @@ export default async function AdminUniversitySubjectPage({ params }: { params: P
               ))}
             </select>
             <Input name="title" placeholder="Title (e.g. Chapter 1 - Alkanes.pdf)" required />
-            <Input name="url" placeholder="Link (PDF, YouTube, etc.) — optional" className="md:col-span-2 xl:col-span-2" />
+            <UniversityResourceUrlField />
           </UniversityActionForm>
         </CardContent>
       </Card>
@@ -79,8 +86,8 @@ export default async function AdminUniversitySubjectPage({ params }: { params: P
                     <div key={resource.id} className="border-border flex items-center justify-between gap-2 rounded-lg border p-2 text-sm">
                       <span className="truncate">
                         {resource.title}
-                        {resource.url && (
-                          <a href={resource.url} target="_blank" rel="noreferrer" className="text-primary ml-2 text-xs underline">
+                        {resource.openUrl && (
+                          <a href={resource.openUrl} target="_blank" rel="noreferrer" className="text-primary ml-2 text-xs underline">
                             open
                           </a>
                         )}

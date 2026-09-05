@@ -77,11 +77,11 @@ export default function ContactPage() {
                   ilmai.study1@gmail.com
                 </a>
                 <a
-                  href="tel:+923480049900"
+                  href="/api/support/contact?via=whatsapp"
                   className="mt-3 flex items-center gap-2 text-sm text-violet-300 underline-offset-4 hover:underline"
                 >
                   <Phone className="h-4 w-4" />
-                  03480049900
+                  WhatsApp us
                 </a>
               </div>
             </aside>

@@ -8,6 +8,7 @@ import { getCollegeFees } from '@/lib/college-erp/queries';
 import { listPendingFeePaymentClaims } from '@/lib/institution-payments/fee-actions';
 import { FeeClaimReviewRow } from '@/components/features/institution-payments/FeeClaimReviewRow';
 import { VoucherLedgerTable } from '@/components/features/school-erp/VoucherLedgerTable';
+import { FeesSubNav } from '@/components/features/institution-payments/FeesSubNav';
 
 const selectClass = 'border-input bg-background h-10 w-full rounded-lg border px-3 text-sm';
 
@@ -36,6 +37,7 @@ export default async function CollegeFeesPage() {
           <p className="font-bold">{context.organization.currency} {outstanding.toLocaleString()}</p>
         </div>
       </div>
+      <FeesSubNav basePath="/college-admin/fees" active="overview" />
       {canManage && (
         <div className="grid gap-5 xl:grid-cols-3">
           <Card>

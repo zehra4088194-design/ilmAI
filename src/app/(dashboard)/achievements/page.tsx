@@ -9,16 +9,24 @@ export const metadata: Metadata = { title: 'Achievements' };
 export default async function AchievementsPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const [{ data: profile }, { data: achievements }, { data: earned }, { data: league }, { data: coins }, { count: bossWins }] = await Promise.all([
+  const [{ data: profile }, { data: achievements }, { data: earned }, { data: league }, { data: coins }, { count: bossWins }, { data: completedEntries }] = await Promise.all([
     supabase.from('profiles').select('xp, streak, coins').eq('id', user!.id).single(),
     supabase.from('achievements').select('id, name, description, icon_url, xp_reward, condition_type, condition_value').order('condition_value'),
     supabase.from('user_achievements').select('achievement_id, earned_at').eq('user_id', user!.id),
     supabase.from('league_memberships' as any).select('weekly_xp').eq('user_id', user!.id).eq('week_start_date', getCurrentWeekStart()).maybeSingle(),
     supabase.from('coin_transactions' as any).select('amount').eq('user_id', user!.id).gt('amount', 0),
     supabase.from('boss_quiz_attempts' as any).select('id', { count: 'exact', head: true }).eq('user_id', user!.id).gte('score', 80),
+    // Competition Portal — mirrors the same read checkAndAwardAchievements() uses server-side, so
+    // this page's progress bars (not just the earned/locked state) reflect it too.
+    supabase
+      .from('competition_entries' as any)
+      .select('rank, competitions(competition_type)')
+      .eq('user_id', user!.id)
+      .not('completed_at', 'is', null),
   ]);
 
   const earnedIds = new Set((earned || []).map((row) => row.achievement_id));
+  const completed = completedEntries || [];
   const stats: Record<string, number> = {
     streak_days: profile?.streak || 0,
     xp_total: profile?.xp || 0,
@@ -26,6 +34,12 @@ export default async function AchievementsPage() {
     weekly_xp: (league as any)?.weekly_xp || 0,
     coins_earned: (coins || []).reduce((sum: number, row: any) => sum + Math.max(0, row.amount || 0), 0),
     boss_quiz_wins: bossWins || 0,
+    competition_wins: completed.filter((row: any) => row.rank === 1).length,
+    competition_top3: completed.filter((row: any) => row.rank && row.rank <= 3).length,
+    daily_challenges_completed: completed.filter((row: any) => {
+      const competition = Array.isArray(row.competitions) ? row.competitions[0] : row.competitions;
+      return competition?.competition_type === 'daily';
+    }).length,
   };
 
   return (

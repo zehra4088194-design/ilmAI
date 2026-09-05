@@ -107,9 +107,14 @@ export default async function CollegeExamsPage() {
                     <input type="hidden" name="exam_id" value={exam.id} />
                   </CollegeActionForm>
                   {exam.status === 'published' && (
-                    <Button asChild variant="outline" size="sm">
-                      <Link href={`/college-admin/exams/report-cards/${exam.id}`}>Report cards</Link>
-                    </Button>
+                    <>
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={`/college-admin/exams/report-cards/${exam.id}`}>Report cards</Link>
+                      </Button>
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={`/college-admin/exams/tabulation/${exam.id}`}>Result sheet / merit list</Link>
+                      </Button>
+                    </>
                   )}
                 </div>
               )}

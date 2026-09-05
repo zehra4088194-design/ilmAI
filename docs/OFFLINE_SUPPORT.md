@@ -25,13 +25,32 @@ How Ilm AI works offline, what's deliberately excluded, and how to verify it bef
   storage used via `navigator.storage.estimate()`).
 - **Per-user scoping**: offline-saved files are keyed by `${userId}:${kind}:${resourceId}:${mode}`. Two Ilm AI
   accounts sharing a browser/device never see or can clear each other's saved files.
+- **Offline write queue** (`src/lib/offline/sync-queue.ts`, replayed by `/api/offline/sync`): captures writes a
+  user makes while offline and replays them once connectivity returns. Currently covers attendance marking,
+  quiz completion, and notes (create/edit — see `src/components/features/notes/NotesGrid` and `NoteEditor`).
+  A brand-new note created offline has no server row yet, so it's edited inline in a dialog (client-generated
+  uuid, `crypto.randomUUID()`) instead of navigating to `/notes/[id]`, which can't render a note the server has
+  never heard of.
+- **Offline read mirror** (`src/lib/offline/read-cache.ts`): the WhatsApp-style "whatever you've already seen
+  stays on the device" half. `fetchWithOfflineCache(key, fetcher)` wraps any client-side `fetch()`/API call —
+  on success it mirrors the response into IndexedDB, on failure it falls back to the last mirrored value for
+  that key. Every key must include the signed-in user's id (the cache has no per-user concept on its own).
+  Currently used by the presentation builder's saved-history list and individual saved decks
+  (`src/components/features/university/PresentationBuilderClient`) — the same call wraps any other
+  fetch-then-render list/detail view that should keep working once it's been seen offline.
 
 ## What's deliberately online-only
 
 The exhaustive list lives in `src/lib/offline/online-only.ts` (single source of truth — nothing else should
-duplicate it). It covers: AI tutor chat/generation, live quiz/test-taking (Full Test), vision/OCR (Scan & Solve),
-voice (Speaking Practice), Study Buddies live chat, real-time/push endpoints, and payments/checkout. Anything
-not listed there is expected to work offline.
+duplicate it). It covers: AI generation (sending a message to AI Tutor, calling AI-powered tools), live
+quiz/test-taking (Full Test), vision/OCR (Scan & Solve), voice (Speaking Practice), sending a Study Buddies
+message, real-time/push endpoints, and payments/checkout. Anything not listed there is expected to work offline.
+
+AI Tutor and Study Buddies are a deliberate partial exception: the *page* itself is not gated, because past
+messages already live on the device (chat.store.ts persists to localStorage; Study Buddies requests/messages
+are mirrored via `src/lib/offline/read-cache.ts`) — so browsing history offline works fine. Only the actual
+send action is blocked while offline, inline where the send button lives (`useOnlineStatus()` disables it),
+rather than hiding the whole page behind `OnlineOnlyGate`.
 
 These surfaces are wrapped in `<OnlineOnlyGate>` (`src/components/features/offline/OnlineOnlyGate`), which shows
 the `OfflineNotice` banner in place of the feature when `navigator.onLine` is false, instead of letting it hang

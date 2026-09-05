@@ -18,7 +18,9 @@ export default async function AdminUniversityPage() {
         <h1 className="text-2xl font-bold">University Hub</h1>
         <p className="text-muted-foreground mt-1 text-sm">
           Platform-wide degree programs, years, and subjects — dynamic: add a program here and it shows up for every
-          university student immediately, no deploy needed.
+          university student immediately, no deploy needed. Subjects are a shared pool: typing the same subject name
+          under a different program/year links it to the one already there instead of creating a duplicate, so its
+          notes and MCQs are already there for the second program too.
         </p>
       </header>
 
@@ -65,6 +67,7 @@ export default async function AdminUniversityPage() {
                             </Link>
                             <UniversityActionForm action={deleteUniversitySubject} submitLabel="Remove" className="shrink-0">
                               <input type="hidden" name="subject_id" value={subject.id} />
+                              <input type="hidden" name="program_year_id" value={year.id} />
                             </UniversityActionForm>
                           </div>
                           <ResourceCoverageBadges
@@ -80,7 +83,12 @@ export default async function AdminUniversityPage() {
                     </div>
                     <UniversityActionForm action={createUniversitySubject} submitLabel="Add subject" className="mt-3 flex gap-2">
                       <input type="hidden" name="program_year_id" value={year.id} />
-                      <Input name="name" placeholder="Subject name" required className="h-9 text-sm" />
+                      <Input
+                        name="name"
+                        placeholder="Subject name (reuses it if it already exists elsewhere)"
+                        required
+                        className="h-9 text-sm"
+                      />
                     </UniversityActionForm>
                   </div>
                 ))}

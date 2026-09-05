@@ -8,6 +8,8 @@ import { getSiteUrl } from '@/lib/utils/siteUrl';
 import { getThemeStylesheetHref, parseAppTheme, THEME_COOKIE_NAME } from '@/lib/constants/themes';
 import { DEFAULT_LOCALE, isValidLocale, LOCALE_COOKIE_NAME, type Locale } from '@/lib/i18n/config';
 import { createClient } from '@/lib/supabase/server';
+import { getPlatformSettings } from '@/lib/platform-settings/server';
+import { SupportDonateWidget } from '@/components/features/support/SupportDonateWidget';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
 const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono', display: 'swap' });
@@ -76,6 +78,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     }
   }
 
+  // Best-effort — the "Support us" widget's PKR/USD conversion falls back to a fixed rate if
+  // platform settings can't be read, never blocking the page from rendering.
+  let usdToPkrRate = 280;
+  try {
+    const settings = await getPlatformSettings();
+    if (settings?.exchangeRate?.usdToPkr) usdToPkrRate = settings.exchangeRate.usdToPkr;
+  } catch {
+    // Keep the fallback rate.
+  }
+
   return (
     <html
       lang={initialLocale === 'roman-ur' ? 'en-PK' : 'en'}
@@ -96,6 +108,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className={`${inter.variable} ${geistMono.variable} font-sans antialiased`}>
         <Providers locale={initialLocale} initialTheme={initialTheme.className}>
           {children}
+          <SupportDonateWidget usdToPkrRate={usdToPkrRate} />
         </Providers>
       </body>
     </html>

@@ -10,8 +10,8 @@ export default async function UniversityMcqPage({
   params: Promise<{ programSlug: string; yearId: string; subjectId: string }>;
 }) {
   const { programSlug, yearId, subjectId } = await params;
-  const subject = await getUniversitySubjectById(subjectId);
-  if (!subject || subject.program_year_id !== yearId) notFound();
+  const subject = await getUniversitySubjectById(subjectId, yearId);
+  if (!subject) notFound();
   const questions = await getUniversityQuestions(subjectId);
 
   return (

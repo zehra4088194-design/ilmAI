@@ -13,8 +13,8 @@ export default async function UniversitySubjectivePracticePage({
   if (mode !== 'short' && mode !== 'long') notFound();
   const program = await getUniversityProgramBySlug(programSlug);
   if (!program) notFound();
-  const subject = await getUniversitySubjectById(subjectId);
-  if (!subject || subject.program_year_id !== yearId) notFound();
+  const subject = await getUniversitySubjectById(subjectId, yearId);
+  if (!subject) notFound();
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">

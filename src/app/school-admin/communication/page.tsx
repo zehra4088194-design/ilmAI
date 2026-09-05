@@ -38,7 +38,7 @@ export default async function SchoolCommunicationPage() {
 
   return (
     <div className="space-y-6">
-      <SchoolPageHeader title="Communication" description="Role-targeted alerts with in-app, email, SMS, WhatsApp, and push delivery queues." />
+      <SchoolPageHeader title="Communication" description="Broadcast to a class/section or the whole school, with in-app, email, SMS, WhatsApp, and push delivery queues." />
       {canManage && (
         <Card>
           <CardHeader><CardTitle className="text-base">Create announcement</CardTitle></CardHeader>
@@ -54,8 +54,16 @@ export default async function SchoolCommunicationPage() {
                 <div className="flex flex-wrap gap-3">{['student', 'parent', 'teacher', 'staff'].map((role) => <label key={role} className="flex items-center gap-1.5 text-sm capitalize"><input type="checkbox" name="audience_roles" value={role} defaultChecked />{role}</label>)}</div>
               </div>
               <div>
+                <p className="mb-2 text-xs font-medium">Class / section (broadcast composer)</p>
+                <select name="audience_section_id" className={selectClass} defaultValue="">
+                  <option value="">All guardians / everyone selected above</option>
+                  {data.sections.map((section: any) => <option key={section.id} value={section.id}>{section.label}</option>)}
+                </select>
+                <p className="text-muted-foreground mt-1 text-[11px]">When a class/section is chosen, only its students and their guardians receive this message — teacher/staff audience checkboxes are ignored.</p>
+              </div>
+              <div>
                 <p className="mb-2 text-xs font-medium">Channels</p>
-                <div className="flex flex-wrap gap-3">{['in_app', 'email', 'sms', 'whatsapp', 'push'].map((channel) => <label key={channel} className="flex items-center gap-1.5 text-sm"><input type="checkbox" name="delivery_channels" value={channel} defaultChecked={channel === 'in_app'} />{channel.replace('_', ' ')}</label>)}</div>
+                <div className="flex flex-wrap gap-3">{['in_app', 'email', 'sms', 'whatsapp', 'push'].map((channel) => <label key={channel} className="flex items-center gap-1.5 text-sm"><input type="checkbox" name="delivery_channels" value={channel} defaultChecked={channel === 'in_app' || channel === 'whatsapp'} />{channel.replace('_', ' ')}</label>)}</div>
               </div>
               <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="publish_now" defaultChecked /> Publish now</label>
             </SchoolActionForm>

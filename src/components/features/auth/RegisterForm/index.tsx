@@ -10,6 +10,7 @@ import {
   ArrowLeft,
   ArrowRight,
   AtSign,
+  Baby,
   Building2,
   Check,
   Eye,
@@ -68,7 +69,7 @@ type AccountType = 'student' | 'parent';
 type MembershipMode = 'individual' | 'institutional';
 type InstitutionalRole = 'student' | 'teacher' | 'principal';
 type Gender = 'girl' | 'boy';
-type SignupIdentity = 'parent' | 'university' | 'school-college' | 'institutional';
+type SignupIdentity = 'parent' | 'university' | 'school-college' | 'institutional' | 'kid';
 type SignupStepId =
   | 'identity'
   | 'language'
@@ -180,6 +181,14 @@ export function getSignupSteps(
   // Parent pathway: no education/institution questions
   if (identity === 'parent') {
     return [IDENTITY_STEP, ...CORE_STEPS];
+  }
+
+  // Kid pathway: explicit "I'm a Kid" identity, always the short under-8 flow — no
+  // gender/education/institution/grade/board questions, same shape the age-based isYoungChild
+  // shortcut already produces for the other identities below, just reachable directly instead of
+  // requiring someone to guess "School/College Student" and enter a real birthdate to unlock it.
+  if (identity === 'kid') {
+    return [IDENTITY_STEP, BIRTHDATE_STEP, ...CORE_STEPS];
   }
 
   // University student pathway: no grade/board/education picker (pre-selected as 'university')
@@ -313,7 +322,7 @@ export function RegisterForm() {
     : [];
   const birthDateValue = watch('birthDate');
   const isYoungChild = Boolean(
-    identity && ['parent', 'university', 'school-college'].includes(identity) &&
+    identity && ['parent', 'university', 'school-college', 'kid'].includes(identity) &&
     calculateAge(birthDateValue) !== null &&
     (calculateAge(birthDateValue) as number) < KIDS_DASHBOARD_AGE_CUTOFF
   );
@@ -497,7 +506,11 @@ export function RegisterForm() {
   const onSubmit = async (data: FormData) => {
     const isInstitutional = membershipMode === 'institutional';
 
-    if (effectiveRole === 'student' && !isYoungChild) {
+    // The 'kid' identity's step list never includes gender/institution/grade/board (see
+    // getSignupSteps above) — unlike the university/school-college isYoungChild shortcut, it
+    // stays short even if the entered birthdate turns out not to compute under the kids-dashboard
+    // age cutoff, so this final check must not demand fields that flow never asked for.
+    if (effectiveRole === 'student' && !isYoungChild && identity !== 'kid') {
       if (!gender) {
         toast.error('Please select your gender.');
         return;
@@ -723,7 +736,7 @@ export function RegisterForm() {
           <h2 className="mb-4 text-xl font-bold">{currentStep.title}</h2>
 
           {currentStep.id === 'identity' && (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <button
                 type="button"
                 onClick={() => {
@@ -779,6 +792,25 @@ export function RegisterForm() {
               >
                 <School className="h-6 w-6" /> School/College Student
                 <span className="text-muted-foreground text-xs font-normal">Classes, boards and grades setup</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIdentity('kid');
+                  setMembershipMode('individual');
+                  setAccountType('student');
+                  setEducationLevel('school');
+                }}
+                aria-pressed={identity === 'kid'}
+                className={cn(
+                  'flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border-2 p-3 text-center text-sm font-semibold transition-all',
+                  identity === 'kid'
+                    ? 'border-primary bg-primary/15 text-primary'
+                    : 'border-border bg-card/80 text-muted-foreground hover:border-primary/40'
+                )}
+              >
+                <Baby className="h-6 w-6" /> I&apos;m a Kid 🎈
+                <span className="text-muted-foreground text-xs font-normal">For learners under 8 — no boring forms</span>
               </button>
               <button
                 type="button"

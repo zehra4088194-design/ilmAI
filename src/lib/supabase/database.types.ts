@@ -71,6 +71,184 @@ export type Database = {
         }
         Relationships: []
       }
+      ad_banners: {
+        Row: {
+          categories: string[]
+          category: string | null
+          created_at: string
+          created_by: string | null
+          ends_at: string | null
+          id: string
+          image_url: string
+          is_active: boolean
+          placement: string
+          starts_at: string | null
+          target_audience: string | null
+          target_url: string
+          title: string
+          updated_at: string
+          weight: number
+        }
+        Insert: {
+          categories?: string[]
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          id?: string
+          image_url: string
+          is_active?: boolean
+          placement: string
+          starts_at?: string | null
+          target_audience?: string | null
+          target_url: string
+          title: string
+          updated_at?: string
+          weight?: number
+        }
+        Update: {
+          categories?: string[]
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          id?: string
+          image_url?: string
+          is_active?: boolean
+          placement?: string
+          starts_at?: string | null
+          target_audience?: string | null
+          target_url?: string
+          title?: string
+          updated_at?: string
+          weight?: number
+        }
+        Relationships: []
+      }
+      ad_categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      ad_clicks: {
+        Row: {
+          banner_id: string
+          click_id: string
+          clicked_at: string
+          converted: boolean
+          converted_at: string | null
+          id: string
+          order_id: string | null
+          order_value: number | null
+          user_id: string | null
+        }
+        Insert: {
+          banner_id: string
+          click_id: string
+          clicked_at?: string
+          converted?: boolean
+          converted_at?: string | null
+          id?: string
+          order_id?: string | null
+          order_value?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          banner_id?: string
+          click_id?: string
+          clicked_at?: string
+          converted?: boolean
+          converted_at?: string | null
+          id?: string
+          order_id?: string | null
+          order_value?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_clicks_banner_id_fkey"
+            columns: ["banner_id"]
+            isOneToOne: false
+            referencedRelation: "ad_banners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ad_impressions_daily: {
+        Row: {
+          banner_id: string
+          date: string
+          impression_count: number
+        }
+        Insert: {
+          banner_id: string
+          date?: string
+          impression_count?: number
+        }
+        Update: {
+          banner_id?: string
+          date?: string
+          impression_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_impressions_daily_banner_id_fkey"
+            columns: ["banner_id"]
+            isOneToOne: false
+            referencedRelation: "ad_banners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ad_placement_settings: {
+        Row: {
+          is_enabled: boolean
+          placement: string
+          updated_at: string
+        }
+        Insert: {
+          is_enabled?: boolean
+          placement: string
+          updated_at?: string
+        }
+        Update: {
+          is_enabled?: boolean
+          placement?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ad_seller_emails: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          email: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          email: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          email?: string
+        }
+        Relationships: []
+      }
       ai_answer_feedback: {
         Row: {
           created_at: string
@@ -993,6 +1171,180 @@ export type Database = {
           },
         ]
       }
+      class_live_attendance: {
+        Row: {
+          id: string
+          joined_at: string
+          left_at: string | null
+          session_id: string
+          student_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          left_at?: string | null
+          session_id: string
+          student_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          left_at?: string | null
+          session_id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_live_attendance_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "class_live_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_live_attendance_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_live_chat_messages: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          sender_id: string
+          sender_role: string
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          sender_id: string
+          sender_role: string
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          sender_id?: string
+          sender_role?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_live_chat_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_live_chat_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "class_live_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_live_hand_raises: {
+        Row: {
+          created_at: string
+          id: string
+          session_id: string
+          status: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          session_id: string
+          status?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          session_id?: string
+          status?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_live_hand_raises_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "class_live_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_live_hand_raises_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_live_sessions: {
+        Row: {
+          class_id: string
+          created_at: string
+          created_by: string | null
+          ended_at: string | null
+          id: string
+          livekit_room_name: string
+          started_at: string
+          status: string
+          title: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          created_by?: string | null
+          ended_at?: string | null
+          id?: string
+          livekit_room_name: string
+          started_at?: string
+          status?: string
+          title: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          created_by?: string | null
+          ended_at?: string | null
+          id?: string
+          livekit_room_name?: string
+          started_at?: string
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_live_sessions_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_live_sessions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coin_transactions: {
         Row: {
           amount: number
@@ -1241,6 +1593,7 @@ export type Database = {
       college_admissions: {
         Row: {
           academic_year_id: string | null
+          applicant_email: string | null
           applicant_name: string
           applicant_profile_id: string | null
           application_number: string
@@ -1264,6 +1617,7 @@ export type Database = {
         }
         Insert: {
           academic_year_id?: string | null
+          applicant_email?: string | null
           applicant_name: string
           applicant_profile_id?: string | null
           application_number: string
@@ -1287,6 +1641,7 @@ export type Database = {
         }
         Update: {
           academic_year_id?: string | null
+          applicant_email?: string | null
           applicant_name?: string
           applicant_profile_id?: string | null
           application_number?: string
@@ -2243,6 +2598,60 @@ export type Database = {
           },
         ]
       }
+      college_expenses: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          created_by: string
+          description: string
+          expense_date: string
+          id: string
+          notes: string | null
+          organization_id: string
+          paid_via: string
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string
+          created_by: string
+          description: string
+          expense_date?: string
+          id?: string
+          notes?: string | null
+          organization_id: string
+          paid_via?: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          created_by?: string
+          description?: string
+          expense_date?: string
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          paid_via?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "college_expenses_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "college_expenses_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "college_organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       college_fee_invoices: {
         Row: {
           academic_year_id: string
@@ -2371,6 +2780,7 @@ export type Database = {
           notes: string | null
           organization_id: string
           paid_at: string
+          payment_group_id: string | null
           payment_method: string
           provider: string | null
           provider_reference: string | null
@@ -2385,6 +2795,7 @@ export type Database = {
           notes?: string | null
           organization_id: string
           paid_at?: string
+          payment_group_id?: string | null
           payment_method: string
           provider?: string | null
           provider_reference?: string | null
@@ -2399,6 +2810,7 @@ export type Database = {
           notes?: string | null
           organization_id?: string
           paid_at?: string
+          payment_group_id?: string | null
           payment_method?: string
           provider?: string | null
           provider_reference?: string | null
@@ -3073,6 +3485,8 @@ export type Database = {
           name: string
           organization_type: string
           phone: string | null
+          principal_name: string | null
+          principal_signature_url: string | null
           settings: Json
           slug: string
           status: string
@@ -3090,6 +3504,8 @@ export type Database = {
           name: string
           organization_type?: string
           phone?: string | null
+          principal_name?: string | null
+          principal_signature_url?: string | null
           settings?: Json
           slug: string
           status?: string
@@ -3107,6 +3523,8 @@ export type Database = {
           name?: string
           organization_type?: string
           phone?: string | null
+          principal_name?: string | null
+          principal_signature_url?: string | null
           settings?: Json
           slug?: string
           status?: string
@@ -3800,6 +4218,193 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competition_certificates: {
+        Row: {
+          competition_id: string
+          id: string
+          issued_at: string
+          percentile: number | null
+          rank: number
+          user_id: string
+        }
+        Insert: {
+          competition_id: string
+          id?: string
+          issued_at?: string
+          percentile?: number | null
+          rank: number
+          user_id: string
+        }
+        Update: {
+          competition_id?: string
+          id?: string
+          issued_at?: string
+          percentile?: number | null
+          rank?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_certificates_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_certificates_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competition_entries: {
+        Row: {
+          competition_id: string
+          completed_at: string | null
+          correct_count: number | null
+          id: string
+          percentile: number | null
+          quiz_session_id: string | null
+          rank: number | null
+          score: number | null
+          started_at: string
+          time_spent: number | null
+          user_id: string
+        }
+        Insert: {
+          competition_id: string
+          completed_at?: string | null
+          correct_count?: number | null
+          id?: string
+          percentile?: number | null
+          quiz_session_id?: string | null
+          rank?: number | null
+          score?: number | null
+          started_at?: string
+          time_spent?: number | null
+          user_id: string
+        }
+        Update: {
+          competition_id?: string
+          completed_at?: string | null
+          correct_count?: number | null
+          id?: string
+          percentile?: number | null
+          quiz_session_id?: string | null
+          rank?: number | null
+          score?: number | null
+          started_at?: string
+          time_spent?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_entries_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_entries_quiz_session_id_fkey"
+            columns: ["quiz_session_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_entries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competitions: {
+        Row: {
+          chapter_id: string | null
+          coin_reward: number
+          competition_type: Database["public"]["Enums"]["competition_type"]
+          created_at: string
+          created_by: string | null
+          description: string
+          ends_at: string
+          id: string
+          organization_id: string | null
+          question_count: number
+          quiz_session_template: Json
+          scope: Database["public"]["Enums"]["competition_scope"]
+          section_a_id: string | null
+          section_b_id: string | null
+          starts_at: string
+          subject_id: string | null
+          time_limit_seconds: number
+          title: string
+          xp_reward: number
+        }
+        Insert: {
+          chapter_id?: string | null
+          coin_reward?: number
+          competition_type: Database["public"]["Enums"]["competition_type"]
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          ends_at: string
+          id?: string
+          organization_id?: string | null
+          question_count?: number
+          quiz_session_template: Json
+          scope?: Database["public"]["Enums"]["competition_scope"]
+          section_a_id?: string | null
+          section_b_id?: string | null
+          starts_at: string
+          subject_id?: string | null
+          time_limit_seconds?: number
+          title: string
+          xp_reward?: number
+        }
+        Update: {
+          chapter_id?: string | null
+          coin_reward?: number
+          competition_type?: Database["public"]["Enums"]["competition_type"]
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          ends_at?: string
+          id?: string
+          organization_id?: string | null
+          question_count?: number
+          quiz_session_template?: Json
+          scope?: Database["public"]["Enums"]["competition_scope"]
+          section_a_id?: string | null
+          section_b_id?: string | null
+          starts_at?: string
+          subject_id?: string | null
+          time_limit_seconds?: number
+          title?: string
+          xp_reward?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competitions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competitions_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
             referencedColumns: ["id"]
           },
         ]
@@ -4882,6 +5487,164 @@ export type Database = {
         }
         Relationships: []
       }
+      kids_activity_log: {
+        Row: {
+          activity_key: string
+          category: string
+          created_at: string
+          id: string
+          user_id: string
+          xp_earned: number
+        }
+        Insert: {
+          activity_key: string
+          category: string
+          created_at?: string
+          id?: string
+          user_id: string
+          xp_earned?: number
+        }
+        Update: {
+          activity_key?: string
+          category?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+          xp_earned?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kids_activity_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kids_gk_facts: {
+        Row: {
+          correct_index: number
+          created_at: string
+          emoji: string
+          fun_fact: string | null
+          id: string
+          options: Json
+          question: string
+          xp_reward: number
+        }
+        Insert: {
+          correct_index?: number
+          created_at?: string
+          emoji?: string
+          fun_fact?: string | null
+          id?: string
+          options?: Json
+          question: string
+          xp_reward?: number
+        }
+        Update: {
+          correct_index?: number
+          created_at?: string
+          emoji?: string
+          fun_fact?: string | null
+          id?: string
+          options?: Json
+          question?: string
+          xp_reward?: number
+        }
+        Relationships: []
+      }
+      kids_islamic_lessons: {
+        Row: {
+          category: string
+          content: string
+          created_at: string
+          emoji: string
+          id: string
+          title: string
+          xp_reward: number
+        }
+        Insert: {
+          category?: string
+          content: string
+          created_at?: string
+          emoji?: string
+          id?: string
+          title: string
+          xp_reward?: number
+        }
+        Update: {
+          category?: string
+          content?: string
+          created_at?: string
+          emoji?: string
+          id?: string
+          title?: string
+          xp_reward?: number
+        }
+        Relationships: []
+      }
+      kids_quiz_questions: {
+        Row: {
+          correct_index: number
+          created_at: string
+          emoji: string
+          id: string
+          options: Json
+          question: string
+          subject: string
+          xp_reward: number
+        }
+        Insert: {
+          correct_index?: number
+          created_at?: string
+          emoji?: string
+          id?: string
+          options?: Json
+          question: string
+          subject?: string
+          xp_reward?: number
+        }
+        Update: {
+          correct_index?: number
+          created_at?: string
+          emoji?: string
+          id?: string
+          options?: Json
+          question?: string
+          subject?: string
+          xp_reward?: number
+        }
+        Relationships: []
+      }
+      kids_stories: {
+        Row: {
+          cover_emoji: string
+          created_at: string
+          id: string
+          pages: Json
+          title: string
+          xp_reward: number
+        }
+        Insert: {
+          cover_emoji?: string
+          created_at?: string
+          id?: string
+          pages?: Json
+          title: string
+          xp_reward?: number
+        }
+        Update: {
+          cover_emoji?: string
+          created_at?: string
+          id?: string
+          pages?: Json
+          title?: string
+          xp_reward?: number
+        }
+        Relationships: []
+      }
       league_memberships: {
         Row: {
           created_at: string
@@ -5533,6 +6296,63 @@ export type Database = {
           },
         ]
       }
+      parent_family_goals: {
+        Row: {
+          created_at: string
+          due_date: string | null
+          id: string
+          parent_id: string
+          progress_value: number
+          status: string
+          student_id: string
+          target_value: number
+          title: string
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          parent_id: string
+          progress_value?: number
+          status?: string
+          student_id: string
+          target_value?: number
+          title: string
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          parent_id?: string
+          progress_value?: number
+          status?: string
+          student_id?: string
+          target_value?: number
+          title?: string
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_family_goals_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parent_family_goals_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parent_messages: {
         Row: {
           content: string
@@ -5866,41 +6686,56 @@ export type Database = {
         Row: {
           artist: string | null
           created_at: string
+          duration_seconds: number | null
+          file_size_bytes: number | null
           id: string
           is_active: boolean
+          mime_type: string | null
           order_index: number
           playlist_id: string
+          source_type: string
+          storage_url: string | null
           thumbnail_url: string | null
           title: string
           updated_at: string
-          youtube_url: string
-          youtube_video_id: string
+          youtube_url: string | null
+          youtube_video_id: string | null
         }
         Insert: {
           artist?: string | null
           created_at?: string
+          duration_seconds?: number | null
+          file_size_bytes?: number | null
           id?: string
           is_active?: boolean
+          mime_type?: string | null
           order_index?: number
           playlist_id: string
+          source_type?: string
+          storage_url?: string | null
           thumbnail_url?: string | null
           title: string
           updated_at?: string
-          youtube_url: string
-          youtube_video_id: string
+          youtube_url?: string | null
+          youtube_video_id?: string | null
         }
         Update: {
           artist?: string | null
           created_at?: string
+          duration_seconds?: number | null
+          file_size_bytes?: number | null
           id?: string
           is_active?: boolean
+          mime_type?: string | null
           order_index?: number
           playlist_id?: string
+          source_type?: string
+          storage_url?: string | null
           thumbnail_url?: string | null
           title?: string
           updated_at?: string
-          youtube_url?: string
-          youtube_video_id?: string
+          youtube_url?: string | null
+          youtube_video_id?: string | null
         }
         Relationships: [
           {
@@ -6560,6 +7395,38 @@ export type Database = {
           },
         ]
       }
+      quran_daily_practice: {
+        Row: {
+          completed: boolean
+          created_at: string
+          id: string
+          practice_date: string
+          student_id: string
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          id?: string
+          practice_date?: string
+          student_id: string
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          id?: string
+          practice_date?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quran_daily_practice_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quran_group_members: {
         Row: {
           added_by: string | null
@@ -6613,6 +7480,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          current_lesson: string | null
           days_of_week: number[]
           id: string
           livekit_room_name: string
@@ -6626,6 +7494,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          current_lesson?: string | null
           days_of_week?: number[]
           id?: string
           livekit_room_name: string
@@ -6639,6 +7508,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
+          current_lesson?: string | null
           days_of_week?: number[]
           id?: string
           livekit_room_name?: string
@@ -7297,6 +8167,7 @@ export type Database = {
       school_admissions: {
         Row: {
           academic_year_id: string | null
+          applicant_email: string | null
           applicant_name: string
           applicant_profile_id: string | null
           application_number: string
@@ -7323,6 +8194,7 @@ export type Database = {
         }
         Insert: {
           academic_year_id?: string | null
+          applicant_email?: string | null
           applicant_name: string
           applicant_profile_id?: string | null
           application_number: string
@@ -7349,6 +8221,7 @@ export type Database = {
         }
         Update: {
           academic_year_id?: string | null
+          applicant_email?: string | null
           applicant_name?: string
           applicant_profile_id?: string | null
           application_number?: string
@@ -8220,6 +9093,60 @@ export type Database = {
           },
         ]
       }
+      school_expenses: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          created_by: string
+          description: string
+          expense_date: string
+          id: string
+          notes: string | null
+          organization_id: string
+          paid_via: string
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string
+          created_by: string
+          description: string
+          expense_date?: string
+          id?: string
+          notes?: string | null
+          organization_id: string
+          paid_via?: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          created_by?: string
+          description?: string
+          expense_date?: string
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          paid_via?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_expenses_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "school_expenses_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "school_organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       school_fee_invoices: {
         Row: {
           academic_year_id: string
@@ -8348,6 +9275,7 @@ export type Database = {
           notes: string | null
           organization_id: string
           paid_at: string
+          payment_group_id: string | null
           payment_method: string
           provider: string | null
           provider_reference: string | null
@@ -8362,6 +9290,7 @@ export type Database = {
           notes?: string | null
           organization_id: string
           paid_at?: string
+          payment_group_id?: string | null
           payment_method: string
           provider?: string | null
           provider_reference?: string | null
@@ -8376,6 +9305,7 @@ export type Database = {
           notes?: string | null
           organization_id?: string
           paid_at?: string
+          payment_group_id?: string | null
           payment_method?: string
           provider?: string | null
           provider_reference?: string | null
@@ -9109,6 +10039,8 @@ export type Database = {
           name: string
           organization_type: string
           phone: string | null
+          principal_name: string | null
+          principal_signature_url: string | null
           settings: Json
           slug: string
           status: string
@@ -9126,6 +10058,8 @@ export type Database = {
           name: string
           organization_type?: string
           phone?: string | null
+          principal_name?: string | null
+          principal_signature_url?: string | null
           settings?: Json
           slug: string
           status?: string
@@ -9143,6 +10077,8 @@ export type Database = {
           name?: string
           organization_type?: string
           phone?: string | null
+          principal_name?: string | null
+          principal_signature_url?: string | null
           settings?: Json
           slug?: string
           status?: string
@@ -11722,7 +12658,7 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
-          program_year_id: string
+          program_year_id: string | null
           sort_order: number
           updated_at: string
         }
@@ -11732,7 +12668,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
-          program_year_id: string
+          program_year_id?: string | null
           sort_order?: number
           updated_at?: string
         }
@@ -11742,7 +12678,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
-          program_year_id?: string
+          program_year_id?: string | null
           sort_order?: number
           updated_at?: string
         }
@@ -11752,6 +12688,45 @@ export type Database = {
             columns: ["program_year_id"]
             isOneToOne: false
             referencedRelation: "university_program_years"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      university_program_year_subjects: {
+        Row: {
+          created_at: string
+          id: string
+          program_year_id: string
+          sort_order: number
+          subject_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          program_year_id: string
+          sort_order?: number
+          subject_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          program_year_id?: string
+          sort_order?: number
+          subject_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "university_program_year_subjects_program_year_id_fkey"
+            columns: ["program_year_id"]
+            isOneToOne: false
+            referencedRelation: "university_program_years"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "university_program_year_subjects_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "university_subjects"
             referencedColumns: ["id"]
           },
         ]
@@ -11920,6 +12895,8 @@ export type Database = {
           name: string
           organization_type: string
           phone: string | null
+          principal_name: string | null
+          principal_signature_url: string | null
           settings: Json
           slug: string
           status: string
@@ -11954,6 +12931,40 @@ export type Database = {
           name: string
           organization_type: string
           phone: string | null
+          principal_name: string | null
+          principal_signature_url: string | null
+          settings: Json
+          slug: string
+          status: string
+          timezone: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "college_organizations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      college_update_principal_signature: {
+        Args: {
+          p_organization_id: string
+          p_principal_name: string
+          p_signature_url: string
+        }
+        Returns: {
+          address: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          email: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          organization_type: string
+          phone: string | null
+          principal_name: string | null
+          principal_signature_url: string | null
           settings: Json
           slug: string
           status: string
@@ -12143,6 +13154,10 @@ export type Database = {
       }
       import_academic_questions: { Args: { p_payload: Json }; Returns: number }
       import_qbank_payload: { Args: { p_payload: Json }; Returns: Json }
+      increment_ad_impression: {
+        Args: { p_banner_id: string }
+        Returns: undefined
+      }
       increment_coins: {
         Args: { p_amount: number; p_user_id: string }
         Returns: number
@@ -12227,6 +13242,8 @@ export type Database = {
           name: string
           organization_type: string
           phone: string | null
+          principal_name: string | null
+          principal_signature_url: string | null
           settings: Json
           slug: string
           status: string
@@ -12261,6 +13278,40 @@ export type Database = {
           name: string
           organization_type: string
           phone: string | null
+          principal_name: string | null
+          principal_signature_url: string | null
+          settings: Json
+          slug: string
+          status: string
+          timezone: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "school_organizations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      school_update_principal_signature: {
+        Args: {
+          p_organization_id: string
+          p_principal_name: string
+          p_signature_url: string
+        }
+        Returns: {
+          address: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          email: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          organization_type: string
+          phone: string | null
+          principal_name: string | null
+          principal_signature_url: string | null
           settings: Json
           slug: string
           status: string
@@ -12288,6 +13339,44 @@ export type Database = {
           metadata: Json
           page_number: number
           rank: number
+          text: string
+        }[]
+      }
+      search_subject_questions: {
+        Args: {
+          p_chapter_id?: string
+          p_limit?: number
+          p_query?: string
+          p_subject_id: string
+        }
+        Returns: {
+          chapter_id: string
+          correct_answer: Json
+          difficulty: string
+          explanation: string
+          id: string
+          marks: number
+          options: Json
+          question_type: string
+          similarity: number
+          text: string
+        }[]
+      }
+      search_subject_resource_chunks: {
+        Args: {
+          p_chapter_id?: string
+          p_limit?: number
+          p_query?: string
+          p_subject_id: string
+        }
+        Returns: {
+          chunk_index: number
+          heading: string
+          page_number: number
+          rank: number
+          resource_id: string
+          resource_kind: string
+          resource_title: string
           text: string
         }[]
       }
@@ -12326,6 +13415,8 @@ export type Database = {
         | "CBSE"
         | "ICSE"
         | "STATE_BOARD_IN"
+      competition_scope: "global" | "school" | "college"
+      competition_type: "daily" | "class_vs_class" | "school_vs_school"
       difficulty_level: "EASY" | "MEDIUM" | "HARD" | "EXPERT"
       grade_level:
         | "GRADE_9"
@@ -12347,7 +13438,7 @@ export type Database = {
       session_status: "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED" | "ABANDONED"
       session_type: "READING" | "QUIZ" | "FLASHCARD" | "AI_CHAT" | "PAST_PAPER"
       subscription_tier: "FREE" | "PRO" | "ELITE"
-      user_role: "student" | "teacher" | "admin" | "parent"
+      user_role: "student" | "teacher" | "principal" | "admin" | "parent"
     }
     CompositeTypes: {
       http_header: {
@@ -12379,12 +13470,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -12408,11 +13499,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -12433,11 +13524,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -12458,11 +13549,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -12475,11 +13566,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -12503,6 +13594,8 @@ export const Constants = {
         "ICSE",
         "STATE_BOARD_IN",
       ],
+      competition_scope: ["global", "school", "college"],
+      competition_type: ["daily", "class_vs_class", "school_vs_school"],
       difficulty_level: ["EASY", "MEDIUM", "HARD", "EXPERT"],
       grade_level: [
         "GRADE_9",
@@ -12526,7 +13619,7 @@ export const Constants = {
       session_status: ["NOT_STARTED", "IN_PROGRESS", "COMPLETED", "ABANDONED"],
       session_type: ["READING", "QUIZ", "FLASHCARD", "AI_CHAT", "PAST_PAPER"],
       subscription_tier: ["FREE", "PRO", "ELITE"],
-      user_role: ["student", "teacher", "admin", "parent"],
+      user_role: ["student", "teacher", "principal", "admin", "parent"],
     },
   },
 } as const

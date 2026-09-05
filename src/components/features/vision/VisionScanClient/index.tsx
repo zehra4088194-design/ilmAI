@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Camera, FileImage, Loader2, ScanLine, Sparkles } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Camera, FileImage, ListChecks, Loader2, ScanLine, Sparkles, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +19,7 @@ const SCAN_TYPES = [
 ];
 
 export function VisionScanClient() {
+  const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [scanType, setScanType] = useState('textbook_page');
@@ -29,6 +31,12 @@ export function VisionScanClient() {
     remaining_credits?: number;
     credit_cost?: number;
   } | null>(null);
+
+  // "Make a test from this" — every successfully scanned page's text is kept here so a student
+  // who photographed several pages of the same chapter can build one test from all of them, not
+  // just the last scan. Cleared once a test is generated.
+  const [testPages, setTestPages] = useState<string[]>([]);
+  const [buildingTest, setBuildingTest] = useState(false);
 
   const onFile = (next: File | null) => {
     if (!next) return;
@@ -60,10 +68,45 @@ export function VisionScanClient() {
         return;
       }
       setResult(json.data);
+      if (json.data?.ocr_text?.trim()) setTestPages((prev) => [...prev, json.data.ocr_text]);
     } catch {
       toast.error('The scan could not be processed.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Sends every page scanned so far to the AI test generator, then hands the generated paper to
+  // /full-test the same way a resource-based test does — via sessionStorage — so it reuses that
+  // page's whole take/grade experience instead of building a second one here.
+  const buildTest = async () => {
+    if (!testPages.length) return;
+    setBuildingTest(true);
+    try {
+      const res = await fetch('/api/vision/test-generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: testPages.join('\n\n'),
+          title: testPages.length > 1 ? `Scanned Pages Test (${testPages.length} pages)` : 'Scanned Page Test',
+        }),
+      });
+      const json = await res.json();
+      if (json.status === 'error') {
+        toast.error(json.error);
+        return;
+      }
+      window.sessionStorage.setItem(
+        'ilm-ai-resource-test',
+        JSON.stringify({ paper: json.data.paper, resourceTitle: json.data.paper.title })
+      );
+      setTestPages([]);
+      toast.success('Test ready — opening it now.');
+      router.push('/full-test');
+    } catch {
+      toast.error('The test could not be generated.');
+    } finally {
+      setBuildingTest(false);
     }
   };
 
@@ -168,6 +211,35 @@ export function VisionScanClient() {
               </Card>
               <AiAnswerRenderer content={result.ai_explanation} label="AI Vision Explanation" />
             </>
+          )}
+
+          {testPages.length > 0 && (
+            <Card className="border-emerald-500/40 bg-emerald-500/5">
+              <CardContent className="space-y-3 p-5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-sm font-semibold">
+                    <ListChecks className="h-4 w-4 text-emerald-500" />
+                    {testPages.length} page{testPages.length > 1 ? 's' : ''} ready for a test
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setTestPages([])}
+                    aria-label="Clear scanned pages"
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+                <p className="text-muted-foreground text-xs">
+                  Scan another page above to add it to this test, or generate an AI test — with MCQs, short and long
+                  questions — from what you&apos;ve scanned so far.
+                </p>
+                <Button variant="gradient" className="w-full" onClick={buildTest} disabled={buildingTest}>
+                  {buildingTest ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  Generate test from scan{testPages.length > 1 ? 's' : ''}
+                </Button>
+              </CardContent>
+            </Card>
           )}
         </div>
       </div>

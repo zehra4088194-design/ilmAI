@@ -9,6 +9,7 @@ import { getRequestSiteUrl } from '@/lib/utils/siteUrl';
 import { createInstitutionalJoinRequestFromSignup } from '@/lib/school-erp/join-request-signup';
 import { resolveMembershipRedirect } from '@/lib/auth/resolveMembershipRedirect';
 import { decodeSessionIdFromJwt, enforceSessionLimit } from '@/lib/auth/enforceSessionLimit';
+import { isYoungLearnerByAge } from '@/lib/kids/eligibility';
 
 type BoardType = Database['public']['Enums']['board_type'];
 type GradeLevel = Database['public']['Enums']['grade_level'];
@@ -34,6 +35,10 @@ function resolveEducationLevel(value: unknown): EducationLevel | null {
 
 function resolveGender(value: unknown): 'girl' | 'boy' | null {
   return value === 'girl' || value === 'boy' ? value : null;
+}
+
+function resolveDateOfBirth(value: unknown): string | null {
+  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
 }
 
 function isMissingAcademicInstitutionColumn(error: { code?: string; message?: string } | null) {
@@ -100,7 +105,7 @@ export async function GET(request: NextRequest) {
       const { data: existingProfile } = await (supabase
         .from('profiles')
         .select(
-          'id, role, username, gender, board, grade_level, education_level, university_program, university_semester, onboarding_completed, is_profile_complete, preferred_language'
+          'id, role, username, gender, board, grade_level, education_level, university_program, university_semester, onboarding_completed, is_profile_complete, preferred_language, date_of_birth'
         )
         .eq('id', data.user.id)
         .maybeSingle() as any);
@@ -129,6 +134,7 @@ export async function GET(request: NextRequest) {
         userMetadata?.preferred_language === 'roman-ur' || userMetadata?.preferred_language === 'en'
           ? userMetadata.preferred_language
           : null;
+      const metadataDateOfBirth = resolveDateOfBirth(userMetadata?.date_of_birth);
       const signupInstitutionId =
         typeof userMetadata?.signup_institution_id === 'string' ? userMetadata.signup_institution_id : null;
       const signupRoleRequested =
@@ -137,6 +143,17 @@ export async function GET(request: NextRequest) {
           : null;
 
       const resolvedRole = metadataRole ?? existingProfile?.role ?? 'student';
+      // A young child (RegisterForm's isYoungChild shortcut, including the dedicated "I'm a Kid"
+      // identity) is never asked gender/board/grade/education, so onboarding_completed stays false
+      // for them here too — consistent with how /api/auth/ensure-profile (the immediate-session
+      // twin of this route) already leaves it. What matters is the POST-SIGNUP DESTINATION below:
+      // without this flag, a young child whose signup required email confirmation would fall
+      // through to the needsProfileCompletion()/onboarding_completed redirect chain and land on
+      // /onboarding/complete-profile or /onboarding/class instead of /kids. date_of_birth falls
+      // back to the existing profile row so a returning young child (e.g. re-clicking an old
+      // confirmation link) still resolves correctly.
+      const isYoungChild =
+        resolvedRole === 'student' && isYoungLearnerByAge(metadataDateOfBirth ?? existingProfile?.date_of_birth ?? null);
       const metadataOnboardingCompleted =
         resolvedRole !== 'student' ||
         (metadataEducationLevel !== 'university' && Boolean(metadataGender && metadataBoard && metadataGradeLevel));
@@ -160,6 +177,7 @@ export async function GET(request: NextRequest) {
           username: metadataUsername,
           gender: metadataGender,
           gender_changed_at: metadataGender ? new Date().toISOString() : null,
+          date_of_birth: metadataDateOfBirth,
           avatar_url: data.user.user_metadata?.avatar_url || null,
           board: metadataBoard,
           grade_level: metadataGradeLevel,
@@ -228,6 +246,10 @@ export async function GET(request: NextRequest) {
         if (metadataGender && !existingProfile.gender) {
           updates.gender = metadataGender;
           updates.gender_changed_at = new Date().toISOString();
+        }
+
+        if (metadataDateOfBirth && !existingProfile.date_of_birth) {
+          (updates as any).date_of_birth = metadataDateOfBirth;
         }
 
         if (metadataOnboardingCompleted && existingProfile.onboarding_completed === false) {
@@ -303,15 +325,17 @@ export async function GET(request: NextRequest) {
         ? redirectTo
         : membershipRedirect?.institutionType
           ? membershipRedirect.destination
-          : !profileForRedirect.username && !needsProfileCompletion(profileForRedirect)
-            ? `/onboarding/username?next=${encodeURIComponent(resolvedRole === 'parent' ? '/parent' : redirectTo)}`
-            : (isSocialOAuthSignIn || metadataEducationLevel === 'university') && needsProfileCompletion(profileForRedirect)
-              ? '/onboarding/complete-profile'
-              : resolvedRole === 'student' && !profileForRedirect.onboarding_completed
-                ? '/onboarding/class'
-                : resolvedRole === 'parent'
-                  ? '/parent'
-                  : redirectTo;
+          : isYoungChild
+            ? '/kids'
+            : !profileForRedirect.username && !needsProfileCompletion(profileForRedirect)
+              ? `/onboarding/username?next=${encodeURIComponent(resolvedRole === 'parent' ? '/parent' : redirectTo)}`
+              : (isSocialOAuthSignIn || metadataEducationLevel === 'university') && needsProfileCompletion(profileForRedirect)
+                ? '/onboarding/complete-profile'
+                : resolvedRole === 'student' && !profileForRedirect.onboarding_completed
+                  ? '/onboarding/class'
+                  : resolvedRole === 'parent'
+                    ? '/parent'
+                    : redirectTo;
 
       // The "Enable 2-step verification after signup" checkbox on RegisterForm can't enroll MFA
       // directly — that needs an authenticated session, which doesn't exist during the wizard
@@ -320,9 +344,13 @@ export async function GET(request: NextRequest) {
       // real session exists. Only honored for a brand-new profile (a returning user's signup
       // metadata is irrelevant to their login) and never overrides the parent-link deep link or an
       // institution member's portal landing.
+      // Kids accounts skip the MFA enrollment offer entirely — a young child isn't the one
+      // setting up their own authenticator app; a parent/guardian can enable it later from
+      // Settings if they want to. Mirrors RegisterForm's `wantsMfa && !isYoungChild` guard on the
+      // immediate-session path.
       const wantsMfaFromSignup = !existingProfile && userMetadata?.enable_2fa === true;
       const destination =
-        wantsMfaFromSignup && !isParentLinkRedirect && !membershipRedirect?.institutionType
+        wantsMfaFromSignup && !isParentLinkRedirect && !membershipRedirect?.institutionType && !isYoungChild
           ? `/settings?tab=security&mfa=start&next=${encodeURIComponent(normalDestination)}`
           : normalDestination;
 

@@ -50,6 +50,7 @@ export type QuranStudentGroup = {
   livekit_room_name: string;
   status: string;
   teacher_name: string;
+  current_lesson: string | null;
 };
 
 /** Every active group the signed-in user belongs to as a student. */
@@ -58,7 +59,7 @@ export async function getQuranStudentGroups(supabase: SupabaseClient, userId: st
   const { data: memberships } = await db
     .from('quran_group_members')
     .select(
-      'group_id, quran_groups(id, name, session_time, days_of_week, livekit_room_name, status, quran_teachers(profiles(full_name)))'
+      'group_id, quran_groups(id, name, session_time, days_of_week, livekit_room_name, status, current_lesson, quran_teachers(profiles(full_name)))'
     )
     .eq('student_id', userId)
     .eq('status', 'active');
@@ -77,6 +78,7 @@ export async function getQuranStudentGroups(supabase: SupabaseClient, userId: st
         livekit_room_name: group.livekit_room_name,
         status: group.status,
         teacher_name: teacherProfile?.full_name || 'Teacher',
+        current_lesson: group.current_lesson || null,
       } as QuranStudentGroup;
     })
     .filter(Boolean) as QuranStudentGroup[];

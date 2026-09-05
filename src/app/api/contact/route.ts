@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
   }
 
   const { name, email, subject, message } = parsed.data;
-  const recipient = process.env.CONTACT_EMAIL || 'ilmai.study1@gmail.com';
+  const recipient = process.env.CONTACT_EMAIL || 'noorhusnain792@gmail.com';
   const safeName = escapeHtml(name);
   const safeEmail = escapeHtml(email);
   const safeSubject = escapeHtml(subject);

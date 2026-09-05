@@ -42,9 +42,12 @@ export type UniversityProgramYear = {
   sort_order: number;
 };
 
+// No longer scoped to a single program_year_id (20260905130000_university_subject_pool.sql) —
+// a subject is a shared pool entry now, linked to whichever program-year(s) include it via
+// university_program_year_subjects. Its resources/MCQs (keyed by subject_id) are then visible
+// under every program-year that links it.
 export type UniversitySubject = {
   id: string;
-  program_year_id: string;
   name: string;
   icon_key: string | null;
   is_active: boolean;

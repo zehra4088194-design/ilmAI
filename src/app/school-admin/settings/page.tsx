@@ -11,6 +11,7 @@ import {
   createSubjectOffering,
   updateSchoolLogo,
   updateSchoolOrganization,
+  updateSchoolPrincipalSignature,
 } from '@/lib/school-erp/actions';
 import { hasSchoolPermission, requireSchoolContext } from '@/lib/school-erp/access';
 import { getSchoolAcademicSetup } from '@/lib/school-erp/queries';
@@ -74,6 +75,30 @@ export default async function SchoolSettingsPage() {
             </p>
             <SchoolActionForm action={updateSchoolLogo} submitLabel="Upload logo" className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <Input name="logo" type="file" accept="image/*" required />
+            </SchoolActionForm>
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Principal signature</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-start">
+          {context.organization.principal_signature_url && (
+            // eslint-disable-next-line @next/next/no-img-element -- institution-supplied signature
+            <img
+              src={context.organization.principal_signature_url}
+              alt="Principal signature"
+              className="h-16 w-32 shrink-0 rounded-lg border border-border bg-white object-contain p-1"
+            />
+          )}
+          <div className="flex-1">
+            <p className="text-muted-foreground mb-2 text-xs">
+              Printed on Student ID Cards. Upload a scanned or photographed signature on a plain background.
+            </p>
+            <SchoolActionForm action={updateSchoolPrincipalSignature} submitLabel="Save" className="grid gap-2 sm:grid-cols-2">
+              <Input name="principal_name" placeholder="Principal's name" defaultValue={context.organization.principal_name || ''} />
+              <Input name="signature" type="file" accept="image/*" />
             </SchoolActionForm>
           </div>
         </CardContent>

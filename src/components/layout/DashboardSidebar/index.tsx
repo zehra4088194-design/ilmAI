@@ -6,7 +6,7 @@ import {
   Zap, StickyNote, Bookmark, Star, CreditCard, ChevronRight, X, Menu,
   Library, CalendarClock, HelpCircle, Target, LogOut, Users, PenLine, Cake,
   GraduationCap, Presentation, Mic2, FlaskConical, Quote, BriefcaseBusiness, Network, Video,
-  Camera, MessageCircle, Sparkles, WandSparkles, Gamepad2, Music2, Pill, HardDriveDownload, School, FileQuestion, BookOpenText, ShoppingBag
+  Camera, MessageCircle, Sparkles, WandSparkles, Gamepad2, Music2, Pill, HardDriveDownload, School, FileQuestion, BookOpenText, ShoppingBag, Medal
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useAuth } from '@/hooks/auth/useAuth';
@@ -72,6 +72,7 @@ const NAV_GROUPS = [
     items: [
       { icon: TrendingUp, label: 'Progress', href: '/progress' },
       { icon: Trophy, label: 'Leaderboard', href: '/leaderboard' },
+      { icon: Medal, label: 'Competitions', href: '/competitions', badge: 'New' },
     ],
   },
   {
@@ -149,6 +150,7 @@ const UNIVERSITY_NAV_GROUPS = [
     items: [
       { icon: TrendingUp, label: 'Progress', href: '/progress' },
       { icon: Trophy, label: 'Leaderboard', href: '/leaderboard' },
+      { icon: Medal, label: 'Competitions', href: '/competitions', badge: 'New' },
     ],
   },
   {

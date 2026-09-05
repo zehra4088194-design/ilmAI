@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils/cn';
+import { enqueueOfflineItem } from '@/lib/offline/sync-queue';
 
 export function NoteEditor({ note }: { note: any }) {
   const [title, setTitle] = useState(note.title || '');
@@ -27,11 +28,27 @@ export function NoteEditor({ note }: { note: any }) {
 
   const save = useCallback(async () => {
     setSaving(true);
+    const payload = { id: note.id, title, content, is_starred: starred, folder: folder.trim() || null };
+
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      await enqueueOfflineItem('notes_update', payload);
+      toast.info('Internet nahi hai — save queue ho gaya, connect hote hi sync ho jayega.');
+      setSaving(false);
+      return;
+    }
+
     const { error } = await supabase
       .from('notes')
       .update({ title, content, is_starred: starred, folder: folder.trim() || null, updated_at: new Date().toISOString() })
       .eq('id', note.id);
-    if (error) toast.error('The note could not be saved.'); else toast.success('Saved');
+    if (error) {
+      // Browser thought it was online but the request itself failed (network dropped mid-flight)
+      // — queue it the same way rather than losing the edit.
+      await enqueueOfflineItem('notes_update', payload);
+      toast.info('Save nahi ho saka, offline queue mein daal diya — connect hote hi sync ho jayega.');
+    } else {
+      toast.success('Saved');
+    }
     setSaving(false);
   }, [title, content, starred, folder, note.id, supabase]);
 

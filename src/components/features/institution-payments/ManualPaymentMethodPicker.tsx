@@ -20,7 +20,6 @@ const METHODS: PaymentMethod[] = ['jazzcash', 'card'];
 const JAZZCASH_NUMBER = process.env.NEXT_PUBLIC_SCHOOL_PAYMENT_JAZZCASH_NUMBER || '';
 const EASYPAISA_NUMBER = process.env.NEXT_PUBLIC_SCHOOL_PAYMENT_EASYPAISA_NUMBER || '';
 const BANK_DETAILS = process.env.NEXT_PUBLIC_SCHOOL_PAYMENT_BANK_DETAILS || '';
-const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_SCHOOL_PAYMENT_WHATSAPP_NUMBER || '923480049900';
 
 function methodDestination(method: PaymentMethod) {
   if (method === 'jazzcash') return JAZZCASH_NUMBER;
@@ -50,7 +49,9 @@ export function ManualPaymentMethodPicker({
   scannableAmountPkr?: number;
 }) {
   const destination = methodDestination(method);
-  const whatsappHref = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappMessage)}`;
+  // Routed through a server redirect (src/app/api/support/contact) rather than a raw wa.me
+  // href, so the support number never appears as a literal in client-bundled JS/HTML.
+  const whatsappHref = `/api/support/contact?via=whatsapp&text=${encodeURIComponent(whatsappMessage)}`;
   const showScannableQr = Boolean(scannableAmountPkr) && (method === 'jazzcash' || method === 'easypaisa');
   const [scannableQrDataUrl, setScannableQrDataUrl] = useState<string | null>(null);
   const [scannableQrLoading, setScannableQrLoading] = useState(false);

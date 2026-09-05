@@ -78,8 +78,11 @@ export function isOnlineOnlyApiPath(pathname: string) {
  * show the OfflineNotice banner in place of the interactive feature.
  */
 export const ONLINE_ONLY_PAGE_PREFIXES = [
-  '/ai-tutor',
-  '/student-chat',
+  // '/ai-tutor' and '/student-chat' are NOT listed here on purpose: their message history is
+  // already on the device (chat.store.ts persists to localStorage / the student-chat thread is
+  // cached via read-cache.ts), so the page itself stays viewable offline. Only the "send a new
+  // message" action inside those pages is online-only, gated inline where the send button lives
+  // rather than page-wide.
   '/full-test',
   '/scan',
   '/tutor/speaking-practice',

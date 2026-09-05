@@ -16,7 +16,7 @@
  * to an in-memory array (best-effort only, lost on reload) in environments without IndexedDB.
  */
 
-export type OfflineQueueItemType = 'attendance' | 'quiz_complete';
+export type OfflineQueueItemType = 'attendance' | 'quiz_complete' | 'notes_create' | 'notes_update';
 
 export interface OfflineQueueItem {
   id: string;

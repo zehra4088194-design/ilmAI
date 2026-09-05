@@ -93,8 +93,40 @@ export function isAudioStorageConfigured() {
   return Boolean(getAudioConfig());
 }
 
+// Fourth B2 account/bucket, dedicated to University Hub notes (books, past
+// papers, topic-wise notes, practical guides, etc uploaded for degree
+// programs). Same isolation reasoning as secondary/audio above — its own B2
+// account, its own application key, its own usage/cost dashboard. Expected
+// bucket name: ilmai-uni-bucket (set via UNIVERSITY_STORAGE_BUCKET below).
+function getUniversityConfig(): R2Config | null {
+  const endpoint = process.env.UNIVERSITY_STORAGE_ENDPOINT || process.env.OBJECT_STORAGE_ENDPOINT || '';
+  const accessKeyId = process.env.UNIVERSITY_STORAGE_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.UNIVERSITY_STORAGE_SECRET_ACCESS_KEY;
+  const bucket = process.env.UNIVERSITY_STORAGE_BUCKET;
+  const region = process.env.UNIVERSITY_STORAGE_REGION || process.env.OBJECT_STORAGE_REGION || 'auto';
+  const forcePathStyle = Boolean(
+    process.env.UNIVERSITY_STORAGE_FORCE_PATH_STYLE || process.env.OBJECT_STORAGE_FORCE_PATH_STYLE
+  );
+  return endpoint && accessKeyId && secretAccessKey && bucket
+    ? { accessKeyId, secretAccessKey, bucket, endpoint, region, forcePathStyle }
+    : null;
+}
+
+// Name of the configured university bucket, if any — for call sites (upload
+// routes) that need to pass an explicit `bucket` to putR2Object/getR2Uri
+// instead of falling through to the primary bucket.
+export function getUniversityBucketName(): string | null {
+  return getUniversityConfig()?.bucket || null;
+}
+
+export function isUniversityStorageConfigured() {
+  return Boolean(getUniversityConfig());
+}
+
 function allConfigs(): R2Config[] {
-  return [getPrimaryConfig(), getSecondaryConfig(), getAudioConfig()].filter((c): c is R2Config => c !== null);
+  return [getPrimaryConfig(), getSecondaryConfig(), getAudioConfig(), getUniversityConfig()].filter(
+    (c): c is R2Config => c !== null
+  );
 }
 
 // Resolves which configured bucket to use: an explicit bucket name (from a

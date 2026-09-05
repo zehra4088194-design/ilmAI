@@ -38,6 +38,8 @@ export type SchoolOrganization = {
   phone: string | null;
   address: string | null;
   logo_url: string | null;
+  principal_name: string | null;
+  principal_signature_url: string | null;
 };
 
 export type SchoolMembership = {

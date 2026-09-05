@@ -9,6 +9,7 @@ import { getSchoolFees } from '@/lib/school-erp/queries';
 import { listPendingFeePaymentClaims } from '@/lib/institution-payments/fee-actions';
 import { FeeClaimReviewRow } from '@/components/features/institution-payments/FeeClaimReviewRow';
 import { VoucherLedgerTable } from '@/components/features/school-erp/VoucherLedgerTable';
+import { FeesSubNav } from '@/components/features/institution-payments/FeesSubNav';
 
 const selectClass = 'border-input bg-background h-10 w-full rounded-lg border px-3 text-sm';
 
@@ -35,6 +36,7 @@ export default async function SchoolFeesPage() {
         description="Structures, monthly vouchers, fines, discounts, scholarships, receipts, and defaulter tracking."
         action={<div className="border-border bg-card rounded-lg border px-4 py-2 text-right"><p className="text-muted-foreground text-[11px]">Outstanding</p><p className="font-bold">{context.organization.currency} {outstanding.toLocaleString()}</p></div>}
       />
+      <FeesSubNav basePath="/school-admin/fees" active="overview" />
       {canManage && (
         <div className="grid gap-5 xl:grid-cols-3">
           <Card>

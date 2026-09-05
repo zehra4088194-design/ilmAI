@@ -25,7 +25,7 @@ function makeRound() {
 }
 
 /** Simple addition/subtraction within 10 — for grades that already know their numbers. */
-export function SimpleMathGame() {
+export function SimpleMathGame({ onCorrect }: { onCorrect?: () => void } = {}) {
   const [round, setRound] = useState(makeRound);
   const [score, setScore] = useState(0);
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
@@ -35,6 +35,7 @@ export function SimpleMathGame() {
     if (value === round.answer) {
       setFeedback('correct');
       setScore((s) => s + 1);
+      onCorrect?.();
       setTimeout(() => {
         setRound(makeRound());
         setFeedback(null);

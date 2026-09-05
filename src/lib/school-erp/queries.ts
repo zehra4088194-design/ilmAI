@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { computeGrowthInsights } from './growth';
 import type { PublicSchoolOrganization, SchoolContext, SchoolJoinRequestWithRequester } from './types';
 
 // Only these columns are ever selected for the public-facing signup
@@ -462,6 +463,156 @@ export async function getExamReportCards(supabase: SupabaseClient, context: Scho
   return { exam, cards };
 }
 
+// Result Sheet / Tabulation / Merit List: builds a wide subject-by-subject table straight from the
+// report cards publishExamResults() already wrote (summary.subjects carries each subject's
+// max/obtained marks), joined to the student's current section for the class/section filter — no
+// new tables needed.
+export async function getExamTabulation(supabase: SupabaseClient, context: SchoolContext, examId: string) {
+  const db = supabase as any;
+  const organizationId = context.organization.id;
+  const { data: exam } = await db
+    .from('school_exams')
+    .select('id, name, term, academic_year_id')
+    .eq('id', examId)
+    .eq('organization_id', organizationId)
+    .maybeSingle();
+  if (!exam) return null;
+
+  const cards = await rows(
+    db
+      .from('school_report_cards')
+      .select(
+        'id, student_id, summary, total_marks, obtained_marks, percentage, gpa, grade, class_position, profiles!school_report_cards_student_id_fkey(full_name)'
+      )
+      .eq('organization_id', organizationId)
+      .eq('exam_id', examId)
+      .not('published_at', 'is', null)
+  );
+  if (!cards.length) return { exam, subjects: [] as string[], sections: [] as string[], rows: [] as any[] };
+
+  const studentIds = cards.map((card: any) => card.student_id);
+  const enrollments = await rows(
+    db
+      .from('school_enrollments')
+      .select(
+        'student_id, roll_number, section_id, school_sections!school_enrollments_section_id_fkey(name, school_classes!school_sections_class_id_fkey(name))'
+      )
+      .eq('organization_id', organizationId)
+      .eq('academic_year_id', exam.academic_year_id)
+      .in('student_id', studentIds)
+  );
+  const enrollmentByStudent = new Map(enrollments.map((e: any) => [e.student_id, e]));
+
+  const subjects: string[] = [];
+  for (const card of cards) {
+    for (const subject of card.summary?.subjects || []) {
+      if (!subjects.includes(subject.subject)) subjects.push(subject.subject);
+    }
+  }
+
+  const tableRows = cards.map((card: any) => {
+    const profile = Array.isArray(card.profiles) ? card.profiles[0] : card.profiles;
+    const enrollment = enrollmentByStudent.get(card.student_id) as any;
+    const section = enrollment?.school_sections
+      ? Array.isArray(enrollment.school_sections)
+        ? enrollment.school_sections[0]
+        : enrollment.school_sections
+      : null;
+    const klass = section
+      ? Array.isArray(section.school_classes)
+        ? section.school_classes[0]
+        : section.school_classes
+      : null;
+    const marksBySubject = new Map<string, any>((card.summary?.subjects || []).map((s: any) => [s.subject, s]));
+    return {
+      studentId: card.student_id,
+      studentName: profile?.full_name || 'Student',
+      rollNumber: enrollment?.roll_number || '',
+      sectionLabel: section ? [klass?.name, section.name].filter(Boolean).join(' - ') : 'Unassigned',
+      marksBySubject,
+      totalMarks: Number(card.total_marks || 0),
+      obtainedMarks: Number(card.obtained_marks || 0),
+      percentage: Number(card.percentage || 0),
+      grade: card.grade,
+      gpa: card.gpa,
+      classPosition: card.class_position,
+    };
+  });
+
+  const sections = Array.from(new Set(tableRows.map((row) => row.sectionLabel))).sort();
+  return { exam, subjects, sections, rows: tableRows };
+}
+
+// Student ID Card generator: active-student roster with photo, class/section, and primary
+// guardian's name/phone — powers the class/section picker + card grid.
+export async function getSchoolIdCardRoster(supabase: SupabaseClient, context: SchoolContext) {
+  const db = supabase as any;
+  const organizationId = context.organization.id;
+  const [sections, enrollments] = await Promise.all([
+    rows(
+      db
+        .from('school_sections')
+        .select('id, name, school_classes!school_sections_class_id_fkey(name)')
+        .eq('organization_id', organizationId)
+        .eq('is_active', true)
+        .order('name')
+    ),
+    rows(
+      db
+        .from('school_enrollments')
+        .select(
+          'student_id, admission_number, section_id, profiles!school_enrollments_student_id_fkey(id, full_name, avatar_url), school_sections!school_enrollments_section_id_fkey(name, school_classes!school_sections_class_id_fkey(name))'
+        )
+        .eq('organization_id', organizationId)
+        .eq('status', 'active')
+        .order('roll_number')
+    ),
+  ]);
+
+  const studentIds = enrollments.map((e: any) => e.student_id);
+  const guardianPhoneByStudent = new Map<string, string>();
+  const guardianNameByStudent = new Map<string, string>();
+  if (studentIds.length) {
+    const guardianLinks = await rows(
+      db
+        .from('school_guardians')
+        .select('student_id, is_primary, profiles!school_guardians_guardian_id_fkey(full_name, phone)')
+        .eq('organization_id', organizationId)
+        .in('student_id', studentIds)
+        .order('is_primary', { ascending: false })
+    );
+    for (const link of guardianLinks) {
+      if (guardianPhoneByStudent.has(link.student_id)) continue;
+      const guardian = Array.isArray(link.profiles) ? link.profiles[0] : link.profiles;
+      if (guardian?.phone) guardianPhoneByStudent.set(link.student_id, guardian.phone);
+      if (guardian?.full_name) guardianNameByStudent.set(link.student_id, guardian.full_name);
+    }
+  }
+
+  const students = enrollments.map((e: any) => {
+    const profile = Array.isArray(e.profiles) ? e.profiles[0] : e.profiles;
+    const section = Array.isArray(e.school_sections) ? e.school_sections[0] : e.school_sections;
+    const klass = section ? (Array.isArray(section.school_classes) ? section.school_classes[0] : section.school_classes) : null;
+    return {
+      studentId: e.student_id,
+      sectionId: e.section_id,
+      fullName: profile?.full_name || 'Student',
+      photoUrl: profile?.avatar_url || null,
+      idNumber: e.admission_number,
+      classLabel: section ? [klass?.name, section.name].filter(Boolean).join(' - ') : '',
+      guardianName: guardianNameByStudent.get(e.student_id) || null,
+      guardianPhone: guardianPhoneByStudent.get(e.student_id) || null,
+    };
+  });
+
+  const sectionOptions = sections.map((section: any) => ({
+    id: section.id,
+    label: [section.school_classes?.name, section.name].filter(Boolean).join(' - '),
+  }));
+
+  return { sections: sectionOptions, students };
+}
+
 export async function getSchoolExams(supabase: SupabaseClient, context: SchoolContext) {
   const db = supabase as any;
   const organizationId = context.organization.id;
@@ -585,6 +736,165 @@ export async function getSchoolFees(supabase: SupabaseClient, context: SchoolCon
   }));
 
   return { structures, invoices: invoicesWithPhone, payments, years, classes, students };
+}
+
+// Fee defaulters: overdue/partial invoices with a positive balance, sorted worst-first. Reuses the
+// same guardian-phone lookup pattern as getSchoolFees so the UI can offer a free wa.me WhatsApp
+// reminder link without a new notification mechanism.
+export async function getSchoolDefaulters(supabase: SupabaseClient, context: SchoolContext) {
+  const db = supabase as any;
+  const organizationId = context.organization.id;
+  const invoices = await rows(
+    db
+      .from('school_fee_invoices')
+      .select('id, student_id, voucher_number, due_date, total_amount, paid_amount, status, profiles!school_fee_invoices_student_id_fkey(full_name)')
+      .eq('organization_id', organizationId)
+      .in('status', ['overdue', 'partial', 'issued'])
+      .order('due_date', { ascending: true })
+      .limit(1000)
+  );
+  const today = new Date();
+  const overdue = invoices
+    .map((item: any) => {
+      const balance = Math.max(0, Number(item.total_amount) - Number(item.paid_amount));
+      const dueDate = new Date(`${item.due_date}T00:00:00Z`);
+      const daysOverdue = Math.floor((today.getTime() - dueDate.getTime()) / 86400000);
+      return { ...item, balance, daysOverdue };
+    })
+    .filter((item: any) => item.balance > 0 && item.daysOverdue > 0);
+
+  const studentIds = Array.from(new Set(overdue.map((item: any) => item.student_id)));
+  const guardianPhoneByStudentId = new Map<string, string>();
+  if (studentIds.length) {
+    const guardianLinks = await rows(
+      db
+        .from('school_guardians')
+        .select('student_id, is_primary, profiles!school_guardians_guardian_id_fkey(phone)')
+        .eq('organization_id', organizationId)
+        .in('student_id', studentIds)
+        .order('is_primary', { ascending: false })
+    );
+    for (const link of guardianLinks) {
+      if (guardianPhoneByStudentId.has(link.student_id)) continue;
+      const phone = (Array.isArray(link.profiles) ? link.profiles[0] : link.profiles)?.phone;
+      if (phone) guardianPhoneByStudentId.set(link.student_id, phone);
+    }
+  }
+  return overdue
+    .map((item: any) => ({ ...item, guardianPhone: guardianPhoneByStudentId.get(item.student_id) || null }))
+    .sort((a: any, b: any) => b.balance - a.balance);
+}
+
+// Family accounts: every guardian linked to more than one active student, with each child's
+// pending balance and a combined family total — powers "pay across children" in one receipt.
+export async function getSchoolFamilyAccounts(supabase: SupabaseClient, context: SchoolContext) {
+  const db = supabase as any;
+  const organizationId = context.organization.id;
+  const [guardianLinks, invoices] = await Promise.all([
+    rows(
+      db
+        .from('school_guardians')
+        .select(
+          'student_id, guardian_id, guardian:profiles!school_guardians_guardian_id_fkey(id, full_name, phone), student:profiles!school_guardians_student_id_fkey(id, full_name)'
+        )
+        .eq('organization_id', organizationId)
+    ),
+    rows(
+      db
+        .from('school_fee_invoices')
+        .select('id, student_id, voucher_number, due_date, billing_period, total_amount, paid_amount, status')
+        .eq('organization_id', organizationId)
+        .not('status', 'in', '(cancelled,waived)')
+    ),
+  ]);
+
+  const byGuardian = new Map<string, { guardian: any; students: Map<string, any> }>();
+  for (const link of guardianLinks) {
+    const guardian = Array.isArray(link.guardian) ? link.guardian[0] : link.guardian;
+    const student = Array.isArray(link.student) ? link.student[0] : link.student;
+    if (!guardian || !student) continue;
+    const bucket = byGuardian.get(guardian.id) || { guardian, students: new Map() };
+    bucket.students.set(student.id, student);
+    byGuardian.set(guardian.id, bucket);
+  }
+
+  const invoicesByStudent = new Map<string, any[]>();
+  for (const invoice of invoices) {
+    const list = invoicesByStudent.get(invoice.student_id) || [];
+    list.push(invoice);
+    invoicesByStudent.set(invoice.student_id, list);
+  }
+
+  return Array.from(byGuardian.values())
+    .filter((bucket) => bucket.students.size > 1)
+    .map((bucket) => {
+      const children = Array.from(bucket.students.values()).map((student: any) => {
+        const studentInvoices = invoicesByStudent.get(student.id) || [];
+        const pending = studentInvoices.reduce(
+          (sum: number, inv: any) => sum + Math.max(0, Number(inv.total_amount) - Number(inv.paid_amount)),
+          0
+        );
+        return { student, invoices: studentInvoices, pending };
+      });
+      return {
+        guardian: bucket.guardian,
+        children,
+        totalPending: children.reduce((sum, child) => sum + child.pending, 0),
+      };
+    })
+    .sort((a, b) => b.totalPending - a.totalPending);
+}
+
+// Ledger/accounting: fees collected vs expenses over the trailing 12 months, plus the raw expense
+// list for the page's table. school_expenses is new (this feature); collections come from the
+// existing school_fee_payments table.
+export async function getSchoolLedger(supabase: SupabaseClient, context: SchoolContext) {
+  const db = supabase as any;
+  const organizationId = context.organization.id;
+  const since = new Date();
+  since.setMonth(since.getMonth() - 11);
+  since.setDate(1);
+  const sinceIso = since.toISOString().slice(0, 10);
+
+  const [payments, expenses] = await Promise.all([
+    rows(
+      db.from('school_fee_payments').select('amount, paid_at').eq('organization_id', organizationId).gte('paid_at', sinceIso)
+    ),
+    rows(
+      db
+        .from('school_expenses')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .gte('expense_date', sinceIso)
+        .order('expense_date', { ascending: false })
+    ),
+  ]);
+
+  const monthKey = (value: string) => value.slice(0, 7);
+  const collectedByMonth = new Map<string, number>();
+  for (const payment of payments) {
+    const key = monthKey(payment.paid_at);
+    collectedByMonth.set(key, (collectedByMonth.get(key) || 0) + Number(payment.amount));
+  }
+  const expensesByMonth = new Map<string, number>();
+  for (const expense of expenses) {
+    const key = monthKey(expense.expense_date);
+    expensesByMonth.set(key, (expensesByMonth.get(key) || 0) + Number(expense.amount));
+  }
+  const months: string[] = [];
+  const cursor = new Date(since);
+  for (let i = 0; i < 12; i++) {
+    months.push(cursor.toISOString().slice(0, 7));
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+  const summary = months.map((month) => ({
+    month,
+    collected: collectedByMonth.get(month) || 0,
+    expenses: expensesByMonth.get(month) || 0,
+  }));
+  const totalCollected = payments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+  const totalExpenses = expenses.reduce((sum: number, e: any) => sum + Number(e.amount), 0);
+  return { summary, expenses, totalCollected, totalExpenses, netBalance: totalCollected - totalExpenses };
 }
 
 export async function getSchoolPayroll(supabase: SupabaseClient, context: SchoolContext) {
@@ -713,7 +1023,7 @@ export async function getAnnouncementReadStats(supabase: SupabaseClient, organiz
 export async function getSchoolCommunication(supabase: SupabaseClient, context: SchoolContext) {
   const db = supabase as any;
   const organizationId = context.organization.id;
-  const [announcements, deliveries, campuses, messages] = await Promise.all([
+  const [announcements, deliveries, campuses, messages, sectionRows] = await Promise.all([
     rows(
       db
         .from('school_announcements')
@@ -739,8 +1049,19 @@ export async function getSchoolCommunication(supabase: SupabaseClient, context: 
         .order('created_at', { ascending: false })
         .limit(200)
     ),
+    rows(
+      db
+        .from('school_sections')
+        .select('id, name, school_classes!school_sections_class_id_fkey(name)')
+        .eq('organization_id', organizationId)
+        .eq('is_active', true)
+    ),
   ]);
-  return { announcements, deliveries, campuses, messages };
+  const sections = sectionRows.map((row: any) => {
+    const klass = Array.isArray(row.school_classes) ? row.school_classes[0] : row.school_classes;
+    return { id: row.id, label: [klass?.name, row.name].filter(Boolean).join(' - ') };
+  });
+  return { announcements, deliveries, campuses, messages, sections };
 }
 
 export async function getSchoolReports(supabase: SupabaseClient, context: SchoolContext) {
@@ -780,6 +1101,67 @@ export async function getSchoolReports(supabase: SupabaseClient, context: School
     ),
   ]);
   return { attendance, invoices, reportCards, admissions, auditLogs };
+}
+
+// Phase: "School Growth" — deterministic, no AI call. See src/lib/school-erp/growth.ts for the math.
+export async function getSchoolGrowthInsights(supabase: SupabaseClient, context: SchoolContext) {
+  const db = supabase as any;
+  const organizationId = context.organization.id;
+  const since6mo = new Date(Date.now() - 183 * 86400000).toISOString().slice(0, 10);
+  const since30 = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+  const today = new Date().toISOString().slice(0, 10);
+
+  const [enrollmentEvents, attendance6mo, invoices, sectionAttendanceRaw, activeCount] = await Promise.all([
+    rows(
+      db
+        .from('school_enrollments')
+        .select('enrolled_on, status, updated_at')
+        .eq('organization_id', organizationId)
+        .or(`enrolled_on.gte.${since6mo},updated_at.gte.${since6mo}`)
+    ),
+    rows(
+      db
+        .from('school_attendance_records')
+        .select('status, attendance_date')
+        .eq('organization_id', organizationId)
+        .gte('attendance_date', since6mo)
+    ),
+    rows(
+      db
+        .from('school_fee_invoices')
+        .select('status, total_amount, paid_amount, due_date')
+        .eq('organization_id', organizationId)
+        .gte('due_date', since6mo)
+    ),
+    rows(
+      db
+        .from('school_attendance_records')
+        .select('status, school_sections!school_attendance_records_section_id_fkey(name, school_classes!school_sections_class_id_fkey(name))')
+        .eq('organization_id', organizationId)
+        .gte('attendance_date', since30)
+    ),
+    db
+      .from('school_enrollments')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', organizationId)
+      .eq('status', 'active'),
+  ]);
+
+  const sectionAttendance = sectionAttendanceRaw.map((row: any) => {
+    const section = Array.isArray(row.school_sections) ? row.school_sections[0] : row.school_sections;
+    const klass = section ? (Array.isArray(section.school_classes) ? section.school_classes[0] : section.school_classes) : null;
+    return { status: row.status, label: [klass?.name, section?.name].filter(Boolean).join(' - ') || 'Unassigned' };
+  });
+
+  return computeGrowthInsights({
+    currency: context.organization.currency,
+    activeStudents: Number(activeCount.count || 0),
+    enrollmentEvents,
+    attendance60d: attendance6mo,
+    invoices,
+    sectionAttendance,
+    today,
+  });
 }
 
 export async function getSchoolPortalData(supabase: SupabaseClient, context: SchoolContext) {

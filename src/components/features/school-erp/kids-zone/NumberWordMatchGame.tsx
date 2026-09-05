@@ -16,6 +16,7 @@ const NUMBER_WORDS = [
   { value: 7, urdu: 'سات', english: 'Seven' },
   { value: 8, urdu: 'آٹھ', english: 'Eight' },
   { value: 9, urdu: 'نو', english: 'Nine' },
+  { value: 10, urdu: 'دس', english: 'Ten' },
 ];
 
 function shuffle<T>(items: T[]): T[] {
@@ -36,7 +37,7 @@ function makeRound() {
 }
 
 /** Count the objects, tap the matching Urdu number-word — bilingual (Urdu + English) counting practice. */
-export function NumberWordMatchGame() {
+export function NumberWordMatchGame({ onCorrect }: { onCorrect?: () => void } = {}) {
   const [round, setRound] = useState(makeRound);
   const [score, setScore] = useState(0);
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
@@ -46,6 +47,7 @@ export function NumberWordMatchGame() {
     if (value === round.correct.value) {
       setFeedback('correct');
       setScore((s) => s + 1);
+      onCorrect?.();
       setTimeout(() => {
         setRound(makeRound());
         setFeedback(null);

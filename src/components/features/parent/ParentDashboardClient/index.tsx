@@ -1,17 +1,22 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import {
   AlertCircle,
   BookOpen,
+  CalendarCheck,
+  CheckCircle2 as CheckIcon,
   Clock,
   Copy,
   Flame,
   KeyRound,
+  Lock,
   LockKeyhole,
+  MessageCircle,
   Plus,
+  Trophy,
   TrendingUp,
   Users,
   Zap,
@@ -28,6 +33,8 @@ import { ParentMessageThread } from '@/components/ui/ParentMessageThread';
 import { ParentAttachments } from '@/components/ui/ParentAttachments';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import type { FamilyErpMap } from '@/lib/parent/erp-bridge';
+import { FamilyGoals, type FamilyGoal } from '@/components/features/parent/FamilyGoals';
 
 interface ParentDashboardClientProps {
   links: any[];
@@ -45,7 +52,28 @@ interface ParentDashboardClientProps {
   activityByStudent?: Record<string, { reads: any[]; todayMinutes: number; todaySessions: any[] }>;
   initialLinkId?: string;
   initialView?: 'chat' | 'files';
+  // Ilmai Family additions — Homework/Attendance bridge, Achievements, Goals, Progress.
+  erpData?: FamilyErpMap;
+  familyQuran?: Record<string, { groupName: string; teacherName: string; sessionTime: string; daysOfWeek: number[]; currentLesson: string | null; thisMonthAttendance: number; attendedToday: boolean; practiceDoneToday: boolean } | null>;
+  achievements?: { id: string; name: string; description: string; icon_url: string }[];
+  earnedAchievements?: { user_id: string; achievement_id: string; earned_at: string }[];
+  familyGoals?: FamilyGoal[];
+  multiChildComparison?: ReactNode;
+  weeklyReports?: any[];
+  showAiDecisionFeatures?: boolean;
 }
+
+const FAMILY_TABS = [
+  { key: 'overview', label: 'Overview' },
+  { key: 'progress', label: 'Progress' },
+  { key: 'homework', label: 'Homework' },
+  { key: 'attendance', label: 'Attendance' },
+  { key: 'achievements', label: 'Achievements' },
+  { key: 'goals', label: 'Goals' },
+  { key: 'alerts', label: 'Alerts' },
+  { key: 'communication', label: 'Communication' },
+] as const;
+type FamilyTab = (typeof FAMILY_TABS)[number]['key'];
 
 export function ParentDashboardClient({
   links,
@@ -56,6 +84,14 @@ export function ParentDashboardClient({
   activityByStudent,
   initialLinkId,
   initialView,
+  erpData = {},
+  familyQuran = {},
+  achievements = [],
+  earnedAchievements = [],
+  familyGoals = [],
+  multiChildComparison,
+  weeklyReports = [],
+  showAiDecisionFeatures,
 }: ParentDashboardClientProps) {
   const approvedLinks = links.filter((link) => link.status === 'approved' && link.student);
   const dashboardLinks = approvedLinks.filter((link) => link.student?.parent_entitlement?.dashboard);
@@ -63,6 +99,7 @@ export function ParentDashboardClient({
   const [showLinkForm, setShowLinkForm] = useState(approvedLinks.length === 0);
   const [inviteCode, setInviteCode] = useState(pendingLinks[0]?.invite_code || '');
   const [creating, setCreating] = useState(false);
+  const [activeTab, setActiveTab] = useState<FamilyTab>('overview');
   const router = useRouter();
   const supabase = createClient();
 
@@ -256,6 +293,25 @@ export function ParentDashboardClient({
         </CardContent>
       </Card>
 
+      <div className="flex flex-wrap gap-1.5 border-b pb-2">
+        {FAMILY_TABS.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => setActiveTab(tab.key)}
+            className={cn(
+              'rounded-full px-3 py-1.5 text-xs font-semibold transition-colors',
+              activeTab === tab.key
+                ? 'bg-violet-600 text-white'
+                : 'bg-muted/40 text-muted-foreground hover:bg-muted'
+            )}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'overview' && (
       <div className={cn('grid gap-6', approvedLinks.length > 1 ? 'xl:grid-cols-2' : 'grid-cols-1')}>
         {approvedLinks.map((link, index) => {
           const student = link.student as any;
@@ -554,6 +610,332 @@ export function ParentDashboardClient({
           );
         })}
       </div>
+      )}
+
+      {activeTab === 'progress' && (
+        <div className="space-y-6">
+          {multiChildComparison}
+          {weeklyReports.length > 0 ? (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Weekly Family Report</CardTitle>
+              </CardHeader>
+              <CardContent className="grid gap-3 md:grid-cols-2">
+                {weeklyReports.map((report: any) => (
+                  <div key={report.id} className="rounded-lg border p-3">
+                    <p className="text-muted-foreground text-xs">{report.week_start_date}</p>
+                    <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+                      <span className="bg-muted rounded p-2">
+                        XP {report.summary?.xp_earned ?? report.summary?.xp_gained ?? 0}
+                      </span>
+                      <span className="bg-muted rounded p-2">
+                        Quizzes {report.summary?.quizzes_completed ?? report.summary?.quizzes_taken ?? 0}
+                      </span>
+                      <span className="bg-muted rounded p-2">Study {report.summary?.study_minutes ?? 0}m</span>
+                    </div>
+                    {report.ai_narrative && (
+                      <>
+                        <p className="mt-3 text-sm">{report.ai_narrative}</p>
+                        <ul className="text-muted-foreground mt-2 list-inside list-disc text-sm">
+                          {(report.suggested_actions || []).map((action: string) => (
+                            <li key={action}>{action}</li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
+                    {showAiDecisionFeatures && report.predictionSignal && (
+                      <div className="mt-3 rounded-lg border border-violet-500/30 p-2 text-xs">
+                        <p>Study continuity signal: {Math.round(report.predictionSignal.dropout_risk_score || 0)}%</p>
+                        <p>Study load signal: {Math.round(report.predictionSignal.burnout_risk_score || 0)}%</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardContent className="text-muted-foreground p-6 text-center text-sm">
+                No weekly reports yet — these appear once a full study week has been recorded.
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'homework' && (
+        <div className="grid gap-4 md:grid-cols-2">
+          {approvedLinks.map((link) => {
+            const student = link.student as any;
+            const erp = erpData[student.id];
+            return (
+              <Card key={link.id}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <BookOpen className="h-4 w-4 text-violet-400" /> {student.full_name}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {!erp || !erp.erpLinked ? (
+                    <p className="text-muted-foreground text-xs">
+                      Not linked to a school/college homework tracker yet.
+                    </p>
+                  ) : erp.homework.upcoming.length === 0 ? (
+                    <p className="text-muted-foreground text-xs">No homework recorded.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {erp.homework.overdueCount > 0 && (
+                        <Badge variant="destructive">{erp.homework.overdueCount} overdue</Badge>
+                      )}
+                      {erp.homework.upcoming.map((item) => (
+                        <div key={item.id} className="bg-muted/20 flex items-center justify-between gap-2 rounded-lg p-2 text-xs">
+                          <span className="min-w-0 truncate">{item.title}</span>
+                          <Badge variant={item.overdue ? 'destructive' : 'outline'}>
+                            {item.due_at ? new Date(item.due_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'No due date'}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {activeTab === 'attendance' && (
+        <div className="grid gap-4 md:grid-cols-2">
+          {approvedLinks.map((link) => {
+            const student = link.student as any;
+            const erp = erpData[student.id];
+            return (
+              <Card key={link.id}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <CalendarCheck className="h-4 w-4 text-violet-400" /> {student.full_name}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {!erp || !erp.erpLinked || erp.attendance.percentage === null ? (
+                    <p className="text-muted-foreground text-xs">
+                      Not linked to a school/college attendance record yet.
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <p className={cn('text-3xl font-bold', erp.attendance.percentage < 75 ? 'text-red-500' : 'text-green-500')}>
+                          {erp.attendance.percentage}%
+                        </p>
+                        <p className="text-muted-foreground text-xs">last 30 days</p>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-xs">
+                        <InfoPill icon={CalendarCheck} label="Present" value={erp.attendance.presentCount} />
+                        <InfoPill icon={AlertCircle} label="Absent" value={erp.attendance.absentCount} />
+                        <InfoPill icon={Clock} label="Late" value={erp.attendance.lateCount} />
+                      </div>
+                    </div>
+                  )}
+                  {familyQuran[student.id] && (
+                    <div className="border-border/70 mt-3 rounded-xl border p-3">
+                      <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold">
+                        <BookOpen className="h-3.5 w-3.5 text-emerald-500" /> Quran Class — {familyQuran[student.id]!.groupName}
+                      </p>
+                      <p className="text-muted-foreground text-[11px]">
+                        with {familyQuran[student.id]!.teacherName} · {familyQuran[student.id]!.sessionTime}
+                      </p>
+                      {familyQuran[student.id]!.currentLesson && (
+                        <p className="mt-1 text-xs">
+                          <span className="font-medium">Today's lesson:</span> {familyQuran[student.id]!.currentLesson}
+                        </p>
+                      )}
+                      <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                        <InfoPill icon={CalendarCheck} label="This month" value={familyQuran[student.id]!.thisMonthAttendance} />
+                        <InfoPill
+                          icon={CheckIcon}
+                          label="Practice today"
+                          value={familyQuran[student.id]!.practiceDoneToday ? 'Done' : 'Not yet'}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {activeTab === 'achievements' && (
+        <div className="grid gap-4 md:grid-cols-2">
+          {approvedLinks.map((link) => {
+            const student = link.student as any;
+            const earnedIds = new Set(
+              earnedAchievements.filter((row) => row.user_id === student.id).map((row) => row.achievement_id)
+            );
+            return (
+              <Card key={link.id}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Trophy className="h-4 w-4 text-amber-500" /> {student.full_name}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 gap-3">
+                  {achievements.length === 0 && (
+                    <p className="text-muted-foreground col-span-2 text-center text-sm">No achievements set up yet.</p>
+                  )}
+                  {achievements.map((achievement) => {
+                    const isEarned = earnedIds.has(achievement.id);
+                    return (
+                      <div
+                        key={achievement.id}
+                        className={cn(
+                          'rounded-xl border p-3 text-center',
+                          isEarned ? 'border-amber-500/30 bg-amber-500/5' : 'border-border opacity-50'
+                        )}
+                      >
+                        <div className={cn('mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full', isEarned ? 'bg-amber-500/20' : 'bg-muted')}>
+                          {isEarned ? <Trophy className="h-5 w-5 text-amber-500" /> : <Lock className="text-muted-foreground h-4 w-4" />}
+                        </div>
+                        <p className="text-xs font-medium">{achievement.name}</p>
+                        <p className="text-muted-foreground mt-0.5 text-[10px]">{achievement.description}</p>
+                      </div>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {activeTab === 'goals' && (
+        <FamilyGoals
+          students={approvedLinks.map((link) => ({ id: (link.student as any).id, full_name: (link.student as any).full_name }))}
+          goals={familyGoals}
+        />
+      )}
+
+      {activeTab === 'alerts' && (
+        <div className="space-y-3">
+          {(() => {
+            const alertItems: { key: string; title: string; body: string; studentName: string; tone: 'amber' | 'red' }[] = [];
+            for (const link of approvedLinks) {
+              const student = link.student as any;
+              for (const insight of insights[student.id] || []) {
+                if (insight.type === 'steady') continue;
+                alertItems.push({
+                  key: `${student.id}-${insight.type}-${insight.title}`,
+                  title: insight.title,
+                  body: insight.body,
+                  studentName: student.full_name,
+                  tone: 'amber',
+                });
+              }
+              const erp = erpData[student.id];
+              if (erp?.erpLinked) {
+                if (erp.homework.overdueCount > 0) {
+                  alertItems.push({
+                    key: `${student.id}-homework-overdue`,
+                    title: `${erp.homework.overdueCount} overdue homework`,
+                    body: 'Some assignments have passed their due date.',
+                    studentName: student.full_name,
+                    tone: 'red',
+                  });
+                }
+                if (erp.attendance.percentage !== null && erp.attendance.percentage < 75) {
+                  alertItems.push({
+                    key: `${student.id}-attendance-low`,
+                    title: `Attendance at ${erp.attendance.percentage}%`,
+                    body: 'This is below the typical 75% requirement for the last 30 days.',
+                    studentName: student.full_name,
+                    tone: 'red',
+                  });
+                }
+              }
+              const today = new Date().toISOString().slice(0, 10);
+              for (const goal of familyGoals.filter((g) => g.student_id === student.id && g.status === 'active')) {
+                if (goal.due_date && goal.due_date < today) {
+                  alertItems.push({
+                    key: `goal-${goal.id}`,
+                    title: `Goal overdue: ${goal.title}`,
+                    body: `Was due ${new Date(`${goal.due_date}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}.`,
+                    studentName: student.full_name,
+                    tone: 'amber',
+                  });
+                }
+              }
+            }
+            if (alertItems.length === 0) {
+              return (
+                <Card>
+                  <CardContent className="text-muted-foreground p-6 text-center text-sm">
+                    No important alerts right now.
+                  </CardContent>
+                </Card>
+              );
+            }
+            return alertItems.map((alert) => (
+              <div
+                key={alert.key}
+                className={cn(
+                  'flex items-start gap-2 rounded-xl border p-3',
+                  alert.tone === 'red' ? 'border-red-500/30 bg-red-500/5' : 'border-amber-500/30 bg-amber-500/5'
+                )}
+              >
+                <AlertCircle className={cn('mt-0.5 h-4 w-4 shrink-0', alert.tone === 'red' ? 'text-red-500' : 'text-amber-500')} />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold">{alert.title}</p>
+                  <p className="text-muted-foreground text-xs">{alert.studentName} · {alert.body}</p>
+                </div>
+              </div>
+            ));
+          })()}
+        </div>
+      )}
+
+      {activeTab === 'communication' && (
+        <div className="grid gap-4 md:grid-cols-2">
+          {approvedLinks.map((link) => {
+            const student = link.student as any;
+            const erp = erpData[student.id];
+            return (
+              <Card key={link.id}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <MessageCircle className="h-4 w-4 text-violet-400" /> {student.full_name}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex flex-wrap gap-2">
+                    <ParentMessageThread
+                      linkId={link.id}
+                      currentUserId={parentId}
+                      autoOpen={initialLinkId === link.id && initialView === 'chat'}
+                    />
+                    <ParentAttachments
+                      linkId={link.id}
+                      currentUserId={parentId}
+                      autoOpen={initialLinkId === link.id && initialView === 'files'}
+                    />
+                  </div>
+                  {erp?.erpLinked && (
+                    <div className="bg-muted/20 rounded-lg border p-2.5 text-xs">
+                      <p className="mb-1 font-medium">Talk to teachers</p>
+                      <p className="text-muted-foreground mb-2">
+                        This child is enrolled in a school/college portal with its own teacher messaging and PTM scheduling.
+                      </p>
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={erp.orgType === 'school' ? '/school' : '/college/dashboard'}>Open school portal</Link>
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

@@ -9,12 +9,14 @@ import {
   CalendarCheck2,
   ClipboardList,
   GraduationCap,
+  IdCard,
   LayoutDashboard,
   LogOut,
   Menu,
   MessageSquareText,
   ReceiptText,
   Settings2,
+  TrendingUp,
   UserCircle,
   UserPlus,
   Users,
@@ -33,6 +35,7 @@ import { ThemeToggle } from '@/components/common/ThemeToggle';
 const ITEMS: Array<{ href: string; label: string; icon: typeof LayoutDashboard; permission: CollegePermission; module: CollegeModuleKey }> = [
   { href: '/college-admin', label: 'Overview', icon: LayoutDashboard, permission: 'dashboard.read', module: 'dashboard' },
   { href: '/college-admin/people', label: 'People', icon: Users, permission: 'people.read', module: 'people' },
+  { href: '/college-admin/people/id-cards', label: 'ID Cards', icon: IdCard, permission: 'people.read', module: 'people' },
   { href: '/college-admin/requests', label: 'Requests', icon: UserPlus, permission: 'people.manage', module: 'people' },
   { href: '/college-admin/admissions', label: 'Admissions', icon: ClipboardList, permission: 'admissions.read', module: 'admissions' },
   { href: '/college-admin/attendance', label: 'Attendance', icon: CalendarCheck2, permission: 'attendance.read', module: 'attendance' },
@@ -41,6 +44,7 @@ const ITEMS: Array<{ href: string; label: string; icon: typeof LayoutDashboard; 
   { href: '/college-admin/academics', label: 'Academics', icon: BookOpenCheck, permission: 'academics.read', module: 'academics' },
   { href: '/college-admin/communication', label: 'Communication', icon: MessageSquareText, permission: 'communication.read', module: 'communication' },
   { href: '/college-admin/reports', label: 'Reports', icon: BarChart3, permission: 'reports.read', module: 'reports' },
+  { href: '/college-admin/growth', label: 'Growth', icon: TrendingUp, permission: 'reports.read', module: 'reports' },
   { href: '/college-admin/settings', label: 'Organization', icon: Settings2, permission: 'organization.manage', module: 'dashboard' },
 ];
 

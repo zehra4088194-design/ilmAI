@@ -48,6 +48,12 @@ export async function createUniversityProgram(
   return { success: true, message: `${name} created with ${totalYears} year(s).` };
 }
 
+// Subjects are a shared pool (20260905130000_university_subject_pool.sql): typing a name that
+// already exists anywhere on the platform (case-insensitively) reuses that same subject row —
+// so adding "Pharmacology" under Pharm-D Year 1 and later under BS Nursing Year 2 links both
+// years to one subject whose resources/MCQs are then already there for the second program too,
+// instead of creating a second, empty "Pharmacology". Only a genuinely new name creates a new
+// pool entry.
 export async function createUniversitySubject(
   _state: UniversityActionState,
   formData: FormData
@@ -60,13 +66,38 @@ export async function createUniversitySubject(
   if (!programYearId || name.length < 2) return { success: false, message: 'Subject name is required.' };
 
   const db = (await createAdminClient()) as any;
-  const { error } = await db.from('university_subjects').insert({ program_year_id: programYearId, name });
-  if (error) return { success: false, message: error.message };
+  const { data: existing } = await db
+    .from('university_subjects')
+    .select('id, name')
+    .ilike('name', name)
+    .maybeSingle();
+
+  let subjectId = existing?.id as string | undefined;
+  if (!subjectId) {
+    const { data: created, error } = await db.from('university_subjects').insert({ name }).select('id').single();
+    if (error) return { success: false, message: error.message };
+    subjectId = created.id;
+  }
+
+  const { error: linkError } = await db
+    .from('university_program_year_subjects')
+    .insert({ program_year_id: programYearId, subject_id: subjectId });
+  if (linkError) {
+    if (linkError.code === '23505') return { success: false, message: `${name} is already added to this year.` };
+    return { success: false, message: linkError.message };
+  }
 
   revalidatePath('/admin/university', 'layout');
-  return { success: true, message: `${name} added.` };
+  return {
+    success: true,
+    message: existing ? `${existing.name} linked (existing subject, notes/MCQs already shared).` : `${name} created and added.`,
+  };
 }
 
+// Unlinks the subject from this one program-year only — the subject row itself (and its
+// resources/MCQs) is left untouched, since the same subject may still be linked to other
+// program-years that share it. Deleting it outright here would silently wipe another program's
+// content too.
 export async function deleteUniversitySubject(
   _state: UniversityActionState,
   formData: FormData
@@ -74,14 +105,19 @@ export async function deleteUniversitySubject(
   const admin = await requireAdminUser();
   if (!admin) return { success: false, message: 'Admin access required.' };
   const subjectId = String(formData.get('subject_id') || '').trim();
-  if (!subjectId) return { success: false, message: 'Subject is required.' };
+  const programYearId = String(formData.get('program_year_id') || '').trim();
+  if (!subjectId || !programYearId) return { success: false, message: 'Subject and year are required.' };
 
   const db = (await createAdminClient()) as any;
-  const { error } = await db.from('university_subjects').delete().eq('id', subjectId);
+  const { error } = await db
+    .from('university_program_year_subjects')
+    .delete()
+    .eq('subject_id', subjectId)
+    .eq('program_year_id', programYearId);
   if (error) return { success: false, message: error.message };
 
   revalidatePath('/admin/university', 'layout');
-  return { success: true, message: 'Subject removed.' };
+  return { success: true, message: 'Subject removed from this year (kept under any other program/year using it).' };
 }
 
 export async function createUniversityResource(

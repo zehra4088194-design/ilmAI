@@ -16,6 +16,7 @@ import {
 import type { SubscriptionTier } from '@/types';
 import { getLocalSmallTalkResponse, shouldUseLocalSmallTalk } from '@/lib/ai/request-routing';
 import { buildSubjectTutorContext } from '@/lib/resources/subject-tutor-context';
+import { buildSubjectResourceRagContext } from '@/lib/resources/subject-resource-rag';
 import { getPlatformSettings } from '@/lib/platform-settings/server';
 import { getAdminAiProvider } from '@/lib/platform-settings/shared';
 
@@ -168,24 +169,35 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const subjectContext =
+    const resolvedSubjectId = typeof subjectId === 'string' ? subjectId : null;
+    const [localKnowledgeContext, resourceRagContext] =
       source === 'ai_tutor'
-        ? await buildSubjectTutorContext({
-            subjectId: typeof subjectId === 'string' ? subjectId : null,
-            subjectName: typeof subject === 'string' ? subject : null,
-            query: message,
-          }).catch((error) => {
-            console.warn('Subject tutor context unavailable:', error);
-            return null;
-          })
-        : null;
+        ? await Promise.all([
+            buildSubjectTutorContext({
+              subjectId: resolvedSubjectId,
+              subjectName: typeof subject === 'string' ? subject : null,
+              query: message,
+            }).catch((error) => {
+              console.warn('Subject tutor context unavailable:', error);
+              return null;
+            }),
+            buildSubjectResourceRagContext({
+              subjectId: resolvedSubjectId,
+              query: message,
+            }),
+          ])
+        : [null, null];
+    // Curated local knowledge files first, then indexed resource/past-paper excerpts.
+    const subjectContext = [localKnowledgeContext, resourceRagContext].filter(Boolean).join('\n\n') || null;
     const adminProvider = getAdminAiProvider(platformSettings, isSideChat ? 'sideChat' : 'aiTutor') as AiProviderId;
-    const provider: AiProviderId =
-      assistantSelected && source === 'ai_tutor' && subjectContext && adminProvider === 'local'
-        ? 'local'
-        : adminProvider === 'local'
-          ? 'groq'
-          : adminProvider;
+    // AI Tutor cost/speed chain, for the default "Assistant" tier (not an explicitly-picked
+    // named provider like Claude/GPT): Groq first — free, fast (LPU), and higher-quality
+    // (70B) than the self-hosted model — then the local self-hosted model (grounded with
+    // subjectContext above when available) only once Groq's whole key pool/budget is
+    // exhausted, as a zero-marginal-cost safety net before falling through to whatever the
+    // admin has configured as the last resort below.
+    const useAiTutorCostSafeChain = assistantSelected && source === 'ai_tutor';
+    const provider: AiProviderId = adminProvider === 'local' ? 'groq' : adminProvider;
 
     const messages = [
       {
@@ -202,23 +214,38 @@ export async function POST(req: NextRequest) {
     ];
 
     let result;
-    if (source === 'ai_tutor' && subjectContext && adminProvider === 'local') {
+    if (useAiTutorCostSafeChain) {
       try {
         result = await gatewayChat({
-          provider: 'local',
+          provider: 'groq',
           tier,
           messages,
-          maxTokens: 1600,
-          temperature: 0.55,
+          maxTokens: 2048,
+          temperature: 0.7,
           strictProvider: true,
-          routingPolicy: 'local',
+          routingPolicy: 'text',
         });
-      } catch (localError) {
-        console.warn('Local subject tutor unavailable; falling back to admin chat provider:', localError);
+      } catch (groqError) {
+        console.warn('Groq unavailable for AI Tutor; trying local self-hosted model next:', groqError);
+      }
+      if (!result) {
+        try {
+          result = await gatewayChat({
+            provider: 'local',
+            tier,
+            messages,
+            maxTokens: 1600,
+            temperature: 0.55,
+            strictProvider: true,
+            routingPolicy: 'local',
+          });
+        } catch (localError) {
+          console.warn('Local AI Tutor also unavailable; falling back to admin chat provider:', localError);
+        }
       }
     }
     result ||= await gatewayChat({
-      provider: provider === 'local' ? 'groq' : provider,
+      provider,
       tier,
       messages,
       maxTokens: source === 'side_chat' ? 1100 : 2048,

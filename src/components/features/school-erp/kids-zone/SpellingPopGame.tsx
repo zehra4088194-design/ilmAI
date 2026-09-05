@@ -16,6 +16,14 @@ const WORDS: Array<{ word: string; emoji: string }> = [
   { word: 'BEE', emoji: '🐝' },
   { word: 'FISH', emoji: '🐟' },
   { word: 'STAR', emoji: '⭐' },
+  { word: 'EGG', emoji: '🥚' },
+  { word: 'MOON', emoji: '🌙' },
+  { word: 'BOOK', emoji: '📚' },
+  { word: 'KITE', emoji: '🪁' },
+  { word: 'LEAF', emoji: '🍃' },
+  { word: 'MILK', emoji: '🥛' },
+  { word: 'COW', emoji: '🐄' },
+  { word: 'BALL', emoji: '⚽' },
 ];
 
 function shuffle<T>(items: T[]): T[] {
@@ -41,7 +49,7 @@ function makeRound() {
 }
 
 /** Pick the correctly spelled word for the pictured object — early reading/spelling recognition. */
-export function SpellingPopGame() {
+export function SpellingPopGame({ onCorrect }: { onCorrect?: () => void } = {}) {
   const [round, setRound] = useState(makeRound);
   const [score, setScore] = useState(0);
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
@@ -51,6 +59,7 @@ export function SpellingPopGame() {
     if (value === round.target.word) {
       setFeedback('correct');
       setScore((s) => s + 1);
+      onCorrect?.();
       setTimeout(() => {
         setRound(makeRound());
         setFeedback(null);

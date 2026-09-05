@@ -49,8 +49,12 @@ jobs:
 
           call_job /api/cron/resource-context
           call_job /api/cron/school-notifications
+          call_job /api/cron/college-notifications
           call_job /api/cron/usd-pkr-rate
           call_job /api/cron/expire-institution-trials
+          # Idempotent (checks for an existing row covering "today" first) — safe to call on
+          # every run rather than needing its own time-of-day slot.
+          call_job /api/cron/daily-competition
           # Only twice/day here (this workflow's own schedule) vs. the ~2-minute cadence the
           # self-hosted services/cron container runs it at — biometric attendance will lag on
           # the free-hosted deployment, but still syncs instead of never running at all.
@@ -61,6 +65,7 @@ jobs:
           case "$day:$time" in
             1:00:00) call_job /api/cron/weekly-snapshots ;;
             1:00:10) call_job /api/cron/weekly-league-rollover ;;
+            1:00:20) call_job /api/cron/weekly-boss-quiz ;;
           esac
 
           case "$time" in

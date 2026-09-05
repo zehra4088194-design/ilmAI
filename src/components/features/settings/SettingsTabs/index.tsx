@@ -101,6 +101,8 @@ export function SettingsTabs({
   const [localProfile, setLocalProfile] = useState(profile);
   const [activeTab, setActiveTab] = useState(initialTab || 'profile');
   const [fullName, setFullName] = useState(profile?.full_name || '');
+  const [username, setUsername] = useState(profile?.username || '');
+  const [checkingUsername, setCheckingUsername] = useState(false);
   const [dateOfBirth, setDateOfBirth] = useState(profile?.date_of_birth || '');
   const [gender, setGender] = useState<'girl' | 'boy' | null>(
     profile?.gender === 'girl' || profile?.gender === 'boy' ? profile.gender : null
@@ -148,8 +150,17 @@ export function SettingsTabs({
   const { locale, setLocale } = useLocale();
   const verifiedMfaFactor = mfaFactors.find((factor) => factor.status === 'verified');
   const profileGradeLevel = (localProfile?.grade_level || currentGradeLevel) as GradeLevel | null;
+  // Once a profile is in University Mode, grade_level is a leftover from before they switched (or
+  // from before they ever set it) — showing "Current Class: Grade 12" here has nothing behind it,
+  // and its "Change" button (setGradeLevel, src/app/onboarding/class/actions.ts) unconditionally
+  // recomputes education_level from the picked grade, silently kicking the profile back out of
+  // University Mode. Gating on educationLevel here (not just grade_level) keeps the card reachable
+  // for anyone who switches back out of University Mode, while hiding it while they're in it.
   const classSettingsGrade =
-    profileGradeLevel && CLASS_SELECTION_GRADE_LEVELS.includes(profileGradeLevel as ClassSelectionGradeLevel)
+    localProfile?.role === 'student' &&
+    educationLevel !== 'university' &&
+    profileGradeLevel &&
+    CLASS_SELECTION_GRADE_LEVELS.includes(profileGradeLevel as ClassSelectionGradeLevel)
       ? (profileGradeLevel as ClassSelectionGradeLevel)
       : null;
 
@@ -189,6 +200,7 @@ export function SettingsTabs({
   useEffect(() => {
     setLocalProfile(profile);
     setFullName(profile?.full_name || '');
+    setUsername(profile?.username || '');
     setDateOfBirth(profile?.date_of_birth || '');
     setGender(profile?.gender === 'girl' || profile?.gender === 'boy' ? profile.gender : null);
     setGenderChangedAt(profile?.gender_changed_at || null);
@@ -221,10 +233,38 @@ export function SettingsTabs({
   }, [activeTab]);
 
   const handleSave = async () => {
+    const trimmedUsername = username.trim().toLowerCase();
+    if (!/^[a-z0-9._]{3,30}$/i.test(trimmedUsername)) {
+      toast.error('Username must be 3-30 characters: letters, numbers, dots, or underscores.');
+      return;
+    }
     setSaving(true);
+    // Only re-check availability when it actually changed — /api/auth/check-username has no
+    // notion of "this is your own current username", so re-checking an unchanged value would
+    // always report it as taken.
+    if (trimmedUsername !== (localProfile?.username || '').toLowerCase()) {
+      setCheckingUsername(true);
+      try {
+        const res = await fetch(`/api/auth/check-username?username=${encodeURIComponent(trimmedUsername)}`);
+        const json = await res.json();
+        if (!json.available) {
+          toast.error(json.error || 'That username is already taken.');
+          setSaving(false);
+          setCheckingUsername(false);
+          return;
+        }
+      } catch {
+        toast.error('Could not verify username availability. Please try again.');
+        setSaving(false);
+        setCheckingUsername(false);
+        return;
+      }
+      setCheckingUsername(false);
+    }
     const { error } = await (supabase.from('profiles') as any)
       .update({
         full_name: fullName,
+        username: trimmedUsername,
         date_of_birth: dateOfBirth || null,
         board,
         education_level: educationLevel,
@@ -233,9 +273,11 @@ export function SettingsTabs({
       .eq('id', localProfile.id);
     if (error) toast.error(error.message);
     else {
+      setUsername(trimmedUsername);
       setLocalProfile((current: any) => ({
         ...current,
         full_name: fullName,
+        username: trimmedUsername,
         date_of_birth: dateOfBirth || null,
         board,
         education_level: educationLevel,
@@ -585,6 +627,17 @@ export function SettingsTabs({
                 <Input value={fullName} onChange={(e) => setFullName(e.target.value)} />
               </div>
               <div>
+                <label className="mb-1.5 block text-sm font-medium">Username</label>
+                <Input
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value.toLowerCase())}
+                  placeholder="e.g. ahmad.study"
+                />
+                <p className="text-muted-foreground mt-1.5 text-xs">
+                  People can find you by this @username in search and Study Buddies.
+                </p>
+              </div>
+              <div>
                 <label className="mb-1.5 block text-sm font-medium">Date of Birth</label>
                 <Input type="date" value={dateOfBirth || ''} onChange={(e) => setDateOfBirth(e.target.value)} />
                 <p className="text-muted-foreground mt-1.5 text-xs">
@@ -624,22 +677,24 @@ export function SettingsTabs({
                   </p>
                 </div>
               )}
-              <div>
-                <label className="mb-1.5 block text-sm font-medium">Board</label>
-                <select
-                  value={board}
-                  onChange={(e) => setBoard(e.target.value)}
-                  className="border-input bg-background h-10 w-full rounded-lg border px-3 text-sm"
-                >
-                  <option value="">Select board</option>
-                  {BOARDS.map((b) => (
-                    <option key={b.value} value={b.value}>
-                      {b.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <Button variant="gradient" onClick={handleSave} loading={saving}>
+              {localProfile?.role === 'student' && educationLevel !== 'university' && (
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium">Board</label>
+                  <select
+                    value={board}
+                    onChange={(e) => setBoard(e.target.value)}
+                    className="border-input bg-background h-10 w-full rounded-lg border px-3 text-sm"
+                  >
+                    <option value="">Select board</option>
+                    {BOARDS.map((b) => (
+                      <option key={b.value} value={b.value}>
+                        {b.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <Button variant="gradient" onClick={handleSave} loading={saving || checkingUsername}>
                 Save Changes
               </Button>
               {classSettingsGrade && (

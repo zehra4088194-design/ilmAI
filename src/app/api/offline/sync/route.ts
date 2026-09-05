@@ -6,7 +6,7 @@ import { completeQuizSession } from '@/lib/quiz/complete';
 import { sendImmediateAttendanceAlerts } from '@/lib/school-erp/notification-queue';
 
 /**
- * Server-side replay target for the offline queue (src/lib/offline/sync-queue.ts). Handles the two
+ * Server-side replay target for the offline queue (src/lib/offline/sync-queue.ts). Handles the
  * write types the client is allowed to queue while offline:
  *
  *  - 'attendance': one section's attendance for one date, same shape saveAttendance()
@@ -18,6 +18,12 @@ import { sendImmediateAttendanceAlerts } from '@/lib/school-erp/notification-que
  *  - 'quiz_complete': the exact payload /api/quiz/complete accepts, replayed as-is. A client
  *    idempotency key prevents a duplicate XP/coin award if the same queued item is replayed twice
  *    (e.g. the client retried before seeing the first success response).
+ *  - 'notes_create' / 'notes_update': a note written or edited while offline. The client generates
+ *    the note's id itself (crypto.randomUUID(), a valid uuid the notes.id column accepts) so the
+ *    same id can be used for the optimistic local copy and the eventual server row — replaying a
+ *    'notes_create' twice for the same id is a plain upsert, so it's naturally idempotent too.
+ *    Ownership is always re-derived from the session (user_id is never taken from the payload), so
+ *    a queued item can never write into another user's notes.
  *
  * This route is intentionally NOT reachable through the service worker's cache — it's called
  * directly by app JS only when the browser reports it is back online.
@@ -143,6 +149,80 @@ async function syncQuizComplete(payload: unknown, clientId: string) {
   return NextResponse.json(result.body, { status: result.status });
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+type NoteWritePayload = {
+  id: string;
+  title?: string;
+  content?: string;
+  is_starred?: boolean;
+  folder?: string | null;
+};
+
+async function syncNotesCreate(payload: NoteWritePayload) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Login required' }, { status: 401 });
+
+  const { id, title, content, is_starred, folder } = payload || ({} as NoteWritePayload);
+  if (!id || !UUID_RE.test(id)) return NextResponse.json({ error: 'A valid note id is required.' }, { status: 400 });
+
+  const limit = await checkDailyLimit(user.id, 'erp_mutation:offline_notes', 500);
+  if (!limit.success) return NextResponse.json({ error: 'Too many offline updates today. Try again later.' }, { status: 429 });
+
+  const db = supabase as any;
+  // Upsert (not insert) so replaying the same queued item twice — e.g. the client retried before
+  // seeing the first success — is a no-op instead of a duplicate/conflict error. user_id always
+  // comes from the session, never the payload, so this can never create a note under another user.
+  const { error } = await db.from('notes').upsert(
+    {
+      id,
+      user_id: user.id,
+      title: (title || 'New Note').slice(0, 200),
+      content: content || '',
+      is_starred: Boolean(is_starred),
+      is_public: false,
+      folder: folder?.trim() || null,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'id' }
+  );
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ status: 'success' });
+}
+
+async function syncNotesUpdate(payload: NoteWritePayload) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Login required' }, { status: 401 });
+
+  const { id, title, content, is_starred, folder } = payload || ({} as NoteWritePayload);
+  if (!id || !UUID_RE.test(id)) return NextResponse.json({ error: 'A valid note id is required.' }, { status: 400 });
+
+  const db = supabase as any;
+  const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (title !== undefined) update.title = title.slice(0, 200);
+  if (content !== undefined) update.content = content;
+  if (is_starred !== undefined) update.is_starred = Boolean(is_starred);
+  if (folder !== undefined) update.folder = folder?.trim() || null;
+
+  // Scoped to the caller's own row (eq user_id) rather than relying on RLS alone, so this can
+  // never silently edit another user's note even if the client sent a note id it doesn't own —
+  // it will just match zero rows.
+  const { error, count } = await db
+    .from('notes')
+    .update(update, { count: 'exact' })
+    .eq('id', id)
+    .eq('user_id', user.id);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!count) return NextResponse.json({ error: 'Note not found.' }, { status: 404 });
+  return NextResponse.json({ status: 'success' });
+}
+
 export async function POST(req: NextRequest) {
   let body: { id?: string; type?: string; payload?: unknown };
   try {
@@ -156,6 +236,12 @@ export async function POST(req: NextRequest) {
   }
   if (body.type === 'quiz_complete') {
     return syncQuizComplete(body.payload, body.id || '');
+  }
+  if (body.type === 'notes_create') {
+    return syncNotesCreate(body.payload as NoteWritePayload);
+  }
+  if (body.type === 'notes_update') {
+    return syncNotesUpdate(body.payload as NoteWritePayload);
   }
   return NextResponse.json({ error: `Unsupported offline sync type: ${body.type}` }, { status: 400 });
 }

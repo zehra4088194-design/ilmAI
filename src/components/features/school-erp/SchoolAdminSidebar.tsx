@@ -9,6 +9,7 @@ import {
   CalendarCheck2,
   ClipboardList,
   GraduationCap,
+  IdCard,
   ListChecks,
   LayoutDashboard,
   LogOut,
@@ -17,6 +18,7 @@ import {
   ReceiptText,
   Settings2,
   Sparkles,
+  TrendingUp,
   UserCircle,
   UserPlus,
   Users2,
@@ -48,6 +50,7 @@ const ITEMS: Array<{
     module: 'dashboard',
   },
   { href: '/school-admin/people', label: 'People', icon: Users, permission: 'people.read', module: 'people' },
+  { href: '/school-admin/people/id-cards', label: 'ID Cards', icon: IdCard, permission: 'people.read', module: 'people' },
   {
     href: '/school-admin/requests',
     label: 'Join Requests',
@@ -95,6 +98,7 @@ const ITEMS: Array<{
     module: 'communication',
   },
   { href: '/school-admin/reports', label: 'Reports', icon: BarChart3, permission: 'reports.read', module: 'reports' },
+  { href: '/school-admin/growth', label: 'Growth', icon: TrendingUp, permission: 'reports.read', module: 'reports' },
   {
     href: '/school-admin/settings',
     label: 'Organization',

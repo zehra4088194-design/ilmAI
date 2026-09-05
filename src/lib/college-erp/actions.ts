@@ -149,6 +149,33 @@ export async function updateCollegeLogo(_state: CollegeActionState, formData: Fo
   }
 }
 
+// College-side mirror of updateSchoolPrincipalSignature (src/lib/school-erp/actions.ts).
+export async function updateCollegePrincipalSignature(
+  _state: CollegeActionState,
+  formData: FormData
+): Promise<CollegeActionState> {
+  try {
+    const principalName = text(formData, 'principal_name');
+    const { db, context } = await mutationContext('organization.manage', 'principal-signature');
+    const file = formData.get('signature');
+    let signatureUrl = context.organization.principal_signature_url || '';
+    if (file instanceof File && file.size > 0) {
+      if (!file.type.startsWith('image/')) throw new Error('Signature must be an image file.');
+      signatureUrl = await uploadCollegeLogo(db, context.organization.id, file);
+    }
+    const { error } = await db.rpc('college_update_principal_signature', {
+      p_organization_id: context.organization.id,
+      p_principal_name: principalName,
+      p_signature_url: signatureUrl,
+    });
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'update', 'college_principal_signature', context.organization.id);
+    return done('/college-admin/settings', 'Principal details saved.');
+  } catch (error) {
+    return failure(error);
+  }
+}
+
 export async function createCollegeCampus(_state: CollegeActionState, formData: FormData): Promise<CollegeActionState> {
   try {
     const parsed = z.object({ name: z.string().min(2).max(100), code: z.string().min(1).max(20) }).parse({
@@ -624,6 +651,15 @@ export async function saveCollegeAttendance(_state: CollegeActionState, formData
     const { error } = await db.from('college_attendance_records').upsert(records, { onConflict: 'section_id,student_id,attendance_date' });
     if (error) throw new Error(error.message);
     await audit(db, context, 'bulk_upsert', 'attendance', sectionId, { attendanceDate, count: records.length });
+
+    // Mirrors saveAttendance()'s real-time guardian alert on the school side (Phase 2a) — fires
+    // the moment a student is marked absent instead of waiting for the next reminder cron run.
+    const absentStudentIds = records.filter((record) => record.status === 'absent').map((record) => record.student_id);
+    if (absentStudentIds.length) {
+      const { sendImmediateAttendanceAlerts } = await import('./notification-queue');
+      await sendImmediateAttendanceAlerts(context.organization.id, attendanceDate, absentStudentIds);
+    }
+
     return done('/college-admin/attendance', `${records.length} attendance records saved.`);
   } catch (error) {
     return failure(error);
@@ -1075,6 +1111,98 @@ export async function recordCollegeFeePayment(_state: CollegeActionState, formDa
   }
 }
 
+export type BulkCollegeFeePaymentInput = {
+  items: { invoiceId: string; amount: number }[];
+  paymentMethod?: string;
+  providerReference?: string;
+  notes?: string;
+};
+export type BulkCollegeFeePaymentResult = { success: boolean; message: string; groupId?: string; receiptNumber?: string };
+
+// College-side mirror of src/lib/school-erp/actions.ts's recordBulkFeePayment — see that comment
+// for why a shared payment_group_id (rather than a new join table) is enough to print one combined
+// voucher for several invoices paid in one receipt.
+export async function recordBulkCollegeFeePayment(input: BulkCollegeFeePaymentInput): Promise<BulkCollegeFeePaymentResult> {
+  try {
+    const items = (input.items || []).filter((item) => item.invoiceId && Number(item.amount) > 0);
+    if (!items.length) throw new Error('Select at least one fee head with an amount to collect.');
+    const { db, context, user } = await mutationContext('fees.manage', 'fee-payment-bulk', 'fees');
+
+    const invoiceIds = items.map((item) => item.invoiceId);
+    const { data: invoices, error: invoiceError } = await db
+      .from('college_fee_invoices')
+      .select('id, total_amount, paid_amount')
+      .eq('organization_id', context.organization.id)
+      .in('id', invoiceIds);
+    if (invoiceError) throw new Error(invoiceError.message);
+    const invoiceById = new Map((invoices || []).map((row: any) => [row.id, row]));
+    for (const item of items) {
+      const invoice = invoiceById.get(item.invoiceId) as any;
+      if (!invoice) throw new Error('One of the selected vouchers was not found.');
+      const balance = Math.max(0, Number(invoice.total_amount) - Number(invoice.paid_amount));
+      if (item.amount > balance + 0.01) throw new Error('A payment amount exceeds that voucher\'s pending balance.');
+    }
+
+    const groupId = crypto.randomUUID();
+    const receiptNumber = `R-${Date.now().toString(36).toUpperCase()}`;
+    const paymentMethod = input.paymentMethod || 'cash';
+    const rows = items.map((item, index) => ({
+      organization_id: context.organization.id,
+      invoice_id: item.invoiceId,
+      amount: item.amount,
+      payment_method: paymentMethod,
+      provider_reference: input.providerReference || null,
+      receipt_number: items.length > 1 ? `${receiptNumber}-${index + 1}` : receiptNumber,
+      payment_group_id: groupId,
+      received_by: user.id,
+      notes: input.notes || null,
+    }));
+    const { error } = await db.from('college_fee_payments').insert(rows);
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'bulk_create', 'fee_payment_group', groupId, {
+      count: rows.length,
+      total: items.reduce((sum, item) => sum + item.amount, 0),
+    });
+    revalidatePath('/college-admin', 'layout');
+    revalidatePath('/college');
+    const total = items.reduce((sum, item) => sum + item.amount, 0);
+    return { success: true, message: `Payment of ${total.toLocaleString()} recorded.`, groupId, receiptNumber };
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : 'Payment could not be recorded.' };
+  }
+}
+
+export async function createCollegeExpense(_state: CollegeActionState, formData: FormData): Promise<CollegeActionState> {
+  try {
+    const description = text(formData, 'description');
+    const amount = numberValue(formData, 'amount', -1);
+    const category = text(formData, 'category') || 'other';
+    const allowedCategories = ['salary', 'utilities', 'maintenance', 'supplies', 'transport', 'events', 'other'];
+    if (!description || amount <= 0) throw new Error('Description and a valid amount are required.');
+    if (!allowedCategories.includes(category)) throw new Error('Invalid expense category.');
+    const { db, context, user } = await mutationContext('fees.manage', 'expense', 'fees');
+    const { data, error } = await db
+      .from('college_expenses')
+      .insert({
+        organization_id: context.organization.id,
+        category,
+        description,
+        amount,
+        expense_date: dateValue(formData, 'expense_date') || new Date().toISOString().slice(0, 10),
+        paid_via: text(formData, 'paid_via') || 'cash',
+        notes: optionalText(formData, 'notes'),
+        created_by: user.id,
+      })
+      .select('id')
+      .single();
+    if (error) throw new Error(error.message);
+    await audit(db, context, 'create', 'expense', data.id, { amount, category });
+    return done('/college-admin/fees/ledger', 'Expense recorded.');
+  } catch (error) {
+    return failure(error);
+  }
+}
+
 export async function createCollegeAssignment(_state: CollegeActionState, formData: FormData): Promise<CollegeActionState> {
   try {
     const sectionId = text(formData, 'section_id');
@@ -1199,6 +1327,84 @@ export async function createCollegeCalendarEvent(_state: CollegeActionState, for
   }
 }
 
+/**
+ * College mirror of resolveAnnouncementRecipients() in school-erp/actions.ts. With no section
+ * filter this is every active member in the chosen roles; with one, 'student' narrows to that
+ * section's enrolled students and 'parent' to their guardians — 'teacher'/'staff' aren't tied to
+ * a section, so a section filter drops them from the recipient set.
+ */
+async function resolveCollegeAnnouncementRecipients(
+  db: any,
+  organizationId: string,
+  roles: string[],
+  sectionId: string | null
+): Promise<Array<{ profile_id: string; email: string | null; phone: string | null }>> {
+  if (!sectionId) {
+    const { data: recipients } = await db
+      .from('college_memberships')
+      .select('profile_id, profiles(email, phone)')
+      .eq('organization_id', organizationId)
+      .eq('status', 'active')
+      .in('member_role', roles);
+    return (recipients || []).map((r: any) => {
+      const profile = Array.isArray(r.profiles) ? r.profiles[0] : r.profiles;
+      return { profile_id: r.profile_id, email: profile?.email || null, phone: profile?.phone || null };
+    });
+  }
+
+  const wantsStudents = roles.includes('student');
+  const wantsParents = roles.includes('parent');
+  if (!wantsStudents && !wantsParents) return [];
+
+  const { data: enrollments } = await db
+    .from('college_enrollments')
+    .select('student_id, profiles!college_enrollments_student_id_fkey(email, phone)')
+    .eq('organization_id', organizationId)
+    .eq('section_id', sectionId)
+    .eq('status', 'active');
+  const studentIds = (enrollments || []).map((e: any) => e.student_id);
+  const result: Array<{ profile_id: string; email: string | null; phone: string | null }> = [];
+
+  if (wantsStudents) {
+    for (const enrollment of enrollments || []) {
+      const profile = Array.isArray(enrollment.profiles) ? enrollment.profiles[0] : enrollment.profiles;
+      result.push({ profile_id: enrollment.student_id, email: profile?.email || null, phone: profile?.phone || null });
+    }
+  }
+  if (wantsParents && studentIds.length) {
+    const { data: guardians } = await db
+      .from('college_guardians')
+      .select('guardian_id, profiles!college_guardians_guardian_id_fkey(email, phone)')
+      .eq('organization_id', organizationId)
+      .in('student_id', studentIds)
+      .eq('receives_alerts', true);
+    for (const guardian of guardians || []) {
+      const profile = Array.isArray(guardian.profiles) ? guardian.profiles[0] : guardian.profiles;
+      result.push({ profile_id: guardian.guardian_id, email: profile?.email || null, phone: profile?.phone || null });
+    }
+  }
+  return result;
+}
+
+function collegeAnnouncementDeliveries(
+  organizationId: string,
+  announcementId: string,
+  recipients: Array<{ profile_id: string; email: string | null; phone: string | null }>,
+  channels: string[]
+) {
+  return recipients.flatMap((recipient) =>
+    channels.map((channel) => ({
+      organization_id: organizationId,
+      announcement_id: announcementId,
+      recipient_id: recipient.profile_id,
+      recipient_address: channel === 'email' ? recipient.email : channel === 'sms' || channel === 'whatsapp' ? recipient.phone : null,
+      channel,
+      category: 'announcement',
+      status: 'queued',
+    }))
+  );
+}
+
 export async function createCollegeAnnouncement(_state: CollegeActionState, formData: FormData): Promise<CollegeActionState> {
   try {
     const title = text(formData, 'title');
@@ -1206,7 +1412,9 @@ export async function createCollegeAnnouncement(_state: CollegeActionState, form
     if (!title || !body) throw new Error('Announcement title and message are required.');
     const roles = formData.getAll('audience_roles').map(String);
     const channels = formData.getAll('delivery_channels').map(String);
+    const sectionId = optionalText(formData, 'audience_section_id');
     const { db, context, user } = await mutationContext('communication.manage', 'announcement', 'communication');
+    const resolvedRoles = roles.length ? roles : ['student', 'parent', 'teacher', 'staff'];
     const publishedAt = formData.get('publish_now') === 'on' ? new Date().toISOString() : null;
     const { data, error } = await db
       .from('college_announcements')
@@ -1216,7 +1424,7 @@ export async function createCollegeAnnouncement(_state: CollegeActionState, form
         title,
         body,
         priority: text(formData, 'priority') || 'normal',
-        audience_roles: roles.length ? roles : ['student', 'parent', 'teacher', 'staff'],
+        audience_roles: resolvedRoles,
         delivery_channels: channels.length ? channels : ['in_app'],
         published_at: publishedAt,
         expires_at: optionalText(formData, 'expires_at'),
@@ -1227,29 +1435,11 @@ export async function createCollegeAnnouncement(_state: CollegeActionState, form
     if (error) throw new Error(error.message);
 
     if (publishedAt) {
-      const { data: recipients } = await db
-        .from('college_memberships')
-        .select('profile_id, member_role, profiles(email, phone)')
-        .eq('organization_id', context.organization.id)
-        .eq('status', 'active')
-        .in('member_role', roles.length ? roles : ['student', 'parent', 'teacher', 'staff']);
-      const deliveries = (recipients || []).flatMap((recipient: any) =>
-        (channels.length ? channels : ['in_app']).map((channel) => {
-          const profile = Array.isArray(recipient.profiles) ? recipient.profiles[0] : recipient.profiles;
-          return {
-            organization_id: context.organization.id,
-            announcement_id: data.id,
-            recipient_id: recipient.profile_id,
-            recipient_address:
-              channel === 'email' ? profile?.email || null : channel === 'sms' || channel === 'whatsapp' ? profile?.phone || null : null,
-            channel,
-            status: 'queued',
-          };
-        })
-      );
+      const recipients = await resolveCollegeAnnouncementRecipients(db, context.organization.id, resolvedRoles, sectionId);
+      const deliveries = collegeAnnouncementDeliveries(context.organization.id, data.id, recipients, channels.length ? channels : ['in_app']);
       if (deliveries.length) await db.from('college_notification_deliveries').insert(deliveries);
     }
-    await audit(db, context, 'create', 'announcement', data.id, { published: Boolean(publishedAt) });
+    await audit(db, context, 'create', 'announcement', data.id, { published: Boolean(publishedAt), sectionId });
     return done('/college-admin/communication', publishedAt ? 'Announcement published and delivery queued.' : 'Announcement saved as draft.');
   } catch (error) {
     return failure(error);
@@ -1277,23 +1467,8 @@ export async function publishCollegeAnnouncement(_state: CollegeActionState, for
       .eq('organization_id', context.organization.id);
     if (publishError) throw new Error(publishError.message);
 
-    const { data: recipients } = await db
-      .from('college_memberships')
-      .select('profile_id, profiles(email, phone)')
-      .eq('organization_id', context.organization.id)
-      .eq('status', 'active')
-      .in('member_role', announcement.audience_roles);
-    const deliveries = (recipients || []).flatMap((recipient: any) => {
-      const profile = Array.isArray(recipient.profiles) ? recipient.profiles[0] : recipient.profiles;
-      return (announcement.delivery_channels || ['in_app']).map((channel: string) => ({
-        organization_id: context.organization.id,
-        announcement_id: id,
-        recipient_id: recipient.profile_id,
-        recipient_address: channel === 'email' ? profile?.email || null : channel === 'sms' || channel === 'whatsapp' ? profile?.phone || null : null,
-        channel,
-        status: 'queued',
-      }));
-    });
+    const recipients = await resolveCollegeAnnouncementRecipients(db, context.organization.id, announcement.audience_roles, null);
+    const deliveries = collegeAnnouncementDeliveries(context.organization.id, id, recipients, announcement.delivery_channels || ['in_app']);
     if (deliveries.length) {
       const { error: deliveryError } = await db.from('college_notification_deliveries').insert(deliveries);
       if (deliveryError) throw new Error(deliveryError.message);

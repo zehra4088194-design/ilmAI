@@ -47,7 +47,7 @@ function makeRound() {
 }
 
 /** Same simple addition/subtraction within 10 as SimpleMathGame, re-skinned bilingual (English + Urdu number words). */
-export function UrduAddSubtractGame() {
+export function UrduAddSubtractGame({ onCorrect }: { onCorrect?: () => void } = {}) {
   const [round, setRound] = useState(makeRound);
   const [score, setScore] = useState(0);
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
@@ -57,6 +57,7 @@ export function UrduAddSubtractGame() {
     if (value === round.answer) {
       setFeedback('correct');
       setScore((s) => s + 1);
+      onCorrect?.();
       setTimeout(() => {
         setRound(makeRound());
         setFeedback(null);

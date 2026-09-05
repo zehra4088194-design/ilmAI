@@ -15,6 +15,9 @@ const ITEMS = [
   { emoji: '🟢', urdu: 'سبز', english: 'Green' },
   { emoji: '🟡', urdu: 'پیلا', english: 'Yellow' },
   { emoji: '🟣', urdu: 'جامنی', english: 'Purple' },
+  { emoji: '🟠', urdu: 'نارنجی', english: 'Orange' },
+  { emoji: '🩷', urdu: 'گلابی', english: 'Pink' },
+  { emoji: '🟤', urdu: 'بھورا', english: 'Brown' },
 ];
 
 function shuffle<T>(items: T[]): T[] {
@@ -34,7 +37,7 @@ function makeRound() {
 }
 
 /** Shapes & colors — tap the bilingual (Urdu + English) name matching the shown emoji. */
-export function ShapeColorMatchGame() {
+export function ShapeColorMatchGame({ onCorrect }: { onCorrect?: () => void } = {}) {
   const [round, setRound] = useState(makeRound);
   const [score, setScore] = useState(0);
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
@@ -44,6 +47,7 @@ export function ShapeColorMatchGame() {
     if (english === round.target.english) {
       setFeedback('correct');
       setScore((s) => s + 1);
+      onCorrect?.();
       setTimeout(() => {
         setRound(makeRound());
         setFeedback(null);

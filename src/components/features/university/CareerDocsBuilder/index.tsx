@@ -54,6 +54,9 @@ export function CareerDocsBuilder() {
   };
 
   const activeOutput = outputs[view];
+  const completenessFields: (keyof typeof form)[] = ['name', 'contact', 'university', 'degree', 'skills', 'projects'];
+  const filledCount = completenessFields.filter((key) => form[key].trim().length > 0).length;
+  const completeness = Math.round((filledCount / completenessFields.length) * 100);
 
   const copy = async () => {
     if (!activeOutput) return;
@@ -78,7 +81,21 @@ export function CareerDocsBuilder() {
 
       <div className="grid gap-6 xl:grid-cols-[420px_1fr]">
         <Card className="h-fit">
-          <CardHeader><CardTitle className="text-base">Student Details</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between text-base">
+              <span>Student Details</span>
+              <Badge variant={completeness === 100 ? 'default' : 'secondary'}>{completeness}% complete</Badge>
+            </CardTitle>
+            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className={cn(
+                  'h-full rounded-full transition-all',
+                  completeness === 100 ? 'bg-emerald-500' : 'bg-violet-500'
+                )}
+                style={{ width: `${completeness}%` }}
+              />
+            </div>
+          </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
               <Input label="Name" value={form.name} onChange={(value) => update('name', value)} placeholder="Your full name" />

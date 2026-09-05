@@ -152,6 +152,9 @@ export default async function SchoolExamsPage() {
                       <Button asChild variant="outline" size="sm">
                         <Link href={`/school-admin/exams/report-cards/${exam.id}`}>Report cards</Link>
                       </Button>
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={`/school-admin/exams/tabulation/${exam.id}`}>Result sheet / merit list</Link>
+                      </Button>
                     </>
                   )}
                 </div>

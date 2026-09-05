@@ -1,7 +1,21 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Download, Loader2, WandSparkles } from 'lucide-react';
+import {
+  Banknote,
+  Copy,
+  Download,
+  FileText,
+  GitBranch,
+  Layers,
+  Loader2,
+  Megaphone,
+  Mic,
+  ShieldAlert,
+  Sparkles as SparklesIcon,
+  TrendingUp,
+  WandSparkles,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +36,20 @@ const LABELS: Record<string, string> = {
   report: 'Project Report',
   poster_copy: 'Poster Copy',
   pitch_script: 'Pitch Script',
+};
+
+const ICONS: Record<string, typeof FileText> = {
+  proposal: FileText,
+  executive_summary: SparklesIcon,
+  business_model: Layers,
+  timeline: TrendingUp,
+  flowchart_mermaid: GitBranch,
+  architecture: Layers,
+  budget_estimation: Banknote,
+  risk_analysis: ShieldAlert,
+  report: FileText,
+  poster_copy: Megaphone,
+  pitch_script: Mic,
 };
 
 export function ProjectBuilderClient({ isLocked = false }: { isLocked?: boolean }) {
@@ -101,7 +129,13 @@ export function ProjectBuilderClient({ isLocked = false }: { isLocked?: boolean 
           </div>
           <div id="project-builder-export" data-print-root="true" className="grid gap-4 lg:grid-cols-2">
             {entries.map(([key, value]) => (
-              <EditableSection key={key} title={LABELS[key] || key} value={value} onChange={(next) => setContent((prev) => ({ ...(prev || {}), [key]: next }))} />
+              <EditableSection
+                key={key}
+                icon={ICONS[key] || FileText}
+                title={LABELS[key] || key}
+                value={value}
+                onChange={(next) => setContent((prev) => ({ ...(prev || {}), [key]: next }))}
+              />
             ))}
           </div>
         </>
@@ -110,12 +144,43 @@ export function ProjectBuilderClient({ isLocked = false }: { isLocked?: boolean 
   );
 }
 
-function EditableSection({ title, value, onChange }: { title: string; value: string; onChange: (next: string) => void }) {
+function EditableSection({
+  icon: Icon,
+  title,
+  value,
+  onChange,
+}: {
+  icon: typeof FileText;
+  title: string;
+  value: string;
+  onChange: (next: string) => void;
+}) {
+  const copy = async () => {
+    if (!value) return;
+    await navigator.clipboard.writeText(value);
+    toast.success(`${title} copied`);
+  };
+
   return (
     <Card>
-      <CardHeader><CardTitle className="text-base">{title}</CardTitle></CardHeader>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between text-base">
+          <span className="flex items-center gap-2">
+            <Icon className="h-4 w-4 text-violet-400" />
+            {title}
+          </span>
+          <Button variant="ghost" size="icon-sm" onClick={copy}>
+            <Copy className="h-3.5 w-3.5" />
+          </Button>
+        </CardTitle>
+      </CardHeader>
       <CardContent>
-        <textarea value={value || ''} onChange={(event) => onChange(event.target.value)} rows={title === 'Flowchart' ? 8 : 10} className="w-full rounded-xl border bg-background p-3 text-sm leading-6" />
+        <textarea
+          value={value || ''}
+          onChange={(event) => onChange(event.target.value)}
+          rows={title === 'Flowchart' ? 8 : 10}
+          className="w-full rounded-xl border bg-background p-3 text-sm leading-6"
+        />
       </CardContent>
     </Card>
   );

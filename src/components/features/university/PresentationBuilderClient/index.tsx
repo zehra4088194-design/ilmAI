@@ -11,6 +11,8 @@ import { PresentationSlideRenderer, THEMES } from '@/components/features/univers
 import { exportPresentationDeckToPdf } from '@/lib/utils/exportPresentationPdf';
 import { cn } from '@/lib/utils/cn';
 import type { PresentationDeck, PresentationGenerateMode, PresentationTheme } from '@/lib/presentation/types';
+import { fetchWithOfflineCache } from '@/lib/offline/read-cache';
+import { useAuth } from '@/hooks/auth/useAuth';
 
 type Props = {
   defaultSubject?: string;
@@ -41,14 +43,24 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
   const [history, setHistory] = useState<{ id: string; title: string; created_at: string }[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [activeHistoryId, setActiveHistoryId] = useState<string | null>(null);
+  const { user } = useAuth();
 
   const formReady = topic.trim().length > 2;
 
   async function loadHistory() {
+    if (!user?.id) return;
     try {
-      const res = await fetch('/api/presentation/history');
-      const json = await res.json();
-      if (json.status === 'success') setHistory(json.data.presentations);
+      // Mirrors the list into IndexedDB on every successful load and falls back to that mirror
+      // when offline, so previously-seen saved presentations still show up with no network at
+      // all — same pattern as openSaved() below for opening one of them. The fetcher throws on
+      // an app-level error response so a transient failure never overwrites a good cached list.
+      const { data: json } = await fetchWithOfflineCache(`presentations:history:${user.id}`, async () => {
+        const res = await fetch('/api/presentation/history');
+        const body = await res.json();
+        if (body.status !== 'success') throw new Error(body.error || 'History could not be loaded.');
+        return body;
+      });
+      setHistory(json.data.presentations);
     } catch {
       // Non-fatal — the builder still works without the saved list loading.
     }
@@ -56,19 +68,20 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
 
   useEffect(() => {
     void loadHistory();
-  }, []);
+  }, [user?.id]);
 
   async function openSaved(id: string) {
     setHistoryLoading(true);
     try {
-      const res = await fetch(`/api/presentation/history/${id}`);
-      const json = await res.json();
-      if (json.status !== 'success') {
-        toast.error(json.error || 'This presentation could not be opened.');
-        return;
-      }
+      const { data: json, fromCache } = await fetchWithOfflineCache(`presentations:deck:${id}`, async () => {
+        const res = await fetch(`/api/presentation/history/${id}`);
+        const body = await res.json();
+        if (body.status !== 'success') throw new Error(body.error || 'This presentation could not be opened.');
+        return body;
+      });
       setDeck(json.data.deck);
       setActiveHistoryId(id);
+      if (fromCache) toast.info('Internet nahi hai — pehle se save kiya hua version dikha rahe hain.');
     } catch {
       toast.error('This presentation could not be opened.');
     } finally {

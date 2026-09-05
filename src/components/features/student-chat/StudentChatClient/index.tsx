@@ -14,6 +14,8 @@ import { useAuth } from '@/hooks/auth/useAuth';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 import { cn } from '@/lib/utils/cn';
 import { toast } from 'sonner';
+import { fetchWithOfflineCache } from '@/lib/offline/read-cache';
+import { useOnlineStatus } from '@/hooks/offline/useOnlineStatus';
 
 type StudentProfile = {
   id: string;
@@ -56,6 +58,7 @@ export function StudentChatClient() {
   const searchParams = useSearchParams();
   const { user } = useAuth();
   const settings = usePlatformSettings();
+  const isOnline = useOnlineStatus();
   const [identifier, setIdentifier] = useState('');
   const [requests, setRequests] = useState<ChatRequest[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -85,9 +88,17 @@ export function StudentChatClient() {
   const loadRequests = async (showLoading = true) => {
     if (showLoading) setLoading(true);
     try {
-      const res = await fetch('/api/student-chat/requests');
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Requests could not be loaded.');
+      // Mirrored to IndexedDB on every successful load (see src/lib/offline/read-cache.ts), so
+      // the buddy list and approved threads are still there to look at with no network at all —
+      // only sending a new message genuinely needs to be online. The fetcher throws on an
+      // app-level error response so a transient server error never overwrites a good cached
+      // list with an error blob — fetchWithOfflineCache only mirrors what it never threw on.
+      const { data: json } = await fetchWithOfflineCache(`student-chat:requests:${user?.id}`, async () => {
+        const res = await fetch('/api/student-chat/requests');
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.error || 'Requests could not be loaded.');
+        return body;
+      });
       setRequests(json.requests || []);
       const requested = json.requests?.find(
         (request: ChatRequest) => request.status === 'approved' && request.id === requestedChatId
@@ -98,6 +109,9 @@ export function StudentChatClient() {
         setSelectedId(json.requests.find((request: ChatRequest) => request.status === 'approved')?.id || null);
       }
     } catch (error) {
+      // Offline with nothing cached yet — expected on a first-ever offline visit, not worth a
+      // toast, and the 15s poll below would otherwise re-toast this every cycle while offline.
+      if (!isOnline) return;
       toast.error(error instanceof Error ? error.message : 'Requests could not be loaded.');
     } finally {
       if (showLoading) setLoading(false);
@@ -106,11 +120,16 @@ export function StudentChatClient() {
 
   const loadMessages = async (requestId: string) => {
     try {
-      const res = await fetch(`/api/student-chat/messages?requestId=${requestId}`);
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Messages could not be loaded.');
+      const { data: json, fromCache } = await fetchWithOfflineCache(`student-chat:messages:${requestId}`, async () => {
+        const res = await fetch(`/api/student-chat/messages?requestId=${requestId}`);
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.error || 'Messages could not be loaded.');
+        return body;
+      });
       setMessages(json.messages || []);
+      if (fromCache && !isOnline) return; // don't toast — offline is expected, not an error
     } catch (error) {
+      if (!isOnline) return; // no cache yet for this thread and we're offline — nothing more to do
       toast.error(error instanceof Error ? error.message : 'Messages could not be loaded.');
     }
   };
@@ -438,25 +457,34 @@ export function StudentChatClient() {
                     </div>
                   </div>
                 ) : (
-                  <div className="border-border bg-background/95 flex gap-2 border-t p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:p-4">
-                    <Input
-                      value={message}
-                      onChange={(event) => setMessage(event.target.value)}
-                      placeholder="Type your message..."
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter') sendMessage();
-                      }}
-                      className="min-w-0"
-                    />
-                    <Button
-                      variant="default"
-                      size="icon"
-                      onClick={sendMessage}
-                      loading={sending}
-                      aria-label="Send message"
-                    >
-                      <Send className="h-4 w-4" />
-                    </Button>
+                  <div className="border-border bg-background/95 flex flex-col gap-1.5 border-t p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:p-4">
+                    {!isOnline && (
+                      <p className="text-muted-foreground text-xs">
+                        Internet nahi hai — purani messages dikh rahi hain, naya bhejne ke liye connect karo.
+                      </p>
+                    )}
+                    <div className="flex gap-2">
+                      <Input
+                        value={message}
+                        onChange={(event) => setMessage(event.target.value)}
+                        placeholder={isOnline ? 'Type your message...' : 'Internet chahiye...'}
+                        disabled={!isOnline}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') sendMessage();
+                        }}
+                        className="min-w-0"
+                      />
+                      <Button
+                        variant="default"
+                        size="icon"
+                        onClick={sendMessage}
+                        loading={sending}
+                        disabled={!isOnline}
+                        aria-label="Send message"
+                      >
+                        <Send className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 )}
               </>

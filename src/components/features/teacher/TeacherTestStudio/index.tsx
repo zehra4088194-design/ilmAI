@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { HouseAdBanner } from '@/components/features/ads/HouseAdBanner';
+import { AdGateComplete, AdGateSequence } from './AdGateSequence';
 import { TestPaper } from './TestPaper';
 import {
   formatGrade,
@@ -59,8 +59,13 @@ export function TeacherTestStudio({
       ?.id || ''
   );
   const filteredChapters = useMemo(
-    () => chapters.filter((chapter) => chapter.subject_id === subjectId),
-    [chapters, subjectId]
+    () =>
+      chapters.filter(
+        (chapter) =>
+          chapter.subject_id === subjectId &&
+          (!chapter.grade_levels?.length || chapter.grade_levels.includes(gradeLevel))
+      ),
+    [chapters, subjectId, gradeLevel]
   );
   const [chapterId, setChapterId] = useState('');
   const [institutionName, setInstitutionName] = useState('');
@@ -131,7 +136,7 @@ export function TeacherTestStudio({
       return;
     }
     if (planTier === 'FREE' && !adAcknowledged) {
-      toast.error('Please view the ad below, then tap "Generate test".');
+      toast.error('Please watch all 5 ads below, then tap "Generate test".');
       return;
     }
     setLoading(true);
@@ -161,7 +166,7 @@ export function TeacherTestStudio({
       });
       const json = await response.json();
       if (response.status === 402) {
-        toast.error('Please view the ad below to generate your free test paper.');
+        toast.error('Please watch all 5 ads below to generate your free test paper.');
         setAdAcknowledged(false);
         return;
       }
@@ -362,13 +367,12 @@ export function TeacherTestStudio({
           )}
 
           {planTier === 'FREE' && (
-            <div className="space-y-3 rounded-lg border border-dashed p-4 lg:col-span-2">
-              <p className="text-sm font-semibold">Free plan: view a quick ad to unlock each paper.</p>
-              <HouseAdBanner slot="teacher_test_gate" />
-              <label className="flex items-center gap-2 text-sm">
-                <Checkbox checked={adAcknowledged} onCheckedChange={(v) => setAdAcknowledged(v === true)} />
-                I&apos;ve viewed the ad above — unlock generation
-              </label>
+            <div className="lg:col-span-2">
+              {adAcknowledged ? (
+                <AdGateComplete />
+              ) : (
+                <AdGateSequence slot="teacher_test_gate" onComplete={() => setAdAcknowledged(true)} />
+              )}
             </div>
           )}
 

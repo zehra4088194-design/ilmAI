@@ -24,7 +24,11 @@ export default async function TeacherTestsPage() {
 
   const [{ data: subjects }, { data: chapters }] = await Promise.all([
     supabase.from('subjects').select('id, name, grade_levels').eq('is_active', true).order('name'),
-    supabase.from('chapters').select('id, subject_id, name, order_index').eq('is_active', true).order('order_index'),
+    supabase
+      .from('chapters')
+      .select('id, subject_id, name, order_index, grade_levels')
+      .eq('is_active', true)
+      .order('order_index'),
   ]);
 
   return (

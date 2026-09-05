@@ -5,7 +5,7 @@ import { ArrowLeft, Copy, Crown, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { MANUAL_PAYMENT_OPTIONS, SUPPORT_WHATSAPP_NUMBER, TRANSACTION_FEE_USD } from '@/lib/constants';
+import { MANUAL_PAYMENT_OPTIONS, TRANSACTION_FEE_USD } from '@/lib/constants';
 
 /**
  * Manual JazzCash checkout for a parent's OWN plan — mirrors ManualUpgradePage's pattern (QR,
@@ -110,9 +110,11 @@ export function ParentPlanCheckout({
               ))}
             </div>
             <p className="text-muted-foreground mt-4 text-xs">
-              Send proof and your registered email to `ilmai.study1@gmail.com`, or send the transaction screenshot on
-              WhatsApp: <span className="font-semibold">{SUPPORT_WHATSAPP_NUMBER}</span>. Never share an OTP or wallet
-              PIN.
+              Send proof and your registered email to `ilmai.study1@gmail.com`, or send the transaction screenshot on{' '}
+              <a href="/api/support/contact?via=whatsapp" className="font-semibold underline underline-offset-2">
+                WhatsApp
+              </a>
+              . Never share an OTP or wallet PIN.
             </p>
           </div>
         </CardContent>

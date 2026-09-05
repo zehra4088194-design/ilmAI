@@ -161,6 +161,15 @@ export function CompleteProfileStep({
   const [error, setError] = useState<string | null>(null);
   const [parentUsername, setParentUsername] = useState('');
 
+  // The email/password RegisterForm wizard already collects username (CORE_STEPS) and gender
+  // (GENDER_STEP) for student/university identities before ever routing here — this page only
+  // exists to collect what that wizard couldn't (board/grade/science subject, or the
+  // university program/semester fields). Re-showing already-answered fields was pure duplicate
+  // work for that person, so we only render them when they're genuinely still missing (which is
+  // exactly the Google/OAuth case, where neither was ever collected).
+  const usernameAlreadyKnown = initialUsername.trim() !== '';
+  const genderAlreadyKnown = initialGender !== null;
+
   const canSubmit =
     educationLevel === 'university'
       ? username.trim() !== '' && gender !== null && program.trim() !== '' && semester.trim() !== '' && !isPending
@@ -305,32 +314,34 @@ export function CompleteProfileStep({
       </div>
 
       <div className="space-y-4">
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium">You are</label>
-          <div className="grid grid-cols-2 gap-2">
-            {(['girl', 'boy'] as const).map((value) => (
-              <button
-                key={value}
-                type="button"
-                aria-pressed={gender === value}
-                onClick={() => setGender(value)}
-                className={cn(
-                  'rounded-xl border-2 px-4 py-3 text-sm font-semibold capitalize transition-all',
-                  gender === value
-                    ? value === 'girl'
-                      ? 'border-pink-500 bg-pink-500/15 text-pink-500'
-                      : 'border-emerald-500 bg-emerald-500/15 text-emerald-500'
-                    : 'border-border text-muted-foreground'
-                )}
-              >
-                {value}
-              </button>
-            ))}
+        {!genderAlreadyKnown && (
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">You are</label>
+            <div className="grid grid-cols-2 gap-2">
+              {(['girl', 'boy'] as const).map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={gender === value}
+                  onClick={() => setGender(value)}
+                  className={cn(
+                    'rounded-xl border-2 px-4 py-3 text-sm font-semibold capitalize transition-all',
+                    gender === value
+                      ? value === 'girl'
+                        ? 'border-pink-500 bg-pink-500/15 text-pink-500'
+                        : 'border-emerald-500 bg-emerald-500/15 text-emerald-500'
+                      : 'border-border text-muted-foreground'
+                  )}
+                >
+                  {value}
+                </button>
+              ))}
+            </div>
+            <p className="text-muted-foreground text-xs">
+              Only students of the same gender can connect in Study Buddies.
+            </p>
           </div>
-          <p className="text-muted-foreground text-xs">
-            Only students of the same gender can connect in Study Buddies.
-          </p>
-        </div>
+        )}
         <div className="grid gap-2">
           {EDUCATION_LEVELS.map((level) => (
             <button
@@ -347,17 +358,19 @@ export function CompleteProfileStep({
           ))}
         </div>
 
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium">Unique username</label>
-          <Input
-            value={username}
-            onChange={(event) => setUsername(event.target.value.toLowerCase())}
-            placeholder="e.g. ahmad.study"
-          />
-          <p className="text-muted-foreground text-xs">
-            3-30 characters: letters, numbers, dots, or underscores. Study Buddies uses this for search.
-          </p>
-        </div>
+        {!usernameAlreadyKnown && (
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Unique username</label>
+            <Input
+              value={username}
+              onChange={(event) => setUsername(event.target.value.toLowerCase())}
+              placeholder="e.g. ahmad.study"
+            />
+            <p className="text-muted-foreground text-xs">
+              3-30 characters: letters, numbers, dots, or underscores. Study Buddies uses this for search.
+            </p>
+          </div>
+        )}
 
         {educationLevel === 'university' ? (
           <div className="space-y-3">

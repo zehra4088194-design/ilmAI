@@ -23,7 +23,7 @@ function makeRound() {
 }
 
 /** Count the objects, tap the matching number — number recognition + counting for early grades. */
-export function CountAndTapGame() {
+export function CountAndTapGame({ onCorrect }: { onCorrect?: () => void } = {}) {
   const [round, setRound] = useState(makeRound);
   const [score, setScore] = useState(0);
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
@@ -33,6 +33,7 @@ export function CountAndTapGame() {
     if (value === round.count) {
       setFeedback('correct');
       setScore((s) => s + 1);
+      onCorrect?.();
       setTimeout(() => {
         setRound(makeRound());
         setFeedback(null);

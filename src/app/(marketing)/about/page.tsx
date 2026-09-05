@@ -41,9 +41,9 @@ export default function AboutPage() {
               Practical learning support, built for students in Pakistan
             </h1>
             <p className="text-muted-foreground mt-6 max-w-3xl text-lg leading-8">
-              ilm AI is an independent education-technology project built by Hafiz M. Husnain Noor. Development began in
-              2024 around a simple question: how can one platform help a student understand a topic, practise it, and
-              see what to improve next?
+              ilm AI is an independent education-technology project built by a small team in Pakistan. Development began
+              in 2024 around a simple question: how can one platform help a student understand a topic, practise it,
+              and see what to improve next?
             </p>
           </div>
         </section>

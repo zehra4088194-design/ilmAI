@@ -238,6 +238,7 @@ const AI_CREDIT_COSTS: Record<string, number> = {
   summarize: 4,
   resource_test_analyze: 2,
   resource_test_generate: 4,
+  vision_test_generate: 4,
   university_presentation: 8,
   pharmapulse_drug: 5,
   pharmapulse_mcq: 2,

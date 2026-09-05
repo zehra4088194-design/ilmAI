@@ -1,8 +1,9 @@
 /**
- * Phase 7a — free wa.me deep links only, no WhatsApp Business API / Meta approval / paid service.
- * Opens WhatsApp (app or web) with a pre-composed message; the staff member/parent still taps
- * Send themselves. See buildWhatsAppLink usages for fee reminders, attendance alerts, and payment
- * confirmations.
+ * Free wa.me deep link — opens WhatsApp (app or web) with a pre-composed message that a staff
+ * member/parent still taps Send on themselves. Used for one-off manual "Chat on WhatsApp" buttons
+ * in the UI. For automated server-sent WhatsApp (weekly reports, fee reminders, absence alerts,
+ * leave decisions) see src/lib/whatsapp/brevo.ts instead, which sends through Brevo's WhatsApp
+ * Business API with no tap required from the recipient's side.
  */
 export function buildWhatsAppLink(phone: string | null | undefined, message: string): string | null {
   if (!phone) return null;

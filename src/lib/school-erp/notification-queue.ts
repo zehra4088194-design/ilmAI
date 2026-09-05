@@ -1,5 +1,6 @@
 import { createServiceClient } from '@/lib/supabase/service';
 import { createNotificationsIfEnabled } from '@/lib/notifications/preferences';
+import { isWhatsAppConfigured } from '@/lib/whatsapp/brevo';
 
 /**
  * Shared with src/app/api/cron/school-notifications/route.ts — extracted here (Phase 2a) so the
@@ -10,7 +11,7 @@ import { createNotificationsIfEnabled } from '@/lib/notifications/preferences';
 export type QueuedReminder = {
   organization_id: string;
   recipient_id: string;
-  channel: 'in_app' | 'whatsapp' | 'push';
+  channel: 'in_app' | 'whatsapp' | 'push' | 'email';
   category: string;
   dedupe_key: string;
   title: string;
@@ -23,10 +24,11 @@ export type QueuedReminder = {
 
 export function reminderChannels(): Array<'in_app' | 'whatsapp' | 'push'> {
   const channels: Array<'in_app' | 'whatsapp' | 'push'> = ['in_app', 'push'];
-  // WhatsApp only when a provider webhook is actually configured, otherwise every row would queue
-  // just to be skipped. Push already degrades gracefully on its own (sendPushNotification returns
-  // {skipped: true} with no Firebase config / no device subscription) so it's always queued.
-  if (process.env.SCHOOL_WHATSAPP_WEBHOOK_URL) channels.push('whatsapp');
+  // WhatsApp only when Brevo (API key + approved sender number) is actually configured, otherwise
+  // every row would queue just to be skipped. Push already degrades gracefully on its own
+  // (sendPushNotification returns {skipped: true} with no Firebase config / no device subscription)
+  // so it's always queued.
+  if (isWhatsAppConfigured()) channels.push('whatsapp');
   return channels;
 }
 
@@ -109,4 +111,166 @@ export async function sendImmediateAttendanceAlerts(
     .upsert(deliveryRows, { onConflict: 'organization_id,channel,dedupe_key', ignoreDuplicates: true });
 
   return { sent };
+}
+
+/**
+ * Weekly parent digest — attendance % and fee pending for the last 7 days, one row per active
+ * student. Queued through the same school_notification_deliveries pipeline as every other
+ * reminder (in_app / push always, whatsapp/email when configured), so the cron's existing
+ * deliver() handles the actual send. Called only on Mondays by the cron route so it behaves like a
+ * weekly job even though the underlying cron itself runs twice a day.
+ */
+export async function queueWeeklyReports(db: any, today: string) {
+  const weekAgo = new Date(Date.parse(today) - 6 * 86_400_000).toISOString().slice(0, 10);
+  const weekLabel = `${weekAgo}_${today}`;
+
+  const { data: students } = await db
+    .from('school_guardians')
+    .select('organization_id, student_id')
+    .eq('receives_alerts', true);
+  if (!students?.length) return [];
+
+  const byOrganization = new Map<string, Set<string>>();
+  for (const row of students) {
+    const set = byOrganization.get(row.organization_id) || new Set<string>();
+    set.add(String(row.student_id));
+    byOrganization.set(row.organization_id, set);
+  }
+
+  const queued: QueuedReminder[] = [];
+  for (const [organizationId, studentIdSet] of byOrganization) {
+    const studentIds = Array.from(studentIdSet);
+    const recipients = await alertRecipients(db, organizationId, studentIds);
+    const { data: studentProfiles } = await db.from('profiles').select('id, full_name').in('id', studentIds);
+    const nameById = new Map<string, string>((studentProfiles || []).map((row: any) => [String(row.id), row.full_name]));
+
+    const { data: attendance } = await db
+      .from('school_attendance_records')
+      .select('student_id, status')
+      .eq('organization_id', organizationId)
+      .in('student_id', studentIds)
+      .gte('attendance_date', weekAgo)
+      .lte('attendance_date', today);
+    const { data: invoices } = await db
+      .from('school_fee_invoices')
+      .select('student_id, total_amount, paid_amount, status')
+      .eq('organization_id', organizationId)
+      .in('student_id', studentIds)
+      .in('status', ['issued', 'partial', 'overdue']);
+
+    const attendanceByStudent = new Map<string, { present: number; total: number }>();
+    for (const record of attendance || []) {
+      const bucket = attendanceByStudent.get(String(record.student_id)) || { present: 0, total: 0 };
+      bucket.total++;
+      if (record.status === 'present' || record.status === 'late') bucket.present++;
+      attendanceByStudent.set(String(record.student_id), bucket);
+    }
+    const pendingByStudent = new Map<string, number>();
+    for (const invoice of invoices || []) {
+      const outstanding = Math.max(0, Number(invoice.total_amount || 0) - Number(invoice.paid_amount || 0));
+      pendingByStudent.set(
+        String(invoice.student_id),
+        (pendingByStudent.get(String(invoice.student_id)) || 0) + outstanding
+      );
+    }
+
+    for (const studentId of studentIds) {
+      const name = nameById.get(studentId) || 'Your child';
+      const attendanceBucket = attendanceByStudent.get(studentId);
+      const attendancePct = attendanceBucket?.total
+        ? Math.round((attendanceBucket.present / attendanceBucket.total) * 100)
+        : null;
+      const pending = pendingByStudent.get(studentId) || 0;
+      const attendanceLine =
+        attendancePct === null ? 'No attendance recorded this week.' : `Attendance this week: ${attendancePct}%.`;
+      const feeLine = pending > 0 ? `Fee pending: Rs ${pending.toLocaleString()}.` : 'No fee pending.';
+      const title = `Weekly report for ${name}`;
+      const body = `${attendanceLine} ${feeLine}`;
+
+      for (const recipientId of recipients.get(studentId) || []) {
+        for (const channel of reminderChannels()) {
+          queued.push({
+            organization_id: organizationId,
+            recipient_id: recipientId,
+            channel,
+            category: 'weekly_report',
+            dedupe_key: `weekly:${weekLabel}:${studentId}:${recipientId}`,
+            title,
+            body,
+          });
+        }
+        // Weekly report also goes by email — email isn't in reminderChannels() (that gate is
+        // whatsapp-specific) so it's queued explicitly here; deliver() skips it gracefully if
+        // Brevo isn't configured.
+        queued.push({
+          organization_id: organizationId,
+          recipient_id: recipientId,
+          channel: 'email',
+          category: 'weekly_report',
+          dedupe_key: `weekly:${weekLabel}:${studentId}:${recipientId}`,
+          title,
+          body,
+        });
+      }
+    }
+  }
+  return queued;
+}
+
+/**
+ * Leave request decisions (approved/rejected) — notifies the requester plus, if the requester is a
+ * student, their guardians. Polls reviewed_at is not null && notified_at is null so a decision is
+ * announced exactly once no matter how many times the cron runs.
+ */
+export async function queueLeaveNotifications(db: any) {
+  const { data: requests } = await db
+    .from('school_leave_requests')
+    .select('id, organization_id, requester_id, requester_type, starts_on, ends_on, status, reviewed_at')
+    .in('status', ['approved', 'rejected'])
+    .not('reviewed_at', 'is', null)
+    .is('notified_at', null)
+    .limit(200);
+  if (!requests?.length) return [];
+
+  const queued: QueuedReminder[] = [];
+  const notifiedIds: string[] = [];
+  for (const request of requests) {
+    const recipients = new Set<string>([String(request.requester_id)]);
+    if (request.requester_type === 'student') {
+      const guardianMap = await alertRecipients(db, request.organization_id, [String(request.requester_id)]);
+      for (const guardianId of guardianMap.get(String(request.requester_id)) || []) recipients.add(guardianId);
+    }
+    const verdict = request.status === 'approved' ? 'approved' : 'declined';
+    const title = `Leave request ${verdict}`;
+    const body = `Your leave request for ${request.starts_on} to ${request.ends_on} was ${verdict}.`;
+
+    for (const recipientId of recipients) {
+      for (const channel of reminderChannels()) {
+        queued.push({
+          organization_id: request.organization_id,
+          recipient_id: recipientId,
+          channel,
+          category: 'leave_update',
+          dedupe_key: `leave:${request.id}:${recipientId}`,
+          title,
+          body,
+        });
+      }
+      queued.push({
+        organization_id: request.organization_id,
+        recipient_id: recipientId,
+        channel: 'email',
+        category: 'leave_update',
+        dedupe_key: `leave:${request.id}:${recipientId}`,
+        title,
+        body,
+      });
+    }
+    notifiedIds.push(request.id);
+  }
+
+  if (notifiedIds.length) {
+    await db.from('school_leave_requests').update({ notified_at: new Date().toISOString() }).in('id', notifiedIds);
+  }
+  return queued;
 }
