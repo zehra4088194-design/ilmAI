@@ -129,10 +129,12 @@ Each problem must include:
 - q: The problem statement (e.g., "A object with mass 5 kg..." following the style and examples in the chapter)
 - marks: 5 (standard marks for a numerical problem)
 - keyPoints: List of formulas, concepts, or steps required to solve
-- modelAnswer: A complete worked solution showing all steps, intermediate calculations, and final answer with units (ending with $$\\\\boxed{answer\\\\;unit}$$ format)
+- modelAnswer: A complete worked solution showing all steps and intermediate calculations, ending with a plain-text line "Final Answer: <value> <unit>" (plain text only — no LaTeX, no backslashes, no $ signs; write formulas and exponents in plain text, e.g. "3.36 x 10^5 J kg^-1", so the string stays valid JSON)
 - difficulty: 'EASY', 'MEDIUM', or 'HARD' based on the solution steps required
 
 Base every problem ONLY on real data, formulas, and examples in this source text. Never invent numbers, scenarios, or physics/chemistry not present in the material. If the source contains fewer than 4 suitable numerical problems, return fewer rather than inventing filler.
+
+IMPORTANT: the response must be strictly valid JSON. Never use LaTeX, backslash escape sequences (like \boxed, \times, \;), or unescaped special characters inside any string value — write all math in plain text (x for multiplication, ^ for exponents, / for fractions).
 
 Return exactly:
 {"items":[{"q":"...","marks":5,"keyPoints":["..."],"modelAnswer":"...","difficulty":"EASY|MEDIUM|HARD"}]}
@@ -162,7 +164,12 @@ async function extractKind(kind: ExtendedKind, title: string, context: string): 
         { role: 'user', content: user },
       ],
     });
-    const parsed = parseAiJson<{ items?: any[] }>(result.text, { items: [] });
+    // Defense-in-depth: even with the prompt's plain-text instruction, a model can still slip in
+    // a stray LaTeX/backslash sequence (e.g. \boxed, \times) that breaks JSON.parse outright. Escape
+    // any backslash that isn't already a valid JSON escape before handing the text to parseAiJson,
+    // rather than silently losing the whole batch to a parse failure.
+    const sanitized = result.text.replace(/\\(?!["\\/bfnrtu])/g, '\\\\');
+    const parsed = parseAiJson<{ items?: any[] }>(sanitized, { items: [] });
     const items = Array.isArray(parsed.items) ? parsed.items : [];
     return items
       .map((raw) => normalizeExtendedQuestion(raw, kind))
