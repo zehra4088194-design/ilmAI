@@ -63,6 +63,10 @@ export async function POST(req: NextRequest) {
     const mcqCount = count(body.mcqCount, 10, 100);
     const shortCount = count(body.shortCount, 5, 50);
     const longCount = count(body.longCount, 2, 20);
+    const letterCount = count(body.letterCount, 3, 20);
+    const vocabCount = count(body.vocabCount, 5, 30);
+    const grammarCount = count(body.grammarCount, 3, 20);
+    const numericalCount = count(body.numericalCount, 5, 20);
     const difficultyRaw = String(body.difficulty || '').toUpperCase();
     const difficulty: DifficultyFilter = VALID_DIFFICULTIES.has(difficultyRaw)
       ? (difficultyRaw as DifficultyFilter)
@@ -76,9 +80,21 @@ export async function POST(req: NextRequest) {
       mcqCount,
       shortCount,
       longCount,
+      letterCount,
+      vocabCount,
+      grammarCount,
+      numericalCount,
       difficulty,
     });
-    if (!paper.mcqs.length && !paper.shortQuestions.length && !paper.longQuestions.length) {
+    if (
+      !paper.mcqs.length &&
+      !paper.shortQuestions.length &&
+      !paper.longQuestions.length &&
+      !paper.letterQuestions.length &&
+      !paper.vocabQuestions.length &&
+      !paper.grammarQuestions.length &&
+      !paper.numericalQuestions.length
+    ) {
       return NextResponse.json(
         { error: 'No uploaded source questions are available for this chapter yet.' },
         { status: 409 }
@@ -88,10 +104,14 @@ export async function POST(req: NextRequest) {
     const totalMarks =
       paper.mcqs.length +
       paper.shortQuestions.reduce((sum, question) => sum + question.marks, 0) +
-      paper.longQuestions.reduce((sum, question) => sum + question.marks, 0);
+      paper.longQuestions.reduce((sum, question) => sum + question.marks, 0) +
+      paper.letterQuestions.reduce((sum, question) => sum + question.marks, 0) +
+      paper.vocabQuestions.reduce((sum, question) => sum + question.marks, 0) +
+      paper.grammarQuestions.reduce((sum, question) => sum + question.marks, 0) +
+      paper.numericalQuestions.reduce((sum, question) => sum + question.marks, 0);
 
     const institutionName =
-      planTier === 'ELITE' && branding.customHeader
+      (planTier === 'PRO' || planTier === 'ELITE') && branding.customHeader
         ? branding.customHeader
         : String(body.institutionName || '')
             .trim()
@@ -114,7 +134,15 @@ export async function POST(req: NextRequest) {
       planTier,
       branding,
       generatedAt: new Date().toISOString(),
-      requestedCounts: { mcq: mcqCount, short: shortCount, long: longCount },
+      requestedCounts: {
+        mcq: mcqCount,
+        short: shortCount,
+        long: longCount,
+        letter: letterCount,
+        vocab: vocabCount,
+        grammar: grammarCount,
+        numerical: numericalCount,
+      },
     };
 
     // Persist the paper so the teacher can revisit it later. Best-effort:
@@ -170,6 +198,34 @@ export async function POST(req: NextRequest) {
           ...paper.longQuestions.map((q, index) => ({
             test_id: testId,
             section: 'LONG',
+            position: index,
+            marks: q.marks,
+            question_snapshot: q,
+          })),
+          ...paper.letterQuestions.map((q, index) => ({
+            test_id: testId,
+            section: 'LETTER',
+            position: index,
+            marks: q.marks,
+            question_snapshot: q,
+          })),
+          ...paper.vocabQuestions.map((q, index) => ({
+            test_id: testId,
+            section: 'VOCAB',
+            position: index,
+            marks: q.marks,
+            question_snapshot: q,
+          })),
+          ...paper.grammarQuestions.map((q, index) => ({
+            test_id: testId,
+            section: 'GRAMMAR',
+            position: index,
+            marks: q.marks,
+            question_snapshot: q,
+          })),
+          ...paper.numericalQuestions.map((q, index) => ({
+            test_id: testId,
+            section: 'NUMERICAL',
             position: index,
             marks: q.marks,
             question_snapshot: q,

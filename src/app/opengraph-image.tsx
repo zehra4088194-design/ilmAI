@@ -41,7 +41,7 @@ export default function OpenGraphImage() {
           Learn clearly. Practise deliberately. Improve with evidence.
         </div>
         <div style={{ color: '#c4b5fd', fontSize: 30 }}>
-          AI study tools and practical guides for students in Pakistan
+          AI study tools and practical guides for students of the subcontinent
         </div>
       </div>
     </div>,

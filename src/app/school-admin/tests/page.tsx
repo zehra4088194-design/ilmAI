@@ -21,7 +21,7 @@ export default async function SchoolAdminTestsPage() {
     : 'FREE';
 
   const [{ data: subjects }, { data: chapters }] = await Promise.all([
-    supabase.from('subjects').select('id, name, grade_levels').eq('is_active', true).order('name'),
+    supabase.from('subjects').select('id, name, grade_levels, content_profile').eq('is_active', true).order('name'),
     supabase
       .from('chapters')
       .select('id, subject_id, name, order_index, grade_levels')
@@ -35,7 +35,13 @@ export default async function SchoolAdminTestsPage() {
         title="Test Studio"
         description="Build an AI-generated test paper from the chapter question bank, branded with your school's name, then print or save it as a PDF."
       />
-      <TeacherTestStudio subjects={subjects || []} chapters={(chapters as any) || []} planTier={planTier} />
+      <TeacherTestStudio
+        subjects={(subjects as any) || []}
+        chapters={(chapters as any) || []}
+        planTier={planTier}
+        initialInstitutionName={context.organization.name}
+        initialLogoUrl={context.organization.logo_url || undefined}
+      />
     </div>
   );
 }

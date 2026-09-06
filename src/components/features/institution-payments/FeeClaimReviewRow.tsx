@@ -37,15 +37,24 @@ export function FeeClaimReviewRow({
         {state.message ? (
           <p className={state.success ? 'text-emerald-600 text-xs' : 'text-red-500 text-xs'}>{state.message}</p>
         ) : (
-          <form action={formAction} className="flex gap-2">
-            <input type="hidden" name="id" value={claim.id} />
-            <Button type="submit" name="decision" value="verified" size="sm" variant="gradient" disabled={pending}>
-              Verify
-            </Button>
-            <Button type="submit" name="decision" value="rejected" size="sm" variant="outline" disabled={pending}>
-              Reject
-            </Button>
-          </form>
+          <div className="flex gap-2">
+            {/* Two separate forms, not one form with two same-named submit buttons — see
+                PaymentReviewRow for why the shared-form/submitter trick isn't reliable here. */}
+            <form action={formAction}>
+              <input type="hidden" name="id" value={claim.id} />
+              <input type="hidden" name="decision" value="verified" />
+              <Button type="submit" size="sm" variant="gradient" disabled={pending}>
+                Verify
+              </Button>
+            </form>
+            <form action={formAction}>
+              <input type="hidden" name="id" value={claim.id} />
+              <input type="hidden" name="decision" value="rejected" />
+              <Button type="submit" size="sm" variant="outline" disabled={pending}>
+                Reject
+              </Button>
+            </form>
+          </div>
         )}
       </td>
     </tr>

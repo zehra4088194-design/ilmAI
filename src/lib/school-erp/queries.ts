@@ -1498,7 +1498,9 @@ export async function getSubstituteSuggestions(supabase: SupabaseClient, context
     rows(
       db
         .from('school_timetable_entries')
-        .select('id, section_id, subject_name, teacher_id, starts_at, ends_at, school_sections(name)')
+        .select(
+          'id, section_id, subject_name, teacher_id, starts_at, ends_at, school_sections!school_timetable_entries_section_id_fkey(name)'
+        )
         .eq('organization_id', organizationId)
         .eq('day_of_week', dayOfWeek)
     ),

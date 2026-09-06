@@ -37,7 +37,9 @@ export async function getStudentKidsZoneEligibility(
   const db = supabase as any;
   const { data } = await db
     .from('school_enrollments')
-    .select('school_sections(school_classes(grade_level, name))')
+    .select(
+      'school_sections!school_enrollments_section_id_fkey(school_classes!school_sections_class_id_fkey(grade_level, name))'
+    )
     .eq('organization_id', context.organization.id)
     .eq('student_id', context.userId)
     .eq('status', 'active')

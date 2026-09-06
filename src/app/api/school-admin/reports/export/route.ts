@@ -33,7 +33,9 @@ export async function GET(request: NextRequest) {
   if (type === 'attendance') {
     const { data, error } = await db
       .from('school_attendance_records')
-      .select('attendance_date, status, remarks, profiles!school_attendance_records_student_id_fkey(full_name), school_sections(name, school_classes(name))')
+      .select(
+        'attendance_date, status, remarks, profiles!school_attendance_records_student_id_fkey(full_name), school_sections!school_attendance_records_section_id_fkey(name, school_classes!school_sections_class_id_fkey(name))'
+      )
       .eq('organization_id', organizationId)
       .order('attendance_date', { ascending: false })
       .limit(10_000);

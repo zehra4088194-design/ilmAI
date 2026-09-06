@@ -373,6 +373,31 @@ export async function addSchoolMember(_state: SchoolActionState, formData: FormD
   }
 }
 
+// A principal adding one already-decided student shouldn't have to invent a unique admission
+// number by hand — that's real institutional data most small schools don't track carefully, and
+// forcing it up front is exactly the kind of friction that makes "just add this kid" feel like
+// filling out a form for the education ministry. Auto-generates "ADM-<year>-<seq>" and retries on
+// the rare unique-constraint collision (two admins adding students at the same instant).
+async function generateAdmissionNumber(db: any, organizationId: string): Promise<string> {
+  const year = new Date().getFullYear();
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const { count } = await db
+      .from('school_enrollments')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', organizationId);
+    const candidate = `ADM-${year}-${String((count || 0) + 1 + attempt).padStart(4, '0')}`;
+    const { data: existing } = await db
+      .from('school_enrollments')
+      .select('id')
+      .eq('organization_id', organizationId)
+      .eq('admission_number', candidate)
+      .maybeSingle();
+    if (!existing) return candidate;
+  }
+  // Extremely unlikely fallback — guarantees uniqueness even if the loop above keeps colliding.
+  return `ADM-${year}-${Date.now().toString().slice(-6)}`;
+}
+
 // Shared by enrollStudent (manual, email-driven) and updateAdmissionStatus's enrollment auto-link
 // (Phase 6e — an admission marked 'enrolled' creates the actual enrollment instead of the status
 // change being purely cosmetic). Both need the exact same membership+enrollment+billing sequence.
@@ -430,9 +455,8 @@ export async function enrollStudent(_state: SchoolActionState, formData: FormDat
     const studentName = optionalText(formData, 'student_name');
     const sectionId = text(formData, 'section_id');
     const academicYearId = text(formData, 'academic_year_id');
-    const admissionNumber = text(formData, 'admission_number');
-    if (!studentEmail || !sectionId || !academicYearId || !admissionNumber) {
-      throw new Error('Student email, section, academic year, and admission number are required.');
+    if (!studentEmail || !sectionId || !academicYearId) {
+      throw new Error('Student email, section, and academic year are required.');
     }
     const { db, context } = await mutationContext('admissions.manage', 'enrollment', 'people');
     // A brand-new admission has never touched ilm AI before — used to require the student to
@@ -444,6 +468,9 @@ export async function enrollStudent(_state: SchoolActionState, formData: FormDat
       fullNameHint: studentName || undefined,
       profileRole: 'student',
     });
+    // Admission number is optional — see generateAdmissionNumber's comment. Most principals
+    // adding one already-decided student just want it done, not another field to fill.
+    const admissionNumber = optionalText(formData, 'admission_number') || (await generateAdmissionNumber(db, context.organization.id));
     await createEnrollmentRecord(db, context, {
       profileId: profile.id,
       sectionId,

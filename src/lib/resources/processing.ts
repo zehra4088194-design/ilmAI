@@ -1,13 +1,15 @@
 import { createServiceClient } from '@/lib/supabase/service';
 import { fetchResourceContext, getResourceForProcessing, type ProtectedResourceKind } from '@/lib/resources/server';
 import { buildResourceSourceTest } from '@/lib/resources/source-fallback';
+import { buildExtendedQuestionBank, type ContentProfile } from '@/lib/resources/extended-extraction';
 
 async function persistResourceMcqs(
   admin: any,
   kind: ProtectedResourceKind,
   resourceId: string,
   title: string,
-  context: string
+  context: string,
+  contentProfile: ContentProfile | null = null
 ) {
   const paper = buildResourceSourceTest(title, context, { mcq: 100, short: 50, long: 20 });
   const questions = paper.mcqs.slice(0, 100);
@@ -16,6 +18,7 @@ async function persistResourceMcqs(
   if (!questions.length && !shortQuestions.length && !longQuestions.length) {
     throw new Error('The TXT source did not contain recognizable MCQ, short, or long questions.');
   }
+  const extendedQuestions = contentProfile ? await buildExtendedQuestionBank(contentProfile, title, context) : {};
   const { error } = await admin.from('resource_mcq_sets').upsert(
     {
       resource_kind: kind,
@@ -23,6 +26,7 @@ async function persistResourceMcqs(
       questions,
       short_questions: shortQuestions,
       long_questions: longQuestions,
+      extended_questions: extendedQuestions,
       status: 'ready',
       error_message: null,
       generated_at: new Date().toISOString(),
@@ -165,8 +169,25 @@ export async function processQueuedResourceContexts(maxJobs = 1) {
       if (!resource) throw new Error('Resource no longer exists.');
       const context = await fetchResourceContext(resource);
       const chunkCount = await persistResourceChunks(admin, kind, job.resource_id, context);
+      // Resolve content profile for extended question extraction (library resources only)
+      let contentProfile: ContentProfile | null = null;
+      if (kind === 'library') {
+        const { data: libraryRow } = await admin
+          .from('library_resources')
+          .select('subject_id')
+          .eq('id', job.resource_id)
+          .maybeSingle();
+        if (libraryRow?.subject_id) {
+          const { data: subjectRow } = await admin
+            .from('subjects')
+            .select('content_profile')
+            .eq('id', libraryRow.subject_id)
+            .maybeSingle();
+          contentProfile = (subjectRow?.content_profile as ContentProfile) || null;
+        }
+      }
       // resource_mcq_sets now lives in the standalone question-bank project.
-      await persistResourceMcqs(createServiceClient(), kind, job.resource_id, resource.title, context);
+      await persistResourceMcqs(createServiceClient(), kind, job.resource_id, resource.title, context, contentProfile);
       await markImporterStatus(
         admin,
         kind,

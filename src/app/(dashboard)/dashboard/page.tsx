@@ -65,6 +65,7 @@ export default async function DashboardPage() {
     { data: latestDiagnostic },
     { data: weakMastery },
     { count: revisionDueCount },
+    { data: dueRevisionItems },
     continueLearningItems,
   ] =
     await Promise.all([
@@ -110,6 +111,14 @@ export default async function DashboardPage() {
         .eq('student_id', user!.id)
         .eq('status', 'due')
         .lte('due_at', new Date().toISOString()),
+      supabase
+        .from('student_revision_items' as any)
+        .select('id, title, curriculum_concepts(title)')
+        .eq('student_id', user!.id)
+        .eq('status', 'due')
+        .lte('due_at', new Date().toISOString())
+        .order('due_at', { ascending: true })
+        .limit(3),
       getContinueLearningItems(supabase, user!.id, { board: profile?.board, gradeLevel: profile?.grade_level }),
     ]);
 
@@ -130,6 +139,11 @@ export default async function DashboardPage() {
   const focusSubject = subjectScores.length
     ? [...subjectScores].sort((a, b) => a.average - b.average)[0]?.subjectName
     : subjects?.[0]?.name;
+  const dueItems = (dueRevisionItems || []).map((item: any) => ({
+    id: item.id,
+    title: item.curriculum_concepts?.title || item.title,
+  }));
+  const weakConceptTitle = dueItems[0]?.title;
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
@@ -183,14 +197,19 @@ export default async function DashboardPage() {
       />
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          <WeaknessRadar scores={subjectScores} />
+          <WeaknessRadar scores={subjectScores} weakConceptTitle={weakConceptTitle} />
           <ContinueLearning items={continueLearningItems} />
           <RecentActivity userId={user!.id} />
         </div>
         <div className="space-y-6">
           <BossQuizCard bossQuiz={(bossQuiz as any) || null} />
           <OpportunityDeadlinesCard deadlines={(opportunityDeadlines as any) || []} />
-          <RevisionPlannerCard board={profile?.board} gradeLevel={profile?.grade_level} focusSubject={focusSubject} />
+          <RevisionPlannerCard
+            board={profile?.board}
+            gradeLevel={profile?.grade_level}
+            focusSubject={focusSubject}
+            dueItems={dueItems}
+          />
           <QuickActions />
         </div>
       </div>

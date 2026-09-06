@@ -6,7 +6,7 @@ import { Progress } from '@/components/ui/progress';
 
 type SubjectScore = { subjectId: string | null; subjectName: string; average: number; attempts: number };
 
-export function WeaknessRadar({ scores }: { scores: SubjectScore[] }) {
+export function WeaknessRadar({ scores, weakConceptTitle }: { scores: SubjectScore[]; weakConceptTitle?: string }) {
   const sorted = [...scores].sort((a, b) => a.average - b.average);
   const weak = sorted[0];
   const strong = sorted[sorted.length - 1];
@@ -35,7 +35,11 @@ export function WeaknessRadar({ scores }: { scores: SubjectScore[] }) {
             </div>
             <Insight icon={TrendingDown} label="Needs attention" value={weak ? `${weak.subjectName} · ${weak.average}%` : '-'} />
             <Insight icon={TrendingUp} label="Strong subject" value={strong ? `${strong.subjectName} · ${strong.average}%` : '-'} />
-            <p className="text-sm text-muted-foreground">Recommended action: revise weak concepts, then attempt 10 focused MCQs.</p>
+            <p className="text-sm text-muted-foreground">
+              {weakConceptTitle
+                ? `Recommended action: revise "${weakConceptTitle}", then attempt 10 focused MCQs.`
+                : 'Recommended action: revise weak concepts, then attempt 10 focused MCQs.'}
+            </p>
           </>
         )}
       </CardContent>

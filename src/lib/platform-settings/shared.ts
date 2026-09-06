@@ -38,11 +38,15 @@ export type ProviderDailyBudgets = Record<ProviderBudgetKey, number>;
 
 export type PlanAudience = 'school' | 'college' | 'university';
 
+// File summaries/tests used to have their own monthly count cap here too, but both routes were
+// switched to being fully credit-gated (the shared AI credit pool is the only thing that governs
+// access — see checkFileSummaryLimit/checkFileTestLimit in lib/rate-limit) with no independent cap
+// left to configure, so those two fields were removed rather than left as settings that silently
+// did nothing. presentationsMonthly is similarly credit-gated for the ACTUAL monthly volume — this
+// flag only controls whether Presentation Builder is available on this plan/audience at all.
 export type AudienceFeatureLimits = {
-  presentationsMonthly: number;
+  presentationsEnabled: boolean;
   presentationSlidesMax: number;
-  fileSummariesMonthly: number;
-  fileTestsMonthly: number;
 };
 
 export type PlatformSubscriptionPlan = {
@@ -63,7 +67,6 @@ export type PlatformSubscriptionPlan = {
     aiCreditsMonthly: number;
     premiumAiMonthly: number;
     quizDaily: number;
-    universityHubWeekly: number;
     liveVoiceDaily: number;
     flashcardsTotal: number;
     gameMinutesDaily: number;
@@ -245,7 +248,6 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
         aiCreditsMonthly: 0,
         premiumAiMonthly: 0,
         quizDaily: 3,
-        universityHubWeekly: 3,
         liveVoiceDaily: 0,
         flashcardsTotal: 50,
         gameMinutesDaily: 0,
@@ -254,30 +256,15 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
         parentAttachmentMegabytesMonthly: 0,
       },
       audienceLimits: {
-        school: {
-          presentationsMonthly: 0,
-          presentationSlidesMax: 0,
-          fileSummariesMonthly: 0,
-          fileTestsMonthly: 0,
-        },
-        college: {
-          presentationsMonthly: 0,
-          presentationSlidesMax: 0,
-          fileSummariesMonthly: 0,
-          fileTestsMonthly: 0,
-        },
-        university: {
-          // University Hub is fully credit-gated, not plan-gated: FREE users can use every
-          // University Hub tool (PDF Summarizer, PharmaPulse, Project Builder, etc.) as long as
-          // they have shared AI credits â€” Presentation Builder was the one exception, hard-locked
-          // to Pro/Elite via a 0 monthly allowance here regardless of credit balance. A modest
-          // non-zero allowance below Pro's (4/8) lets FREE's weekly credit pool (20 credits,
-          // 8 credits/presentation â‰ˆ 2-3/week) be the real limiter instead.
-          presentationsMonthly: 3,
-          presentationSlidesMax: 6,
-          fileSummariesMonthly: 0,
-          fileTestsMonthly: 0,
-        },
+        school: { presentationsEnabled: false, presentationSlidesMax: 0 },
+        college: { presentationsEnabled: false, presentationSlidesMax: 0 },
+        // University Hub is fully credit-gated, not plan-gated: FREE users can use every
+        // University Hub tool (PDF Summarizer, PharmaPulse, Project Builder, etc.) as long as
+        // they have shared AI credits â€” Presentation Builder was the one exception, hard-locked
+        // to Pro/Elite by leaving it disabled here regardless of credit balance. Enabling it for
+        // FREE lets FREE's weekly credit pool (20 credits, 8 credits/presentation â‰ˆ 2-3/week) be
+        // the real limiter instead.
+        university: { presentationsEnabled: true, presentationSlidesMax: 6 },
       },
       access: {
         pastPapers: true,
@@ -318,7 +305,6 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
         aiCreditsMonthly: 300,
         premiumAiMonthly: 0,
         quizDaily: 10,
-        universityHubWeekly: 10,
         liveVoiceDaily: 0,
         flashcardsTotal: 1000,
         gameMinutesDaily: 45,
@@ -327,24 +313,9 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
         parentAttachmentMegabytesMonthly: 20,
       },
       audienceLimits: {
-        school: {
-          presentationsMonthly: 1,
-          presentationSlidesMax: 8,
-          fileSummariesMonthly: 8,
-          fileTestsMonthly: 8,
-        },
-        college: {
-          presentationsMonthly: 2,
-          presentationSlidesMax: 8,
-          fileSummariesMonthly: 10,
-          fileTestsMonthly: 6,
-        },
-        university: {
-          presentationsMonthly: 4,
-          presentationSlidesMax: 8,
-          fileSummariesMonthly: 15,
-          fileTestsMonthly: 4,
-        },
+        school: { presentationsEnabled: true, presentationSlidesMax: 8 },
+        college: { presentationsEnabled: true, presentationSlidesMax: 8 },
+        university: { presentationsEnabled: true, presentationSlidesMax: 8 },
       },
       access: {
         pastPapers: true,
@@ -364,8 +335,7 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
         'Groq/DeepSeek budget AI routing',
         'Printed scan: 1 shared AI credit',
         'Handwritten scan: 3 shared AI credits',
-        'School: 8 file tests/month',
-        'University: 4 presentations and 15 file summaries/month',
+        'File summaries, file tests, and Presentation Builder',
         'Downloads, offline reading, and ad-free access',
         '1 guardian with cached weekly report',
         '10 attachments or 20 MB/month',
@@ -387,7 +357,6 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
         aiCreditsMonthly: 600,
         premiumAiMonthly: 10,
         quizDaily: 25,
-        universityHubWeekly: 25,
         liveVoiceDaily: 0,
         flashcardsTotal: 5000,
         gameMinutesDaily: 45,
@@ -396,24 +365,9 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
         parentAttachmentMegabytesMonthly: 100,
       },
       audienceLimits: {
-        school: {
-          presentationsMonthly: 2,
-          presentationSlidesMax: 12,
-          fileSummariesMonthly: 20,
-          fileTestsMonthly: 16,
-        },
-        college: {
-          presentationsMonthly: 4,
-          presentationSlidesMax: 12,
-          fileSummariesMonthly: 25,
-          fileTestsMonthly: 12,
-        },
-        university: {
-          presentationsMonthly: 8,
-          presentationSlidesMax: 12,
-          fileSummariesMonthly: 35,
-          fileTestsMonthly: 10,
-        },
+        school: { presentationsEnabled: true, presentationSlidesMax: 12 },
+        college: { presentationsEnabled: true, presentationSlidesMax: 12 },
+        university: { presentationsEnabled: true, presentationSlidesMax: 12 },
       },
       access: {
         pastPapers: true,
@@ -433,8 +387,7 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
         '10 premium AI calls/month, budget model by default',
         'Printed scan: 1 shared AI credit',
         'Handwritten scan: 3 shared AI credits',
-        'School: 16 file tests/month',
-        'University: 8 presentations and 35 file summaries/month',
+        'File summaries, file tests, and Presentation Builder',
         'Downloads, offline reading, and ad-free access',
         '2 guardians with detailed weekly insights',
         '30 attachments or 100 MB/month',
@@ -501,10 +454,8 @@ function normalizeAudienceLimits(
       const incoming = value?.[audience] || {};
       const defaults = fallback[audience];
       result[audience] = {
-        presentationsMonthly: numberOrFallback(incoming.presentationsMonthly, defaults.presentationsMonthly),
+        presentationsEnabled: booleanOrFallback(incoming.presentationsEnabled, defaults.presentationsEnabled),
         presentationSlidesMax: numberOrFallback(incoming.presentationSlidesMax, defaults.presentationSlidesMax),
-        fileSummariesMonthly: numberOrFallback(incoming.fileSummariesMonthly, defaults.fileSummariesMonthly),
-        fileTestsMonthly: numberOrFallback(incoming.fileTestsMonthly, defaults.fileTestsMonthly),
       };
       return result;
     },
@@ -752,10 +703,6 @@ export function normalizePlatformSettings(input: unknown): PlatformSettings {
           aiCreditsMonthly: numberOrFallback(incomingLimits.aiCreditsMonthly, fallback.limits.aiCreditsMonthly),
           premiumAiMonthly: numberOrFallback(incomingLimits.premiumAiMonthly, fallback.limits.premiumAiMonthly),
           quizDaily: numberOrFallback(incomingLimits.quizDaily, fallback.limits.quizDaily),
-          universityHubWeekly: numberOrFallback(
-            incomingLimits.universityHubWeekly,
-            fallback.limits.universityHubWeekly
-          ),
           liveVoiceDaily: numberOrFallback(incomingLimits.liveVoiceDaily, fallback.limits.liveVoiceDaily),
           flashcardsTotal: numberOrFallback(incomingLimits.flashcardsTotal, fallback.limits.flashcardsTotal),
           gameMinutesDaily: numberOrFallback(incomingLimits.gameMinutesDaily, fallback.limits.gameMinutesDaily),
@@ -912,6 +859,43 @@ export function resolveInstitutionPricing(
     pkr: convertUsdToPkr(usd, settings),
     volumeDiscountApplied: volumeEligible,
   };
+}
+
+/**
+ * The single source of truth for "what does this PRO/ELITE plan actually cost right now" —
+ * whatever the admin panel currently has saved, no separate Paddle price to keep in sync. Used
+ * both to display a price (RolePlanCards, the /subscription/[tier] upgrade page) and, via
+ * paddle.ts's createCheckout, to set the actual charge amount at checkout time (Paddle's
+ * non-catalog price API), so a price change in the admin panel takes effect immediately with no
+ * Paddle dashboard edit.
+ *
+ * Student plans (planFamily 'student'/omitted) store monthly AND annual independently
+ * (subscriptionPlans[tier].price.USD). Parent/teacher/university plans only store a monthly rate;
+ * annual is always that monthly rate x12 at a fixed 20% off — the same math RolePlanCards and the
+ * upgrade page use to display it, kept here so all three never drift apart.
+ */
+export function resolvePlanAmountUsd(
+  settings: PlatformSettings,
+  params: {
+    tier: 'PRO' | 'ELITE';
+    billingCycle: 'monthly' | 'annual';
+    planFamily?: 'student' | 'parent' | 'teacher' | 'university';
+  }
+): number {
+  const family = params.planFamily || 'student';
+  if (family === 'student') {
+    const plan = settings.subscriptionPlans[params.tier] || DEFAULT_PLATFORM_SETTINGS.subscriptionPlans[params.tier];
+    return plan.price.USD[params.billingCycle];
+  }
+  const tierKey = params.tier === 'PRO' ? 'paid' : 'elite';
+  const priceUsdMonthly =
+    family === 'parent'
+      ? settings.parentPlans[tierKey].priceUsdMonthly
+      : family === 'teacher'
+        ? settings.teacherPlans[tierKey].priceUsdMonthly
+        : settings.universityPlans[tierKey].priceUsdMonthly;
+  if (params.billingCycle === 'annual') return Math.round(priceUsdMonthly * 12 * 0.8 * 100) / 100;
+  return priceUsdMonthly;
 }
 
 

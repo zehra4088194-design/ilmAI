@@ -9,11 +9,15 @@ describe('resolveTestBranding', () => {
     expect(branding.customHeader).toBeNull();
   });
 
-  it('gives PRO a clean paper with no ad gate but keeps the watermark', () => {
-    const branding = resolveTestBranding('PRO', { customHeader: 'Ignored for PRO' });
+  it('gives PRO no ad gate, a custom header/logo, but no way to hide the ilm AI mark', () => {
+    const branding = resolveTestBranding('PRO', {
+      customHeader: 'Beaconhouse School System',
+      hidePlatformBranding: true,
+    });
     expect(branding.requiresAdGate).toBe(false);
+    expect(branding.customHeader).toBe('Beaconhouse School System');
     expect(branding.forceIlmAiWatermark).toBe(true);
-    expect(branding.customHeader).toBeNull();
+    expect(branding.hidePlatformBranding).toBe(false);
   });
 
   it('lets ELITE set a custom header and watermark text', () => {

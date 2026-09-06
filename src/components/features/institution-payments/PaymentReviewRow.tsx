@@ -30,15 +30,27 @@ export function PaymentReviewRow({ claim, organizationName }: { claim: Instituti
         {state.message ? (
           <p className={state.success ? 'text-emerald-600 text-xs' : 'text-red-500 text-xs'}>{state.message}</p>
         ) : (
-          <form action={formAction} className="flex gap-2">
-            <input type="hidden" name="id" value={claim.id} />
-            <Button type="submit" name="decision" value="verified" size="sm" variant="gradient" disabled={pending}>
-              Verify
-            </Button>
-            <Button type="submit" name="decision" value="rejected" size="sm" variant="outline" disabled={pending}>
-              Reject
-            </Button>
-          </form>
+          <div className="flex gap-2">
+            {/* Two separate forms (not one form with two same-named submit buttons) — which
+                button's name/value pair actually reaches FormData depends on the browser/React
+                version correctly identifying the click "submitter", which proved unreliable here
+                and always fell back to nothing, hence "Invalid review request." on every click.
+                A fixed hidden input per form has no such ambiguity. */}
+            <form action={formAction}>
+              <input type="hidden" name="id" value={claim.id} />
+              <input type="hidden" name="decision" value="verified" />
+              <Button type="submit" size="sm" variant="gradient" disabled={pending}>
+                Verify
+              </Button>
+            </form>
+            <form action={formAction}>
+              <input type="hidden" name="id" value={claim.id} />
+              <input type="hidden" name="decision" value="rejected" />
+              <Button type="submit" size="sm" variant="outline" disabled={pending}>
+                Reject
+              </Button>
+            </form>
+          </div>
         )}
       </td>
     </tr>

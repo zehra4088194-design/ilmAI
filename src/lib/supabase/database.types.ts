@@ -12209,6 +12209,7 @@ export type Database = {
           boards: Database["public"]["Enums"]["board_type"][]
           code: string
           color: string
+          content_profile: "language" | "stem" | "general"
           created_at: string
           description: string | null
           grade_levels: Database["public"]["Enums"]["grade_level"][]
@@ -12226,6 +12227,7 @@ export type Database = {
           boards?: Database["public"]["Enums"]["board_type"][]
           code: string
           color?: string
+          content_profile?: "language" | "stem" | "general"
           created_at?: string
           description?: string | null
           grade_levels?: Database["public"]["Enums"]["grade_level"][]
@@ -12243,6 +12245,7 @@ export type Database = {
           boards?: Database["public"]["Enums"]["board_type"][]
           code?: string
           color?: string
+          content_profile?: "language" | "stem" | "general"
           created_at?: string
           description?: string | null
           grade_levels?: Database["public"]["Enums"]["grade_level"][]

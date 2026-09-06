@@ -736,6 +736,32 @@ export function ParentDashboardClient({
                       </div>
                     </div>
                   )}
+                  {erp?.erpLinked && erp.examResults.length > 0 && (
+                    <div className="border-border/70 mt-3 space-y-2 rounded-xl border p-3">
+                      <p className="flex items-center gap-1.5 text-xs font-semibold">
+                        <Trophy className="h-3.5 w-3.5 text-amber-500" /> Recent exam results
+                      </p>
+                      {erp.examResults.map((exam) => (
+                        <div
+                          key={exam.examId}
+                          className="bg-muted/20 flex items-center justify-between gap-2 rounded-lg p-2 text-xs"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate font-medium">
+                              {exam.examName}
+                              {exam.term ? ` · ${exam.term}` : ''}
+                            </p>
+                            <p className="text-muted-foreground">
+                              {exam.obtainedMarks ?? '—'}/{exam.totalMarks ?? '—'}
+                              {exam.percentage !== null ? ` (${exam.percentage}%)` : ''}
+                              {exam.classPosition ? ` · Rank #${exam.classPosition}` : ''}
+                            </p>
+                          </div>
+                          {exam.grade && <Badge variant="outline">{exam.grade}</Badge>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   {familyQuran[student.id] && (
                     <div className="border-border/70 mt-3 rounded-xl border p-3">
                       <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold">

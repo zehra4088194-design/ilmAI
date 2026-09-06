@@ -1,9 +1,10 @@
 'use client';
 import Link from 'next/link';
 import { useMemo } from 'react';
-import { BookOpen, Heart, Phone } from 'lucide-react';
+import { BookOpen, Heart, HandHeart } from 'lucide-react';
 import { openCookieSettings } from '@/lib/utils/cookieConsent';
 import { PRIMARY_SITE_LINKS } from '@/lib/seo/study-tools';
+import { SupportDonateWidget } from '@/components/features/support/SupportDonateWidget';
 
 const LINKS = {
   'Study Tools': PRIMARY_SITE_LINKS.map((link) => ({ label: link.name, href: link.url })),
@@ -53,21 +54,34 @@ export function LandingFooter() {
                     </Link>
                   </li>
                 ))}
-                {heading === 'Support' && (
-                  <li>
-                    <a
-                      href="/api/support/contact?via=whatsapp"
-                      className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 text-sm transition-colors"
-                    >
-                      <Phone className="h-3.5 w-3.5" />
-                      WhatsApp us
-                    </a>
-                  </li>
-                )}
               </ul>
             </div>
           ))}
         </div>
+
+        <div className="border-border from-rose-500/10 to-amber-500/10 mb-8 flex flex-col items-center justify-between gap-4 rounded-2xl border bg-gradient-to-r p-5 text-center sm:flex-row sm:text-left">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-rose-500 to-amber-500 text-white">
+              <HandHeart className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-bold">Enjoying ilm AI?</p>
+              <p className="text-muted-foreground text-xs">A small contribution keeps it free for students.</p>
+            </div>
+          </div>
+          <SupportDonateWidget
+            trigger={(open) => (
+              <button
+                type="button"
+                onClick={open}
+                className="shrink-0 rounded-full bg-gradient-to-br from-rose-500 to-amber-500 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:scale-105"
+              >
+                Support us
+              </button>
+            )}
+          />
+        </div>
+
         <div className="border-border flex flex-col items-center justify-between gap-4 border-t pt-8 md:flex-row">
           <p className="text-muted-foreground text-center text-sm md:text-left">
             © <span suppressHydrationWarning>{currentYear}</span> ilm AI. Pakistan
@@ -81,7 +95,7 @@ export function LandingFooter() {
               Cookie Settings
             </button>
             <p className="text-muted-foreground flex items-center gap-1.5 text-sm">
-              Made with <Heart className="h-3.5 w-3.5 fill-red-500 text-red-500" /> for students in Pakistan
+              Made with <Heart className="h-3.5 w-3.5 fill-red-500 text-red-500" /> for students of the subcontinent
             </p>
           </div>
         </div>

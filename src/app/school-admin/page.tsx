@@ -1,9 +1,11 @@
-import { CalendarDays, CircleDollarSign, ClipboardList, GraduationCap, Sparkles, UserRoundCheck, Users2 } from 'lucide-react';
+import { CalendarDays, CircleDollarSign, ClipboardList, GraduationCap, Sparkles, UserPlus, UserRoundCheck, Users2 } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { SchoolActionForm } from '@/components/features/school-erp/SchoolActionForm';
 import { SchoolMetric } from '@/components/features/school-erp/SchoolMetric';
 import { SchoolPageHeader } from '@/components/features/school-erp/SchoolPageHeader';
 import { AbsenceAlertWidget } from '@/components/features/school-erp/AbsenceAlertWidget';
@@ -11,8 +13,11 @@ import { PercentRingCard } from '@/components/features/school-erp/PercentRingCar
 import { RecentFeePaymentsList, type RecentFeePayment } from '@/components/features/school-erp/RecentFeePaymentsList';
 import { ClassOverviewList, type ClassOverviewRow } from '@/components/features/school-erp/ClassOverviewList';
 import { ReportsQuickLinks } from '@/components/features/school-erp/ReportsQuickLinks';
+import { enrollStudent } from '@/lib/school-erp/actions';
 import { hasSchoolPermission, requireSchoolContext } from '@/lib/school-erp/access';
 import { getSchoolFees, getSchoolOverview, getSchoolPeople, getTodayAbsences } from '@/lib/school-erp/queries';
+
+const selectClass = 'border-input bg-background h-10 w-full rounded-lg border px-3 text-sm';
 
 export default async function SchoolAdminPage() {
   const { supabase, context } = await requireSchoolContext('dashboard.read');
@@ -20,6 +25,7 @@ export default async function SchoolAdminPage() {
   const canManageExams = hasSchoolPermission(context, 'exams.manage');
   const canReadFees = hasSchoolPermission(context, 'fees.read');
   const canReadPeople = hasSchoolPermission(context, 'people.read');
+  const canEnrollStudent = hasSchoolPermission(context, 'admissions.manage');
 
   const [overview, absences, fees, people] = await Promise.all([
     getSchoolOverview(supabase, context),
@@ -92,6 +98,48 @@ export default async function SchoolAdminPage() {
           </Badge>
         }
       />
+      {canEnrollStudent && people && (
+        <Card className="border-emerald-500/25 bg-emerald-500/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-500">
+                <UserPlus className="h-4 w-4" />
+              </span>
+              Quick add student
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <SchoolActionForm
+              action={enrollStudent}
+              submitLabel="Add student"
+              className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+            >
+              <Input name="student_name" placeholder="Student's full name" />
+              <Input name="student_email" type="email" placeholder="Their email address" required />
+              <select name="academic_year_id" className={selectClass} required>
+                <option value="">Academic year</option>
+                {people.years.map((item: any) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+              <select name="section_id" className={selectClass} required>
+                <option value="">Class / section</option>
+                {people.sections.map((item: any) => (
+                  <option key={item.id} value={item.id}>
+                    {item.school_classes?.name} - {item.name}
+                  </option>
+                ))}
+              </select>
+            </SchoolActionForm>
+            <p className="text-muted-foreground mt-3 text-xs">
+              New to ilm AI? An account is created automatically and they get an email to set a password.
+              Admission number is assigned automatically — see People for roll number and other details.
+            </p>
+          </CardContent>
+        </Card>
+      )}
       {canManageExams && (
         <Card>
           <CardHeader>

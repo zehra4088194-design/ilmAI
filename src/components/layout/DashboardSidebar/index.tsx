@@ -6,13 +6,14 @@ import {
   Zap, StickyNote, Bookmark, Star, CreditCard, ChevronRight, X, Menu,
   Library, CalendarClock, HelpCircle, Target, LogOut, Users, PenLine, Cake,
   GraduationCap, Presentation, Mic2, FlaskConical, Quote, BriefcaseBusiness, Network, Video,
-  Camera, MessageCircle, Sparkles, WandSparkles, Gamepad2, Music2, Pill, HardDriveDownload, School, FileQuestion, BookOpenText, ShoppingBag, Medal, ArrowLeftRight
+  Camera, MessageCircle, Sparkles, WandSparkles, Gamepad2, Music2, Pill, HardDriveDownload, School, FileQuestion, BookOpenText, ShoppingBag, Medal, ArrowLeftRight, HandHeart
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { useEffect, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import type { InstitutionBranding } from '@/lib/branding/resolveInstitutionBranding';
+import { SupportDonateWidget } from '@/components/features/support/SupportDonateWidget';
 
 const NAV_GROUPS = [
   { 
@@ -418,6 +419,22 @@ export function DashboardSidebar({ mobileOpen: controlledMobileOpen, onMobileOpe
           </div>
         ))}
       </nav>
+
+      {/* Support us */}
+      <div className="px-3 pt-2 shrink-0">
+        <SupportDonateWidget
+          trigger={(open) => (
+            <button
+              type="button"
+              onClick={open}
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/60 transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+            >
+              <HandHeart className="w-4 h-4 shrink-0 text-rose-400" />
+              Support us
+            </button>
+          )}
+        />
+      </div>
 
       {/* User footer */}
       {user && (

@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { MANUAL_PAYMENT_OPTIONS, TRANSACTION_FEE_USD } from '@/lib/constants';
+import { PaymentProofForm } from '@/components/features/payments/PaymentProofForm';
 
 /**
  * Manual JazzCash checkout for a parent's OWN plan — mirrors ManualUpgradePage's pattern (QR,
@@ -109,13 +110,10 @@ export function ParentPlanCheckout({
                 </div>
               ))}
             </div>
-            <p className="text-muted-foreground mt-4 text-xs">
-              Send proof and your registered email to `ilmai.study1@gmail.com`, or send the transaction screenshot on{' '}
-              <a href="/api/support/contact?via=whatsapp" className="font-semibold underline underline-offset-2">
-                WhatsApp
-              </a>
-              . Never share an OTP or wallet PIN.
-            </p>
+            <p className="text-muted-foreground mt-4 text-xs">Never share an OTP or wallet PIN.</p>
+            <div className="mt-3">
+              <PaymentProofForm context={`Parent ${tier === 'elite' ? 'Elite' : 'Paid'} plan payment confirmation`} />
+            </div>
           </div>
         </CardContent>
       </Card>

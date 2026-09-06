@@ -1,15 +1,27 @@
 // Bridges the consumer-facing parent_student_links world with the institutional
 // school_guardians / college_guardians world. A linked child may also be enrolled in a
 // school or college where this same parent account is registered as a guardian — when that's
-// the case we surface a read-only Homework/Attendance snapshot on the Ilmai Family dashboard
-// instead of duplicating the school/college ERP portal. Children with no ERP link simply come
-// back with erpLinked: false.
+// the case we surface a read-only Homework/Attendance/Exam Results snapshot on the Ilmai Family
+// dashboard instead of duplicating the school/college ERP portal. Children with no ERP link
+// simply come back with erpLinked: false.
 
 export interface FamilyHomeworkItem {
   id: string;
   title: string;
   due_at: string | null;
   overdue: boolean;
+}
+
+export interface FamilyExamResult {
+  examId: string;
+  examName: string;
+  term: string | null;
+  obtainedMarks: number | null;
+  totalMarks: number | null;
+  percentage: number | null;
+  grade: string | null;
+  classPosition: number | null;
+  publishedAt: string | null;
 }
 
 export interface FamilyErpEntry {
@@ -27,6 +39,9 @@ export interface FamilyErpEntry {
     totalMarked: number;
     percentage: number | null;
   };
+  // Only exams the school/college has actually published a report card for — a draft/unpublished
+  // mark entry never reaches a parent, same rule the school's own report-card screen follows.
+  examResults: FamilyExamResult[];
 }
 
 export type FamilyErpMap = Record<string, FamilyErpEntry | { erpLinked: false }>;
@@ -96,8 +111,10 @@ export async function getFamilyErpData(
     entries.map(async (entry) => {
       const homeworkTable = entry.orgType === 'school' ? 'school_homework' : 'college_assignments';
       const attendanceTable = entry.orgType === 'school' ? 'school_attendance_records' : 'college_attendance_records';
+      const reportCardTable = entry.orgType === 'school' ? 'school_report_cards' : 'college_report_cards';
+      const examTable = entry.orgType === 'school' ? 'school_exams' : 'college_exams';
 
-      const [{ data: homeworkRows }, { data: attendanceRows }] = await Promise.all([
+      const [{ data: homeworkRows }, { data: attendanceRows }, { data: reportCardRows }] = await Promise.all([
         (admin.from(homeworkTable) as any)
           .select('id, title, due_at')
           .eq('organization_id', entry.organizationId)
@@ -109,6 +126,14 @@ export async function getFamilyErpData(
           .eq('organization_id', entry.organizationId)
           .eq('student_id', entry.studentId)
           .gte('attendance_date', thirtyDaysAgo),
+        // Only report cards the school/college has actually published — never a draft mark entry.
+        (admin.from(reportCardTable) as any)
+          .select(`exam_id, total_marks, obtained_marks, percentage, grade, class_position, published_at, ${examTable}(name, term)`)
+          .eq('organization_id', entry.organizationId)
+          .eq('student_id', entry.studentId)
+          .not('published_at', 'is', null)
+          .order('published_at', { ascending: false })
+          .limit(5),
       ]);
 
       const homework: FamilyHomeworkItem[] = ((homeworkRows || []) as any[]).map((row) => ({
@@ -130,11 +155,28 @@ export async function getFamilyErpData(
         { presentCount: 0, absentCount: 0, lateCount: 0, totalMarked: 0 }
       );
 
+      const examResults: FamilyExamResult[] = ((reportCardRows || []) as any[]).map((row) => {
+        const examRaw = row[examTable];
+        const exam = Array.isArray(examRaw) ? examRaw[0] : examRaw;
+        return {
+          examId: row.exam_id,
+          examName: exam?.name || 'Exam',
+          term: exam?.term || null,
+          obtainedMarks: row.obtained_marks,
+          totalMarks: row.total_marks,
+          percentage: row.percentage,
+          grade: row.grade,
+          classPosition: row.class_position,
+          publishedAt: row.published_at,
+        };
+      });
+
       result[entry.studentId] = {
         erpLinked: true,
         orgType: entry.orgType,
         organizationId: entry.organizationId,
         homework: { upcoming: homework, overdueCount },
+        examResults,
         attendance: {
           ...attendance,
           percentage: attendance.totalMarked

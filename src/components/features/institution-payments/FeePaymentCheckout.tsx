@@ -46,7 +46,7 @@ export function FeePaymentCheckout({ institutionType, invoiceId, voucherNumber, 
         <ManualPaymentMethodPicker
           method={method}
           onMethodChange={setMethod}
-          whatsappMessage={`Hi, I want to confirm my fee payment for voucher ${voucherNumber}.`}
+          proofContext={`Hi, I want to confirm my fee payment for voucher ${voucherNumber}.`}
         />
 
         <form action={formAction} className="space-y-3">

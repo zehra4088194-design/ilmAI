@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { CURRENCY_SYMBOLS, MANUAL_PAYMENT_OPTIONS, TRANSACTION_FEE_USD, type Currency } from '@/lib/constants';
 import { DEFAULT_PLATFORM_SETTINGS, convertUsdToPkr, type PlatformSettings } from '@/lib/platform-settings/shared';
 import type { PaymentAvailability } from '@/lib/payments';
+import { PaymentProofForm } from '@/components/features/payments/PaymentProofForm';
 
 type BillingCycle = 'monthly' | 'annual';
 type CheckoutCountry = 'PK' | 'OTHER';
@@ -272,13 +273,10 @@ export function ManualUpgradePage({
                   </div>
                 ))}
               </div>
-              <p className="text-muted-foreground mt-4 text-xs">
-                Send proof and your registered email to `ilmai.study1@gmail.com`, or send the transaction screenshot on{' '}
-                <a href="/api/support/contact?via=whatsapp" className="font-semibold underline underline-offset-2">
-                  WhatsApp
-                </a>
-                . Never share an OTP or wallet PIN.
-              </p>
+              <div className="mt-4">
+                <PaymentProofForm context={`${plan.name} plan payment confirmation`} />
+              </div>
+              <p className="text-muted-foreground mt-2 text-xs">Never share an OTP or wallet PIN.</p>
             </div>
           )}
         </CardContent>

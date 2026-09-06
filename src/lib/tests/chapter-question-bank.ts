@@ -25,6 +25,15 @@ export type BankSubjectiveQuestion = {
   difficulty?: string | null;
 };
 
+export type BankExtendedQuestion = {
+  q: string;
+  marks: number;
+  subtype?: string;
+  keyPoints: string[];
+  modelAnswer: string;
+  difficulty?: string | null;
+};
+
 export type ChapterQuestionPaper = {
   subject: { id: string; name: string };
   chapter: { id: string; name: string };
@@ -32,6 +41,10 @@ export type ChapterQuestionPaper = {
   mcqs: BankMcq[];
   shortQuestions: BankSubjectiveQuestion[];
   longQuestions: BankSubjectiveQuestion[];
+  letterQuestions: BankExtendedQuestion[];
+  vocabQuestions: BankExtendedQuestion[];
+  grammarQuestions: BankExtendedQuestion[];
+  numericalQuestions: BankExtendedQuestion[];
   sourceCount: number;
 };
 
@@ -42,6 +55,10 @@ type GenerateOptions = {
   mcqCount: number;
   shortCount: number;
   longCount: number;
+  letterCount?: number;
+  vocabCount?: number;
+  grammarCount?: number;
+  numericalCount?: number;
   difficulty?: DifficultyFilter;
 };
 
@@ -84,6 +101,23 @@ function normalizeSubjective(value: any, defaultMarks: number): BankSubjectiveQu
     keyPoints,
     modelAnswer,
     guide: value?.guide ? String(value.guide) : undefined,
+    difficulty: value?.difficulty ? String(value.difficulty).toUpperCase() : null,
+  };
+}
+
+function normalizeExtended(value: any, defaultMarks: number): BankExtendedQuestion | null {
+  const q = sanitizeSourceQuestionText(value?.q || value?.text);
+  if (!q) return null;
+  const keyPoints = Array.isArray(value?.keyPoints)
+    ? value.keyPoints.map(String).filter(Boolean)
+    : [];
+  const modelAnswer = String(value?.modelAnswer || value?.model_answer || '').trim();
+  return {
+    q,
+    marks: Number(value?.marks) || defaultMarks,
+    subtype: value?.subtype ? String(value.subtype) : undefined,
+    keyPoints,
+    modelAnswer,
     difficulty: value?.difficulty ? String(value.difficulty).toUpperCase() : null,
   };
 }
@@ -141,7 +175,7 @@ export async function generateChapterQuestionPaper(options: GenerateOptions): Pr
   const { data: cachedBanks } = resourceIds.length
     ? await questionBank
         .from('resource_mcq_sets')
-        .select('resource_id, questions, short_questions, long_questions, status')
+        .select('resource_id, questions, short_questions, long_questions, extended_questions, status')
         .eq('resource_kind', 'library')
         .in('resource_id', resourceIds)
         .eq('status', 'ready')
@@ -150,6 +184,10 @@ export async function generateChapterQuestionPaper(options: GenerateOptions): Pr
   const mcqs: BankMcq[] = [];
   const shortQuestions: BankSubjectiveQuestion[] = [];
   const longQuestions: BankSubjectiveQuestion[] = [];
+  const letterQuestions: BankExtendedQuestion[] = [];
+  const vocabQuestions: BankExtendedQuestion[] = [];
+  const grammarQuestions: BankExtendedQuestion[] = [];
+  const numericalQuestions: BankExtendedQuestion[] = [];
 
   for (const row of databaseQuestions || []) {
     const type = String(row.type || '').toUpperCase();
@@ -162,6 +200,18 @@ export async function generateChapterQuestionPaper(options: GenerateOptions): Pr
     } else if (type === 'LONG') {
       const item = normalizeSubjective(row, 8);
       if (item) longQuestions.push(item);
+    } else if (type === 'LETTER') {
+      const item = normalizeExtended(row, 3);
+      if (item) letterQuestions.push(item);
+    } else if (type === 'VOCAB') {
+      const item = normalizeExtended(row, 3);
+      if (item) vocabQuestions.push(item);
+    } else if (type === 'GRAMMAR') {
+      const item = normalizeExtended(row, 3);
+      if (item) grammarQuestions.push(item);
+    } else if (type === 'NUMERICAL') {
+      const item = normalizeExtended(row, 5);
+      if (item) numericalQuestions.push(item);
     }
   }
 
@@ -179,6 +229,23 @@ export async function generateChapterQuestionPaper(options: GenerateOptions): Pr
     for (const raw of bank.long_questions || []) {
       const item = normalizeSubjective(raw, 8);
       if (item) longQuestions.push(item);
+    }
+    const extendedQs = bank.extended_questions || {};
+    for (const raw of extendedQs['LETTER'] || []) {
+      const item = normalizeExtended(raw, 3);
+      if (item) letterQuestions.push(item);
+    }
+    for (const raw of extendedQs['VOCAB'] || []) {
+      const item = normalizeExtended(raw, 3);
+      if (item) vocabQuestions.push(item);
+    }
+    for (const raw of extendedQs['GRAMMAR'] || []) {
+      const item = normalizeExtended(raw, 3);
+      if (item) grammarQuestions.push(item);
+    }
+    for (const raw of extendedQs['NUMERICAL'] || []) {
+      const item = normalizeExtended(raw, 5);
+      if (item) numericalQuestions.push(item);
     }
   }
 
@@ -221,6 +288,10 @@ export async function generateChapterQuestionPaper(options: GenerateOptions): Pr
     mcqs: pickRandomQuestions(mcqs, options.mcqCount, options.difficulty),
     shortQuestions: pickRandomQuestions(shortQuestions, options.shortCount, options.difficulty),
     longQuestions: pickRandomQuestions(longQuestions, options.longCount, options.difficulty),
+    letterQuestions: pickRandomQuestions(letterQuestions, options.letterCount || 0, options.difficulty),
+    vocabQuestions: pickRandomQuestions(vocabQuestions, options.vocabCount || 0, options.difficulty),
+    grammarQuestions: pickRandomQuestions(grammarQuestions, options.grammarCount || 0, options.difficulty),
+    numericalQuestions: pickRandomQuestions(numericalQuestions, options.numericalCount || 0, options.difficulty),
     sourceCount: resourceRows.length,
   };
 }

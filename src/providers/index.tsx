@@ -21,10 +21,6 @@ const PostHogClient = dynamic(
   () => import('@/components/features/analytics/PostHogClient').then((module) => module.PostHogClient),
   { ssr: false }
 );
-const ServiceWorkerRegister = dynamic(
-  () => import('@/components/features/offline/ServiceWorkerRegister').then((module) => module.ServiceWorkerRegister),
-  { ssr: false }
-);
 const OfflineSyncManager = dynamic(
   () => import('@/components/features/offline/OfflineSyncManager').then((module) => module.OfflineSyncManager),
   { ssr: false }
@@ -68,7 +64,6 @@ export function Providers({
           <ThemeRuntime />
           {children}
           <PostHogClient />
-          <ServiceWorkerRegister />
           <OfflineSyncManager />
           <GlobalSpeechControls />
           <CookieConsent />

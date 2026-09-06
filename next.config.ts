@@ -19,13 +19,8 @@ const sentryBuildEnabled = Boolean(
 const withPWA = withPWAInit({
   dest: 'public',
   disable: process.env.NODE_ENV === 'development',
-  // The plugin's own default (register: true) injects an inline <script> to
-  // call navigator.serviceWorker.register() — that script carries no CSP
-  // nonce, so it gets blocked by this app's strict-dynamic CSP. Registration
-  // is already handled properly by
-  // src/components/features/offline/ServiceWorkerRegister (a real React
-  // effect, production-only), so the plugin's own injection is both
-  // redundant and broken here.
+  // Registration is handled by the nonce-bearing beforeInteractive script in
+  // src/app/layout.tsx because the plugin's injected script has no CSP nonce.
   register: false,
   cacheOnFrontEndNav: true,
   reloadOnOnline: true,

@@ -36,7 +36,6 @@ const LIMIT_LABELS: Array<[keyof PlatformSettings['subscriptionPlans']['FREE']['
   ['aiCreditsMonthly', 'Shared AI/month'],
   ['premiumAiMonthly', 'Premium AI/month'],
   ['quizDaily', 'Testing/day'],
-  ['universityHubWeekly', 'University Hub/week'],
   ['liveVoiceDaily', 'Live voice/day'],
   ['flashcardsTotal', 'Flashcards total'],
   ['gameMinutesDaily', 'Game minutes/day'],
@@ -45,14 +44,10 @@ const LIMIT_LABELS: Array<[keyof PlatformSettings['subscriptionPlans']['FREE']['
   ['parentAttachmentMegabytesMonthly', 'Parent MB/month'],
 ];
 
-const AUDIENCE_LIMIT_LABELS: Array<
-  [keyof PlatformSettings['subscriptionPlans']['FREE']['audienceLimits']['school'], string]
-> = [
-  ['presentationsMonthly', 'Presentations/month'],
-  ['presentationSlidesMax', 'Slides/presentation'],
-  ['fileSummariesMonthly', 'File summaries/month'],
-  ['fileTestsMonthly', 'File tests/month'],
-];
+// File summaries/tests used to have their own monthly-count fields here too — removed along with
+// AudienceFeatureLimits' fields of the same name, since both tools are fully credit-gated now and
+// the counts did nothing. presentationsEnabled renders as a checkbox below, not in this array.
+const AUDIENCE_SLIDES_LABEL = 'Slides/presentation';
 
 const PROVIDER_BUDGET_LABELS: Array<[keyof PlatformSettings['providerDailyBudgets'], string]> = [
   ['groqFast', 'Groq fast/day'],
@@ -682,27 +677,45 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
                 </div>
 
                 <div className="space-y-3">
-                  <p className="text-sm font-semibold">Audience-specific value</p>
+                  <p className="text-sm font-semibold">Presentation Builder, by audience</p>
+                  <p className="text-muted-foreground text-xs">
+                    Monthly volume is credit-gated like every other AI tool — the only things left to configure per
+                    audience are whether the tool is available at all, and the largest presentation it can generate.
+                  </p>
                   {(['school', 'college', 'university'] as const).map((audience) => (
-                    <div key={audience} className="bg-muted/20 space-y-2 rounded-xl border p-3">
+                    <div key={audience} className="bg-muted/20 flex items-center justify-between gap-3 rounded-xl border p-3">
                       <p className="text-xs font-bold capitalize">{audience}</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {AUDIENCE_LIMIT_LABELS.map(([key, label]) => (
+                      <div className="flex items-center gap-4">
+                        <label className="flex items-center gap-2 text-xs">
+                          <Checkbox
+                            checked={plan.audienceLimits[audience].presentationsEnabled}
+                            onCheckedChange={(checked) =>
+                              updatePlan(tier, (item) => ({
+                                ...item,
+                                audienceLimits: {
+                                  ...item.audienceLimits,
+                                  [audience]: { ...item.audienceLimits[audience], presentationsEnabled: checked === true },
+                                },
+                              }))
+                            }
+                          />
+                          Enabled
+                        </label>
+                        <div className="w-36">
                           <NumberField
-                            key={key}
-                            label={label}
-                            value={plan.audienceLimits[audience][key]}
+                            label={AUDIENCE_SLIDES_LABEL}
+                            value={plan.audienceLimits[audience].presentationSlidesMax}
                             onChange={(value) =>
                               updatePlan(tier, (item) => ({
                                 ...item,
                                 audienceLimits: {
                                   ...item.audienceLimits,
-                                  [audience]: { ...item.audienceLimits[audience], [key]: value },
+                                  [audience]: { ...item.audienceLimits[audience], presentationSlidesMax: value },
                                 },
                               }))
                             }
                           />
-                        ))}
+                        </div>
                       </div>
                     </div>
                   ))}

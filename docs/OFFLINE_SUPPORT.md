@@ -6,7 +6,7 @@ How Ilm AI works offline, what's deliberately excluded, and how to verify it bef
 
 - **Service worker**: generated at build time by `@ducanh2912/next-pwa` (configured in `next.config.ts`), output
   to `public/sw.js` (gitignored — regenerated on every `next build`, never hand-edited). Registered in production
-  only by `src/components/features/offline/ServiceWorkerRegister/index.tsx`.
+  by the nonce-bearing `beforeInteractive` script in `src/app/layout.tsx`, before React hydration starts.
 - **App shell / static assets** (`_next/static/*`, fonts, images, CSS/JS): `CacheFirst`/`StaleWhileRevalidate` via
   the plugin's shipped defaults.
 - **Page navigations** (every route, including client-side RSC navigations via `next/link`): `NetworkFirst`,
@@ -46,7 +46,7 @@ duplicate it). It covers: AI generation (sending a message to AI Tutor, calling 
 quiz/test-taking (Full Test), vision/OCR (Scan & Solve), voice (Speaking Practice), sending a Study Buddies
 message, real-time/push endpoints, and payments/checkout. Anything not listed there is expected to work offline.
 
-AI Tutor and Study Buddies are a deliberate partial exception: the *page* itself is not gated, because past
+AI Tutor and Study Buddies are a deliberate partial exception: the _page_ itself is not gated, because past
 messages already live on the device (chat.store.ts persists to localStorage; Study Buddies requests/messages
 are mirrored via `src/lib/offline/read-cache.ts`) — so browsing history offline works fine. Only the actual
 send action is blocked while offline, inline where the send button lives (`useOnlineStatus()` disables it),

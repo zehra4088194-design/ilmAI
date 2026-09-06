@@ -77,7 +77,7 @@ export default async function PracticePage() {
         <h1 className="text-2xl font-bold">Chapter Testing</h1>
         <p className="text-muted-foreground">Choose a chapter and question type. Every attempt is rebuilt in a fresh random order from all of its uploaded source text.</p>
       </div>
-      <AiPracticeHub subjects={subjects || []} chaptersBySubject={chaptersBySubject} resourcesByChapter={resourcesByChapter} />
+      <AiPracticeHub subjects={(subjects as any) || []} chaptersBySubject={chaptersBySubject} resourcesByChapter={resourcesByChapter} />
     </div>
   );
 }

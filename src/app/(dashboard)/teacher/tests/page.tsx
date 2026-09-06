@@ -13,7 +13,7 @@ export default async function TeacherTestsPage() {
   if (!user) redirect('/login');
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, subscription_tier')
+    .select('role, subscription_tier, full_name, avatar_url')
     .eq('id', user.id)
     .maybeSingle();
   if (!profile || !['teacher', 'admin'].includes(String((profile as any).role))) redirect('/dashboard');
@@ -23,7 +23,7 @@ export default async function TeacherTestsPage() {
     : 'FREE';
 
   const [{ data: subjects }, { data: chapters }] = await Promise.all([
-    supabase.from('subjects').select('id, name, grade_levels').eq('is_active', true).order('name'),
+    supabase.from('subjects').select('id, name, grade_levels, content_profile').eq('is_active', true).order('name'),
     supabase
       .from('chapters')
       .select('id, subject_id, name, order_index, grade_levels')
@@ -41,7 +41,13 @@ export default async function TeacherTestsPage() {
           as a branded PDF.
         </p>
       </div>
-      <TeacherTestStudio subjects={subjects || []} chapters={chapters || []} planTier={planTier} />
+      <TeacherTestStudio
+        subjects={(subjects as any) || []}
+        chapters={chapters || []}
+        planTier={planTier}
+        initialInstitutionName={(profile as any).full_name || undefined}
+        initialLogoUrl={(profile as any).avatar_url || undefined}
+      />
     </div>
   );
 }

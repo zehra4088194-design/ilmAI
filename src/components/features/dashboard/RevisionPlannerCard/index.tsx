@@ -8,16 +8,19 @@ export function RevisionPlannerCard({
   board,
   gradeLevel,
   focusSubject,
+  dueItems,
 }: {
   board?: string | null;
   gradeLevel?: string | null;
   focusSubject?: string;
+  dueItems?: { id: string; title: string }[];
 }) {
+  const dueConceptTasks = (dueItems || []).slice(0, 2).map((item) => `Review "${item.title}" (due for revision)`);
   const tasks = [
     `Revise ${focusSubject || 'one priority subject'} for 25 minutes`,
     'Attempt 10 AI-generated MCQs',
     'Create or review 5 flashcards',
-    'Mark one weak concept for AI Tutor follow-up',
+    ...(dueConceptTasks.length ? dueConceptTasks : ['Mark one weak concept for AI Tutor follow-up']),
   ];
 
   return (

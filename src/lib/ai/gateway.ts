@@ -319,6 +319,71 @@ export async function generateFlashcardsViaGateway(
   return result.text;
 }
 
+export async function generateConceptsForChapterViaGateway(params: {
+  chapterName: string;
+  subjectName: string;
+  boards?: string[];
+  gradeLevel?: string | null;
+  count?: number;
+  provider?: AiProviderId;
+  tier?: ModelTier;
+}): Promise<string> {
+  const count = params.count || 8;
+  const boardLine = params.boards?.length ? params.boards.join(', ') : 'Pakistani boards';
+  const gradeLine = params.gradeLevel || 'the relevant grade';
+  const prompt = `List the ${count} core curriculum concepts (SLOs) taught in the chapter "${params.chapterName}" of ${params.subjectName} for ${boardLine}, ${gradeLine}.
+Order them the way a student should learn them (foundational concepts first).
+For any concept that depends on another concept in this same list, list that concept's exact title in "prerequisite_titles".
+Return ONLY valid JSON array: [{"slo_code":"...","title":"...","description":"...","difficulty":"easy|medium|hard","order_index":0,"prerequisite_titles":["..."]}]`;
+  const result = await gatewayChat({
+    provider: params.provider || 'gemini',
+    tier: params.tier || 'medium',
+    messages: [
+      {
+        role: 'system',
+        content:
+          'You are a curriculum designer for Pakistani board exams. Return only valid JSON array, no markdown fences.',
+      },
+      { role: 'user', content: prompt },
+    ],
+    maxTokens: 4096,
+    temperature: 0.3,
+  });
+  return result.text;
+}
+
+export async function tagQuestionsWithConceptsViaGateway(params: {
+  concepts: { id: string; title: string }[];
+  questions: { id: string; text: string }[];
+  provider?: AiProviderId;
+  tier?: ModelTier;
+}): Promise<string> {
+  const conceptList = params.concepts.map((c) => `${c.id}: ${c.title}`).join('\n');
+  const questionList = params.questions.map((q) => `${q.id}: ${q.text.slice(0, 300)}`).join('\n');
+  const prompt = `Concepts (id: title):
+${conceptList}
+
+Questions (id: text):
+${questionList}
+
+For each question, pick the single best-matching concept id from the list above, or null if none genuinely fit.
+Return ONLY valid JSON array: [{"questionId":"...","conceptId":"..."|null}]`;
+  const result = await gatewayChat({
+    provider: params.provider || 'gemini',
+    tier: params.tier || 'mini',
+    messages: [
+      {
+        role: 'system',
+        content: 'You classify exam questions against a curriculum concept list. Return only valid JSON array, no markdown fences.',
+      },
+      { role: 'user', content: prompt },
+    ],
+    maxTokens: 2048,
+    temperature: 0.1,
+  });
+  return result.text;
+}
+
 // ============================================
 // LIVE VOICE CALL
 // The gateway mints a short-lived, single-use ephemeral Gemini token with

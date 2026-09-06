@@ -7,11 +7,18 @@ import type { SubscriptionTier } from '@/types';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-type PracticeType = 'short' | 'long';
+type PracticeType = 'short' | 'long' | 'letter' | 'vocab' | 'grammar' | 'numerical';
 
 function cleanCount(value: unknown, type: PracticeType) {
-  const fallback = type === 'short' ? 5 : 3;
-  const max = type === 'short' ? 15 : 8;
+  const defaults: Record<PracticeType, { fallback: number; max: number }> = {
+    short: { fallback: 5, max: 15 },
+    long: { fallback: 3, max: 8 },
+    letter: { fallback: 2, max: 10 },
+    vocab: { fallback: 5, max: 20 },
+    grammar: { fallback: 5, max: 15 },
+    numerical: { fallback: 5, max: 15 },
+  };
+  const { fallback, max } = defaults[type];
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return fallback;
   return Math.min(Math.max(Math.floor(parsed), 1), max);
@@ -26,7 +33,8 @@ export async function POST(req: NextRequest) {
     if (!user) return NextResponse.json({ status: 'error', error: 'Login required.' }, { status: 401 });
 
     const { type, subjectId, chapterId, count } = await req.json();
-    const questionType: PracticeType = type === 'long' ? 'long' : 'short';
+    const VALID_TYPES: PracticeType[] = ['short', 'long', 'letter', 'vocab', 'grammar', 'numerical'];
+    const questionType: PracticeType = VALID_TYPES.includes(type) ? type : 'short';
     if (!subjectId || !chapterId) {
       return NextResponse.json({ status: 'error', error: 'A subject and chapter are required.' }, { status: 400 });
     }
@@ -46,14 +54,19 @@ export async function POST(req: NextRequest) {
     }
 
     const finalCount = cleanCount(count, questionType);
-    const paper = await generateChapterQuestionPaper({
-      subjectId,
-      chapterId,
-      mcqCount: 0,
-      shortCount: questionType === 'short' ? finalCount : 0,
-      longCount: questionType === 'long' ? finalCount : 0,
-    });
-    const questions = questionType === 'short' ? paper.shortQuestions : paper.longQuestions;
+    const counts = { mcqCount: 0, shortCount: 0, longCount: 0, letterCount: 0, vocabCount: 0, grammarCount: 0, numericalCount: 0 };
+    const countKey = `${questionType}Count` as keyof typeof counts;
+    counts[countKey] = finalCount;
+    const paper = await generateChapterQuestionPaper({ subjectId, chapterId, ...counts });
+    const questionsByType: Record<PracticeType, any[]> = {
+      short: paper.shortQuestions,
+      long: paper.longQuestions,
+      letter: paper.letterQuestions,
+      vocab: paper.vocabQuestions,
+      grammar: paper.grammarQuestions,
+      numerical: paper.numericalQuestions,
+    };
+    const questions = questionsByType[questionType];
     if (!questions.length) {
       return NextResponse.json(
         { status: 'error', error: `No source-based ${questionType} questions are available for this chapter yet.` },

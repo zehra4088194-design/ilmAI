@@ -26,7 +26,9 @@ export async function resolveKidsDashboardEligibility(
   // No DOB on file — fall back to an active school enrollment's grade_level, if any.
   const { data: enrollment } = await db
     .from('school_enrollments')
-    .select('school_sections(school_classes(grade_level, name))')
+    .select(
+      'school_sections!school_enrollments_section_id_fkey(school_classes!school_sections_class_id_fkey(grade_level, name))'
+    )
     .eq('student_id', userId)
     .eq('status', 'active')
     .limit(1)

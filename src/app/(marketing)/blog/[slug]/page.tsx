@@ -250,7 +250,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                 <p className="font-semibold">About this guide</p>
                 <p className="text-muted-foreground mt-2 leading-6">
                   The ilm AI Editorial Team prepares practical educational material and reviews it for clarity,
-                  responsible AI use, and relevance to students in Pakistan. Board rules can change, so official notices
+                  responsible AI use, and relevance to students of the subcontinent. Board rules can change, so official notices
                   take priority. Found an error?{' '}
                   <Link href="/contact" className="text-violet-300 underline">
                     Tell us

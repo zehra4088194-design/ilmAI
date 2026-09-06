@@ -81,10 +81,8 @@ export function getPaymentAvailability(requestHeaders?: Pick<Headers, 'get'>): P
   const consumptionOnly = requestHeaders ? isPlayConsumptionOnlyRequest(requestHeaders) : false;
   const paddleCredentialsConfigured = Boolean(
     hasPaddleBaseCredentials() &&
-    process.env.PADDLE_PRICE_ID_PRO_MONTHLY &&
-    process.env.PADDLE_PRICE_ID_PRO_ANNUAL &&
-    process.env.PADDLE_PRICE_ID_ELITE_MONTHLY &&
-    process.env.PADDLE_PRICE_ID_ELITE_ANNUAL
+    process.env.PADDLE_PRODUCT_ID_STUDENT_PRO &&
+    process.env.PADDLE_PRODUCT_ID_STUDENT_ELITE
   );
   const paddleConfigured = !consumptionOnly && paddleCredentialsConfigured;
   const payproCredentialsConfigured = Boolean(

@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import QRCode from 'react-qr-code';
-import { MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { PAYMENT_METHOD_LABELS, type PaymentMethod } from '@/lib/institution-payments/types';
+import { PaymentProofForm } from '@/components/features/payments/PaymentProofForm';
 
 // Only JazzCash (scannable QR) and Card are actually offered — Easypaisa and
 // bank transfer were configured but never actually staffed/monitored, so they
@@ -17,13 +17,12 @@ const METHODS: PaymentMethod[] = ['jazzcash', 'card'];
 // Payment destination numbers/details are env-driven (master prompt Part 6.2
 // explicit ask: "do not hardcode literal numbers in source"), exposed via
 // NEXT_PUBLIC_* since a checkout screen is inherently public-facing information.
+// Easypaisa is not an offered method (see METHODS above) and has no destination number.
 const JAZZCASH_NUMBER = process.env.NEXT_PUBLIC_SCHOOL_PAYMENT_JAZZCASH_NUMBER || '';
-const EASYPAISA_NUMBER = process.env.NEXT_PUBLIC_SCHOOL_PAYMENT_EASYPAISA_NUMBER || '';
 const BANK_DETAILS = process.env.NEXT_PUBLIC_SCHOOL_PAYMENT_BANK_DETAILS || '';
 
 function methodDestination(method: PaymentMethod) {
   if (method === 'jazzcash') return JAZZCASH_NUMBER;
-  if (method === 'easypaisa') return EASYPAISA_NUMBER;
   if (method === 'bank_transfer') return BANK_DETAILS;
   return '';
 }
@@ -35,7 +34,7 @@ function methodDestination(method: PaymentMethod) {
 export function ManualPaymentMethodPicker({
   method,
   onMethodChange,
-  whatsappMessage,
+  proofContext,
   // Only ever passed by InstitutionPaymentCheckout (institution paying ilm AI for its own plan)
   // — when set, jazzcash/easypaisa show the real scannable QR (amount + expiry embedded, same
   // merchant as the consumer checkout) instead of a plain-text QR of the phone number.
@@ -45,13 +44,10 @@ export function ManualPaymentMethodPicker({
 }: {
   method: PaymentMethod;
   onMethodChange: (method: PaymentMethod) => void;
-  whatsappMessage: string;
+  proofContext: string;
   scannableAmountPkr?: number;
 }) {
   const destination = methodDestination(method);
-  // Routed through a server redirect (src/app/api/support/contact) rather than a raw wa.me
-  // href, so the support number never appears as a literal in client-bundled JS/HTML.
-  const whatsappHref = `/api/support/contact?via=whatsapp&text=${encodeURIComponent(whatsappMessage)}`;
   const showScannableQr = Boolean(scannableAmountPkr) && (method === 'jazzcash' || method === 'easypaisa');
   const [scannableQrDataUrl, setScannableQrDataUrl] = useState<string | null>(null);
   const [scannableQrLoading, setScannableQrLoading] = useState(false);
@@ -129,18 +125,7 @@ export function ManualPaymentMethodPicker({
         </div>
       )}
 
-      <a
-        href={whatsappHref}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center justify-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm font-semibold text-emerald-600 transition hover:bg-emerald-500/15"
-      >
-        <MessageCircle className="h-4 w-4" /> Confirm on WhatsApp
-      </a>
-
-      <p className="text-muted-foreground text-xs">
-        Send the screenshot of the transaction with your email to confirm. An admin verifies claims manually.
-      </p>
+      <PaymentProofForm context={proofContext} />
     </div>
   );
 }

@@ -38,7 +38,7 @@ export default function AboutPage() {
           <div className="mx-auto max-w-4xl">
             <p className="mb-4 text-sm font-semibold text-violet-300">About ilm AI</p>
             <h1 className="max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl">
-              Practical learning support, built for students in Pakistan
+              Practical learning support, built for students of the subcontinent
             </h1>
             <p className="text-muted-foreground mt-6 max-w-3xl text-lg leading-8">
               ilm AI is an independent education-technology project built by a small team in Pakistan. Development began

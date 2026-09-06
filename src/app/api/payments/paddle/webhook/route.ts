@@ -54,37 +54,12 @@ type PaddleSubscriptionData = {
   }>;
 };
 
-// Includes the parent/teacher/university price ids (see paddle.ts's FAMILY_PRICE_IDS) alongside
-// the original student ones — every plan family still just resolves to PRO/ELITE on
-// profiles.subscription_tier (see RolePlanCards' comment for why one column serves every account
-// type), so the webhook only needs to recognize the price id, not which family it belongs to.
-const PRICE_IDS = {
-  PRO: new Set(
-    [
-      process.env.PADDLE_PRICE_ID_PRO_MONTHLY,
-      process.env.PADDLE_PRICE_ID_PRO_ANNUAL,
-      process.env.PADDLE_PRICE_ID_PARENT_PRO,
-      process.env.PADDLE_PRICE_ID_TEACHER_PRO,
-      process.env.PADDLE_PRICE_ID_UNIVERSITY_PRO,
-    ].filter(Boolean)
-  ),
-  ELITE: new Set(
-    [
-      process.env.PADDLE_PRICE_ID_ELITE_MONTHLY,
-      process.env.PADDLE_PRICE_ID_ELITE_ANNUAL,
-      process.env.PADDLE_PRICE_ID_PARENT_ELITE,
-      process.env.PADDLE_PRICE_ID_TEACHER_ELITE,
-      process.env.PADDLE_PRICE_ID_UNIVERSITY_ELITE,
-    ].filter(Boolean)
-  ),
-};
-
-function resolveTier(priceId?: string | null, fallback?: string | null): PaddleTier {
-  if (priceId && PRICE_IDS.ELITE.has(priceId)) return 'ELITE';
-  if (priceId && PRICE_IDS.PRO.has(priceId)) return 'PRO';
-  // Unrecognized price id (e.g. this webhook's env vars haven't caught up with a newly-added
-  // family price yet) still falls back to custom_data.tier — set unconditionally in
-  // paddleProvider.createCheckout — rather than silently downgrading the purchase to FREE.
+// Every plan (student or parent/teacher/university, PRO or ELITE) now checks out through Paddle's
+// non-catalog price API (see paddle.ts's resolveCheckoutPricing) — the amount is set fresh per
+// checkout from the admin panel's current price, so there's no fixed catalog price id to map back
+// to a tier here. custom_data.tier (set unconditionally in paddleProvider.createCheckout) is the
+// only source of truth for which tier a transaction/subscription is for.
+function resolveTier(fallback?: string | null): PaddleTier {
   if (fallback === 'PRO' || fallback === 'ELITE') return fallback;
   return 'FREE';
 }
@@ -262,8 +237,7 @@ export async function POST(req: NextRequest) {
       }
 
       const userId = typeof customData.user_id === 'string' ? customData.user_id : null;
-      const priceId = transaction?.items?.[0]?.price?.id;
-      const tier = resolveTier(priceId, typeof customData.tier === 'string' ? customData.tier : null);
+      const tier = resolveTier(typeof customData.tier === 'string' ? customData.tier : null);
       const billingCycle = resolveBillingCycle(
         transaction?.items?.[0]?.price?.billing_cycle?.interval,
         typeof customData.billing_cycle === 'string' ? customData.billing_cycle : null
@@ -321,14 +295,13 @@ export async function POST(req: NextRequest) {
         break;
       }
 
-      const priceId = subscription.items?.[0]?.price?.id;
       const fallbackTier =
         typeof existing?.tier === 'string'
           ? existing.tier
           : typeof customData.tier === 'string'
             ? customData.tier
             : null;
-      const tier = resolveTier(priceId, fallbackTier);
+      const tier = resolveTier(fallbackTier);
       if (tier === 'FREE') {
         break;
       }

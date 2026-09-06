@@ -103,7 +103,7 @@ export default async function SchoolPeoplePage() {
                     ))}
                   </select>
                   <div className="grid grid-cols-2 gap-3">
-                    <Input name="admission_number" placeholder="Admission no." required />
+                    <Input name="admission_number" placeholder="Admission no. (auto if blank)" />
                     <Input name="roll_number" placeholder="Roll no. (optional)" />
                   </div>
                 </SchoolActionForm>

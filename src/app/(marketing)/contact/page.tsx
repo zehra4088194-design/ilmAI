@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { BookOpenCheck, CreditCard, LifeBuoy, Mail, MessageSquareWarning, Phone } from 'lucide-react';
+import { BookOpenCheck, CreditCard, LifeBuoy, Mail, MessageSquareWarning } from 'lucide-react';
 import { Navbar } from '@/components/features/landing/Navbar';
 import { LandingFooter } from '@/components/features/landing/Footer';
 import { ContactForm } from '@/components/features/marketing/ContactForm';
@@ -75,13 +75,6 @@ export default function ContactPage() {
                   className="mt-2 block text-sm text-violet-300 underline-offset-4 hover:underline"
                 >
                   ilmai.study1@gmail.com
-                </a>
-                <a
-                  href="/api/support/contact?via=whatsapp"
-                  className="mt-3 flex items-center gap-2 text-sm text-violet-300 underline-offset-4 hover:underline"
-                >
-                  <Phone className="h-4 w-4" />
-                  WhatsApp us
                 </a>
               </div>
             </aside>

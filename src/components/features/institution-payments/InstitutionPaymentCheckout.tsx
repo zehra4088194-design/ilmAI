@@ -182,7 +182,7 @@ export function InstitutionPaymentCheckout({
         <ManualPaymentMethodPicker
           method={method}
           onMethodChange={setMethod}
-          whatsappMessage="Hi, I want to confirm my institution plan payment."
+          proofContext="Hi, I want to confirm my institution plan payment."
           scannableAmountPkr={amountPkrWithFee}
         />
 

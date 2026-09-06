@@ -13,6 +13,7 @@ import { AdGateComplete, AdGateSequence } from './AdGateSequence';
 import { TestPaper } from './TestPaper';
 import {
   formatGrade,
+  EXTRA_TYPES_BY_PROFILE,
   type Chapter,
   type DifficultyChoice,
   type Paper,
@@ -40,10 +41,16 @@ export function TeacherTestStudio({
   subjects,
   chapters,
   planTier,
+  initialInstitutionName,
+  initialLogoUrl,
 }: {
   subjects: Subject[];
   chapters: Chapter[];
   planTier: PlanTier;
+  /** School/college admins already have a registered institution — prefill instead of asking. */
+  initialInstitutionName?: string;
+  /** The institution's own uploaded logo, prefilled as the default watermark image (still editable). */
+  initialLogoUrl?: string;
 }) {
   const gradeLevels = useMemo(
     () => [...new Set(subjects.flatMap((subject) => subject.grade_levels || []))],
@@ -67,12 +74,24 @@ export function TeacherTestStudio({
       ),
     [chapters, subjectId, gradeLevel]
   );
+  const selectedSubject = useMemo(
+    () => filteredSubjects.find((s) => s.id === subjectId),
+    [filteredSubjects, subjectId]
+  );
+  const extraTypes = useMemo(
+    () => EXTRA_TYPES_BY_PROFILE[selectedSubject?.content_profile || 'general'],
+    [selectedSubject?.content_profile]
+  );
   const [chapterId, setChapterId] = useState('');
-  const [institutionName, setInstitutionName] = useState('');
+  const [institutionName, setInstitutionName] = useState(initialInstitutionName || '');
   const [title, setTitle] = useState('Chapter Assessment');
-  const [mcqCount, setMcqCount] = useState(10);
+  const [mcqCount, setMcqCount] = useState(5);
   const [shortCount, setShortCount] = useState(5);
   const [longCount, setLongCount] = useState(2);
+  const [letterCount, setLetterCount] = useState(3);
+  const [vocabCount, setVocabCount] = useState(5);
+  const [grammarCount, setGrammarCount] = useState(3);
+  const [numericalCount, setNumericalCount] = useState(5);
   const [timeAllowed, setTimeAllowed] = useState(45);
   const [theme, setTheme] = useState<PaperTheme>('classic');
   const [difficulty, setDifficulty] = useState<DifficultyChoice>('MIXED');
@@ -82,11 +101,17 @@ export function TeacherTestStudio({
   // acknowledge it before each generation. PRO/ELITE never see this.
   const [adAcknowledged, setAdAcknowledged] = useState(false);
 
-  // ELITE-only custom branding.
-  const [useCustomBranding, setUseCustomBranding] = useState(false);
+  // PRO/ELITE custom branding — auto-applied whenever there's a saved institution name/logo to
+  // use (school-admin's org, or a plain teacher's own profile), so a PRO/ELITE user never has to
+  // manually opt in just to get their own name and logo on the paper. Still fully editable/
+  // toggleable below. hidePlatformBranding (fully removing ilm AI's own mark) stays ELITE-only.
+  const canUseCustomBranding = planTier === 'PRO' || planTier === 'ELITE';
+  const [useCustomBranding, setUseCustomBranding] = useState(
+    canUseCustomBranding && Boolean(initialInstitutionName || initialLogoUrl)
+  );
   const [customHeader, setCustomHeader] = useState('');
   const [customWatermarkText, setCustomWatermarkText] = useState('');
-  const [customWatermarkImageUrl, setCustomWatermarkImageUrl] = useState('');
+  const [customWatermarkImageUrl, setCustomWatermarkImageUrl] = useState(initialLogoUrl || '');
   const [hidePlatformBranding, setHidePlatformBranding] = useState(false);
 
   const [loading, setLoading] = useState(false);
@@ -153,14 +178,18 @@ export function TeacherTestStudio({
           mcqCount,
           shortCount,
           longCount,
+          letterCount,
+          vocabCount,
+          grammarCount,
+          numericalCount,
           timeAllowed,
           theme,
           difficulty,
           includeAnswerKey,
           adAcknowledged: planTier === 'FREE' ? adAcknowledged : undefined,
-          customHeader: planTier === 'ELITE' && useCustomBranding ? customHeader : undefined,
-          customWatermarkText: planTier === 'ELITE' && useCustomBranding ? customWatermarkText : undefined,
-          customWatermarkImageUrl: planTier === 'ELITE' && useCustomBranding ? customWatermarkImageUrl : undefined,
+          customHeader: canUseCustomBranding && useCustomBranding ? customHeader : undefined,
+          customWatermarkText: canUseCustomBranding && useCustomBranding ? customWatermarkText : undefined,
+          customWatermarkImageUrl: canUseCustomBranding && useCustomBranding ? customWatermarkImageUrl : undefined,
           hidePlatformBranding: planTier === 'ELITE' && useCustomBranding ? hidePlatformBranding : undefined,
         }),
       });
@@ -196,8 +225,15 @@ export function TeacherTestStudio({
           ...prev,
         ]);
       }
-      const actual = json.data.mcqs.length + json.data.shortQuestions.length + json.data.longQuestions.length;
-      const requested = mcqCount + shortCount + longCount;
+      const actual =
+        json.data.mcqs.length +
+        json.data.shortQuestions.length +
+        json.data.longQuestions.length +
+        (json.data.letterQuestions?.length || 0) +
+        (json.data.vocabQuestions?.length || 0) +
+        (json.data.grammarQuestions?.length || 0) +
+        (json.data.numericalQuestions?.length || 0);
+      const requested = mcqCount + shortCount + longCount + letterCount + vocabCount + grammarCount + numericalCount;
       if (actual < requested)
         toast.warning(`Paper created with ${actual} available unique questions out of ${requested} requested.`);
       else toast.success('A new random paper is ready.');
@@ -225,7 +261,7 @@ export function TeacherTestStudio({
               value={institutionName}
               onChange={(event) => setInstitutionName(event.target.value)}
               placeholder="School, college, or academy"
-              disabled={planTier === 'ELITE' && useCustomBranding && !!customHeader}
+              disabled={canUseCustomBranding && useCustomBranding && !!customHeader}
             />
           </Field>
           <Field label="Paper title">
@@ -288,6 +324,21 @@ export function TeacherTestStudio({
             <NumberField label="Long" value={longCount} max={20} onChange={setLongCount} />
             <NumberField label="Minutes" value={timeAllowed} max={240} onChange={setTimeAllowed} />
           </div>
+          {extraTypes.length > 0 && (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:col-span-2">
+              {extraTypes.map((type) => {
+                const stateMap = {
+                  letter: [letterCount, setLetterCount] as const,
+                  vocab: [vocabCount, setVocabCount] as const,
+                  grammar: [grammarCount, setGrammarCount] as const,
+                  numerical: [numericalCount, setNumericalCount] as const,
+                };
+                const [value, setter] = stateMap[type.key];
+                const maxValue = type.key === 'vocab' ? 30 : 20;
+                return <NumberField key={type.key} label={type.label} value={value} max={maxValue} onChange={setter} />;
+              })}
+            </div>
+          )}
           <Field label="Difficulty">
             <select
               className="border-input bg-card h-10 w-full rounded-lg border px-3 text-sm"
@@ -321,12 +372,17 @@ export function TeacherTestStudio({
             </label>
           </div>
 
-          {planTier === 'ELITE' && (
+          {canUseCustomBranding && (
             <div className="space-y-3 rounded-lg border border-amber-400/40 bg-amber-400/5 p-4 lg:col-span-2">
               <label className="flex items-center gap-2 text-sm font-semibold">
                 <Checkbox checked={useCustomBranding} onCheckedChange={(v) => setUseCustomBranding(v === true)} />
-                Use my own name / school branding on this paper
+                Use my own name / school logo on this paper
               </label>
+              {(initialInstitutionName || initialLogoUrl) && useCustomBranding && (
+                <p className="text-muted-foreground text-xs">
+                  Applied automatically from your saved {initialLogoUrl ? 'logo and ' : ''}name — edit below if needed.
+                </p>
+              )}
               {useCustomBranding && (
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Field label="Custom header (name / school)">
@@ -345,22 +401,24 @@ export function TeacherTestStudio({
                       maxLength={60}
                     />
                   </Field>
-                  <Field label="Watermark image URL (optional)">
+                  <Field label="Logo / watermark image URL">
                     <Input
                       value={customWatermarkImageUrl}
                       onChange={(event) => setCustomWatermarkImageUrl(event.target.value)}
                       placeholder="https://your-school-logo.png"
                     />
                   </Field>
-                  <div className="flex items-end pb-2">
-                    <label className="flex items-center gap-2 text-sm">
-                      <Checkbox
-                        checked={hidePlatformBranding}
-                        onCheckedChange={(v) => setHidePlatformBranding(v === true)}
-                      />
-                      Hide the ilm AI watermark
-                    </label>
-                  </div>
+                  {planTier === 'ELITE' && (
+                    <div className="flex items-end pb-2">
+                      <label className="flex items-center gap-2 text-sm">
+                        <Checkbox
+                          checked={hidePlatformBranding}
+                          onCheckedChange={(v) => setHidePlatformBranding(v === true)}
+                        />
+                        Hide the ilm AI watermark entirely
+                      </label>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

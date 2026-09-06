@@ -1,4 +1,6 @@
-export type Subject = { id: string; name: string; grade_levels: string[] };
+export type ContentProfile = 'language' | 'stem' | 'general';
+
+export type Subject = { id: string; name: string; grade_levels: string[]; content_profile?: ContentProfile };
 export type Chapter = { id: string; subject_id: string; name: string; grade_levels?: string[] | null };
 export type PlanTier = 'FREE' | 'PRO' | 'ELITE';
 export type PaperTheme = 'classic' | 'modern' | 'minimal';
@@ -11,6 +13,7 @@ export type Question = {
   modelAnswer: string;
   guide?: string;
   difficulty?: string | null;
+  subtype?: string;
 };
 export type Mcq = { q: string; opts: string[]; correct: number; exp: string; difficulty?: string | null };
 
@@ -39,8 +42,20 @@ export type Paper = {
   mcqs: Mcq[];
   shortQuestions: Question[];
   longQuestions: Question[];
+  letterQuestions: Question[];
+  vocabQuestions: Question[];
+  grammarQuestions: Question[];
+  numericalQuestions: Question[];
   sourceCount: number;
-  requestedCounts: { mcq: number; short: number; long: number };
+  requestedCounts: {
+    mcq: number;
+    short: number;
+    long: number;
+    letter: number;
+    vocab: number;
+    grammar: number;
+    numerical: number;
+  };
   testId?: string | null;
 };
 
@@ -67,3 +82,16 @@ export function formatGrade(value: string) {
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
 }
+
+export const EXTRA_TYPES_BY_PROFILE: Record<
+  ContentProfile,
+  { key: 'letter' | 'vocab' | 'grammar' | 'numerical'; label: string }[]
+> = {
+  language: [
+    { key: 'letter', label: 'Letters / Applications' },
+    { key: 'vocab', label: 'Vocabulary (Synonyms/Antonyms)' },
+    { key: 'grammar', label: 'Grammar' },
+  ],
+  stem: [{ key: 'numerical', label: 'Numericals' }],
+  general: [],
+};

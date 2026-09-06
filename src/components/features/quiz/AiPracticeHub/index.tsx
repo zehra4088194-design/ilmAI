@@ -19,6 +19,7 @@ type Subject = {
   id: string;
   name: string;
   color: string;
+  content_profile?: 'language' | 'stem' | 'general' | null;
 };
 
 type Chapter = {
@@ -31,7 +32,7 @@ type ChapterResource = {
   title: string;
 };
 
-type PracticeMode = 'mcq' | 'short' | 'long';
+type PracticeMode = 'mcq' | 'short' | 'long' | 'letter' | 'vocab' | 'grammar' | 'numerical';
 
 type SubjectiveQuestion = {
   id: string;
@@ -40,6 +41,8 @@ type SubjectiveQuestion = {
   keyPoints: string[];
   modelAnswer: string;
   guide?: string;
+  subtype?: string;
+  difficulty?: string | null;
 };
 
 type Evaluation = {
@@ -59,6 +62,26 @@ const MCQ_COUNTS = [5, 10, 15, 20];
 const SHORT_COUNTS = [3, 5, 8, 10];
 const LONG_COUNTS = [1, 2, 3, 5];
 
+const EXTRA_MODE_COUNTS: Record<'letter' | 'vocab' | 'grammar' | 'numerical', number[]> = {
+  letter: [1, 2, 3, 5],
+  vocab: [3, 5, 8, 10],
+  grammar: [3, 5, 8, 10],
+  numerical: [3, 5, 8, 10],
+};
+
+const EXTRA_MODES_BY_PROFILE: Record<'language' | 'stem' | 'general', ('letter' | 'vocab' | 'grammar' | 'numerical')[]> = {
+  language: ['letter', 'vocab', 'grammar'],
+  stem: ['numerical'],
+  general: [],
+};
+
+const EXTRA_MODE_LABELS: Record<'letter' | 'vocab' | 'grammar' | 'numerical', string> = {
+  letter: 'Letters',
+  vocab: 'Vocabulary',
+  grammar: 'Grammar',
+  numerical: 'Numericals',
+};
+
 export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter }: AiPracticeHubProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -67,10 +90,10 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
   const [chapterId, setChapterId] = useState<string | null>(null);
   const [mode, setMode] = useState<PracticeMode>('mcq');
   const [selectedModes, setSelectedModes] = useState<PracticeMode[]>(['mcq']);
-  const [counts, setCounts] = useState<Record<PracticeMode, number>>({ mcq: 10, short: 5, long: 3 });
+  const [counts, setCounts] = useState<Record<PracticeMode, number>>({ mcq: 10, short: 5, long: 3, letter: 2, vocab: 5, grammar: 5, numerical: 5 });
   const [loading, setLoading] = useState(false);
   const [subjective, setSubjective] = useState<{
-    type: 'short' | 'long';
+    type: 'short' | 'long' | 'letter' | 'vocab' | 'grammar' | 'numerical';
     subjectName: string;
     chapterName: string;
     questions: SubjectiveQuestion[];
@@ -84,6 +107,7 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
   const chapters = openSubjectId ? chaptersBySubject[openSubjectId] || [] : [];
   const selectedChapter = chapters.find((chapter) => chapter.id === chapterId) ?? null;
   const chapterResources = chapterId ? resourcesByChapter[chapterId] || [] : [];
+  const extraModes = EXTRA_MODES_BY_PROFILE[selectedSubject?.content_profile || 'general'];
   const currentSubjectiveQuestion = subjective?.questions[questionIndex] ?? null;
   const count = counts[mode];
 
@@ -104,6 +128,7 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
   const countOptions = useMemo(() => {
     if (mode === 'short') return SHORT_COUNTS;
     if (mode === 'long') return LONG_COUNTS;
+    if (mode in EXTRA_MODE_COUNTS) return EXTRA_MODE_COUNTS[mode as keyof typeof EXTRA_MODE_COUNTS];
     return MCQ_COUNTS;
   }, [mode]);
 
@@ -112,7 +137,7 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
     setChapterId(null);
     setMode('mcq');
     setSelectedModes(['mcq']);
-    setCounts({ mcq: 10, short: 5, long: 3 });
+    setCounts({ mcq: 10, short: 5, long: 3, letter: 2, vocab: 5, grammar: 5, numerical: 5 });
   }
 
   function resetSubjectiveAnswer() {
@@ -156,7 +181,7 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
     }
   }
 
-  async function startSubjective(nextMode: 'short' | 'long') {
+  async function startSubjective(nextMode: 'short' | 'long' | 'letter' | 'vocab' | 'grammar' | 'numerical') {
     if (!openSubjectId || !chapterId || !selectedSubject || !selectedChapter) return;
     setLoading(true);
     try {
@@ -274,7 +299,7 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-xs font-medium tracking-wide text-violet-400 uppercase">
-                {subjective.type === 'short' ? 'Short Questions' : 'Long Questions'}
+                {{ short: 'Short Questions', long: 'Long Questions', letter: 'Letters', vocab: 'Vocabulary', grammar: 'Grammar', numerical: 'Numericals' }[subjective.type]}
               </p>
               <h2 className="text-xl font-bold">
                 {subjective.subjectName} - {subjective.chapterName}
@@ -475,7 +500,7 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
                       Question types
                     </p>
                     <div className="grid grid-cols-3 gap-2">
-                      {(['mcq', 'short', 'long'] as PracticeMode[]).map((option) => (
+                      {([...(['mcq', 'short', 'long'] as PracticeMode[]), ...extraModes]).map((option) => (
                         <button
                           key={option}
                           type="button"
@@ -497,7 +522,7 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
                           )}
                         >
                           {selectedModes.includes(option) && <CheckCircle2 className="h-3.5 w-3.5" />}
-                          {option}
+                          {EXTRA_MODE_LABELS[option as keyof typeof EXTRA_MODE_LABELS] || option}
                         </button>
                       ))}
                     </div>

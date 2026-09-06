@@ -7,38 +7,24 @@ import type {
   SubscriptionRecord,
   WebhookVerificationResult,
 } from './provider';
+import { getPlatformSettings } from '@/lib/platform-settings/server';
+import { resolvePlanAmountUsd } from '@/lib/platform-settings/shared';
 
 const PADDLE_API_KEY = process.env.PADDLE_API_KEY;
 const PADDLE_WEBHOOK_SECRET = process.env.PADDLE_WEBHOOK_SECRET;
 
-const PRICE_IDS = {
-  PRO: {
-    monthly: process.env.PADDLE_PRICE_ID_PRO_MONTHLY,
-    annual: process.env.PADDLE_PRICE_ID_PRO_ANNUAL,
-  },
-  ELITE: {
-    monthly: process.env.PADDLE_PRICE_ID_ELITE_MONTHLY,
-    annual: process.env.PADDLE_PRICE_ID_ELITE_ANNUAL,
-  },
-} as const;
-
-// Parent/Teacher/University plans (see RolePlanCards) — same monthly/annual matrix as the student
-// PRO_IDS above, just one set per family. Admin settings only store a monthly USD price per tier;
-// the annual price is always that monthly price × 12 at a fixed 20% discount (RolePlanCards
-// computes and displays it the same way), so there's no separate "annual price" admin field — but
-// Paddle still needs its own real price object per billing interval, hence 2 ids per tier here too.
-const FAMILY_PRICE_IDS = {
-  parent: {
-    PRO: { monthly: process.env.PADDLE_PRICE_ID_PARENT_PRO_MONTHLY, annual: process.env.PADDLE_PRICE_ID_PARENT_PRO_ANNUAL },
-    ELITE: { monthly: process.env.PADDLE_PRICE_ID_PARENT_ELITE_MONTHLY, annual: process.env.PADDLE_PRICE_ID_PARENT_ELITE_ANNUAL },
-  },
-  teacher: {
-    PRO: { monthly: process.env.PADDLE_PRICE_ID_TEACHER_PRO_MONTHLY, annual: process.env.PADDLE_PRICE_ID_TEACHER_PRO_ANNUAL },
-    ELITE: { monthly: process.env.PADDLE_PRICE_ID_TEACHER_ELITE_MONTHLY, annual: process.env.PADDLE_PRICE_ID_TEACHER_ELITE_ANNUAL },
-  },
+// One Paddle PRODUCT per plan family x tier — NOT a price. The actual charge amount is set fresh
+// per checkout below, straight from whatever the admin panel currently has saved
+// (resolvePlanAmountUsd), via Paddle's non-catalog price API (same pattern as
+// createInstitutionCheckout/createSupportCheckout). So a price change in the admin panel takes
+// effect immediately on the next checkout — no matching Paddle dashboard price to create/update.
+const PRODUCT_IDS = {
+  student: { PRO: process.env.PADDLE_PRODUCT_ID_STUDENT_PRO, ELITE: process.env.PADDLE_PRODUCT_ID_STUDENT_ELITE },
+  parent: { PRO: process.env.PADDLE_PRODUCT_ID_PARENT_PRO, ELITE: process.env.PADDLE_PRODUCT_ID_PARENT_ELITE },
+  teacher: { PRO: process.env.PADDLE_PRODUCT_ID_TEACHER_PRO, ELITE: process.env.PADDLE_PRODUCT_ID_TEACHER_ELITE },
   university: {
-    PRO: { monthly: process.env.PADDLE_PRICE_ID_UNIVERSITY_PRO_MONTHLY, annual: process.env.PADDLE_PRICE_ID_UNIVERSITY_PRO_ANNUAL },
-    ELITE: { monthly: process.env.PADDLE_PRICE_ID_UNIVERSITY_ELITE_MONTHLY, annual: process.env.PADDLE_PRICE_ID_UNIVERSITY_ELITE_ANNUAL },
+    PRO: process.env.PADDLE_PRODUCT_ID_UNIVERSITY_PRO,
+    ELITE: process.env.PADDLE_PRODUCT_ID_UNIVERSITY_ELITE,
   },
 } as const;
 
@@ -61,19 +47,22 @@ function getCheckoutUrl(successUrl: string) {
   return new URL('/checkout', successUrl).toString();
 }
 
-function getPriceId(params: CreateCheckoutParams) {
-  if (params.planFamily && params.planFamily !== 'student') {
-    const priceId = FAMILY_PRICE_IDS[params.planFamily][params.tier][params.billingCycle];
-    if (!priceId) {
-      throw new Error(`Missing Paddle price id for ${params.planFamily} ${params.tier} (${params.billingCycle})`);
-    }
-    return priceId;
+async function resolveCheckoutPricing(params: CreateCheckoutParams) {
+  const family = params.planFamily || 'student';
+  const productId = PRODUCT_IDS[family][params.tier];
+  if (!productId) {
+    throw new Error(`Missing Paddle product id for ${family} ${params.tier}`);
   }
-  const priceId = PRICE_IDS[params.tier][params.billingCycle];
-  if (!priceId) {
-    throw new Error(`Missing Paddle price id for ${params.tier} (${params.billingCycle})`);
+  const settings = await getPlatformSettings();
+  const amountUsd = resolvePlanAmountUsd(settings, {
+    tier: params.tier,
+    billingCycle: params.billingCycle,
+    planFamily: params.planFamily,
+  });
+  if (!(amountUsd > 0)) {
+    throw new Error(`Invalid resolved amount for ${family} ${params.tier} (${params.billingCycle})`);
   }
-  return priceId;
+  return { productId, amountUsd };
 }
 
 async function paddleRequest<T>(path: string, init?: RequestInit): Promise<T> {
@@ -116,8 +105,10 @@ export const paddleProvider: PaymentProvider = {
   id: 'paddle',
 
   async createCheckout(params: CreateCheckoutParams): Promise<CheckoutSession> {
-    const priceId = getPriceId(params);
+    const { productId, amountUsd } = await resolveCheckoutPricing(params);
     const checkoutUrl = getCheckoutUrl(params.successUrl);
+    const unitPriceCents = String(Math.round(amountUsd * 100));
+    const family = params.planFamily || 'student';
 
     const response = await paddleRequest<{
       data?: {
@@ -130,14 +121,24 @@ export const paddleProvider: PaymentProvider = {
       method: 'POST',
       body: JSON.stringify({
         collection_mode: 'automatic',
-        items: [{ price_id: priceId, quantity: 1 }],
+        items: [
+          {
+            price: {
+              product_id: productId,
+              description: `ilm AI ${family} ${params.tier} (${params.billingCycle})`,
+              unit_price: { amount: unitPriceCents, currency_code: 'USD' },
+              billing_cycle: { interval: params.billingCycle === 'annual' ? 'year' : 'month', frequency: 1 },
+            },
+            quantity: 1,
+          },
+        ],
         checkout: { url: checkoutUrl },
         custom_data: {
           user_id: params.userId,
           user_email: params.userEmail,
           tier: params.tier,
           billing_cycle: params.billingCycle,
-          plan_family: params.planFamily || 'student',
+          plan_family: family,
           region: params.region,
           currency: params.currency,
           success_url: params.successUrl,
@@ -194,11 +195,7 @@ export const paddleProvider: PaymentProvider = {
         scheduled_change?: {
           action?: string | null;
         } | null;
-        items?: Array<{
-          price?: {
-            id?: string | null;
-          } | null;
-        }>;
+        custom_data?: Record<string, unknown> | null;
       };
     }>(`/subscriptions/${providerSubscriptionId}`);
 
@@ -207,11 +204,10 @@ export const paddleProvider: PaymentProvider = {
       return null;
     }
 
-    const priceId = subscription.items?.[0]?.price?.id || '';
-    const tier =
-      priceId === process.env.PADDLE_PRICE_ID_ELITE_MONTHLY || priceId === process.env.PADDLE_PRICE_ID_ELITE_ANNUAL
-        ? 'ELITE'
-        : 'PRO';
+    // Prices are set per-checkout now (see createCheckout/resolveCheckoutPricing), not pre-created
+    // catalog prices, so there's no fixed price id to match against a tier — custom_data.tier
+    // (set unconditionally in createCheckout) is the only reliable source, same as the webhook.
+    const tier = subscription.custom_data?.tier === 'ELITE' ? 'ELITE' : 'PRO';
 
     return {
       providerSubscriptionId: subscription.id,
@@ -330,6 +326,80 @@ export async function createInstitutionCheckout(params: InstitutionCheckoutParam
         billing_cycle: params.billingCycle,
         user_id: params.userId,
         user_email: params.userEmail,
+        success_url: params.successUrl,
+        cancel_url: params.cancelUrl,
+      },
+    }),
+  });
+
+  const transactionId = response.data?.id;
+  if (!transactionId) {
+    throw new Error('Paddle transaction id missing from response');
+  }
+
+  const redirectUrl = new URL(checkoutUrl);
+  redirectUrl.searchParams.set('transaction_id', transactionId);
+  redirectUrl.searchParams.set('success_url', params.successUrl);
+  redirectUrl.searchParams.set('cancel_url', params.cancelUrl);
+
+  return { url: redirectUrl.toString(), providerSessionId: transactionId };
+}
+
+// "Support ilm AI" donations — same non-catalog-price pattern as createInstitutionCheckout above:
+// one pre-existing Product (PADDLE_SUPPORT_PRODUCT_ID), amount set fresh per checkout from
+// whatever the visitor picked in the donate widget. `cycle: 'one_time'` omits billing_cycle (a
+// single charge, no recurring subscription created); 'monthly'/'annual' sets it, so it becomes a
+// real recurring subscription that auto-charges the saved card each period, same mechanism as
+// every other plan (see resolveCheckoutPricing above). Works signed out — userId/userEmail are
+// optional since a visitor can donate without an account.
+export type SupportCheckoutParams = {
+  amountUsd: number;
+  cycle: 'one_time' | 'monthly' | 'annual';
+  userId?: string | null;
+  userEmail?: string | null;
+  successUrl: string;
+  cancelUrl: string;
+};
+
+export async function createSupportCheckout(params: SupportCheckoutParams): Promise<CheckoutSession> {
+  const productId = process.env.PADDLE_SUPPORT_PRODUCT_ID;
+  if (!productId) {
+    throw new Error('PADDLE_SUPPORT_PRODUCT_ID is not configured');
+  }
+  if (!(params.amountUsd > 0)) {
+    throw new Error('Invalid donation amount');
+  }
+
+  const checkoutUrl = getCheckoutUrl(params.successUrl);
+  const unitPriceCents = String(Math.round(params.amountUsd * 100));
+  const cycleLabel = params.cycle === 'monthly' ? 'monthly' : params.cycle === 'annual' ? 'yearly' : 'one-time';
+
+  const response = await paddleRequest<{
+    data?: { id: string };
+  }>('/transactions', {
+    method: 'POST',
+    body: JSON.stringify({
+      collection_mode: 'automatic',
+      items: [
+        {
+          price: {
+            product_id: productId,
+            description: `Support ilm AI (${cycleLabel})`,
+            unit_price: { amount: unitPriceCents, currency_code: 'USD' },
+            ...(params.cycle !== 'one_time'
+              ? { billing_cycle: { interval: params.cycle === 'annual' ? 'year' : 'month', frequency: 1 } }
+              : {}),
+          },
+          quantity: 1,
+        },
+      ],
+      checkout: { url: checkoutUrl },
+      custom_data: {
+        purpose: 'donation',
+        tier: 'FREE', // Not a plan upgrade — keeps resolveTier's fallback from mistaking this for one.
+        cycle: params.cycle,
+        user_id: params.userId || null,
+        user_email: params.userEmail || null,
         success_url: params.successUrl,
         cancel_url: params.cancelUrl,
       },

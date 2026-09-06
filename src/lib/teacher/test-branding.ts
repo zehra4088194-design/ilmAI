@@ -50,12 +50,16 @@ function safeUrl(value: string | null | undefined): string | null {
 /**
  * Resolves what a paper is allowed to show, given the teacher's plan.
  * - FREE: ad-gated, ilm AI watermark always forced on, no custom branding.
- * - PRO: no ad gate, ilm AI watermark still shown (clean, no forced ad), no custom branding.
- * - ELITE: may add a custom header/watermark and may hide the ilm AI mark.
+ * - PRO: no ad gate. May use their own saved institution/teacher name and logo as the paper's
+ *   header mark (auto-applied — see initialInstitutionName/initialLogoUrl in TeacherTestStudio) —
+ *   but ilm AI still credits itself (as a small side mark, not the header logo, once a custom logo
+ *   is set — see HeaderBrandMark in TestPaper.tsx) and cannot be fully hidden.
+ * - ELITE: everything PRO gets, plus the option to hide the ilm AI mark entirely.
  */
 export function resolveTestBranding(tier: PlanTier, elite: EliteBrandingInput = {}): ResolvedBranding {
-  if (tier === 'ELITE') {
-    const hidePlatformBranding = Boolean(elite.hidePlatformBranding);
+  if (tier === 'PRO' || tier === 'ELITE') {
+    // Only ELITE may fully remove ilm AI's own credit from the paper.
+    const hidePlatformBranding = tier === 'ELITE' && Boolean(elite.hidePlatformBranding);
     return {
       forceIlmAiWatermark: !hidePlatformBranding,
       requiresAdGate: false,
@@ -63,17 +67,6 @@ export function resolveTestBranding(tier: PlanTier, elite: EliteBrandingInput = 
       customWatermarkText: clean(elite.customWatermarkText, WATERMARK_TEXT_MAX),
       customWatermarkImageUrl: safeUrl(elite.customWatermarkImageUrl),
       hidePlatformBranding,
-    };
-  }
-
-  if (tier === 'PRO') {
-    return {
-      forceIlmAiWatermark: true,
-      requiresAdGate: false,
-      customHeader: null,
-      customWatermarkText: null,
-      customWatermarkImageUrl: null,
-      hidePlatformBranding: false,
     };
   }
 

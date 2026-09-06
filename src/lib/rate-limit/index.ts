@@ -459,12 +459,12 @@ export async function consumeOcrCredits(
 // they'd generated a fixed number of presentations that month, unrelated to their
 // actual credit balance. Same fix already applied to University Hub — see
 // checkUniversityFeatureLimit below for the original rationale.
-// presentationsMonthly<=0 is kept as a plan *access* gate (FREE tier doesn't get
-// the feature at all), and the slide-count cap is a per-request size limit, not a
-// usage-rate limit — neither of those is what credits are supposed to replace.
+// presentationsEnabled is kept as a plan *access* gate (FREE tier doesn't get the
+// feature at all on some audiences), and the slide-count cap is a per-request size
+// limit, not a usage-rate limit — neither of those is what credits are supposed to replace.
 export async function checkPresentationLimit(userId: string, tier: SubscriptionTier, slideCount: number) {
   const entitlement = await getAudiencePlanLimits(userId, tier);
-  if (entitlement.limits.presentationsMonthly <= 0 || slideCount > entitlement.limits.presentationSlidesMax) {
+  if (!entitlement.limits.presentationsEnabled || slideCount > entitlement.limits.presentationSlidesMax) {
     return {
       success: false,
       remaining: 0,
@@ -498,16 +498,13 @@ export async function checkFileTestLimit(userId: string, tier: SubscriptionTier)
   return checkAudienceFileLimit(userId, tier, 'file_test');
 }
 
-export async function checkUniversityHubLimit(userId: string, tier: SubscriptionTier) {
-  const plan = await getConfiguredPlan(tier);
-  return checkWeeklyLimit(userId, 'university_hub', plan.limits.universityHubWeekly);
-}
-
 // University Hub is fully credit-gated: the shared AI credit pool is the only thing that governs
-// access here now. This used to ALSO enforce plan.limits.universityHubWeekly as an independent
-// cap on top of credits — a FREE user with most of their weekly credit balance untouched could
-// still get blocked with an "upgrade" message just because they'd already used a small fixed
-// number of University Hub actions that week, unrelated to how many credits they had left.
+// access here now. This used to ALSO enforce a plan.limits.universityHubWeekly independent cap on
+// top of credits — a FREE user with most of their weekly credit balance untouched could still get
+// blocked with an "upgrade" message just because they'd already used a small fixed number of
+// University Hub actions that week, unrelated to how many credits they had left. That field (and
+// the weekly-scope check it powered) has been removed — every caller already only ever produced
+// the 'daily' scope below.
 export async function checkUniversityFeatureLimit(userId: string, tier: SubscriptionTier, featureKey: string) {
   const credits = await checkSharedAiLimit(userId, tier, featureKey);
   return { ...credits, scope: 'daily' as const };
@@ -520,12 +517,11 @@ export async function consumeUniversityFeatureCredits(userId: string, tier: Subs
 
 export async function getUniversityLimitExceededMessage(
   tier: SubscriptionTier,
-  scope: 'weekly' | 'daily',
+  scope: 'daily',
   featureLabel: string
 ) {
-  if (scope === 'daily') return getConfiguredLimitExceededMessage(tier, featureLabel);
-  const plan = await getConfiguredPlan(tier);
-  return `The weekly University Hub limit for ${featureLabel} (${plan.limits.universityHubWeekly}) has been reached. It resets next Monday.`;
+  void scope;
+  return getConfiguredLimitExceededMessage(tier, featureLabel);
 }
 
 export async function checkModelTierLimit(
