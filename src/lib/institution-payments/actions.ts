@@ -34,7 +34,7 @@ export async function getActiveStudentCount(institutionType: InstitutionType, or
 export type SubmitPaymentState = { success: boolean; message: string };
 
 // Master prompt Part 6.2: an institution owner/admin submits a manual payment
-// claim (JazzCash/Easypaisa/Bank/Card) after sending funds outside the app —
+// claim (JazzCash/Bank/Card) after sending funds outside the app —
 // this only records the claim as `pending_review`; it never activates the plan
 // itself (see reviewInstitutionPaymentVerification below for that).
 export async function submitInstitutionPaymentVerification(

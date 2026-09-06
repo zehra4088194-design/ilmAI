@@ -422,27 +422,18 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-muted-foreground text-sm">
-            One base monthly USD price per institution type. Annual and volume-tier prices are always computed
-            from this + the discount percentages below â€” never entered by hand on the checkout screen.
+            A single flat PKR rate per active enrolled student per month, same for schools and colleges.
+            Annual and volume-tier totals are always computed from this + the discount percentages below â€”
+            never entered by hand on the checkout screen.
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <NumberField
-              label="School base $/month"
-              value={settings.institutionPricing.school.monthlyUsd}
+              label="Price per student (PKR/month)"
+              value={settings.institutionPricing.perStudentPkr}
               onChange={(value) =>
                 setSettings((current) => ({
                   ...current,
-                  institutionPricing: { ...current.institutionPricing, school: { monthlyUsd: Math.max(0, value) } },
-                }))
-              }
-            />
-            <NumberField
-              label="College base $/month"
-              value={settings.institutionPricing.college.monthlyUsd}
-              onChange={(value) =>
-                setSettings((current) => ({
-                  ...current,
-                  institutionPricing: { ...current.institutionPricing, college: { monthlyUsd: Math.max(0, value) } },
+                  institutionPricing: { ...current.institutionPricing, perStudentPkr: Math.max(0, value) },
                 }))
               }
             />
@@ -469,7 +460,7 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
               }
             />
             <NumberField
-              label="Min students for volume discount"
+              label="Min students for volume discount (e.g. 201 = above 200)"
               value={settings.institutionPricing.volumeDiscountMinStudents}
               onChange={(value) =>
                 setSettings((current) => ({

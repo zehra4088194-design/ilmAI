@@ -113,7 +113,7 @@ export default async function CollegeAdminSettingsPage() {
               currentStudentCount={studentCount}
               volumeDiscountMinStudents={platformSettings.institutionPricing.volumeDiscountMinStudents}
               volumeDiscountPercent={platformSettings.institutionPricing.volumeDiscountPercent}
-              baseMonthlyUsd={platformSettings.institutionPricing.college.monthlyUsd}
+              perStudentPkr={platformSettings.institutionPricing.perStudentPkr}
               usdToPkr={platformSettings.exchangeRate.usdToPkr}
             />
           </CardContent>

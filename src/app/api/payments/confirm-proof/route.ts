@@ -2,13 +2,12 @@ import { createHash } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { checkDailyLimit } from '@/lib/rate-limit';
 
-// Manual JazzCash/Easypaisa/bank-transfer payment proof (institution plans, fee vouchers, parent
+// Manual JazzCash/bank-transfer payment proof (institution plans, fee vouchers, parent
 // plans, the student wallet upgrade flow) — replaces the old "Confirm on WhatsApp" link. Same
 // server-side formsubmit.co relay as /api/suggestions, so no phone number or email address ever
 // appears in client-bundled JS/HTML; the payer's own name/number and screenshot go straight to
-// this env var's inbox for an admin to verify against the JazzCash/Easypaisa transaction.
-const PAYMENT_PROOF_EMAIL =
-  process.env.PAYMENT_PROOF_EMAIL || process.env.MISTAKE_REPORT_EMAIL || process.env.CONTACT_EMAIL || 'noorhusnain792@gmail.com';
+// this env var's inbox for an admin to verify against the JazzCash transaction.
+const PAYMENT_PROOF_EMAIL = process.env.PAYMENT_PROOF_EMAIL || 'proof@ilmai.study';
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 

@@ -72,7 +72,7 @@ export function ParentPlanCheckout({
 
         <CardContent className="space-y-5 p-6">
           <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5">
-            <h2 className="text-lg font-bold">JazzCash</h2>
+            <h2 className="text-lg font-bold">JazzCash / Easypaisa</h2>
             <p className="text-muted-foreground mt-2 text-sm leading-6">
               Send exactly Rs. {totalPkr.toLocaleString()} (Rs. {pkrPrice.toLocaleString()} plan price + Rs.{' '}
               {feePkr.toLocaleString()} transaction fee), then send the transaction screenshot and your account email
@@ -84,16 +84,18 @@ export function ParentPlanCheckout({
                   key={option.label}
                   className="bg-background flex flex-col items-center gap-4 rounded-xl border p-4 text-center sm:flex-row sm:text-left"
                 >
-                  <div className="rounded-lg bg-white p-4">
-                    {walletQrDataUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- data: URL, Next/Image doesn't optimize these
-                      <img src={walletQrDataUrl} alt={`${option.label} payment QR`} width={132} height={132} />
-                    ) : (
-                      <div className="text-muted-foreground flex h-[132px] w-[132px] items-center justify-center text-center text-xs">
-                        QR unavailable
-                      </div>
-                    )}
-                  </div>
+                  {option.hasQr && (
+                    <div className="rounded-lg bg-white p-4">
+                      {walletQrDataUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- data: URL, Next/Image doesn't optimize these
+                        <img src={walletQrDataUrl} alt={`${option.label} payment QR`} width={132} height={132} />
+                      ) : (
+                        <div className="text-muted-foreground flex h-[132px] w-[132px] items-center justify-center text-center text-xs">
+                          QR unavailable
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-semibold uppercase tracking-wide text-amber-600">{option.label}</p>
                     <p className="text-lg font-bold">Rs. {totalPkr.toLocaleString()}</p>

@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 
 /**
- * Replaces the old "Confirm on WhatsApp" link on every manual JazzCash/Easypaisa/bank payment
+ * Replaces the old "Confirm on WhatsApp" link on every manual JazzCash/bank payment
  * screen (institution plans, fee vouchers, parent plans, the wallet upgrade flow) — the payer
  * types the name and number the transaction was made from and attaches a screenshot, which posts
  * straight to /api/payments/confirm-proof (a server-side formsubmit.co relay). No phone number or
@@ -75,7 +75,7 @@ export function PaymentProofForm({ context }: { context: string }) {
         <input
           value={phone}
           onChange={(event) => setPhone(event.target.value)}
-          placeholder="JazzCash/Easypaisa number used"
+          placeholder="JazzCash number used"
           maxLength={30}
           className="border-input bg-card h-10 w-full rounded-lg border px-3 text-sm"
         />

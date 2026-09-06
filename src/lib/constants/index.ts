@@ -34,8 +34,11 @@ export const CURRENCY_SYMBOLS: Record<Currency, string> = {
   PKR: 'Rs.',
 };
 
+// hasQr: true only for JazzCash — its number/expiry-embedded merchant QR (lib/payments/paymentQr.ts)
+// is confirmed to scan correctly in the JazzCash app. Easypaisa is deliberately number-only (no QR).
 export const MANUAL_PAYMENT_OPTIONS = [
-  { label: 'JazzCash', number: '03001088194', accountName: 'MUHAMMAD AHMED NOOR' },
+  { label: 'JazzCash', number: '03001088194', accountName: 'MUHAMMAD AHMED NOOR', hasQr: true },
+  { label: 'Easypaisa', number: '03001088194', accountName: 'MUHAMMAD AHMED NOOR', hasQr: false },
 ] as const;
 
 // Flat per-transaction processing fee added on top of every plan price shown across every

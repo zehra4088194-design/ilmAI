@@ -91,17 +91,19 @@ export type PlatformSubscriptionPlan = {
   features: string[];
 };
 
-// Master prompt Part 6.1: a single global base monthly USD price per institution
-// type, plus admin-set discount percentages â€” the annual/volume $ amounts are
-// always computed from these (monthly * 12 * (1 - discount%)), never hand-entered,
-// per the master prompt's explicit "never entered manually" instruction.
+// Master prompt Part 6.1: a flat PKR rate per active enrolled student per month
+// (same rate for school and college), plus admin-set discount percentages â€” the
+// annual/volume amounts are always computed from this (perStudent * students,
+// then the discounts), never hand-entered, per the master prompt's explicit
+// "never entered manually" instruction. Replaced the old flat per-institution
+// base price (school/college monthlyUsd) so cost scales with real enrollment.
 export type InstitutionPricingSettings = {
-  school: { monthlyUsd: number };
-  college: { monthlyUsd: number };
+  perStudentPkr: number;
   annualDiscountPercent: number;
   volumeDiscountPercent: number;
-  // An institution's plan-settings max_students at/above this qualifies for the
-  // volume discount â€” a simple single-tier stand-in for "by student-count tier".
+  // An institution's REAL active-enrollment count at/above this qualifies for
+  // the volume discount â€” a simple single-tier stand-in for "by student-count
+  // tier". Set to 201 by default so "more than 200 students" qualifies.
   volumeDiscountMinStudents: number;
 };
 
@@ -197,11 +199,10 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
     fetchedRate: null,
   },
   institutionPricing: {
-    school: { monthlyUsd: 10 },
-    college: { monthlyUsd: 20 },
+    perStudentPkr: 100,
     annualDiscountPercent: 15,
-    volumeDiscountPercent: 10,
-    volumeDiscountMinStudents: 500,
+    volumeDiscountPercent: 5,
+    volumeDiscountMinStudents: 201,
   },
   parentPlans: {
     freeChildrenMax: 1,
@@ -467,8 +468,7 @@ function normalizeInstitutionPricing(value: unknown): InstitutionPricingSettings
   const source = (value && typeof value === 'object' ? value : {}) as Partial<InstitutionPricingSettings>;
   const fallback = DEFAULT_PLATFORM_SETTINGS.institutionPricing;
   return {
-    school: { monthlyUsd: Math.max(0, numberOrFallback(source.school?.monthlyUsd, fallback.school.monthlyUsd)) },
-    college: { monthlyUsd: Math.max(0, numberOrFallback(source.college?.monthlyUsd, fallback.college.monthlyUsd)) },
+    perStudentPkr: Math.max(0, numberOrFallback(source.perStudentPkr, fallback.perStudentPkr)),
     annualDiscountPercent: Math.min(
       100,
       Math.max(0, numberOrFallback(source.annualDiscountPercent, fallback.annualDiscountPercent))
@@ -838,25 +838,31 @@ export function getPlanFromSettings(settings: PlatformSettings, tier: Subscripti
   return settings.subscriptionPlans[tier] || DEFAULT_PLATFORM_SETTINGS.subscriptionPlans[tier];
 }
 
-// Master prompt Part 6.1's "computed, never hand-entered" pricing: base monthly
-// USD -> apply the volume discount (if the institution's student count qualifies)
-// -> apply the annual discount (if billing annually) -> convert to PKR. This is
-// the single source of truth the institution checkout reads from.
+// Master prompt Part 6.1's "computed, never hand-entered" pricing: PKR-per-
+// student * real active student count -> apply the volume discount (if the
+// institution's student count qualifies) -> apply the annual discount (if
+// billing annually) -> derive USD from the admin-configured exchange rate for
+// display and for the Paddle card charge. This is the single source of truth
+// the institution checkout reads from. `institutionType` is kept for call-site
+// stability even though school and college currently share one flat rate.
 export function resolveInstitutionPricing(
   settings: PlatformSettings,
-  institutionType: 'school' | 'college',
+  _institutionType: 'school' | 'college',
   billingCycle: 'monthly' | 'annual',
   studentCount = 0
 ) {
   const pricing = settings.institutionPricing;
-  const baseMonthly = pricing[institutionType].monthlyUsd;
-  const volumeEligible = studentCount >= pricing.volumeDiscountMinStudents && pricing.volumeDiscountMinStudents > 0;
-  const afterVolume = volumeEligible ? baseMonthly * (1 - pricing.volumeDiscountPercent / 100) : baseMonthly;
-  const usd =
-    billingCycle === 'annual' ? afterVolume * 12 * (1 - pricing.annualDiscountPercent / 100) : afterVolume;
+  const students = Math.max(0, studentCount);
+  const baseMonthlyPkr = pricing.perStudentPkr * students;
+  const volumeEligible = students >= pricing.volumeDiscountMinStudents && pricing.volumeDiscountMinStudents > 0;
+  const afterVolume = volumeEligible ? baseMonthlyPkr * (1 - pricing.volumeDiscountPercent / 100) : baseMonthlyPkr;
+  const pkr = Math.round(
+    billingCycle === 'annual' ? afterVolume * 12 * (1 - pricing.annualDiscountPercent / 100) : afterVolume
+  );
+  const usdToPkr = Math.max(1, settings.exchangeRate.usdToPkr);
   return {
-    usd: Math.round(usd * 100) / 100,
-    pkr: convertUsdToPkr(usd, settings),
+    usd: Math.round((pkr / usdToPkr) * 100) / 100,
+    pkr,
     volumeDiscountApplied: volumeEligible,
   };
 }

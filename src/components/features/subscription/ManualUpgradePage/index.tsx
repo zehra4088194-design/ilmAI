@@ -231,7 +231,7 @@ export function ManualUpgradePage({
 
           {!paymentAvailability.consumptionOnly && !hasActiveSubscription && country === 'PK' && method === 'wallet' && (
             <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5">
-              <h2 className="text-lg font-bold">JazzCash</h2>
+              <h2 className="text-lg font-bold">JazzCash / Easypaisa</h2>
               <p className="text-muted-foreground mt-2 text-sm leading-6">
                 Send exactly Rs. {formatPrice(walletTotalPkr, 'PKR')} (Rs. {formatPrice(price, 'PKR')} plan price + Rs.{' '}
                 {formatPrice(feePkr, 'PKR')} transaction fee), then send the transaction screenshot and registered
@@ -246,17 +246,20 @@ export function ManualUpgradePage({
                     {/* Server-generated dynamic payment QR (today's price + Asia/Karachi
                         23:59 expiry, CRC recalculated every time — see
                         lib/payments/paymentQr.ts). p-4 keeps a wide white quiet zone
-                        around the modules so an in-app scanner can lock on reliably. */}
-                    <div className="rounded-lg bg-white p-4">
-                      {walletQrDataUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element -- data: URL, Next/Image doesn't optimize these
-                        <img src={walletQrDataUrl} alt={`${option.label} payment QR`} width={132} height={132} />
-                      ) : (
-                        <div className="text-muted-foreground flex h-[132px] w-[132px] items-center justify-center text-center text-xs">
-                          QR unavailable
-                        </div>
-                      )}
-                    </div>
+                        around the modules so an in-app scanner can lock on reliably.
+                        JazzCash only — Easypaisa (hasQr: false) is number-only. */}
+                    {option.hasQr && (
+                      <div className="rounded-lg bg-white p-4">
+                        {walletQrDataUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element -- data: URL, Next/Image doesn't optimize these
+                          <img src={walletQrDataUrl} alt={`${option.label} payment QR`} width={132} height={132} />
+                        ) : (
+                          <div className="text-muted-foreground flex h-[132px] w-[132px] items-center justify-center text-center text-xs">
+                            QR unavailable
+                          </div>
+                        )}
+                      </div>
+                    )}
                     <div className="min-w-0 flex-1">
                       <p className="text-xs font-semibold uppercase tracking-wide text-amber-600">{option.label}</p>
                       <p className="text-lg font-bold">Rs. {formatPrice(walletTotalPkr, 'PKR')}</p>

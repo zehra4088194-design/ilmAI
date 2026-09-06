@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generatePaymentQR, validateAmount } from '@/lib/payments/paymentQr';
 
-// Institution plan checkout (InstitutionPaymentCheckout) needs the real scannable JazzCash/
-// Easypaisa QR (amount + today's expiry embedded, same merchant account as the consumer
+// Institution plan checkout (InstitutionPaymentCheckout) needs the real scannable JazzCash
+// QR (amount + today's expiry embedded, same merchant account as the consumer
 // checkout — 03001088194, confirmed intentional, not a mistake) rather than a plain-text QR of
 // the phone number. The amount changes client-side (monthly/annual toggle), so this small route
 // regenerates it on demand instead of baking one QR into a server component prop.

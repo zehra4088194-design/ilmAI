@@ -10,7 +10,7 @@ import {
 } from './paymentQr';
 
 // Regression baseline: the exact QR the app owner personally tested and
-// confirmed scans in the JazzCash/Easypaisa in-app scanner.
+// confirmed scans in the JazzCash in-app scanner.
 const KNOWN_WORKING_PAYLOAD =
   '0002020102120202000424PK53JCMA300392300108819405041109071219082026083210042F66';
 const KNOWN_WORKING_AMOUNT = 1109;

@@ -128,7 +128,7 @@ export async function middleware(request: NextRequest) {
 
   // Google Play policy: an app distributed via Play cannot link out to any external
   // (non-Google-Play-billing) payment flow for digital goods — this includes the
-  // institutional/manual payment methods (JazzCash/Easypaisa/bank transfer/etc.) from the
+  // institutional/manual payment methods (JazzCash/bank transfer/etc.) from the
   // separate school/college billing work. EVERY checkout-like route, present or future,
   // must be added to both blocks below or the Play Store app risks rejection/suspension.
   if (playConsumptionOnly && (pathname === '/checkout' || pathname === '/pricing')) {

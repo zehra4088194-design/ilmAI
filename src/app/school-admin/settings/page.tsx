@@ -124,7 +124,7 @@ export default async function SchoolSettingsPage() {
             currentStudentCount={studentCount}
             volumeDiscountMinStudents={platformSettings.institutionPricing.volumeDiscountMinStudents}
             volumeDiscountPercent={platformSettings.institutionPricing.volumeDiscountPercent}
-            baseMonthlyUsd={platformSettings.institutionPricing.school.monthlyUsd}
+            perStudentPkr={platformSettings.institutionPricing.perStudentPkr}
             usdToPkr={platformSettings.exchangeRate.usdToPkr}
           />
         </CardContent>

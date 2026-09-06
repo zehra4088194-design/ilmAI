@@ -1,11 +1,11 @@
 import QRCode from 'qrcode';
 
-// Server-side generator for the dynamic JazzCash/Easypaisa-scannable payment QR
+// Server-side generator for the dynamic JazzCash-scannable payment QR
 // used on the manual wallet checkout ([tier]/page.tsx -> ManualUpgradePage).
 //
 // The payload FORMAT below (tags 00/01/02/04/05/07/10 + CRC-16/CCITT-FALSE) and
 // the static merchant identifier are taken verbatim from a QR the app owner
-// personally tested and confirmed scans successfully in the JazzCash/Easypaisa
+// personally tested and confirmed scans successfully in the JazzCash
 // in-app scanner (amount 1109, expiry 190820260832 -> payload
 // "0002020102120202000424PK53JCMA300392300108819405041109071219082026083210042F66",
 // CRC 2F66 — re-verified against crc16CCITT() below, matches exactly). Do not

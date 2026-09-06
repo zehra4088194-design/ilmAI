@@ -24,7 +24,7 @@ export type RolePlanFamilyKey = 'parent' | 'teacher' | 'university';
 // × 12 at a fixed 20% discount, same math as the "Save 20%" badge on the student plans, computed
 // client-side rather than stored. "Checkout" is a plain link into the same /subscription/[tier]
 // page (with ?family= added) the student plans use — that page shows both the Paddle card option
-// and the JazzCash/Easypaisa QR option, same full checkout experience students get, not a
+// and the JazzCash QR option, same full checkout experience students get, not a
 // stripped-down parent/teacher/university-only flow.
 const ANNUAL_DISCOUNT = 0.2;
 

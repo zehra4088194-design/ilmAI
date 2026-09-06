@@ -9,7 +9,7 @@ import { getPaymentAvailability } from '@/lib/payments';
 import { getSiteUrl } from '@/lib/utils/siteUrl';
 
 // Lets a principal (school/college owner or admin) pay for their institution's plan directly by
-// card instead of the manual JazzCash/Easypaisa/bank flow — see InstitutionPaymentCheckout's new
+// card instead of the manual JazzCash/bank flow — see InstitutionPaymentCheckout's new
 // "Pay now with card" button. The amount is always recomputed here from resolveInstitutionPricing()
 // using the organization's real current student count, never trusted from the client, so it can
 // never diverge from what's actually displayed on the settings page.

@@ -61,8 +61,8 @@ export async function POST(req: NextRequest) {
         : undefined;
     const billingCycle = body.billingCycle === 'annual' ? 'annual' : body.billingCycle === 'monthly' ? 'monthly' : null;
     // PayPro currently does not support automatic recurring subscriptions for
-    // the local wallet flow. Keep automated checkout on Paddle; Easypaisa and
-    // JazzCash remain manual verification flows from the upgrade page.
+    // the local wallet flow. Keep automated checkout on Paddle; JazzCash
+    // remains a manual verification flow from the upgrade page.
     const region: PaymentRegion = 'GLOBAL';
     const currency = 'USD';
     checkoutContext = { tier, billingCycle: billingCycle || undefined, region, planFamily };
