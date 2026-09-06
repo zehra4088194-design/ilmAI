@@ -10,7 +10,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
-    const results = await processQueuedResourceContexts(1);
+    // 5 is the function's own internal cap (see processQueuedResourceContexts) — process a full
+    // batch per 5-minute tick instead of one at a time, so a backlog (e.g. a bulk re-processing
+    // pass) drains in a reasonable time instead of trickling in for days.
+    const results = await processQueuedResourceContexts(5);
     return NextResponse.json({ status: 'success', processed: results.length, results });
   } catch (error) {
     return NextResponse.json(
