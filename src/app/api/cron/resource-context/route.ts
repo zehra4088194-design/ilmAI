@@ -10,10 +10,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
-    // 5 is the function's own internal cap (see processQueuedResourceContexts) — process a full
-    // batch per 5-minute tick instead of one at a time, so a backlog (e.g. a bulk re-processing
-    // pass) drains in a reasonable time instead of trickling in for days.
-    const results = await processQueuedResourceContexts(5);
+    // Reverted to 1: with the AI gateway currently timing out frequently (~90s per call), batching
+    // multiple resources per tick risked the combined wall-clock time exceeding this route's
+    // maxDuration (300s) and killing the whole request outright (observed live as repeated 500s
+    // from the cron container, worse than the original slow-but-steady 1-per-tick pace).
+    const results = await processQueuedResourceContexts(1);
     return NextResponse.json({ status: 'success', processed: results.length, results });
   } catch (error) {
     return NextResponse.json(
