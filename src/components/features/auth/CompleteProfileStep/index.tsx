@@ -225,9 +225,13 @@ export function CompleteProfileStep({
   if (whoAmI === null) {
     return (
       <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-6 px-6 py-10">
+        {/* Deliberately NOT "One more step" — the screen after picking a role below is titled
+            that, and reusing the same heading here made the two back-to-back screens read as the
+            same question asked twice (reported confusion: "I already answered this, why again?"),
+            even though this one asks role and the next asks education level. */}
         <div className="space-y-2 text-center">
-          <h1 className="text-xl font-semibold tracking-tight">One more step</h1>
-          <p className="text-muted-foreground text-sm">First, tell us who you are.</p>
+          <h1 className="text-xl font-semibold tracking-tight">Welcome to ilm AI 👋</h1>
+          <p className="text-muted-foreground text-sm">First, tell us who you are — this decides everything else below.</p>
         </div>
         <div className="grid gap-2">
           {(
@@ -309,7 +313,9 @@ export function CompleteProfileStep({
       <div className="space-y-2 text-center">
         <h1 className="text-xl font-semibold tracking-tight">One more step</h1>
         <p className="text-muted-foreground text-sm">
-          Confirm your education level and we will tailor the dashboard to your study goals.
+          {/* Explicitly ties back to the role just picked, instead of a generic prompt that reads
+              like a second, unrelated "who are you" question. */}
+          Thanks — as a student, tell us your education level and we will tailor the dashboard to your study goals.
         </p>
       </div>
 
