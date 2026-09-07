@@ -27,7 +27,7 @@ export default async function SchoolAdminLayout({ children }: { children: React.
         permissions={context.permissions}
         enabledModules={context.enabledModules}
       />
-      <main className="min-w-0 p-4 pt-20 sm:p-6 sm:pt-20 lg:ml-64 lg:p-8">
+      <main className="min-w-0 p-4 pt-18 sm:p-6 sm:pt-18 lg:ml-64 lg:p-8">
         <div className="mx-auto max-w-7xl">{children}</div>
       </main>
     </div>

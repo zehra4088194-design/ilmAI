@@ -230,14 +230,21 @@ export function SchoolAdminSidebar({
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="fixed top-4 left-4 z-50 flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-lg lg:hidden"
-        aria-label="Open school menu"
-      >
-        <Menu className="h-5 w-5" />
-      </button>
+      {/* Full-width sticky bar rather than a bare floating button — a bare fixed button sits
+          directly on top of whatever card happens to scroll under it (looked like a layout bug:
+          the button visually "cut into" card corners). A bar with its own opaque/blurred
+          background reads as an intentional header strip instead, matching DashboardNavbar's
+          pattern for the main student dashboard. */}
+      <div className="border-sidebar-border bg-sidebar/95 fixed inset-x-0 top-0 z-50 flex h-14 items-center border-b px-4 backdrop-blur-sm lg:hidden">
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-lg"
+          aria-label="Open school menu"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+      </div>
       <aside className="bg-sidebar border-sidebar-border fixed inset-y-0 left-0 z-40 hidden w-64 border-r lg:block">
         {content}
       </aside>
