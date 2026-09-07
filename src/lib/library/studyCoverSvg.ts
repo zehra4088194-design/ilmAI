@@ -73,9 +73,12 @@ function resolveMotif(subject?: string | null): SubjectMotif {
 
 // Every motif is just a handful of thin, low-opacity teal/gold strokes — decoration, never
 // competing with the text for attention (per the "subtle, never interfere with readability" rule).
+// Drawn around a local origin near (610, 260); generateStudyCoverSvg translates the whole group
+// down into the empty band below the content-type badge so it never overlaps CLASS/SUBJECT/
+// CHAPTER/title text above it (a computer-science monitor icon used to land right on "CLASS 11").
 function motifLayer(motif: SubjectMotif): string {
-  const teal = 'rgba(45,212,191,0.16)';
-  const gold = 'rgba(212,175,55,0.14)';
+  const teal = 'rgba(45,212,191,0.22)';
+  const gold = 'rgba(212,175,55,0.2)';
   switch (motif) {
     case 'physics':
       return `
@@ -189,9 +192,10 @@ export function generateStudyCoverSvg(input: StudyCoverInput): string {
 
   <rect width="794" height="1123" fill="url(#bg)"/>
   <!-- Safe-print border, well inside the physical trim edge -->
-  <rect x="28" y="28" width="738" height="1067" fill="none" stroke="rgba(212,175,55,0.35)" stroke-width="1.5"/>
+  <rect x="28" y="28" width="738" height="1067" rx="18" fill="none" stroke="rgba(212,175,55,0.35)" stroke-width="1.5"/>
 
-  <g opacity="0.9">${motifLayer(motif)}</g>
+  <!-- Subject motif, parked in the open band below the badge — see motifLayer's comment. -->
+  <g transform="translate(-213 565)">${motifLayer(motif)}</g>
 
   <!-- Brand header -->
   <text x="397" y="110" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="22"
