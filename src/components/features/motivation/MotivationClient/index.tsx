@@ -32,7 +32,11 @@ export function MotivationClient() {
       });
       const json = await res.json();
       if (!res.ok || json.status === 'error') throw new Error(json.error || 'Motivation could not be loaded.');
-      const next = Array.isArray(json.quotes) ? json.quotes.filter(Boolean) : [];
+      // Defensive: never show a "quote" that's actually unparsed JSON/markup — a server-side
+      // parsing bug once let a raw '{"quotes":["...' string straight through to this list.
+      const next = Array.isArray(json.quotes)
+        ? json.quotes.filter((q: unknown): q is string => typeof q === 'string' && q.trim().length > 0 && !/^[{[]/.test(q.trim()))
+        : [];
       if (next.length) {
         setQuotes(next);
         setIndex(0);
