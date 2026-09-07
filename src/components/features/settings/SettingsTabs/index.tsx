@@ -684,8 +684,7 @@ export function SettingsTabs({
                     ))}
                   </div>
                   <p className="text-muted-foreground mt-1.5 text-xs">
-                    For privacy, Study Buddies matches students of the same gender. This setting can be changed only
-                    once every 7 days.
+                    Used to personalize your theme and dashboard. This setting can be changed only once every 7 days.
                     {genderChangedAt
                       ? ` Next change: ${new Date(new Date(genderChangedAt).getTime() + 7 * 24 * 60 * 60 * 1000).toLocaleString()}.`
                       : ''}

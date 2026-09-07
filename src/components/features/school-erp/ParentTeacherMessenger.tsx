@@ -97,7 +97,14 @@ export function ParentTeacherMessenger({
         {selected && loading && <p className="text-muted-foreground p-6 text-center text-sm">Opening conversation...</p>}
         {selected && error && <p className="text-destructive p-6 text-center text-sm">{error}</p>}
         {selected && conversationId && !loading && (
-          <DirectMessageThread conversationId={conversationId} currentUserId={currentUserId} />
+          <DirectMessageThread
+            conversationId={conversationId}
+            currentUserId={currentUserId}
+            onDeleted={() => {
+              setSelected(null);
+              setConversationId(null);
+            }}
+          />
         )}
       </div>
     </div>

@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { CheckCheck, Send, MessageCircle } from 'lucide-react';
+import { CheckCheck, Send, MessageCircle, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton';
@@ -87,6 +87,18 @@ export function ParentMessageThread({
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const clearChat = async () => {
+    if (!window.confirm('Delete this chat? This removes every message and cannot be undone.')) return;
+    try {
+      const res = await fetch(`/api/parent/messages?linkId=${linkId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error();
+      setMessages([]);
+      toast.success('Chat deleted.');
+    } catch {
+      toast.error('The chat could not be deleted.');
+    }
+  };
+
   const send = async () => {
     if (!text.trim()) return;
     setSending(true);
@@ -122,9 +134,19 @@ export function ParentMessageThread({
         <span className="flex items-center gap-1.5 text-xs font-semibold">
           <MessageCircle className="h-3.5 w-3.5" /> Live Chat
         </span>
-        <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground text-xs">
-          Close
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={clearChat}
+            aria-label="Delete chat"
+            title="Delete chat"
+            className="text-muted-foreground hover:text-destructive"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+          <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground text-xs">
+            Close
+          </button>
+        </div>
       </div>
       <div className="bg-background/50 h-56 space-y-2 overflow-y-auto p-3">
         {messages.length === 0 && (

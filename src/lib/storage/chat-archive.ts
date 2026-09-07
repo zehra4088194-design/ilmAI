@@ -1,5 +1,5 @@
 import { gunzipSync, gzipSync } from 'node:zlib';
-import { getR2Object, putR2Object } from '@/lib/storage/r2';
+import { deleteR2Object, getR2Object, putR2Object } from '@/lib/storage/r2';
 
 export type ChatArchiveType = 'student' | 'parent';
 
@@ -159,4 +159,24 @@ export async function loadArchivedChatMessages<T extends { id: string; created_a
     })
   );
   return mergeChatMessages(...archives);
+}
+
+// "Delete chat" needs to clear archived history too, not just the live rows a caller separately
+// deletes from `table` — otherwise loadArchivedChatMessages would resurrect old messages into a
+// chat the user just deleted, the next time this conversationId's row (or a new one with the same
+// id, for student_chat_requests which reuses request ids on re-request) is opened.
+export async function deleteChatArchive(db: any, type: ChatArchiveType, conversationId: string) {
+  const { data } = await db
+    .from('chat_archives')
+    .select('object_key')
+    .eq('archive_type', type)
+    .eq('conversation_id', conversationId);
+
+  await Promise.all(
+    ((data || []) as ArchiveIndexRow[]).map(({ object_key: objectKey }) =>
+      deleteR2Object(objectKey).catch((error) => console.error(`Chat archive object could not be deleted (${objectKey}):`, error))
+    )
+  );
+
+  await db.from('chat_archives').delete().eq('archive_type', type).eq('conversation_id', conversationId);
 }

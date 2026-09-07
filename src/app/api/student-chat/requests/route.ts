@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { createNotificationIfEnabled } from '@/lib/notifications/preferences';
+import { deleteChatArchive } from '@/lib/storage/chat-archive';
 
 type ChatRequest = {
   id: string;
@@ -54,11 +55,7 @@ export async function GET() {
     );
   }
   const decorated = await decorateRequests(admin, data || []);
-  return NextResponse.json({
-    requests: decorated.filter(
-      (request: any) => request.requester?.gender && request.requester.gender === request.recipient?.gender
-    ),
-  });
+  return NextResponse.json({ requests: decorated });
 }
 
 export async function POST(req: NextRequest) {
@@ -103,12 +100,6 @@ export async function POST(req: NextRequest) {
   }
   if (recipient.id === user.id) {
     return NextResponse.json({ error: 'You cannot send a request to yourself.' }, { status: 400 });
-  }
-  if (recipient.gender !== me.gender) {
-    return NextResponse.json(
-      { error: 'Study Buddies privacy settings allow connections only between students of the same gender.' },
-      { status: 403 }
-    );
   }
 
   const { data: existing } = await chatsAdmin
@@ -168,14 +159,6 @@ export async function PATCH(req: NextRequest) {
 
   if (!existing) return NextResponse.json({ error: 'The pending request was not found.' }, { status: 404 });
 
-  const { data: participants } = await admin
-    .from('profiles')
-    .select('id, gender')
-    .in('id', [existing.requester_id, existing.recipient_id]);
-  if (!participants || participants.length !== 2 || participants[0]?.gender !== participants[1]?.gender) {
-    return NextResponse.json({ error: 'This request cannot be approved under the same-gender privacy rule.' }, { status: 403 });
-  }
-
   const { data, error } = await chatsAdmin
     .from('student_chat_requests')
     .update({ status, updated_at: new Date().toISOString() })
@@ -198,4 +181,33 @@ export async function PATCH(req: NextRequest) {
   });
 
   return NextResponse.json({ request: (await decorateRequests(admin, [data]))[0] });
+}
+
+// Deletes a chat entirely (the request row and, via student_chat_messages_request_id_fkey's
+// ON DELETE CASCADE, every message in it) — either participant can delete it, at any status
+// (pending, approved, or declined), same as clearing a WhatsApp chat.
+export async function DELETE(req: NextRequest) {
+  const user = await getUser();
+  if (!user) return NextResponse.json({ error: 'Login required' }, { status: 401 });
+
+  const requestId = req.nextUrl.searchParams.get('requestId');
+  if (!requestId) return NextResponse.json({ error: 'A request ID is required' }, { status: 400 });
+
+  const chatsAdmin = createServiceClient() as any;
+  const { data: deleted, error } = await chatsAdmin
+    .from('student_chat_requests')
+    .delete()
+    .eq('id', requestId)
+    .or(`requester_id.eq.${user.id},recipient_id.eq.${user.id}`)
+    .select('id')
+    .maybeSingle();
+
+  if (error) return NextResponse.json({ error: 'The chat could not be deleted.' }, { status: 500 });
+  if (!deleted) return NextResponse.json({ error: 'Chat not found.' }, { status: 404 });
+
+  await deleteChatArchive(chatsAdmin, 'student', requestId).catch((err) =>
+    console.error('Student chat archive cleanup failed:', err)
+  );
+
+  return NextResponse.json({ success: true });
 }

@@ -3,7 +3,7 @@ import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { createNotificationIfEnabled } from '@/lib/notifications/preferences';
 import { getParentLinkAccess } from '@/lib/parent/access';
-import { loadArchivedChatMessages, mergeChatMessages } from '@/lib/storage/chat-archive';
+import { deleteChatArchive, loadArchivedChatMessages, mergeChatMessages } from '@/lib/storage/chat-archive';
 
 async function getUser() {
   const supabase = await createClient();
@@ -121,4 +121,27 @@ export async function PATCH(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: 'The read status could not be updated.' }, { status: 500 });
   return NextResponse.json({ status: 'success' });
+}
+
+// Clears this chat's history (live rows + archived ones) — deliberately does NOT touch the
+// parent_student_links row itself, since that's the actual parent<->student relationship, not
+// just a chat thread. Either the parent or the linked student may clear it, same as GET/POST above.
+export async function DELETE(req: NextRequest) {
+  const user = await getUser();
+  if (!user) return NextResponse.json({ error: 'Login required' }, { status: 401 });
+
+  const linkId = req.nextUrl.searchParams.get('linkId');
+  if (!linkId) return NextResponse.json({ error: 'A link ID is required' }, { status: 400 });
+  const access = await getParentLinkAccess(linkId, user.id);
+  if (!access) return NextResponse.json({ error: 'This link does not belong to your account.' }, { status: 403 });
+
+  const chatsAdmin = createServiceClient() as any;
+  const { error } = await chatsAdmin.from('parent_messages').delete().eq('link_id', linkId);
+  if (error) return NextResponse.json({ error: 'The chat could not be deleted.' }, { status: 500 });
+
+  await deleteChatArchive(chatsAdmin, 'parent', linkId).catch((err) =>
+    console.error('Parent chat archive cleanup failed:', err)
+  );
+
+  return NextResponse.json({ success: true });
 }

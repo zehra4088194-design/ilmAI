@@ -343,9 +343,7 @@ export function CompleteProfileStep({
                 </button>
               ))}
             </div>
-            <p className="text-muted-foreground text-xs">
-              Only students of the same gender can connect in Study Buddies.
-            </p>
+            <p className="text-muted-foreground text-xs">Used to personalize your theme and dashboard.</p>
           </div>
         )}
         <div className="grid gap-2">

@@ -5,7 +5,7 @@ import type React from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { AlertTriangle, Check, CheckCheck, Crown, LockKeyhole, MessageCircle, Send, UserPlus, X } from 'lucide-react';
+import { AlertTriangle, Check, CheckCheck, Crown, LockKeyhole, MessageCircle, Send, Trash2, UserPlus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -215,6 +215,20 @@ export function StudentChatClient() {
     }
   };
 
+  const deleteChat = async (requestId: string) => {
+    if (!window.confirm('Delete this chat? This removes every message and cannot be undone.')) return;
+    try {
+      const res = await fetch(`/api/student-chat/requests?requestId=${requestId}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'The chat could not be deleted.');
+      setRequests((items) => items.filter((item) => item.id !== requestId));
+      if (selectedId === requestId) setSelectedId(null);
+      toast.success('Chat deleted.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'The chat could not be deleted.');
+    }
+  };
+
   const sendMessage = async () => {
     if (!selected || !message.trim()) return;
     setSending(true);
@@ -357,15 +371,28 @@ export function StudentChatClient() {
         </div>
 
         <Card className="border-primary/20 bg-card/95 min-h-[560px] overflow-hidden shadow-xl shadow-black/5">
-          <CardHeader className="border-border/70 bg-muted/20 border-b pb-4">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <MessageCircle className="text-primary h-5 w-5" />
-              {selectedBuddy ? selectedBuddy.full_name : 'Select a buddy'}
-            </CardTitle>
-            {selectedBuddy && (
-              <p className="text-muted-foreground text-xs">
-                {selectedBuddy.username ? `@${selectedBuddy.username}` : selectedBuddy.email}
-              </p>
+          <CardHeader className="border-border/70 bg-muted/20 flex-row items-center justify-between border-b pb-4">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <MessageCircle className="text-primary h-5 w-5" />
+                {selectedBuddy ? selectedBuddy.full_name : 'Select a buddy'}
+              </CardTitle>
+              {selectedBuddy && (
+                <p className="text-muted-foreground text-xs">
+                  {selectedBuddy.username ? `@${selectedBuddy.username}` : selectedBuddy.email}
+                </p>
+              )}
+            </div>
+            {selected && (
+              <Button
+                size="icon-sm"
+                variant="ghost"
+                onClick={() => deleteChat(selected.id)}
+                aria-label="Delete chat"
+                title="Delete chat"
+              >
+                <Trash2 className="text-destructive h-4 w-4" />
+              </Button>
             )}
           </CardHeader>
           <CardContent className="flex h-[500px] flex-col p-0">

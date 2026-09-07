@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { CheckCheck, Send } from 'lucide-react';
+import { CheckCheck, Send, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton';
@@ -23,7 +23,17 @@ interface Message {
  * parent<->teacher messaging; reusable as-is for any future relationship built on the same
  * direct_conversations/direct_messages tables (see the Phase 1a migration).
  */
-export function DirectMessageThread({ conversationId, currentUserId }: { conversationId: string; currentUserId: string }) {
+export function DirectMessageThread({
+  conversationId,
+  currentUserId,
+  onDeleted,
+}: {
+  conversationId: string;
+  currentUserId: string;
+  // Lets the caller (e.g. ParentTeacherMessenger) clear its own "selected contact" state once
+  // this conversation is gone, instead of leaving a dead thread selected with nothing to show.
+  onDeleted?: () => void;
+}) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
@@ -71,8 +81,30 @@ export function DirectMessageThread({ conversationId, currentUserId }: { convers
     }
   };
 
+  const deleteChat = async () => {
+    if (!window.confirm('Delete this chat? This removes every message and cannot be undone.')) return;
+    try {
+      const res = await fetch(`/api/messages/${conversationId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error();
+      toast.success('Chat deleted.');
+      onDeleted?.();
+    } catch {
+      toast.error('The chat could not be deleted.');
+    }
+  };
+
   return (
     <div className="border-border overflow-hidden rounded-xl border">
+      <div className="border-border bg-muted/30 flex items-center justify-end border-b px-3 py-1.5">
+        <button
+          onClick={deleteChat}
+          aria-label="Delete chat"
+          title="Delete chat"
+          className="text-muted-foreground hover:text-destructive"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      </div>
       <div className="bg-background/50 h-64 space-y-2 overflow-y-auto p-3">
         {messages.length === 0 && (
           <p className="text-muted-foreground mt-4 text-center text-xs">No messages yet. Say hello to start.</p>

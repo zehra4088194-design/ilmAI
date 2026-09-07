@@ -78,3 +78,30 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ con
 
   return NextResponse.json({ message });
 }
+
+// Deletes the conversation (and, via direct_messages' ON DELETE CASCADE, every message in it) —
+// either participant may delete it. RLS on direct_conversations has no delete policy for regular
+// users, so this goes through the admin client after confirming the caller is actually a
+// participant — same trust boundary this route already uses elsewhere.
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ conversationId: string }> }) {
+  const { conversationId } = await params;
+  const { supabase, user } = await getUser();
+  if (!user) return NextResponse.json({ error: 'Login required' }, { status: 401 });
+
+  const db = supabase as any;
+  const { data: conversation } = await db
+    .from('direct_conversations')
+    .select('id, participant_one_id, participant_two_id')
+    .eq('id', conversationId)
+    .maybeSingle();
+  if (!conversation) return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
+  if (user.id !== conversation.participant_one_id && user.id !== conversation.participant_two_id) {
+    return NextResponse.json({ error: 'This conversation does not belong to your account.' }, { status: 403 });
+  }
+
+  const admin = (await createAdminClient()) as any;
+  const { error } = await admin.from('direct_conversations').delete().eq('id', conversationId);
+  if (error) return NextResponse.json({ error: 'The chat could not be deleted.' }, { status: 500 });
+
+  return NextResponse.json({ success: true });
+}
