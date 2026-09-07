@@ -677,7 +677,10 @@ export function RegisterForm() {
     <div className={cn(isYoungChild && 'rounded-3xl bg-gradient-to-b from-sky-50 via-violet-50 to-amber-50 p-4 dark:from-sky-950/40 dark:via-violet-950/40 dark:to-amber-950/40')}>
       <div className="mb-5">
         <div className="mb-2 flex items-center justify-between gap-4">
-          <div>
+          {/* min-w-0 lets this block shrink/wrap instead of forcing its own width (a flex item's
+              default min-width is auto) — without it, a long step description pushed the step-count
+              badge on the right past the edge of narrow screens instead of wrapping under it. */}
+          <div className="min-w-0">
             <h1 className={cn('text-2xl font-bold', isYoungChild && 'text-violet-700 dark:text-violet-200')}>
               {isYoungChild ? '🎈 ' : ''}
               {t('auth.register.title')}
