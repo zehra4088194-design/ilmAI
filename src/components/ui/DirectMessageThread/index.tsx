@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { CheckCheck, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton';
 import { cn } from '@/lib/utils/cn';
 import { toast } from 'sonner';
 
@@ -96,6 +97,7 @@ export function DirectMessageThread({ conversationId, currentUserId }: { convers
         <div ref={bottomRef} />
       </div>
       <div className="border-border flex gap-2 border-t p-2">
+        <EmojiPickerButton onSelect={(emoji) => setText((current) => current + emoji)} />
         <Input
           value={text}
           onChange={(e) => setText(e.target.value)}

@@ -67,6 +67,22 @@ export default async function SchoolPortalPage() {
           return { profileId: item.profile_id, fullName: profile?.full_name || 'Teacher' };
         })
       : [];
+  // The principal is whichever member has member_role 'owner' (self-service Principal signup was
+  // removed — see RegisterForm's comment — so this is always exactly the platform-admin-
+  // provisioned owner). Separate small query since messagingContacts above only fetches teachers.
+  let principalContacts: { profileId: string; fullName: string }[] = [];
+  if (role === 'parent') {
+    const { data: principals } = await (supabase as any)
+      .from('school_memberships')
+      .select('profile_id, profiles(full_name)')
+      .eq('organization_id', context.organization.id)
+      .eq('member_role', 'owner')
+      .eq('status', 'active');
+    principalContacts = (principals || []).map((item: any) => {
+      const profile = Array.isArray(item.profiles) ? item.profiles[0] : item.profiles;
+      return { profileId: item.profile_id, fullName: profile?.full_name || 'Principal' };
+    });
+  }
 
   return (
     <main className="bg-background min-h-screen">
@@ -396,6 +412,21 @@ export default async function SchoolPortalPage() {
                 contacts={messagingContacts}
                 organizationId={context.organization.id}
                 currentUserId={context.userId}
+              />
+            </CardContent>
+          </Card>
+        )}
+        {role === 'parent' && principalContacts.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Message the principal</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ParentTeacherMessenger
+                contacts={principalContacts}
+                organizationId={context.organization.id}
+                currentUserId={context.userId}
+                relationshipType="parent_principal"
               />
             </CardContent>
           </Card>

@@ -10,7 +10,7 @@ import { CollegeActionForm } from '@/components/features/college-erp/CollegeActi
 import { ParentTeacherMessenger } from '@/components/features/school-erp/ParentTeacherMessenger';
 import { createCollegeContactMessage, createCollegeLeaveRequest } from '@/lib/college-erp/actions';
 import { requireCollegeContext } from '@/lib/college-erp/access';
-import { getCollegeParentMessagingContacts, getCollegePortalData } from '@/lib/college-erp/queries';
+import { getCollegeParentMessagingContacts, getCollegePortalData, getCollegePrincipalContacts } from '@/lib/college-erp/queries';
 
 // Mirrors src/app/school/page.tsx, minus the PTM (parent-teacher meeting) section — that subsystem
 // was never ported for college (see docs/SCHOOL_COLLEGE_SEPARATION_TODO.md).
@@ -26,6 +26,7 @@ export default async function CollegePortalPage() {
   const data = await getCollegePortalData(supabase, context);
   const role = context.membership.member_role;
   const messagingContacts = role === 'parent' ? await getCollegeParentMessagingContacts(supabase, context) : [];
+  const principalContacts = role === 'parent' ? await getCollegePrincipalContacts(supabase, context) : [];
   // No org-switcher UI yet for college (school's SchoolOrganizationSwitcher wasn't ported) — a
   // member of more than one college organization only sees their highest-priority one for now.
   const absent = data.attendance.filter((item: any) => item.status === 'absent').length;
@@ -155,6 +156,20 @@ export default async function CollegePortalPage() {
                 organizationId={context.organization.id}
                 currentUserId={context.userId}
                 contextType="college"
+              />
+            </CardContent>
+          </Card>
+        )}
+        {role === 'parent' && principalContacts.length > 0 && (
+          <Card>
+            <CardHeader><CardTitle className="text-base">Message the principal</CardTitle></CardHeader>
+            <CardContent>
+              <ParentTeacherMessenger
+                contacts={principalContacts}
+                organizationId={context.organization.id}
+                currentUserId={context.userId}
+                contextType="college"
+                relationshipType="parent_principal"
               />
             </CardContent>
           </Card>

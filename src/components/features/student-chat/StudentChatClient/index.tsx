@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 import { cn } from '@/lib/utils/cn';
@@ -464,6 +465,7 @@ export function StudentChatClient() {
                       </p>
                     )}
                     <div className="flex gap-2">
+                      <EmojiPickerButton onSelect={(emoji) => setMessage((current) => current + emoji)} disabled={!isOnline} />
                       <Input
                         value={message}
                         onChange={(event) => setMessage(event.target.value)}

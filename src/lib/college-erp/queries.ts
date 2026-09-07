@@ -1009,3 +1009,21 @@ export async function getCollegeParentMessagingContacts(supabase: SupabaseClient
     return { profileId: teacher.profile_id, fullName: profile?.full_name || 'Teacher', avatarUrl: profile?.avatar_url || null };
   });
 }
+
+// Mirrors getCollegeParentMessagingContacts above, for the parent_principal relationship_type —
+// the principal is whichever member has member_role 'owner' (self-service Principal signup was
+// removed on purpose, so this is always the platform-admin-provisioned owner).
+export async function getCollegePrincipalContacts(supabase: SupabaseClient, context: CollegeContext) {
+  const db = supabase as any;
+  const { data: principals } = await db
+    .from('college_memberships')
+    .select('profile_id, profiles(full_name, avatar_url)')
+    .eq('organization_id', context.organization.id)
+    .eq('member_role', 'owner')
+    .eq('status', 'active');
+
+  return (principals || []).map((item: any) => {
+    const profile = Array.isArray(item.profiles) ? item.profiles[0] : item.profiles;
+    return { profileId: item.profile_id, fullName: profile?.full_name || 'Principal', avatarUrl: profile?.avatar_url || null };
+  });
+}

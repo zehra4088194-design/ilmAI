@@ -7,21 +7,24 @@ import { DirectMessageThread } from '@/components/ui/DirectMessageThread';
 type Contact = { profileId: string; fullName: string; avatarUrl?: string | null; context?: string };
 
 /**
- * Phase 2c — parent<->teacher messaging UI on top of the Phase 1a direct_conversations
- * infrastructure. Same component renders on all four sides (school-admin/communication and
- * /school for the school portal, college-admin/communication and /college for the college
- * portal) — only `contacts`/`contextType` differ per caller.
+ * Phase 2c — parent<->teacher (and, since the parent_principal relationship_type, parent<->
+ * principal too) messaging UI on top of the Phase 1a direct_conversations infrastructure. Same
+ * component renders on all four sides (school-admin/communication and /school for the school
+ * portal, college-admin/communication and /college for the college portal) — only
+ * `contacts`/`contextType`/`relationshipType` differ per caller.
  */
 export function ParentTeacherMessenger({
   contacts,
   organizationId,
   currentUserId,
   contextType = 'school',
+  relationshipType = 'parent_teacher',
 }: {
   contacts: Contact[];
   organizationId: string;
   currentUserId: string;
   contextType?: 'school' | 'college';
+  relationshipType?: 'parent_teacher' | 'parent_principal';
 }) {
   const [selected, setSelected] = useState<Contact | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -40,7 +43,7 @@ export function ParentTeacherMessenger({
         body: JSON.stringify({
           contextType,
           organizationId,
-          relationshipType: 'parent_teacher',
+          relationshipType,
           otherProfileId: contact.profileId,
         }),
       });
