@@ -16,6 +16,7 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/TextLayer.css';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils/cn';
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
@@ -34,11 +35,31 @@ const AUTO_SCROLL_SPEEDS = [
 const MOUNT_ROOT_MARGIN = '1400px 0px 1400px 0px';
 const A4_ASPECT = 210 / 297; // width / height fallback until a page tells us its real shape
 
+const DEFAULT_ZOOM = 1;
+const MIN_ZOOM = 0.7;
+const MAX_ZOOM = 2.25;
+// Chrome's built-in PDF viewer's "100%" rendered noticeably smaller than this viewer's old 100%
+// (users compared the two directly — ours at 70% zoom looked the same size as Chrome's 100%).
+// Rather than just changing the default zoom (which would leave the "100%" label lying about
+// what it shows), the base width itself is scaled down so 100% here now IS what 70% used to
+// render — the zoom control's own range/labels are otherwise untouched.
+const BASE_WIDTH_SCALE = 0.7;
+
+// The margin around the page stack used to be a flat slate-200/950 regardless of which PDF
+// variant loaded, so a dark-mode PDF sat on a plain light-gray (or the reader shell's near-black)
+// strip on either side instead of blending into the page. These reuse the app's own theme preview
+// backgrounds (see lib/constants/themes.ts) — blue for dark PDFs, the paper-toned one for light.
+const MODE_BACKGROUND: Record<'dark' | 'light', string> = {
+  dark: '/background-blue.png',
+  light: '/background-light.png',
+};
+
 export function ProtectedPdfViewer({
   file: sourceFile,
   title,
   className,
   toolbarVisible = true,
+  mode,
   onLoadError,
 }: {
   // Blob for an already-downloaded file (offline reads); a real same-origin https:// URL string
@@ -53,6 +74,9 @@ export function ProtectedPdfViewer({
   // Driven by the parent's fullscreen auto-hide timer — false fades this toolbar out so only the
   // page content fills the screen. Always true outside fullscreen.
   toolbarVisible?: boolean;
+  // Which PDF variant is loaded (see ProtectedResourceReader's effectiveMode) — picks the margin
+  // background around the page stack. Omitted falls back to the plain slate-200 it always had.
+  mode?: 'dark' | 'light';
   // Bubbles a load failure up to the parent's richer error UI (retry + "open original file"),
   // instead of only the small inline error card below.
   onLoadError?: (message: string) => void;
@@ -66,10 +90,10 @@ export function ProtectedPdfViewer({
   const [containerWidth, setContainerWidth] = useState(0);
   const [pages, setPages] = useState(0);
   const [page, setPage] = useState(1);
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState(DEFAULT_ZOOM);
   // Mirrors `zoom` for the pinch-gesture effect below, which only attaches its listeners once
   // (empty deps, so its closures would otherwise see the zoom value from first render forever).
-  const zoomRef = useRef(1);
+  const zoomRef = useRef(DEFAULT_ZOOM);
   useEffect(() => {
     zoomRef.current = zoom;
   }, [zoom]);
@@ -124,7 +148,7 @@ export function ProtectedPdfViewer({
   useEffect(() => {
     setPages(0);
     setPage(1);
-    setZoom(1);
+    setZoom(DEFAULT_ZOOM);
     setRotation(0);
     setError(null);
     setAutoScrolling(false);
@@ -281,7 +305,7 @@ export function ProtectedPdfViewer({
     const onTouchMove = (event: TouchEvent) => {
       if (!active || event.touches.length !== 2 || !pinchStartDistance) return;
       event.preventDefault();
-      const targetZoom = Math.min(2.25, Math.max(0.7, pinchStartZoom * (distanceBetween(event.touches) / pinchStartDistance)));
+      const targetZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, pinchStartZoom * (distanceBetween(event.touches) / pinchStartDistance)));
       liveScale = targetZoom / pinchStartZoom;
       pinchTarget.style.transform = `scale(${liveScale})`;
     };
@@ -314,7 +338,7 @@ export function ProtectedPdfViewer({
     };
   }, []);
 
-  const fittedWidth = Math.max(240, Math.min(containerWidth - 32, 1100));
+  const fittedWidth = Math.max(240, Math.min(containerWidth - 32, 1100)) * BASE_WIDTH_SCALE;
   const renderedWidth = Math.round(fittedWidth * zoom);
   const rotated90 = rotation === 90 || rotation === 270;
   const documentAspect = pageAspects[1] ?? A4_ASPECT;
@@ -348,9 +372,9 @@ export function ProtectedPdfViewer({
         event.preventDefault();
         jumpToPage(Math.max(1, page - 1));
       } else if (event.key === '+' || event.key === '=') {
-        setZoom((value) => Math.min(2.25, Number((value + 0.15).toFixed(2))));
+        setZoom((value) => Math.min(MAX_ZOOM, Number((value + 0.15).toFixed(2))));
       } else if (event.key === '-') {
-        setZoom((value) => Math.max(0.7, Number((value - 0.15).toFixed(2))));
+        setZoom((value) => Math.max(MIN_ZOOM, Number((value - 0.15).toFixed(2))));
       }
     };
     frame.addEventListener('keydown', onKeyDown);
@@ -392,7 +416,12 @@ export function ProtectedPdfViewer({
     <div
       ref={frameRef}
       tabIndex={-1}
-      className={cn('bg-slate-200 text-slate-950 outline-none', className)}
+      className={cn('text-slate-950 outline-none', !mode && 'bg-slate-200', className)}
+      style={
+        mode
+          ? { backgroundImage: `url(${MODE_BACKGROUND[mode]})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+          : undefined
+      }
     >
       <div className="flex h-full min-h-0 flex-col">
         <div
@@ -401,7 +430,7 @@ export function ProtectedPdfViewer({
             // Height collapses along with opacity (not just opacity alone) so the PDF viewport
             // below actually reclaims the toolbar's space in fullscreen instead of leaving a
             // blank invisible strip at the top.
-            toolbarShown ? 'min-h-12 border-b opacity-100' : 'pointer-events-none min-h-0 border-b-0 py-0 opacity-0',
+            toolbarShown ? 'min-h-9 border-b opacity-100' : 'pointer-events-none min-h-0 border-b-0 py-0 opacity-0',
           )}
         >
           <div className="flex min-w-0 items-center gap-1">
@@ -439,49 +468,39 @@ export function ProtectedPdfViewer({
             >
               {autoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
             </Button>
-            <div className="relative">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => setSpeedMenuOpen((value) => !value)}
-                aria-label="Auto-scroll speed"
-                title="Auto-scroll speed"
-              >
-                <Gauge className="h-4 w-4" />
-              </Button>
-              {speedMenuOpen && (
-                <>
-                  {/* Backdrop to close the menu on outside click/tap */}
-                  <div className="fixed inset-0 z-[5]" onClick={() => setSpeedMenuOpen(false)} />
-                  <div className="absolute right-0 top-full z-10 mt-1 w-24 rounded-lg border border-slate-200 bg-white p-1 shadow-lg">
-                    {AUTO_SCROLL_SPEEDS.map((speed, index) => (
-                      <button
-                        key={speed.label}
-                        type="button"
-                        onClick={() => {
-                          setSpeedIndex(index);
-                          setSpeedMenuOpen(false);
-                        }}
-                        className={cn(
-                          'block w-full rounded-md px-2 py-1 text-left text-xs font-medium',
-                          index === speedIndex ? 'bg-primary/10 text-primary' : 'text-slate-600 hover:bg-slate-100',
-                        )}
-                      >
-                        {speed.label}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
+            {/* DropdownMenu (not the previous hand-rolled absolute-positioned div) — that version
+                lived inside this toolbar's `overflow-hidden` (needed for the collapse animation
+                above), which clipped the popover instead of showing it: reported as the speed
+                menu "going behind the PDF, never appearing in front." Radix portals
+                DropdownMenuContent straight to document.body, escaping that clip entirely. */}
+            <DropdownMenu open={speedMenuOpen} onOpenChange={setSpeedMenuOpen}>
+              <DropdownMenuTrigger asChild>
+                <Button type="button" variant="ghost" size="icon-sm" aria-label="Auto-scroll speed" title="Auto-scroll speed">
+                  <Gauge className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-24 bg-white p-1 text-slate-950">
+                {AUTO_SCROLL_SPEEDS.map((speed, index) => (
+                  <DropdownMenuItem
+                    key={speed.label}
+                    onSelect={() => setSpeedIndex(index)}
+                    className={cn(
+                      'justify-center text-xs font-medium',
+                      index === speedIndex ? 'bg-primary/10 text-primary' : 'text-slate-600',
+                    )}
+                  >
+                    {speed.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <div className="mx-1 h-5 w-px bg-slate-200" />
             <Button
               type="button"
               variant="ghost"
               size="icon-sm"
-              onClick={() => setZoom((value) => Math.max(0.7, Number((value - 0.15).toFixed(2))))}
-              disabled={zoom <= 0.7}
+              onClick={() => setZoom((value) => Math.max(MIN_ZOOM, Number((value - 0.15).toFixed(2))))}
+              disabled={zoom <= MIN_ZOOM}
               aria-label="Zoom out"
             >
               <Minus className="h-4 w-4" />
@@ -491,8 +510,8 @@ export function ProtectedPdfViewer({
               type="button"
               variant="ghost"
               size="icon-sm"
-              onClick={() => setZoom((value) => Math.min(2.25, Number((value + 0.15).toFixed(2))))}
-              disabled={zoom >= 2.25}
+              onClick={() => setZoom((value) => Math.min(MAX_ZOOM, Number((value + 0.15).toFixed(2))))}
+              disabled={zoom >= MAX_ZOOM}
               aria-label="Zoom in"
             >
               <Plus className="h-4 w-4" />
