@@ -123,8 +123,33 @@ export function isUniversityStorageConfigured() {
   return Boolean(getUniversityConfig());
 }
 
+// Fifth B2 account/bucket, dedicated to chat attachments (Study Buddies, parent<->student,
+// parent<->teacher/principal) — its own account/application key like audio and university above,
+// kept PRIVATE (never public) since chat attachments are personal, not published content. Every
+// read goes through a signed URL (getR2SignedUrl) or a server-side proxy route, never a public
+// bucket URL.
+function getChatConfig(): R2Config | null {
+  const endpoint = process.env.CHAT_STORAGE_ENDPOINT || process.env.OBJECT_STORAGE_ENDPOINT || '';
+  const accessKeyId = process.env.CHAT_STORAGE_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.CHAT_STORAGE_SECRET_ACCESS_KEY;
+  const bucket = process.env.CHAT_STORAGE_BUCKET;
+  const region = process.env.CHAT_STORAGE_REGION || process.env.OBJECT_STORAGE_REGION || 'auto';
+  const forcePathStyle = Boolean(process.env.CHAT_STORAGE_FORCE_PATH_STYLE || process.env.OBJECT_STORAGE_FORCE_PATH_STYLE);
+  return endpoint && accessKeyId && secretAccessKey && bucket
+    ? { accessKeyId, secretAccessKey, bucket, endpoint, region, forcePathStyle }
+    : null;
+}
+
+export function getChatBucketName(): string | null {
+  return getChatConfig()?.bucket || null;
+}
+
+export function isChatStorageConfigured() {
+  return Boolean(getChatConfig());
+}
+
 function allConfigs(): R2Config[] {
-  return [getPrimaryConfig(), getSecondaryConfig(), getAudioConfig(), getUniversityConfig()].filter(
+  return [getPrimaryConfig(), getSecondaryConfig(), getAudioConfig(), getUniversityConfig(), getChatConfig()].filter(
     (c): c is R2Config => c !== null
   );
 }

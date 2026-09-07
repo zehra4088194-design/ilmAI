@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { createNotificationIfEnabled } from '@/lib/notifications/preferences';
+import { resolveAttachmentSignedUrl, uploadChatAttachment } from '@/lib/storage/chat-attachments';
 
 /**
  * Messages within one direct_conversations thread. RLS on direct_conversations /
@@ -25,7 +26,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ con
 
   const { data: messages, error } = await db
     .from('direct_messages')
-    .select('id, conversation_id, sender_id, content, read_at, created_at')
+    .select('id, conversation_id, sender_id, content, read_at, created_at, attachment_url, attachment_name, attachment_type, attachment_size_kb')
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: true })
     .limit(200);
@@ -38,7 +39,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ con
     .neq('sender_id', user.id)
     .is('read_at', null);
 
-  return NextResponse.json({ messages: messages || [] });
+  const withUrls = await Promise.all(
+    (messages || []).map(async (m: any) => ({ ...m, attachment_signed_url: await resolveAttachmentSignedUrl(m.attachment_url) }))
+  );
+  return NextResponse.json({ messages: withUrls });
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ conversationId: string }> }) {
@@ -46,8 +50,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ con
   const { supabase, user } = await getUser();
   if (!user) return NextResponse.json({ error: 'Login required' }, { status: 401 });
 
-  const { content } = await req.json();
-  if (!content?.trim()) return NextResponse.json({ error: 'Message content is required' }, { status: 400 });
+  const contentType = req.headers.get('content-type') || '';
+  let content = '';
+  let file: File | null = null;
+  if (contentType.includes('multipart/form-data')) {
+    const formData = await req.formData();
+    content = ((formData.get('content') as string | null) || '').trim();
+    file = (formData.get('file') as File | null) || null;
+  } else {
+    const body = await req.json();
+    content = typeof body.content === 'string' ? body.content.trim() : '';
+  }
+  if (!content && !file) return NextResponse.json({ error: 'Message content or a file is required' }, { status: 400 });
 
   const db = supabase as any;
   const { data: conversation } = await db
@@ -56,13 +70,37 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ con
     .eq('id', conversationId)
     .maybeSingle();
   if (!conversation) return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
+  if (user.id !== conversation.participant_one_id && user.id !== conversation.participant_two_id) {
+    return NextResponse.json({ error: 'This conversation does not belong to your account.' }, { status: 403 });
+  }
+
+  let attachment: { url: string; name: string; type: string; sizeKb: number } | null = null;
+  if (file) {
+    try {
+      attachment = await uploadChatAttachment(file, `direct-messages/${conversationId}`);
+    } catch (uploadError) {
+      return NextResponse.json(
+        { error: uploadError instanceof Error ? uploadError.message : 'The file could not be uploaded.' },
+        { status: 400 }
+      );
+    }
+  }
 
   const { data: message, error } = await db
     .from('direct_messages')
-    .insert({ conversation_id: conversationId, sender_id: user.id, content: content.trim().slice(0, 4000) })
+    .insert({
+      conversation_id: conversationId,
+      sender_id: user.id,
+      content: content.slice(0, 4000),
+      attachment_url: attachment?.url || null,
+      attachment_name: attachment?.name || null,
+      attachment_type: attachment?.type || null,
+      attachment_size_kb: attachment?.sizeKb || null,
+    })
     .select()
     .single();
   if (error) return NextResponse.json({ error: 'The message could not be sent.' }, { status: 500 });
+  message.attachment_signed_url = await resolveAttachmentSignedUrl(message.attachment_url);
 
   const recipientId =
     conversation.participant_one_id === user.id ? conversation.participant_two_id : conversation.participant_one_id;
@@ -71,7 +109,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ con
     user_id: recipientId,
     type: 'SOCIAL',
     title: 'New message',
-    message: content.trim().slice(0, 120),
+    message: content ? content.slice(0, 120) : `Sent a file: ${attachment?.name || 'attachment'}`,
     link: '/messages?conversationId=' + encodeURIComponent(conversationId),
     is_read: false,
   }).catch((err) => console.error('Direct message notification failed:', err));

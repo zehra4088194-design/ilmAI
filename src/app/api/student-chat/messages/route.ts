@@ -7,6 +7,7 @@ import { gatewayChat, type AiProviderId } from '@/lib/ai/gateway';
 import { parseAiJson } from '@/lib/utils/json-extract';
 import { createNotificationIfEnabled, createNotificationsIfEnabled } from '@/lib/notifications/preferences';
 import { loadArchivedChatMessages, mergeChatMessages } from '@/lib/storage/chat-archive';
+import { resolveAttachmentSignedUrl, uploadChatAttachment } from '@/lib/storage/chat-attachments';
 import type { SubscriptionTier } from '@/types';
 
 async function getUser() {
@@ -19,7 +20,7 @@ async function getUser() {
 
 // `chatsAdmin` = chats-DB (student_chat_requests/messages, chat_archives).
 // `admin` = main DB (profiles, notifications).
-async function getApprovedRequest(chatsAdmin: any, admin: any, requestId: string, userId: string) {
+async function getApprovedRequest(chatsAdmin: any, _admin: any, requestId: string, userId: string) {
   const { data } = await chatsAdmin
     .from('student_chat_requests')
     .select('*')
@@ -27,18 +28,6 @@ async function getApprovedRequest(chatsAdmin: any, admin: any, requestId: string
     .eq('status', 'approved')
     .maybeSingle();
   if (!data || (data.requester_id !== userId && data.recipient_id !== userId)) return null;
-  const { data: participants } = await admin
-    .from('profiles')
-    .select('id, gender')
-    .in('id', [data.requester_id, data.recipient_id]);
-  if (
-    !participants ||
-    participants.length !== 2 ||
-    !participants[0]?.gender ||
-    participants[0].gender !== participants[1]?.gender
-  ) {
-    return null;
-  }
   return data;
 }
 
@@ -227,17 +216,36 @@ export async function GET(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: 'Messages could not be loaded. Check the chats DB schema.' }, { status: 500 });
   const archived = await loadArchivedChatMessages<any>(chatsAdmin, 'student', requestId);
-  return NextResponse.json({ messages: mergeChatMessages(archived, data || []) });
+  const merged = mergeChatMessages(archived, data || []);
+  const messages = await Promise.all(
+    merged.map(async (m: any) => ({ ...m, attachment_signed_url: await resolveAttachmentSignedUrl(m.attachment_url) }))
+  );
+  return NextResponse.json({ messages });
 }
 
 export async function POST(req: NextRequest) {
   const user = await getUser();
   if (!user) return NextResponse.json({ error: 'Login required' }, { status: 401 });
 
-  const { requestId, content } = await req.json();
-  const message = typeof content === 'string' ? content.trim() : '';
-  if (!requestId || !message)
-    return NextResponse.json({ error: 'A request ID and message are required' }, { status: 400 });
+  // multipart/form-data when a file is attached (from the UI's attach button), plain JSON for a
+  // text-only send — both accepted since most messages still have no attachment and JSON is
+  // simpler for that common case.
+  const contentType = req.headers.get('content-type') || '';
+  let requestId: string | null = null;
+  let message = '';
+  let file: File | null = null;
+  if (contentType.includes('multipart/form-data')) {
+    const formData = await req.formData();
+    requestId = (formData.get('requestId') as string | null) || null;
+    message = ((formData.get('content') as string | null) || '').trim();
+    file = (formData.get('file') as File | null) || null;
+  } else {
+    const body = await req.json();
+    requestId = body.requestId || null;
+    message = typeof body.content === 'string' ? body.content.trim() : '';
+  }
+  if (!requestId || (!message && !file))
+    return NextResponse.json({ error: 'A request ID and message or file are required' }, { status: 400 });
 
   const admin = (await createAdminClient()) as any;
   const chatsAdmin = createServiceClient() as any;
@@ -257,20 +265,41 @@ export async function POST(req: NextRequest) {
   const request = await getApprovedRequest(chatsAdmin, admin, requestId, user.id);
   if (!request) return NextResponse.json({ error: 'An approved chat was not found.' }, { status: 403 });
 
+  let attachment: { url: string; name: string; type: string; sizeKb: number } | null = null;
+  if (file) {
+    try {
+      attachment = await uploadChatAttachment(file, `student-chat/${requestId}`);
+    } catch (uploadError) {
+      return NextResponse.json(
+        { error: uploadError instanceof Error ? uploadError.message : 'The file could not be uploaded.' },
+        { status: 400 }
+      );
+    }
+  }
+
   const { data, error } = await chatsAdmin
     .from('student_chat_messages')
-    .insert({ request_id: requestId, sender_id: user.id, content: message })
+    .insert({
+      request_id: requestId,
+      sender_id: user.id,
+      content: message,
+      attachment_url: attachment?.url || null,
+      attachment_name: attachment?.name || null,
+      attachment_type: attachment?.type || null,
+      attachment_size_kb: attachment?.sizeKb || null,
+    })
     .select('*')
     .single();
 
   if (error) return NextResponse.json({ error: 'The message could not be sent.' }, { status: 500 });
+  data.attachment_signed_url = await resolveAttachmentSignedUrl(data.attachment_url);
 
   const recipientId = user.id === request.requester_id ? request.recipient_id : request.requester_id;
   await createNotificationIfEnabled(admin, 'studentChat', {
     user_id: recipientId,
     type: 'SOCIAL',
     title: 'New study buddy message',
-    message: message.slice(0, 120),
+    message: message ? message.slice(0, 120) : `Sent a file: ${attachment?.name || 'attachment'}`,
     link: `/student-chat?requestId=${requestId}`,
     is_read: false,
   });

@@ -4,6 +4,8 @@ import { CheckCheck, Send, MessageCircle, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton';
+import { ChatAttachmentButton } from '@/components/ui/ChatAttachmentButton';
+import { ChatAttachmentBubble } from '@/components/ui/ChatAttachmentBubble';
 import { cn } from '@/lib/utils/cn';
 import { toast } from 'sonner';
 
@@ -14,6 +16,10 @@ interface Message {
   content: string;
   created_at: string;
   read_at?: string | null;
+  attachment_signed_url?: string | null;
+  attachment_name?: string | null;
+  attachment_type?: string | null;
+  attachment_size_kb?: number | null;
 }
 
 /**
@@ -99,17 +105,26 @@ export function ParentMessageThread({
     }
   };
 
-  const send = async () => {
-    if (!text.trim()) return;
+  const send = async (file?: File) => {
+    if (!text.trim() && !file) return;
     setSending(true);
     const content = text.trim();
     setText('');
     try {
-      const res = await fetch('/api/parent/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ linkId, content }),
-      });
+      let res: Response;
+      if (file) {
+        const formData = new FormData();
+        formData.set('linkId', linkId);
+        formData.set('content', content);
+        formData.set('file', file);
+        res = await fetch('/api/parent/messages', { method: 'POST', body: formData });
+      } else {
+        res = await fetch('/api/parent/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ linkId, content }),
+        });
+      }
       if (!res.ok) throw new Error();
       // The next poll tick will pick it up; no optimistic append needed here.
     } catch {
@@ -165,6 +180,7 @@ export function ParentMessageThread({
               )}
             >
               {m.content}
+              <ChatAttachmentBubble message={m} mine={mine} />
               {mine && (
                 <div
                   className={cn(
@@ -183,6 +199,7 @@ export function ParentMessageThread({
       </div>
       <div className="border-border flex gap-2 border-t p-2">
         <EmojiPickerButton onSelect={(emoji) => setText((current) => current + emoji)} />
+        <ChatAttachmentButton onSelect={(file) => send(file)} disabled={sending} />
         <Input
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -190,7 +207,7 @@ export function ParentMessageThread({
           placeholder="Write a message..."
           className="text-sm"
         />
-        <Button size="icon" variant="gradient" onClick={send} disabled={sending}>
+        <Button size="icon" variant="gradient" onClick={() => send()} disabled={sending}>
           <Send className="h-4 w-4" />
         </Button>
       </div>

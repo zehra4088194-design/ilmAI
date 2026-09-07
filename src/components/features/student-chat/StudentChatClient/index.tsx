@@ -11,6 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton';
+import { ChatAttachmentButton } from '@/components/ui/ChatAttachmentButton';
+import { ChatAttachmentBubble } from '@/components/ui/ChatAttachmentBubble';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 import { cn } from '@/lib/utils/cn';
@@ -49,6 +51,10 @@ type ChatMessage = {
   content: string;
   created_at: string;
   read_at?: string | null;
+  attachment_signed_url?: string | null;
+  attachment_name?: string | null;
+  attachment_type?: string | null;
+  attachment_size_kb?: number | null;
 };
 
 function formatMessageTime(value: string) {
@@ -229,15 +235,24 @@ export function StudentChatClient() {
     }
   };
 
-  const sendMessage = async () => {
-    if (!selected || !message.trim()) return;
+  const sendMessage = async (file?: File) => {
+    if (!selected || (!message.trim() && !file)) return;
     setSending(true);
     try {
-      const res = await fetch('/api/student-chat/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requestId: selected.id, content: message }),
-      });
+      let res: Response;
+      if (file) {
+        const formData = new FormData();
+        formData.set('requestId', selected.id);
+        formData.set('content', message);
+        formData.set('file', file);
+        res = await fetch('/api/student-chat/messages', { method: 'POST', body: formData });
+      } else {
+        res = await fetch('/api/student-chat/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ requestId: selected.id, content: message }),
+        });
+      }
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'The message could not be sent.');
       upsertMessage(json.message);
@@ -440,7 +455,8 @@ export function StudentChatClient() {
                               : 'border-border/70 bg-background/95 text-foreground rounded-bl-md'
                           )}
                         >
-                          <p className="leading-5 whitespace-pre-wrap">{item.content}</p>
+                          {item.content && <p className="leading-5 whitespace-pre-wrap">{item.content}</p>}
+                          <ChatAttachmentBubble message={item} mine={mine} />
                           <div
                             className={cn(
                               'mt-1.5 flex items-center gap-1 text-[11px] font-medium',
@@ -493,6 +509,7 @@ export function StudentChatClient() {
                     )}
                     <div className="flex gap-2">
                       <EmojiPickerButton onSelect={(emoji) => setMessage((current) => current + emoji)} disabled={!isOnline} />
+                      <ChatAttachmentButton onSelect={(file) => sendMessage(file)} disabled={!isOnline || sending} />
                       <Input
                         value={message}
                         onChange={(event) => setMessage(event.target.value)}
@@ -506,7 +523,7 @@ export function StudentChatClient() {
                       <Button
                         variant="default"
                         size="icon"
-                        onClick={sendMessage}
+                        onClick={() => sendMessage()}
                         loading={sending}
                         disabled={!isOnline}
                         aria-label="Send message"

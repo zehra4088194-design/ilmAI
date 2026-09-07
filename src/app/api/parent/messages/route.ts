@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase/service';
 import { createNotificationIfEnabled } from '@/lib/notifications/preferences';
 import { getParentLinkAccess } from '@/lib/parent/access';
 import { deleteChatArchive, loadArchivedChatMessages, mergeChatMessages } from '@/lib/storage/chat-archive';
+import { resolveAttachmentSignedUrl, uploadChatAttachment } from '@/lib/storage/chat-attachments';
 
 async function getUser() {
   const supabase = await createClient();
@@ -45,16 +46,33 @@ export async function GET(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: 'Messages could not be loaded.' }, { status: 500 });
   const archived = await loadArchivedChatMessages<any>(chatsAdmin, 'parent', linkId);
-  return NextResponse.json({ messages: mergeChatMessages(archived, data || []) });
+  const merged = mergeChatMessages(archived, data || []);
+  const messages = await Promise.all(
+    merged.map(async (m: any) => ({ ...m, attachment_signed_url: await resolveAttachmentSignedUrl(m.attachment_url) }))
+  );
+  return NextResponse.json({ messages });
 }
 
 export async function POST(req: NextRequest) {
   const user = await getUser();
   if (!user) return NextResponse.json({ error: 'Login required' }, { status: 401 });
 
-  const { linkId, content } = await req.json();
-  if (!linkId || !content?.trim()) {
-    return NextResponse.json({ error: 'A link ID and message content are required' }, { status: 400 });
+  const contentType = req.headers.get('content-type') || '';
+  let linkId: string | null = null;
+  let content = '';
+  let file: File | null = null;
+  if (contentType.includes('multipart/form-data')) {
+    const formData = await req.formData();
+    linkId = (formData.get('linkId') as string | null) || null;
+    content = ((formData.get('content') as string | null) || '').trim();
+    file = (formData.get('file') as File | null) || null;
+  } else {
+    const body = await req.json();
+    linkId = body.linkId || null;
+    content = typeof body.content === 'string' ? body.content.trim() : '';
+  }
+  if (!linkId || (!content && !file)) {
+    return NextResponse.json({ error: 'A link ID and message or file are required' }, { status: 400 });
   }
 
   const access = await getParentLinkAccess(linkId, user.id);
@@ -68,14 +86,35 @@ export async function POST(req: NextRequest) {
   }
   const { link } = access;
 
+  let attachment: { url: string; name: string; type: string; sizeKb: number } | null = null;
+  if (file) {
+    try {
+      attachment = await uploadChatAttachment(file, `parent-chat/${linkId}`);
+    } catch (uploadError) {
+      return NextResponse.json(
+        { error: uploadError instanceof Error ? uploadError.message : 'The file could not be uploaded.' },
+        { status: 400 }
+      );
+    }
+  }
+
   const chatsAdmin = createServiceClient() as any;
   const { data, error } = await chatsAdmin
     .from('parent_messages')
-    .insert({ link_id: linkId, sender_id: user.id, content: content.trim() })
+    .insert({
+      link_id: linkId,
+      sender_id: user.id,
+      content,
+      attachment_url: attachment?.url || null,
+      attachment_name: attachment?.name || null,
+      attachment_type: attachment?.type || null,
+      attachment_size_kb: attachment?.sizeKb || null,
+    })
     .select()
     .single();
 
   if (error) return NextResponse.json({ error: 'The message could not be sent.' }, { status: 500 });
+  data.attachment_signed_url = await resolveAttachmentSignedUrl(data.attachment_url);
 
   const recipientId = user.id === link.parent_id ? link.student_id : link.parent_id;
   if (!recipientId) return NextResponse.json({ error: 'The linked recipient was not found.' }, { status: 409 });
@@ -84,7 +123,7 @@ export async function POST(req: NextRequest) {
     user_id: recipientId,
     type: 'SOCIAL',
     title: 'New parent message',
-    message: content.trim().slice(0, 120),
+    message: content ? content.slice(0, 120) : `Sent a file: ${attachment?.name || 'attachment'}`,
     link:
       user.id === link.parent_id
         ? `/settings?tab=parent-link&linkId=${encodeURIComponent(linkId)}&view=chat`

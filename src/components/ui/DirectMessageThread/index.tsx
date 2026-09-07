@@ -5,6 +5,8 @@ import { CheckCheck, Send, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton';
+import { ChatAttachmentButton } from '@/components/ui/ChatAttachmentButton';
+import { ChatAttachmentBubble } from '@/components/ui/ChatAttachmentBubble';
 import { cn } from '@/lib/utils/cn';
 import { toast } from 'sonner';
 
@@ -15,6 +17,10 @@ interface Message {
   content: string;
   created_at: string;
   read_at?: string | null;
+  attachment_signed_url?: string | null;
+  attachment_name?: string | null;
+  attachment_type?: string | null;
+  attachment_size_kb?: number | null;
 }
 
 /**
@@ -61,17 +67,25 @@ export function DirectMessageThread({
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const send = async () => {
-    if (!text.trim()) return;
+  const send = async (file?: File) => {
+    if (!text.trim() && !file) return;
     setSending(true);
     const content = text.trim();
     setText('');
     try {
-      const res = await fetch(`/api/messages/${conversationId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content }),
-      });
+      let res: Response;
+      if (file) {
+        const formData = new FormData();
+        formData.set('content', content);
+        formData.set('file', file);
+        res = await fetch(`/api/messages/${conversationId}`, { method: 'POST', body: formData });
+      } else {
+        res = await fetch(`/api/messages/${conversationId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content }),
+        });
+      }
       if (!res.ok) throw new Error();
     } catch {
       toast.error('The message could not be sent.');
@@ -117,6 +131,7 @@ export function DirectMessageThread({
               className={cn('max-w-[80%] rounded-xl px-3 py-1.5 text-sm', mine ? 'ml-auto bg-violet-600 text-white' : 'bg-muted')}
             >
               {m.content}
+              <ChatAttachmentBubble message={m} mine={mine} />
               {mine && (
                 <div className={cn('mt-1 flex items-center justify-end gap-1 text-[10px]', m.read_at ? 'text-sky-200' : 'text-white/65')}>
                   <CheckCheck className="h-3 w-3" />
@@ -130,6 +145,7 @@ export function DirectMessageThread({
       </div>
       <div className="border-border flex gap-2 border-t p-2">
         <EmojiPickerButton onSelect={(emoji) => setText((current) => current + emoji)} />
+        <ChatAttachmentButton onSelect={(file) => send(file)} disabled={sending} />
         <Input
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -137,7 +153,7 @@ export function DirectMessageThread({
           placeholder="Write a message..."
           className="text-sm"
         />
-        <Button size="icon" variant="gradient" onClick={send} disabled={sending}>
+        <Button size="icon" variant="gradient" onClick={() => send()} disabled={sending}>
           <Send className="h-4 w-4" />
         </Button>
       </div>
