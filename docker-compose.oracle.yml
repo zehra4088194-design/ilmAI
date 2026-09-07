@@ -80,7 +80,7 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       EMAIL_FROM: ${EMAIL_FROM:-}
-      CONTACT_EMAIL: ${CONTACT_EMAIL:-information@ilmai.study}
+      CONTACT_EMAIL: ${CONTACT_EMAIL:-ilmai.study1@gmail.com}
       # Server-only — see src/app/api/resource-feedback/route.ts
       MISTAKE_REPORT_EMAIL: ${MISTAKE_REPORT_EMAIL:-}
       SUGGESTION_EMAIL: ${SUGGESTION_EMAIL:-}

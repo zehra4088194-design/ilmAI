@@ -10,6 +10,15 @@ export async function syncNotesProduct(input: {
   title: string;
   priceMinor: number;
   pageCount: number;
+  // Which of the resource's PDF theme versions actually exist — the student picks one on the
+  // store's product page as a variant (see the store's syncNotesProduct). At least one must be
+  // true; if only one is, there's nothing to choose and the store creates a single variant.
+  hasLightVersion: boolean;
+  hasDarkVersion: boolean;
+  // Auto-generated cover (see lib/library/studyCoverSvg.ts) — raw SVG markup, uploaded as-is as
+  // the product's primary image. Generated fresh here (not on the store) so the design lives in
+  // one place; the store just stores whatever bytes it's handed.
+  coverSvg: string;
 }): Promise<NotesProductSyncResult> {
   const storeUrl = process.env.STORE_URL || 'https://ilmai.store';
   const secret = process.env.NOTES_PRODUCT_SYNC_SECRET;

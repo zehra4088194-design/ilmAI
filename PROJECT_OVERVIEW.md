@@ -142,19 +142,17 @@ primitives), `primitives/` (animation), `layout/` (shells), `common/` (cross-cut
 - Email/password signup → `RegisterForm` → Supabase `signUp()` with `user_metadata` (role, board,
   grade_level, education_level, username, gender, `enable_2fa`, and — for a school-join signup —
   `signup_institution_id` + `signup_role_requested`).
-- Google/Facebook OAuth signup/login → redirects through Supabase → lands on
+- Google OAuth signup/login → redirects through Supabase → lands on
   **`src/app/api/auth/callback/route.ts`** (`GET`) — this is the single, critical entry point for
   **every** login/signup (both email-confirm links and OAuth) and is where role/profile creation
-  and redirect targeting actually happen. Both providers plug into this same route with zero
-  provider-specific branching beyond `isSocialOAuthSignIn` (used only to route a still-incomplete
-  profile to `/onboarding/complete-profile`, same as any Google signup always did).
+  and redirect targeting actually happen.
   **Provider setup lives entirely in the Supabase Dashboard** (Authentication → Providers), not in
-  this repo's env vars: Google needs a Client ID/Secret there, and Facebook needs a Facebook App
-  ID/Secret there (create the app at developers.facebook.com, add the Supabase callback URL
-  `https://<project-ref>.supabase.co/auth/v1/callback` under Facebook Login → Settings, and enable
-  the `email` permission under Use Cases). A new Facebook app starts in **Development mode**,
-  where only added Testers/Developers can log in — it must be switched to **Live** (optionally
-  after Facebook's App Review) before real users can sign in with it.
+  this repo's env vars: Google needs a Client ID/Secret there.
+  Facebook login was removed (`OAuthButtons`/`useAuth` only offer Google now) — disable/remove the
+  Facebook provider in the Supabase Dashboard too if it's still enabled there. The callback route
+  still recognizes `provider === 'facebook'` in `isSocialOAuthSignIn` purely so the handful of
+  accounts that already linked Facebook before the removal keep being classified correctly on
+  login; it is not a new way to sign in.
 
 **What `api/auth/callback/route.ts` does, in order:**
 1. Exchanges the `code` for a session (`supabase.auth.exchangeCodeForSession`), enforces the
@@ -195,7 +193,7 @@ primitives), `primitives/` (animation), `layout/` (shells), `common/` (cross-cut
       entirely** — gender/board/grade/username selection is a K-12-consumer-app concept an
       institution member never needs.
    3. No username yet → `/onboarding/username`.
-   4. Google/Facebook/university-education-level signup still missing profile fields
+   4. Google/university-education-level signup still missing profile fields
       (`needsProfileCompletion`) → `/onboarding/complete-profile`.
    5. Student role, `onboarding_completed=false` → `/onboarding/class`.
    6. Parent role → `/parent`.
@@ -205,7 +203,7 @@ primitives), `primitives/` (animation), `layout/` (shells), `common/` (cross-cut
       `/settings?tab=security&mfa=start&next=<original destination>` first.
 
 **`/onboarding/complete-profile`** (`src/components/features/auth/CompleteProfileStep/index.tsx`
-+ `src/app/onboarding/complete-profile/actions.ts`) — shown when a Google/Facebook/university
++ `src/app/onboarding/complete-profile/actions.ts`) — shown when a Google/university
 signup still has gaps:
 - Starts with an **"I am a..." chooser**: Student / Parent / Teacher (principals/new-schools are
   **never** self-service here — always platform-admin-provisioned via `/admin/schools`).

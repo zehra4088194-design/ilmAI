@@ -39,8 +39,11 @@ jobs:
 
           # Each job must run independently — one failing (5xx, timeout, etc.)
           # must not stop the rest of the batch from being called at all.
+          # $2 is the HTTP method (defaults to GET, matching every job's route handler except
+          # search-index, which only accepts POST).
           call_job() {
             if ! curl --fail --silent --show-error --retry 2 \
+              -X "${2:-GET}" \
               -H "Authorization: Bearer ${CRON_SECRET}" \
               "${APP_URL%/}$1"; then
               echo "::warning::cron job $1 failed"
@@ -52,6 +55,11 @@ jobs:
           call_job /api/cron/college-notifications
           call_job /api/cron/usd-pkr-rate
           call_job /api/cron/expire-institution-trials
+          # Full resync of the Algolia public-catalog index — never scheduled anywhere before,
+          # so the index stayed empty. Content changes rarely; safe (and idempotent, via
+          # replaceAllObjects) to just run on every invocation of this workflow rather than
+          # needing its own time-of-day slot. No-ops with a 503 if Algolia env vars aren't set.
+          call_job /api/cron/search-index POST
           # Idempotent (checks for an existing row covering "today" first) — safe to call on
           # every run rather than needing its own time-of-day slot.
           call_job /api/cron/daily-competition

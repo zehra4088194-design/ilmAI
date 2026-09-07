@@ -1,0 +1,898 @@
+You are working on my existing **Next.js + TypeScript + Supabase** ILM AI Study project.
+
+I need a **universal, automatically generated product-cover system** for my study PDFs/notes.
+
+### 1. Core requirement
+
+I have study material for:
+
+* Class 9
+* Class 10
+* Class 11
+* Class 12
+
+and for every class I have different subjects.
+
+For each chapter/topic, I may have separate files such as:
+
+* MCQs
+* Short Questions
+* Long Questions
+* Notes
+* Examples / Solved Examples
+* Other chapter-specific study material
+
+These are **separate products/files**, not necessarily one combined PDF.
+
+The cover system must therefore be intelligent enough to understand the difference between:
+
+`Class 9 Physics Chapter 1 MCQs`
+
+`Class 9 Physics Chapter 1 Short Questions`
+
+`Class 9 Physics Chapter 1 Long Questions`
+
+`Class 9 Physics Chapter 1 Notes`
+
+`Class 9 Physics Chapter 1 Examples`
+
+and generate an appropriate cover for each one.
+
+---
+
+## 2. IMPORTANT: Do NOT permanently show MCQs + SHORTS + LONGS together
+
+Do **NOT** create a universal cover with a permanent line such as:
+
+`MCQs | SHORTS | LONGS`
+
+because these are separate files/products.
+
+Instead, the cover must dynamically determine the **content type** from the product metadata/title.
+
+For example:
+
+### Product:
+
+`Class 9 Physics Chapter 1 MCQs`
+
+Cover should show:
+
+**CLASS 9**
+
+**PHYSICS**
+
+**CHAPTER 1**
+
+**PHYSICAL QUANTITIES & MEASUREMENT**
+
+**MCQs**
+
+---
+
+### Product:
+
+`Class 9 Physics Chapter 1 Short Questions`
+
+Cover should show:
+
+**CLASS 9**
+
+**PHYSICS**
+
+**CHAPTER 1**
+
+**PHYSICAL QUANTITIES & MEASUREMENT**
+
+**SHORT QUESTIONS**
+
+---
+
+### Product:
+
+`Class 9 Physics Chapter 1 Long Questions`
+
+Cover should show:
+
+**CLASS 9**
+
+**PHYSICS**
+
+**CHAPTER 1**
+
+**PHYSICAL QUANTITIES & MEASUREMENT**
+
+**LONG QUESTIONS**
+
+---
+
+### Product:
+
+`Class 9 Physics Chapter 1 Notes`
+
+Cover should show:
+
+**CLASS 9**
+
+**PHYSICS**
+
+**CHAPTER 1**
+
+**PHYSICAL QUANTITIES & MEASUREMENT**
+
+**NOTES**
+
+---
+
+### Product:
+
+`Class 9 Physics Chapter 1 Examples`
+
+Cover should show:
+
+**CLASS 9**
+
+**PHYSICS**
+
+**CHAPTER 1**
+
+**PHYSICAL QUANTITIES & MEASUREMENT**
+
+**SOLVED EXAMPLES**
+
+The same system must work for all classes, subjects, chapters and content types.
+
+---
+
+# 3. Design direction
+
+The cover must feel like a **premium professionally published educational product**, not like a normal website thumbnail.
+
+Use the existing **ILM AI STUDY** visual identity.
+
+### Visual style
+
+* Premium
+* Modern
+* Academic
+* Clean
+* Professional
+* Dark
+* High-end educational publishing aesthetic
+* Print-friendly
+* Suitable for online product cards
+* Suitable for physical printed notes
+* Suitable when laminated with a transparent plastic sheet
+
+Keep the existing brand direction:
+
+* Near-black / dark charcoal background
+* White / light-grey typography
+* Teal accent
+* Subtle gold accent where useful
+* Elegant lighting
+* Subtle academic/technical visual elements
+* Strong hierarchy
+* Plenty of negative space
+* No clutter
+
+Do not make it childish or overly colorful.
+
+It should look appropriate for both school and college/university-level educational material.
+
+---
+
+# 4. SVG requirement
+
+IMPORTANT:
+
+The cover template must be implemented as **SVG**, not as a manually hard-coded raster image.
+
+Create a reusable **dynamic SVG cover template** that can receive variables such as:
+
+```ts
+className
+subject
+chapterNumber
+chapterName
+contentType
+brandName
+website
+```
+
+For example:
+
+```ts
+{
+  className: "9",
+  subject: "Physics",
+  chapterNumber: "1",
+  chapterName: "Physical Quantities and Measurement",
+  contentType: "MCQs",
+  brandName: "ILM AI STUDY",
+  website: "www.ilmai.study"
+}
+```
+
+The SVG should automatically place and style the values.
+
+The design must remain visually balanced even when:
+
+* chapter name is short
+* chapter name is long
+* subject name is short
+* subject name is very long
+* content type is `MCQs`
+* content type is `SHORT QUESTIONS`
+* content type is `LONG QUESTIONS`
+* content type is `NOTES`
+* content type is `SOLVED EXAMPLES`
+
+Implement proper text wrapping / truncation / scaling so long text never breaks the design.
+
+---
+
+# 5. Cover hierarchy
+
+The visual hierarchy should approximately be:
+
+### Top
+
+**ILM AI STUDY**
+
+small premium brand treatment.
+
+### Main section
+
+**CLASS 9**
+
+large and prominent.
+
+Then:
+
+**PHYSICS**
+
+large subject title.
+
+Then:
+
+**CHAPTER 1**
+
+smaller supporting label.
+
+Then the actual chapter title:
+
+**PHYSICAL QUANTITIES AND MEASUREMENT**
+
+This should be visually important but must not overpower the class + subject hierarchy.
+
+Then a clearly visible content-type label:
+
+**MCQs**
+
+or:
+
+**SHORT QUESTIONS**
+
+or:
+
+**LONG QUESTIONS**
+
+or:
+
+**NOTES**
+
+or:
+
+**SOLVED EXAMPLES**
+
+depending on the product.
+
+### Bottom
+
+A subtle educational branding line such as:
+
+**Smart Exam Preparation**
+
+and:
+
+**[www.ilmai.study](http://www.ilmai.study)**
+
+Do not overcrowd the bottom.
+
+---
+
+# 6. Visual subject identity
+
+The cover should not look identical internally for every subject.
+
+Keep the same overall ILM AI STUDY design system, but allow subtle subject-specific visual motifs.
+
+For example:
+
+### Physics
+
+Subtle elements such as:
+
+* formulas
+* measurement symbols
+* motion/energy lines
+* scientific diagrams
+* grids
+* physics-inspired geometry
+
+### Chemistry
+
+Subtle:
+
+* molecular structures
+* atoms
+* chemical bonds
+* periodic-table-inspired geometry
+
+### Biology
+
+Subtle:
+
+* cells
+* DNA
+* organic/scientific structures
+* botanical/scientific line art
+
+### Mathematics
+
+Subtle:
+
+* equations
+* geometric shapes
+* graphs
+* coordinates
+* mathematical symbols
+
+### English
+
+Subtle:
+
+* typography
+* quotation marks
+* books
+* elegant literary lines
+
+### Computer Science
+
+Subtle:
+
+* code
+* circuits
+* binary patterns
+* network/grid motifs
+
+But keep these elements **subtle and premium**.
+
+They must never interfere with readability.
+
+---
+
+# 7. Chapter image / illustration behavior
+
+Do not rely on a manually uploaded image for every product.
+
+The system should generate the visual appearance from the subject/chapter metadata using reusable SVG elements or controlled graphical motifs.
+
+The primary emphasis should remain:
+
+**Class → Subject → Chapter → Content Type**
+
+not a giant illustration.
+
+The cover should still look good even if there is no chapter-specific image.
+
+---
+
+# 8. Example exact output
+
+For this product:
+
+`Class 9 Physics Chapter 1 MCQs`
+
+generate a cover visually similar to:
+
+```text
+                ILM AI STUDY
+
+                  CLASS 9
+
+                   PHYSICS
+
+                 CHAPTER 1
+
+       PHYSICAL QUANTITIES AND
+            MEASUREMENT
+
+                    MCQs
+
+
+              SMART EXAM PREPARATION
+
+                 www.ilmai.study
+```
+
+But this should NOT be rendered as plain text only.
+
+It must look like a premium professionally designed cover with:
+
+* strong typography
+* dark textured background
+* teal accent details
+* subtle physics graphics
+* visual depth
+* balanced spacing
+* elegant composition
+* print-safe layout
+
+---
+
+# 9. Online + physical print requirements
+
+The same generated cover should support two uses:
+
+### Online product image
+
+Used on:
+
+* store product cards
+* product detail pages
+* search results
+* category pages
+
+### Printable front cover
+
+Used as the first page of the actual PDF/printed notes.
+
+Therefore the SVG should be high quality and scalable.
+
+Do not create a tiny low-resolution thumbnail and upscale it later.
+
+Use vector-first rendering.
+
+---
+
+# 10. Printable dimensions
+
+Support a standard printable document ratio suitable for A4.
+
+The SVG should be designed with an A4-friendly aspect ratio:
+
+**210 × 297 mm**
+
+or equivalent SVG dimensions.
+
+Maintain a safe margin around important text so that printing and plastic covering/lamination do not cut anything off.
+
+Important text should stay inside a safe area.
+
+---
+
+# 11. Automatically detect metadata
+
+Create a reusable function that extracts information from the product title / metadata.
+
+For example:
+
+```text
+Class 9 Physics Chapter 1 MCQs
+```
+
+should resolve to:
+
+```ts
+className = "9"
+subject = "Physics"
+chapterNumber = "1"
+chapterName = "Physical Quantities and Measurement"
+contentType = "MCQs"
+```
+
+Similarly:
+
+```text
+Class 12 Mathematics Chapter 8 Integration Long Questions
+```
+
+should resolve to:
+
+```ts
+className = "12"
+subject = "Mathematics"
+chapterNumber = "8"
+chapterName = "Integration"
+contentType = "LONG QUESTIONS"
+```
+
+However, do not depend only on title parsing if structured product metadata already exists.
+
+Prefer:
+
+1. explicit database fields
+2. normalized product metadata
+3. title parsing as fallback
+
+---
+
+# 12. Product data model
+
+Add or use appropriate fields such as:
+
+```ts
+className
+subject
+chapterNumber
+chapterName
+contentType
+coverSvg
+coverImageUrl
+```
+
+Possible content types:
+
+```ts
+MCQS
+SHORT_QUESTIONS
+LONG_QUESTIONS
+NOTES
+EXAMPLES
+SOLVED_EXAMPLES
+OTHER
+```
+
+Use a normalized enum/constant instead of random strings throughout the app.
+
+---
+
+# 13. Cover generation architecture
+
+Create a reusable component such as:
+
+```tsx
+<StudyCover
+  className="9"
+  subject="Physics"
+  chapterNumber="1"
+  chapterName="Physical Quantities and Measurement"
+  contentType="MCQs"
+/>
+```
+
+The component should generate the SVG dynamically.
+
+Do not duplicate the entire cover code for every subject.
+
+Use a shared design system.
+
+For example:
+
+```text
+StudyCover
+ ├── Brand Header
+ ├── Class Block
+ ├── Subject Block
+ ├── Chapter Block
+ ├── Chapter Title
+ ├── Content Type Badge
+ ├── Subject Visual Layer
+ ├── Footer Branding
+ └── Decorative SVG Layer
+```
+
+---
+
+# 14. Cover generation from product creation
+
+When creating a product in the admin panel:
+
+If the admin enters:
+
+```text
+Class: 9
+Subject: Physics
+Chapter: 1
+Chapter Name: Physical Quantities and Measurement
+Content Type: MCQs
+```
+
+the system should automatically generate the cover.
+
+The admin should NOT need to manually upload a cover every time.
+
+Allow manual override/upload as an optional fallback, but the automatic generated SVG cover should be the default.
+
+---
+
+# 15. Product editing behavior
+
+When the admin edits:
+
+* class
+* subject
+* chapter
+* chapter name
+* content type
+
+the generated cover should update automatically.
+
+Do not leave an old cover cached after metadata changes.
+
+Regenerate/invalidate the relevant asset.
+
+---
+
+# 16. Product card behavior
+
+Product cards should use the same generated cover image/SVG preview.
+
+For example:
+
+```text
+[ GENERATED COVER ]
+
+Class 9 Physics
+Chapter 1
+MCQs
+```
+
+Avoid creating a separate unrelated thumbnail design.
+
+The visual identity should remain consistent between:
+
+* product card
+* product page
+* downloadable PDF
+* printed cover
+
+---
+
+# 17. PDF generation/export
+
+The cover should be exportable from SVG into a high-quality printable representation.
+
+Prefer vector output wherever possible.
+
+If a PNG/JPEG preview is necessary for web compatibility, generate it at sufficiently high resolution.
+
+Do not use low-resolution screenshots.
+
+---
+
+# 18. Existing PDF style compatibility
+
+My existing notes already use a dark ILM AI STUDY design with:
+
+* dark background
+* teal accents
+* white/light text
+* watermark/branding
+
+The new cover should feel like the **front cover of the same publication**, not like a completely different product.
+
+Do not destroy the existing design language.
+
+---
+
+# 19. Watermark / branding
+
+Use subtle branding where appropriate.
+
+Possible:
+
+**ILM AI STUDY**
+
+and:
+
+**[www.ilmai.study](http://www.ilmai.study)**
+
+A very subtle watermark can be used in the background, but do not make the cover look spammy.
+
+The branding should remain elegant.
+
+---
+
+# 20. Important UX rule
+
+The admin should be able to create hundreds of products without designing hundreds of covers manually.
+
+The workflow should essentially become:
+
+```text
+Create Product
+      ↓
+Enter Metadata
+      ↓
+Choose / Detect Content Type
+      ↓
+Generate SVG Cover Automatically
+      ↓
+Save / Preview
+      ↓
+Use Cover Online
+      ↓
+Use Same Cover for Printable PDF
+```
+
+No repetitive Canva/Photoshop work.
+
+---
+
+# 21. Handle missing metadata gracefully
+
+If chapter name is missing:
+
+Do not crash.
+
+Fallback to:
+
+```text
+CHAPTER 1
+```
+
+If content type is missing:
+
+hide the content-type badge rather than displaying:
+
+`undefined`
+
+If subject is missing:
+
+use a generic academic visual treatment.
+
+Never allow:
+
+* undefined
+* null
+* NaN
+* empty ugly placeholders
+
+to appear on the cover.
+
+---
+
+# 22. Responsive preview
+
+In the admin panel provide a live cover preview.
+
+As the admin changes:
+
+* class
+* subject
+* chapter
+* content type
+
+the SVG preview should update instantly.
+
+Add:
+
+* Preview
+* Regenerate
+* Download/Export
+* Save
+
+where appropriate.
+
+---
+
+# 23. Technical quality
+
+Use clean reusable TypeScript.
+
+Avoid:
+
+* duplicate SVG templates
+* duplicated subject-specific components
+* hard-coded product-specific designs
+* unnecessary image generation APIs
+* unnecessary external dependencies
+
+The implementation must be maintainable.
+
+Use a centralized configuration for:
+
+* typography
+* spacing
+* colors
+* subject visual motifs
+* content-type labels
+
+---
+
+# 24. Do not change my existing product content
+
+This feature is only for the **cover / product presentation system**.
+
+Do not modify:
+
+* existing MCQ questions
+* short questions
+* long questions
+* notes
+* examples
+* PDF content
+* original study material
+
+unless required for integration.
+
+---
+
+# 25. Final visual goal
+
+The final result should feel like a real commercially sold study guide.
+
+For example:
+
+**ILM AI STUDY**
+
+**CLASS 9**
+
+**PHYSICS**
+
+**CHAPTER 1**
+
+**PHYSICAL QUANTITIES AND MEASUREMENT**
+
+**MCQs**
+
+with a sophisticated dark academic visual background and subtle physics-related SVG graphics.
+
+Then the same system should automatically produce:
+
+**CLASS 9 — PHYSICS — CHAPTER 1 — SHORT QUESTIONS**
+
+or:
+
+**CLASS 9 — PHYSICS — CHAPTER 1 — LONG QUESTIONS**
+
+or:
+
+**CLASS 9 — PHYSICS — CHAPTER 1 — NOTES**
+
+or:
+
+**CLASS 9 — PHYSICS — CHAPTER 1 — SOLVED EXAMPLES**
+
+without creating a completely different design.
+
+The design system must remain consistent across **Class 9, 10, 11 and 12 and all subjects**.
+
+---
+
+# 26. Deliverables
+
+Implement the complete feature in the existing project.
+
+Deliver:
+
+1. Reusable dynamic SVG cover component
+2. Metadata/content-type normalization
+3. Automatic cover generation
+4. Admin live preview
+5. Product-card cover integration
+6. Product-page cover integration
+7. Printable A4 cover export
+8. Proper caching/regeneration when metadata changes
+9. Subject-specific subtle SVG visual motifs
+10. Clean responsive UI
+11. Type-safe implementation
+12. No regression to existing product/file functionality
+
+Before finishing, inspect the existing codebase and integrate this into the architecture already being used instead of creating a disconnected demo.
+
+Also verify the feature with multiple examples, including:
+
+* Class 9 Physics Chapter 1 MCQs
+* Class 9 Physics Chapter 1 Short Questions
+* Class 9 Physics Chapter 1 Long Questions
+* Class 9 Physics Chapter 1 Notes
+* Class 9 Physics Chapter 1 Solved Examples
+* Class 10 Chemistry Chapter 2 MCQs
+* Class 11 Mathematics Chapter 8 Long Questions
+* Class 12 Biology Chapter 5 Notes
+
+The final implementation should demonstrate that one reusable SVG design can handle all of these automatically.

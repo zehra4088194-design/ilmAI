@@ -1,12 +1,14 @@
 'use client';
 import { motion } from 'framer-motion';
-import { Brain, Zap, Trophy, BookOpen, BarChart3, FileText } from 'lucide-react';
+import { Brain, Zap, Trophy, BookOpen, BarChart3, FileText, ScanLine, MessageCircleQuestion } from 'lucide-react';
 
 const FEATURES = [
   { icon: Brain, title: 'AI Tutor 24/7', desc: 'Ask questions anytime, anywhere. Get instant, detailed answers in English or Urdu.', color: 'from-violet-500 to-purple-600', badge: 'Most Popular' },
+  { icon: ScanLine, title: 'Scan & Solve', desc: 'Photograph handwritten work, a textbook page, or a diagram and get it read and explained step by step.', color: 'from-teal-500 to-emerald-600', badge: 'From a Photo' },
   { icon: Zap, title: 'Smart MCQ Engine', desc: '50,000+ verified MCQs with adaptive difficulty. Practice more and improve faster.', color: 'from-blue-500 to-indigo-600', badge: '50K+ Questions' },
   { icon: FileText, title: 'Past Papers', desc: 'Access 20 years of past papers in one place. Filter by board and year for focused practice.', color: 'from-green-500 to-emerald-600', badge: '20 Years' },
   { icon: BookOpen, title: 'Smart Flashcards', desc: 'AI-powered spaced repetition shows you the cards you need to review most.', color: 'from-amber-500 to-orange-600', badge: 'Spaced Repetition' },
+  { icon: MessageCircleQuestion, title: 'Ask a Teacher', desc: 'Post a question, scan your working straight into it, and get help from a teacher, a classmate, or the AI Tutor.', color: 'from-fuchsia-500 to-pink-600', badge: 'Real Replies' },
   { icon: BarChart3, title: 'Progress Analytics', desc: 'Track performance by subject, identify weak areas, and improve with clear insights.', color: 'from-pink-500 to-rose-600', badge: 'AI Analytics' },
   { icon: Trophy, title: 'Leaderboard & XP', desc: 'Compete with friends, earn XP, and unlock achievements while you study.', color: 'from-cyan-500 to-sky-600', badge: 'Gamification' },
 ];

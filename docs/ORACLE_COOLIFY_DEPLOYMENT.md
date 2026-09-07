@@ -169,7 +169,7 @@ In Oracle Email Delivery:
 4. Generate SMTP credentials; OCI console login credentials do not work as SMTP credentials.
 5. Put the SMTP host, port 587, username, password, and sender into Coolify.
 6. Put the same SMTP credentials into Supabase Auth SMTP settings.
-7. Set `CONTACT_EMAIL=information@ilmai.study` for public contact-form delivery.
+7. Leave `CONTACT_EMAIL` (and `MISTAKE_REPORT_EMAIL` / `SUGGESTION_EMAIL` / `PAYMENT_PROOF_EMAIL`) unset to default to `ilmai.study1@gmail.com`, or set any of them to send that form's submissions elsewhere.
 
 Customize Supabase Auth templates with the ilm AI name/logo. Include the normal confirmation/recovery link and the template token where Supabase supports it, so the email can present both a button and a code. Test signup, email confirmation, and password recovery before launch.
 

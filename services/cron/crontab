@@ -22,3 +22,11 @@
 0 20 * * * curl -fsS --retry 3 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/usd-pkr-rate"
 # Also missing from this file the same way — present in free-cron.yml but never scheduled here.
 30 20 * * * curl -fsS --retry 3 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/expire-institution-trials"
+# Rebuilds the Algolia public-catalog index (subjects/chapters/library resources/lectures/past
+# papers) from Supabase. Was never scheduled anywhere — the route worked fine but nothing ever
+# called it, so the index stayed empty and the Algolia app sat idle with zero requests. Content
+# here changes rarely, so once a day is enough; replaceAllObjects() is a full resync, safe to
+# re-run. No-ops with a 503 if ALGOLIA_ADMIN_API_KEY/ALGOLIA_APP_ID aren't set. This route only
+# accepts POST (unlike its GET-handler siblings in this file) — -X POST is required or curl's
+# default GET gets a silent 405.
+0 5 * * * curl -fsS --retry 3 -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/search-index"

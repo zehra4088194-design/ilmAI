@@ -32,7 +32,7 @@ const CYCLE_OPTIONS: { value: Cycle; label: string; icon: typeof Sparkles }[] = 
  * omitted for one-time (a single charge), set for monthly/annual (a real recurring subscription
  * that auto-charges the saved card each period, same Paddle mechanism as every paid plan).
  *
- * The suggestion box posts to /api/suggestions, which forwards it server-side via formsubmit.co
+ * The suggestion box posts to /api/suggestions, which sends it server-side via Brevo
  * — the destination inbox is a server-only env var and never reaches the client bundle.
  */
 export function SupportDonateWidget({ trigger }: { trigger: (open: () => void) => React.ReactNode }) {

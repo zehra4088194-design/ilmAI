@@ -4,8 +4,10 @@ import { headers } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 import { Navbar } from '@/components/features/landing/Navbar';
 import { HeroSection } from '@/components/features/landing/HeroSection';
+import { ProductShowcaseSection } from '@/components/features/landing/ProductShowcaseSection';
 import { StatsSection } from '@/components/features/landing/StatsSection';
 import { FeaturesSection } from '@/components/features/landing/FeaturesSection';
+import { RecentUpdatesSection } from '@/components/features/landing/RecentUpdatesSection';
 import { BoardsSection } from '@/components/features/landing/BoardsSection';
 import { PricingSection } from '@/components/features/landing/PricingSection';
 import { TestimonialsSection } from '@/components/features/landing/TestimonialsSection';
@@ -66,8 +68,10 @@ export default async function HomePage() {
       <Navbar />
       <main>
         <HeroSection />
+        <ProductShowcaseSection />
         <StatsSection />
         <FeaturesSection />
+        <RecentUpdatesSection />
         <BoardsSection />
         <PricingSection currency={currency} />
         <TestimonialsSection />

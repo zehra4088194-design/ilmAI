@@ -708,6 +708,162 @@ export const BLOG_POSTS: BlogPost[] = [
       },
     ],
   },
+  {
+    slug: 'scan-and-solve-handwritten-work',
+    title: 'Scan & Solve: Turn a Photo of Your Handwritten Work Into a Real Explanation',
+    description:
+      'How the Scan & Solve feature reads a photo of handwritten working, a textbook page, or a diagram, explains it step by step, and can turn scanned pages into a practice test.',
+    excerpt:
+      'Photograph a page instead of retyping it. ilm AI reads the handwriting or print, explains the concept, and can build a test from everything you scanned.',
+    category: 'Product',
+    publishedAt: '2026-08-18',
+    updatedAt: '2026-08-18',
+    readingMinutes: 6,
+    intro: [
+      'A lot of studying happens on paper first: a worked numerical in a notebook, a diagram copied from the whiteboard, a paragraph highlighted in a borrowed textbook. Typing all of that back in to ask a question is friction most students skip, so the question never gets asked.',
+      'Scan & Solve removes that step. Point a phone camera at the page, and ilm AI reads it, explains it, and keeps it ready to turn into practice — without anyone retyping a single line.',
+    ],
+    takeaways: [
+      'Scan & Solve reads handwritten pages, textbook pages, diagrams, and numericals from a single photo.',
+      'You choose the scan type and language so the explanation matches what you actually need.',
+      'Every successful scan is kept, so several pages of the same chapter can become one test.',
+      'The explanation is a starting point for understanding, not a substitute for checking your own working against your teacher or textbook.',
+    ],
+    sections: [
+      {
+        id: 'how-it-reads-the-page',
+        heading: '1. What the camera actually reads',
+        paragraphs: [
+          'When you upload a photo, ilm AI first extracts the text from the image — handwriting, printed text, or both — using the scan type you select: textbook page, handwritten, diagram, math, chemistry, or biology. Choosing the right type helps the reading match what is actually on the page, instead of guessing.',
+          'The extracted text is then explained in the language you pick, English or Roman Urdu, so a student who thinks more comfortably in one language is not forced to work in the other just to get help.',
+        ],
+        bullets: [
+          'Textbook page — for printed paragraphs, definitions, and passages.',
+          'Handwritten — for your own notes, homework, or a classmate\'s working.',
+          'Diagram — for labelled figures, circuits, and structures.',
+          'Math, chemistry, biology — for subject-specific numericals and notation.',
+        ],
+      },
+      {
+        id: 'from-photo-to-explanation',
+        heading: '2. From a photo to a usable explanation',
+        paragraphs: [
+          'A scan does not just return a transcript. Alongside the extracted text, ilm AI produces an explanation of the concept the page is about — the idea is to help you understand the working, not only confirm what the page already says.',
+          'This matters most for a handwritten numerical where you got stuck partway through: the explanation can show the method, not just repeat your own incomplete attempt back to you.',
+        ],
+      },
+      {
+        id: 'building-a-test-from-scans',
+        heading: '3. Turning several scanned pages into one test',
+        paragraphs: [
+          'If you scan more than one page from the same chapter — your notes, then a textbook page, then a diagram — ilm AI keeps the text from every successful scan. When you are ready, you can send everything you have scanned so far to build a fresh test based on that exact material, the same way a resource-based test is generated elsewhere on the platform.',
+          'This turns a stack of photographed pages into a single, focused practice session on the same evening you took them, instead of a folder of images nobody revisits.',
+        ],
+        note: 'Made-from-your-scans tests are only as good as the pages you photograph. A clear, well-lit photo of the relevant section works far better than a blurry shot of an entire chapter.',
+      },
+      {
+        id: 'limits-and-good-practice',
+        heading: '4. What to check before you trust a scan',
+        bullets: [
+          'Handwriting that is very unclear can be misread — re-check the extracted text against your own page before relying on it.',
+          'An explanation is a teaching aid, not a marking scheme; it does not replace your teacher\'s feedback on your actual answer.',
+          'Keep photos under the size limit and well-lit — a sharp, cropped photo of one page reads far more reliably than a wide shot of a full notebook.',
+          'Scan & Solve needs an internet connection to process the image, so it will not work mid-flight or fully offline.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'Does Scan & Solve work with handwriting, or only printed text?',
+        answer:
+          'Both. Choose the "Handwritten" scan type for your own notes or working, or "Textbook page" for printed material, so the reading is tuned to what is actually on the page.',
+      },
+      {
+        question: 'Can I build a test from more than one scanned page?',
+        answer:
+          'Yes. Every page you scan successfully in a session is kept, and you can send all of them together to generate one practice test covering that material.',
+      },
+      {
+        question: 'Is the explanation the same as an official marking scheme?',
+        answer:
+          'No. It is a step-by-step explanation meant to help you understand the concept. For marks and grading, always follow your teacher\'s or board\'s official mark scheme.',
+      },
+    ],
+  },
+  {
+    slug: 'built-for-pakistani-and-indian-boards',
+    title: 'Built for Pakistani and Indian Boards, Not Adapted to Them',
+    description:
+      'Why ilm AI is designed around FBISE, provincial, and Indian board realities from the start, instead of translating a generic international platform.',
+    excerpt:
+      'A study platform designed for one exam system and then translated to another usually gets the small details wrong. Here is why we built ours the other way round.',
+    category: 'Education',
+    publishedAt: '2026-08-27',
+    updatedAt: '2026-08-27',
+    readingMinutes: 5,
+    intro: [
+      'Many study tools are built for one country\'s curriculum and then loosely adapted for others — a term renamed, a grading scale swapped, a currency changed. The underlying assumptions about how a subject is taught and examined usually stay untouched, and that is exactly where students feel the mismatch.',
+      'ilm AI was built the other way round: around the boards, subjects, and exam formats that Pakistani and Indian students actually sit, from FBISE and provincial boards to the university-level workflows students move into afterward.',
+    ],
+    takeaways: [
+      'Practice questions, past papers, and explanations are organised by board and subject, not a single generic syllabus.',
+      'Roman Urdu support exists because that is how many students actually think and ask questions, not as a translation layer.',
+      'Past papers span years of real board material rather than a small internationally-licensed question bank.',
+      'The product still tells students to check the current official syllabus, because boards update requirements and no platform should claim to override that.',
+    ],
+    sections: [
+      {
+        id: 'why-board-context-matters',
+        heading: '1. Why "board-aware" is not a small detail',
+        paragraphs: [
+          'A question bank that ignores which board a student sits will mix formats, mark allocations, and command words that do not match the paper the student will actually face. A physics numerical marked one way under one board\'s scheme can be marked differently elsewhere.',
+          'ilm AI\'s practice, past papers, and library content are filtered by board and subject so that what a student sees during preparation looks like what they will see in the exam hall, not a generic approximation of it.',
+        ],
+      },
+      {
+        id: 'language-as-first-class',
+        heading: '2. Roman Urdu is a first-class option, not a fallback',
+        paragraphs: [
+          'A large number of students reason more comfortably in a mix of English and Roman Urdu, especially when a concept is new. Treating that as an afterthought — a machine-translated caption bolted onto an English-first product — usually produces stiff, unnatural explanations.',
+          'The AI Tutor and explanation features are built to hold a genuine conversation in that mix from the start, because that is closer to how students actually talk to a teacher or a classmate about a problem.',
+        ],
+      },
+      {
+        id: 'past-papers-and-library-depth',
+        heading: '3. Depth in past papers and library material, not just breadth of features',
+        paragraphs: [
+          'It is easy to list many features on a landing page. It is harder to make sure the past-paper archive, textbook library, and question sets are deep enough, board by board and subject by subject, to actually carry a student through a full year of preparation.',
+          'We treat the library and past-paper collection as core infrastructure, not a bonus section, because a study platform without enough real material to practise on is not much of a study platform.',
+        ],
+      },
+      {
+        id: 'official-sources-still-win',
+        heading: '4. The platform still defers to the official source',
+        paragraphs: [
+          'Boards revise syllabi, assessment frameworks, and date sheets. No platform, including ours, should present itself as the final word over an official notice from FBISE, a provincial board, or an Indian examination board.',
+          'Where a rule can change, our guides and product pages point students back to the responsible authority. Being built for a specific system means respecting that system\'s authority over its own rules, not replacing it.',
+        ],
+        note: 'If you ever notice practice content that seems out of step with your board\'s current syllabus, tell us — see the correction process on our About page.',
+      },
+    ],
+    faq: [
+      {
+        question: 'Does ilm AI support boards outside FBISE?',
+        answer:
+          'Yes, the platform is organised around provincial Pakistani boards and Indian board content as well as FBISE, with practice and past papers filterable by board and subject.',
+      },
+      {
+        question: 'Is Roman Urdu support just translated English?',
+        answer:
+          'No. The AI Tutor and explanation features are designed to hold a natural conversation in a Roman Urdu and English mix, rather than running a fixed English answer through a translator.',
+      },
+      {
+        question: 'What happens when my board changes its syllabus?',
+        answer:
+          'Always treat your board\'s official notice as the source of truth. If you spot practice content that looks outdated against a syllabus change, report it through the contact page so it can be reviewed.',
+      },
+    ],
+  },
 ];
 
 export const BLOG_POSTS_BY_SLUG = Object.fromEntries(BLOG_POSTS.map((post) => [post.slug, post])) as Record<

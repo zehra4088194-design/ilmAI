@@ -39,15 +39,17 @@ export async function GET(req: NextRequest) {
     audience = profile?.role || null;
   }
 
+  const category = req.nextUrl.searchParams.get('category');
+
   // Auto-populated from ilmai.store's live catalog — no admin-uploaded banner rows involved at
   // all, so it skips selectActiveBanners entirely. Links straight to the store product page
   // (not the usual /api/ads/click/[id] proxy — there's no local banner row for that route to
-  // look up); PRO/ELITE and the per-placement enable/disable toggle above still both apply.
+  // look up); PRO/ELITE and the per-placement enable/disable toggle above still both apply, and
+  // audience/category scope it exactly like a manually-created banner (see matchesViewer there).
   if (slot === 'store_products') {
-    return NextResponse.json({ banners: await getStoreProductBanners() });
+    return NextResponse.json({ banners: await getStoreProductBanners(audience, category) });
   }
 
-  const category = req.nextUrl.searchParams.get('category');
   const banners = await selectActiveBanners(slot, audience, category);
 
   // Only the fields the carousel needs to render — target_url stays server-side; the client

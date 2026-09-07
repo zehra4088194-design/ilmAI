@@ -57,7 +57,9 @@ function HeaderBrandMark({ paper, size = 'md' }: { paper: Paper; size?: 'sm' | '
         )
       )}
       {hasCustomLogo && !branding.hidePlatformBranding && (
-        <span className={`absolute right-0 ${sideMarkClass} font-semibold text-slate-500`}>ilm AI</span>
+        <span className={`absolute right-0 ${sideMarkClass} font-semibold whitespace-nowrap text-slate-500`}>
+          Powered by ilmai.study
+        </span>
       )}
     </div>
   );

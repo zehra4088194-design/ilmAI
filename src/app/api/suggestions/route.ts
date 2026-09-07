@@ -1,16 +1,31 @@
 import { createHash } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
+import { isEmailConfigured, sendEmail } from '@/lib/email/send';
 import { checkDailyLimit } from '@/lib/rate-limit';
 
 // General "have a suggestion?" box (e.g. the Support dialog) — takes a message plus an optional
-// screenshot (a pricing page, a bug, anything) and forwards it server-side via formsubmit.co, the
-// same pattern as /api/resource-feedback. The destination email is a server-only env var, never
-// NEXT_PUBLIC_*, so it never appears in client-bundled JS/HTML.
+// screenshot (a pricing page, a bug, anything) and sends it server-side via Brevo, the
+// same pattern as /api/resource-feedback and /api/contact. The destination email is a
+// server-only env var, never NEXT_PUBLIC_*, so it never appears in client-bundled JS/HTML.
 const SUGGESTION_EMAIL =
-  process.env.SUGGESTION_EMAIL || process.env.MISTAKE_REPORT_EMAIL || process.env.CONTACT_EMAIL || 'suggestions@ilmai.study';
+  process.env.SUGGESTION_EMAIL || process.env.MISTAKE_REPORT_EMAIL || process.env.CONTACT_EMAIL || 'ilmai.study1@gmail.com';
+
+function escapeHtml(value: string) {
+  return value.replace(
+    /[&<>"']/g,
+    (character) =>
+      ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;',
+      })[character] || character
+  );
+}
 
 const MAX_MESSAGE_LENGTH = 4000;
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // formsubmit.co's own attachment cap
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
 function requestFingerprint(request: NextRequest) {
   const address =
@@ -50,21 +65,40 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Too many suggestions sent from this connection today.' }, { status: 429 });
   }
 
-  try {
-    const relay = new FormData();
-    relay.set('_subject', '[ilm AI] New suggestion');
-    relay.set('Message', message);
-    relay.set('Page URL', page);
-    if (image instanceof File && image.size > 0) {
-      relay.set('Attachment', image, image.name || 'screenshot.png');
-    }
+  if (!isEmailConfigured()) {
+    console.error('Suggestion delivery failed: BREVO_API_KEY/EMAIL_FROM not configured');
+    return NextResponse.json({ error: 'Could not deliver the suggestion. Please try again later.' }, { status: 503 });
+  }
 
-    const response = await fetch(`https://formsubmit.co/ajax/${SUGGESTION_EMAIL}`, {
-      method: 'POST',
-      headers: { Accept: 'application/json' },
-      body: relay,
+  try {
+    const attachments =
+      image instanceof File && image.size > 0
+        ? [
+            {
+              filename: image.name || 'screenshot.png',
+              content: Buffer.from(await image.arrayBuffer()),
+              contentType: image.type || undefined,
+            },
+          ]
+        : undefined;
+
+    const safeMessage = escapeHtml(message).replace(/\r?\n/g, '<br />');
+    const safePage = escapeHtml(page);
+
+    await sendEmail({
+      to: SUGGESTION_EMAIL,
+      subject: '[ilm AI] New suggestion',
+      text: `${page ? `Page URL: ${page}\n\n` : ''}${message}`,
+      html: `
+        <div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827">
+          <h2>ilm AI — new suggestion</h2>
+          ${safePage ? `<p><strong>Page URL:</strong> ${safePage}</p>` : ''}
+          <hr style="border:0;border-top:1px solid #e5e7eb" />
+          <p>${safeMessage}</p>
+        </div>
+      `,
+      attachments,
     });
-    if (!response.ok) throw new Error(`formsubmit responded ${response.status}`);
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('Suggestion delivery failed:', error);

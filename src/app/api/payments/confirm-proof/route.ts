@@ -1,13 +1,29 @@
 import { createHash } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
+import { isEmailConfigured, sendEmail } from '@/lib/email/send';
 import { checkDailyLimit } from '@/lib/rate-limit';
 
 // Manual JazzCash/bank-transfer payment proof (institution plans, fee vouchers, parent
-// plans, the student wallet upgrade flow) — replaces the old "Confirm on WhatsApp" link. Same
-// server-side formsubmit.co relay as /api/suggestions, so no phone number or email address ever
-// appears in client-bundled JS/HTML; the payer's own name/number and screenshot go straight to
-// this env var's inbox for an admin to verify against the JazzCash transaction.
-const PAYMENT_PROOF_EMAIL = process.env.PAYMENT_PROOF_EMAIL || 'proof@ilmai.study';
+// plans, the student wallet upgrade flow) — replaces the old "Confirm on WhatsApp" link. Sent
+// straight through Brevo, same as /api/suggestions and /api/resource-feedback, so no phone
+// number or email address ever appears in client-bundled JS/HTML; the payer's own name/number
+// and screenshot go straight to this env var's inbox for an admin to verify against the
+// JazzCash transaction.
+const PAYMENT_PROOF_EMAIL = process.env.PAYMENT_PROOF_EMAIL || 'ilmai.study1@gmail.com';
+
+function escapeHtml(value: string) {
+  return value.replace(
+    /[&<>"']/g,
+    (character) =>
+      ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;',
+      })[character] || character
+  );
+}
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
@@ -51,20 +67,36 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Too many submissions from this connection today.' }, { status: 429 });
   }
 
-  try {
-    const relay = new FormData();
-    relay.set('_subject', `[ilm AI] Payment proof: ${context || 'manual payment'}`);
-    relay.set('Name on transaction', name);
-    relay.set('Sender number', phone);
-    relay.set('Context', context);
-    relay.set('Screenshot', image, image.name || 'proof.png');
+  if (!isEmailConfigured()) {
+    console.error('Payment proof delivery failed: BREVO_API_KEY/EMAIL_FROM not configured');
+    return NextResponse.json({ error: 'Could not send your proof. Please try again later.' }, { status: 503 });
+  }
 
-    const response = await fetch(`https://formsubmit.co/ajax/${PAYMENT_PROOF_EMAIL}`, {
-      method: 'POST',
-      headers: { Accept: 'application/json' },
-      body: relay,
+  try {
+    const safeName = escapeHtml(name);
+    const safePhone = escapeHtml(phone);
+    const safeContext = escapeHtml(context);
+
+    await sendEmail({
+      to: PAYMENT_PROOF_EMAIL,
+      subject: `[ilm AI] Payment proof: ${context || 'manual payment'}`,
+      text: `Name on transaction: ${name}\nSender number: ${phone}\nContext: ${context}`,
+      html: `
+        <div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827">
+          <h2>ilm AI — payment proof</h2>
+          <p><strong>Name on transaction:</strong> ${safeName}</p>
+          <p><strong>Sender number:</strong> ${safePhone}</p>
+          ${safeContext ? `<p><strong>Context:</strong> ${safeContext}</p>` : ''}
+        </div>
+      `,
+      attachments: [
+        {
+          filename: image.name || 'proof.png',
+          content: Buffer.from(await image.arrayBuffer()),
+          contentType: image.type || undefined,
+        },
+      ],
     });
-    if (!response.ok) throw new Error(`formsubmit responded ${response.status}`);
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('Payment proof delivery failed:', error);

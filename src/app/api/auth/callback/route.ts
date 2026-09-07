@@ -92,9 +92,12 @@ export async function GET(request: NextRequest) {
 
       const userMetadata = data.user.user_metadata;
       const providers = data.user.app_metadata?.providers;
-      // Google and Facebook are both "one-click" OAuth signups that skip the full RegisterForm
-      // wizard entirely — neither hands us board/grade_level/education_level, so both need the
-      // same needsProfileCompletion() catch-all below (see isSocialOAuthSignIn's usage).
+      // Google is a "one-click" OAuth signup that skips the full RegisterForm wizard entirely — it
+      // never hands us board/grade_level/education_level, so it needs the same
+      // needsProfileCompletion() catch-all below (see isSocialOAuthSignIn's usage). Facebook is no
+      // longer offered as a sign-in option (OAuthButtons/useAuth only expose Google now), but the
+      // 'facebook' check stays here so the handful of accounts that already linked it keep being
+      // classified correctly on login instead of silently falling through a different branch.
       const isSocialOAuthSignIn =
         data.user.app_metadata?.provider === 'google' ||
         data.user.app_metadata?.provider === 'facebook' ||

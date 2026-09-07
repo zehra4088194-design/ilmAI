@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
 
 const TRACK_COLOR = 'hsl(var(--muted))';
@@ -30,27 +31,38 @@ export function PercentRingCard({
   ];
   const color = `hsl(var(${colorVar}))`;
 
+  // recharts' ResponsiveContainer measures its size via ResizeObserver on the client only —
+  // rendering it during SSR (or right as the page unmounts/remounts on a fast route change)
+  // leaves it touching a container node that's mid-teardown, which throws
+  // "Cannot read properties of null (reading 'parentNode')" and trips React's hydration-mismatch
+  // error #418. Mount-gating it (same pattern as ThemeToggle) keeps the server and first client
+  // render identical and only asks recharts to measure once the DOM is stable.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   return (
     <section className="border-border bg-card rounded-lg border p-4">
       <h2 className="text-sm font-semibold">{title}</h2>
       <div className="relative mt-2 h-48 min-w-0">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={data}
-              dataKey="value"
-              startAngle={90}
-              endAngle={-270}
-              innerRadius="70%"
-              outerRadius="95%"
-              stroke="none"
-              isAnimationActive={false}
-            >
-              <Cell fill={color} />
-              <Cell fill={TRACK_COLOR} />
-            </Pie>
-          </PieChart>
-        </ResponsiveContainer>
+        {mounted && (
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={data}
+                dataKey="value"
+                startAngle={90}
+                endAngle={-270}
+                innerRadius="70%"
+                outerRadius="95%"
+                stroke="none"
+                isAnimationActive={false}
+              >
+                <Cell fill={color} />
+                <Cell fill={TRACK_COLOR} />
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
+        )}
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-3xl font-bold">{clamped}%</span>
           {centerLabel && <span className="text-muted-foreground text-xs">{centerLabel}</span>}

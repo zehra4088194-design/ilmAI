@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
  * Replaces the old "Confirm on WhatsApp" link on every manual JazzCash/bank payment
  * screen (institution plans, fee vouchers, parent plans, the wallet upgrade flow) — the payer
  * types the name and number the transaction was made from and attaches a screenshot, which posts
- * straight to /api/payments/confirm-proof (a server-side formsubmit.co relay). No phone number or
+ * straight to /api/payments/confirm-proof (sent server-side via Brevo). No phone number or
  * email address is ever shown to the payer or present in client-bundled JS/HTML.
  */
 export function PaymentProofForm({ context }: { context: string }) {

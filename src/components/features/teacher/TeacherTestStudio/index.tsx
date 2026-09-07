@@ -143,9 +143,12 @@ export function TeacherTestStudio({
   // manually opt in just to get their own name and logo on the paper. Still fully editable/
   // toggleable below. hidePlatformBranding (fully removing ilm AI's own mark) stays ELITE-only.
   const canUseCustomBranding = planTier === 'PRO' || planTier === 'ELITE';
-  const [useCustomBranding, setUseCustomBranding] = useState(
-    canUseCustomBranding && Boolean(initialInstitutionName || initialLogoUrl)
-  );
+  // A school/college admin (or a teacher with a saved profile photo) already HAS a name/logo to
+  // brand with — asking them to opt in and fill out a form for something we can already apply
+  // automatically is pure friction. Only someone with nothing saved yet sees the manual fields
+  // below, to type their own name/logo in by hand.
+  const hasAutoBranding = canUseCustomBranding && Boolean(initialInstitutionName || initialLogoUrl);
+  const [useCustomBranding, setUseCustomBranding] = useState(hasAutoBranding);
   const [customHeader, setCustomHeader] = useState('');
   const [customWatermarkText, setCustomWatermarkText] = useState('');
   const [customWatermarkImageUrl, setCustomWatermarkImageUrl] = useState(initialLogoUrl || '');
@@ -560,17 +563,32 @@ export function TeacherTestStudio({
             </label>
           </div>
 
-          {canUseCustomBranding && (
+          {canUseCustomBranding && hasAutoBranding && (
+            // Nothing to configure — your school/name and logo are already known, so they're
+            // just applied. No opt-in checkbox, no form to fill out.
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-4 py-2.5 lg:col-span-2">
+              <p className="text-sm">
+                Your {initialLogoUrl ? 'logo and ' : ''}name are applied on this paper automatically — &quot;Powered by
+                ilmai.study&quot; shows as a small credit.
+              </p>
+              {planTier === 'ELITE' && (
+                <label className="flex shrink-0 items-center gap-2 text-xs font-medium">
+                  <Checkbox
+                    checked={hidePlatformBranding}
+                    onCheckedChange={(v) => setHidePlatformBranding(v === true)}
+                  />
+                  Hide that credit too
+                </label>
+              )}
+            </div>
+          )}
+
+          {canUseCustomBranding && !hasAutoBranding && (
             <div className="space-y-3 rounded-lg border border-amber-400/40 bg-amber-400/5 p-4 lg:col-span-2">
               <label className="flex items-center gap-2 text-sm font-semibold">
                 <Checkbox checked={useCustomBranding} onCheckedChange={(v) => setUseCustomBranding(v === true)} />
                 Use my own name / school logo on this paper
               </label>
-              {(initialInstitutionName || initialLogoUrl) && useCustomBranding && (
-                <p className="text-muted-foreground text-xs">
-                  Applied automatically from your saved {initialLogoUrl ? 'logo and ' : ''}name — edit below if needed.
-                </p>
-              )}
               {useCustomBranding && (
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Field label="Custom header (name / school)">

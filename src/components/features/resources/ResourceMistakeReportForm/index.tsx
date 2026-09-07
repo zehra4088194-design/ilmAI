@@ -10,8 +10,8 @@ type FeedbackKind = 'mistake' | 'suggestion';
 
 /**
  * "Report a mistake" / "Got an idea?" — a tiny inline form shown below every PDF resource.
- * Submits to our own /api/resource-feedback route, which forwards it server-side via
- * formsubmit.co — the destination email never touches the client bundle. Always carries the
+ * Submits to our own /api/resource-feedback route, which sends it server-side via
+ * Brevo — the destination email never touches the client bundle. Always carries the
  * resource's own title/id so the report is actionable without asking the reporter which file
  * they meant, and the chosen `kind` labels the email so a mistake report and a suggestion don't
  * read the same in the inbox.

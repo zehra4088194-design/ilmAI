@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { RestClient } from '@/components/features/rest/RestClient';
 import { getPlatformSettings } from '@/lib/platform-settings/server';
@@ -11,7 +12,13 @@ export const metadata: Metadata = { title: 'Rest & Relaxing Sounds' };
 export default async function RestPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user!.id).maybeSingle();
+  // The (dashboard) layout already redirects unauthenticated visitors, but it calls
+  // getUser() separately from this page — if the session expires/invalidates in the gap
+  // between those two calls, `user` lands here as null and `user!.id` used to crash with
+  // "Cannot read properties of null (reading 'id')". Guard it directly instead of trusting
+  // the layout's check to still hold by the time this runs.
+  if (!user) redirect('/login');
+  const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).maybeSingle();
   const tier = (profile?.subscription_tier || 'FREE') as SubscriptionTier;
   const settings = await getPlatformSettings();
   const plan = getPlanFromSettings(settings, tier);
