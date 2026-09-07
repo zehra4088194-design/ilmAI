@@ -66,6 +66,11 @@ export function SchoolJoinRequestList({ initialRequests }: { initialRequests: Sc
             <div className="min-w-0">
               <p className="truncate font-medium">{request.requester?.full_name ?? 'Unknown user'}</p>
               <p className="truncate text-xs text-muted-foreground">{request.requester?.email}</p>
+              {request.requester?.previous_roll_number && (
+                <p className="truncate text-xs text-muted-foreground">
+                  Previous roll #: <span className="font-medium">{request.requester.previous_roll_number}</span>
+                </p>
+              )}
             </div>
             <Badge variant="outline" className="capitalize">
               {request.role_requested}

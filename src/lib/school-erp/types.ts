@@ -104,6 +104,9 @@ export type SchoolJoinRequestWithRequester = SchoolJoinRequest & {
     full_name: string | null;
     email: string | null;
     avatar_url: string | null;
+    // Self-reported at signup (PersonalizationModal) — shown to the reviewing admin as a
+    // transferring-student hint, e.g. to cross-check against a paper record during approval.
+    previous_roll_number: string | null;
   } | null;
 };
 

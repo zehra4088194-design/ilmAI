@@ -1395,7 +1395,7 @@ export async function getPendingSchoolJoinRequests(
   const { data, error } = await db
     .from('school_join_requests')
     .select(
-      'id, requester_id, organization_id, role_requested, status, requested_at, resolved_at, resolved_by, requester:profiles!school_join_requests_requester_id_fkey ( id, full_name, email, avatar_url )'
+      'id, requester_id, organization_id, role_requested, status, requested_at, resolved_at, resolved_by, requester:profiles!school_join_requests_requester_id_fkey ( id, full_name, email, avatar_url, previous_roll_number )'
     )
     .eq('organization_id', organizationId)
     .eq('status', 'pending')
