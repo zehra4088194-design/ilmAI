@@ -40,7 +40,7 @@ Features:
 1. Verify user authentication
 2. Generate random 6-digit OTP
 3. Store OTP in database with 15-minute expiry
-4. Send email via Resend API with OTP
+4. Send email via Brevo API with OTP
 5. Return success message
 
 **Request**:
@@ -102,7 +102,7 @@ Features:
 
 ### 3. Email Template
 
-**Email Service**: Resend API
+**Email Service**: Brevo API
 
 **Template Path**: Inline HTML in `request/route.ts`
 
@@ -115,7 +115,7 @@ Features:
 - Plain text fallback
 
 **Email Content**:
-- From: `noreply@ilmai.study` (configurable via `RESEND_FROM_EMAIL`)
+- From: `noreply@ilmai.study` (configurable via `EMAIL_FROM`)
 - Subject: "Confirm your account deletion request"
 - OTP: 6-digit code valid for 15 minutes
 
@@ -176,8 +176,8 @@ Features:
 ### Required Variables
 
 1. **Email Service** (for `request/route.ts`):
-   - `RESEND_API_KEY` - Resend API authentication key
-   - `RESEND_FROM_EMAIL` (optional) - Sender email address (defaults to `noreply@ilmai.study`)
+   - `BREVO_API_KEY` - Brevo API authentication key
+   - `EMAIL_FROM` (optional) - Sender email address (defaults to `noreply@ilmai.study`)
 
 2. **Supabase** (for `confirm/route.ts`):
    - `SUPABASE_SERVICE_ROLE_KEY` - Admin access for user deletion
@@ -271,7 +271,7 @@ Test scenarios:
 ## Deployment Checklist
 
 - [ ] Run migration: `supabase migration up 20260820110000`
-- [ ] Set `RESEND_API_KEY` in production environment
+- [ ] Set `BREVO_API_KEY` in production environment
 - [ ] Verify email sender address is configured
 - [ ] Add service role key to production environment
 - [ ] Test deletion flow in staging environment

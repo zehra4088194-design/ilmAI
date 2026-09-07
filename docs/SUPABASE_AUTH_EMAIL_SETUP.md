@@ -4,14 +4,14 @@ The app supports both a clickable link and a 6-digit code for signup confirmatio
 
 ## 1. Custom SMTP
 
-Open `Authentication > SMTP Settings`, enable Custom SMTP, and configure your provider. Resend SMTP can be used with the existing email provider account.
+Open `Authentication > SMTP Settings`, enable Custom SMTP, and configure your provider. Brevo's SMTP relay can be used with the same account/domain that already sends this app's own transactional email (see `docs/BREVO_SETUP.md`).
 
-- Host: `smtp.resend.com`
-- Port: `465`
-- Username: `resend`
-- Password: your Resend API key
+- Host: `smtp-relay.brevo.com`
+- Port: `587`
+- Username: your Brevo account login email
+- Password: an SMTP key from Brevo > SMTP & API > SMTP (not the same as `BREVO_API_KEY`, which is the HTTP API key this app's own `sendEmail()` uses)
 - Sender name: `ilm AI`
-- Sender email: a verified address such as `no-reply@your-domain.com`
+- Sender email: a verified address such as `noreply@ilmai.study`
 - Disable email-link tracking in the SMTP provider.
 
 Without Custom SMTP, Supabase's default sender may remain visible and production delivery is severely restricted.

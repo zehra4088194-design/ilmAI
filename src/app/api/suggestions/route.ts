@@ -7,7 +7,7 @@ import { checkDailyLimit } from '@/lib/rate-limit';
 // same pattern as /api/resource-feedback. The destination email is a server-only env var, never
 // NEXT_PUBLIC_*, so it never appears in client-bundled JS/HTML.
 const SUGGESTION_EMAIL =
-  process.env.SUGGESTION_EMAIL || process.env.MISTAKE_REPORT_EMAIL || process.env.CONTACT_EMAIL || 'noorhusnain792@gmail.com';
+  process.env.SUGGESTION_EMAIL || process.env.MISTAKE_REPORT_EMAIL || process.env.CONTACT_EMAIL || 'suggestions@ilmai.study';
 
 const MAX_MESSAGE_LENGTH = 4000;
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // formsubmit.co's own attachment cap

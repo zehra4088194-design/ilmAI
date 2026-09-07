@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
-const SUPPORT_EMAIL = 'ilmai.study1@gmail.com';
+const SUPPORT_EMAIL = 'support@ilmai.study';
 const PRESET_USD = [2, 5, 10, 20];
 type Cycle = 'one_time' | 'monthly' | 'annual';
 const CYCLE_OPTIONS: { value: Cycle; label: string; icon: typeof Sparkles }[] = [

@@ -34,7 +34,7 @@ export default async function HelpPage() {
           bullets: [
             'Plans are shown in PKR for Pakistan and USD for other countries.',
             'Paddle handles Visa/Mastercard recurring checkout; Pakistani cards must support international e-commerce and 3D Secure.',
-            'Easypaisa/JazzCash manual verification is available as a fallback in Pakistan.',
+            'JazzCash/Easypaisa manual verification is available as a fallback in Pakistan.',
             'The Play Store app uses and syncs existing web subscriptions.',
             'If payment succeeds but the plan does not activate, contact support with your Paddle receipt or wallet proof.',
           ],

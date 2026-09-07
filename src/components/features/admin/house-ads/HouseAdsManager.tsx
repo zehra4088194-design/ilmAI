@@ -79,10 +79,16 @@ function datetimeLocalValueToIso(value: string): string {
   return Number.isNaN(date.getTime()) ? '' : date.toISOString();
 }
 
+// 'store_products' pulls live from ilmai.store's catalog (see lib/ads/storeProductsFeed.ts) —
+// a manually-uploaded banner for it would just never be served, so it's left out of "create a
+// banner" entirely rather than let an admin upload an image that does nothing. It still appears
+// in the per-placement enable/disable list below (that toggle genuinely applies to it).
+const MANUAL_AD_PLACEMENTS = AD_PLACEMENTS.filter((placement) => placement !== 'store_products');
+
 const EMPTY_FORM = {
   title: '',
   targetUrl: '',
-  placement: AD_PLACEMENTS[0] as AdPlacement,
+  placement: MANUAL_AD_PLACEMENTS[0] as AdPlacement,
   categories: [] as string[],
   targetAudience: '' as '' | AdTargetAudience,
   weight: '1',
@@ -432,7 +438,7 @@ export function HouseAdsManager() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {AD_PLACEMENTS.map((placement) => (
+                    {MANUAL_AD_PLACEMENTS.map((placement) => (
                       <SelectItem key={placement} value={placement}>
                         {AD_PLACEMENT_LABELS[placement]}
                       </SelectItem>

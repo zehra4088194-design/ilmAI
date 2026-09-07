@@ -12,6 +12,7 @@ import {
   HardDriveDownload,
   Loader2,
   Maximize2,
+  Printer,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { toast } from 'sonner';
@@ -69,6 +70,7 @@ export function GoogleDriveResourceCard({
   const canDownload = settings.subscriptionPlans[tier].access.downloadPDF;
   const [readerOpen, setReaderOpen] = useState(autoOpen);
   const [downloading, setDownloading] = useState(false);
+  const [ordering, setOrdering] = useState(false);
   const [thumbnailFailed, setThumbnailFailed] = useState(false);
   const { saved: savedOffline, markSaved } = useOfflineSaved('library', resource.id, mode);
   const readerSourceUrl =
@@ -104,6 +106,26 @@ export function GoogleDriveResourceCard({
       toast.error(error instanceof Error ? error.message : 'Offline save failed.');
     } finally {
       setDownloading(false);
+    }
+  };
+
+  // Opens the matching printed-copy product on ilmai.store (creating/pricing it there first if
+  // this is the first time anyone has ordered this exact resource — see the route's own comment).
+  const orderPrintedNotes = async () => {
+    if (!user) {
+      toast.error('Sign in to order printed notes.');
+      return;
+    }
+    setOrdering(true);
+    try {
+      const response = await fetch(`/api/library/resources/${resource.id}/order-notes`, { method: 'POST' });
+      const json = await response.json();
+      if (!response.ok) throw new Error(json.error || 'Could not start this order.');
+      window.open(json.url, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not start this order.');
+    } finally {
+      setOrdering(false);
     }
   };
 
@@ -206,6 +228,18 @@ export function GoogleDriveResourceCard({
               <HardDriveDownload className="h-3.5 w-3.5" />
               Download
             </a>
+          </Button>
+        )}
+        {readerSourceUrl && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full border-amber-500/40 bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 dark:text-amber-300"
+            onClick={orderPrintedNotes}
+            disabled={ordering}
+          >
+            {ordering ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Printer className="h-3.5 w-3.5" />}
+            Order printed notes
           </Button>
         )}
         {relatedLinks.length > 0 && (

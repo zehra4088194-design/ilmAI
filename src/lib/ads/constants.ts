@@ -8,6 +8,7 @@ export const AD_PLACEMENTS = [
   'flashcards_top',
   'pdf_viewer',
   'test_taking',
+  'store_products',
 ] as const;
 export type AdPlacement = (typeof AD_PLACEMENTS)[number];
 
@@ -19,6 +20,10 @@ export const AD_PLACEMENT_LABELS: Record<AdPlacement, string> = {
   flashcards_top: 'Flashcards page (top)',
   pdf_viewer: 'PDF reader (footer strip)',
   test_taking: 'Per-file test-taking screen',
+  // Not manually configurable in the admin banner form — this slot pulls live from ilmai.store's
+  // published catalog instead (see lib/ads/storeProductsFeed.ts). Listed here only so it can
+  // still be picked as a slot when wiring <HouseAdBanner> onto a page.
+  store_products: 'ilmai.store products (auto — no banner upload needed)',
 };
 
 export const AD_TARGET_AUDIENCES = ['student', 'parent', 'teacher', 'principal', 'admin'] as const;

@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useState } from 'react';
-import { Bot, BookOpenCheck, DollarSign, GraduationCap, Mail, Moon, Presentation, Save, ShieldCheck, Sun, UserRoundCog, Users } from 'lucide-react';
+import { Bot, BookOpenCheck, DollarSign, GraduationCap, Mail, Moon, Presentation, Printer, Save, ShieldCheck, Sun, UserRoundCog, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -467,6 +467,31 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
                   ...current,
                   institutionPricing: { ...current.institutionPricing, volumeDiscountMinStudents: Math.max(0, value) },
                 }))
+              }
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-amber-500/25 bg-amber-500/5">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Printer className="h-5 w-5 text-amber-500" />
+            Order printed notes pricing
+          </CardTitle>
+          <CardDescription>
+            A library resource&apos;s &quot;Order printed notes&quot; button prices a printed, delivered copy at
+            this rate per 2 pages of the file — e.g. a 10-page PDF at Rs. 50/2 pages prices at Rs. 250. The page
+            count is counted once per resource and cached.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <NumberField
+              label="Price per 2 pages (PKR)"
+              value={settings.notesOrderPricePerTwoPagesPkr}
+              onChange={(value) =>
+                setSettings((current) => ({ ...current, notesOrderPricePerTwoPagesPkr: Math.max(1, value) }))
               }
             />
           </div>

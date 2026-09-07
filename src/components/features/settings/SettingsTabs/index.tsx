@@ -23,7 +23,13 @@ import {
   Trash2,
   Camera,
   ArrowLeftRight,
+  Mic,
 } from 'lucide-react';
+import {
+  getVoiceTypingMode,
+  setVoiceTypingMode,
+  type VoiceTypingMode,
+} from '@/lib/utils/voiceTypingPreference';
 import { ParentMessageThread } from '@/components/ui/ParentMessageThread';
 import { ParentAttachments } from '@/components/ui/ParentAttachments';
 import { RoutineTestsWidget } from '@/components/ui/RoutineTestsWidget';
@@ -102,6 +108,10 @@ export function SettingsTabs({
 }) {
   const [localProfile, setLocalProfile] = useState(profile);
   const [activeTab, setActiveTab] = useState(initialTab || 'profile');
+  const [voiceTypingMode, setVoiceTypingModeState] = useState<VoiceTypingMode>('always');
+  useEffect(() => {
+    setVoiceTypingModeState(getVoiceTypingMode());
+  }, []);
   const [fullName, setFullName] = useState(profile?.full_name || '');
   const [username, setUsername] = useState(profile?.username || '');
   const [checkingUsername, setCheckingUsername] = useState(false);
@@ -984,6 +994,44 @@ export function SettingsTabs({
                 </p>
               </div>
               <ThemePicker />
+
+              <div className="border-border border-t pt-4">
+                <h3 className="mb-1 flex items-center gap-2 font-semibold">
+                  <Mic className="h-4 w-4 text-violet-400" />
+                  Voice typing
+                </h3>
+                <p className="text-muted-foreground mb-4 text-sm">
+                  Controls the mic/speaker popup that appears above text fields across the app after you close (✕)
+                  it once.
+                </p>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  {(
+                    [
+                      { value: 'always', label: 'Show again next field', hint: 'Reappears every time you focus a new field' },
+                      { value: 'remember-dismiss', label: 'Stay hidden this tab', hint: 'Closing it once hides it everywhere until reload' },
+                      { value: 'off', label: 'Turn off', hint: "Don't show it at all" },
+                    ] as { value: VoiceTypingMode; label: string; hint: string }[]
+                  ).map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => {
+                        setVoiceTypingModeState(option.value);
+                        setVoiceTypingMode(option.value);
+                      }}
+                      className={cn(
+                        'rounded-xl border-2 p-3 text-left text-sm font-medium transition-all',
+                        voiceTypingMode === option.value
+                          ? 'text-foreground border-violet-500 bg-violet-500/10'
+                          : 'border-border text-muted-foreground hover:border-violet-500/30'
+                      )}
+                    >
+                      <p>{option.label}</p>
+                      <p className="text-muted-foreground mt-1 text-xs font-normal">{option.hint}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
           {activeTab === 'downloads' &&

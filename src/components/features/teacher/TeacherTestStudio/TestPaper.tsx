@@ -248,7 +248,7 @@ function ClassicPaper({ paper }: { paper: Paper }) {
         {!paper.branding.hidePlatformBranding && (
           <footer className="mt-4 flex justify-between border-t border-[#d9a441]/70 pt-2 text-[9px] font-semibold">
             <span>www.ilmai.study</span>
-            <span>ilmai.study1@gmail.com</span>
+            <span>information@ilmai.study</span>
           </footer>
         )}
       </div>
@@ -366,7 +366,7 @@ function ModernPaper({ paper }: { paper: Paper }) {
         {!paper.branding.hidePlatformBranding && (
           <footer className="mt-4 flex justify-between border-t pt-2 text-[9px] font-semibold text-slate-500">
             <span>www.ilmai.study</span>
-            <span>ilmai.study1@gmail.com</span>
+            <span>information@ilmai.study</span>
           </footer>
         )}
       </div>

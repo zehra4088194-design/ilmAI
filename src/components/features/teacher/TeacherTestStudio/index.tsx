@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { FileDown, History, Loader2, RefreshCw, Sparkles } from 'lucide-react';
+import { FileDown, History, Loader2, Plus, RefreshCw, Sparkles, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils/cn';
 import { AdGateComplete, AdGateSequence } from './AdGateSequence';
 import { TestPaper } from './TestPaper';
 import {
@@ -22,6 +24,30 @@ import {
   type Subject,
   type TestHistoryRow,
 } from './types';
+
+// "Custom" builder mode — a teacher types their own questions for a section instead of letting
+// the AI pick N at random from the chapter bank. Each section (MCQs, Short, Long, and whichever
+// extra types apply to this subject) can independently stay Auto or switch to Manual once Custom
+// mode is on — see builderMode/sectionMode below.
+type SectionKey = 'mcq' | 'short' | 'long' | 'letter' | 'vocab' | 'grammar' | 'numerical';
+type SectionMode = 'auto' | 'manual';
+type ManualMcq = { q: string; opts: [string, string, string, string]; correct: number; exp: string };
+type ManualQuestion = { q: string; marks: number; modelAnswer: string };
+// Vocab is edited as word/meaning pairs (see ManualVocabEditor) and joined into ManualQuestion.q
+// ("word — meaning") only when sent to the server — kept as pairs in the UI so the intent stays
+// obvious while typing.
+type ManualVocabPair = { word: string; meaning: string };
+
+const SECTION_KEYS: SectionKey[] = ['mcq', 'short', 'long', 'letter', 'vocab', 'grammar', 'numerical'];
+const EMPTY_SECTION_MODE: Record<SectionKey, SectionMode> = {
+  mcq: 'auto',
+  short: 'auto',
+  long: 'auto',
+  letter: 'auto',
+  vocab: 'auto',
+  grammar: 'auto',
+  numerical: 'auto',
+};
 
 const THEME_OPTIONS: { value: PaperTheme; label: string; blurb: string }[] = [
   { value: 'classic', label: 'Classic exam sheet', blurb: 'Textured background, gold rules — the familiar look.' },
@@ -97,6 +123,17 @@ export function TeacherTestStudio({
   const [difficulty, setDifficulty] = useState<DifficultyChoice>('MIXED');
   const [includeAnswerKey, setIncludeAnswerKey] = useState(true);
 
+  // "Custom" builder — see the SectionKey/SectionMode comment above.
+  const [builderMode, setBuilderMode] = useState<'auto' | 'custom'>('auto');
+  const [sectionMode, setSectionMode] = useState<Record<SectionKey, SectionMode>>(EMPTY_SECTION_MODE);
+  const [manualMcqs, setManualMcqs] = useState<ManualMcq[]>([]);
+  const [manualShorts, setManualShorts] = useState<ManualQuestion[]>([]);
+  const [manualLongs, setManualLongs] = useState<ManualQuestion[]>([]);
+  const [manualLetters, setManualLetters] = useState<ManualQuestion[]>([]);
+  const [manualVocab, setManualVocab] = useState<ManualVocabPair[]>([]);
+  const [manualGrammar, setManualGrammar] = useState<ManualQuestion[]>([]);
+  const [manualNumericals, setManualNumericals] = useState<ManualQuestion[]>([]);
+
   // FREE plan: a lightweight ad-gate. The banner is shown; the teacher must
   // acknowledge it before each generation. PRO/ELITE never see this.
   const [adAcknowledged, setAdAcknowledged] = useState(false);
@@ -155,6 +192,26 @@ export function TeacherTestStudio({
     }
   }
 
+  const isManualSection = (key: SectionKey) => builderMode === 'custom' && sectionMode[key] === 'manual';
+  const manualListLength: Record<SectionKey, number> = {
+    mcq: manualMcqs.length,
+    short: manualShorts.length,
+    long: manualLongs.length,
+    letter: manualLetters.length,
+    vocab: manualVocab.length,
+    grammar: manualGrammar.length,
+    numerical: manualNumericals.length,
+  };
+  const SECTION_LABELS: Record<SectionKey, string> = {
+    mcq: 'MCQ',
+    short: 'short',
+    long: 'long',
+    letter: 'application/letter',
+    vocab: 'vocabulary',
+    grammar: 'grammar',
+    numerical: 'numerical',
+  };
+
   async function generate() {
     if (!subjectId || !chapterId) {
       toast.error('Select a class, subject, and chapter.');
@@ -162,6 +219,11 @@ export function TeacherTestStudio({
     }
     if (planTier === 'FREE' && !adAcknowledged) {
       toast.error('Please watch all 5 ads below, then tap "Generate test".');
+      return;
+    }
+    const emptyManualSection = SECTION_KEYS.find((key) => isManualSection(key) && manualListLength[key] === 0);
+    if (emptyManualSection) {
+      toast.error(`Add at least one ${SECTION_LABELS[emptyManualSection]} question, or switch that section back to Auto.`);
       return;
     }
     setLoading(true);
@@ -191,6 +253,19 @@ export function TeacherTestStudio({
           customWatermarkText: canUseCustomBranding && useCustomBranding ? customWatermarkText : undefined,
           customWatermarkImageUrl: canUseCustomBranding && useCustomBranding ? customWatermarkImageUrl : undefined,
           hidePlatformBranding: planTier === 'ELITE' && useCustomBranding ? hidePlatformBranding : undefined,
+          manualMcqs: isManualSection('mcq') ? manualMcqs : undefined,
+          manualShortQuestions: isManualSection('short') ? manualShorts : undefined,
+          manualLongQuestions: isManualSection('long') ? manualLongs : undefined,
+          manualLetterQuestions: isManualSection('letter') ? manualLetters : undefined,
+          manualVocabQuestions: isManualSection('vocab')
+            ? manualVocab.map((pair) => ({
+                q: `${pair.word.trim()} — ${pair.meaning.trim()}`,
+                marks: 1,
+                modelAnswer: pair.meaning.trim(),
+              }))
+            : undefined,
+          manualGrammarQuestions: isManualSection('grammar') ? manualGrammar : undefined,
+          manualNumericalQuestions: isManualSection('numerical') ? manualNumericals : undefined,
         }),
       });
       const json = await response.json();
@@ -318,24 +393,137 @@ export function TeacherTestStudio({
               ))}
             </select>
           </Field>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:col-span-2">
-            <NumberField label="MCQs" value={mcqCount} max={100} onChange={setMcqCount} />
-            <NumberField label="Short" value={shortCount} max={50} onChange={setShortCount} />
-            <NumberField label="Long" value={longCount} max={20} onChange={setLongCount} />
+          <div className="lg:col-span-2">
             <NumberField label="Minutes" value={timeAllowed} max={240} onChange={setTimeAllowed} />
           </div>
-          {extraTypes.length > 0 && (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:col-span-2">
+
+          <div className="flex items-center justify-between lg:col-span-2">
+            <Label>Questions</Label>
+            <div className="bg-muted flex rounded-lg p-0.5 text-xs font-semibold">
+              {(['auto', 'custom'] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setBuilderMode(m)}
+                  className={cn(
+                    'rounded-md px-3 py-1.5 transition-colors',
+                    builderMode === m ? 'bg-card shadow-sm' : 'text-muted-foreground'
+                  )}
+                >
+                  {m === 'auto' ? 'Auto' : 'Custom'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {builderMode === 'auto' ? (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:col-span-2">
+              <NumberField label="MCQs" value={mcqCount} max={100} onChange={setMcqCount} />
+              <NumberField label="Short" value={shortCount} max={50} onChange={setShortCount} />
+              <NumberField label="Long" value={longCount} max={20} onChange={setLongCount} />
               {extraTypes.map((type) => {
                 const stateMap = {
-                  letter: [letterCount, setLetterCount] as const,
-                  vocab: [vocabCount, setVocabCount] as const,
-                  grammar: [grammarCount, setGrammarCount] as const,
-                  numerical: [numericalCount, setNumericalCount] as const,
+                  letter: [letterCount, setLetterCount, 20] as const,
+                  vocab: [vocabCount, setVocabCount, 30] as const,
+                  grammar: [grammarCount, setGrammarCount, 20] as const,
+                  numerical: [numericalCount, setNumericalCount, 20] as const,
                 };
-                const [value, setter] = stateMap[type.key];
-                const maxValue = type.key === 'vocab' ? 30 : 20;
-                return <NumberField key={type.key} label={type.label} value={value} max={maxValue} onChange={setter} />;
+                const [value, setter, max] = stateMap[type.key];
+                return <NumberField key={type.key} label={type.label} value={value} max={max} onChange={setter} />;
+              })}
+            </div>
+          ) : (
+            <div className="space-y-3 lg:col-span-2">
+              <p className="text-muted-foreground text-xs">
+                Each section can stay Auto (the AI picks from the chapter bank) or switch to Manual to write your own
+                questions — pick as many as you want per section.
+              </p>
+              <SectionBuilder
+                label="MCQs"
+                mode={sectionMode.mcq}
+                onModeChange={(m) => setSectionMode((s) => ({ ...s, mcq: m }))}
+                autoValue={mcqCount}
+                autoMax={100}
+                onAutoChange={setMcqCount}
+              >
+                <ManualMcqEditor items={manualMcqs} onChange={setManualMcqs} />
+              </SectionBuilder>
+              <SectionBuilder
+                label="Short questions"
+                mode={sectionMode.short}
+                onModeChange={(m) => setSectionMode((s) => ({ ...s, short: m }))}
+                autoValue={shortCount}
+                autoMax={50}
+                onAutoChange={setShortCount}
+              >
+                <ManualQuestionEditor items={manualShorts} onChange={setManualShorts} defaultMarks={3} />
+              </SectionBuilder>
+              <SectionBuilder
+                label="Long questions"
+                mode={sectionMode.long}
+                onModeChange={(m) => setSectionMode((s) => ({ ...s, long: m }))}
+                autoValue={longCount}
+                autoMax={20}
+                onAutoChange={setLongCount}
+              >
+                <ManualQuestionEditor items={manualLongs} onChange={setManualLongs} defaultMarks={8} allowSubParts />
+              </SectionBuilder>
+              {extraTypes.map((type) => {
+                if (type.key === 'letter')
+                  return (
+                    <SectionBuilder
+                      key="letter"
+                      label={type.label}
+                      mode={sectionMode.letter}
+                      onModeChange={(m) => setSectionMode((s) => ({ ...s, letter: m }))}
+                      autoValue={letterCount}
+                      autoMax={20}
+                      onAutoChange={setLetterCount}
+                    >
+                      <ManualQuestionEditor items={manualLetters} onChange={setManualLetters} defaultMarks={3} allowSubParts />
+                    </SectionBuilder>
+                  );
+                if (type.key === 'vocab')
+                  return (
+                    <SectionBuilder
+                      key="vocab"
+                      label={type.label}
+                      mode={sectionMode.vocab}
+                      onModeChange={(m) => setSectionMode((s) => ({ ...s, vocab: m }))}
+                      autoValue={vocabCount}
+                      autoMax={30}
+                      onAutoChange={setVocabCount}
+                    >
+                      <ManualVocabEditor items={manualVocab} onChange={setManualVocab} />
+                    </SectionBuilder>
+                  );
+                if (type.key === 'grammar')
+                  return (
+                    <SectionBuilder
+                      key="grammar"
+                      label={type.label}
+                      mode={sectionMode.grammar}
+                      onModeChange={(m) => setSectionMode((s) => ({ ...s, grammar: m }))}
+                      autoValue={grammarCount}
+                      autoMax={20}
+                      onAutoChange={setGrammarCount}
+                    >
+                      <ManualQuestionEditor items={manualGrammar} onChange={setManualGrammar} defaultMarks={3} />
+                    </SectionBuilder>
+                  );
+                return (
+                  <SectionBuilder
+                    key="numerical"
+                    label={type.label}
+                    mode={sectionMode.numerical}
+                    onModeChange={(m) => setSectionMode((s) => ({ ...s, numerical: m }))}
+                    autoValue={numericalCount}
+                    autoMax={20}
+                    onAutoChange={setNumericalCount}
+                  >
+                    <ManualQuestionEditor items={manualNumericals} onChange={setManualNumericals} defaultMarks={5} allowSubParts />
+                  </SectionBuilder>
+                );
               })}
             </div>
           )}
@@ -529,5 +717,221 @@ function NumberField({
     <Field label={label}>
       <Input type="number" min={0} max={max} value={value} onChange={(event) => onChange(Number(event.target.value))} />
     </Field>
+  );
+}
+
+function SectionBuilder({
+  label,
+  mode,
+  onModeChange,
+  autoValue,
+  autoMax,
+  onAutoChange,
+  children,
+}: {
+  label: string;
+  mode: SectionMode;
+  onModeChange: (mode: SectionMode) => void;
+  autoValue: number;
+  autoMax: number;
+  onAutoChange: (value: number) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-lg border p-3">
+      <div className="mb-2 flex items-center justify-between">
+        <p className="text-sm font-semibold">{label}</p>
+        <div className="bg-muted flex rounded-lg p-0.5 text-xs font-semibold">
+          {(['auto', 'manual'] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => onModeChange(m)}
+              className={cn(
+                'rounded-md px-2.5 py-1 transition-colors',
+                mode === m ? 'bg-card shadow-sm' : 'text-muted-foreground'
+              )}
+            >
+              {m === 'auto' ? 'Auto' : 'Manual'}
+            </button>
+          ))}
+        </div>
+      </div>
+      {mode === 'auto' ? (
+        <div className="max-w-[10rem]">
+          <NumberField label="How many" value={autoValue} max={autoMax} onChange={onAutoChange} />
+        </div>
+      ) : (
+        children
+      )}
+    </div>
+  );
+}
+
+function ManualMcqEditor({ items, onChange }: { items: ManualMcq[]; onChange: (items: ManualMcq[]) => void }) {
+  function update(index: number, patch: Partial<ManualMcq>) {
+    onChange(items.map((item, i) => (i === index ? { ...item, ...patch } : item)));
+  }
+  function updateOption(index: number, optionIndex: number, value: string) {
+    const current = items[index];
+    if (!current) return;
+    const opts = [...current.opts] as ManualMcq['opts'];
+    opts[optionIndex] = value;
+    update(index, { opts });
+  }
+  return (
+    <div className="space-y-3">
+      {items.map((item, index) => (
+        <div key={index} className="space-y-2 rounded-lg border p-3">
+          <div className="flex items-start gap-2">
+            <span className="text-muted-foreground mt-2 shrink-0 text-xs font-bold">{index + 1}.</span>
+            <Textarea
+              value={item.q}
+              onChange={(event) => update(index, { q: event.target.value })}
+              placeholder="Question text"
+              rows={2}
+              className="flex-1"
+            />
+            <Button type="button" variant="ghost" size="icon-sm" onClick={() => onChange(items.filter((_, i) => i !== index))}>
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="grid grid-cols-1 gap-2 pl-6 sm:grid-cols-2">
+            {item.opts.map((option, optionIndex) => (
+              <label key={optionIndex} className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name={`mcq-correct-${index}`}
+                  checked={item.correct === optionIndex}
+                  onChange={() => update(index, { correct: optionIndex })}
+                  title="Mark as the correct option"
+                />
+                <Input
+                  value={option}
+                  onChange={(event) => updateOption(index, optionIndex, event.target.value)}
+                  placeholder={`Option ${String.fromCharCode(65 + optionIndex)}`}
+                  className="h-8 text-sm"
+                />
+              </label>
+            ))}
+          </div>
+          <Input
+            value={item.exp}
+            onChange={(event) => update(index, { exp: event.target.value })}
+            placeholder="Explanation (optional)"
+            className="ml-6 h-8 text-sm"
+          />
+        </div>
+      ))}
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={() => onChange([...items, { q: '', opts: ['', '', '', ''], correct: 0, exp: '' }])}
+      >
+        <Plus className="h-3.5 w-3.5" /> Add MCQ
+      </Button>
+    </div>
+  );
+}
+
+function ManualQuestionEditor({
+  items,
+  onChange,
+  defaultMarks,
+  allowSubParts,
+}: {
+  items: ManualQuestion[];
+  onChange: (items: ManualQuestion[]) => void;
+  defaultMarks: number;
+  allowSubParts?: boolean;
+}) {
+  function update(index: number, patch: Partial<ManualQuestion>) {
+    onChange(items.map((item, i) => (i === index ? { ...item, ...patch } : item)));
+  }
+  return (
+    <div className="space-y-3">
+      {items.map((item, index) => (
+        <div key={index} className="space-y-2 rounded-lg border p-3">
+          <div className="flex items-start gap-2">
+            <span className="text-muted-foreground mt-2 shrink-0 text-xs font-bold">{index + 1}.</span>
+            <Textarea
+              value={item.q}
+              onChange={(event) => update(index, { q: event.target.value })}
+              placeholder={
+                allowSubParts
+                  ? 'Question text — for a multi-part question, write each part on its own line, e.g. (i) ...\n(ii) ...'
+                  : 'Question text'
+              }
+              rows={allowSubParts ? 3 : 2}
+              className="flex-1"
+            />
+            <Button type="button" variant="ghost" size="icon-sm" onClick={() => onChange(items.filter((_, i) => i !== index))}>
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="flex items-center gap-2 pl-6">
+            <Label className="text-xs">Marks</Label>
+            <Input
+              type="number"
+              min={1}
+              max={50}
+              value={item.marks}
+              onChange={(event) => update(index, { marks: Number(event.target.value) || defaultMarks })}
+              className="h-8 w-20 text-sm"
+            />
+          </div>
+          <Textarea
+            value={item.modelAnswer}
+            onChange={(event) => update(index, { modelAnswer: event.target.value })}
+            placeholder="Model answer (optional — shown on the answer key)"
+            rows={2}
+            className="ml-6"
+          />
+        </div>
+      ))}
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={() => onChange([...items, { q: '', marks: defaultMarks, modelAnswer: '' }])}
+      >
+        <Plus className="h-3.5 w-3.5" /> Add question
+      </Button>
+    </div>
+  );
+}
+
+function ManualVocabEditor({
+  items,
+  onChange,
+}: {
+  items: ManualVocabPair[];
+  onChange: (items: ManualVocabPair[]) => void;
+}) {
+  function update(index: number, patch: Partial<ManualVocabPair>) {
+    onChange(items.map((item, i) => (i === index ? { ...item, ...patch } : item)));
+  }
+  return (
+    <div className="space-y-2">
+      {items.map((item, index) => (
+        <div key={index} className="flex items-center gap-2">
+          <span className="text-muted-foreground w-5 shrink-0 text-xs font-bold">{index + 1}.</span>
+          <Input value={item.word} onChange={(event) => update(index, { word: event.target.value })} placeholder="Word" className="h-9" />
+          <Input
+            value={item.meaning}
+            onChange={(event) => update(index, { meaning: event.target.value })}
+            placeholder="Meaning / pair word"
+            className="h-9"
+          />
+          <Button type="button" variant="ghost" size="icon-sm" onClick={() => onChange(items.filter((_, i) => i !== index))}>
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      ))}
+      <Button type="button" variant="outline" size="sm" onClick={() => onChange([...items, { word: '', meaning: '' }])}>
+        <Plus className="h-3.5 w-3.5" /> Add word pair
+      </Button>
+    </div>
   );
 }

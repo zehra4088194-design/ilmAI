@@ -5,7 +5,7 @@
 ### Prerequisites
 1. Local development environment running
 2. Supabase project with migration applied
-3. Resend API key configured
+3. Brevo API key configured
 4. Test user account
 
 ### Step-by-Step Testing
@@ -21,7 +21,7 @@
    - Loading spinner appears briefly
    - Success toast message: "Confirmation email sent!"
    - UI transitions to OTP input form
-   - Email received in Resend (check console or Resend dashboard)
+   - Email received in Brevo (check console or Brevo dashboard)
 
 **Expected Email Contents**:
 - Subject: "Confirm your account deletion request"
@@ -176,7 +176,7 @@ SELECT COUNT(*) FROM flashcard_decks WHERE user_id = '<test-user-id>';
 ### Email Delivery Failure
 
 **Setup**:
-1. Configure invalid Resend API key
+1. Configure invalid Brevo API key
 2. Try to request deletion
 
 **Expected**:
@@ -288,8 +288,8 @@ Or create a new test user for each test cycle.
 # Look for POST /api/auth/delete-account/confirm
 ```
 
-### Resend Email Logs
-- Visit Resend dashboard at https://resend.com
+### Brevo Email Logs
+- Visit Brevo dashboard at https://app.brevo.com
 - Navigate to Emails section
 - Filter by "account deletion" subject
 - Verify delivery status
@@ -300,19 +300,19 @@ Or create a new test user for each test cycle.
 
 ### Email Not Arriving
 
-1. **Check** RESEND_API_KEY is correct
+1. **Check** BREVO_API_KEY is correct
    ```bash
-   echo $RESEND_API_KEY
+   echo $BREVO_API_KEY
    ```
 
 2. **Check** email address in request
    - Verify user.email in auth.users table
 
-3. **Check** Resend API status
-   - Visit https://www.resenddocs.com
+3. **Check** Brevo API status
+   - Visit https://status.brevo.com
    - Check if there are service issues
 
-4. **Review** Resend dashboard logs
+4. **Review** Brevo dashboard logs
 
 ### OTP Always Invalid
 

@@ -26,11 +26,11 @@ A complete 3-step account deletion flow with OTP email verification:
 
 ```env
 # Required
-RESEND_API_KEY=re_xxx
+BREVO_API_KEY=xxx
 SUPABASE_SERVICE_ROLE_KEY=xxx
 
 # Optional
-RESEND_FROM_EMAIL=noreply@ilmai.study
+EMAIL_FROM=noreply@ilmai.study
 ```
 
 ## Quick Test
@@ -125,7 +125,7 @@ POST /api/auth/delete-account/confirm
 | Error | Cause | Solution |
 |-------|-------|----------|
 | "Not authenticated" | Session expired | Re-login |
-| "Could not send email" | Invalid RESEND_API_KEY | Check .env |
+| "Could not send email" | Invalid BREVO_API_KEY | Check .env |
 | "OTP has expired" | >15 minutes passed | Request new deletion |
 | "Invalid OTP" | Wrong code entered | Copy from email again |
 | "No deletion request found" | Didn't call request first | Request deletion first |
@@ -189,9 +189,9 @@ SELECT * FROM auth.users WHERE id = 'user-id';
 ## Troubleshooting
 
 **Problem**: Email not sent
-- Check `RESEND_API_KEY` is correct
+- Check `BREVO_API_KEY` is correct
 - Check user email in profile
-- Check Resend dashboard for errors
+- Check Brevo dashboard for errors
 
 **Problem**: OTP always invalid
 - Verify exact OTP from email
@@ -226,6 +226,6 @@ SELECT * FROM auth.users WHERE id = 'user-id';
 For issues:
 1. Check error message in browser
 2. Check server logs
-3. Check email delivery via Resend
+3. Check email delivery via Brevo
 4. Review testing guide
 5. Check troubleshooting section

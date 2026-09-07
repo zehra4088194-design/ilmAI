@@ -70,15 +70,21 @@ services:
       CRON_SECRET: ${CRON_SECRET:?}
       AD_TRACKING_SECRET: ${AD_TRACKING_SECRET:-}
       ADMIN_EMAILS: ${ADMIN_EMAILS:?}
+      # Brevo — see src/lib/email/send.ts and docs/BREVO_SETUP.md. SMTP_* below is unused by this
+      # app (nodemailer/SMTP was fully replaced by the Brevo API); left only in case it's still
+      # read elsewhere in this deployment.
+      BREVO_API_KEY: ${BREVO_API_KEY:?}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_SECURE: ${SMTP_SECURE:-false}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       EMAIL_FROM: ${EMAIL_FROM:-}
-      CONTACT_EMAIL: ${CONTACT_EMAIL:-support@ilmai.study}
+      CONTACT_EMAIL: ${CONTACT_EMAIL:-information@ilmai.study}
       # Server-only — see src/app/api/resource-feedback/route.ts
       MISTAKE_REPORT_EMAIL: ${MISTAKE_REPORT_EMAIL:-}
+      SUGGESTION_EMAIL: ${SUGGESTION_EMAIL:-}
+      PAYMENT_PROOF_EMAIL: ${PAYMENT_PROOF_EMAIL:-}
       # Server-only (not NEXT_PUBLIC_*) — see src/app/api/support/contact/route.ts
       SUPPORT_CONTACT_PHONE: ${SUPPORT_CONTACT_PHONE:-}
       NEXT_PUBLIC_RECAPTCHA_SITE_KEY: ${NEXT_PUBLIC_RECAPTCHA_SITE_KEY:-}

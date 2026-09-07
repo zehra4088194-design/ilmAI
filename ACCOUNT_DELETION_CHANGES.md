@@ -22,7 +22,7 @@ Complete implementation of account deletion endpoint with OTP-based email confir
 - **Features**:
   - Generate 6-digit OTP
   - Store in database with 15-min expiry
-  - Send email via Resend API
+  - Send email via Brevo API
   - Proper error handling and validation
 
 #### Confirm Deletion Endpoint
@@ -153,8 +153,8 @@ CREATE INDEX account_deletion_requests_expires_at_idx ON account_deletion_reques
 ## Environment Variables Required
 
 ### New (if not already set)
-- `RESEND_API_KEY` - Resend email service API key
-- `RESEND_FROM_EMAIL` (optional) - Sender email (defaults to `noreply@ilmai.study`)
+- `BREVO_API_KEY` - Brevo email service API key
+- `EMAIL_FROM` (optional) - Sender email (defaults to `noreply@ilmai.study`)
 
 ### Existing (used by this feature)
 - `NEXT_PUBLIC_SUPABASE_URL` - Supabase URL
@@ -197,7 +197,7 @@ Click "Request Deletion"
 API: /api/auth/delete-account/request
     ├─ Generate OTP
     ├─ Store in DB (15min expiry)
-    └─ Send email via Resend
+    └─ Send email via Brevo
     ↓
 User receives email
     ↓
@@ -255,8 +255,8 @@ When account is deleted, the following cascade deletes via foreign key relations
    supabase migration up 20260820110000
    
    # Set environment variables
-   RESEND_API_KEY=re_xxx
-   RESEND_FROM_EMAIL=noreply@ilmai.study
+   BREVO_API_KEY=xxx
+   EMAIL_FROM=noreply@ilmai.study
    SUPABASE_SERVICE_ROLE_KEY=xxx
    ```
 
@@ -274,7 +274,7 @@ When account is deleted, the following cascade deletes via foreign key relations
 
 4. **Monitor**:
    - Check logs for errors
-   - Monitor Resend email delivery
+   - Monitor Brevo email delivery
    - Verify user deletion flow works
 
 ## Security Notes
@@ -314,7 +314,7 @@ When account is deleted, the following cascade deletes via foreign key relations
 This feature integrates with:
 - Supabase Auth (user deletion)
 - Supabase Database (profile and data deletion)
-- Resend Email Service (OTP delivery)
+- Brevo Email Service (OTP delivery)
 - Settings UI (delete tab)
 - Toast notifications (sonner)
 

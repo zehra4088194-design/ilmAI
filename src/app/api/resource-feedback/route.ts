@@ -7,7 +7,7 @@ import { checkDailyLimit } from '@/lib/rate-limit';
 // — server-only, deliberately NOT NEXT_PUBLIC_*. Forwarded via formsubmit.co from the SERVER
 // (not the browser), so this address never appears in any client-bundled JS/HTML. See
 // src/components/features/resources/ResourceMistakeReportForm for the client side.
-const MISTAKE_REPORT_EMAIL = process.env.MISTAKE_REPORT_EMAIL || 'noorhusnain792@gmail.com';
+const MISTAKE_REPORT_EMAIL = process.env.MISTAKE_REPORT_EMAIL || 'support@ilmai.study';
 
 const feedbackSchema = z.object({
   kind: z.enum(['mistake', 'suggestion']).optional().default('mistake'),

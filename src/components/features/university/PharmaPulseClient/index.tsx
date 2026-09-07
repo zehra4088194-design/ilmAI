@@ -26,6 +26,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { printElementById } from '@/lib/utils/printElement';
 import { cn } from '@/lib/utils/cn';
+import { MoleculeViewer3D } from './MoleculeViewer3D';
 
 type PharmaMode = 'student' | 'patient';
 
@@ -1060,8 +1061,8 @@ function StructureModal({ drug, onClose }: { drug: DrugInfo; onClose: () => void
   const [view, setView] = useState<'2d' | '3d'>('2d');
   const [imageError, setImageError] = useState(false);
   const drugName = drug.medicine_name || 'Medicine';
-  const pubChemImageUrl = getPubChemImageUrl(drugName, view, drug.aliases || []);
-  const pubChemSearchUrl = getPubChemSearchUrl(drugName);
+  const structureImageUrl = getStructureUrl(drugName, drug.aliases || [], { view: '2d' });
+  const structureDataUrl = getStructureUrl(drugName, drug.aliases || [], { format: 'sdf' });
 
   useEffect(() => {
     setImageError(false);
@@ -1078,7 +1079,7 @@ function StructureModal({ drug, onClose }: { drug: DrugInfo; onClose: () => void
       >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-bold tracking-wide text-cyan-500 uppercase">PubChem molecular structure</p>
+            <p className="text-xs font-bold tracking-wide text-cyan-500 uppercase">Molecular structure</p>
             <h2 className="mt-1 text-2xl font-bold">{drugName}</h2>
             <p className="text-muted-foreground mt-1 text-sm">{drug.drug_class || 'General therapeutic agent'}</p>
           </div>
@@ -1096,7 +1097,7 @@ function StructureModal({ drug, onClose }: { drug: DrugInfo; onClose: () => void
             )}
             onClick={() => setView('2d')}
           >
-            2D PubChem
+            2D structure
           </button>
           <button
             type="button"
@@ -1106,17 +1107,20 @@ function StructureModal({ drug, onClose }: { drug: DrugInfo; onClose: () => void
             )}
             onClick={() => setView('3d')}
           >
-            3D PubChem
+            3D structure (interactive)
           </button>
         </div>
 
         <div className="my-5 flex justify-center rounded-lg border bg-white p-3 shadow-inner sm:p-6 dark:bg-slate-950">
           <div className="flex aspect-square w-full max-w-[18rem] items-center justify-center sm:max-w-sm">
-            {!imageError ? (
+            {view === '3d' ? (
+              <MoleculeViewer3D dataUrl={structureDataUrl} />
+            ) : !imageError ? (
+              // eslint-disable-next-line @next/next/no-img-element -- dynamic proxy URL per medicine, not a Next-optimizable local asset
               <img
-                key={pubChemImageUrl}
-                src={pubChemImageUrl}
-                alt={`${view.toUpperCase()} molecular structure for ${drugName}`}
+                key={structureImageUrl}
+                src={structureImageUrl}
+                alt={`2D molecular structure for ${drugName}`}
                 className="h-full w-full object-contain"
                 referrerPolicy="no-referrer"
                 onError={() => setImageError(true)}
@@ -1132,58 +1136,49 @@ function StructureModal({ drug, onClose }: { drug: DrugInfo; onClose: () => void
             )}
           </div>
         </div>
-        <div className="mb-3 grid gap-2 text-sm sm:grid-cols-3">
-          <div className="bg-muted/20 rounded-md border p-3">
-            <p className="text-muted-foreground text-xs font-bold tracking-wide uppercase">Source</p>
-            <p className="mt-1 font-semibold">PubChem</p>
-          </div>
+        <div className="mb-3 grid gap-2 text-sm sm:grid-cols-2">
           <div className="bg-muted/20 rounded-md border p-3">
             <p className="text-muted-foreground text-xs font-bold tracking-wide uppercase">View</p>
-            <p className="mt-1 font-semibold">{view === '2d' ? '2D structure' : 'Molecular structure'}</p>
+            <p className="mt-1 font-semibold">{view === '2d' ? '2D structure' : 'Interactive 3D structure'}</p>
           </div>
           <div className="bg-muted/20 rounded-md border p-3">
             <p className="text-muted-foreground text-xs font-bold tracking-wide uppercase">Compound</p>
             <p className="mt-1 font-semibold break-words">{drugName}</p>
           </div>
         </div>
-        <div className="grid gap-2 sm:grid-cols-2">
-          <Button asChild variant="outline" className="justify-center">
-            <a href={pubChemImageUrl} target="_blank" rel="noreferrer">
+        {view === '3d' ? (
+          <p className="text-muted-foreground mb-3 text-xs">Drag to rotate, scroll to zoom.</p>
+        ) : (
+          <Button asChild variant="outline" className="w-full justify-center">
+            <a href={structureImageUrl} target="_blank" rel="noreferrer">
               <FlaskConical className="h-4 w-4" />
-              Open {view.toUpperCase()} image
+              Open full-size image
             </a>
           </Button>
-          <Button asChild className="justify-center">
-            <a href={pubChemSearchUrl} target="_blank" rel="noreferrer">
-              <Search className="h-4 w-4" />
-              Open PubChem
-            </a>
-          </Button>
-        </div>
+        )}
         <p className="text-muted-foreground mt-3 rounded-md border border-cyan-500/25 bg-cyan-500/10 p-3 text-sm leading-6">
-          Structures are resolved through PubChem CID using the medicine name and aliases, then loaded inside ilm AI.
-          Brand or combination products may still need the generic name.
+          Structures are resolved from the medicine name and aliases, then loaded inside ilm AI. Brand or combination
+          products may still need the generic name.
         </p>
       </div>
     </div>
   );
 }
 
-function getPubChemImageUrl(drugName: string, view: '2d' | '3d', aliases: string[]) {
-  const params = new URLSearchParams({
-    name: drugName.trim() || 'medicine',
-    view,
-  });
+function getStructureUrl(
+  drugName: string,
+  aliases: string[],
+  options: { view?: '2d' | '3d'; format?: 'sdf' }
+) {
+  const params = new URLSearchParams({ name: drugName.trim() || 'medicine' });
+  if (options.view) params.set('view', options.view);
+  if (options.format) params.set('format', options.format);
   const cleanAliases = aliases
     .map((item) => item.trim())
     .filter(Boolean)
     .slice(0, 8);
   if (cleanAliases.length) params.set('aliases', cleanAliases.join('|'));
   return `/api/pubchem/structure?${params.toString()}`;
-}
-
-function getPubChemSearchUrl(drugName: string) {
-  return `https://pubchem.ncbi.nlm.nih.gov/#query=${encodeURIComponent(drugName.trim() || 'medicine')}`;
 }
 
 function getMoleculeStyle(drugClass: string) {

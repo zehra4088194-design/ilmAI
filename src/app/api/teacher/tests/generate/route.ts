@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
-import { generateChapterQuestionPaper } from '@/lib/tests/chapter-question-bank';
+import { generateChapterQuestionPaper, type BankMcq, type BankSubjectiveQuestion } from '@/lib/tests/chapter-question-bank';
 import { isTeacherAuthorized } from '@/lib/teacher/authorization';
 import { resolveTestBranding, type PlanTier } from '@/lib/teacher/test-branding';
 import type { DifficultyFilter } from '@/lib/tests/paper-selection';
@@ -15,6 +15,49 @@ const VALID_THEMES = new Set(['classic', 'modern', 'minimal']);
 function count(value: unknown, fallback: number, max: number) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? Math.min(Math.max(Math.floor(parsed), 0), max) : fallback;
+}
+
+// A teacher building a paper in "Custom" mode types their own questions for a type instead of
+// picking a count for the AI to fill randomly (see mcqMode/shortMode/etc in TeacherTestStudio).
+// These sanitize whatever the client sent into the same shape the chapter question bank
+// produces, so everything downstream (totals, persistence, PDF rendering) treats a manual
+// question exactly like a bank-picked one.
+function sanitizeManualMcqs(raw: unknown, max: number): BankMcq[] {
+  if (!Array.isArray(raw)) return [];
+  const out: BankMcq[] = [];
+  for (const entry of raw) {
+    const item = entry as Record<string, unknown>;
+    const q = String(item?.q || '').trim().slice(0, 1000);
+    if (!q) continue;
+    const opts = Array.isArray(item?.opts)
+      ? (item.opts as unknown[])
+          .map((option) => String(option || '').trim().slice(0, 300))
+          .filter(Boolean)
+          .slice(0, 4)
+      : [];
+    if (opts.length < 2) continue;
+    let correct = Number(item?.correct);
+    if (!Number.isInteger(correct) || correct < 0 || correct >= opts.length) correct = 0;
+    out.push({ q, opts, correct, exp: String(item?.exp || '').trim().slice(0, 500), difficulty: null });
+    if (out.length >= max) break;
+  }
+  return out;
+}
+
+function sanitizeManualQuestions(raw: unknown, max: number, defaultMarks: number): BankSubjectiveQuestion[] {
+  if (!Array.isArray(raw)) return [];
+  const out: BankSubjectiveQuestion[] = [];
+  for (const entry of raw) {
+    const item = entry as Record<string, unknown>;
+    const q = String(item?.q || '').trim().slice(0, 3000);
+    if (!q) continue;
+    const parsedMarks = Number(item?.marks);
+    const marks = parsedMarks > 0 ? Math.min(50, Math.round(parsedMarks)) : defaultMarks;
+    const modelAnswer = String(item?.modelAnswer || '').trim().slice(0, 3000);
+    out.push({ q, marks, keyPoints: [], modelAnswer, difficulty: null });
+    if (out.length >= max) break;
+  }
+  return out;
 }
 
 export async function POST(req: NextRequest) {
@@ -60,13 +103,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const mcqCount = count(body.mcqCount, 10, 100);
-    const shortCount = count(body.shortCount, 5, 50);
-    const longCount = count(body.longCount, 2, 20);
-    const letterCount = count(body.letterCount, 3, 20);
-    const vocabCount = count(body.vocabCount, 5, 30);
-    const grammarCount = count(body.grammarCount, 3, 20);
-    const numericalCount = count(body.numericalCount, 5, 20);
+    // "Custom" mode (per-type Auto/Manual in TeacherTestStudio) — a manualX array present means
+    // that section is hand-authored, so its auto count is 0 (skip the bank fetch/random-pick
+    // entirely for it) and the sanitized manual questions replace it below instead.
+    const mcqIsManual = Array.isArray(body.manualMcqs);
+    const shortIsManual = Array.isArray(body.manualShortQuestions);
+    const longIsManual = Array.isArray(body.manualLongQuestions);
+    const letterIsManual = Array.isArray(body.manualLetterQuestions);
+    const vocabIsManual = Array.isArray(body.manualVocabQuestions);
+    const grammarIsManual = Array.isArray(body.manualGrammarQuestions);
+    const numericalIsManual = Array.isArray(body.manualNumericalQuestions);
+
+    const mcqCount = mcqIsManual ? 0 : count(body.mcqCount, 5, 100);
+    const shortCount = shortIsManual ? 0 : count(body.shortCount, 5, 50);
+    const longCount = longIsManual ? 0 : count(body.longCount, 2, 20);
+    const letterCount = letterIsManual ? 0 : count(body.letterCount, 3, 20);
+    const vocabCount = vocabIsManual ? 0 : count(body.vocabCount, 5, 30);
+    const grammarCount = grammarIsManual ? 0 : count(body.grammarCount, 3, 20);
+    const numericalCount = numericalIsManual ? 0 : count(body.numericalCount, 5, 20);
     const difficultyRaw = String(body.difficulty || '').toUpperCase();
     const difficulty: DifficultyFilter = VALID_DIFFICULTIES.has(difficultyRaw)
       ? (difficultyRaw as DifficultyFilter)
@@ -86,6 +140,18 @@ export async function POST(req: NextRequest) {
       numericalCount,
       difficulty,
     });
+
+    if (mcqIsManual) paper.mcqs = sanitizeManualMcqs(body.manualMcqs, 100);
+    if (shortIsManual) paper.shortQuestions = sanitizeManualQuestions(body.manualShortQuestions, 50, 3);
+    if (longIsManual) paper.longQuestions = sanitizeManualQuestions(body.manualLongQuestions, 20, 8);
+    if (letterIsManual) paper.letterQuestions = sanitizeManualQuestions(body.manualLetterQuestions, 20, 3);
+    if (vocabIsManual) paper.vocabQuestions = sanitizeManualQuestions(body.manualVocabQuestions, 30, 3);
+    if (grammarIsManual) paper.grammarQuestions = sanitizeManualQuestions(body.manualGrammarQuestions, 20, 3);
+    if (numericalIsManual) paper.numericalQuestions = sanitizeManualQuestions(body.manualNumericalQuestions, 20, 5);
+
+    const anyManual =
+      mcqIsManual || shortIsManual || longIsManual || letterIsManual || vocabIsManual || grammarIsManual || numericalIsManual;
+
     if (
       !paper.mcqs.length &&
       !paper.shortQuestions.length &&
@@ -96,7 +162,11 @@ export async function POST(req: NextRequest) {
       !paper.numericalQuestions.length
     ) {
       return NextResponse.json(
-        { error: 'No uploaded source questions are available for this chapter yet.' },
+        {
+          error: anyManual
+            ? 'Add at least one question, or switch a section back to Auto.'
+            : 'No uploaded source questions are available for this chapter yet.',
+        },
         { status: 409 }
       );
     }
@@ -135,13 +205,15 @@ export async function POST(req: NextRequest) {
       branding,
       generatedAt: new Date().toISOString(),
       requestedCounts: {
-        mcq: mcqCount,
-        short: shortCount,
-        long: longCount,
-        letter: letterCount,
-        vocab: vocabCount,
-        grammar: grammarCount,
-        numerical: numericalCount,
+        // A manual section's "requested" count is just what actually made it through
+        // sanitization — there's no random bank pool for it to fall short against.
+        mcq: mcqIsManual ? paper.mcqs.length : mcqCount,
+        short: shortIsManual ? paper.shortQuestions.length : shortCount,
+        long: longIsManual ? paper.longQuestions.length : longCount,
+        letter: letterIsManual ? paper.letterQuestions.length : letterCount,
+        vocab: vocabIsManual ? paper.vocabQuestions.length : vocabCount,
+        grammar: grammarIsManual ? paper.grammarQuestions.length : grammarCount,
+        numerical: numericalIsManual ? paper.numericalQuestions.length : numericalCount,
       },
     };
 

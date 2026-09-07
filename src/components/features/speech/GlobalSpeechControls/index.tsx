@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Mic, Square, Volume2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils/cn';
+import { getVoiceTypingMode, onVoiceTypingModeChange, type VoiceTypingMode } from '@/lib/utils/voiceTypingPreference';
 
 type EditableElement = HTMLTextAreaElement | HTMLInputElement | HTMLElement;
 
@@ -89,12 +90,25 @@ export function GlobalSpeechControls() {
   const [activeElement, setActiveElement] = useState<EditableElement | null>(null);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
   const [listening, setListening] = useState(false);
+  // 'remember-dismiss' mode's dismissal — persists for the whole tab (sessionStorage).
   const [dismissed, setDismissed] = useState(false);
+  // 'always' mode's dismissal — scoped to whichever single element was just dismissed, so
+  // focusing any other field (even a moment later) shows the widget again automatically.
+  const [dismissedElement, setDismissedElement] = useState<EditableElement | null>(null);
+  const [mode, setMode] = useState<VoiceTypingMode>('always');
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
   useEffect(() => {
     setDismissed(window.sessionStorage.getItem('ilm-ai-speech-controls-dismissed') === '1');
+    setMode(getVoiceTypingMode());
+    return onVoiceTypingModeChange(setMode);
   }, []);
+
+  // A new field taking focus always clears the 'always'-mode per-element dismissal — it's meant
+  // to reset on every focus change, not just remember whatever was dismissed last.
+  useEffect(() => {
+    setDismissedElement(null);
+  }, [activeElement]);
 
   useEffect(() => {
     const updatePosition = () => {
@@ -209,7 +223,10 @@ export function GlobalSpeechControls() {
     }
   };
 
-  if (dismissed || !activeElement || !position) return null;
+  if (mode === 'off') return null;
+  if (mode === 'remember-dismiss' && dismissed) return null;
+  if (mode === 'always' && dismissedElement === activeElement && activeElement !== null) return null;
+  if (!activeElement || !position) return null;
 
   return (
     <div
@@ -244,12 +261,18 @@ export function GlobalSpeechControls() {
         onClick={() => {
           recognitionRef.current?.abort();
           window.speechSynthesis?.cancel();
-          window.sessionStorage.setItem('ilm-ai-speech-controls-dismissed', '1');
-          setDismissed(true);
+          if (mode === 'remember-dismiss') {
+            window.sessionStorage.setItem('ilm-ai-speech-controls-dismissed', '1');
+            setDismissed(true);
+          } else {
+            // 'always' mode — only this field's popup goes away; the next field focused
+            // clears dismissedElement automatically (see the effect above) and shows it again.
+            setDismissedElement(activeElement);
+          }
         }}
         className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-        title="Hide for this tab"
-        aria-label="Hide voice controls for this tab"
+        title={mode === 'remember-dismiss' ? 'Hide for this tab' : 'Hide for this field'}
+        aria-label={mode === 'remember-dismiss' ? 'Hide voice controls for this tab' : 'Hide voice controls for this field'}
       >
         <X className="h-3.5 w-3.5" />
       </button>

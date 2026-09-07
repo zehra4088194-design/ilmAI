@@ -101,26 +101,32 @@ export function HouseAdBanner({ slot, className = '', categoryContext }: HouseAd
   };
 
   return (
-    <div className={`overflow-hidden ${className}`}>
+    // Fixed square "box" instead of stretching full-width — a portrait/product-shot creative
+    // (most admin-uploaded ads) used to sit tiny and left-aligned inside a wide, mostly-empty
+    // strip once object-contain letterboxed it against a full-width, short container. A capped,
+    // centered, aspect-locked box looks intentional (like a product card) no matter what shape
+    // the uploaded image actually is — kept deliberately modest (not full-width, not the biggest
+    // thing on the page) since this shares the page with real content, not an ad-first layout.
+    <div className={`mx-auto w-full max-w-[160px] overflow-hidden ${className}`}>
       <p className="text-[10px] text-muted-foreground text-center mb-1 select-none">Promoted</p>
-      <div className="bg-muted/30 relative flex items-center justify-center overflow-hidden rounded-lg">
+      <div className="bg-muted/30 relative aspect-square w-full overflow-hidden rounded-lg">
         <AnimatePresence initial={false} custom={direction} mode="popLayout">
           <motion.a
             key={current.id}
             href={current.clickHref}
             aria-label={current.title}
-            className="block w-full"
+            className="absolute inset-0 block"
             custom={direction}
             initial={{ x: direction > 0 ? '30%' : '-30%', opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: direction > 0 ? '-30%' : '30%', opacity: 0 }}
             transition={{ duration: 0.32, ease: 'easeInOut' }}
           >
-            {/* Capped height so a tall/square admin-uploaded image (a school logo, a portrait
-                poster) can never balloon into a huge block — object-contain (not cover) keeps the
-                whole image visible either way, just letterboxed instead of stretched or cropped. */}
+            {/* object-contain (not cover) keeps the whole image visible either way, just
+                letterboxed instead of stretched or cropped — but now within a fixed square box
+                instead of an ambiguous full-width one, so the letterboxing itself looks tidy. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={current.imageUrl} alt={current.title} className="max-h-28 w-full object-contain sm:max-h-36" />
+            <img src={current.imageUrl} alt={current.title} className="h-full w-full object-contain" />
           </motion.a>
         </AnimatePresence>
         {banners.length > 1 && (

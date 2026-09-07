@@ -275,17 +275,18 @@ export function ProtectedResourceReader({
     >
       <div
         className={`border-border flex items-center justify-between gap-3 overflow-hidden border-b px-3 transition-all duration-300 ease-in-out sm:px-5 ${
-          toolbarsVisible ? 'min-h-14 opacity-100' : 'pointer-events-none min-h-0 border-b-0 py-0 opacity-0'
+          // Was min-h-14 with a "PDF reader" subtitle line under the title — stacked on top of
+          // ProtectedPdfViewer's own page/zoom toolbar right below it, the two bars ate a
+          // disproportionate share of the viewport (worst on short mobile screens). Dropping the
+          // subtitle and shrinking this bar keeps the title/controls readable in less height.
+          toolbarsVisible ? 'min-h-10 opacity-100' : 'pointer-events-none min-h-0 border-b-0 py-0 opacity-0'
         }`}
         onMouseEnter={holdControlsVisible}
         onMouseLeave={() => {
           if (isFullscreen) scheduleControlsHide();
         }}
       >
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold sm:text-base">{title}</p>
-          <p className="text-muted-foreground text-xs">PDF reader</p>
-        </div>
+        <p className="min-w-0 truncate text-sm font-semibold sm:text-base">{title}</p>
         <div className="flex shrink-0 items-center gap-1">
           <div className="border-border bg-muted/60 mr-1 flex rounded-full border p-0.5">
             {(['auto', 'dark', 'light'] as const).map((option) => (
@@ -378,6 +379,7 @@ export function ProtectedResourceReader({
                 title={title}
                 className="h-full w-full"
                 toolbarVisible={toolbarsVisible}
+                mode={effectiveMode}
                 onLoadError={(message) => setLoadError(message)}
               />
             )}

@@ -163,12 +163,6 @@ export const SUBJECTS_COLORS: Record<string, string> = {
   'tarjuma-tul-quran': '#7c3aed',
 };
 
-export const AI_PROVIDERS_CONFIG = {
-  groq: { model: 'llama-3.3-70b-versatile', maxTokens: 2048, temperature: 0.7, free: true },
-  anthropic: { model: 'claude-3-haiku-20240307', maxTokens: 4096, temperature: 0.7, free: false },
-  openai: { model: 'gpt-4o-mini', maxTokens: 4096, temperature: 0.7, free: false },
-} as const;
-
 export const ROUTES = {
   HOME: '/',
   LOGIN: '/login',

@@ -169,7 +169,7 @@ In Oracle Email Delivery:
 4. Generate SMTP credentials; OCI console login credentials do not work as SMTP credentials.
 5. Put the SMTP host, port 587, username, password, and sender into Coolify.
 6. Put the same SMTP credentials into Supabase Auth SMTP settings.
-7. Set `CONTACT_EMAIL=ilmai.study1@gmail.com` for public contact-form delivery.
+7. Set `CONTACT_EMAIL=information@ilmai.study` for public contact-form delivery.
 
 Customize Supabase Auth templates with the ilm AI name/logo. Include the normal confirmation/recovery link and the template token where Supabase supports it, so the email can present both a button and a code. Test signup, email confirmation, and password recovery before launch.
 
@@ -213,7 +213,7 @@ An already-paid user is intentionally not sent through a second checkout for an 
 
 Paddle requires a default payment link and an approved live domain: https://developer.paddle.com/get-started/quickstart/.
 
-Paddle remains the default card checkout. If PayPro merchant checkout credentials are approved, set `PAYPRO_CHECKOUT_URL`, `PAYPRO_WEBHOOK_SECRET`, and all four `PAYPRO_PLAN_ID_*` values to enable Pakistan local checkout. If those values are empty, Pakistan users still see Easypaisa/JazzCash manual verification fallback.
+Paddle remains the default card checkout. If PayPro merchant checkout credentials are approved, set `PAYPRO_CHECKOUT_URL`, `PAYPRO_WEBHOOK_SECRET`, and all four `PAYPRO_PLAN_ID_*` values to enable Pakistan local checkout. If those values are empty, Pakistan users still see the JazzCash/Easypaisa manual verification fallback.
 
 ## 7. Validate production
 

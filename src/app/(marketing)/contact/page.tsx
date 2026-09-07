@@ -71,10 +71,10 @@ export default function ContactPage() {
               <div className="border-border/70 mt-8 rounded-xl border p-5">
                 <p className="text-sm font-semibold">Direct contact</p>
                 <a
-                  href="mailto:ilmai.study1@gmail.com"
+                  href="mailto:information@ilmai.study"
                   className="mt-2 block text-sm text-violet-300 underline-offset-4 hover:underline"
                 >
-                  ilmai.study1@gmail.com
+                  information@ilmai.study
                 </a>
               </div>
             </aside>

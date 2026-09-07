@@ -15,7 +15,7 @@ Successfully implemented a complete account deletion feature for ilm AI with OTP
 - [x] `POST /api/auth/delete-account/confirm` - Verify OTP and permanently delete account
 - [x] Complete error handling and validation
 - [x] Secure OTP generation and verification
-- [x] Email delivery via Resend API
+- [x] Email delivery via Brevo API
 
 **Database**
 - [x] Migration: `supabase/migrations/20260820110000_account_deletion_requests.sql`
@@ -161,7 +161,7 @@ src/components/features/settings/SettingsTabs/index.tsx
 # Set these environment variables
 
 # Email Service (Required)
-RESEND_API_KEY=re_xxx  # Get from Resend dashboard
+BREVO_API_KEY=xxx  # Get from Brevo dashboard
 
 # Supabase (Required - likely already set)
 NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
@@ -169,7 +169,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=xxx
 SUPABASE_SERVICE_ROLE_KEY=xxx
 
 # Email Sender (Optional)
-RESEND_FROM_EMAIL=noreply@ilmai.study  # Customize as needed
+EMAIL_FROM=noreply@ilmai.study  # Customize as needed
 ```
 
 ### Database Migration
@@ -201,7 +201,7 @@ Before going to production, complete these tests:
 - [ ] Page loads with correct user email
 - [ ] API endpoints return proper responses
 - [ ] Database records created and deleted
-- [ ] Resend API integration works
+- [ ] Brevo API integration works
 - [ ] Email template renders correctly
 
 ### Edge Cases
@@ -227,7 +227,7 @@ Before going to production, complete these tests:
 supabase migration up 20260820110000
 
 # 2. Set environment variables in .env.local
-RESEND_API_KEY=re_xxx
+BREVO_API_KEY=xxx
 SUPABASE_SERVICE_ROLE_KEY=xxx
 
 # 3. Start dev server
@@ -338,7 +338,7 @@ When account is deleted, the following is permanently removed:
 
 3. **Post-Deployment**
    - [ ] Monitor user deletion requests
-   - [ ] Check Resend email delivery
+   - [ ] Check Brevo email delivery
    - [ ] Verify cascade deletion working
    - [ ] Keep monitoring for 24 hours
 
@@ -369,8 +369,8 @@ When account is deleted, the following is permanently removed:
 ### Common Issues
 
 **Email not received?**
-- Check RESEND_API_KEY is correct
-- Check Resend dashboard for bounces
+- Check BREVO_API_KEY is correct
+- Check Brevo dashboard for bounces
 - Verify email address in profile
 
 **OTP invalid?**

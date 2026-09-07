@@ -165,6 +165,10 @@ export type PlatformSettings = {
   // NOT gate the accompanying in-app notification, which is a separate, always-on
   // delivery â€” see that route's own comment for why the two are decoupled.
   dailyStudyEmailsEnabled: boolean;
+  // "Order printed notes" (a library resource card button) prices a print-on-demand copy at
+  // this many PKR per 2 pages of the resource's PDF â€” e.g. 50 (default) means a 10-page PDF
+  // prices at ceil(10/2)*50 = Rs. 250. See /api/library/resources/[id]/order-notes.
+  notesOrderPricePerTwoPagesPkr: number;
 };
 
 export const SUBSCRIPTION_SETTINGS_KEY = 'subscription_plans';
@@ -172,6 +176,7 @@ export const SUBSCRIPTION_SETTINGS_KEY = 'subscription_plans';
 export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
   pdfThemeMode: 'dark',
   dailyStudyEmailsEnabled: false,
+  notesOrderPricePerTwoPagesPkr: 50,
   // Default routing runs through OpenRouter for every text-only feature â€” the gateway's
   // 'advanced' provider already tries OpenRouter's own best-available free auto-router first
   // and falls back to DeepSeek v4 Flash (still on OpenRouter) automatically on error, so this
@@ -750,6 +755,10 @@ export function normalizePlatformSettings(input: unknown): PlatformSettings {
       source.dailyStudyEmailsEnabled,
       DEFAULT_PLATFORM_SETTINGS.dailyStudyEmailsEnabled
     ),
+    notesOrderPricePerTwoPagesPkr: Math.max(
+      1,
+      numberOrFallback(source.notesOrderPricePerTwoPagesPkr, DEFAULT_PLATFORM_SETTINGS.notesOrderPricePerTwoPagesPkr)
+    ),
     institutionPricing: normalizeInstitutionPricing(source.institutionPricing),
     parentPlans: normalizeParentPlans(source.parentPlans),
     universityPlans: normalizeUniversityPlans(source.universityPlans),
@@ -902,6 +911,16 @@ export function resolvePlanAmountUsd(
         : settings.universityPlans[tierKey].priceUsdMonthly;
   if (params.billingCycle === 'annual') return Math.round(priceUsdMonthly * 12 * 0.8 * 100) / 100;
   return priceUsdMonthly;
+}
+
+/**
+ * "Order printed notes" pricing — a flat rate per 2 pages, admin-configurable
+ * (notesOrderPricePerTwoPagesPkr). A 1-page PDF still counts as one "2-page" unit (nobody prints
+ * half a sheet), hence the ceil. Returns whole rupees; the caller converts to paisa for the store.
+ */
+export function computeNotesOrderPriceRs(settings: PlatformSettings, pageCount: number): number {
+  const pages = Math.max(1, Math.round(pageCount));
+  return Math.ceil(pages / 2) * settings.notesOrderPricePerTwoPagesPkr;
 }
 
 

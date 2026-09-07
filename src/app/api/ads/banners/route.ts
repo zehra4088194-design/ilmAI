@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { isPlacementEnabled, selectActiveBanners } from '@/lib/ads/queries';
 import { isAdPlacement } from '@/lib/ads/constants';
+import { getStoreProductBanners } from '@/lib/ads/storeProductsFeed';
 
 export const runtime = 'nodejs';
 
@@ -36,6 +37,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ banners: [] });
     }
     audience = profile?.role || null;
+  }
+
+  // Auto-populated from ilmai.store's live catalog — no admin-uploaded banner rows involved at
+  // all, so it skips selectActiveBanners entirely. Links straight to the store product page
+  // (not the usual /api/ads/click/[id] proxy — there's no local banner row for that route to
+  // look up); PRO/ELITE and the per-placement enable/disable toggle above still both apply.
+  if (slot === 'store_products') {
+    return NextResponse.json({ banners: await getStoreProductBanners() });
   }
 
   const category = req.nextUrl.searchParams.get('category');

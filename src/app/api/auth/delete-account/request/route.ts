@@ -1,28 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { sendEmail } from '@/lib/email/send';
 
 // Generate a 6-digit OTP
 function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// Send email via Resend
+// Send email via Brevo — same transport as every other transactional email in the app
+// (auth OTPs, school/college notifications, contact form). See src/lib/email/send.ts.
 async function sendDeletionEmail(email: string, otp: string, fullName: string): Promise<void> {
-  if (!process.env.RESEND_API_KEY) {
-    throw new Error('RESEND_API_KEY is not configured');
-  }
-
-  const response = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-    },
-    body: JSON.stringify({
-      from: process.env.RESEND_FROM_EMAIL || 'noreply@ilmai.study',
-      to: email,
-      subject: 'Confirm your account deletion request',
-      html: `
+  await sendEmail({
+    to: email,
+    subject: 'Confirm your account deletion request',
+    html: `
         <!DOCTYPE html>
         <html>
           <head>
@@ -67,7 +58,7 @@ async function sendDeletionEmail(email: string, otp: string, fullName: string): 
           </body>
         </html>
       `,
-      text: `
+    text: `
 Account Deletion Request
 
 Hi ${fullName},
@@ -85,14 +76,7 @@ If you did not request account deletion, you can safely ignore this email. Your 
 Best regards,
 The ilm AI Team
       `,
-    }),
   });
-
-  if (!response.ok) {
-    const error = await response.json();
-    console.error('Resend API error:', error);
-    throw new Error('Failed to send deletion confirmation email');
-  }
 }
 
 export async function POST(request: NextRequest) {
