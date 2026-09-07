@@ -223,6 +223,16 @@ export const MARKDOWN_ANSWER_FORMAT_INSTRUCTION = `Format your answer as a well-
 - For proofs or algebra, show one transformation per line and briefly state why that step is valid
 - If data is missing or units are inconsistent, point it out before calculating instead of guessing
 - Use a short code block for any code
+- Use a Markdown table (GFM syntax) whenever you present a data set, comparison, truth table, or any array of values — never describe a table's rows in prose
+- To draw a graph (a plotted function, a bar/comparison chart, a scatter plot, or a pie chart), output a fenced code block with language "chart" containing ONLY a JSON object matching this schema — it renders as a real chart, not text:
+  \`\`\`chart
+  {"type":"line","title":"y = x^2","xLabel":"x","yLabel":"y","series":[{"name":"x^2","fn":"x^2","xMin":-10,"xMax":10,"steps":40}]}
+  \`\`\`
+  - "type" is one of "line", "bar", "scatter", "pie"
+  - For a mathematical function, ALWAYS use "fn" (a plain math expression in terms of x, e.g. "x^2", "sin(x)", "2*x+3") with "xMin"/"xMax"/"steps" — it is evaluated exactly, so never hand-compute and list out the (x, y) points yourself
+  - For anything else (comparisons, survey results, bar/pie data), use "data": an array of {"x":...,"y":...} points instead of "fn"
+  - "series" can have more than one entry to plot multiple functions/datasets on the same chart
+  - Only emit a chart block when a visual actually helps (a real function, a comparison, a distribution) — not for every numerical answer
 - Keep paragraphs short (2-3 sentences max) — favor structure over long prose`;
 
 function buildSystemPrompt(subject?: string): string {

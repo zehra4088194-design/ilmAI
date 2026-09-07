@@ -7,6 +7,7 @@ import rehypeKatex from 'rehype-katex';
 import { ThumbsUp, ThumbsDown, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { toast } from 'sonner';
+import { ChartBlock } from '@/components/features/ai/ChartBlock';
 
 // Import once, globally, from src/app/layout.tsx: import 'katex/dist/katex.min.css';
 
@@ -76,6 +77,19 @@ export function AiAnswerRenderer({ content, className, card = true, label, feedb
               <table className="w-full text-left text-sm">{children}</table>
             </div>
           ),
+          // A ```chart fenced block (JSON spec — see ChartBlock's doc comment) renders as an
+          // actual graph instead of a code block. Anything else (or a malformed chart spec)
+          // falls through to the default <pre><code> rendering untouched.
+          pre: ({ children }) => {
+            const codeElement = Array.isArray(children) ? children[0] : children;
+            const codeProps = (codeElement as { props?: { className?: string; children?: unknown } })?.props;
+            const language = /language-(\w+)/.exec(codeProps?.className || '')?.[1];
+            if (language === 'chart') {
+              const raw = Array.isArray(codeProps?.children) ? codeProps.children.join('') : String(codeProps?.children ?? '');
+              return <ChartBlock spec={raw.replace(/\n$/, '')} />;
+            }
+            return <pre>{children}</pre>;
+          },
         }}
       >
         {content}
