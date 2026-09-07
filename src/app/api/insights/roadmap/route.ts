@@ -133,7 +133,11 @@ export async function POST(req: NextRequest) {
     const now = new Date().toISOString();
 
     const [{ data: profile }, { data: twin, error: twinError }, { data: cached }] = await Promise.all([
-      supabase.from('profiles').select('subscription_tier, board, grade_level').eq('id', user.id).single(),
+      supabase
+        .from('profiles')
+        .select('subscription_tier, board, grade_level, target_marks_percentage, total_marks_percentage, subject_condition_baseline')
+        .eq('id', user.id)
+        .single(),
       db
         .from('student_digital_twin')
         .select(
@@ -231,6 +235,17 @@ export async function POST(req: NextRequest) {
         chapterId: row.chapter_id,
         confidence: Number(row.mastery || 0),
       });
+    }
+    // Cold-start fallback: a brand-new student has no real quiz/mistake signal yet, so weakConcepts
+    // above is often empty. subject_condition_baseline is the self-reported "Strong/Steady/Needs
+    // focus" per subject from the onboarding modal — until now collected and never read back
+    // anywhere. Fold in the subjects they flagged 'needs-work' (chapter-less, so the roadmap can
+    // only reason at subject level) whenever real per-chapter signal hasn't already covered them.
+    const knownWeakSubjects = new Set(weakConcepts.map((item) => item.subjectId).filter(Boolean));
+    const baseline = ((profile as any)?.subject_condition_baseline || {}) as Record<string, string>;
+    for (const [subjectId, condition] of Object.entries(baseline)) {
+      if (condition !== 'needs-work' || knownWeakSubjects.has(subjectId)) continue;
+      weakConcepts.push({ subjectId, chapterId: '', confidence: 30 });
     }
     weakConcepts.sort((a, b) => a.confidence - b.confidence);
 
@@ -346,11 +361,15 @@ export async function POST(req: NextRequest) {
         reason: 'This reinforces your latest saved learning signals.',
       });
     }
+    const targetScore = (profile as any)?.target_marks_percentage;
     const fallback: Roadmap = {
       title: 'Focused weekly roadmap',
       summary: 'Clear due revisions first, then strengthen the weakest chapters with focused practice.',
       tasks: fallbackTasks,
-      checkpoints: ['Complete one focused quiz after revision', 'Review progress at the end of the week'],
+      checkpoints: [
+        'Complete one focused quiz after revision',
+        typeof targetScore === 'number' ? `Track progress toward your ${targetScore}% target` : 'Review progress at the end of the week',
+      ],
       risk_flags: [],
     };
 
@@ -371,6 +390,8 @@ export async function POST(req: NextRequest) {
           content: `Build a ${insightType} for this Pakistani board student.
 Board: ${(profile as any)?.board || 'unknown'}
 Grade: ${(profile as any)?.grade_level || 'unknown'}
+Last exam score: ${(profile as any)?.total_marks_percentage ?? 'unknown'}%
+Target score this time: ${(profile as any)?.target_marks_percentage ?? 'not set'}%
 Confidence: ${typedTwin.confidence_level ?? 'unknown'}
 Preferred study time: ${typedTwin.preferred_study_time || 'unknown'}
 Attention span (minutes): ${typedTwin.attention_span_minutes ?? 'unknown'}
@@ -387,7 +408,8 @@ ${JSON.stringify(recentQuizzes || [])}
 Recent study:
 ${JSON.stringify(recentStudy || [])}
 
-Prioritize due work and low-confidence chapters. Use only the supplied subject_id and chapter_id values.
+Prioritize due work and low-confidence chapters. If a target score is set, let the summary or a checkpoint
+acknowledge the gap between the last score and the target. Use only the supplied subject_id and chapter_id values.
 Return JSON:
 {
   "title": "short title",

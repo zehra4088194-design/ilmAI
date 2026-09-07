@@ -6,11 +6,23 @@ import { Progress } from '@/components/ui/progress';
 
 type SubjectScore = { subjectId: string | null; subjectName: string; average: number; attempts: number };
 
-export function WeaknessRadar({ scores, weakConceptTitle }: { scores: SubjectScore[]; weakConceptTitle?: string }) {
+export function WeaknessRadar({
+  scores,
+  weakConceptTitle,
+  targetMarksPercentage,
+}: {
+  scores: SubjectScore[];
+  weakConceptTitle?: string;
+  // From the "Tell us a little more" onboarding modal (PersonalizationModal) — collected at
+  // signup but, until now, never read back anywhere: this card is the first real use of it.
+  targetMarksPercentage?: number | null;
+}) {
   const sorted = [...scores].sort((a, b) => a.average - b.average);
   const weak = sorted[0];
   const strong = sorted[sorted.length - 1];
   const avg = scores.length ? Math.round(scores.reduce((sum, item) => sum + item.average, 0) / scores.length) : 0;
+  const hasTarget = typeof targetMarksPercentage === 'number' && targetMarksPercentage > 0;
+  const gap = hasTarget ? Math.round(targetMarksPercentage! - avg) : null;
 
   return (
     <Card className="dashboard-surface text-foreground">
@@ -29,9 +41,18 @@ export function WeaknessRadar({ scores, weakConceptTitle }: { scores: SubjectSco
             <div>
               <div className="mb-1 flex items-center justify-between text-sm">
                 <span>Overall accuracy</span>
-                <span className="font-semibold">{avg}%</span>
+                <span className="font-semibold">
+                  {avg}%{hasTarget && <span className="text-muted-foreground font-normal"> / {targetMarksPercentage}% target</span>}
+                </span>
               </div>
               <Progress value={avg} className="h-2" />
+              {hasTarget && (
+                <p className={`mt-1 text-xs ${gap! > 0 ? 'text-amber-500' : 'text-emerald-500'}`}>
+                  {gap! > 0
+                    ? `${gap} percentage points to reach your target of ${targetMarksPercentage}%.`
+                    : `You're at or above your ${targetMarksPercentage}% target — nice work.`}
+                </p>
+              )}
             </div>
             <Insight icon={TrendingDown} label="Needs attention" value={weak ? `${weak.subjectName} · ${weak.average}%` : '-'} />
             <Insight icon={TrendingUp} label="Strong subject" value={strong ? `${strong.subjectName} · ${strong.average}%` : '-'} />

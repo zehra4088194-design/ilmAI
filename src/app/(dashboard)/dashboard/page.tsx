@@ -162,6 +162,8 @@ export default async function DashboardPage() {
         </div>
       )}
       <HouseAdBanner slot="dashboard_top" />
+      {/* Live ilmai.store products — no admin setup, appears/disappears with the store's own catalog. */}
+      <HouseAdBanner slot="store_products" />
       <WelcomeSection
         name={profile?.full_name || 'Student'}
         streak={profile?.streak || 0}
@@ -197,7 +199,11 @@ export default async function DashboardPage() {
       />
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          <WeaknessRadar scores={subjectScores} weakConceptTitle={weakConceptTitle} />
+          <WeaknessRadar
+            scores={subjectScores}
+            weakConceptTitle={weakConceptTitle}
+            targetMarksPercentage={profile?.target_marks_percentage ?? null}
+          />
           <ContinueLearning items={continueLearningItems} />
           <RecentActivity userId={user!.id} />
         </div>
