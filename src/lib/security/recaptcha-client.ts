@@ -58,6 +58,21 @@ export async function getRecaptchaToken(action: RecaptchaAction): Promise<string
   });
 }
 
+/**
+ * Same as getRecaptchaToken, but never throws. Use this for low-risk, anonymous
+ * flows (e.g. the public demo) that must keep working even when the reCAPTCHA
+ * script can't load (blocked/slow network, restricted test environments, etc.).
+ * The server treats a null token from these flows as "unverified", not "denied".
+ */
+export async function getRecaptchaTokenOrNull(action: RecaptchaAction): Promise<string | null> {
+  try {
+    return await getRecaptchaToken(action);
+  } catch (error) {
+    console.warn('reCAPTCHA unavailable, continuing without it:', error);
+    return null;
+  }
+}
+
 export async function verifyAuthRecaptcha(action: RecaptchaAction) {
   const token = await getRecaptchaToken(action);
   const response = await fetch('/api/security/recaptcha', {

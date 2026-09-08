@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { gatewayChat } from '@/lib/ai/gateway';
 import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
 import { checkAiMessageLimit, consumeAiCredits } from '@/lib/rate-limit';
@@ -16,6 +17,18 @@ export interface FullTestPaper {
   mcqs: { q: string; opts: string[]; correct: number; exp: string }[];
   shortQs: { q: string; marks: number; keyPoints: string[] }[];
   longQs: { q: string; marks: number; keyPoints: string[]; guide: string }[];
+}
+
+// Best-effort history save into public.full_tests. Never blocks/fails generation
+// (mirrors savePresentationHistory in /api/presentation/generate).
+async function saveFullTestHistory(userId: string, title: string, paper: FullTestPaper) {
+  const admin = createServiceClient() as any;
+  const { error } = await admin.from('full_tests').insert({
+    user_id: userId,
+    title,
+    paper_json: paper,
+  });
+  if (error) throw error;
 }
 
 export async function POST(req: NextRequest) {
@@ -102,6 +115,10 @@ Return ONLY valid JSON, no markdown, no extra text:
     });
 
     await consumeAiCredits(user.id, tier, 'full_test');
+    const title = parsed.title || `${subjectName} — ${boardName} — ${className}`;
+    await saveFullTestHistory(user.id, title, parsed).catch((error) =>
+      console.error('Full test history could not be saved (non-fatal):', error)
+    );
     return NextResponse.json({ status: 'success', data: parsed, providerUsed: result.providerUsed });
   } catch (error) {
     console.error('Full test error:', error);

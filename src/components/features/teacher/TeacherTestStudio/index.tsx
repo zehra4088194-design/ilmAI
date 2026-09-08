@@ -133,6 +133,9 @@ export function TeacherTestStudio({
   const [manualVocab, setManualVocab] = useState<ManualVocabPair[]>([]);
   const [manualGrammar, setManualGrammar] = useState<ManualQuestion[]>([]);
   const [manualNumericals, setManualNumericals] = useState<ManualQuestion[]>([]);
+  // "Additional questions" — always hand-typed, no Auto/chapter-bank counterpart, so it's not part
+  // of SectionKey/sectionMode at all (see the section's own render block below).
+  const [manualExtras, setManualExtras] = useState<ManualQuestion[]>([]);
 
   // FREE plan: a lightweight ad-gate. The banner is shown; the teacher must
   // acknowledge it before each generation. PRO/ELITE never see this.
@@ -269,6 +272,7 @@ export function TeacherTestStudio({
             : undefined,
           manualGrammarQuestions: isManualSection('grammar') ? manualGrammar : undefined,
           manualNumericalQuestions: isManualSection('numerical') ? manualNumericals : undefined,
+          manualExtraQuestions: manualExtras.length ? manualExtras : undefined,
         }),
       });
       const json = await response.json();
@@ -310,8 +314,12 @@ export function TeacherTestStudio({
         (json.data.letterQuestions?.length || 0) +
         (json.data.vocabQuestions?.length || 0) +
         (json.data.grammarQuestions?.length || 0) +
-        (json.data.numericalQuestions?.length || 0);
-      const requested = mcqCount + shortCount + longCount + letterCount + vocabCount + grammarCount + numericalCount;
+        (json.data.numericalQuestions?.length || 0) +
+        (json.data.extraQuestions?.length || 0);
+      // manualExtras has no "requested" count of its own (no Auto counterpart to fall short
+      // against) — whatever made it through sanitization is folded straight into `requested` too.
+      const requested =
+        mcqCount + shortCount + longCount + letterCount + vocabCount + grammarCount + numericalCount + manualExtras.length;
       if (actual < requested)
         toast.warning(`Paper created with ${actual} available unique questions out of ${requested} requested.`);
       else toast.success('A new random paper is ready.');
@@ -528,6 +536,14 @@ export function TeacherTestStudio({
                   </SectionBuilder>
                 );
               })}
+              <div className="rounded-lg border p-3">
+                <p className="mb-2 text-sm font-semibold">Additional questions</p>
+                <p className="text-muted-foreground mb-2 text-xs">
+                  Anything that doesn&apos;t fit the sections above — always written by you, since there&apos;s no
+                  chapter bank to auto-pick these from.
+                </p>
+                <ManualQuestionEditor items={manualExtras} onChange={setManualExtras} defaultMarks={5} allowSubParts />
+              </div>
             </div>
           )}
           <Field label="Difficulty">

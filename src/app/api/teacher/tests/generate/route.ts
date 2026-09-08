@@ -148,9 +148,19 @@ export async function POST(req: NextRequest) {
     if (vocabIsManual) paper.vocabQuestions = sanitizeManualQuestions(body.manualVocabQuestions, 30, 3);
     if (grammarIsManual) paper.grammarQuestions = sanitizeManualQuestions(body.manualGrammarQuestions, 20, 3);
     if (numericalIsManual) paper.numericalQuestions = sanitizeManualQuestions(body.manualNumericalQuestions, 20, 5);
+    // No Auto counterpart at all — always whatever the teacher typed, or empty.
+    paper.extraQuestions = sanitizeManualQuestions(body.manualExtraQuestions, 20, 5);
+    const extraIsManual = paper.extraQuestions.length > 0;
 
     const anyManual =
-      mcqIsManual || shortIsManual || longIsManual || letterIsManual || vocabIsManual || grammarIsManual || numericalIsManual;
+      mcqIsManual ||
+      shortIsManual ||
+      longIsManual ||
+      letterIsManual ||
+      vocabIsManual ||
+      grammarIsManual ||
+      numericalIsManual ||
+      extraIsManual;
 
     if (
       !paper.mcqs.length &&
@@ -159,7 +169,8 @@ export async function POST(req: NextRequest) {
       !paper.letterQuestions.length &&
       !paper.vocabQuestions.length &&
       !paper.grammarQuestions.length &&
-      !paper.numericalQuestions.length
+      !paper.numericalQuestions.length &&
+      !paper.extraQuestions.length
     ) {
       return NextResponse.json(
         {
@@ -178,7 +189,8 @@ export async function POST(req: NextRequest) {
       paper.letterQuestions.reduce((sum, question) => sum + question.marks, 0) +
       paper.vocabQuestions.reduce((sum, question) => sum + question.marks, 0) +
       paper.grammarQuestions.reduce((sum, question) => sum + question.marks, 0) +
-      paper.numericalQuestions.reduce((sum, question) => sum + question.marks, 0);
+      paper.numericalQuestions.reduce((sum, question) => sum + question.marks, 0) +
+      paper.extraQuestions.reduce((sum, question) => sum + question.marks, 0);
 
     const institutionName =
       (planTier === 'PRO' || planTier === 'ELITE') && branding.customHeader
@@ -214,6 +226,7 @@ export async function POST(req: NextRequest) {
         vocab: vocabIsManual ? paper.vocabQuestions.length : vocabCount,
         grammar: grammarIsManual ? paper.grammarQuestions.length : grammarCount,
         numerical: numericalIsManual ? paper.numericalQuestions.length : numericalCount,
+        extra: paper.extraQuestions.length,
       },
     };
 
@@ -298,6 +311,13 @@ export async function POST(req: NextRequest) {
           ...paper.numericalQuestions.map((q, index) => ({
             test_id: testId,
             section: 'NUMERICAL',
+            position: index,
+            marks: q.marks,
+            question_snapshot: q,
+          })),
+          ...paper.extraQuestions.map((q, index) => ({
+            test_id: testId,
+            section: 'EXTRA',
             position: index,
             marks: q.marks,
             question_snapshot: q,

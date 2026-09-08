@@ -1,9 +1,9 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PenLine, Sparkles, Copy, RotateCcw } from 'lucide-react';
+import { PenLine, Sparkles, Copy, RotateCcw, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BrandLoader } from '@/components/ui/BrandLoader';
 import { AIProviderSelector } from '@/components/features/ai-selector/AIProviderSelector';
 import { AiAnswerRenderer } from '@/components/features/ai/AiAnswerRenderer';
@@ -19,6 +19,8 @@ import {
 } from '@/lib/utils/buildGradeContext';
 import type { SubscriptionTier } from '@/types';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils/cn';
+import { useAuth } from '@/hooks/auth/useAuth';
 
 const ESSAY_TYPES = [
   { value: 'general', label: 'General' },
@@ -48,7 +50,43 @@ export function EssayWriterForm({ userTier, gradeLevel: initialGradeLevel }: Ess
   const [loading, setLoading] = useState(false);
   const [essay, setEssay] = useState<string | null>(null);
   const [essayGradeLevel, setEssayGradeLevel] = useState<GradeLevel | null>(null);
+  const [history, setHistory] = useState<{ id: string; title: string; created_at: string }[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [activeHistoryId, setActiveHistoryId] = useState<string | null>(null);
+  const { user } = useAuth();
   const isFreeTier = userTier === 'FREE';
+
+  async function loadHistory() {
+    if (!user?.id) return;
+    try {
+      const res = await fetch('/api/ai/essay-writer/history');
+      const body = await res.json();
+      if (body.status !== 'success') return;
+      setHistory(body.data.essays);
+    } catch {
+      // Non-fatal — the writer still works without the saved list loading.
+    }
+  }
+
+  useEffect(() => {
+    void loadHistory();
+  }, [user?.id]);
+
+  async function openSaved(id: string) {
+    setHistoryLoading(true);
+    try {
+      const res = await fetch(`/api/ai/essay-writer/history/${id}`);
+      const body = await res.json();
+      if (body.status !== 'success') throw new Error(body.error || 'This essay could not be opened.');
+      setEssay(body.data.essay);
+      setEssayGradeLevel(isGradeLevel(body.data.meta?.gradeLevel) ? body.data.meta.gradeLevel : null);
+      setActiveHistoryId(id);
+    } catch {
+      toast.error('This essay could not be opened.');
+    } finally {
+      setHistoryLoading(false);
+    }
+  }
 
   const generate = async () => {
     if (!topic.trim()) { toast.error('Essay topic likho pehle'); return; }
@@ -69,6 +107,8 @@ export function EssayWriterForm({ userTier, gradeLevel: initialGradeLevel }: Ess
       setEssayGradeLevel(isGradeLevel(json.data.gradeLevel) ? json.data.gradeLevel : gradeLevel);
       setGradeLevel(profileGradeLevel);
       setShowOverride(false);
+      setActiveHistoryId(null);
+      void loadHistory(); // pick up the row /api/ai/essay-writer just saved
     } catch {
       toast.error('The essay could not be generated. Please try again.');
     } finally {
@@ -136,6 +176,36 @@ export function EssayWriterForm({ userTier, gradeLevel: initialGradeLevel }: Ess
           </div>
         </CardContent>
       </Card>
+
+      {history.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Clock className="h-4 w-4 text-violet-400" />
+              Saved Essays
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
+            {history.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                disabled={historyLoading}
+                onClick={() => void openSaved(item.id)}
+                className={cn(
+                  'flex flex-col rounded-lg border px-3 py-2 text-left text-sm transition disabled:opacity-50',
+                  activeHistoryId === item.id
+                    ? 'border-violet-400 bg-violet-500/10'
+                    : 'border-transparent hover:bg-muted/50'
+                )}
+              >
+                <span className="truncate font-medium">{item.title}</span>
+                <span className="text-muted-foreground text-xs">{new Date(item.created_at).toLocaleDateString()}</span>
+              </button>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       <AnimatePresence>
         {loading && (

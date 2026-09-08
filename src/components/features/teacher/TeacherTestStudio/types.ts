@@ -46,6 +46,9 @@ export type Paper = {
   vocabQuestions: Question[];
   grammarQuestions: Question[];
   numericalQuestions: Question[];
+  // Always hand-typed — there's no chapter-bank category for "whatever else the teacher wants to
+  // add", so unlike every other section above, this one has no Auto counterpart or count.
+  extraQuestions: Question[];
   sourceCount: number;
   requestedCounts: {
     mcq: number;
@@ -55,6 +58,7 @@ export type Paper = {
     vocab: number;
     grammar: number;
     numerical: number;
+    extra: number;
   };
   testId?: string | null;
 };

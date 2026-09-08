@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { gatewayChat } from '@/lib/ai/gateway';
 import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
 import { checkAiMessageLimit, consumeAiCredits } from '@/lib/rate-limit';
@@ -16,6 +17,18 @@ export interface GuessPaperResult {
   longQuestions: { q: string; marks: number; likelihood: 'high' | 'medium' }[];
   examTips: string[];
   disclaimer: string;
+}
+
+// Best-effort history save into public.guess_papers. Never blocks/fails generation
+// (mirrors savePresentationHistory in /api/presentation/generate).
+async function saveGuessPaperHistory(userId: string, title: string, result: GuessPaperResult) {
+  const admin = createServiceClient() as any;
+  const { error } = await admin.from('guess_papers').insert({
+    user_id: userId,
+    title,
+    result_json: result,
+  });
+  if (error) throw error;
 }
 
 export async function POST(req: NextRequest) {
@@ -100,6 +113,10 @@ Include: 8 MCQs, 5 short questions, 3 long questions. Mark each as high or mediu
     });
 
     await consumeAiCredits(user.id, tier, 'guess_paper');
+    const title = `${subjectName} — ${board} — ${gradeLevel.replace('GRADE_', 'Grade ')}`;
+    await saveGuessPaperHistory(user.id, title, parsed).catch((error) =>
+      console.error('Guess paper history could not be saved (non-fatal):', error)
+    );
     return NextResponse.json({ status: 'success', data: parsed, providerUsed: result.providerUsed });
   } catch (error) {
     console.error('Guess paper error:', error);

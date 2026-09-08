@@ -45,6 +45,9 @@ export type ChapterQuestionPaper = {
   vocabQuestions: BankExtendedQuestion[];
   grammarQuestions: BankExtendedQuestion[];
   numericalQuestions: BankExtendedQuestion[];
+  // Always empty here — populated only by the teacher/tests/generate route from hand-typed
+  // input, since there's no chapter-bank category for "anything else" to pick from.
+  extraQuestions: BankExtendedQuestion[];
   sourceCount: number;
 };
 
@@ -292,6 +295,7 @@ export async function generateChapterQuestionPaper(options: GenerateOptions): Pr
     vocabQuestions: pickRandomQuestions(vocabQuestions, options.vocabCount || 0, options.difficulty),
     grammarQuestions: pickRandomQuestions(grammarQuestions, options.grammarCount || 0, options.difficulty),
     numericalQuestions: pickRandomQuestions(numericalQuestions, options.numericalCount || 0, options.difficulty),
+    extraQuestions: [],
     sourceCount: resourceRows.length,
   };
 }

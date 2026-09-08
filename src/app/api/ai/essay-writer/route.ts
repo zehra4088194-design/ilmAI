@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { gatewayChat } from '@/lib/ai/gateway';
 import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
 import { checkAiMessageLimit, consumeAiCredits } from '@/lib/rate-limit';
@@ -16,6 +17,24 @@ import type { AiProviderId, ModelTier } from '@/lib/ai/gateway';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
+
+// Best-effort history save into public.essays. Never blocks/fails generation
+// (mirrors savePresentationHistory in /api/presentation/generate).
+async function saveEssayHistory(
+  userId: string,
+  title: string,
+  essayText: string,
+  meta: { essayType: string; wordCount: number; language: string; gradeLevel: GradeLevel }
+) {
+  const admin = createServiceClient() as any;
+  const { error } = await admin.from('essays').insert({
+    user_id: userId,
+    title,
+    essay_text: essayText,
+    meta,
+  });
+  if (error) throw error;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -70,6 +89,9 @@ export async function POST(req: NextRequest) {
 
     const data: EssayWriterResponseData = { essay: result.text, gradeLevel };
     await consumeAiCredits(user.id, tier, 'essay_writer');
+    await saveEssayHistory(user.id, topic, result.text, { essayType: type, wordCount: targetWords, language: lang, gradeLevel }).catch(
+      (error) => console.error('Essay history could not be saved (non-fatal):', error)
+    );
     return NextResponse.json({ status: 'success', data });
   } catch (error) {
     console.error('Essay writer error:', error);

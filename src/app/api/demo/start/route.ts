@@ -28,10 +28,20 @@ export async function POST(req: NextRequest) {
     );
     if (!recaptcha.success) {
       logRecaptchaFailure('demo_start', recaptcha);
-      return NextResponse.json(
-        { status: 'error', error: 'Security verification failed. Please try again.' },
-        { status: 403 }
-      );
+      // This is a public, anonymous, already IP-rate-limited flow. Only block when
+      // reCAPTCHA actually ran and flagged the request as a bot; if the check itself
+      // couldn't run (script blocked/unreachable, e.g. locked-down test networks),
+      // fail open rather than making the whole demo unusable.
+      const isAvailabilityIssue =
+        recaptcha.reason === 'missing_token' ||
+        recaptcha.reason === 'verification_unavailable' ||
+        recaptcha.reason === 'recaptcha_misconfigured';
+      if (!isAvailabilityIssue) {
+        return NextResponse.json(
+          { status: 'error', error: 'Security verification failed. Please try again.' },
+          { status: 403 }
+        );
+      }
     }
 
     const requestedSubjectId = typeof body.subject_id === 'string' ? body.subject_id : null;

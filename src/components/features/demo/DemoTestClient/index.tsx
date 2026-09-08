@@ -13,7 +13,7 @@ import { AiAnswerRenderer } from '@/components/features/ai/AiAnswerRenderer';
 import { cn } from '@/lib/utils/cn';
 import type { DemoQuestionForClient, DemoQuestionResult } from '@/lib/demo/questions';
 import { toast } from 'sonner';
-import { getRecaptchaToken } from '@/lib/security/recaptcha-client';
+import { getRecaptchaTokenOrNull } from '@/lib/security/recaptcha-client';
 
 type DemoSubject = { id: string; name: string; slug?: string; color?: string | null; count: number };
 type DemoResult = {
@@ -88,7 +88,7 @@ export function DemoTestClient() {
     setAnswers({});
     setCurrentIndex(0);
     try {
-      const recaptchaToken = await getRecaptchaToken('demo_start');
+      const recaptchaToken = await getRecaptchaTokenOrNull('demo_start');
       const res = await fetch('/api/demo/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

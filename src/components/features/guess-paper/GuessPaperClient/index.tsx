@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Sparkles,
@@ -9,6 +9,7 @@ import {
   Target,
   ChevronDown,
   ChevronUp,
+  Clock,
   Loader2,
   LockKeyhole,
 } from 'lucide-react';
@@ -24,6 +25,8 @@ import type { SubscriptionTier } from '@/types';
 import type { GuessPaperResult } from '@/app/api/ai/guess-paper/route';
 import { toast } from 'sonner';
 import { AiAnswerRenderer } from '@/components/features/ai/AiAnswerRenderer';
+import { cn } from '@/lib/utils/cn';
+import { useAuth } from '@/hooks/auth/useAuth';
 
 export function GuessPaperClient({
   subjects,
@@ -45,7 +48,43 @@ export function GuessPaperClient({
   const [result, setResult] = useState<GuessPaperResult | null>(null);
   const [summary, setSummary] = useState('');
   const [summaryLoading, setSummaryLoading] = useState(false);
+  const [history, setHistory] = useState<{ id: string; title: string; created_at: string }[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [activeHistoryId, setActiveHistoryId] = useState<string | null>(null);
+  const { user } = useAuth();
   const isFreeTier = userTier === 'FREE';
+
+  async function loadHistory() {
+    if (!user?.id) return;
+    try {
+      const res = await fetch('/api/ai/guess-paper/history');
+      const body = await res.json();
+      if (body.status !== 'success') return;
+      setHistory(body.data.guessPapers);
+    } catch {
+      // Non-fatal — the generator still works without the saved list loading.
+    }
+  }
+
+  useEffect(() => {
+    void loadHistory();
+  }, [user?.id]);
+
+  async function openSaved(id: string) {
+    setHistoryLoading(true);
+    try {
+      const res = await fetch(`/api/ai/guess-paper/history/${id}`);
+      const body = await res.json();
+      if (body.status !== 'success') throw new Error(body.error || 'This guess paper could not be opened.');
+      setResult(body.data.result);
+      setSummary('');
+      setActiveHistoryId(id);
+    } catch {
+      toast.error('This guess paper could not be opened.');
+    } finally {
+      setHistoryLoading(false);
+    }
+  }
 
   const generate = async () => {
     if (!selectedSubject) {
@@ -67,6 +106,8 @@ export function GuessPaperClient({
         return;
       }
       setResult(json.data);
+      setActiveHistoryId(null);
+      void loadHistory(); // pick up the row /api/ai/guess-paper just saved
     } catch {
       toast.error('Something went wrong. Please try again.');
     } finally {
@@ -172,6 +213,36 @@ export function GuessPaperClient({
           </div>
         </CardContent>
       </Card>
+
+      {history.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Clock className="h-4 w-4 text-violet-400" />
+              Saved Guess Papers
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
+            {history.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                disabled={historyLoading}
+                onClick={() => void openSaved(item.id)}
+                className={cn(
+                  'flex flex-col rounded-lg border px-3 py-2 text-left text-sm transition disabled:opacity-50',
+                  activeHistoryId === item.id
+                    ? 'border-violet-400 bg-violet-500/10'
+                    : 'border-transparent hover:bg-muted/50'
+                )}
+              >
+                <span className="truncate font-medium">{item.title}</span>
+                <span className="text-muted-foreground text-xs">{new Date(item.created_at).toLocaleDateString()}</span>
+              </button>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Loading */}
       {loading && (

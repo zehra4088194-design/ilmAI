@@ -112,7 +112,7 @@ function AnswerKey({ paper }: { paper: Paper }) {
           {paper.mcqs.map((question, index) => `${index + 1}-${String.fromCharCode(65 + question.correct)}`).join(', ')}
         </p>
       )}
-      {[...paper.shortQuestions, ...paper.longQuestions, ...paper.letterQuestions, ...paper.vocabQuestions, ...paper.grammarQuestions, ...paper.numericalQuestions].map((question, index) => (
+      {[...paper.shortQuestions, ...paper.longQuestions, ...paper.letterQuestions, ...paper.vocabQuestions, ...paper.grammarQuestions, ...paper.numericalQuestions, ...paper.extraQuestions].map((question, index) => (
         <div key={`${question.q}-${index}`} className="mt-2 break-inside-avoid text-xs">
           <p className="font-bold whitespace-pre-wrap">
             {index + 1}. {question.q}
@@ -246,6 +246,14 @@ function ClassicPaper({ paper }: { paper: Paper }) {
             ))}
           </section>
         )}
+        {paper.extraQuestions.length > 0 && (
+          <section className="mt-3">
+            <h2 className="mb-1.5 border-b border-[#d9a441]/70 pb-1 text-sm font-black">Section H — Additional Questions</h2>
+            {paper.extraQuestions.map((question, index) => (
+              <SubjectiveBlock key={`${question.q}-${index}`} question={question} index={index} />
+            ))}
+          </section>
+        )}
         <AnswerKey paper={paper} />
         {!paper.branding.hidePlatformBranding && (
           <footer className="mt-4 flex justify-between border-t border-[#d9a441]/70 pt-2 text-[9px] font-semibold">
@@ -364,6 +372,17 @@ function ModernPaper({ paper }: { paper: Paper }) {
             ))}
           </section>
         )}
+        {paper.extraQuestions.length > 0 && (
+          <section className="mt-3 rounded-xl border border-slate-300 p-3">
+            <h2 className="mb-1.5 text-sm font-black text-slate-900">
+              <span className="mr-2 rounded bg-slate-900 px-2 py-0.5 text-[10px] text-white">H</span>
+              Additional Questions
+            </h2>
+            {paper.extraQuestions.map((question, index) => (
+              <SubjectiveBlock key={`${question.q}-${index}`} question={question} index={index} />
+            ))}
+          </section>
+        )}
         <AnswerKey paper={paper} />
         {!paper.branding.hidePlatformBranding && (
           <footer className="mt-4 flex justify-between border-t pt-2 text-[9px] font-semibold text-slate-500">
@@ -457,6 +476,14 @@ function MinimalPaper({ paper }: { paper: Paper }) {
           <section className="mt-3">
             <h2 className="mb-1.5 text-xs font-bold underline">SECTION G — Numericals</h2>
             {paper.numericalQuestions.map((question, index) => (
+              <SubjectiveBlock key={`${question.q}-${index}`} question={question} index={index} />
+            ))}
+          </section>
+        )}
+        {paper.extraQuestions.length > 0 && (
+          <section className="mt-3">
+            <h2 className="mb-1.5 text-xs font-bold underline">SECTION H — Additional Questions</h2>
+            {paper.extraQuestions.map((question, index) => (
               <SubjectiveBlock key={`${question.q}-${index}`} question={question} index={index} />
             ))}
           </section>

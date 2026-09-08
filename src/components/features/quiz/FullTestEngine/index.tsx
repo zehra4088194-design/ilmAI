@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, CheckCircle2, Camera, ChevronDown, ChevronUp, Clock, FileCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { BrandLoader } from '@/components/ui/BrandLoader';
 import { AIProviderSelector } from '@/components/features/ai-selector/AIProviderSelector';
@@ -15,6 +15,7 @@ import type { SubscriptionTier } from '@/types';
 import { cn } from '@/lib/utils/cn';
 import { toast } from 'sonner';
 import { nanoid } from 'nanoid';
+import { useAuth } from '@/hooks/auth/useAuth';
 
 const BOARD_PATTERNS: Record<string, { mcq: number; short: number; long: number; marks: number; time: number }> = {
   GRADE_9: { mcq: 15, short: 6, long: 3, marks: 75, time: 180 },
@@ -55,11 +56,50 @@ export function FullTestSetup({
   const [wholeScanKind, setWholeScanKind] = useState<'diagram' | 'handwritten' | 'printed'>('handwritten');
   const [wholeScanLanguage, setWholeScanLanguage] = useState<'en' | 'ur' | 'other'>('en');
   const wholeTestFileRef = useRef<HTMLInputElement>(null);
+  const [history, setHistory] = useState<{ id: string; title: string; created_at: string }[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const { user } = useAuth();
   const isFreeTier = userTier === 'FREE';
 
   const bp = BOARD_PATTERNS[grade] || BOARD_PATTERNS['GRADE_10']!;
   const counts = pattern === 'board' ? { mcq: bp.mcq, short: bp.short, long: bp.long } : custom;
   const selectedSubject = subjects.find((s) => s.id === subject);
+
+  async function loadHistory() {
+    if (!user?.id) return;
+    try {
+      const res = await fetch('/api/ai/full-test/history');
+      const body = await res.json();
+      if (body.status !== 'success') return;
+      setHistory(body.data.fullTests);
+    } catch {
+      // Non-fatal — the test builder still works without the saved list loading.
+    }
+  }
+
+  useEffect(() => {
+    void loadHistory();
+  }, [user?.id]);
+
+  async function openSaved(id: string) {
+    setHistoryLoading(true);
+    try {
+      const res = await fetch(`/api/ai/full-test/history/${id}`);
+      const body = await res.json();
+      if (body.status !== 'success') throw new Error(body.error || 'This test could not be opened.');
+      const p = body.data.paper;
+      p.shortQs = (p.shortQs || []).map((q: any) => ({ ...q, id: nanoid() }));
+      p.longQs = (p.longQs || []).map((q: any) => ({ ...q, id: nanoid() }));
+      setPaper(p);
+      setAnswers({});
+      setResourceSourceTitle(null);
+      setState('paper');
+    } catch {
+      toast.error('This test could not be opened.');
+    } finally {
+      setHistoryLoading(false);
+    }
+  }
 
   useEffect(() => {
     const raw = window.sessionStorage.getItem('ilm-ai-resource-test');
@@ -117,6 +157,7 @@ export function FullTestSetup({
       setPaper(p);
       setAnswers({});
       setState('paper');
+      void loadHistory(); // pick up the row /api/ai/full-test just saved
     } catch {
       toast.error('The test could not be generated.');
       setState('setup');
@@ -391,6 +432,33 @@ export function FullTestSetup({
               )}
             </CardContent>
           </Card>
+
+          {history.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Clock className="h-4 w-4 text-violet-400" />
+                  Saved Tests
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
+                {history.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    disabled={historyLoading}
+                    onClick={() => void openSaved(item.id)}
+                    className="hover:bg-muted/50 flex flex-col rounded-lg border border-transparent px-3 py-2 text-left text-sm transition disabled:opacity-50"
+                  >
+                    <span className="truncate font-medium">{item.title}</span>
+                    <span className="text-muted-foreground text-xs">
+                      {new Date(item.created_at).toLocaleDateString()}
+                    </span>
+                  </button>
+                ))}
+              </CardContent>
+            </Card>
+          )}
 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <AIProviderSelector
