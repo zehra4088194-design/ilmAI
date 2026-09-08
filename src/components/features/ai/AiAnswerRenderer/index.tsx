@@ -1,13 +1,39 @@
 'use client';
-import { useState } from 'react';
+import { isValidElement, useMemo, useState, type ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-import { ThumbsUp, ThumbsDown, Sparkles } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, Sparkles, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { toast } from 'sonner';
-import { ChartBlock } from '@/components/features/ai/ChartBlock';
+import { ChartBlock, parseSpec as parseChartSpec } from '@/components/features/ai/ChartBlock';
+import { normalizeLatexDelimiters } from '@/lib/utils/normalizeLatexDelimiters';
+
+// Flattens a react-markdown paragraph's children back to plain text, so the "Final Answer"
+// paragraph (see MARKDOWN_ANSWER_FORMAT_INSTRUCTION — every worked numerical ends with one,
+// often carrying its boxed $$\boxed{...}$$ result on the same line) can be recognized regardless
+// of the bold/math elements inside it, and rendered as a celebratory highlight instead of a plain
+// paragraph — the "whiteboard, step-by-step, boxed final answer" look for ANY subject, not just
+// a hardcoded math template.
+function flattenToText(node: ReactNode): string {
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(flattenToText).join('');
+  if (isValidElement(node)) return flattenToText((node.props as { children?: ReactNode })?.children);
+  return '';
+}
+
+// A small handwritten-marker note on the Final Answer card, like a teacher's tick on a whiteboard
+// — purely decorative (the actual answer text stays in the normal font, fully legible). Picked
+// from a hash of the answer text itself, not Math.random(), so it stays put across re-renders —
+// including every re-render while a streamed answer is still arriving character by character.
+const WELL_DONE_NOTES = ['Well done!', 'Nicely solved!', 'Great work!', "That's it!", 'Spot on!'];
+
+function pickWellDoneNote(content: string): string {
+  let hash = 0;
+  for (let i = 0; i < content.length; i++) hash = (hash * 31 + content.charCodeAt(i)) | 0;
+  return WELL_DONE_NOTES[Math.abs(hash) % WELL_DONE_NOTES.length] ?? 'Well done!';
+}
 
 // Import once, globally, from src/app/layout.tsx: import 'katex/dist/katex.min.css';
 
@@ -39,6 +65,7 @@ interface AiAnswerRendererProps {
  */
 export function AiAnswerRenderer({ content, className, card = true, label, feedback }: AiAnswerRendererProps) {
   const [voted, setVoted] = useState<'up' | 'down' | null>(null);
+  const normalizedContent = useMemo(() => normalizeLatexDelimiters(content), [content]);
 
   const submitFeedback = async (isHelpful: boolean) => {
     if (!feedback || voted) return;
@@ -77,22 +104,46 @@ export function AiAnswerRenderer({ content, className, card = true, label, feedb
               <table className="w-full text-left text-sm">{children}</table>
             </div>
           ),
+          // A paragraph starting with "Final Answer" (the AI always ends a worked numerical this
+          // way, boxed result and all — see MARKDOWN_ANSWER_FORMAT_INSTRUCTION) gets the
+          // "well done!" whiteboard treatment instead of a plain line: a green highlighted card
+          // with a checkmark, same idea for math, physics, chemistry, biology — any subject.
+          p: ({ children }) => {
+            if (/^final answer\b/i.test(flattenToText(children).trim())) {
+              return (
+                <div className="not-prose ai-final-answer my-3 flex items-start justify-between gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3.5">
+                  <div className="flex items-start gap-2.5">
+                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                    <p className="m-0 text-sm leading-relaxed font-semibold text-emerald-800 dark:text-emerald-300">{children}</p>
+                  </div>
+                  <span className="ai-well-done hidden shrink-0 -rotate-6 text-lg text-emerald-600 sm:inline-block dark:text-emerald-400">
+                    {pickWellDoneNote(normalizedContent)}
+                  </span>
+                </div>
+              );
+            }
+            return <p>{children}</p>;
+          },
           // A ```chart fenced block (JSON spec — see ChartBlock's doc comment) renders as an
-          // actual graph instead of a code block. Anything else (or a malformed chart spec)
-          // falls through to the default <pre><code> rendering untouched.
+          // actual graph instead of a code block. A ```json or unlabeled block whose content
+          // still parses as a valid chart spec is also rendered as a chart — a smaller/free-tier
+          // model sometimes has the right data but forgets the exact "chart" tag. Anything else
+          // (or a malformed/placeholder spec) falls through to the default <pre><code> rendering.
           pre: ({ children }) => {
             const codeElement = Array.isArray(children) ? children[0] : children;
             const codeProps = (codeElement as { props?: { className?: string; children?: unknown } })?.props;
             const language = /language-(\w+)/.exec(codeProps?.className || '')?.[1];
-            if (language === 'chart') {
+            if (language === 'chart' || language === 'json' || !language) {
               const raw = Array.isArray(codeProps?.children) ? codeProps.children.join('') : String(codeProps?.children ?? '');
-              return <ChartBlock spec={raw.replace(/\n$/, '')} />;
+              const trimmed = raw.replace(/\n$/, '');
+              if (language === 'chart') return <ChartBlock spec={trimmed} />;
+              if (parseChartSpec(trimmed)) return <ChartBlock spec={trimmed} />;
             }
             return <pre>{children}</pre>;
           },
         }}
       >
-        {content}
+        {normalizedContent}
       </ReactMarkdown>
     </div>
   );

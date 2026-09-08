@@ -290,12 +290,15 @@ export function GuessPaperClient({
                   <LikelihoodBadge level={q.likelihood} />
                   <span className="text-muted-foreground text-xs">MCQ {i + 1}</span>
                 </div>
-                <p className="mb-2 text-sm font-medium">{q.q}</p>
+                <div className="mb-2 text-sm font-medium">
+                  <AiAnswerRenderer content={q.q} card={false} />
+                </div>
                 {q.opts?.length > 0 && (
                   <div className="grid grid-cols-2 gap-1">
                     {q.opts.map((opt, oi) => (
                       <div key={oi} className="text-muted-foreground flex items-center gap-1 text-xs">
-                        <span className="font-bold">{['A', 'B', 'C', 'D'][oi]}.</span> {opt}
+                        <span className="font-bold">{['A', 'B', 'C', 'D'][oi]}.</span>
+                        <AiAnswerRenderer content={opt} card={false} />
                       </div>
                     ))}
                   </div>
@@ -314,7 +317,7 @@ export function GuessPaperClient({
               <div key={i} className="bg-muted/30 border-border/50 flex items-start gap-3 rounded-xl border p-3">
                 <LikelihoodBadge level={q.likelihood} />
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm">{q.q}</p>
+                  <AiAnswerRenderer content={q.q} card={false} className="text-sm" />
                   <p className="text-muted-foreground mt-1 text-xs">{q.marks} marks</p>
                 </div>
               </div>
@@ -331,7 +334,7 @@ export function GuessPaperClient({
               <div key={i} className="bg-muted/30 border-border/50 flex items-start gap-3 rounded-xl border p-3">
                 <LikelihoodBadge level={q.likelihood} />
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium">{q.q}</p>
+                  <AiAnswerRenderer content={q.q} card={false} className="text-sm font-medium" />
                   <p className="text-muted-foreground mt-1 text-xs">{q.marks} marks</p>
                 </div>
               </div>

@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils/cn';
 import { toast } from 'sonner';
 import { nanoid } from 'nanoid';
 import { useAuth } from '@/hooks/auth/useAuth';
+import { AiAnswerRenderer } from '@/components/features/ai/AiAnswerRenderer';
 
 const BOARD_PATTERNS: Record<string, { mcq: number; short: number; long: number; marks: number; time: number }> = {
   GRADE_9: { mcq: 15, short: 6, long: 3, marks: 75, time: 180 },
@@ -687,10 +688,10 @@ function MCQQuestion({
   const L = ['A', 'B', 'C', 'D'];
   return (
     <div className="min-w-0">
-      <p className="mb-3 text-sm font-medium break-words">
+      <div className="mb-3 min-w-0 text-sm font-medium break-words">
         <span className="text-muted-foreground">Q{index + 1}. </span>
-        {question.q}
-      </p>
+        <AiAnswerRenderer content={question.q} card={false} className="inline" />
+      </div>
       <div className="grid gap-2 sm:grid-cols-2">
         {(question.opts || []).map((opt: string, i: number) => (
           <label
@@ -710,7 +711,9 @@ function MCQQuestion({
               onChange={() => onSelect(i)}
             />
             <span className="shrink-0 text-xs font-semibold">{L[i]}.</span>
-            <span className="min-w-0 break-words">{opt}</span>
+            <span className="min-w-0 break-words">
+              <AiAnswerRenderer content={opt} card={false} />
+            </span>
           </label>
         ))}
       </div>
@@ -734,10 +737,10 @@ function WrittenQuestion({
   return (
     <div>
       <div className="mb-2 flex items-start justify-between gap-3">
-        <p className="flex-1 text-sm font-medium">
+        <div className="min-w-0 flex-1 text-sm font-medium">
           <span className="text-muted-foreground">Q{index + 1}. </span>
-          {question.q}
-        </p>
+          <AiAnswerRenderer content={question.q} card={false} className="inline" />
+        </div>
         <div className="flex shrink-0 items-center gap-1">
           <Badge variant="outline" className="text-xs">
             {question.marks} marks
@@ -854,16 +857,16 @@ function TestResult({
                     r?.correct ? 'border-green-500/30 bg-green-500/5' : 'border-red-500/30 bg-red-500/5'
                   )}
                 >
-                  <p className="mb-1 font-medium">
-                    {r?.correct ? '✅' : '❌'} Q{i + 1}. {q.q}
-                  </p>
+                  <div className="mb-1 font-medium">
+                    {r?.correct ? '✅' : '❌'} Q{i + 1}. <AiAnswerRenderer content={q.q} card={false} className="inline" />
+                  </div>
                   <p>
                     Your answer: <strong>{r?.userAns !== undefined ? L[r.userAns] : '—'}</strong> · Correct answer:{' '}
                     <strong className="text-green-400">{L[q.correct]}</strong>
                   </p>
-                  <p className="text-muted-foreground mt-1">
-                    Explanation: {r?.explanation || q.exp || 'The correct option is shown above.'}
-                  </p>
+                  <div className="text-muted-foreground mt-1">
+                    Explanation: <AiAnswerRenderer content={r?.explanation || q.exp || 'The correct option is shown above.'} card={false} className="inline" />
+                  </div>
                 </div>
               );
             })}
@@ -880,9 +883,9 @@ function TestResult({
               const r = writeResults[i];
               return (
                 <div key={q.id} className="border-border/50 bg-muted/20 space-y-1 rounded-lg border p-3 text-xs">
-                  <p className="font-medium">
-                    Q{i + 1}. {q.q}
-                  </p>
+                  <div className="font-medium">
+                    Q{i + 1}. <AiAnswerRenderer content={q.q} card={false} className="inline" />
+                  </div>
                   <div className="flex gap-2">
                     <Badge variant="outline" className="text-[10px]">
                       Grade: {r?.grade || '?'}

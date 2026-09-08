@@ -5,6 +5,7 @@ import { BookOpen, CheckCircle2, Loader2, Play, Trophy, Users } from 'lucide-rea
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { AiAnswerRenderer } from '@/components/features/ai/AiAnswerRenderer';
 
 type QuizEvent = {
   id: string;
@@ -226,7 +227,9 @@ export function LiveQuizGame({
         </div>
       </div>
 
-      <h2 className="text-lg leading-7 font-semibold sm:text-xl">{round.text}</h2>
+      <div className="text-lg leading-7 font-semibold sm:text-xl">
+        <AiAnswerRenderer content={round.text} card={false} />
+      </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
         {round.options.map((option, optionIndex) => {
@@ -251,7 +254,9 @@ export function LiveQuizGame({
                 <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${isCorrect ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-border'}`}>
                   {String.fromCharCode(65 + optionIndex)}
                 </span>
-                <span className="min-w-0 flex-1 text-sm font-medium">{option}</span>
+                <span className="min-w-0 flex-1 text-sm font-medium">
+                  <AiAnswerRenderer content={option} card={false} />
+                </span>
                 {isCorrect && <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-500" />}
               </span>
               {selectedPlayers.length > 0 && (

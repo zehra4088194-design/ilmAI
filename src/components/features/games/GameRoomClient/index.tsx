@@ -181,31 +181,34 @@ function ludoStateFromEvents(events: GameEvent[]): LudoState {
 }
 
 const MEMORY_PAIR_COUNT = 6;
+const MEMORY_SUBJECTS = ['Mixed', 'Physics', 'Biology', 'Chemistry', 'Math', 'English', 'Pak Studies'] as const;
+type MemorySubject = (typeof MEMORY_SUBJECTS)[number];
+
 const MEMORY_PAIRS = [
-  { id: 'force', prompt: 'Force', answer: 'Mass x acceleration', tone: 'border-sky-400/50 bg-sky-500/12 text-sky-200' },
-  { id: 'speed', prompt: 'Speed', answer: 'Distance / time', tone: 'border-sky-400/50 bg-sky-500/12 text-sky-200' },
-  { id: 'density', prompt: 'Density', answer: 'Mass / volume', tone: 'border-sky-400/50 bg-sky-500/12 text-sky-200' },
-  { id: 'voltage', prompt: 'Voltage unit', answer: 'Volt', tone: 'border-sky-400/50 bg-sky-500/12 text-sky-200' },
-  { id: 'cell', prompt: 'Basic unit of life', answer: 'Cell', tone: 'border-emerald-400/50 bg-emerald-500/12 text-emerald-200' },
-  { id: 'mitochondria', prompt: 'Cell powerhouse', answer: 'Mitochondria', tone: 'border-emerald-400/50 bg-emerald-500/12 text-emerald-200' },
-  { id: 'photosynthesis', prompt: 'Makes glucose in plants', answer: 'Photosynthesis', tone: 'border-emerald-400/50 bg-emerald-500/12 text-emerald-200' },
-  { id: 'dna', prompt: 'Carries genetic information', answer: 'DNA', tone: 'border-emerald-400/50 bg-emerald-500/12 text-emerald-200' },
-  { id: 'water', prompt: 'H2O', answer: 'Water', tone: 'border-cyan-400/50 bg-cyan-500/12 text-cyan-200' },
-  { id: 'carbon-dioxide', prompt: 'CO2', answer: 'Carbon dioxide', tone: 'border-cyan-400/50 bg-cyan-500/12 text-cyan-200' },
-  { id: 'acid', prompt: 'pH below 7', answer: 'Acid', tone: 'border-cyan-400/50 bg-cyan-500/12 text-cyan-200' },
-  { id: 'atom', prompt: 'Smallest element particle', answer: 'Atom', tone: 'border-cyan-400/50 bg-cyan-500/12 text-cyan-200' },
-  { id: 'triangle', prompt: 'Triangle angle sum', answer: '180 degrees', tone: 'border-violet-400/50 bg-violet-500/12 text-violet-200' },
-  { id: 'circle', prompt: 'Circle area', answer: 'pi x radius squared', tone: 'border-violet-400/50 bg-violet-500/12 text-violet-200' },
-  { id: 'pythagoras', prompt: 'Right triangle rule', answer: 'a2 + b2 = c2', tone: 'border-violet-400/50 bg-violet-500/12 text-violet-200' },
-  { id: 'prime', prompt: 'Only two factors', answer: 'Prime number', tone: 'border-violet-400/50 bg-violet-500/12 text-violet-200' },
-  { id: 'noun', prompt: 'Names a person or thing', answer: 'Noun', tone: 'border-amber-400/50 bg-amber-500/12 text-amber-200' },
-  { id: 'verb', prompt: 'Shows an action', answer: 'Verb', tone: 'border-amber-400/50 bg-amber-500/12 text-amber-200' },
-  { id: 'synonym', prompt: 'Word with similar meaning', answer: 'Synonym', tone: 'border-amber-400/50 bg-amber-500/12 text-amber-200' },
-  { id: 'metaphor', prompt: 'Direct poetic comparison', answer: 'Metaphor', tone: 'border-amber-400/50 bg-amber-500/12 text-amber-200' },
-  { id: 'pakistan', prompt: 'Pakistan independence', answer: '14 August 1947', tone: 'border-rose-400/50 bg-rose-500/12 text-rose-200' },
-  { id: 'capital', prompt: 'Capital of Pakistan', answer: 'Islamabad', tone: 'border-rose-400/50 bg-rose-500/12 text-rose-200' },
-  { id: 'indus', prompt: 'Pakistan longest river', answer: 'Indus', tone: 'border-rose-400/50 bg-rose-500/12 text-rose-200' },
-  { id: 'equator', prompt: 'Zero-degree latitude', answer: 'Equator', tone: 'border-rose-400/50 bg-rose-500/12 text-rose-200' },
+  { id: 'force', prompt: 'Force', answer: 'Mass x acceleration', subject: 'Physics', tone: 'border-sky-400/50 bg-sky-500/12 text-sky-200' },
+  { id: 'speed', prompt: 'Speed', answer: 'Distance / time', subject: 'Physics', tone: 'border-sky-400/50 bg-sky-500/12 text-sky-200' },
+  { id: 'density', prompt: 'Density', answer: 'Mass / volume', subject: 'Physics', tone: 'border-sky-400/50 bg-sky-500/12 text-sky-200' },
+  { id: 'voltage', prompt: 'Voltage unit', answer: 'Volt', subject: 'Physics', tone: 'border-sky-400/50 bg-sky-500/12 text-sky-200' },
+  { id: 'cell', prompt: 'Basic unit of life', answer: 'Cell', subject: 'Biology', tone: 'border-emerald-400/50 bg-emerald-500/12 text-emerald-200' },
+  { id: 'mitochondria', prompt: 'Cell powerhouse', answer: 'Mitochondria', subject: 'Biology', tone: 'border-emerald-400/50 bg-emerald-500/12 text-emerald-200' },
+  { id: 'photosynthesis', prompt: 'Makes glucose in plants', answer: 'Photosynthesis', subject: 'Biology', tone: 'border-emerald-400/50 bg-emerald-500/12 text-emerald-200' },
+  { id: 'dna', prompt: 'Carries genetic information', answer: 'DNA', subject: 'Biology', tone: 'border-emerald-400/50 bg-emerald-500/12 text-emerald-200' },
+  { id: 'water', prompt: 'H2O', answer: 'Water', subject: 'Chemistry', tone: 'border-cyan-400/50 bg-cyan-500/12 text-cyan-200' },
+  { id: 'carbon-dioxide', prompt: 'CO2', answer: 'Carbon dioxide', subject: 'Chemistry', tone: 'border-cyan-400/50 bg-cyan-500/12 text-cyan-200' },
+  { id: 'acid', prompt: 'pH below 7', answer: 'Acid', subject: 'Chemistry', tone: 'border-cyan-400/50 bg-cyan-500/12 text-cyan-200' },
+  { id: 'atom', prompt: 'Smallest element particle', answer: 'Atom', subject: 'Chemistry', tone: 'border-cyan-400/50 bg-cyan-500/12 text-cyan-200' },
+  { id: 'triangle', prompt: 'Triangle angle sum', answer: '180 degrees', subject: 'Math', tone: 'border-violet-400/50 bg-violet-500/12 text-violet-200' },
+  { id: 'circle', prompt: 'Circle area', answer: 'pi x radius squared', subject: 'Math', tone: 'border-violet-400/50 bg-violet-500/12 text-violet-200' },
+  { id: 'pythagoras', prompt: 'Right triangle rule', answer: 'a2 + b2 = c2', subject: 'Math', tone: 'border-violet-400/50 bg-violet-500/12 text-violet-200' },
+  { id: 'prime', prompt: 'Only two factors', answer: 'Prime number', subject: 'Math', tone: 'border-violet-400/50 bg-violet-500/12 text-violet-200' },
+  { id: 'noun', prompt: 'Names a person or thing', answer: 'Noun', subject: 'English', tone: 'border-amber-400/50 bg-amber-500/12 text-amber-200' },
+  { id: 'verb', prompt: 'Shows an action', answer: 'Verb', subject: 'English', tone: 'border-amber-400/50 bg-amber-500/12 text-amber-200' },
+  { id: 'synonym', prompt: 'Word with similar meaning', answer: 'Synonym', subject: 'English', tone: 'border-amber-400/50 bg-amber-500/12 text-amber-200' },
+  { id: 'metaphor', prompt: 'Direct poetic comparison', answer: 'Metaphor', subject: 'English', tone: 'border-amber-400/50 bg-amber-500/12 text-amber-200' },
+  { id: 'pakistan', prompt: 'Pakistan independence', answer: '14 August 1947', subject: 'Pak Studies', tone: 'border-rose-400/50 bg-rose-500/12 text-rose-200' },
+  { id: 'capital', prompt: 'Capital of Pakistan', answer: 'Islamabad', subject: 'Pak Studies', tone: 'border-rose-400/50 bg-rose-500/12 text-rose-200' },
+  { id: 'indus', prompt: 'Pakistan longest river', answer: 'Indus', subject: 'Pak Studies', tone: 'border-rose-400/50 bg-rose-500/12 text-rose-200' },
+  { id: 'equator', prompt: 'Zero-degree latitude', answer: 'Equator', subject: 'Pak Studies', tone: 'border-rose-400/50 bg-rose-500/12 text-rose-200' },
 ] as const;
 
 function shuffleItems<T>(items: T[]) {
@@ -217,10 +220,12 @@ function shuffleItems<T>(items: T[]) {
   return shuffled;
 }
 
-function createMemoryDeck(previousPairIds: Set<string> = new Set()) {
-  const freshPairs = MEMORY_PAIRS.filter((pair) => !previousPairIds.has(pair.id));
-  const availablePairs = freshPairs.length >= MEMORY_PAIR_COUNT ? freshPairs : MEMORY_PAIRS;
-  const selectedPairs = shuffleItems([...availablePairs]).slice(0, MEMORY_PAIR_COUNT);
+function createMemoryDeck(subject: MemorySubject, previousPairIds: Set<string> = new Set()) {
+  const scoped = subject === 'Mixed' ? MEMORY_PAIRS : MEMORY_PAIRS.filter((pair) => pair.subject === subject);
+  const pairCount = Math.min(MEMORY_PAIR_COUNT, scoped.length);
+  const freshPairs = scoped.filter((pair) => !previousPairIds.has(pair.id));
+  const availablePairs = freshPairs.length >= pairCount ? freshPairs : scoped;
+  const selectedPairs = shuffleItems([...availablePairs]).slice(0, pairCount);
 
   return shuffleItems(
     selectedPairs.flatMap((item) => [
@@ -228,6 +233,29 @@ function createMemoryDeck(previousPairIds: Set<string> = new Set()) {
       { id: item.id, label: item.answer, tone: item.tone, cardId: `${item.id}-answer` },
     ]),
   );
+}
+
+const MEMORY_BEST_SCORE_KEY = 'ilm-ai-memory-match-best';
+
+function readBestScores(): Partial<Record<MemorySubject, number>> {
+  if (typeof window === 'undefined') return {};
+  try {
+    return JSON.parse(window.localStorage.getItem(MEMORY_BEST_SCORE_KEY) || '{}');
+  } catch {
+    return {};
+  }
+}
+
+function writeBestScore(subject: MemorySubject, moves: number) {
+  if (typeof window === 'undefined') return;
+  try {
+    const current = readBestScores();
+    if (current[subject] === undefined || moves < current[subject]!) {
+      window.localStorage.setItem(MEMORY_BEST_SCORE_KEY, JSON.stringify({ ...current, [subject]: moves }));
+    }
+  } catch {
+    // Best-effort — localStorage can be unavailable (private mode, quota). Not worth surfacing.
+  }
 }
 
 function pathIndexAt(row: number, col: number) {
@@ -330,10 +358,14 @@ function LudoBoard({ state, currentUserId, onMove }: { state: LudoState; current
 }
 
 function MemoryMatchGame() {
-  const [deck, setDeck] = useState(createMemoryDeck);
+  const [subject, setSubject] = useState<MemorySubject>('Mixed');
+  const [deck, setDeck] = useState(() => createMemoryDeck('Mixed'));
   const [selected, setSelected] = useState<number[]>([]);
   const [matched, setMatched] = useState<Set<string>>(() => new Set());
   const [moves, setMoves] = useState(0);
+  const [bestScores, setBestScores] = useState<Partial<Record<MemorySubject, number>>>(() => readBestScores());
+  const pairCount = new Set(deck.map((card) => card.id)).size;
+  const completed = matched.size === pairCount;
 
   useEffect(() => {
     if (selected.length !== 2) return;
@@ -351,8 +383,24 @@ function MemoryMatchGame() {
     return () => window.clearTimeout(timeout);
   }, [deck, selected]);
 
+  // Personal-best is tracked separately, so it only updates the moment a board is actually
+  // finished — not on every render — and never on a switched-mid-game subject.
+  useEffect(() => {
+    if (!completed || moves === 0) return;
+    writeBestScore(subject, moves);
+    setBestScores(readBestScores());
+  }, [completed, moves, subject]);
+
+  const startGame = (nextSubject: MemorySubject) => {
+    setSubject(nextSubject);
+    setDeck(createMemoryDeck(nextSubject));
+    setSelected([]);
+    setMatched(new Set());
+    setMoves(0);
+  };
+
   const reset = () => {
-    setDeck((currentDeck) => createMemoryDeck(new Set(currentDeck.map((card) => card.id))));
+    setDeck((currentDeck) => createMemoryDeck(subject, new Set(currentDeck.map((card) => card.id))));
     setSelected([]);
     setMatched(new Set());
     setMoves(0);
@@ -364,15 +412,35 @@ function MemoryMatchGame() {
     if (selected.length === 1) setMoves((value) => value + 1);
   };
 
+  const best = bestScores[subject];
+
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap gap-1.5">
+        {MEMORY_SUBJECTS.map((option) => (
+          <button
+            key={option}
+            type="button"
+            onClick={() => startGame(option)}
+            className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+              subject === option
+                ? 'border-violet-400/60 bg-violet-500/15 text-violet-200'
+                : 'border-border/70 bg-muted/25 hover:border-violet-400/40 hover:bg-violet-500/10'
+            }`}
+          >
+            {option}
+          </button>
+        ))}
+      </div>
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/70 bg-muted/25 p-3">
         <div>
-          <p className="text-sm font-semibold">Memory Matrix</p>
-          <p className="text-xs text-muted-foreground">Match all concept pairs with the fewest moves.</p>
+          <p className="text-sm font-semibold">Memory Matrix — {subject}</p>
+          <p className="text-xs text-muted-foreground">
+            Match all concept pairs with the fewest moves.{best !== undefined ? ` Best: ${best} moves.` : ''}
+          </p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="secondary">{matched.size}/{MEMORY_PAIR_COUNT} pairs</Badge>
+          <Badge variant="secondary">{matched.size}/{pairCount} pairs</Badge>
           <Badge variant="outline">{moves} moves</Badge>
           <Button size="icon" variant="outline" onClick={reset} aria-label="Restart memory game">
             <RotateCcw className="h-4 w-4" />
@@ -400,48 +468,211 @@ function MemoryMatchGame() {
           );
         })}
       </div>
-      {matched.size === MEMORY_PAIR_COUNT && (
+      {completed && (
         <div className="flex items-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-200">
           <Trophy className="h-4 w-4" />
-          Completed in {moves} moves. Take a short break, then return to study.
+          Completed in {moves} moves{moves === best ? ' — new personal best!' : ''}. Take a short break, then return
+          to study.
         </div>
       )}
     </div>
   );
 }
 
-function buildLogicRound() {
-  const left = Math.floor(Math.random() * 6) + 1;
-  const right = Math.floor(Math.random() * 6) + 1;
-  const operation = Math.random() > 0.5 ? 'multiply-add' : 'double-difference';
-  const answer = operation === 'multiply-add' ? left * right + left : left * 2 + Math.abs(left - right);
-  const options = Array.from(new Set([answer, answer + 2, Math.max(1, answer - 1), answer + 5]))
-    .sort(() => Math.random() - 0.5)
-    .slice(0, 4);
-  return { left, right, operation, answer, options };
+// A handful of varied dice-arithmetic patterns instead of one fixed formula — every round picks
+// one at random, so the "logic" in Logic Dice is genuinely mixed practice, not a single
+// memorized shape.
+type DiceOperation = {
+  key: string;
+  label: string;
+  prompt: (left: number, right: number) => string;
+  compute: (left: number, right: number) => number;
+};
+const DICE_OPERATIONS: DiceOperation[] = [
+  { key: 'sum', label: 'Add the dice', prompt: (l, r) => `${l} + ${r}`, compute: (l, r) => l + r },
+  { key: 'product', label: 'Multiply the dice', prompt: (l, r) => `${l} × ${r}`, compute: (l, r) => l * r },
+  {
+    key: 'multiply-add',
+    label: 'Multiply, then add the first die',
+    prompt: (l, r) => `(${l} × ${r}) + ${l}`,
+    compute: (l, r) => l * r + l,
+  },
+  {
+    key: 'double-difference',
+    label: 'Double the first, add the difference',
+    prompt: (l, r) => `(${l} × 2) + |${l} − ${r}|`,
+    compute: (l, r) => l * 2 + Math.abs(l - r),
+  },
+  {
+    key: 'square-diff',
+    label: 'Square the first, subtract the second',
+    prompt: (l, r) => `${l}² − ${r}`,
+    compute: (l, r) => l * l - r,
+  },
+];
+
+type DiceRound = {
+  roundId: string;
+  left: number;
+  right: number;
+  operationKey: string;
+  answer: number;
+  options: number[];
+  expectedPlayers: string[];
+};
+
+function isDiceRound(payload: Record<string, unknown>): payload is Record<string, unknown> & DiceRound {
+  return (
+    typeof payload.roundId === 'string' &&
+    typeof payload.left === 'number' &&
+    typeof payload.right === 'number' &&
+    typeof payload.operationKey === 'string' &&
+    typeof payload.answer === 'number' &&
+    Array.isArray(payload.options) &&
+    Array.isArray(payload.expectedPlayers)
+  );
 }
 
-function LogicDiceGame({ onRoll }: { onRoll: () => Promise<void> }) {
-  const [round, setRound] = useState(buildLogicRound);
-  const [score, setScore] = useState(0);
-  const [answered, setAnswered] = useState<number | null>(null);
+function buildDiceRound(expectedPlayers: string[]): DiceRound {
+  const left = Math.floor(Math.random() * 6) + 1;
+  const right = Math.floor(Math.random() * 6) + 1;
+  const operation = DICE_OPERATIONS[Math.floor(Math.random() * DICE_OPERATIONS.length)]!;
+  const answer = operation.compute(left, right);
+  // Distinct, plausible wrong answers close to the real one (never negative, never a repeat).
+  const wrongPool = shuffleItems([1, -1, 2, -2, 3, -3, 4].map((delta) => answer + delta).filter((value) => value >= 0 && value !== answer));
+  const options = shuffleItems([answer, ...new Set(wrongPool)].slice(0, 4));
+  return { roundId: crypto.randomUUID(), left, right, operationKey: operation.key, answer, options, expectedPlayers };
+}
 
-  const prompt =
-    round.operation === 'multiply-add'
-      ? `(${round.left} x ${round.right}) + ${round.left}`
-      : `(${round.left} x 2) + |${round.left} - ${round.right}|`;
+function LogicDiceGame({
+  events,
+  currentUserId,
+  currentUserName,
+  remainingSeconds,
+  sendEvent,
+}: {
+  events: GameEvent[];
+  currentUserId: string | null;
+  currentUserName: string;
+  remainingSeconds: number;
+  sendEvent: (eventType: string, payload: Record<string, unknown>) => Promise<void>;
+}) {
+  const [rolling, setRolling] = useState(false);
+  const players = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const event of events) {
+      if (event.event_type === 'join' && event.user_id && !seen.has(event.user_id)) {
+        seen.set(event.user_id, String(event.payload.name || 'Student').slice(0, 20));
+      }
+    }
+    return [...seen.entries()].map(([id, name]) => ({ id, name }));
+  }, [events]);
+  const hostId = players[0]?.id || null;
+  const isHost = currentUserId === hostId;
 
-  const chooseAnswer = (value: number) => {
-    if (answered !== null) return;
-    setAnswered(value);
-    if (value === round.answer) setScore((current) => current + 1);
+  const roundEvents = useMemo(
+    () => events.filter((event) => event.event_type === 'dice_round' && isDiceRound(event.payload)),
+    [events],
+  );
+  const round = (roundEvents.at(-1)?.payload || null) as DiceRound | null;
+  const operation = DICE_OPERATIONS.find((item) => item.key === round?.operationKey) || DICE_OPERATIONS[0]!;
+
+  const answers = useMemo(() => {
+    const selected = new Map<string, { answerIndex: number; name: string }>();
+    if (!round) return selected;
+    for (const event of events) {
+      if (
+        event.event_type !== 'dice_answer' ||
+        !event.user_id ||
+        event.payload.roundId !== round.roundId ||
+        !round.expectedPlayers.includes(event.user_id)
+      ) {
+        continue;
+      }
+      const answerIndex = Number(event.payload.answerIndex);
+      if (!Number.isInteger(answerIndex) || answerIndex < 0 || answerIndex >= round.options.length) continue;
+      selected.set(event.user_id, { answerIndex, name: String(event.payload.name || 'Student').slice(0, 20) });
+    }
+    return selected;
+  }, [events, round]);
+
+  const myAnswerIndex = currentUserId ? answers.get(currentUserId)?.answerIndex : undefined;
+  const revealed = Boolean(round?.expectedPlayers.length && round.expectedPlayers.every((id) => answers.has(id)));
+
+  const scores = useMemo(() => {
+    const result = new Map<string, number>();
+    const rounds = new Map<string, DiceRound>();
+    const roundAnswers = new Map<string, Map<string, number>>();
+    for (const event of events) {
+      if (event.event_type === 'dice_round' && isDiceRound(event.payload)) {
+        rounds.set(event.payload.roundId, event.payload);
+        roundAnswers.set(event.payload.roundId, new Map());
+        continue;
+      }
+      if (event.event_type !== 'dice_answer' || !event.user_id) continue;
+      const roundId = String(event.payload.roundId || '');
+      const eventRound = rounds.get(roundId);
+      if (!eventRound || !eventRound.expectedPlayers.includes(event.user_id)) continue;
+      roundAnswers.get(roundId)?.set(event.user_id, Number(event.payload.answerIndex));
+    }
+    for (const [roundId, eventRound] of rounds) {
+      const selected = roundAnswers.get(roundId);
+      if (!selected || !eventRound.expectedPlayers.every((id) => selected.has(id))) continue;
+      const correctIndex = eventRound.options.indexOf(eventRound.answer);
+      for (const [playerId, answerIndex] of selected) {
+        if (answerIndex === correctIndex) result.set(playerId, (result.get(playerId) || 0) + 1);
+      }
+    }
+    return result;
+  }, [events]);
+
+  const rollDice = async () => {
+    if (!isHost || rolling || remainingSeconds <= 0) return;
+    setRolling(true);
+    try {
+      await sendEvent('dice_round', buildDiceRound(players.map((player) => player.id)));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'The dice could not be rolled.');
+    } finally {
+      setRolling(false);
+    }
   };
 
-  const next = async () => {
-    await onRoll();
-    setRound(buildLogicRound());
-    setAnswered(null);
+  const chooseAnswer = async (answerIndex: number) => {
+    if (!round || !currentUserId || myAnswerIndex !== undefined || revealed || remainingSeconds <= 0) return;
+    if (!round.expectedPlayers.includes(currentUserId)) {
+      toast.info('You joined during this round and can play from the next roll.');
+      return;
+    }
+    try {
+      await sendEvent('dice_answer', { roundId: round.roundId, answerIndex, name: currentUserName });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Your answer could not be submitted.');
+    }
   };
+
+  if (!round) {
+    return (
+      <div className="flex min-h-72 flex-col items-center justify-center px-4 text-center">
+        <Dice5 className="h-10 w-10 text-violet-400" />
+        <h2 className="mt-4 text-lg font-bold">Ready to roll?</h2>
+        <p className="mt-1 max-w-md text-sm text-muted-foreground">
+          Two dice roll, everyone solves the same arithmetic pattern, and the fastest correct answers climb the
+          scoreboard.
+        </p>
+        {isHost ? (
+          <Button className="mt-5" variant="gradient" onClick={() => void rollDice()} disabled={rolling}>
+            <Dice5 className={`h-4 w-4 ${rolling ? 'animate-spin' : ''}`} />
+            Roll the dice
+          </Button>
+        ) : (
+          <p className="mt-5 text-sm text-muted-foreground">Waiting for {players[0]?.name || 'the room host'} to roll.</p>
+        )}
+      </div>
+    );
+  }
+
+  const correctIndex = round.options.indexOf(round.answer);
 
   return (
     <div className="space-y-4">
@@ -449,34 +680,39 @@ function LogicDiceGame({ onRoll }: { onRoll: () => Promise<void> }) {
         <div className="rounded-2xl border border-border/70 bg-muted/25 p-4 text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Dice</p>
           <div className="mt-4 flex justify-center gap-3">
-            {[round.left, round.right].map((value, index) => (
-              <div key={index} className="flex h-20 w-20 items-center justify-center rounded-2xl border border-violet-400/35 bg-violet-500/12 text-4xl font-black">
-                {value}
-              </div>
+            <DiceFace value={round.left} />
+            <DiceFace value={round.right} />
+          </div>
+          <div className="mt-4 flex flex-wrap justify-center gap-1.5">
+            {players.map((player) => (
+              <Badge key={player.id} variant="outline" className="gap-1.5">
+                <Trophy className="h-3 w-3 text-amber-500" />
+                {player.name}: {scores.get(player.id) || 0}
+              </Badge>
             ))}
           </div>
-          <Badge className="mt-4" variant="secondary">Score {score}</Badge>
         </div>
         <div className="rounded-2xl border border-border/70 bg-card p-4">
           <div className="flex items-center gap-2 text-sm font-semibold text-violet-300">
             <Brain className="h-4 w-4" />
-            Logic challenge
+            {operation.label}
           </div>
-          <p className="mt-3 text-2xl font-bold">{prompt}</p>
+          <p className="mt-3 text-2xl font-bold">{operation.prompt(round.left, round.right)}</p>
           <div className="mt-4 grid grid-cols-2 gap-2">
-            {round.options.map((value) => {
-              const isCorrect = answered !== null && value === round.answer;
-              const isWrong = answered === value && value !== round.answer;
+            {round.options.map((value, index) => {
+              const isCorrect = revealed && index === correctIndex;
+              const isMine = myAnswerIndex === index;
               return (
                 <button
-                  key={value}
+                  key={index}
                   type="button"
-                  onClick={() => chooseAnswer(value)}
+                  onClick={() => void chooseAnswer(index)}
+                  disabled={myAnswerIndex !== undefined || revealed || !round.expectedPlayers.includes(currentUserId || '')}
                   className={`rounded-xl border px-3 py-3 text-sm font-bold transition-colors ${
                     isCorrect
                       ? 'border-emerald-400/60 bg-emerald-500/15 text-emerald-200'
-                      : isWrong
-                        ? 'border-rose-400/60 bg-rose-500/15 text-rose-200'
+                      : isMine
+                        ? 'border-violet-400/60 bg-violet-500/15 text-violet-200'
                         : 'border-border/70 bg-muted/25 hover:border-violet-400/45 hover:bg-violet-500/10'
                   }`}
                 >
@@ -485,13 +721,22 @@ function LogicDiceGame({ onRoll }: { onRoll: () => Promise<void> }) {
               );
             })}
           </div>
-          <Button onClick={next} variant="gradient" className="mt-4 w-full">
-            <Dice5 className="h-4 w-4" />
-            Next round
-          </Button>
+          <p className="mt-3 text-xs text-muted-foreground">
+            {revealed
+              ? 'Everyone answered. The correct option is now green.'
+              : myAnswerIndex !== undefined
+                ? 'Waiting for the rest of the room...'
+                : 'Pick one option.'}
+          </p>
+          {revealed && isHost && (
+            <Button onClick={() => void rollDice()} variant="gradient" className="mt-3 w-full" disabled={rolling}>
+              <Dice5 className={`h-4 w-4 ${rolling ? 'animate-spin' : ''}`} />
+              Roll again
+            </Button>
+          )}
         </div>
       </div>
-      {answered === round.answer && (
+      {revealed && myAnswerIndex === correctIndex && (
         <div className="flex items-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-200">
           <CheckCircle2 className="h-4 w-4" />
           Correct. Keep the pace steady.
@@ -621,6 +866,9 @@ export function GameRoomClient({
     if (!res.ok) throw new Error(json.error || 'Could not send game event');
   };
 
+  // Only reachable from the header "Roll" button, which only renders for live_ludo — Logic Dice
+  // rolls its own dice internally now (see LogicDiceGame's own rollDice, a shared 'dice_round'
+  // event carrying both dice values plus the round's math challenge, not a single 1-6 value).
   const rollDice = async () => {
     if (!joinedRoom || remaining <= 0 || isRolling) return;
     setIsRolling(true);
@@ -629,7 +877,7 @@ export function GameRoomClient({
       await new Promise((resolve) => window.setTimeout(resolve, 560));
       const value = Math.floor(Math.random() * 6) + 1;
       setRollingFace(value);
-      await sendEvent(game.game_type === 'live_ludo' ? 'ludo_roll' : 'dice_roll', { value });
+      await sendEvent('ludo_roll', { value });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'The dice could not be rolled.');
     } finally {
@@ -661,7 +909,6 @@ export function GameRoomClient({
     }
   };
 
-  const lastDice = [...events].reverse().find((event) => event.event_type === 'dice_roll')?.payload?.value;
   const lastLudoDice = [...events].reverse().find((event) => event.event_type === 'ludo_roll')?.payload?.value;
   const ludoState = useMemo(() => ludoStateFromEvents(events), [events]);
   const activeLudoPlayer = ludoState.players[ludoState.currentPlayer];
@@ -749,12 +996,12 @@ export function GameRoomClient({
                     </button>
                   )}
                 </span>
-                {(game.game_type === 'live_ludo' || game.game_type === 'logic_dice') && (
+                {game.game_type === 'live_ludo' && (
                   <Button
                     onClick={rollDice}
-                    disabled={isRolling || remaining <= 0 || (game.game_type === 'live_ludo' && !isMyLudoTurn)}
+                    disabled={isRolling || remaining <= 0 || !isMyLudoTurn}
                     variant="gradient"
-                    className={game.game_type === 'live_ludo' ? 'min-w-28 shrink-0 shadow-lg shadow-violet-900/40' : 'shrink-0'}
+                    className="min-w-28 shrink-0 shadow-lg shadow-violet-900/40"
                   >
                     <Dice5 className={`h-4 w-4 ${isRolling ? 'animate-spin' : ''}`} /> {isRolling ? 'Rolling...' : 'Roll'}
                   </Button>
@@ -773,7 +1020,13 @@ export function GameRoomClient({
                   sendEvent={sendEvent}
                 />
               ) : game.game_type === 'logic_dice' ? (
-                <LogicDiceGame onRoll={rollDice} />
+                <LogicDiceGame
+                  events={events}
+                  currentUserId={currentUserId}
+                  currentUserName={currentUserName}
+                  remainingSeconds={remaining}
+                  sendEvent={sendEvent}
+                />
               ) : (
                 <>
                   <div className="rounded-2xl border border-slate-700 bg-[#0a1020] p-2 shadow-inner sm:p-4">
@@ -861,7 +1114,11 @@ export function GameRoomClient({
                           ? `${event.payload.name || 'Student'} selected ${String.fromCharCode(65 + Number(event.payload.answerIndex || 0))}`
                           : event.event_type === 'quiz_round'
                             ? 'New MCQ started'
-                            : event.payload?.message || event.event_type}
+                            : event.event_type === 'dice_round'
+                              ? `New roll: ${event.payload?.left} & ${event.payload?.right}`
+                              : event.event_type === 'dice_answer'
+                                ? `${event.payload.name || 'Student'} locked in an answer`
+                                : event.payload?.message || event.event_type}
                     </p>
                     <p className="text-[11px] text-muted-foreground">{new Date(event.created_at).toLocaleTimeString()}</p>
                   </div>

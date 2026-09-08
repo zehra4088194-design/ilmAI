@@ -321,7 +321,9 @@ export function AiPracticeHub({ subjects, chaptersBySubject, resourcesByChapter 
                   <Badge variant="secondary">{currentSubjectiveQuestion.guide}</Badge>
                 )}
               </div>
-              <h3 className="text-lg leading-relaxed font-semibold">{currentSubjectiveQuestion.q}</h3>
+              <div className="text-lg leading-relaxed font-semibold">
+                <AiAnswerRenderer content={currentSubjectiveQuestion.q} card={false} />
+              </div>
               <div className="relative">
                 <Textarea
                   value={answer}

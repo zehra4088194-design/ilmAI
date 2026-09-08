@@ -505,11 +505,17 @@ option {
   margin: 1.1rem 0 0.5rem;
   color: hsl(var(--foreground));
 }
+/* The AI always opens with one "### " line (see MARKDOWN_ANSWER_FORMAT_INSTRUCTION) — a short
+   summary/topic, never body text — so a handwritten font reads fine here and gives every answer
+   a "teacher wrote this on the board" opening beat, without touching anything that needs to stay
+   precisely legible (formulas, working, tables). */
 .ai-doc-body h3 {
-  font-size: 0.925rem;
+  font-family: var(--font-caveat), cursive;
+  font-size: 1.5rem;
   font-weight: 700;
-  margin: 1rem 0 0.4rem;
-  color: hsl(var(--foreground));
+  line-height: 1.2;
+  margin: 0.9rem 0 0.35rem;
+  color: hsl(var(--brand-primary));
 }
 .ai-doc-body h4 {
   font-size: 0.85rem;
@@ -638,6 +644,24 @@ option {
   overflow-x: auto;
   overflow-y: hidden;
 }
+
+/* The "Final Answer" highlight card (see AiAnswerRenderer's custom `p` renderer) — its own
+   $$\boxed{...}$$ result reads better in the card's emerald tone than KaTeX's default black
+   \fbox border. */
+.ai-final-answer .katex-display {
+  margin: 0.4rem 0 0;
+}
+.ai-final-answer .katex {
+  color: inherit;
+}
+/* The little "Well done!" tick note next to a Final Answer — purely decorative, the actual
+   answer text stays in the normal font so it's never harder to read. */
+.ai-well-done {
+  font-family: var(--font-caveat), cursive;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 
 /* Extra theme families keep the same dark-mode surface behavior as the original set. */
 .theme-forest-dark .glass,

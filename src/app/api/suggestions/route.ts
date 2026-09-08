@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { checkDailyLimit } from '@/lib/rate-limit';
+import { postToFormsubmit } from '@/lib/formsubmit';
 
 // General "have a suggestion?" box (e.g. the Support dialog) — takes a message plus an optional
 // screenshot (a pricing page, a bug, anything) and forwards it server-side via formsubmit.co, the
@@ -64,12 +65,7 @@ export async function POST(request: NextRequest) {
       relay.set('Attachment', image, image.name || 'screenshot.png');
     }
 
-    const response = await fetch(`https://formsubmit.co/ajax/${SUGGESTION_EMAIL}`, {
-      method: 'POST',
-      headers: { Accept: 'application/json' },
-      body: relay,
-    });
-    if (!response.ok) throw new Error(`formsubmit responded ${response.status}`);
+    await postToFormsubmit(SUGGESTION_EMAIL, relay);
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('Suggestion delivery failed:', error);

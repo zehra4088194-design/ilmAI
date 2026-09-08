@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { checkDailyLimit } from '@/lib/rate-limit';
+import { postToFormsubmit } from '@/lib/formsubmit';
 
 // Manual JazzCash/Easypaisa/bank-transfer payment proof (institution plans, fee vouchers, parent
 // plans, the student wallet upgrade flow) — replaces the old "Confirm on WhatsApp" link. Same
@@ -66,12 +67,7 @@ export async function POST(request: NextRequest) {
     relay.set('Context', context);
     relay.set('Screenshot', image, image.name || 'proof.png');
 
-    const response = await fetch(`https://formsubmit.co/ajax/${PAYMENT_PROOF_EMAIL}`, {
-      method: 'POST',
-      headers: { Accept: 'application/json' },
-      body: relay,
-    });
-    if (!response.ok) throw new Error(`formsubmit responded ${response.status}`);
+    await postToFormsubmit(PAYMENT_PROOF_EMAIL, relay);
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('Payment proof delivery failed:', error);

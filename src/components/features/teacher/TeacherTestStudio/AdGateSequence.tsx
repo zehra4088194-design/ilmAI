@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { CheckCircle2, Loader2, SkipForward } from 'lucide-react';
-import { readCookieConsent, type CookieConsentPreferences } from '@/lib/utils/cookieConsent';
 import type { AdPlacement } from '@/lib/ads/constants';
 
 type Banner = { id: string; title: string; imageUrl: string; clickHref: string };
@@ -24,26 +23,14 @@ export function AdGateSequence({ slot, onComplete }: { slot: AdPlacement; onComp
   const [step, setStep] = useState(0);
   const [skipReady, setSkipReady] = useState(false);
   const [skipCountdown, setSkipCountdown] = useState(SKIP_UNLOCK_MS / 1000);
-  const [preferences, setPreferences] = useState<CookieConsentPreferences | null>(null);
   const trackedImpressions = useRef<Set<string>>(new Set());
   const completedRef = useRef(false);
 
+  // These are first-party ilmai.store cross-promotion banners (no 3rd-party tracking), not
+  // consent-gated marketing ads, so they load regardless of cookie consent. Unlike a passive
+  // banner elsewhere on the site, this is a gate blocking a paid action — skipping it based on
+  // consent would let a FREE teacher unlock test generation with no ads and no wait at all.
   useEffect(() => {
-    setPreferences(readCookieConsent());
-    const handleConsentChange = (event: Event) => {
-      setPreferences((event as CustomEvent<CookieConsentPreferences>).detail || readCookieConsent());
-    };
-    window.addEventListener('ilm-ai-cookie-consent-change', handleConsentChange);
-    return () => window.removeEventListener('ilm-ai-cookie-consent-change', handleConsentChange);
-  }, []);
-
-  useEffect(() => {
-    if (!preferences?.marketing) {
-      // No marketing consent — nothing to show. Don't trap a FREE teacher behind a gate
-      // whose content they've opted out of; let them straight through.
-      setBanners([]);
-      return;
-    }
     let cancelled = false;
     fetch(`/api/ads/banners?slot=${slot}`)
       .then((response) => (response.ok ? response.json() : { banners: [] }))
@@ -56,7 +43,7 @@ export function AdGateSequence({ slot, onComplete }: { slot: AdPlacement; onComp
     return () => {
       cancelled = true;
     };
-  }, [slot, preferences?.marketing]);
+  }, [slot]);
 
   const finish = () => {
     if (completedRef.current) return;

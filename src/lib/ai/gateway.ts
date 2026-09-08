@@ -216,23 +216,24 @@ export const MARKDOWN_ANSWER_FORMAT_INSTRUCTION = `Format your answer as a well-
 - Start with a short one-line heading or summary (use "### " for it)
 - Break the explanation into clear steps or points — use numbered lists ("1. 2. 3.") for sequential/procedural steps and bullet points for non-sequential facts
 - **Bold** key terms, formulas, and final answers
-- Write any math using LaTeX: inline as $x^2$ and standalone equations as $$E = mc^2$$
+- Write any math using LaTeX with dollar-sign delimiters ONLY: inline as $x^2$ and standalone equations (including matrices, \begin{aligned}, etc.) as $$E = mc^2$$. NEVER use \( \) or \[ \] — the renderer does not recognize them and the raw LaTeX source will show up as broken plain text instead of a formula
 - Never place an entire math or physics solution in one paragraph or one line
 - For every numerical, use these short sections in order: **Given**, **Find**, **Formula**, **Substitution**, **Working**, and **Final Answer**
 - Put each important calculation on its own display-math line, preserve units at every step, and box the result as $$\\boxed{answer\\;unit}$$
 - For proofs or algebra, show one transformation per line and briefly state why that step is valid
 - If data is missing or units are inconsistent, point it out before calculating instead of guessing
+- Whenever a question has ONE definitive final answer — not just a math/physics numerical, but also a balanced chemical equation, a genetics cross result, a named structure/process, an MCQ's correct option, a short factual answer — end with a line starting EXACTLY with "**Final Answer:**" followed by that answer alone, concise, on that one line (wrap it in $$\\boxed{...}$$ only when it's a formula/equation/number; plain bold text is fine otherwise). The app highlights this exact line, so never use "Final Answer" as a label for anything else, and skip this entirely for open-ended/discussion questions with no single answer
 - Use a short code block for any code
 - Use a Markdown table (GFM syntax) whenever you present a data set, comparison, truth table, or any array of values — never describe a table's rows in prose
-- To draw a graph (a plotted function, a bar/comparison chart, a scatter plot, or a pie chart), output a fenced code block with language "chart" containing ONLY a JSON object matching this schema — it renders as a real chart, not text:
+- To draw a graph (a plotted function, a bar/comparison chart, a scatter plot, or a pie chart), output a fenced code block with language "chart" (the fence must say exactly \`\`\`chart, never \`\`\`json or plain \`\`\`) containing ONLY a JSON object matching this schema — it renders as a real chart, not text:
   \`\`\`chart
   {"type":"line","title":"y = x^2","xLabel":"x","yLabel":"y","series":[{"name":"x^2","fn":"x^2","xMin":-10,"xMax":10,"steps":40}]}
   \`\`\`
   - "type" is one of "line", "bar", "scatter", "pie"
   - For a mathematical function, ALWAYS use "fn" (a plain math expression in terms of x, e.g. "x^2", "sin(x)", "2*x+3") with "xMin"/"xMax"/"steps" — it is evaluated exactly, so never hand-compute and list out the (x, y) points yourself
-  - For anything else (comparisons, survey results, bar/pie data), use "data": an array of {"x":...,"y":...} points instead of "fn"
+  - For anything else (comparisons, survey results, bar/pie data), use "data": an array of {"x":...,"y":...} points instead of "fn" — every point needs a real number, never a placeholder like "<value>"
   - "series" can have more than one entry to plot multiple functions/datasets on the same chart
-  - Only emit a chart block when a visual actually helps (a real function, a comparison, a distribution) — not for every numerical answer
+  - Only emit a chart block when a visual actually helps (a real function, a comparison, a distribution) AND you are confident in the actual numbers. If real-world data (e.g. a country's GDP by year) isn't reliably known to you, say so in plain text and suggest where to find it — do NOT invent numbers and do NOT output a code block of placeholders/blanks for the student to fill in
 - Keep paragraphs short (2-3 sentences max) — favor structure over long prose`;
 
 function buildSystemPrompt(subject?: string): string {

@@ -592,9 +592,21 @@ export function RestClient({
       {activeSong && (isPlaying || playerOpen) && (
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-background/95 backdrop-blur-lg shadow-[0_-4px_24px_rgba(0,0,0,0.12)]">
           {isAudioTrack && (
-            <div className="h-0.5 w-full bg-muted">
-              <div className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-[width]" style={{ width: `${progressPct}%` }} />
-            </div>
+            <input
+              type="range"
+              min={0}
+              max={duration || 0}
+              step={0.1}
+              value={seeking ?? currentTime}
+              disabled={!canUseRest || !duration}
+              onChange={(e) => setSeeking(Number(e.target.value))}
+              onMouseUp={(e) => seekTo(Number((e.target as HTMLInputElement).value))}
+              onTouchEnd={(e) => seekTo(Number((e.target as HTMLInputElement).value))}
+              onKeyUp={(e) => seekTo(Number((e.target as HTMLInputElement).value))}
+              className="rest-mini-seek w-full"
+              style={{ ['--progress' as any]: `${progressPct}%` }}
+              aria-label="Seek"
+            />
           )}
           <div className="mx-auto flex max-w-7xl items-center gap-3 px-3 py-2.5 sm:px-5">
             <div className="h-11 w-11 shrink-0 overflow-hidden rounded-md shadow">
@@ -616,7 +628,10 @@ export function RestClient({
               </Button>
             </div>
             {isAudioTrack && (
-              <div className="hidden items-center gap-1.5 md:flex">
+              // md:mr-16: the SideChatWidget's floating bubble sits fixed at right-5 bottom-5
+              // (56px, z-[70]) — above this bar's own z-40, so without this margin it visually
+              // sits right on top of the volume control instead of past it.
+              <div className="hidden items-center gap-1.5 md:mr-16 md:flex">
                 <button type="button" onClick={() => setMuted((v) => !v)} aria-label={muted ? 'Unmute' : 'Mute'} className="text-muted-foreground hover:text-foreground">
                   <VolumeIcon className="h-4 w-4" />
                 </button>
@@ -668,6 +683,50 @@ export function RestClient({
         .rest-seek::-moz-range-progress {
           background: hsl(var(--brand-primary, 262 83% 58%));
           border-radius: 9999px;
+        }
+        .rest-mini-seek {
+          -webkit-appearance: none;
+          appearance: none;
+          display: block;
+          height: 6px;
+          margin: 0;
+          border-radius: 0;
+          background: linear-gradient(to right, hsl(var(--brand-primary, 262 83% 58%)) var(--progress, 0%), hsl(var(--muted)) var(--progress, 0%));
+          cursor: pointer;
+        }
+        .rest-mini-seek::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          height: 12px;
+          width: 12px;
+          border-radius: 9999px;
+          background: white;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+          margin-top: -3px;
+          opacity: 0;
+          transition: opacity 0.15s;
+        }
+        .rest-mini-seek:hover::-webkit-slider-thumb,
+        .rest-mini-seek:focus::-webkit-slider-thumb,
+        .rest-mini-seek:active::-webkit-slider-thumb {
+          opacity: 1;
+        }
+        .rest-mini-seek::-moz-range-thumb {
+          height: 12px;
+          width: 12px;
+          border: none;
+          border-radius: 9999px;
+          background: white;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+          opacity: 0;
+          transition: opacity 0.15s;
+        }
+        .rest-mini-seek:hover::-moz-range-thumb,
+        .rest-mini-seek:focus::-moz-range-thumb,
+        .rest-mini-seek:active::-moz-range-thumb {
+          opacity: 1;
+        }
+        .rest-mini-seek::-moz-range-progress {
+          background: hsl(var(--brand-primary, 262 83% 58%));
         }
         .rest-volume {
           -webkit-appearance: none;

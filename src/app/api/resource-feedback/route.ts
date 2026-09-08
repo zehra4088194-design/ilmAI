@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { checkDailyLimit } from '@/lib/rate-limit';
+import { postToFormsubmit } from '@/lib/formsubmit';
 
 // Destination for "report a mistake / suggestion" submissions on resources (PDFs, notes, etc.)
 // — server-only, deliberately NOT NEXT_PUBLIC_*. Forwarded via formsubmit.co from the SERVER
@@ -54,20 +55,15 @@ export async function POST(request: NextRequest) {
   const kindLabel = kind === 'suggestion' ? 'Suggestion' : 'Mistake report';
 
   try {
-    const response = await fetch(`https://formsubmit.co/ajax/${MISTAKE_REPORT_EMAIL}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({
-        // Subject line alone tells the reader which PDF this is about, without opening the email.
-        _subject: `[ilm AI] ${kindLabel}: ${resourceTitle}`,
-        Type: kindLabel,
-        'Resource (PDF)': resourceTitle,
-        'Resource ID': resourceId,
-        Message: message,
-        'Page URL': page,
-      }),
+    await postToFormsubmit(MISTAKE_REPORT_EMAIL, {
+      // Subject line alone tells the reader which PDF this is about, without opening the email.
+      _subject: `[ilm AI] ${kindLabel}: ${resourceTitle}`,
+      Type: kindLabel,
+      'Resource (PDF)': resourceTitle,
+      'Resource ID': resourceId,
+      Message: message,
+      'Page URL': page,
     });
-    if (!response.ok) throw new Error(`formsubmit responded ${response.status}`);
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('Resource feedback delivery failed:', error);

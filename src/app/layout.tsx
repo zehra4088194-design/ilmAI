@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import Script from 'next/script';
-import { Inter, Geist_Mono } from 'next/font/google';
+import { Inter, Geist_Mono, Caveat } from 'next/font/google';
 import { cookies, headers } from 'next/headers';
 import '@/styles/globals.css';
 import 'katex/dist/katex.min.css';
@@ -12,6 +12,10 @@ import { createClient } from '@/lib/supabase/server';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
 const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono', display: 'swap' });
+// The "whiteboard" handwritten touch on AI answers — see .ai-doc-body h3 and .ai-final-answer in
+// globals.css. Only ever used for a few short accent words, never body text, so weight 700 alone
+// (Caveat's boldest) is enough.
+const caveat = Caveat({ subsets: ['latin'], weight: ['700'], variable: '--font-caveat', display: 'swap' });
 const siteUrl = getSiteUrl();
 
 export const metadata: Metadata = {
@@ -105,7 +109,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           data-theme-family={initialTheme.family}
         />
       </head>
-      <body className={`${inter.variable} ${geistMono.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} ${geistMono.variable} ${caveat.variable} font-sans antialiased`}>
         <Providers locale={initialLocale} initialTheme={initialTheme.className}>
           {children}
         </Providers>

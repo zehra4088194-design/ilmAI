@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import { InlineMath } from '@/components/features/ai/InlineMath';
 import type { Mcq, Paper, Question } from './types';
 import { formatGrade } from './types';
 
@@ -80,12 +81,12 @@ function McqBlock({ question, index }: { question: Mcq; index: number }) {
   return (
     <div className="mb-1.5 break-inside-avoid text-xs">
       <p className="font-semibold whitespace-pre-wrap">
-        {index + 1}. {question.q}
+        {index + 1}. <InlineMath text={question.q} />
       </p>
       <div className="mt-0.5 grid grid-cols-2 gap-x-5 gap-y-0.5 pl-3">
         {question.opts.map((option, optionIndex) => (
           <span key={option} className="whitespace-pre-wrap">
-            {String.fromCharCode(65 + optionIndex)}. {option}
+            {String.fromCharCode(65 + optionIndex)}. <InlineMath text={option} />
           </span>
         ))}
       </div>
@@ -96,7 +97,8 @@ function McqBlock({ question, index }: { question: Mcq; index: number }) {
 function SubjectiveBlock({ question, index }: { question: Question; index: number }) {
   return (
     <p className="mb-2.5 break-inside-avoid text-xs leading-5 font-semibold whitespace-pre-wrap">
-      {index + 1}. {question.q} <span className="float-right font-normal">[{question.marks}]</span>
+      {index + 1}. <InlineMath text={question.q} />{' '}
+      <span className="float-right font-normal">[{question.marks}]</span>
     </p>
   );
 }
@@ -115,12 +117,16 @@ function AnswerKey({ paper }: { paper: Paper }) {
       {[...paper.shortQuestions, ...paper.longQuestions, ...paper.letterQuestions, ...paper.vocabQuestions, ...paper.grammarQuestions, ...paper.numericalQuestions, ...paper.extraQuestions].map((question, index) => (
         <div key={`${question.q}-${index}`} className="mt-2 break-inside-avoid text-xs">
           <p className="font-bold whitespace-pre-wrap">
-            {index + 1}. {question.q}
+            {index + 1}. <InlineMath text={question.q} />
           </p>
           <p className="mt-0.5 leading-5 whitespace-pre-wrap">
-            {question.modelAnswer ||
-              question.keyPoints.join(' ') ||
-              'Model answer not available — mark from the chapter source.'}
+            <InlineMath
+              text={
+                question.modelAnswer ||
+                question.keyPoints.join(' ') ||
+                'Model answer not available — mark from the chapter source.'
+              }
+            />
           </p>
         </div>
       ))}

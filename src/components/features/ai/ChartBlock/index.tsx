@@ -70,7 +70,10 @@ function resolveSeriesData(series: ChartSeries): ChartPoint[] {
   return Array.isArray(series.data) ? series.data : [];
 }
 
-function parseSpec(raw: string): ChartSpec | null {
+// Exported so AiAnswerRenderer can also recognize a chart spec that a model emitted in a
+// mistagged fence (```json or unlabeled ```) instead of the documented ```chart — a weaker/free
+// model occasionally forgets the exact tag even when the data itself is real.
+export function parseSpec(raw: string): ChartSpec | null {
   try {
     const spec = JSON.parse(raw) as ChartSpec;
     if (!spec || !Array.isArray(spec.series) || spec.series.length === 0) return null;

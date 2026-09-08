@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import type { ProtectedResourceKind } from '@/lib/resources/server';
 import { HouseAdBanner } from '@/components/features/ads/HouseAdBanner';
+import { AiAnswerRenderer } from '@/components/features/ai/AiAnswerRenderer';
 
 type StoredMcq = { q?: string; opts?: string[]; correct?: number; exp?: string };
 
@@ -98,7 +99,9 @@ export function ResourceQuizClient({ kind, resourceId }: { kind: ProtectedResour
               </span>
               <span>1 mark</span>
             </div>
-            <p className="text-lg leading-7 font-semibold break-words">{current.q || 'Question unavailable'}</p>
+            <div className="text-lg leading-7 font-semibold break-words">
+              <AiAnswerRenderer content={current.q || 'Question unavailable'} card={false} />
+            </div>
             <div className="grid gap-2.5">
               {(current.opts || []).map((option, optionIndex) => {
                 const isSelected = selected === optionIndex;
@@ -119,15 +122,17 @@ export function ResourceQuizClient({ kind, resourceId }: { kind: ProtectedResour
                     }`}
                   >
                     <span className="flex-none font-bold text-amber-600">{String.fromCharCode(65 + optionIndex)}.</span>
-                    <span className="min-w-0 break-words">{option}</span>
+                    <span className="min-w-0 break-words">
+                      <AiAnswerRenderer content={option} card={false} />
+                    </span>
                   </button>
                 );
               })}
             </div>
             {selected !== null && current.exp && (
-              <p className="text-muted-foreground rounded-xl bg-amber-500/10 p-3 text-sm leading-6">
-                Explanation: {current.exp}
-              </p>
+              <div className="text-muted-foreground rounded-xl bg-amber-500/10 p-3 text-sm leading-6">
+                Explanation: <AiAnswerRenderer content={current.exp} card={false} className="inline" />
+              </div>
             )}
             <div className="flex items-center justify-between gap-2 pt-1">
               <Button variant="ghost" size="sm" disabled={index === 0} onClick={() => jumpTo(index - 1)}>
