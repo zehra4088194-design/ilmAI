@@ -393,7 +393,7 @@ export function ProtectedResourceReader({
       </div>
       {/* No wrapping bar with its own padding — HouseAdBanner renders nothing at all when there's
           no active ad, and a wrapper here would otherwise leave an empty padded strip behind. */}
-      {toolbarsVisible && <HouseAdBanner slot="pdf_viewer" className="mx-auto max-w-md px-3 py-2 sm:px-5" />}
+      {toolbarsVisible && <HouseAdBanner slot="store_products" className="mx-auto max-w-md px-3 py-2 sm:px-5" />}
     </div>,
     document.body,
   );

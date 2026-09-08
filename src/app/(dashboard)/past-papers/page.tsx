@@ -32,7 +32,7 @@ export default async function PastPapersPage() {
         <h1 className="text-2xl font-bold sm:text-3xl">Past Papers</h1>
         <p className="text-muted-foreground mt-1">Select a subject, chapter, and then the exact paper.</p>
       </div>
-      <HouseAdBanner slot="content_inline" className="mx-auto max-w-5xl" />
+      <HouseAdBanner slot="store_products" className="mx-auto max-w-5xl" />
       <PastPapersGrid
         papers={(papers || []) as any}
         board={profile?.board || undefined}

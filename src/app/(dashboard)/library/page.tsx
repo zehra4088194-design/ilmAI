@@ -64,7 +64,7 @@ export default async function LibraryPage() {
           Choose textbooks, notes, pairing schemes, or guess papers, then open the relevant subject and file.
         </p>
       </div>
-      <HouseAdBanner slot="content_inline" className="mx-auto max-w-5xl" />
+      <HouseAdBanner slot="store_products" className="mx-auto max-w-5xl" />
       <LibraryGrid resources={visibleResources as any} />
     </div>
   );

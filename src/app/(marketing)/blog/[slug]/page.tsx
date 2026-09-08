@@ -161,7 +161,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                 </ul>
               </aside>
 
-              <HouseAdBanner slot="content_inline" className="my-10" />
+              <HouseAdBanner slot="store_products" className="my-10" />
 
               <div className="space-y-12">
                 {post.sections.map((section) => (

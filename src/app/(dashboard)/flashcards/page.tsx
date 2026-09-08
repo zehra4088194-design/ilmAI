@@ -13,7 +13,7 @@ export default async function FlashcardsPage() {
       <div className="flex items-center justify-between">
         <div><h1 className="text-2xl font-bold">Flashcards</h1><p className="text-muted-foreground">Learn faster with spaced repetition.</p></div>
       </div>
-      <HouseAdBanner slot="flashcards_top" />
+      <HouseAdBanner slot="store_products" />
       <FlashcardDeckGrid decks={decks || []} />
     </div>
   );

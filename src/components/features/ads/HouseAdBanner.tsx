@@ -31,6 +31,11 @@ export function HouseAdBanner({ slot, className = '', categoryContext }: HouseAd
   const [direction, setDirection] = useState(1);
   const [preferences, setPreferences] = useState<CookieConsentPreferences | null>(null);
   const trackedImpressions = useRef<Set<string>>(new Set());
+  // The box used to appear the instant a banner was picked, with its <img> still fetching — a
+  // blank flash before the picture popped in. Every banner in the list is preloaded as soon as it
+  // arrives (not just the current one) so rotating to the next banner never re-triggers that same
+  // flash — by the time its turn comes around it's already sitting in the browser's cache.
+  const [loadedIds, setLoadedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     setPreferences(readCookieConsent());
@@ -54,6 +59,7 @@ export function HouseAdBanner({ slot, className = '', categoryContext }: HouseAd
       .then((json) => {
         if (cancelled) return;
         setBanners(Array.isArray(json.banners) ? json.banners : []);
+        setLoadedIds(new Set());
         setIndex(0);
       })
       .catch(() => {
@@ -64,10 +70,29 @@ export function HouseAdBanner({ slot, className = '', categoryContext }: HouseAd
     };
   }, [slot, categoryContext, preferences?.marketing]);
 
+  // Preload every banner off-DOM as soon as the list arrives — not just the current one — so
+  // rotating to the next banner every 3s never re-triggers the same load flash; by the time its
+  // turn comes around it's already sitting in the browser's cache. Falls through to "loaded" on
+  // error too, so one broken image can't stall the whole carousel on that slide forever.
+  useEffect(() => {
+    if (!banners?.length) return;
+    let cancelled = false;
+    for (const banner of banners) {
+      const preload = new window.Image();
+      preload.onload = () => { if (!cancelled) setLoadedIds((prev) => new Set(prev).add(banner.id)); };
+      preload.onerror = () => { if (!cancelled) setLoadedIds((prev) => new Set(prev).add(banner.id)); };
+      preload.src = banner.imageUrl;
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [banners]);
+
   const current = banners && banners.length ? banners[index % banners.length] : null;
+  const ready = current != null && loadedIds.has(current.id);
 
   useEffect(() => {
-    if (!current || trackedImpressions.current.has(current.id)) return;
+    if (!current || !ready || trackedImpressions.current.has(current.id)) return;
     trackedImpressions.current.add(current.id);
     // Not awaited — never blocks the banner from rendering.
     fetch('/api/ads/impression', {
@@ -76,20 +101,23 @@ export function HouseAdBanner({ slot, className = '', categoryContext }: HouseAd
       body: JSON.stringify({ bannerId: current.id }),
       keepalive: true,
     }).catch(() => {});
-  }, [current]);
+  }, [current, ready]);
 
-  // Auto-advance every 3s. Re-running on every index change (whether from this timer or a manual
-  // prev/next click) naturally restarts the 3s countdown after any interaction.
+  // Auto-advance every 3s once the current picture has actually finished loading — starting the
+  // countdown before then could rotate away from a banner nobody ever got to see.
   useEffect(() => {
-    if (!banners || banners.length <= 1) return;
+    if (!banners || banners.length <= 1 || !ready) return;
     const timer = setTimeout(() => {
       setDirection(1);
       setIndex((value) => (value + 1) % banners.length);
     }, ROTATE_MS);
     return () => clearTimeout(timer);
-  }, [banners, index]);
+  }, [banners, index, ready]);
 
-  if (!banners || !current) return null;
+  // Nothing renders — not even the "Promoted" box — until the picture has actually finished
+  // loading. It used to pop the box in first with a still-loading <img> behind it; now the whole
+  // thing appears at once, already fully loaded (the preload above means this paints from cache).
+  if (!banners || !current || !ready) return null;
 
   const goNext = () => {
     setDirection(1);
@@ -150,6 +178,10 @@ export function HouseAdBanner({ slot, className = '', categoryContext }: HouseAd
           </>
         )}
       </div>
+      {/* The box used to be just a bare picture with nothing to say what it even was — a short
+          caption under it names the product so the ad reads as an actual listing, not a mystery
+          image. */}
+      <p className="text-foreground/80 mt-1.5 line-clamp-1 text-center text-[11px] font-medium">{current.title}</p>
     </div>
   );
 }

@@ -65,7 +65,7 @@ export function QuizResult({ session, onRetry }: { session: QuizSession; onRetry
           </CardContent>
         </Card>
       </div>
-      <HouseAdBanner slot="quiz_results" className="mx-auto mb-6 max-w-md" />
+      <HouseAdBanner slot="store_products" className="mx-auto mb-6 max-w-md" />
       <div className="flex justify-center gap-3">
         <Button variant="outline" onClick={onRetry}>
           <RotateCcw className="h-4 w-4" />

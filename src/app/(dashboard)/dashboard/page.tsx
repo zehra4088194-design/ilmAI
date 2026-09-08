@@ -42,7 +42,7 @@ export default async function DashboardPage() {
     return (
       <div className="space-y-6">
         <InstallAppButton />
-        <HouseAdBanner slot="dashboard_top" />
+        <HouseAdBanner slot="store_products" />
         {!approvedParentLink && <ParentConnectPrompt />}
         <UniversityDashboard profile={profile} />
       </div>
@@ -161,7 +161,6 @@ export default async function DashboardPage() {
           </Button>
         </div>
       )}
-      <HouseAdBanner slot="dashboard_top" />
       {/* Live ilmai.store products — no admin setup, appears/disappears with the store's own catalog. */}
       <HouseAdBanner slot="store_products" />
       <WelcomeSection

@@ -66,7 +66,7 @@ export function ResourceQuizClient({ kind, resourceId }: { kind: ProtectedResour
       <Button variant="ghost" size="sm" onClick={() => router.back()}>
         <ArrowLeft className="h-4 w-4" /> Back to file
       </Button>
-      <HouseAdBanner slot="test_taking" />
+      <HouseAdBanner slot="store_products" />
 
       {loading ? (
         <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3">
