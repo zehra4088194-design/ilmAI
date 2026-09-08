@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, FileText } from 'lucide-react';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { HouseAdBanner } from '@/components/features/ads/HouseAdBanner';
 import { ClassLibraryResourceRow } from '@/components/features/class-library/ClassLibraryResourceRow';
 import { CLASS_LIBRARY_RESOURCE_TYPES, type ClassLibraryResourceType } from '@/lib/class-library/types';
 import { getClassLibraryClassBySlug, getClassLibrarySubjectById, getClassLibrarySubjectResources } from '@/lib/class-library/queries';
@@ -36,6 +37,8 @@ export default async function ClassLibraryResourceListPage({
           {typeMeta.label} - {subject.name}
         </h1>
       </header>
+
+      <HouseAdBanner slot="store_products" categoryContext={subject.name} />
 
       {resources.length === 0 ? (
         <EmptyState

@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button';
 import type { ProtectedResourceKind, ResourceMode } from '@/lib/resources/server';
 import { ResourceComments } from '@/components/features/resources/ResourceComments';
 import { isDarkThemeId } from '@/lib/constants/themes';
-import { HouseAdBanner } from '@/components/features/ads/HouseAdBanner';
 
 // react-pdf's module scope touches browser-only globals (DOMMatrix, etc.) through pdfjs — fine in
 // the browser, but Next still evaluates 'use client' components once during SSR, which crashed
@@ -391,9 +390,6 @@ export function ProtectedResourceReader({
           </div>
         )}
       </div>
-      {/* No wrapping bar with its own padding — HouseAdBanner renders nothing at all when there's
-          no active ad, and a wrapper here would otherwise leave an empty padded strip behind. */}
-      {toolbarsVisible && <HouseAdBanner slot="store_products" className="mx-auto max-w-md px-3 py-2 sm:px-5" />}
     </div>,
     document.body,
   );

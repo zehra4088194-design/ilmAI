@@ -6,6 +6,7 @@ import { createServiceClient } from '@/lib/supabase/service';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { GoogleDriveResourceCard } from '@/components/features/library/GoogleDriveResourceCard';
+import { HouseAdBanner } from '@/components/features/ads/HouseAdBanner';
 import {
   buildCatalogSearch,
   getLibrarySection,
@@ -109,6 +110,8 @@ export default async function LibrarySectionPage({
         <h1 className="mt-4 text-2xl font-bold sm:text-3xl">{section.title}</h1>
         <p className="text-muted-foreground mt-2">This page contains only {section.title.toLowerCase()} files.</p>
       </div>
+
+      <HouseAdBanner slot="store_products" className="mx-auto max-w-5xl" categoryContext={subject?.name} />
 
       {visibleResources.length ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

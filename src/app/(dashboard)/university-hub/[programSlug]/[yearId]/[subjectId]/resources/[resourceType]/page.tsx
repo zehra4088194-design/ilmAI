@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { ArrowLeft, ExternalLink, FileText } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { HouseAdBanner } from '@/components/features/ads/HouseAdBanner';
 import { UNIVERSITY_RESOURCE_TYPES, type UniversityResourceType } from '@/lib/university-hub/types';
 import {
   getUniversitySubjectById,
@@ -45,6 +46,8 @@ export default async function UniversityResourceListPage({
           {typeMeta.label} - {subject.name}
         </h1>
       </header>
+
+      <HouseAdBanner slot="store_products" categoryContext={subject.name} />
 
       {resources.length === 0 ? (
         <EmptyState
