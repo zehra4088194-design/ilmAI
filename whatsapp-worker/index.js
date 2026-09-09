@@ -47,7 +47,6 @@ const PORT = Number(process.env.WHATSAPP_WORKER_PORT || 4310);
 // messages through this process without it.
 const WORKER_SECRET = process.env.WHATSAPP_WORKER_SECRET || '';
 const AUTH_DIR = process.env.WHATSAPP_AUTH_DIR || './auth_info_baileys';
-const SUPPORT_CONTACT = process.env.WHATSAPP_SUPPORT_TEXT || 'ilmai.study1@gmail.com or ilmai.study';
 
 // Where the Next.js app lives — used ONLY for the JazzCash cross-match call below (POST
 // /api/payments/jazzcash/verify). Reuses WHATSAPP_WORKER_SECRET as a mutual secret: the app
@@ -218,6 +217,33 @@ async function verifyJazzcashPayment(phoneDigits, tid, code) {
   }
 }
 
+/**
+ * AI-powered auto-reply — the actual conversation (persona, Groq call, close-the-conversation
+ * logic) lives in the Next.js app (src/app/api/whatsapp/ai-reply/route.ts); this worker only
+ * forwards the message and relays whatever reply comes back. `reply: null` means the app decided
+ * this number's conversation is already closed (see that route's CLOSE_TOKEN handling) — nothing
+ * gets sent, but the message was still logged just above in handleIncoming().
+ */
+async function getAiReply(phoneDigits, message, profileName) {
+  if (!APP_BASE_URL) return null;
+  try {
+    const response = await fetch(`${APP_BASE_URL}/api/whatsapp/ai-reply`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(WORKER_SECRET ? { Authorization: `Bearer ${WORKER_SECRET}` } : {}),
+      },
+      body: JSON.stringify({ phoneDigits, message, profileName: profileName || null }),
+      signal: AbortSignal.timeout(20_000), // Groq + gateway round trip needs more room than /send.
+    });
+    const result = await response.json().catch(() => ({}));
+    return typeof result.reply === 'string' ? result.reply : null;
+  } catch (error) {
+    console.error('[whatsapp-worker] ai-reply request failed:', error);
+    return "Sorry, I'm having a little trouble replying right now — please try again in a bit 🙏";
+  }
+}
+
 /** Uploads a payment-proof screenshot to a private Supabase Storage bucket for manual audit —
  * never written to disk on the VPS at any point (downloaded straight into memory from WhatsApp,
  * uploaded straight from memory), so there's no temp file to remember to clean up. */
@@ -292,13 +318,14 @@ async function handlePossiblePaymentMessage(from, digits, text, msg) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Incoming messages — "Contact Us" auto-responder. Looks the sender up by phone in `profiles`;
-// replies with a personalized note if found, a generic help menu otherwise. Also best-effort
-// logs the message to `whatsapp_inbound_messages` (see the migration in supabase/migrations/) so
-// a human can review it later — this is a canned auto-reply, not a full support bot.
+// Incoming messages — AI-powered auto-reply (see getAiReply() above / src/app/api/whatsapp/
+// ai-reply/route.ts for the actual persona + Groq call). Looks the sender up by phone in
+// `profiles` so the AI can personalize its reply, and always logs the message to
+// `whatsapp_inbound_messages` (see supabase/migrations/) regardless of whether the AI replies —
+// so a human can review the full conversation even after the bot has gone quiet for a number.
 //
 // A message that looks like a JazzCash payment confirmation (TID, plan/claim code, or an image)
-// is routed to handlePossiblePaymentMessage() above instead of getting the generic reply below.
+// is routed to handlePossiblePaymentMessage() above instead of getting the AI reply below.
 // ---------------------------------------------------------------------------------------------
 
 async function handleIncoming({ messages, type }) {
@@ -348,19 +375,12 @@ async function handleIncoming({ messages, type }) {
           );
       }
 
-      const greetingName = profile?.full_name ? profile.full_name.split(' ')[0] : null;
-      const reply = greetingName
-        ? `Hi ${greetingName}! 👋 Thanks for messaging ilm AI.\n\n` +
-          'This inbox is auto-replied — for real support, please email or use the in-app "Contact us" ' +
-          `form so our team can help: ${SUPPORT_CONTACT}.\n\n` +
-          'Reply MENU anytime to see this again.'
-        : 'Hi! 👋 Thanks for messaging ilm AI.\n\n' +
-          "We couldn't find an ilm AI account with this number. If you already have one, add this " +
-          'number in Settings > Profile so we can recognize you here.\n\n' +
-          `This inbox is auto-replied — for real support, please email or use the in-app "Contact us" ` +
-          `form: ${SUPPORT_CONTACT}.`;
+      if (!text) continue; // an image with no caption and no pending claim — nothing to reply to.
 
-      await state.sock?.sendMessage(from, { text: reply });
+      const reply = await getAiReply(digits, text, profile?.full_name || null);
+      if (reply) await state.sock?.sendMessage(from, { text: reply });
+      // reply === null means the app already closed this number's conversation (handed off to
+      // the CEO) — per spec, stay silent from here on for that number.
     } catch (error) {
       console.error('[whatsapp-worker] Failed to process one incoming message:', error);
       // Continue with the rest of the batch — one bad message must not stop the others.

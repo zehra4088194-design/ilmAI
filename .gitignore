@@ -55,6 +55,7 @@ next-env.d.ts
 .temp
 .env*
 !.env.oracle.example
+!whatsapp-worker/.env.example
 
 # local content-ops drafts (YouTube scripts / external-AI prompts - not part of the app)
 docs/content-ops/youtube-scripts/

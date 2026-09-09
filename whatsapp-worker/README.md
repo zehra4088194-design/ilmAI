@@ -88,6 +88,25 @@ for the full fraud-hardening details (each real transaction ID can only ever act
 account/claim). The existing "email a screenshot to an admin" path keeps working unchanged as a
 fallback if the SMS forwarder is ever down.
 
+## AI auto-reply
+
+Any incoming chat that isn't a JazzCash payment message (see above) gets an AI-generated reply
+instead of a canned one — `handleIncoming()` forwards the message to `POST /api/whatsapp/ai-reply`
+in the main app, which calls Groq through the existing AI gateway (same key-rotation/budget infra
+every other AI feature uses) with a system prompt that:
+
+- Represents Muhammad Husnain Noor's team, answers ordinary questions about ilm AI naturally, and
+  shares the relevant sign-up/pricing link when it helps.
+- Is honest that it's an automated assistant if someone directly asks whether they're talking to a
+  human or a bot.
+- For anything critical (business deals, complaints, press, or someone insisting on talking to
+  Husnain Noor personally), asks a couple of clarifying questions, then tells them he'll personally
+  follow up and goes quiet for that number from then on (still logs what they send, just stops
+  replying) — see `whatsapp_ai_conversations` in Supabase for the per-number state.
+
+Requires `WHATSAPP_APP_BASE_URL` to be set (same as the JazzCash cross-match) — without it, the
+worker still logs every incoming message but sends no reply.
+
 ## HTTP API (127.0.0.1 only)
 
 - `GET /health` → `{ ok, connected, startingUp }`
