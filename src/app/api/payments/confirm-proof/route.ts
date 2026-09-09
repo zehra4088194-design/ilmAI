@@ -1,19 +1,16 @@
 import { createHash } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { checkDailyLimit } from '@/lib/rate-limit';
-import { postToFormsubmit } from '@/lib/formsubmit';
+import { sendAdminNotification } from '@/lib/adminMail';
 
 // Manual JazzCash/Easypaisa/bank-transfer payment proof (institution plans, fee vouchers, parent
 // plans, the student wallet upgrade flow) — replaces the old "Confirm on WhatsApp" link. Same
-// server-side formsubmit.co relay as /api/suggestions, so no phone number or email address ever
-// appears in client-bundled JS/HTML; the payer's own name/number and screenshot go straight to
-// this env var's inbox for an admin to verify against the JazzCash/Easypaisa transaction.
-// Deliberately NOT Brevo — Brevo is reserved for the app's own transactional emails, not
-// public-facing forms like this one.
-//
-// formsubmit.co gotcha: the FIRST submission to a new destination address only triggers an
-// activation email from formsubmit.co to that inbox — click the link there once, then every
-// submission after that actually delivers.
+// server-side SMTP send as /api/suggestions (src/lib/adminMail.ts), so no phone number or email
+// address ever appears in client-bundled JS/HTML; the payer's own name/number and screenshot go
+// straight to this env var's inbox for an admin to verify against the JazzCash/Easypaisa
+// transaction. Deliberately NOT Brevo — Brevo is reserved for the app's own transactional emails,
+// not internal notifications like this one. (JazzCash payments also have an automated fast path —
+// see src/app/api/payments/jazzcash/verify — this stays as the manual fallback/audit trail.)
 const PAYMENT_PROOF_EMAIL =
   process.env.PAYMENT_PROOF_EMAIL || process.env.MISTAKE_REPORT_EMAIL || process.env.CONTACT_EMAIL || 'ilmai.study1@gmail.com';
 
@@ -60,14 +57,18 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const relay = new FormData();
-    relay.set('_subject', `[ilm AI] Payment proof: ${context || 'manual payment'}`);
-    relay.set('Name on transaction', name);
-    relay.set('Sender number', phone);
-    relay.set('Context', context);
-    relay.set('Screenshot', image, image.name || 'proof.png');
-
-    await postToFormsubmit(PAYMENT_PROOF_EMAIL, relay);
+    await sendAdminNotification({
+      to: PAYMENT_PROOF_EMAIL,
+      subject: `[ilm AI] Payment proof: ${context || 'manual payment'}`,
+      fields: { 'Name on transaction': name, 'Sender number': phone, Context: context },
+      attachments: [
+        {
+          filename: image.name || 'proof.png',
+          content: Buffer.from(await image.arrayBuffer()),
+          contentType: image.type,
+        },
+      ],
+    });
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('Payment proof delivery failed:', error);

@@ -1,22 +1,19 @@
 import { createHash } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { checkDailyLimit } from '@/lib/rate-limit';
-import { postToFormsubmit } from '@/lib/formsubmit';
+import { sendAdminNotification } from '@/lib/adminMail';
 
 // General "have a suggestion?" box (e.g. the Support dialog) — takes a message plus an optional
-// screenshot (a pricing page, a bug, anything) and forwards it server-side via formsubmit.co, the
-// same pattern as /api/resource-feedback. The destination email is a server-only env var, never
-// NEXT_PUBLIC_*, so it never appears in client-bundled JS/HTML. Deliberately NOT Brevo — Brevo is
-// reserved for the app's own transactional emails, not public-facing forms like this one.
-//
-// formsubmit.co gotcha: the FIRST submission to a new destination address only triggers an
-// activation email from formsubmit.co to that inbox — click the link there once, then every
-// submission after that actually delivers.
+// screenshot (a pricing page, a bug, anything) and sends it server-side via SMTP
+// (src/lib/adminMail.ts), the same pattern as /api/resource-feedback. The destination email is a
+// server-only env var, never NEXT_PUBLIC_*, so it never appears in client-bundled JS/HTML.
+// Deliberately NOT Brevo — Brevo is reserved for the app's own transactional emails, not internal
+// notifications like this one.
 const SUGGESTION_EMAIL =
   process.env.SUGGESTION_EMAIL || process.env.MISTAKE_REPORT_EMAIL || process.env.CONTACT_EMAIL || 'ilmai.study1@gmail.com';
 
 const MAX_MESSAGE_LENGTH = 4000;
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // formsubmit.co's own attachment cap
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // keep email attachments small/deliverable
 
 function requestFingerprint(request: NextRequest) {
   const address =
@@ -57,15 +54,21 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const relay = new FormData();
-    relay.set('_subject', '[ilm AI] New suggestion');
-    relay.set('Message', message);
-    relay.set('Page URL', page);
+    const attachments = [];
     if (image instanceof File && image.size > 0) {
-      relay.set('Attachment', image, image.name || 'screenshot.png');
+      attachments.push({
+        filename: image.name || 'screenshot.png',
+        content: Buffer.from(await image.arrayBuffer()),
+        contentType: image.type,
+      });
     }
 
-    await postToFormsubmit(SUGGESTION_EMAIL, relay);
+    await sendAdminNotification({
+      to: SUGGESTION_EMAIL,
+      subject: '[ilm AI] New suggestion',
+      fields: { Message: message, 'Page URL': page },
+      attachments,
+    });
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('Suggestion delivery failed:', error);

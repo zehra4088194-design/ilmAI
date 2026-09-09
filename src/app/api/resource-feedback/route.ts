@@ -2,18 +2,13 @@ import { createHash } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { checkDailyLimit } from '@/lib/rate-limit';
-import { postToFormsubmit } from '@/lib/formsubmit';
+import { sendAdminNotification } from '@/lib/adminMail';
 
 // Destination for "report a mistake / suggestion" submissions on resources (PDFs, notes, etc.)
-// — server-only, deliberately NOT NEXT_PUBLIC_*. Forwarded via formsubmit.co from the SERVER
-// (not the browser), so this address never appears in any client-bundled JS/HTML. Deliberately
-// NOT Brevo — Brevo is reserved for the app's own transactional emails (auth, reminders), not
-// public-facing forms like this one. See ResourceMistakeReportForm for the client side.
-//
-// formsubmit.co gotcha: the FIRST submission to a new destination address only triggers an
-// activation email from formsubmit.co to that inbox — click the link there once, then every
-// submission after that actually delivers. Nothing arriving at all after a change of
-// MISTAKE_REPORT_EMAIL almost always means that activation step was missed.
+// — server-only, deliberately NOT NEXT_PUBLIC_*. Sent server-side via SMTP (src/lib/adminMail.ts),
+// so this address never appears in any client-bundled JS/HTML. Deliberately NOT Brevo — Brevo is
+// reserved for the app's own transactional emails (auth, reminders), not internal notifications
+// like this one. See ResourceMistakeReportForm for the client side.
 const MISTAKE_REPORT_EMAIL = process.env.MISTAKE_REPORT_EMAIL || 'ilmai.study1@gmail.com';
 
 const feedbackSchema = z.object({
@@ -55,14 +50,17 @@ export async function POST(request: NextRequest) {
   const kindLabel = kind === 'suggestion' ? 'Suggestion' : 'Mistake report';
 
   try {
-    await postToFormsubmit(MISTAKE_REPORT_EMAIL, {
+    await sendAdminNotification({
+      to: MISTAKE_REPORT_EMAIL,
       // Subject line alone tells the reader which PDF this is about, without opening the email.
-      _subject: `[ilm AI] ${kindLabel}: ${resourceTitle}`,
-      Type: kindLabel,
-      'Resource (PDF)': resourceTitle,
-      'Resource ID': resourceId,
-      Message: message,
-      'Page URL': page,
+      subject: `[ilm AI] ${kindLabel}: ${resourceTitle}`,
+      fields: {
+        Type: kindLabel,
+        'Resource (PDF)': resourceTitle,
+        'Resource ID': resourceId,
+        Message: message,
+        'Page URL': page,
+      },
     });
     return NextResponse.json({ ok: true });
   } catch (error) {
