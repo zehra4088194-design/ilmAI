@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { DashboardNavbar } from '@/components/layout/DashboardNavbar';
 import { DashboardSidebar } from '@/components/layout/DashboardSidebar';
+import { DashboardFooter } from '@/components/layout/DashboardFooter';
 import { SideChatWidget } from '@/components/features/ai-selector/SideChatWidget';
 import { DataRetentionNotice } from '@/components/features/privacy/DataRetentionNotice';
 import type { InstitutionBranding } from '@/lib/branding/resolveInstitutionBranding';
@@ -55,6 +56,7 @@ export function DashboardShell({ children, branding }: { children: ReactNode; br
           <DataRetentionNotice />
           {children}
         </main>
+        <DashboardFooter />
       </div>
       <SideChatWidget />
     </div>
