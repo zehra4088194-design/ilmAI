@@ -20,6 +20,11 @@ export type InstitutionPaymentVerification = {
   reviewed_at: string | null;
   review_notes: string | null;
   created_at: string;
+  // 8-char code (e.g. "A1B2C3D4") the submitter includes with their WhatsApp transaction ID so
+  // the JazzCash SMS auto-verify bot can find this exact claim — see src/lib/payments/jazzcash.ts
+  // and activateInstitutionPaymentClaim() in ./actions.ts. Null for claims submitted before this
+  // feature existed.
+  claim_code: string | null;
 };
 
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {

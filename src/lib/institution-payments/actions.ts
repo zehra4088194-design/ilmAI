@@ -1,5 +1,6 @@
 'use server';
 
+import { randomBytes } from 'node:crypto';
 import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdminUser } from '@/lib/admin/auth';
@@ -10,6 +11,13 @@ import { syncOrganizationCollegeGrants } from '@/lib/college-erp/subscription-ca
 import { getPlatformSettings } from '@/lib/platform-settings/server';
 import { resolveInstitutionPricing } from '@/lib/platform-settings/shared';
 import type { BillingCycle, InstitutionPaymentVerification, InstitutionType, PaymentMethod } from './types';
+
+/** 'A1B2C3D4' — short enough to type on WhatsApp, long enough (16^8) that guessing one is not a
+ * realistic attack; the real gate against forging a match is still the exact-TID SMS lookup this
+ * code is paired with (see src/lib/payments/jazzcash.ts). */
+function generateClaimCode() {
+  return randomBytes(4).toString('hex').toUpperCase();
+}
 
 const ENROLLMENT_TABLE: Record<InstitutionType, string> = {
   school: 'school_enrollments',
@@ -31,7 +39,7 @@ export async function getActiveStudentCount(institutionType: InstitutionType, or
   return count || 0;
 }
 
-export type SubmitPaymentState = { success: boolean; message: string };
+export type SubmitPaymentState = { success: boolean; message: string; claimCode?: string | null };
 
 // Master prompt Part 6.2: an institution owner/admin submits a manual payment
 // claim (JazzCash/Bank/Card) after sending funds outside the app —
@@ -85,7 +93,10 @@ export async function submitInstitutionPaymentVerification(
   ]);
   const { usd: amountUsd, pkr: amountPkr } = resolveInstitutionPricing(platformSettings, institutionType, billingCycle, studentCount);
 
-  const { error } = await db.from('institution_payment_verifications').insert({
+  // Retry once on the (extremely unlikely) chance a freshly generated code collides with an
+  // existing one — the unique index (see the jazzcash_auto_verify migration) is the real guard.
+  let claimCode = generateClaimCode();
+  let { error } = await db.from('institution_payment_verifications').insert({
     institution_type: institutionType,
     organization_id: organizationId,
     plan_tier_id: planTierId,
@@ -96,7 +107,24 @@ export async function submitInstitutionPaymentVerification(
     contact_email: contactEmail,
     notes,
     submitted_by: profileId,
+    claim_code: claimCode,
   });
+  if (error?.code === '23505') {
+    claimCode = generateClaimCode();
+    ({ error } = await db.from('institution_payment_verifications').insert({
+      institution_type: institutionType,
+      organization_id: organizationId,
+      plan_tier_id: planTierId,
+      billing_cycle: billingCycle,
+      amount_usd: amountUsd,
+      amount_pkr: amountPkr,
+      method,
+      contact_email: contactEmail,
+      notes,
+      submitted_by: profileId,
+      claim_code: claimCode,
+    }));
+  }
   if (error) return { success: false, message: error.message };
 
   // Surface the pending claim on the plan-settings row immediately (informational
@@ -111,7 +139,17 @@ export async function submitInstitutionPaymentVerification(
   }
 
   revalidatePath(institutionType === 'school' ? '/school-admin/settings' : '/college-admin/settings');
-  return { success: true, message: 'Payment claim submitted. An admin will verify it shortly.' };
+  // JazzCash is the only method the SMS auto-verify pipeline can actually see (it watches for
+  // JazzCash's own "received" SMS) — for the others, this still returns the code for consistency,
+  // but the UI should only advertise the instant-activation path when method === 'jazzcash'.
+  return {
+    success: true,
+    message:
+      method === 'jazzcash'
+        ? `Payment claim submitted. For instant activation, message our WhatsApp bot with your transaction ID and code ${claimCode} — or an admin will verify it shortly either way.`
+        : 'Payment claim submitted. An admin will verify it shortly.',
+    claimCode,
+  };
 }
 
 export async function listPendingInstitutionPaymentVerifications(): Promise<InstitutionPaymentVerification[]> {
@@ -127,11 +165,68 @@ export async function listPendingInstitutionPaymentVerifications(): Promise<Inst
 }
 
 export type ReviewState = { success: boolean; message: string };
+export type ActivationOutcome = { success: boolean; message: string; institutionType?: InstitutionType };
 
-// Verifying is the only place a manual payment claim actually turns into paid
-// access: it flips the org's plan-settings billing_status to 'active' and runs
-// the existing member-grant cascade (same function /admin/schools's billing
-// toggle already calls), so nothing about how access is granted is duplicated.
+/**
+ * The actual "turn a claim into paid access" logic — flips the org's plan-settings billing_status
+ * to 'active' and runs the existing member-grant cascade (same function /admin/schools's billing
+ * toggle already calls). Extracted out of reviewInstitutionPaymentVerification (below) so the
+ * JazzCash SMS auto-verify endpoint (src/app/api/payments/jazzcash/verify/route.ts) can activate a
+ * claim the exact same way a human admin's approval does, instead of a second copy of this logic
+ * drifting out of sync. `reviewedBy` is null for an automated match (no admin in the loop);
+ * `decision` supports 'rejected' too so the admin path below can still keep using this helper.
+ */
+export async function activateInstitutionPaymentClaim(
+  claimId: string,
+  decision: 'verified' | 'rejected',
+  options: { reviewedBy: string | null; reviewNotes?: string | null }
+): Promise<ActivationOutcome> {
+  const db = (await createAdminClient()) as any;
+  const { data: claim } = await db.from('institution_payment_verifications').select('*').eq('id', claimId).maybeSingle();
+  if (!claim) return { success: false, message: 'Payment claim not found.' };
+  if (claim.status !== 'pending_review') return { success: false, message: 'This claim was already reviewed.' };
+
+  const { error } = await db
+    .from('institution_payment_verifications')
+    .update({
+      status: decision,
+      reviewed_by: options.reviewedBy,
+      reviewed_at: new Date().toISOString(),
+      review_notes: options.reviewNotes ?? null,
+    })
+    .eq('id', claimId);
+  if (error) return { success: false, message: error.message };
+
+  if (decision === 'verified') {
+    const settingsTable =
+      claim.institution_type === 'school' ? 'school_organization_plan_settings' : 'college_organization_plan_settings';
+    const renewsOn = new Date();
+    renewsOn.setMonth(renewsOn.getMonth() + (claim.billing_cycle === 'annual' ? 12 : 1));
+    await db.from(settingsTable).upsert(
+      {
+        organization_id: claim.organization_id,
+        billing_status: 'active',
+        plan_tier_id: claim.plan_tier_id,
+        renews_on: renewsOn.toISOString().slice(0, 10),
+        updated_by: options.reviewedBy,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'organization_id' }
+    );
+    if (claim.institution_type === 'school') {
+      await syncOrganizationSchoolGrants(claim.organization_id, true);
+    } else {
+      await syncOrganizationCollegeGrants(claim.organization_id, true);
+    }
+  }
+
+  return {
+    success: true,
+    message: decision === 'verified' ? 'Plan activated.' : 'Claim rejected.',
+    institutionType: claim.institution_type,
+  };
+}
+
 export async function reviewInstitutionPaymentVerification(
   _state: ReviewState,
   formData: FormData
@@ -146,40 +241,7 @@ export async function reviewInstitutionPaymentVerification(
     return { success: false, message: 'Invalid review request.' };
   }
 
-  const db = (await createAdminClient()) as any;
-  const { data: claim } = await db.from('institution_payment_verifications').select('*').eq('id', id).maybeSingle();
-  if (!claim) return { success: false, message: 'Payment claim not found.' };
-  if (claim.status !== 'pending_review') return { success: false, message: 'This claim was already reviewed.' };
-
-  const { error } = await db
-    .from('institution_payment_verifications')
-    .update({ status: decision, reviewed_by: admin.id, reviewed_at: new Date().toISOString(), review_notes: reviewNotes })
-    .eq('id', id);
-  if (error) return { success: false, message: error.message };
-
-  if (decision === 'verified') {
-    const settingsTable =
-      claim.institution_type === 'school' ? 'school_organization_plan_settings' : 'college_organization_plan_settings';
-    const renewsOn = new Date();
-    renewsOn.setMonth(renewsOn.getMonth() + (claim.billing_cycle === 'annual' ? 12 : 1));
-    await db.from(settingsTable).upsert(
-      {
-        organization_id: claim.organization_id,
-        billing_status: 'active',
-        plan_tier_id: claim.plan_tier_id,
-        renews_on: renewsOn.toISOString().slice(0, 10),
-        updated_by: admin.id,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'organization_id' }
-    );
-    if (claim.institution_type === 'school') {
-      await syncOrganizationSchoolGrants(claim.organization_id, true);
-    } else {
-      await syncOrganizationCollegeGrants(claim.organization_id, true);
-    }
-  }
-
-  revalidatePath('/admin/institution-payments');
-  return { success: true, message: decision === 'verified' ? 'Plan activated.' : 'Claim rejected.' };
+  const outcome = await activateInstitutionPaymentClaim(id, decision, { reviewedBy: admin.id, reviewNotes });
+  if (outcome.success) revalidatePath('/admin/institution-payments');
+  return outcome;
 }

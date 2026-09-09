@@ -251,6 +251,12 @@ export function InstitutionPaymentCheckout({
               {state.message && (
                 <p className={cn('text-sm', state.success ? 'text-emerald-600' : 'text-red-500')}>{state.message}</p>
               )}
+              {state.success && state.claimCode && method === 'jazzcash' && (
+                <p className="text-muted-foreground rounded-lg border border-dashed p-3 text-center text-xs">
+                  Your claim code: <span className="font-mono font-bold">{state.claimCode}</span> — message our
+                  WhatsApp bot with this code and your transaction ID for instant activation.
+                </p>
+              )}
             </form>
           </>
         )}
