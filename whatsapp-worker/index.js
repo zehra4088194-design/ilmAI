@@ -86,12 +86,12 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/** Random 5-10s pause before an AI reply is sent — an instant reply reads as obviously robotic;
+/** Random 15-20s pause before an AI reply is sent — an instant reply reads as obviously robotic;
  * this (plus the "composing…" indicator shown while waiting) makes it feel like a person actually
  * typing back. JazzCash payment confirmations are NOT delayed — someone anxiously checking their
  * payment went through shouldn't wait extra seconds for that one. */
 function randomReplyDelayMs() {
-  return 5_000 + Math.floor(Math.random() * 5_001); // 5000-10000ms inclusive
+  return 15_000 + Math.floor(Math.random() * 5_001); // 15000-20000ms inclusive
 }
 
 function touchPendingClaim(digits, patch) {
