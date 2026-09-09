@@ -340,73 +340,96 @@ async function handlePossiblePaymentMessage(from, digits, text, msg) {
 // is routed to handlePossiblePaymentMessage() above instead of getting the AI reply below.
 // ---------------------------------------------------------------------------------------------
 
+// Per-phone-number processing queue — chains each new message after whatever's already pending
+// for that same number, so two quick messages from the same person are NEVER handled
+// concurrently. Without this, two overlapping AI-reply calls could each read the conversation
+// history before the other has saved its turn, silently dropping context — from the outside that
+// looks exactly like "the bot forgets what I just said". Different phone numbers still process
+// fully in parallel; only same-number messages are serialized.
+const phoneQueues = new Map(); // digits -> Promise (tail of that number's queue)
+
+function runSerializedForPhone(digits, task) {
+  const key = digits || 'unknown';
+  const previousTail = phoneQueues.get(key) || Promise.resolve();
+  const thisTask = previousTail.catch(() => {}).then(task);
+  phoneQueues.set(key, thisTask);
+  // Don't let the map grow forever — drop the entry once this was the last queued task for the
+  // number (a newer task queued in the meantime means someone else already replaced it).
+  thisTask.finally(() => {
+    if (phoneQueues.get(key) === thisTask) phoneQueues.delete(key);
+  });
+  return thisTask;
+}
+
+async function processOneMessage(from, digits, msg) {
+  const text =
+    msg.message.conversation ||
+    msg.message.extendedTextMessage?.text ||
+    msg.message.buttonsResponseMessage?.selectedDisplayText ||
+    msg.message.imageMessage?.caption ||
+    '';
+
+  const handledAsPayment = await handlePossiblePaymentMessage(from, digits, text, msg);
+  if (handledAsPayment) return;
+
+  let profile = null;
+  if (supabase && digits) {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, full_name, role')
+      .in('phone', candidateStoredFormats(digits))
+      .limit(1)
+      .maybeSingle();
+    profile = data;
+  }
+
+  if (supabase) {
+    // Best-effort — a logging failure must never stop the reply below.
+    await supabase
+      .from('whatsapp_inbound_messages')
+      .insert({
+        phone_digits: digits || null,
+        profile_id: profile?.id || null,
+        message: text.slice(0, 4000),
+      })
+      .then(
+        () => {},
+        (error) => console.error('[whatsapp-worker] Failed to log inbound message:', error?.message)
+      );
+  }
+
+  if (!text) return; // an image with no caption and no pending claim — nothing to reply to.
+
+  const reply = await getAiReply(digits, text, profile?.full_name || null);
+  if (reply) {
+    // Feels more human than an instant reply — see randomReplyDelayMs()'s comment.
+    try {
+      await state.sock?.presenceSubscribe(from);
+      await state.sock?.sendPresenceUpdate('composing', from);
+    } catch {
+      /* presence updates are cosmetic — never let a failure here block the actual reply */
+    }
+    await sleep(randomReplyDelayMs());
+    await state.sock?.sendMessage(from, { text: reply });
+  }
+  // reply === null means the app already closed this number's conversation (handed off to
+  // the CEO) — per spec, stay silent from here on for that number.
+}
+
 async function handleIncoming({ messages, type }) {
   if (type !== 'notify') return;
 
   for (const msg of messages || []) {
-    try {
-      if (!msg.message || msg.key.fromMe) continue;
-      const from = msg.key.remoteJid;
-      if (!from || from.endsWith('@g.us') || from === 'status@broadcast') continue; // ignore groups/status
+    if (!msg.message || msg.key.fromMe) continue;
+    const from = msg.key.remoteJid;
+    if (!from || from.endsWith('@g.us') || from === 'status@broadcast') continue; // ignore groups/status
+    const digits = jidToDigits(from);
 
-      const text =
-        msg.message.conversation ||
-        msg.message.extendedTextMessage?.text ||
-        msg.message.buttonsResponseMessage?.selectedDisplayText ||
-        msg.message.imageMessage?.caption ||
-        '';
-
-      const digits = jidToDigits(from);
-
-      const handledAsPayment = await handlePossiblePaymentMessage(from, digits, text, msg);
-      if (handledAsPayment) continue;
-
-      let profile = null;
-      if (supabase && digits) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('id, full_name, role')
-          .in('phone', candidateStoredFormats(digits))
-          .limit(1)
-          .maybeSingle();
-        profile = data;
-      }
-
-      if (supabase) {
-        // Best-effort — a logging failure must never stop the reply below.
-        await supabase
-          .from('whatsapp_inbound_messages')
-          .insert({
-            phone_digits: digits || null,
-            profile_id: profile?.id || null,
-            message: text.slice(0, 4000),
-          })
-          .then(
-            () => {},
-            (error) => console.error('[whatsapp-worker] Failed to log inbound message:', error?.message)
-          );
-      }
-
-      if (!text) continue; // an image with no caption and no pending claim — nothing to reply to.
-
-      const reply = await getAiReply(digits, text, profile?.full_name || null);
-      if (reply) {
-        // Feels more human than an instant reply — see randomReplyDelayMs()'s comment.
-        try {
-          await state.sock?.presenceSubscribe(from);
-          await state.sock?.sendPresenceUpdate('composing', from);
-        } catch {
-          /* presence updates are cosmetic — never let a failure here block the actual reply */
-        }
-        await sleep(randomReplyDelayMs());
-        await state.sock?.sendMessage(from, { text: reply });
-      }
-      // reply === null means the app already closed this number's conversation (handed off to
-      // the CEO) — per spec, stay silent from here on for that number.
-    } catch (error) {
+    // Not awaited here on purpose — different senders' messages still process concurrently;
+    // runSerializedForPhone() is what keeps any one number's messages strictly in order.
+    runSerializedForPhone(digits, () => processOneMessage(from, digits, msg)).catch((error) => {
       console.error('[whatsapp-worker] Failed to process one incoming message:', error);
-      // Continue with the rest of the batch — one bad message must not stop the others.
-    }
+    });
   }
 }
 
