@@ -37,6 +37,12 @@ export function VisionScanClient() {
   // just the last scan. Cleared once a test is generated.
   const [testPages, setTestPages] = useState<string[]>([]);
   const [buildingTest, setBuildingTest] = useState(false);
+  // How many of each question type to ask for — matches /api/vision/test-generate's own
+  // defaults/caps (8/4/2, max 30/15/8) so the numbers here stay meaningful even before the user
+  // touches them.
+  const [mcqCount, setMcqCount] = useState(8);
+  const [shortCount, setShortCount] = useState(4);
+  const [longCount, setLongCount] = useState(2);
 
   const onFile = (next: File | null) => {
     if (!next) return;
@@ -81,6 +87,10 @@ export function VisionScanClient() {
   // page's whole take/grade experience instead of building a second one here.
   const buildTest = async () => {
     if (!testPages.length) return;
+    if (mcqCount + shortCount + longCount === 0) {
+      toast.error('Pick at least one question to generate.');
+      return;
+    }
     setBuildingTest(true);
     try {
       const res = await fetch('/api/vision/test-generate', {
@@ -89,6 +99,9 @@ export function VisionScanClient() {
         body: JSON.stringify({
           text: testPages.join('\n\n'),
           title: testPages.length > 1 ? `Scanned Pages Test (${testPages.length} pages)` : 'Scanned Page Test',
+          mcqCount,
+          shortCount,
+          longCount,
         }),
       });
       const json = await res.json();
@@ -231,9 +244,34 @@ export function VisionScanClient() {
                   </button>
                 </div>
                 <p className="text-muted-foreground text-xs">
-                  Scan another page above to add it to this test, or generate an AI test — with MCQs, short and long
-                  questions — from what you&apos;ve scanned so far.
+                  Scan another page above to add it to this test, or pick how many of each question type you want
+                  and let AI build the test from what you&apos;ve scanned so far.
                 </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {(
+                    [
+                      { label: 'MCQs', value: mcqCount, setValue: setMcqCount, max: 30 },
+                      { label: 'Short Qs', value: shortCount, setValue: setShortCount, max: 15 },
+                      { label: 'Long Qs', value: longCount, setValue: setLongCount, max: 8 },
+                    ] as const
+                  ).map(({ label, value, setValue, max }) => (
+                    <label key={label} className="space-y-1">
+                      <span className="text-muted-foreground block text-center text-[11px] font-semibold uppercase">
+                        {label}
+                      </span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={max}
+                        value={value}
+                        onChange={(event) =>
+                          setValue(Math.min(max, Math.max(0, Math.floor(Number(event.target.value) || 0))))
+                        }
+                        className="bg-background h-9 w-full rounded-lg border px-2 text-center text-sm"
+                      />
+                    </label>
+                  ))}
+                </div>
                 <Button variant="gradient" className="w-full" onClick={buildTest} disabled={buildingTest}>
                   {buildingTest ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                   Generate test from scan{testPages.length > 1 ? 's' : ''}
