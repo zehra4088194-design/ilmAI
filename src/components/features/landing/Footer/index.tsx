@@ -1,10 +1,16 @@
 'use client';
 import Link from 'next/link';
 import { useMemo } from 'react';
-import { BookOpen, Heart, HandHeart } from 'lucide-react';
+import { BookOpen, Heart, HandHeart, MessageCircle } from 'lucide-react';
 import { openCookieSettings } from '@/lib/utils/cookieConsent';
 import { PRIMARY_SITE_LINKS } from '@/lib/seo/study-tools';
 import { SupportDonateWidget } from '@/components/features/support/SupportDonateWidget';
+
+// The WhatsApp bot's own linked number (whatsapp-worker/, see src/lib/whatsapp/baileys.ts) — env-
+// driven like every other payment destination number in the app (master prompt Part 6.2: "do not
+// hardcode literal numbers in source"). Digits only, country code, no leading +/0.
+const WHATSAPP_CONTACT_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_BOT_NUMBER || '';
+const WHATSAPP_CONTACT_NAME = 'M. Husnain Noor';
 
 const LINKS = {
   'Study Tools': PRIMARY_SITE_LINKS.map((link) => ({ label: link.name, href: link.url })),
@@ -81,6 +87,20 @@ export function LandingFooter() {
             )}
           />
         </div>
+
+        {WHATSAPP_CONTACT_NUMBER && (
+          <div className="mb-8 flex justify-center">
+            <a
+              href={`https://wa.me/${WHATSAPP_CONTACT_NUMBER}`}
+              target="_blank"
+              rel="noreferrer"
+              className="border-border bg-card/60 hover:border-emerald-500/40 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors"
+            >
+              <MessageCircle className="h-4 w-4 text-emerald-500" />
+              Contact us on WhatsApp — {WHATSAPP_CONTACT_NAME}
+            </a>
+          </div>
+        )}
 
         <div className="border-border flex flex-col items-center justify-between gap-4 border-t pt-8 md:flex-row">
           <p className="text-muted-foreground text-center text-sm md:text-left">

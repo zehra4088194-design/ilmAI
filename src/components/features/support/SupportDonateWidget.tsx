@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { PaymentProofForm } from '@/components/features/payments/PaymentProofForm';
+import { WhatsAppBotQr } from '@/components/features/payments/WhatsAppBotQr';
 import { MANUAL_PAYMENT_OPTIONS } from '@/lib/constants';
 
 const SUPPORT_EMAIL = 'support@ilmai.study';
@@ -305,6 +306,12 @@ export function SupportDonateWidget({ trigger }: { trigger: (open: () => void) =
                       Scan to auto-fill Rs. {amountPkr.toLocaleString()}, or send it manually.
                     </p>
                   </div>
+                </div>
+                <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed p-3 text-center">
+                  <p className="text-muted-foreground text-xs">
+                    You can also just send your screenshot straight on WhatsApp — our team verifies it manually.
+                  </p>
+                  <WhatsAppBotQr />
                 </div>
                 <PaymentProofForm context={`Donation — $${amountUsd} (one-time)`} />
               </div>
