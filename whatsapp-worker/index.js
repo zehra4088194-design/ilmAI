@@ -25,6 +25,8 @@
 
 require('dotenv').config();
 
+const fs = require('fs');
+const path = require('path');
 const http = require('http');
 const pino = require('pino');
 const qrcodeTerminal = require('qrcode-terminal');
@@ -128,6 +130,15 @@ async function startSock() {
       if (qr) {
         console.log('\n[whatsapp-worker] Scan this QR with WhatsApp > Linked Devices:\n');
         qrcodeTerminal.generate(qr, { small: true });
+        // Terminal ASCII QR renders unreliably on some terminals (e.g. Windows Git Bash/MinTTY
+        // mangles the block characters) — also dump the raw QR payload to a file so it can be
+        // turned into a real PNG image instead (see whatsapp-worker/README.md's troubleshooting
+        // note) rather than asking someone to scan a possibly-distorted terminal QR.
+        try {
+          fs.writeFileSync(path.join(__dirname, 'last_qr.txt'), qr);
+        } catch (error) {
+          console.error('[whatsapp-worker] Failed to write last_qr.txt:', error);
+        }
       }
 
       if (connection === 'open') {
