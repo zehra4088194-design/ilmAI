@@ -171,6 +171,17 @@ export async function middleware(request: NextRequest) {
     if (!user) {
       return secure(NextResponse.redirect(`${origin}/login?redirect=${encodeURIComponent(requestedPath)}`));
     }
+    // This generic /teacher area is the standalone-tutor flow: self-created classes with a join
+    // code, and its own pricing page to sell courses independently. A teacher who is actually a
+    // school or college staff member already has real classes, curriculum, and students inside
+    // their institution's ERP — landing here instead would show them an empty, disconnected
+    // dashboard and a pricing page that makes no sense for someone the institution already pays.
+    // Same rule as /dashboard above: whichever institution role an email is linked as, that portal
+    // wins over this consumer-facing one.
+    const portalHome = await resolveInstitutionPortalHome(supabase, user.id);
+    if (portalHome) {
+      return secure(NextResponse.redirect(`${origin}${portalHome}`));
+    }
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
     if (profile?.role !== 'teacher' && profile?.role !== 'admin') {
       return secure(NextResponse.redirect(`${origin}/dashboard`));

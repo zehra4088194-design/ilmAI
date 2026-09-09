@@ -6,7 +6,9 @@ import { deleteR2Object, getAudioBucketName, getR2Uri, isAudioStorageConfigured,
 export const runtime = 'nodejs';
 export const maxDuration = 120;
 
-const MAX_AUDIO_BYTES = 150 * 1024 * 1024; // 150MB — comfortably covers a long spoken-word episode
+// 150MB was hit by real uploads (a 1-hour music track at a decent bitrate lands right at that
+// boundary) — 300MB gives real headroom for a full hour of high-quality audio.
+const MAX_AUDIO_BYTES = 300 * 1024 * 1024;
 const ALLOWED_AUDIO: Record<string, { contentType: string; extension: string }> = {
   'audio/mpeg': { contentType: 'audio/mpeg', extension: 'mp3' },
   'audio/mp3': { contentType: 'audio/mpeg', extension: 'mp3' },
@@ -68,7 +70,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unsupported audio format. Use MP3, WAV, M4A, AAC, OGG, or FLAC.' }, { status: 400 });
   }
   if (file.size <= 0 || file.size > MAX_AUDIO_BYTES) {
-    return NextResponse.json({ error: 'Audio file is too large (150MB limit).' }, { status: 400 });
+    return NextResponse.json({ error: 'Audio file is too large (300MB limit).' }, { status: 400 });
   }
 
   const now = new Date();

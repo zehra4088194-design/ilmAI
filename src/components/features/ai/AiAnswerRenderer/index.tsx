@@ -88,7 +88,7 @@ export function AiAnswerRenderer({ content, className, card = true, label, feedb
     <div className={cn('ai-doc-body prose prose-sm dark:prose-invert max-w-none overflow-x-auto', className)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[rehypeKatex]}
+        rehypePlugins={[[rehypeKatex, { strict: false }]]}
         components={{
           a: ({ href, children, ...props }) => (
             <a

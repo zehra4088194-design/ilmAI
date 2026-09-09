@@ -27,6 +27,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils/cn';
+import { resolveTrackThumbnail } from '@/lib/utils/trackThumbnail';
 import type { SubscriptionTier } from '@/types';
 
 type Song = {
@@ -170,11 +171,7 @@ export function RestClient({
   );
   const activeSong = songs[songIndex] || null;
   const isAudioTrack = activeSong?.source_type === 'audio' && Boolean(activeSong.audio_url);
-  const artwork =
-    activeSong?.thumbnail_url ||
-    (activeSong?.youtube_video_id ? `https://img.youtube.com/vi/${activeSong.youtube_video_id}/hqdefault.jpg` : null) ||
-    activePlaylist?.cover_image_url ||
-    null;
+  const artwork = activeSong ? resolveTrackThumbnail(activeSong, activePlaylist?.cover_image_url, 'hqdefault') : null;
 
   useEffect(() => {
     if (songIndex >= songs.length) setSongIndex(0);
@@ -561,7 +558,7 @@ export function RestClient({
                           {active && isPlaying ? <EqualizerBars className="h-3 w-0.5" /> : index + 1}
                         </span>
                         <img
-                          src={song.thumbnail_url || (song.youtube_video_id ? `https://img.youtube.com/vi/${song.youtube_video_id}/mqdefault.jpg` : '')}
+                          src={resolveTrackThumbnail(song)}
                           alt=""
                           className="bg-muted h-11 w-16 rounded object-cover"
                           loading="lazy"

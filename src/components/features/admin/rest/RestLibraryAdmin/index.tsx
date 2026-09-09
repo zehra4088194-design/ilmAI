@@ -140,12 +140,25 @@ export function RestLibraryAdmin() {
           try {
             const json = JSON.parse(xhr.responseText);
             if (xhr.status >= 200 && xhr.status < 300) resolve(json);
-            else reject(new Error(json.error || 'Upload failed.'));
+            else reject(new Error(json.error || `Upload failed (HTTP ${xhr.status}).`));
           } catch {
-            reject(new Error('Upload failed.'));
+            // Non-JSON response — almost always a reverse-proxy/host rejection that never reached
+            // our route handler at all (a 413 "Payload Too Large" page is the classic case for a
+            // big audio file), so surface the status instead of a bare generic message.
+            const status = xhr.status || 0;
+            reject(
+              new Error(
+                status === 413
+                  ? 'Upload failed: file is too large for the server to accept (HTTP 413). Try a smaller/lower-bitrate file.'
+                  : status
+                    ? `Upload failed (HTTP ${status}). The server did not return a valid response.`
+                    : 'Upload failed: connection was interrupted before the upload finished (large files need a stable connection).'
+              )
+            );
           }
         };
-        xhr.onerror = () => reject(new Error('Upload failed.'));
+        xhr.onerror = () =>
+          reject(new Error('Upload failed: network error (connection dropped — this often happens with very large files).'));
         xhr.send(form);
       });
 

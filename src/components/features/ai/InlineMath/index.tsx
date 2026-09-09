@@ -15,7 +15,7 @@ export function InlineMath({ text }: { text: string }) {
   return (
     <ReactMarkdown
       remarkPlugins={[remarkMath]}
-      rehypePlugins={[rehypeKatex]}
+      rehypePlugins={[[rehypeKatex, { strict: false }]]}
       components={{ p: ({ children }) => <>{children}</> }}
     >
       {normalizeLatexDelimiters(text)}
