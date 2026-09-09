@@ -82,6 +82,18 @@ function getPendingClaim(digits) {
   return existing || null;
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Random 5-10s pause before an AI reply is sent — an instant reply reads as obviously robotic;
+ * this (plus the "composing…" indicator shown while waiting) makes it feel like a person actually
+ * typing back. JazzCash payment confirmations are NOT delayed — someone anxiously checking their
+ * payment went through shouldn't wait extra seconds for that one. */
+function randomReplyDelayMs() {
+  return 5_000 + Math.floor(Math.random() * 5_001); // 5000-10000ms inclusive
+}
+
 function touchPendingClaim(digits, patch) {
   const current = getPendingClaim(digits) || { tid: null, code: null, image: null, updatedAt: 0 };
   const next = { ...current, ...patch, updatedAt: Date.now() };
@@ -378,7 +390,17 @@ async function handleIncoming({ messages, type }) {
       if (!text) continue; // an image with no caption and no pending claim — nothing to reply to.
 
       const reply = await getAiReply(digits, text, profile?.full_name || null);
-      if (reply) await state.sock?.sendMessage(from, { text: reply });
+      if (reply) {
+        // Feels more human than an instant reply — see randomReplyDelayMs()'s comment.
+        try {
+          await state.sock?.presenceSubscribe(from);
+          await state.sock?.sendPresenceUpdate('composing', from);
+        } catch {
+          /* presence updates are cosmetic — never let a failure here block the actual reply */
+        }
+        await sleep(randomReplyDelayMs());
+        await state.sock?.sendMessage(from, { text: reply });
+      }
       // reply === null means the app already closed this number's conversation (handed off to
       // the CEO) — per spec, stay silent from here on for that number.
     } catch (error) {
