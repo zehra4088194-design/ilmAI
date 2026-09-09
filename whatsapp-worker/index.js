@@ -246,7 +246,10 @@ async function getAiReply(phoneDigits, message, profileName) {
         ...(WORKER_SECRET ? { Authorization: `Bearer ${WORKER_SECRET}` } : {}),
       },
       body: JSON.stringify({ phoneDigits, message, profileName: profileName || null }),
-      signal: AbortSignal.timeout(20_000), // Groq + gateway round trip needs more room than /send.
+      // Groq itself is fast, but the gateway can retry through its own provider chain under load —
+      // give it real room (its own internal cap is 90s) rather than timing out and falling back to
+      // the apologetic reply for what would've been a fine, just slightly slow, answer.
+      signal: AbortSignal.timeout(45_000),
     });
     const result = await response.json().catch(() => ({}));
     return typeof result.reply === 'string' ? result.reply : null;
