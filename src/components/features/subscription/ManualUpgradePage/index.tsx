@@ -11,8 +11,6 @@ import { CURRENCY_SYMBOLS, MANUAL_PAYMENT_OPTIONS, TRANSACTION_FEE_USD, type Cur
 import { DEFAULT_PLATFORM_SETTINGS, convertUsdToPkr, type PlatformSettings } from '@/lib/platform-settings/shared';
 import type { PaymentAvailability } from '@/lib/payments';
 import { PaymentProofForm } from '@/components/features/payments/PaymentProofForm';
-import { jazzcashPlanCode } from '@/lib/payments/jazzcash';
-import { WhatsAppBotQr } from '@/components/features/payments/WhatsAppBotQr';
 
 type BillingCycle = 'monthly' | 'annual';
 type CheckoutCountry = 'PK' | 'OTHER';
@@ -73,9 +71,6 @@ export function ManualUpgradePage({
   // The wallet method only ever shows when displayCurrency is already 'PKR' (country === 'PK'),
   // so `price` here is always the PKR price — this is the actual amount to request from the payer.
   const walletTotalPkr = price + feePkr;
-  // Shown next to the amount so the JazzCash SMS auto-verify WhatsApp bot can tell which exact
-  // plan/billing-cycle this payment is for — see src/lib/payments/jazzcash.ts.
-  const jazzcashCode = jazzcashPlanCode({ planFamily, tier, billingCycle: billing });
   const Icon = tier === 'PRO' ? Rocket : Crown;
   const highlight = tier === 'PRO' ? 'from-violet-500 to-indigo-600' : 'from-amber-500 to-orange-600';
   const benefits = useMemo(() => plan.features.slice(0, 6), [plan.features]);
@@ -239,13 +234,9 @@ export function ManualUpgradePage({
               <h2 className="text-lg font-bold">JazzCash / Easypaisa</h2>
               <p className="text-muted-foreground mt-2 text-sm leading-6">
                 Send exactly Rs. {formatPrice(walletTotalPkr, 'PKR')} (Rs. {formatPrice(price, 'PKR')} plan price + Rs.{' '}
-                {formatPrice(feePkr, 'PKR')} transaction fee), then message our WhatsApp bot with your transaction ID
-                and the code <span className="font-mono font-bold">{jazzcashCode}</span> for instant activation — or
-                send the screenshot below and an admin will verify it shortly either way.
+                {formatPrice(feePkr, 'PKR')} transaction fee), then send the transaction screenshot and registered
+                account email to support. The plan will be activated by an admin after verification.
               </p>
-              <div className="mt-3 flex justify-center">
-                <WhatsAppBotQr />
-              </div>
               <div className="mt-4 space-y-3">
                 {MANUAL_PAYMENT_OPTIONS.map((option) => (
                   <div

@@ -139,15 +139,13 @@ export async function submitInstitutionPaymentVerification(
   }
 
   revalidatePath(institutionType === 'school' ? '/school-admin/settings' : '/college-admin/settings');
-  // JazzCash is the only method the SMS auto-verify pipeline can actually see (it watches for
-  // JazzCash's own "received" SMS) — for the others, this still returns the code for consistency,
-  // but the UI should only advertise the instant-activation path when method === 'jazzcash'.
+  // The JazzCash SMS auto-verify pipeline is currently disabled (SMS forwarding isn't reliably
+  // set up) — every method just goes to manual admin review for now. claim_code is still
+  // generated/stored so auto-verify can be turned back on later without a schema change; it's
+  // just not surfaced to the payer while it's off.
   return {
     success: true,
-    message:
-      method === 'jazzcash'
-        ? `Payment claim submitted. For instant activation, message our WhatsApp bot with your transaction ID and code ${claimCode} — or an admin will verify it shortly either way.`
-        : 'Payment claim submitted. An admin will verify it shortly.',
+    message: 'Payment claim submitted. An admin will verify it shortly.',
     claimCode,
   };
 }

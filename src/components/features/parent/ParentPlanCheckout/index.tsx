@@ -7,8 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { MANUAL_PAYMENT_OPTIONS, TRANSACTION_FEE_USD } from '@/lib/constants';
 import { PaymentProofForm } from '@/components/features/payments/PaymentProofForm';
-import { jazzcashPlanCode } from '@/lib/payments/jazzcash';
-import { WhatsAppBotQr } from '@/components/features/payments/WhatsAppBotQr';
 
 /**
  * Manual JazzCash checkout for a parent's OWN plan — mirrors ManualUpgradePage's pattern (QR,
@@ -36,12 +34,6 @@ export function ParentPlanCheckout({
 }) {
   const Icon = tier === 'elite' ? Crown : Users;
   const highlight = tier === 'elite' ? 'from-amber-500 to-orange-600' : 'from-violet-500 to-indigo-600';
-  // This checkout is monthly-only (no annual toggle above) — see src/lib/payments/jazzcash.ts.
-  const jazzcashCode = jazzcashPlanCode({
-    planFamily: 'parent',
-    tier: tier === 'elite' ? 'ELITE' : 'PRO',
-    billingCycle: 'monthly',
-  });
 
   const copy = async (value: string) => {
     await navigator.clipboard.writeText(value);
@@ -83,13 +75,9 @@ export function ParentPlanCheckout({
             <h2 className="text-lg font-bold">JazzCash / Easypaisa</h2>
             <p className="text-muted-foreground mt-2 text-sm leading-6">
               Send exactly Rs. {totalPkr.toLocaleString()} (Rs. {pkrPrice.toLocaleString()} plan price + Rs.{' '}
-              {feePkr.toLocaleString()} transaction fee), then message our WhatsApp bot with your transaction ID and
-              the code <span className="font-mono font-bold">{jazzcashCode}</span> for instant activation — or send
-              the screenshot below and an admin will verify it shortly either way.
+              {feePkr.toLocaleString()} transaction fee), then send the transaction screenshot and your account email
+              to support. Your parent plan is activated by an admin after verification.
             </p>
-            <div className="mt-3 flex justify-center">
-              <WhatsAppBotQr />
-            </div>
             <div className="mt-4 space-y-3">
               {MANUAL_PAYMENT_OPTIONS.map((option) => (
                 <div
