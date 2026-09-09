@@ -10,6 +10,7 @@ import type { BillingCycle, InstitutionType, PaymentMethod } from '@/lib/institu
 import { submitInstitutionPaymentVerification, type SubmitPaymentState } from '@/lib/institution-payments/actions';
 import { ManualPaymentMethodPicker } from './ManualPaymentMethodPicker';
 import { TRANSACTION_FEE_USD } from '@/lib/constants';
+import { WhatsAppBotQr } from '@/components/features/payments/WhatsAppBotQr';
 
 type CyclePrice = { usd: number; pkr: number };
 
@@ -252,10 +253,13 @@ export function InstitutionPaymentCheckout({
                 <p className={cn('text-sm', state.success ? 'text-emerald-600' : 'text-red-500')}>{state.message}</p>
               )}
               {state.success && state.claimCode && method === 'jazzcash' && (
-                <p className="text-muted-foreground rounded-lg border border-dashed p-3 text-center text-xs">
-                  Your claim code: <span className="font-mono font-bold">{state.claimCode}</span> — message our
-                  WhatsApp bot with this code and your transaction ID for instant activation.
-                </p>
+                <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed p-3 text-center">
+                  <p className="text-muted-foreground text-xs">
+                    Your claim code: <span className="font-mono font-bold">{state.claimCode}</span> — message our
+                    WhatsApp bot with this code and your transaction ID for instant activation.
+                  </p>
+                  <WhatsAppBotQr />
+                </div>
               )}
             </form>
           </>

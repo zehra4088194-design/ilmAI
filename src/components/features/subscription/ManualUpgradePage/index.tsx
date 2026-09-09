@@ -12,6 +12,7 @@ import { DEFAULT_PLATFORM_SETTINGS, convertUsdToPkr, type PlatformSettings } fro
 import type { PaymentAvailability } from '@/lib/payments';
 import { PaymentProofForm } from '@/components/features/payments/PaymentProofForm';
 import { jazzcashPlanCode } from '@/lib/payments/jazzcash';
+import { WhatsAppBotQr } from '@/components/features/payments/WhatsAppBotQr';
 
 type BillingCycle = 'monthly' | 'annual';
 type CheckoutCountry = 'PK' | 'OTHER';
@@ -242,6 +243,9 @@ export function ManualUpgradePage({
                 and the code <span className="font-mono font-bold">{jazzcashCode}</span> for instant activation — or
                 send the screenshot below and an admin will verify it shortly either way.
               </p>
+              <div className="mt-3 flex justify-center">
+                <WhatsAppBotQr />
+              </div>
               <div className="mt-4 space-y-3">
                 {MANUAL_PAYMENT_OPTIONS.map((option) => (
                   <div
