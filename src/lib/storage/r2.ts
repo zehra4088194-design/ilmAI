@@ -183,6 +183,15 @@ function getClient(config: R2Config) {
       endpoint: config.endpoint,
       credentials: { accessKeyId: config.accessKeyId, secretAccessKey: config.secretAccessKey },
       forcePathStyle: config.forcePathStyle,
+      // AWS SDK v3 defaults to always attaching a request checksum (x-amz-sdk-checksum-algorithm /
+      // x-amz-checksum-*) since ~3.729. B2 (and other S3-compatible, non-AWS backends) doesn't
+      // handle that extra param/header on a presigned PUT — the browser's CORS preflight for it
+      // gets rejected outright ("No Access-Control-Allow-Origin header"), even with the bucket's
+      // CORS rules wide open, because the checksum breaks the preflight before CORS is even
+      // evaluated. 'WHEN_REQUIRED' restores the old behavior (no checksum unless the API demands
+      // one), which is what every presigned URL here (GET and PUT) needs against B2.
+      requestChecksumCalculation: 'WHEN_REQUIRED',
+      responseChecksumValidation: 'WHEN_REQUIRED',
     });
     clients.set(cacheKey, existing);
   }
