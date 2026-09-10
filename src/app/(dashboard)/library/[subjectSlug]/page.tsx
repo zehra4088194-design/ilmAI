@@ -84,7 +84,14 @@ export default async function LibraryBookPage({
       .filter((resource: any) => !requestedBook || resource.book_title === requestedBook);
   }
 
-  const visibleResources = (resources || []).filter((resource: any) => isCatalogResourceVisible(resource, profile));
+  // Grade/board filtering is a "what's relevant to you" convenience for the general subject feed
+  // — once someone has explicitly picked a specific book by title (a book link, a search result,
+  // or a shared URL), that choice should be honored rather than silently hidden again just
+  // because it's not their own grade. Without this, search could surface a resource that then
+  // renders as an empty, confusing "ask an admin" page for anyone outside its exact grade.
+  const visibleResources = (resources || []).filter((resource: any) =>
+    isCatalogResourceVisible(resource, requestedBook ? null : profile)
+  );
   const bookTitle =
     requestedBook ||
     visibleResources[0]?.book_title ||

@@ -85,7 +85,12 @@ export default async function LibrarySectionPage({
           resource.content_section === section.value && (!bookTitle || resource.book_title === bookTitle)
       );
   }
-  const visibleResources = (resources || []).filter((resource: any) => isCatalogResourceVisible(resource, profile));
+  // See the subject-level page's matching comment — once a specific book has been picked
+  // (e.g. via /api/search, which searches every grade's titles with no grade/board filtering at
+  // all), honor that explicit choice instead of hiding it again here.
+  const visibleResources = (resources || []).filter((resource: any) =>
+    isCatalogResourceVisible(resource, bookTitle ? null : profile)
+  );
   const resolvedBookTitle =
     bookTitle ||
     visibleResources[0]?.book_title ||
