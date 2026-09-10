@@ -380,6 +380,20 @@ export async function getR2SignedUrl(key: string, expiresIn = R2_SIGNED_URL_TTL_
   });
 }
 
+// A presigned PUT — the browser uploads the object bytes directly to B2/R2 over this URL, never
+// through our own app server. Used for large uploads (e.g. audio files) where routing hundreds of
+// MB through the Next.js container's memory/request lifetime risked timeouts and OOM crashes.
+// `contentType` must exactly match the Content-Type header the client sends on the PUT — the
+// signature covers it, so a mismatch fails with SignatureDoesNotMatch.
+export async function getR2SignedPutUrl(key: string, contentType: string, bucket?: string, expiresIn = 3600) {
+  const config = resolveConfig(bucket);
+  if (!config) throw new Error('R2 is not configured.');
+  if (!key || key.includes('..')) throw new Error('Invalid stored object key.');
+  return getSignedUrl(getClient(config), new PutObjectCommand({ Bucket: config.bucket, Key: key, ContentType: contentType }), {
+    expiresIn,
+  });
+}
+
 export async function deleteR2Object(key: string, bucket?: string) {
   const config = resolveConfig(bucket);
   if (!config) return;

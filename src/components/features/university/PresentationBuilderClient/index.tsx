@@ -404,6 +404,15 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
                   Download PDF
                 </Button>
               </div>
+              {headingFont === 'handwritten' && (
+                // PDF export rasterizes the actual on-screen slides (html2canvas → image), so the
+                // handwriting font always comes through exactly as shown here — PPTX/DOCX instead
+                // reference the font by name, and Kalam is very unlikely to be installed on
+                // whoever opens that file, so those fall back to a plain font instead.
+                <p className="text-muted-foreground text-xs">
+                  Download PDF to keep the handwritten font exactly as shown here — PPTX/DOCX use a plain font instead.
+                </p>
+              )}
               <PresentationSlideRenderer deck={deck} headingFont={headingFont} />
               <Card>
                 <CardHeader>

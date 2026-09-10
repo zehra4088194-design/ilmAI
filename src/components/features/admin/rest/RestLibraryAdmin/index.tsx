@@ -126,42 +126,43 @@ export function RestLibraryAdmin() {
     setUploadPct(0);
     try {
       const [durationSeconds] = await Promise.all([readAudioDuration(file)]);
-      const form = new FormData();
-      form.append('file', file);
-      form.append('scope', songForm.playlist_id || 'general');
 
-      const uploaded = await new Promise<{ uri: string; size: number; contentType: string }>((resolve, reject) => {
+      // Step 1: ask our server for a short-lived presigned PUT URL — this call is tiny (just
+      // filename/type/size as JSON), so it can never itself hit a body-size or memory limit.
+      const presignRes = await fetch('/api/admin/audio-files/presign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filename: file.name,
+          contentType: file.type,
+          size: file.size,
+          scope: songForm.playlist_id || 'general',
+        }),
+      });
+      const presignJson = await presignRes.json().catch(() => ({}));
+      if (!presignRes.ok) throw new Error(presignJson.error || `Could not prepare the upload (HTTP ${presignRes.status}).`);
+      const { uploadUrl, uri, contentType } = presignJson as { uploadUrl: string; uri: string; contentType: string };
+
+      // Step 2: upload the actual bytes straight to B2 from the browser — this request never
+      // touches our app server, so a large file can no longer OOM the container or outlast a
+      // reverse-proxy timeout the way routing it through our own upload route used to.
+      await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
-        xhr.open('POST', '/api/admin/audio-files');
+        xhr.open('PUT', uploadUrl);
+        xhr.setRequestHeader('Content-Type', contentType);
         xhr.upload.onprogress = (event) => {
           if (event.lengthComputable) setUploadPct(Math.round((event.loaded / event.total) * 100));
         };
         xhr.onload = () => {
-          try {
-            const json = JSON.parse(xhr.responseText);
-            if (xhr.status >= 200 && xhr.status < 300) resolve(json);
-            else reject(new Error(json.error || `Upload failed (HTTP ${xhr.status}).`));
-          } catch {
-            // Non-JSON response — almost always a reverse-proxy/host rejection that never reached
-            // our route handler at all (a 413 "Payload Too Large" page is the classic case for a
-            // big audio file), so surface the status instead of a bare generic message.
-            const status = xhr.status || 0;
-            reject(
-              new Error(
-                status === 413
-                  ? 'Upload failed: file is too large for the server to accept (HTTP 413). Try a smaller/lower-bitrate file.'
-                  : status
-                    ? `Upload failed (HTTP ${status}). The server did not return a valid response.`
-                    : 'Upload failed: connection was interrupted before the upload finished (large files need a stable connection).'
-              )
-            );
-          }
+          if (xhr.status >= 200 && xhr.status < 300) resolve();
+          else reject(new Error(`Upload to storage failed (HTTP ${xhr.status}). ${xhr.responseText.slice(0, 200)}`));
         };
         xhr.onerror = () =>
           reject(new Error('Upload failed: network error (connection dropped — this often happens with very large files).'));
-        xhr.send(form);
+        xhr.send(file);
       });
 
+      const uploaded = { uri, size: file.size, contentType };
       setPendingUpload({ ...uploaded, durationSeconds, fileName: file.name });
       if (!songForm.title.trim()) {
         setSongForm((v) => ({ ...v, title: file.name.replace(/\.[^.]+$/, '') }));
