@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import Script from 'next/script';
-import { Inter, Geist_Mono, Caveat } from 'next/font/google';
+import { Inter, Geist_Mono, Caveat, Kalam } from 'next/font/google';
 import { cookies, headers } from 'next/headers';
 import '@/styles/globals.css';
 import 'katex/dist/katex.min.css';
@@ -16,6 +16,10 @@ const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono'
 // globals.css. Only ever used for a few short accent words, never body text, so weight 700 alone
 // (Caveat's boldest) is enough.
 const caveat = Caveat({ subsets: ['latin'], weight: ['700'], variable: '--font-caveat', display: 'swap' });
+// A second, rounder handwriting face — used for a note's actual body text when a student picks
+// "Handwritten" style (NoteEditor/NotesGrid), so it reads more like a real handwritten page than
+// Caveat's script does at paragraph length. Needs the regular + bold weight range for that.
+const kalam = Kalam({ subsets: ['latin'], weight: ['400', '700'], variable: '--font-kalam', display: 'swap' });
 const siteUrl = getSiteUrl();
 
 export const metadata: Metadata = {
@@ -109,7 +113,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           data-theme-family={initialTheme.family}
         />
       </head>
-      <body className={`${inter.variable} ${geistMono.variable} ${caveat.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} ${geistMono.variable} ${caveat.variable} ${kalam.variable} font-sans antialiased`}>
         <Providers locale={initialLocale} initialTheme={initialTheme.className}>
           {children}
         </Providers>

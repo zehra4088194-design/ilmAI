@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, Circle } from 'lucide-react';
-import type { PresentationDeck, PresentationSlide } from '@/lib/presentation/types';
+import type { PresentationDeck, PresentationHeadingFont, PresentationSlide } from '@/lib/presentation/types';
 import { cn } from '@/lib/utils/cn';
 
 // Exported so the builder's theme picker can reuse the exact same gradients for
@@ -39,10 +39,17 @@ export const THEMES = {
   },
 } as const;
 
-export type Theme = (typeof THEMES)[keyof typeof THEMES];
+// `display`/`body` are widened to `string` (rather than the literal 'Inter, sans-serif' `as const`
+// would otherwise infer) so themeFor can swap just the heading font in for the optional
+// handwritten mode below without fighting the type checker.
+export type Theme = Omit<(typeof THEMES)[keyof typeof THEMES], 'display' | 'body'> & { display: string; body: string };
 
-function themeFor(deck: PresentationDeck): Theme {
-  return THEMES[deck.theme] || THEMES.dark;
+function themeFor(deck: PresentationDeck, headingFont: PresentationHeadingFont = 'default'): Theme {
+  const base = THEMES[deck.theme] || THEMES.dark;
+  if (headingFont === 'handwritten') {
+    return { ...base, display: 'var(--font-kalam), cursive' };
+  }
+  return base;
 }
 
 function TitleSlide({ slide, theme }: { slide: PresentationSlide; theme: Theme }) {
@@ -230,10 +237,21 @@ function PrintableSlide({ slide, theme, index, total }: { slide: PresentationSli
   );
 }
 
-export function PresentationSlideRenderer({ deck, exportId = 'presentation-export', exportAllId = 'presentation-export-all' }: { deck: PresentationDeck; exportId?: string; exportAllId?: string }) {
+export function PresentationSlideRenderer({
+  deck,
+  headingFont = 'default',
+  exportId = 'presentation-export',
+  exportAllId = 'presentation-export-all',
+}: {
+  deck: PresentationDeck;
+  /** Optional "Handwritten" heading style — a pure display preference, not part of the deck's own generated/persisted data. */
+  headingFont?: PresentationHeadingFont;
+  exportId?: string;
+  exportAllId?: string;
+}) {
   const [current, setCurrent] = useState(0);
   const total = deck.slides.length;
-  const theme = useMemo(() => themeFor(deck), [deck]);
+  const theme = useMemo(() => themeFor(deck, headingFont), [deck, headingFont]);
   const slide = deck.slides[current] || deck.slides[0];
 
   const goNext = useCallback(() => setCurrent((value) => Math.min(value + 1, total - 1)), [total]);

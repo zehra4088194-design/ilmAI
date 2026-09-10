@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils/cn';
 import { toast } from 'sonner';
 import { ChartBlock, parseSpec as parseChartSpec } from '@/components/features/ai/ChartBlock';
 import { normalizeLatexDelimiters } from '@/lib/utils/normalizeLatexDelimiters';
+import { HANDWRITTEN_PALETTE } from '@/lib/constants/handwriting';
 
 // Flattens a react-markdown paragraph's children back to plain text, so the "Final Answer"
 // paragraph (see MARKDOWN_ANSWER_FORMAT_INSTRUCTION — every worked numerical ends with one,
@@ -33,6 +34,20 @@ function pickWellDoneNote(content: string): string {
   let hash = 0;
   for (let i = 0; i < content.length; i++) hash = (hash * 31 + content.charCodeAt(i)) | 0;
   return WELL_DONE_NOTES[Math.abs(hash) % WELL_DONE_NOTES.length] ?? 'Well done!';
+}
+
+// Section headings (the ai-doc-body h3 rule below) get a bit of variety instead of every answer
+// looking identical — a colour from the same small "pretty" palette Notes uses for its handwritten
+// style, plus one of two handwriting faces, both picked from a hash of the heading text so a given
+// heading stays the same colour/font across re-renders (including a streamed answer still
+// arriving). `!` forces the Tailwind colour past .ai-doc-body h3's own `color` rule in globals.css,
+// which otherwise wins on selector specificity alone.
+function pickHeadingStyle(heading: string) {
+  let hash = 0;
+  for (let i = 0; i < heading.length; i++) hash = (hash * 31 + heading.charCodeAt(i)) | 0;
+  const tone = HANDWRITTEN_PALETTE[Math.abs(hash) % HANDWRITTEN_PALETTE.length]!;
+  const font = hash % 2 === 0 ? 'font-handwritten' : 'font-handwritten-alt';
+  return `${font} ${tone.important}`;
 }
 
 // Import once, globally, from src/app/layout.tsx: import 'katex/dist/katex.min.css';
@@ -104,6 +119,7 @@ export function AiAnswerRenderer({ content, className, card = true, label, feedb
               <table className="w-full text-left text-sm">{children}</table>
             </div>
           ),
+          h3: ({ children }) => <h3 className={pickHeadingStyle(flattenToText(children))}>{children}</h3>,
           // A paragraph starting with "Final Answer" (the AI always ends a worked numerical this
           // way, boxed result and all — see MARKDOWN_ANSWER_FORMAT_INSTRUCTION) gets the
           // "well done!" whiteboard treatment instead of a plain line: a green highlighted card

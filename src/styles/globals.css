@@ -508,14 +508,18 @@ option {
 /* The AI always opens with one "### " line (see MARKDOWN_ANSWER_FORMAT_INSTRUCTION) — a short
    summary/topic, never body text — so a handwritten font reads fine here and gives every answer
    a "teacher wrote this on the board" opening beat, without touching anything that needs to stay
-   precisely legible (formulas, working, tables). */
+   precisely legible (formulas, working, tables). Font-family and colour are deliberately NOT set
+   here: AiAnswerRenderer's own h3 renderer picks one of two handwriting faces and one of a small
+   colour palette per heading (pickHeadingStyle) — this rule only supplies the shared size/weight/
+   spacing so every heading still lines up regardless of which font or colour it landed on, and a
+   `.ai-doc-body h3` with no such class (if this markup is ever reused outside that renderer)
+   still gets a sane, legible default via `color: inherit`. */
 .ai-doc-body h3 {
-  font-family: var(--font-caveat), cursive;
   font-size: 1.5rem;
   font-weight: 700;
   line-height: 1.2;
   margin: 0.9rem 0 0.35rem;
-  color: hsl(var(--brand-primary));
+  color: inherit;
 }
 .ai-doc-body h4 {
   font-size: 0.85rem;
@@ -660,6 +664,17 @@ option {
   font-family: var(--font-caveat), cursive;
   line-height: 1;
   white-space: nowrap;
+}
+
+/* Reusable handwriting-font utilities — Kalam for actual handwritten body text (a note's own
+   content, when a student picks "Handwritten" style), Caveat for short decorative accents
+   elsewhere (see .ai-doc-body h3 / .ai-well-done above). Kept as plain classes rather than a
+   Tailwind font-family token so any surface can opt in without a Tailwind config change. */
+.font-handwritten {
+  font-family: var(--font-kalam), cursive;
+}
+.font-handwritten-alt {
+  font-family: var(--font-caveat), cursive;
 }
 
 

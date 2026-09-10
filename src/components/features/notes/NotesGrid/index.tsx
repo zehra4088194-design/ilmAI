@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils/cn';
 import { enqueueOfflineItem } from '@/lib/offline/sync-queue';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { handwrittenColour } from '@/lib/constants/handwriting';
 
 // Each folder gets a deterministic colour from this set so the same folder
 // name always renders the same way across a session, without needing a
@@ -40,6 +41,8 @@ interface Note {
   is_starred: boolean;
   folder: string | null;
   updated_at: string;
+  style?: string | null;
+  accent_colour?: string | null;
 }
 
 export function NotesGrid({ notes: serverNotes, userId }: { notes: Note[]; userId: string }) {
@@ -291,12 +294,14 @@ export function NotesGrid({ notes: serverNotes, userId }: { notes: Note[]; userI
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {filtered.map((note) => {
           const style = note.folder ? folderStyle(note.folder) : null;
+          const handwritten = note.style === 'handwritten';
+          const inkColour = handwrittenColour(note.accent_colour);
           return (
             <Card
               key={note.id}
               className={cn(
                 'group relative cursor-pointer overflow-hidden border-l-4 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-violet-500/5',
-                note.is_starred ? 'border-l-amber-400' : 'border-l-violet-500/40'
+                handwritten ? inkColour.border : note.is_starred ? 'border-l-amber-400' : 'border-l-violet-500/40'
               )}
               onClick={() => openNote(note)}
             >
@@ -340,8 +345,15 @@ export function NotesGrid({ notes: serverNotes, userId }: { notes: Note[]; userI
                     />
                   </button>
                 </div>
-                <h3 className="mb-1 truncate font-semibold">{note.title}</h3>
-                <p className="text-muted-foreground mb-3 line-clamp-2 text-xs whitespace-pre-wrap">
+                <h3 className={cn('mb-1 truncate font-semibold', handwritten && cn('font-handwritten text-base', inkColour.text))}>
+                  {note.title}
+                </h3>
+                <p
+                  className={cn(
+                    'mb-3 line-clamp-2 whitespace-pre-wrap',
+                    handwritten ? cn('font-handwritten text-sm', inkColour.text, 'opacity-90') : 'text-muted-foreground text-xs'
+                  )}
+                >
                   {note.content || 'Empty note'}
                 </p>
                 <p className="text-muted-foreground text-xs">{formatRelativeTime(note.updated_at)}</p>

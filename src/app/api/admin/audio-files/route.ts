@@ -53,41 +53,56 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const form = await req.formData();
-  const file = form.get('file');
-  if (!(file instanceof File)) {
-    return NextResponse.json({ error: 'Upload an audio file.' }, { status: 400 });
-  }
-  const declaredType = (file.type || '').toLowerCase();
-  const byExtension = /\.(mp3|wav|m4a|aac|ogg|webm|flac)$/i.exec(file.name)?.[1]?.toLowerCase();
-  const config =
-    ALLOWED_AUDIO[declaredType] ||
-    (byExtension === 'mp3' ? ALLOWED_AUDIO['audio/mpeg'] : undefined) ||
-    (byExtension === 'wav' ? ALLOWED_AUDIO['audio/wav'] : undefined) ||
-    (byExtension === 'm4a' ? ALLOWED_AUDIO['audio/mp4'] : undefined) ||
-    (byExtension ? ALLOWED_AUDIO[`audio/${byExtension}`] : undefined);
-  if (!config) {
-    return NextResponse.json({ error: 'Unsupported audio format. Use MP3, WAV, M4A, AAC, OGG, or FLAC.' }, { status: 400 });
-  }
-  if (file.size <= 0 || file.size > MAX_AUDIO_BYTES) {
-    return NextResponse.json({ error: 'Audio file is too large (300MB limit).' }, { status: 400 });
-  }
+  // Everything below can throw on a large upload — a dropped connection while the multipart body
+  // is still streaming in (req.formData()), a network hiccup or bad credentials talking to B2
+  // (putR2Object). Left uncaught, any of those became an unhandled exception that Next.js turns
+  // into an HTML 500 page; the client can't JSON.parse that, so it only ever saw a bare "Upload
+  // failed" with no clue why. Catching everything here logs the real error server-side and always
+  // hands the client back real JSON with the actual cause.
+  let key = '';
+  let fileSize = 0;
+  try {
+    const form = await req.formData();
+    const file = form.get('file');
+    if (!(file instanceof File)) {
+      return NextResponse.json({ error: 'Upload an audio file.' }, { status: 400 });
+    }
+    fileSize = file.size;
+    const declaredType = (file.type || '').toLowerCase();
+    const byExtension = /\.(mp3|wav|m4a|aac|ogg|webm|flac)$/i.exec(file.name)?.[1]?.toLowerCase();
+    const config =
+      ALLOWED_AUDIO[declaredType] ||
+      (byExtension === 'mp3' ? ALLOWED_AUDIO['audio/mpeg'] : undefined) ||
+      (byExtension === 'wav' ? ALLOWED_AUDIO['audio/wav'] : undefined) ||
+      (byExtension === 'm4a' ? ALLOWED_AUDIO['audio/mp4'] : undefined) ||
+      (byExtension ? ALLOWED_AUDIO[`audio/${byExtension}`] : undefined);
+    if (!config) {
+      return NextResponse.json({ error: 'Unsupported audio format. Use MP3, WAV, M4A, AAC, OGG, or FLAC.' }, { status: 400 });
+    }
+    if (file.size <= 0 || file.size > MAX_AUDIO_BYTES) {
+      return NextResponse.json({ error: 'Audio file is too large (300MB limit).' }, { status: 400 });
+    }
 
-  const now = new Date();
-  const yyyy = now.getUTCFullYear();
-  const mm = String(now.getUTCMonth() + 1).padStart(2, '0');
-  const scope = cleanScope(form.get('scope'));
-  const bucket = getAudioBucketName() || undefined;
-  const key = `audio/${scope}/${yyyy}/${mm}/${cleanStem(file.name)}-${randomUUID().slice(0, 10)}.${config.extension}`;
-  const bytes = Buffer.from(await file.arrayBuffer());
-  await putR2Object(key, bytes, { contentType: config.contentType, cacheControl: 'private, max-age=86400' }, bucket);
+    const now = new Date();
+    const yyyy = now.getUTCFullYear();
+    const mm = String(now.getUTCMonth() + 1).padStart(2, '0');
+    const scope = cleanScope(form.get('scope'));
+    const bucket = getAudioBucketName() || undefined;
+    key = `audio/${scope}/${yyyy}/${mm}/${cleanStem(file.name)}-${randomUUID().slice(0, 10)}.${config.extension}`;
 
-  return NextResponse.json({
-    uri: getR2Uri(key, bucket),
-    key,
-    size: bytes.byteLength,
-    contentType: config.contentType,
-  });
+    const bytes = Buffer.from(await file.arrayBuffer());
+    await putR2Object(key, bytes, { contentType: config.contentType, cacheControl: 'private, max-age=86400' }, bucket);
+    return NextResponse.json({
+      uri: getR2Uri(key, bucket),
+      key,
+      size: bytes.byteLength,
+      contentType: config.contentType,
+    });
+  } catch (error) {
+    console.error(`[audio-files] upload failed (key=${key || 'n/a'}, size=${fileSize}):`, error);
+    const message = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: `Upload failed: ${message}` }, { status: 502 });
+  }
 }
 
 export async function DELETE(req: NextRequest) {

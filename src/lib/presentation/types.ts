@@ -36,6 +36,15 @@ export type PresentationSlide = {
   backgroundImageUrl?: string;
 };
 
+// A separate, purely client-side rendering preference — deliberately NOT a field on
+// PresentationDeck. `theme` is generated content (the AI is told which one to keep, see
+// generator.ts) and gets persisted with the deck; this is neither, so it stays out of every
+// generator/route return shape and is instead passed straight into PresentationSlideRenderer as
+// its own prop (see PresentationBuilderClient). 'default' keeps the normal Inter headings;
+// 'handwritten' swaps in Kalam for slide titles/section headings only — body text and bullets
+// are unaffected either way.
+export type PresentationHeadingFont = 'default' | 'handwritten';
+
 export type PresentationDeck = {
   topic: string;
   theme: PresentationTheme;

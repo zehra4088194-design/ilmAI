@@ -2,7 +2,7 @@
 import { useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Star, ArrowLeft, Save, Sparkles, Camera, Bold, Heading2, List, Folder } from 'lucide-react';
+import { Star, ArrowLeft, Save, Sparkles, Camera, Bold, Heading2, List, Folder, PenLine, Type } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScanUpload } from '@/components/features/ocr/ScanUpload';
@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/auth/useAuth';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils/cn';
 import { enqueueOfflineItem } from '@/lib/offline/sync-queue';
+import { HANDWRITTEN_PALETTE, handwrittenColour, type NoteStyle } from '@/lib/constants/handwriting';
 
 export function NoteEditor({ note }: { note: any }) {
   const [title, setTitle] = useState(note.title || '');
@@ -18,6 +19,8 @@ export function NoteEditor({ note }: { note: any }) {
   const [starred, setStarred] = useState(note.is_starred || false);
   const [folder, setFolder] = useState<string>(note.folder || '');
   const [editingFolder, setEditingFolder] = useState(false);
+  const [style, setStyle] = useState<NoteStyle>(note.style === 'handwritten' ? 'handwritten' : 'typed');
+  const [accentColour, setAccentColour] = useState<string>(note.accent_colour || 'violet');
   const [saving, setSaving] = useState(false);
   const [aiSummarizing, setAiSummarizing] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -25,10 +28,12 @@ export function NoteEditor({ note }: { note: any }) {
   const supabase = createClient();
   const { user } = useAuth();
   const canUseAiSummary = (user?.subscriptionTier || 'FREE') !== 'FREE';
+  const handwritten = style === 'handwritten';
+  const colour = handwrittenColour(accentColour);
 
   const save = useCallback(async () => {
     setSaving(true);
-    const payload = { id: note.id, title, content, is_starred: starred, folder: folder.trim() || null };
+    const payload = { id: note.id, title, content, is_starred: starred, folder: folder.trim() || null, style, accent_colour: accentColour };
 
     if (typeof navigator !== 'undefined' && navigator.onLine === false) {
       await enqueueOfflineItem('notes_update', payload);
@@ -37,9 +42,11 @@ export function NoteEditor({ note }: { note: any }) {
       return;
     }
 
-    const { error } = await supabase
+    // `style`/`accent_colour` are new columns (see the notes_handwriting_style migration) not yet
+    // in the generated Database types, hence the cast — same as the offline sync route's `db`.
+    const { error } = await (supabase as any)
       .from('notes')
-      .update({ title, content, is_starred: starred, folder: folder.trim() || null, updated_at: new Date().toISOString() })
+      .update({ title, content, is_starred: starred, folder: folder.trim() || null, style, accent_colour: accentColour, updated_at: new Date().toISOString() })
       .eq('id', note.id);
     if (error) {
       // Browser thought it was online but the request itself failed (network dropped mid-flight)
@@ -50,7 +57,7 @@ export function NoteEditor({ note }: { note: any }) {
       toast.success('Saved');
     }
     setSaving(false);
-  }, [title, content, starred, folder, note.id, supabase]);
+  }, [title, content, starred, folder, style, accentColour, note.id, supabase]);
 
   // Lightweight markdown-style formatting: wraps or prefixes the current
   // selection so notes stay plain-text/markdown (no heavy editor dependency)
@@ -130,7 +137,44 @@ export function NoteEditor({ note }: { note: any }) {
       {/* Title + folder row */}
       <div className="space-y-2">
         <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Note title..."
-          className="w-full text-2xl font-bold bg-transparent border-none outline-none placeholder:text-muted-foreground/50" />
+          className={cn(
+            'w-full text-2xl font-bold bg-transparent border-none outline-none placeholder:text-muted-foreground/50',
+            handwritten && 'font-handwritten', handwritten && colour.text
+          )} />
+
+        {/* Handwritten vs typed, with a small colour palette for the handwritten look — purely a
+            display preference, saved alongside the note so it sticks next time it's opened. */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="inline-flex rounded-full border border-border p-0.5">
+            <button
+              onClick={() => setStyle('typed')}
+              className={cn('flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors',
+                !handwritten ? 'bg-violet-500 text-white' : 'text-muted-foreground hover:bg-muted')}
+            >
+              <Type className="h-3 w-3" /> Typed
+            </button>
+            <button
+              onClick={() => setStyle('handwritten')}
+              className={cn('flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors font-handwritten',
+                handwritten ? cn(colour.bg, colour.text) : 'text-muted-foreground hover:bg-muted')}
+            >
+              <PenLine className="h-3 w-3" /> Handwritten
+            </button>
+          </div>
+          {handwritten && (
+            <div className="flex items-center gap-1.5">
+              {HANDWRITTEN_PALETTE.map((c) => (
+                <button
+                  key={c.key}
+                  title={c.label}
+                  onClick={() => setAccentColour(c.key)}
+                  className={cn('h-5 w-5 rounded-full ring-2 ring-offset-2 ring-offset-background transition-transform hover:scale-110', c.dot,
+                    accentColour === c.key ? 'ring-foreground/60' : 'ring-transparent')}
+                />
+              ))}
+            </div>
+          )}
+        </div>
 
         {editingFolder ? (
           <input
@@ -173,7 +217,12 @@ export function NoteEditor({ note }: { note: any }) {
         value={content}
         onChange={e => setContent(e.target.value)}
         placeholder="Start writing here, or use the scan button to scan a textbook page"
-        className="w-full min-h-[calc(100vh-22rem)] bg-transparent border-none outline-none resize-none text-sm leading-relaxed placeholder:text-muted-foreground/40"
+        className={cn(
+          'w-full min-h-[calc(100vh-22rem)] border-none outline-none resize-none leading-relaxed placeholder:text-muted-foreground/40',
+          handwritten
+            ? cn('font-handwritten rounded-xl p-4 text-lg', colour.bg, colour.text)
+            : 'bg-transparent text-sm'
+        )}
       />
     </div>
   );

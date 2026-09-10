@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Clock, Download, FileText, Loader2, Moon, Presentation, Sparkles, Sun } from 'lucide-react';
+import { Clock, Download, FileText, Loader2, Moon, PenLine, Presentation, Sparkles, Sun, Type } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import { BrandLoader } from '@/components/ui/BrandLoader';
 import { PresentationSlideRenderer, THEMES } from '@/components/features/university/PresentationSlideRenderer';
 import { exportPresentationDeckToPdf } from '@/lib/utils/exportPresentationPdf';
 import { cn } from '@/lib/utils/cn';
-import type { PresentationDeck, PresentationGenerateMode, PresentationTheme } from '@/lib/presentation/types';
+import type { PresentationDeck, PresentationGenerateMode, PresentationHeadingFont, PresentationTheme } from '@/lib/presentation/types';
 import { fetchWithOfflineCache } from '@/lib/offline/read-cache';
 import { useAuth } from '@/hooks/auth/useAuth';
 
@@ -35,6 +35,9 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
   const [language, setLanguage] = useState('English');
   const [outputStyle, setOutputStyle] = useState(defaultStyle);
   const [theme, setTheme] = useState<PresentationTheme>('dark');
+  // Purely a rendering preference (see PresentationHeadingFont's doc comment) — never sent to the
+  // generate API, just handed straight to PresentationSlideRenderer.
+  const [headingFont, setHeadingFont] = useState<PresentationHeadingFont>('default');
   const [mode, setMode] = useState<PresentationGenerateMode>('per-slide');
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -310,6 +313,7 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
               />
             </div>
             <ThemeModePicker value={theme} onChange={setTheme} />
+            <HeadingFontPicker value={headingFont} onChange={setHeadingFont} />
             <SelectField
               label="Generation mode"
               value={mode}
@@ -400,7 +404,7 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
                   Download PDF
                 </Button>
               </div>
-              <PresentationSlideRenderer deck={deck} />
+              <PresentationSlideRenderer deck={deck} headingFont={headingFont} />
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">Slide outline</CardTitle>
@@ -514,6 +518,59 @@ function ThemeModePicker({
               <span className="block h-14 w-full rounded-lg ring-1 ring-black/10" style={{ background: palette.bg }} />
               <span className="mt-2 flex items-center gap-1.5">
                 <Icon className="h-3.5 w-3.5" style={{ color: palette.accent }} />
+                <span className="text-sm font-semibold">{label}</span>
+              </span>
+              <span className="text-muted-foreground mt-0.5 block text-[11px] leading-tight">{description}</span>
+              {active && (
+                <span className="absolute right-2 top-2 rounded-full bg-violet-500 px-1.5 py-0.5 text-[9px] font-bold text-white">
+                  Selected
+                </span>
+              )}
+              </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+const HEADING_FONT_OPTIONS: { key: PresentationHeadingFont; label: string; description: string; icon: typeof Type }[] = [
+  { key: 'default', label: 'Default', description: 'Clean, standard headings', icon: Type },
+  { key: 'handwritten', label: 'Handwritten', description: 'A handwriting font for titles only', icon: PenLine },
+];
+
+// Optional — layered on top of the dark/light theme above, not a third theme itself. Only the
+// slide titles/section headings switch font; body text and bullets are never affected, so this
+// is always safe to try and switch back from.
+function HeadingFontPicker({
+  value,
+  onChange,
+}: {
+  value: PresentationHeadingFont;
+  onChange: (value: PresentationHeadingFont) => void;
+}) {
+  return (
+    <div>
+      <label className="text-muted-foreground mb-1.5 block text-xs font-bold tracking-wide uppercase">
+        Heading font <span className="normal-case font-normal">(optional)</span>
+      </label>
+      <div className="grid grid-cols-2 gap-3">
+        {HEADING_FONT_OPTIONS.map(({ key, label, description, icon: Icon }) => {
+          const active = value === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              aria-pressed={active}
+              onClick={() => onChange(key)}
+              className={cn(
+                'relative overflow-hidden rounded-xl border-2 p-3 text-left transition',
+                active ? 'border-violet-400 ring-2 ring-violet-400/40' : 'border-input hover:border-violet-300'
+              )}
+            >
+              <span className={cn('block text-2xl font-bold', key === 'handwritten' && 'font-handwritten')}>Aa</span>
+              <span className="mt-1.5 flex items-center gap-1.5">
+                <Icon className="h-3.5 w-3.5 text-violet-400" />
                 <span className="text-sm font-semibold">{label}</span>
               </span>
               <span className="text-muted-foreground mt-0.5 block text-[11px] leading-tight">{description}</span>

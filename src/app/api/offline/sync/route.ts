@@ -4,6 +4,7 @@ import { checkDailyLimit } from '@/lib/rate-limit';
 import { getActiveSchoolOrganizationId, getSchoolContext, hasSchoolModule, hasSchoolPermission } from '@/lib/school-erp/access';
 import { completeQuizSession } from '@/lib/quiz/complete';
 import { sendImmediateAttendanceAlerts } from '@/lib/school-erp/notification-queue';
+import { HANDWRITTEN_COLOUR_KEYS, NOTE_STYLES } from '@/lib/constants/handwriting';
 
 /**
  * Server-side replay target for the offline queue (src/lib/offline/sync-queue.ts). Handles the
@@ -157,6 +158,8 @@ type NoteWritePayload = {
   content?: string;
   is_starred?: boolean;
   folder?: string | null;
+  style?: string;
+  accent_colour?: string;
 };
 
 async function syncNotesCreate(payload: NoteWritePayload) {
@@ -166,7 +169,7 @@ async function syncNotesCreate(payload: NoteWritePayload) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Login required' }, { status: 401 });
 
-  const { id, title, content, is_starred, folder } = payload || ({} as NoteWritePayload);
+  const { id, title, content, is_starred, folder, style, accent_colour } = payload || ({} as NoteWritePayload);
   if (!id || !UUID_RE.test(id)) return NextResponse.json({ error: 'A valid note id is required.' }, { status: 400 });
 
   const limit = await checkDailyLimit(user.id, 'erp_mutation:offline_notes', 500);
@@ -185,6 +188,8 @@ async function syncNotesCreate(payload: NoteWritePayload) {
       is_starred: Boolean(is_starred),
       is_public: false,
       folder: folder?.trim() || null,
+      ...(NOTE_STYLES.includes(style as any) ? { style } : {}),
+      ...(HANDWRITTEN_COLOUR_KEYS.includes(accent_colour as any) ? { accent_colour } : {}),
       updated_at: new Date().toISOString(),
     },
     { onConflict: 'id' }
@@ -200,7 +205,7 @@ async function syncNotesUpdate(payload: NoteWritePayload) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Login required' }, { status: 401 });
 
-  const { id, title, content, is_starred, folder } = payload || ({} as NoteWritePayload);
+  const { id, title, content, is_starred, folder, style, accent_colour } = payload || ({} as NoteWritePayload);
   if (!id || !UUID_RE.test(id)) return NextResponse.json({ error: 'A valid note id is required.' }, { status: 400 });
 
   const db = supabase as any;
@@ -209,6 +214,8 @@ async function syncNotesUpdate(payload: NoteWritePayload) {
   if (content !== undefined) update.content = content;
   if (is_starred !== undefined) update.is_starred = Boolean(is_starred);
   if (folder !== undefined) update.folder = folder?.trim() || null;
+  if (style !== undefined && NOTE_STYLES.includes(style as any)) update.style = style;
+  if (accent_colour !== undefined && HANDWRITTEN_COLOUR_KEYS.includes(accent_colour as any)) update.accent_colour = accent_colour;
 
   // Scoped to the caller's own row (eq user_id) rather than relying on RLS alone, so this can
   // never silently edit another user's note even if the client sent a note id it doesn't own —
