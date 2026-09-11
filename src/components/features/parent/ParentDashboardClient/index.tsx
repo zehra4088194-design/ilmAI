@@ -14,8 +14,10 @@ import {
   KeyRound,
   Lock,
   LockKeyhole,
+  Megaphone,
   MessageCircle,
   Plus,
+  ReceiptText,
   Trophy,
   TrendingUp,
   Users,
@@ -68,6 +70,8 @@ const FAMILY_TABS = [
   { key: 'progress', label: 'Progress' },
   { key: 'homework', label: 'Homework' },
   { key: 'attendance', label: 'Attendance' },
+  { key: 'fees', label: 'Fees' },
+  { key: 'announcements', label: 'Announcements' },
   { key: 'achievements', label: 'Achievements' },
   { key: 'goals', label: 'Goals' },
   { key: 'alerts', label: 'Alerts' },
@@ -342,7 +346,7 @@ export function ParentDashboardClient({
                   <CardContent className="space-y-4 p-5">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 text-lg font-bold text-white">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-linear-to-br from-violet-500 to-indigo-600 text-lg font-bold text-white">
                           {student.full_name?.[0]?.toUpperCase() || 'S'}
                         </div>
                         <div>
@@ -363,7 +367,7 @@ export function ParentDashboardClient({
                       ))}
                     </div>
 
-                    <div className="relative flex h-36 items-end gap-2 overflow-hidden rounded-xl border bg-gradient-to-b from-violet-500/5 to-violet-500/15 p-4">
+                    <div className="relative flex h-36 items-end gap-2 overflow-hidden rounded-xl border bg-linear-to-b from-violet-500/5 to-violet-500/15 p-4">
                       {[34, 62, 48, 78, 58, 88, 72].map((height, chartIndex) => (
                         <span
                           key={chartIndex}
@@ -398,7 +402,7 @@ export function ParentDashboardClient({
                 <CardHeader className="pb-3">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 text-lg font-bold text-white">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-linear-to-br from-violet-500 to-indigo-600 text-lg font-bold text-white">
                         {student.full_name?.[0]?.toUpperCase() || 'S'}
                       </div>
                       <div>
@@ -783,6 +787,140 @@ export function ParentDashboardClient({
                           value={familyQuran[student.id]!.practiceDoneToday ? 'Done' : 'Not yet'}
                         />
                       </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {activeTab === 'fees' && (
+        <div className="grid gap-4 md:grid-cols-2">
+          {approvedLinks.map((link) => {
+            const student = link.student as any;
+            const erp = erpData[student.id];
+            return (
+              <Card key={link.id}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <ReceiptText className="h-4 w-4 text-emerald-500" /> {student.full_name} — Fee Status
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {!erp || !erp.erpLinked ? (
+                    <p className="text-muted-foreground text-xs">Not linked to a school/college fee tracker yet.</p>
+                  ) : erp.feeInvoices.length === 0 ? (
+                    <p className="text-muted-foreground text-xs">No fee records found.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {(() => {
+                        const totalDue = erp.feeInvoices.reduce((sum, inv) => sum + inv.balance, 0);
+                        return (
+                          <div className="mb-3 flex items-center justify-between rounded-lg bg-muted/30 p-3">
+                            <span className="text-sm font-medium">Total outstanding</span>
+                            <span className={cn('text-lg font-bold', totalDue > 0 ? 'text-red-500' : 'text-green-500')}>
+                              {totalDue.toLocaleString()} PKR
+                            </span>
+                          </div>
+                        );
+                      })()}
+                      {erp.feeInvoices.map((inv) => (
+                        <div
+                          key={inv.id}
+                          className="flex items-center justify-between gap-2 rounded-lg border p-2.5 text-xs"
+                        >
+                          <div className="min-w-0">
+                            <p className="font-medium">{inv.voucherNumber}</p>
+                            <p className="text-muted-foreground">
+                              {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : 'No due date'}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold">{inv.balance.toLocaleString()} PKR</p>
+                            <Badge
+                              variant={
+                                inv.status === 'paid' ? 'secondary' : inv.status === 'overdue' ? 'destructive' : 'outline'
+                              }
+                              className="capitalize"
+                            >
+                              {inv.status}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                      {erp.feeInvoices.length > 0 && (
+                        <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+                          <InfoPill icon={CheckIcon} label="Paid" value={erp.feeInvoices.filter((i) => i.status === 'paid').length} />
+                          <InfoPill icon={AlertCircle} label="Overdue" value={erp.feeInvoices.filter((i) => i.status === 'overdue').length} />
+                          <InfoPill icon={Clock} label="Pending" value={erp.feeInvoices.filter((i) => i.status === 'issued' || i.status === 'partial').length} />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {erp?.erpLinked && (
+                    <Button asChild variant="outline" size="sm" className="mt-3 w-full">
+                      <Link href={erp.orgType === 'school' ? '/school/fees' : '/college/fees'}>
+                        <ReceiptText className="h-3.5 w-3.5" />
+                        View full fee history
+                      </Link>
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {activeTab === 'announcements' && (
+        <div className="grid gap-4 md:grid-cols-2">
+          {approvedLinks.map((link) => {
+            const student = link.student as any;
+            const erp = erpData[student.id];
+            return (
+              <Card key={link.id}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Megaphone className="h-4 w-4 text-amber-500" /> {student.full_name} — Announcements
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {!erp || !erp.erpLinked || erp.announcements.length === 0 ? (
+                    <p className="text-muted-foreground text-xs">No recent announcements from the school/college.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {erp.announcements.map((ann) => (
+                        <div
+                          key={ann.id}
+                          className="rounded-lg border p-2.5 text-xs"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{ann.title}</span>
+                            {ann.priority && (
+                              <Badge
+                                variant={ann.priority === 'high' ? 'destructive' : 'secondary'}
+                                className="ml-auto text-[10px] capitalize"
+                              >
+                                {ann.priority}
+                              </Badge>
+                            )}
+                          </div>
+                          {ann.body && (
+                            <p className="text-muted-foreground mt-1 line-clamp-2">{ann.body}</p>
+                          )}
+                          {ann.publishedAt && (
+                            <p className="text-muted-foreground mt-1 text-[10px]">
+                              {new Date(ann.publishedAt).toLocaleDateString(undefined, {
+                                weekday: 'short',
+                                month: 'short',
+                                day: 'numeric',
+                              })}
+                            </p>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   )}
                 </CardContent>

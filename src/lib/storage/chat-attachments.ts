@@ -53,12 +53,20 @@ export async function uploadChatAttachment(file: File, pathPrefix: string): Prom
 // right before a message list is returned to the client, the same point where these routes
 // already establish the caller is a participant (RLS or an explicit access check above it), so no
 // separate authorization is needed here.
-export async function resolveAttachmentSignedUrl(attachmentUrl: string | null | undefined): Promise<string | null> {
+//
+// `downloadFilename` marks the URL as attachment/download (see getR2SignedUrl) — pass the
+// original file name for anything meant to be downloaded (PDFs, any non-image file). Leave it
+// unset for images, which ChatAttachmentBubble renders inline via <img src>; forcing
+// Content-Disposition: attachment there risks the browser refusing to render it inline at all.
+export async function resolveAttachmentSignedUrl(
+  attachmentUrl: string | null | undefined,
+  downloadFilename?: string | null
+): Promise<string | null> {
   if (!attachmentUrl) return null;
   const parsed = parseR2Uri(attachmentUrl);
   if (!parsed) return null;
   try {
-    return await getR2SignedUrl(parsed.key, SIGNED_URL_TTL_SECONDS, parsed.bucket);
+    return await getR2SignedUrl(parsed.key, SIGNED_URL_TTL_SECONDS, parsed.bucket, downloadFilename || undefined);
   } catch (error) {
     console.error('Chat attachment signed URL failed:', error);
     return null;

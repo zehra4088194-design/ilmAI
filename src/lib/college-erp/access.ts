@@ -60,6 +60,27 @@ const ROLE_PERMISSIONS: Record<CollegeRole, CollegePermission[]> = {
     'reports.read',
     'audit.read',
   ],
+  // Mirrors school-erp/access.ts's coordinator role exactly — a principal-appointed assistant
+  // (people/admissions/attendance/exams/academics/communication/PTM), no org-settings or
+  // fees/payroll access.
+  coordinator: [
+    'dashboard.read',
+    'people.read',
+    'people.manage',
+    'admissions.read',
+    'admissions.manage',
+    'attendance.read',
+    'attendance.manage',
+    'exams.read',
+    'exams.manage',
+    'academics.read',
+    'academics.manage',
+    'communication.read',
+    'communication.manage',
+    'ptm.read',
+    'ptm.manage',
+    'reports.read',
+  ],
   admissions: [
     'dashboard.read',
     'people.read',
@@ -126,6 +147,7 @@ const ROLE_PERMISSIONS: Record<CollegeRole, CollegePermission[]> = {
 const ROLE_PRIORITY: CollegeRole[] = [
   'owner',
   'admin',
+  'coordinator',
   'admissions',
   'accountant',
   'teacher',

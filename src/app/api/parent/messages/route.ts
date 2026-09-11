@@ -48,7 +48,13 @@ export async function GET(req: NextRequest) {
   const archived = await loadArchivedChatMessages<any>(chatsAdmin, 'parent', linkId);
   const merged = mergeChatMessages(archived, data || []);
   const messages = await Promise.all(
-    merged.map(async (m: any) => ({ ...m, attachment_signed_url: await resolveAttachmentSignedUrl(m.attachment_url) }))
+    merged.map(async (m: any) => ({
+      ...m,
+      attachment_signed_url: await resolveAttachmentSignedUrl(
+        m.attachment_url,
+        m.attachment_type?.startsWith('image/') ? null : m.attachment_name
+      ),
+    }))
   );
   return NextResponse.json({ messages });
 }
@@ -114,7 +120,10 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: 'The message could not be sent.' }, { status: 500 });
-  data.attachment_signed_url = await resolveAttachmentSignedUrl(data.attachment_url);
+  data.attachment_signed_url = await resolveAttachmentSignedUrl(
+    data.attachment_url,
+    data.attachment_type?.startsWith('image/') ? null : data.attachment_name
+  );
 
   const recipientId = user.id === link.parent_id ? link.student_id : link.parent_id;
   if (!recipientId) return NextResponse.json({ error: 'The linked recipient was not found.' }, { status: 409 });

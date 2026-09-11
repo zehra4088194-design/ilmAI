@@ -61,7 +61,6 @@ export type PlatformSubscriptionPlan = {
   // explicitly opts a plan out of that.
   pkrManual: boolean;
   limits: {
-    aiLifetimeDemoCredits: number;
     aiCreditsWeekly: number;
     aiCreditsDaily: number;
     aiCreditsMonthly: number;
@@ -248,7 +247,6 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
       },
       pkrManual: false,
       limits: {
-        aiLifetimeDemoCredits: 3,
         aiCreditsWeekly: 20,
         aiCreditsDaily: 3,
         aiCreditsMonthly: 0,
@@ -305,7 +303,6 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
       },
       pkrManual: false,
       limits: {
-        aiLifetimeDemoCredits: 0,
         aiCreditsWeekly: 0,
         aiCreditsDaily: 15,
         aiCreditsMonthly: 300,
@@ -357,7 +354,6 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
       },
       pkrManual: false,
       limits: {
-        aiLifetimeDemoCredits: 0,
         aiCreditsWeekly: 0,
         aiCreditsDaily: 30,
         aiCreditsMonthly: 600,
@@ -699,10 +695,6 @@ export function normalizePlatformSettings(input: unknown): PlatformSettings {
         },
         pkrManual,
         limits: {
-          aiLifetimeDemoCredits: numberOrFallback(
-            incomingLimits.aiLifetimeDemoCredits,
-            fallback.limits.aiLifetimeDemoCredits
-          ),
           aiCreditsWeekly: numberOrFallback(incomingLimits.aiCreditsWeekly, fallback.limits.aiCreditsWeekly),
           aiCreditsDaily: numberOrFallback(incomingLimits.aiCreditsDaily, fallback.limits.aiCreditsDaily),
           aiCreditsMonthly: numberOrFallback(incomingLimits.aiCreditsMonthly, fallback.limits.aiCreditsMonthly),

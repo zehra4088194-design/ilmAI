@@ -40,7 +40,13 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ con
     .is('read_at', null);
 
   const withUrls = await Promise.all(
-    (messages || []).map(async (m: any) => ({ ...m, attachment_signed_url: await resolveAttachmentSignedUrl(m.attachment_url) }))
+    (messages || []).map(async (m: any) => ({
+      ...m,
+      attachment_signed_url: await resolveAttachmentSignedUrl(
+        m.attachment_url,
+        m.attachment_type?.startsWith('image/') ? null : m.attachment_name
+      ),
+    }))
   );
   return NextResponse.json({ messages: withUrls });
 }
@@ -100,7 +106,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ con
     .select()
     .single();
   if (error) return NextResponse.json({ error: 'The message could not be sent.' }, { status: 500 });
-  message.attachment_signed_url = await resolveAttachmentSignedUrl(message.attachment_url);
+  message.attachment_signed_url = await resolveAttachmentSignedUrl(
+    message.attachment_url,
+    message.attachment_type?.startsWith('image/') ? null : message.attachment_name
+  );
 
   const recipientId =
     conversation.participant_one_id === user.id ? conversation.participant_two_id : conversation.participant_one_id;

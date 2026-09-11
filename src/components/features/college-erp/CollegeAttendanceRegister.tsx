@@ -30,15 +30,21 @@ export function CollegeAttendanceRegister({
   records,
   date,
   canManage,
+  editableSectionIds,
 }: {
   sections: any[];
   enrollments: Enrollment[];
   records: AttendanceRecord[];
   date: string;
   canManage: boolean;
+  /** null = unrestricted (owner/admin/staff). An array scopes editing to those section ids only —
+   * teacher-portal split, mirrors school's AttendanceRegister. */
+  editableSectionIds?: string[] | null;
 }) {
   const [sectionId, setSectionId] = useState(String(sections[0]?.id || ''));
   const [attendanceDate, setAttendanceDate] = useState(date);
+  const canEditThisSection =
+    canManage && (editableSectionIds == null || editableSectionIds.includes(sectionId));
   const initial = useMemo(() => Object.fromEntries(records.map((record) => [record.student_id, record.status])), [records]);
   const [answers, setAnswers] = useState<Record<string, string>>(initial);
   const [state, action, pending] = useActionState(saveCollegeAttendance, INITIAL_COLLEGE_ACTION_STATE);
@@ -69,6 +75,12 @@ export function CollegeAttendanceRegister({
 
       <PersonSearchInput value={query} onChange={setQuery} placeholder="Search this section by name or roll no..." />
 
+      {canManage && !canEditThisSection && (
+        <p className="rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+          View only — you can mark attendance for the section you are the advisor (incharge) teacher of.
+        </p>
+      )}
+
       <div className="border-border overflow-hidden rounded-lg border">
         <div className="bg-muted/50 grid grid-cols-[minmax(150px,1fr)_150px] gap-2 px-3 py-2 text-xs font-semibold">
           <span>Student</span>
@@ -89,7 +101,7 @@ export function CollegeAttendanceRegister({
                       key={status.value}
                       type="button"
                       title={status.title}
-                      disabled={!canManage}
+                      disabled={!canEditThisSection}
                       onClick={() => setAnswers((current) => ({ ...current, [student.student_id]: status.value }))}
                       className={`h-8 w-8 rounded-md border text-xs font-bold transition ${
                         (answers[student.student_id] || 'present') === status.value ? status.active : 'border-border text-muted-foreground hover:bg-muted'
@@ -107,7 +119,7 @@ export function CollegeAttendanceRegister({
         </div>
       </div>
 
-      {canManage && students.length > 0 && (
+      {canEditThisSection && students.length > 0 && (
         <form action={action} className="flex flex-wrap items-center gap-3">
           <input type="hidden" name="section_id" value={sectionId} />
           <input type="hidden" name="attendance_date" value={attendanceDate} />

@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation';
 import { SchoolAdminSidebar } from '@/components/features/school-erp/SchoolAdminSidebar';
 import { getSchoolContexts, requireSchoolContext, schoolAdminHomeForRole } from '@/lib/school-erp/access';
+import { getCallIdentity } from '@/lib/calling/identity';
+import { CallProvider } from '@/components/features/calling/CallProvider';
 
 export default async function SchoolAdminLayout({ children }: { children: React.ReactNode }) {
   const { user, supabase, context } = await requireSchoolContext('dashboard.read');
@@ -16,7 +18,10 @@ export default async function SchoolAdminLayout({ children }: { children: React.
     operations: !['student', 'parent'].includes(item.membership.member_role),
   }));
 
+  const callIdentity = await getCallIdentity(supabase, user.id);
+
   return (
+    <CallProvider identity={callIdentity}>
     <div className="bg-background min-h-screen">
       <SchoolAdminSidebar
         organizationName={context.organization.name}
@@ -31,5 +36,6 @@ export default async function SchoolAdminLayout({ children }: { children: React.
         <div className="mx-auto max-w-7xl">{children}</div>
       </main>
     </div>
+    </CallProvider>
   );
 }

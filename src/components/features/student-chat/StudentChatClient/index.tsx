@@ -270,32 +270,47 @@ export function StudentChatClient() {
 
   return (
     <div className="space-y-6">
-      <Card className="border-primary/25 bg-[linear-gradient(135deg,hsl(var(--primary)/0.14),hsl(var(--accent)/0.18),hsl(var(--secondary)/0.18))] shadow-sm">
-        <CardContent className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
-          <div>
-            <Badge className="bg-primary text-primary-foreground mb-2">Request-first safe chat</Badge>
-            <h1 className="text-2xl font-bold">Study Buddies</h1>
-            <p className="text-muted-foreground mt-1 text-sm">
+      {/* Hero Header */}
+      <Card className="border-primary/20 bg-gradient-to-br from-primary/10 via-accent/8 to-secondary/10 shadow-lg shadow-primary/5">
+        <CardContent className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Badge className="bg-primary/90 text-primary-foreground backdrop-blur-sm">Request-first safe chat</Badge>
+              {canUseStudentChat && (
+                <Badge variant="outline" className="gap-1 border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                  <Check className="h-3 w-3" /> Active
+                </Badge>
+              )}
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
+              Study Buddies 💬
+            </h1>
+            <p className="text-muted-foreground max-w-xl text-sm leading-relaxed">
               Send a request using the student&apos;s unique username or email. Chat opens after approval; messaging is a
-              Pro or Elite feature.
+              Pro or Elite feature. Keep it study-focused!
             </p>
           </div>
           {!canUseStudentChat && (
-            <Button asChild variant="gradient" className="shrink-0">
+            <Button asChild variant="gradient" className="shrink-0 shadow-md shadow-primary/20">
               <Link href="/subscription">
-                <Crown className="h-4 w-4" /> Pro to unlock chat
+                <Crown className="mr-2 h-4 w-4" /> Unlock Chat
               </Link>
             </Button>
           )}
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 xl:grid-cols-[360px,1fr]">
-        <div className="space-y-4">
-          <Card>
+      {/* Buddy list on the right, chat thread on the left */}
+      <div className="grid gap-6 xl:grid-cols-[1fr,360px]">
+        <div className="space-y-4 xl:order-2">
+          {/* Send Request Card */}
+          <Card className="border-primary/15 shadow-sm transition-shadow hover:shadow-md">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
-                <UserPlus className="text-primary h-4 w-4" /> Send Request
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10">
+                  <UserPlus className="h-4 w-4 text-primary" />
+                </div>
+                Find a Study Buddy
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -303,18 +318,26 @@ export function StudentChatClient() {
                 value={identifier}
                 onChange={(event) => setIdentifier(event.target.value)}
                 placeholder="@student_username or email"
+                className="h-10 text-sm"
               />
-              <p className="text-muted-foreground text-xs">Usernames are unique; the @ symbol is optional.</p>
-              <Button variant="gradient" onClick={sendRequest} loading={sending} className="w-full">
-                <Send className="h-4 w-4" /> Send study request
+              <p className="text-muted-foreground/80 text-xs">Usernames are unique; the @ symbol is optional.</p>
+              <Button variant="gradient" onClick={sendRequest} loading={sending} className="w-full h-10">
+                <Send className="mr-2 h-4 w-4" /> Send Request
               </Button>
             </CardContent>
           </Card>
 
+          {/* Incoming Requests */}
           {incoming.length > 0 && (
-            <Card>
+            <Card className="border-amber-200 bg-amber-50/50 shadow-sm dark:border-amber-900/50 dark:bg-amber-950/20">
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Incoming Requests</CardTitle>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75"></span>
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500"></span>
+                  </span>
+                  Incoming Requests ({incoming.length})
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 {incoming.map((request) => (
@@ -323,11 +346,11 @@ export function StudentChatClient() {
                     request={request}
                     currentUserId={user?.id}
                     actions={
-                      <div className="flex gap-2">
-                        <Button size="icon-sm" variant="outline" onClick={() => updateRequest(request.id, 'approved')}>
+                      <div className="flex gap-1.5">
+                        <Button size="icon-sm" variant="outline" onClick={() => updateRequest(request.id, 'approved')} className="border-green-200 hover:bg-green-50 hover:text-green-600 dark:border-green-800 dark:hover:bg-green-950">
                           <Check className="h-4 w-4 text-green-500" />
                         </Button>
-                        <Button size="icon-sm" variant="outline" onClick={() => updateRequest(request.id, 'declined')}>
+                        <Button size="icon-sm" variant="outline" onClick={() => updateRequest(request.id, 'declined')} className="border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-red-800 dark:hover:bg-red-950">
                           <X className="h-4 w-4 text-red-500" />
                         </Button>
                       </div>
@@ -338,43 +361,81 @@ export function StudentChatClient() {
             </Card>
           )}
 
-          <Card>
+          {/* Approved Chats */}
+          <Card className="shadow-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Approved Chats</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <MessageCircle className="h-4 w-4 text-primary" />
+                Approved Chats
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {loading && <p className="text-muted-foreground text-sm">Loading...</p>}
+              {loading && (
+                <div className="flex items-center gap-2 py-4">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                  <span className="text-muted-foreground text-sm">Loading buddies...</span>
+                </div>
+              )}
               {!loading && approved.length === 0 && (
-                <p className="text-muted-foreground text-sm">There are no approved buddies yet.</p>
+                <div className="py-6 text-center">
+                  <MessageCircle className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
+                  <p className="font-medium text-muted-foreground">No approved buddies yet</p>
+                  <p className="text-muted-foreground/70 mt-1 text-xs">Send a request above to get started!</p>
+                </div>
               )}
               {approved.map((request) => {
                 const buddy = request.requester_id === user?.id ? request.recipient : request.requester;
+                const initials = buddy?.full_name
+                  ?.split(' ')
+                  .map((n) => n[0])
+                  .join('')
+                  .toUpperCase()
+                  .slice(0, 2) || '?';
                 return (
                   <button
                     key={request.id}
                     type="button"
                     onClick={() => setSelectedId(request.id)}
                     className={cn(
-                      'w-full rounded-xl border px-3 py-2 text-left transition-colors',
+                      'group flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-all duration-200',
                       selected?.id === request.id
-                        ? 'border-primary/50 bg-primary/10'
-                        : 'border-border bg-muted/20 hover:bg-muted/40'
+                        ? 'border-primary/40 bg-primary/10 shadow-sm'
+                        : 'border-border/60 bg-card hover:border-primary/20 hover:bg-muted/30'
                     )}
                   >
-                    <p className="text-sm font-semibold">{buddy?.full_name || 'Student'}</p>
-                    <p className="text-muted-foreground text-xs">
-                      {buddy?.username ? `@${buddy.username}` : buddy?.email}
-                    </p>
+                    <div className={cn(
+                      'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition-colors',
+                      selected?.id === request.id
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground group-hover:bg-primary/20 group-hover:text-primary'
+                    )}>
+                      {initials}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold">{buddy?.full_name || 'Student'}</p>
+                      <p className="text-muted-foreground/80 truncate text-xs">
+                        {buddy?.username ? `@${buddy.username}` : buddy?.email}
+                      </p>
+                    </div>
+                    {selected?.id === request.id && (
+                      <div className="h-2 w-2 shrink-0 rounded-full bg-primary animate-pulse"></div>
+                    )}
                   </button>
                 );
               })}
             </CardContent>
           </Card>
 
+          {/* Pending Sent */}
           {outgoing.length > 0 && (
-            <Card>
+            <Card className="border-dashed shadow-sm">
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Pending Sent</CardTitle>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <span className="relative flex h-2 w-2">
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-blue-400"></span>
+                  </span>
+                  Pending Sent ({outgoing.length})
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 {outgoing.map((request) => (
@@ -385,15 +446,18 @@ export function StudentChatClient() {
           )}
         </div>
 
-        <Card className="border-primary/20 bg-card/95 min-h-[560px] overflow-hidden shadow-xl shadow-black/5">
-          <CardHeader className="border-border/70 bg-muted/20 flex-row items-center justify-between border-b pb-4">
+        {/* Chat Thread */}
+        <Card className="border-primary/15 bg-card/95 shadow-xl shadow-black/5 xl:order-1">
+          <CardHeader className="border-border/70 bg-gradient-to-r from-muted/30 to-muted/10 flex-row items-center justify-between border-b pb-4">
             <div>
               <CardTitle className="flex items-center gap-2 text-base">
-                <MessageCircle className="text-primary h-5 w-5" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                  <MessageCircle className="h-4 w-4 text-primary" />
+                </div>
                 {selectedBuddy ? selectedBuddy.full_name : 'Select a buddy'}
               </CardTitle>
               {selectedBuddy && (
-                <p className="text-muted-foreground text-xs">
+                <p className="text-muted-foreground/80 text-xs mt-0.5">
                   {selectedBuddy.username ? `@${selectedBuddy.username}` : selectedBuddy.email}
                 </p>
               )}
@@ -405,24 +469,32 @@ export function StudentChatClient() {
                 onClick={() => deleteChat(selected.id)}
                 aria-label="Delete chat"
                 title="Delete chat"
+                className="hover:bg-destructive/10 hover:text-destructive"
               >
-                <Trash2 className="text-destructive h-4 w-4" />
+                <Trash2 className="h-4 w-4" />
               </Button>
             )}
           </CardHeader>
           <CardContent className="flex h-[500px] flex-col p-0">
             {!selected ? (
               <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
-                <MessageCircle className="text-muted-foreground mb-3 h-10 w-10" />
-                <p className="font-semibold">Select an approved chat</p>
-                <p className="text-muted-foreground mt-1 max-w-sm text-sm">
+                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/5">
+                  <MessageCircle className="h-8 w-8 text-muted-foreground/40" />
+                </div>
+                <p className="font-semibold text-foreground">Select an approved chat</p>
+                <p className="text-muted-foreground/70 mt-2 max-w-sm text-sm">
                   A conversation will start here after the request is approved.
                 </p>
               </div>
             ) : (
               <>
+                {/* Moderation Alert */}
                 {(moderationAlert || selectedBlockedUntil) && (
-                  <div className="border-b border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-200">
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="border-b border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-200"
+                  >
                     <div className="flex gap-2">
                       <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                       <p>
@@ -431,65 +503,82 @@ export function StudentChatClient() {
                           : moderationAlert}
                       </p>
                     </div>
-                  </div>
+                  </motion.div>
                 )}
-                <div className="flex-1 space-y-3 overflow-y-auto bg-[radial-gradient(circle_at_top_left,hsl(var(--primary)/0.10),transparent_34%),linear-gradient(180deg,hsl(var(--muted)/0.25),transparent)] p-4">
+
+                {/* Messages Area */}
+                <div className="flex-1 space-y-3 overflow-y-auto bg-[radial-gradient(circle_at_top_left,hsl(var(--primary)/0.08),transparent_40%),linear-gradient(180deg,hsl(var(--muted)/0.2),transparent)] p-4">
                   {messages.length === 0 && (
-                    <p className="text-muted-foreground text-center text-sm">No messages yet.</p>
+                    <div className="flex h-full flex-col items-center justify-center text-center">
+                      <p className="text-muted-foreground/60 text-sm">No messages yet. Say hello! 👋</p>
+                    </div>
                   )}
-                  {messages.map((item) => {
+                  {messages.map((item, index) => {
                     const mine = item.sender_id === user?.id;
+                    const showAvatar = index === 0 || messages[index - 1]?.sender_id !== item.sender_id;
                     return (
                       <motion.div
                         key={item.id}
-                        initial={{ opacity: 0, y: 12, scale: 0.98 }}
+                        initial={{ opacity: 0, y: 16, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        transition={{ duration: 0.2, ease: 'easeOut' }}
+                        transition={{ duration: 0.25, ease: 'easeOut' }}
                         className={cn('flex', mine ? 'justify-end' : 'justify-start')}
                       >
-                        <div
-                          className={cn(
-                            'max-w-[82%] rounded-2xl border px-3 py-2 text-sm shadow-sm sm:max-w-[78%]',
-                            mine
-                              ? 'border-primary/20 bg-primary text-primary-foreground shadow-primary/15 rounded-br-md'
-                              : 'border-border/70 bg-background/95 text-foreground rounded-bl-md'
+                        <div className={cn('max-w-[80%] sm:max-w-[75%] group/message')}>
+                          {showAvatar && !mine && (
+                            <div className="mb-1 ml-1 flex items-center gap-1.5">
+                              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] font-semibold text-muted-foreground">
+                                {(item.sender_id === selectedBuddy?.id ? selectedBuddy.full_name : 'You').charAt(0).toUpperCase()}
+                              </div>
+                            </div>
                           )}
-                        >
-                          {item.content && <p className="leading-5 whitespace-pre-wrap">{item.content}</p>}
-                          <ChatAttachmentBubble message={item} mine={mine} />
                           <div
                             className={cn(
-                              'mt-1.5 flex items-center gap-1 text-[11px] font-medium',
-                              mine ? 'text-primary-foreground/80 justify-end' : 'text-muted-foreground justify-start'
+                              'rounded-2xl border px-3.5 py-2.5 text-sm shadow-sm transition-shadow group-hover/message:shadow-md',
+                              mine
+                                ? 'border-primary/20 bg-gradient-to-br from-primary to-primary/90 text-primary-foreground shadow-primary/10 rounded-br-sm'
+                                : 'border-border/60 bg-background/95 text-foreground shadow-sm rounded-bl-sm'
                             )}
                           >
-                            <span>{formatMessageTime(item.created_at)}</span>
-                            {mine && (
-                              <>
-                                {item.read_at ? (
-                                  <CheckCheck className="text-primary-foreground h-3.5 w-3.5" />
-                                ) : (
-                                  <Check className="h-3.5 w-3.5" />
-                                )}
-                                <span>{item.read_at ? 'Seen' : 'Sent'}</span>
-                              </>
-                            )}
+                            {item.content && <p className="leading-relaxed whitespace-pre-wrap">{item.content}</p>}
+                            <ChatAttachmentBubble message={item} mine={mine} />
+                            <div
+                              className={cn(
+                                'mt-1.5 flex items-center gap-1.5 text-[11px] font-medium',
+                                mine ? 'text-primary-foreground/70 justify-end' : 'text-muted-foreground/70 justify-start'
+                              )}
+                            >
+                              <span>{formatMessageTime(item.created_at)}</span>
+                              {mine && (
+                                <>
+                                  {item.read_at ? (
+                                    <CheckCheck className="h-3.5 w-3.5" />
+                                  ) : (
+                                    <Check className="h-3.5 w-3.5" />
+                                  )}
+                                  <span>{item.read_at ? 'Seen' : 'Sent'}</span>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </motion.div>
                     );
                   })}
+                  <div ref={(el) => el?.scrollIntoView({ behavior: 'smooth' })} />
                 </div>
+
+                {/* Input Area */}
                 {!canUseStudentChat ? (
                   <div className="border-border border-t p-4">
-                    <div className="bg-muted/20 rounded-xl border border-dashed p-4 text-center">
-                      <LockKeyhole className="text-primary mx-auto mb-2 h-5 w-5" />
-                      <p className="font-semibold">Messaging is a Pro or Elite feature</p>
-                      <p className="text-muted-foreground mt-1 text-xs">
-                        Free users can send and accept requests. Upgrade to Pro to unlock the actual chat.
+                    <div className="rounded-xl border border-dashed border-primary/20 bg-primary/5 p-5 text-center">
+                      <LockKeyhole className="text-primary mx-auto mb-3 h-6 w-6" />
+                      <p className="font-semibold text-foreground">Messaging is a Pro or Elite feature</p>
+                      <p className="text-muted-foreground/80 mt-1 text-xs">
+                        Free users can send and accept requests. Upgrade to unlock real-time chat.
                       </p>
-                      <Button asChild variant="gradient" size="sm" className="mt-3">
-                        <Link href="/subscription">Pro to unlock chat</Link>
+                      <Button asChild variant="gradient" size="sm" className="mt-4 shadow-md">
+                        <Link href="/subscription">Unlock Chat</Link>
                       </Button>
                     </div>
                   </div>
@@ -501,24 +590,29 @@ export function StudentChatClient() {
                     </div>
                   </div>
                 ) : (
-                  <div className="border-border bg-background/95 flex flex-col gap-1.5 border-t p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:p-4">
+                  <div className="border-border bg-background/95 flex flex-col gap-2 border-t p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:p-4">
                     {!isOnline && (
-                      <p className="text-muted-foreground text-xs">
-                        Internet nahi hai — purani messages dikh rahi hain, naya bhejne ke liye connect karo.
-                      </p>
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="flex items-center gap-2 rounded-lg border border-amber-200/50 bg-amber-50/80 px-3 py-1.5 text-xs text-amber-700 dark:border-amber-800/50 dark:bg-amber-950/50 dark:text-amber-300"
+                      >
+                        <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500"></div>
+                        Offline — messages queued locally
+                      </motion.div>
                     )}
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-2">
                       <EmojiPickerButton onSelect={(emoji) => setMessage((current) => current + emoji)} disabled={!isOnline} />
                       <ChatAttachmentButton onSelect={(file) => sendMessage(file)} disabled={!isOnline || sending} />
                       <Input
                         value={message}
                         onChange={(event) => setMessage(event.target.value)}
-                        placeholder={isOnline ? 'Type your message...' : 'Internet chahiye...'}
+                        placeholder={isOnline ? 'Type your message...' : 'Connect to send...'}
                         disabled={!isOnline}
                         onKeyDown={(event) => {
                           if (event.key === 'Enter') sendMessage();
                         }}
-                        className="min-w-0"
+                        className="flex-1 min-w-0 h-10"
                       />
                       <Button
                         variant="default"
@@ -527,6 +621,7 @@ export function StudentChatClient() {
                         loading={sending}
                         disabled={!isOnline}
                         aria-label="Send message"
+                        className="h-10 w-10"
                       >
                         <Send className="h-4 w-4" />
                       </Button>

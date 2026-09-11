@@ -56,15 +56,23 @@ export function AttendanceRegister({
   records,
   date,
   canManage,
+  editableSectionIds,
 }: {
   sections: any[];
   enrollments: Enrollment[];
   records: AttendanceRecord[];
   date: string;
   canManage: boolean;
+  /** null = every section this user canManage is editable (owner/admin/staff). An array scopes
+   * editing to those section ids only — everything else renders read-only (view). Used for the
+   * teacher-portal split: a teacher sees every section's attendance but can only mark the section
+   * they're the incharge/homeroom teacher of. */
+  editableSectionIds?: string[] | null;
 }) {
   const [sectionId, setSectionId] = useState(String(sections[0]?.id || ''));
   const [attendanceDate, setAttendanceDate] = useState(date);
+  const canEditThisSection =
+    canManage && (editableSectionIds == null || editableSectionIds.includes(sectionId));
   const initial = useMemo(
     () => Object.fromEntries(records.map((record) => [record.student_id, record.status])),
     [records]
@@ -115,6 +123,12 @@ export function AttendanceRegister({
 
       <PersonSearchInput value={query} onChange={setQuery} placeholder="Search this section by name or roll no..." />
 
+      {canManage && !canEditThisSection && (
+        <p className="rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+          View only — you can mark attendance for the class you are the incharge teacher of.
+        </p>
+      )}
+
       <div className="border-border overflow-hidden rounded-lg border">
         <div className="bg-muted/50 grid grid-cols-[minmax(150px,1fr)_150px] gap-2 px-3 py-2 text-xs font-semibold">
           <span>Student</span>
@@ -138,7 +152,7 @@ export function AttendanceRegister({
                       key={status.value}
                       type="button"
                       title={status.title}
-                      disabled={!canManage}
+                      disabled={!canEditThisSection}
                       onClick={() => setAnswers((current) => ({ ...current, [student.student_id]: status.value }))}
                       className={`h-8 w-8 rounded-md border text-xs font-bold transition ${
                         (answers[student.student_id] || 'present') === status.value
@@ -162,7 +176,7 @@ export function AttendanceRegister({
         </div>
       </div>
 
-      {canManage && students.length > 0 && (
+      {canEditThisSection && students.length > 0 && (
         <form
           action={action}
           // Offline-first (Phase 1b): a form action is a network request under the hood, so it

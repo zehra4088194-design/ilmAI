@@ -30,7 +30,6 @@ const ACCESS_LABELS: Array<[keyof PlatformSettings['subscriptionPlans']['FREE'][
 ];
 
 const LIMIT_LABELS: Array<[keyof PlatformSettings['subscriptionPlans']['FREE']['limits'], string]> = [
-  ['aiLifetimeDemoCredits', 'Lifetime AI demos'],
   ['aiCreditsWeekly', 'Shared AI/week (Free)'],
   ['aiCreditsDaily', 'Shared AI/day'],
   ['aiCreditsMonthly', 'Shared AI/month'],

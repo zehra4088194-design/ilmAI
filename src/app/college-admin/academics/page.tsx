@@ -16,6 +16,18 @@ export default async function CollegeAcademicsPage() {
   if (!context) redirect('/college-admin');
   const data = await getCollegeAcademics(supabase, context);
   const canManage = hasCollegePermission(context, 'academics.manage');
+  // Teacher portal split — mirrors school's academics page exactly, scoped to advisor_id.
+  const isTeacherRole = context.membership.member_role === 'teacher';
+  const inchargeSectionIds = isTeacherRole
+    ? data.sections.filter((section: any) => section.advisor_id === context.userId).map((section: any) => section.id)
+    : null;
+  const workSections = inchargeSectionIds
+    ? data.sections.filter((section: any) => inchargeSectionIds.includes(section.id))
+    : data.sections;
+  const lessonPlanOfferings = inchargeSectionIds
+    ? data.offerings.filter((offering: any) => inchargeSectionIds.includes(offering.section_id))
+    : data.offerings;
+  const teacherHasNoIncharge = isTeacherRole && inchargeSectionIds!.length === 0;
 
   return (
     <div className="space-y-6">
@@ -28,14 +40,24 @@ export default async function CollegeAcademicsPage() {
           <Card>
             <CardHeader><CardTitle className="text-base">Assign work</CardTitle></CardHeader>
             <CardContent>
-              <CollegeActionForm action={createCollegeAssignment} submitLabel="Assign">
-                <select name="section_id" className={selectClass} required><option value="">Section</option>{data.sections.map((item: any) => <option key={item.id} value={item.id}>{item.college_semesters?.name} - {item.name}</option>)}</select>
-                <select name="course_offering_id" className={selectClass}><option value="">Course</option>{data.offerings.map((item: any) => <option key={item.id} value={item.id}>{item.course_name}</option>)}</select>
-                <Input name="title" placeholder="Assignment title" required />
-                <Textarea name="instructions" placeholder="Instructions" />
-                <Input name="due_at" type="datetime-local" />
-                <Input name="attachment_url" placeholder="Attachment URL" />
-              </CollegeActionForm>
+              {teacherHasNoIncharge ? (
+                <p className="text-muted-foreground text-xs">
+                  You&apos;re not the advisor (incharge) teacher of any section yet — ask an admin to set you as
+                  advisor to assign work here.
+                </p>
+              ) : (
+                <CollegeActionForm action={createCollegeAssignment} submitLabel="Assign">
+                  <select name="section_id" className={selectClass} required><option value="">Section</option>{workSections.map((item: any) => <option key={item.id} value={item.id}>{item.college_semesters?.name} - {item.name}</option>)}</select>
+                  <select name="course_offering_id" className={selectClass}><option value="">Course</option>{lessonPlanOfferings.map((item: any) => <option key={item.id} value={item.id}>{item.course_name}</option>)}</select>
+                  <Input name="title" placeholder="Assignment title" required />
+                  <Textarea name="instructions" placeholder="Instructions" />
+                  <Input name="due_at" type="datetime-local" />
+                  <Input name="attachment_url" placeholder="Attachment URL" />
+                </CollegeActionForm>
+              )}
+              {isTeacherRole && !teacherHasNoIncharge && (
+                <p className="text-muted-foreground mt-2 text-[11px]">Only your advised section is shown here — other sections are view-only below.</p>
+              )}
             </CardContent>
           </Card>
           <Card>
@@ -53,15 +75,22 @@ export default async function CollegeAcademicsPage() {
           <Card>
             <CardHeader><CardTitle className="text-base">Lesson plan</CardTitle></CardHeader>
             <CardContent>
-              <CollegeActionForm action={createCollegeLessonPlan} submitLabel="Add lesson plan">
-                <select name="course_offering_id" className={selectClass} required><option value="">Course</option>{data.offerings.map((item: any) => <option key={item.id} value={item.id}>{item.course_name}</option>)}</select>
-                <Input name="title" placeholder="Lesson title" required />
-                <Input name="lesson_date" type="date" required />
-                <Input name="objectives" placeholder="Learning objectives" />
-                <Textarea name="content" placeholder="Lesson content" />
-                <Input name="resources" placeholder="Resources, comma separated" />
-                <select name="status" className={selectClass}><option value="draft">Draft</option><option value="ready">Ready</option><option value="delivered">Delivered</option><option value="reviewed">Reviewed</option></select>
-              </CollegeActionForm>
+              {teacherHasNoIncharge ? (
+                <p className="text-muted-foreground text-xs">
+                  You&apos;re not the advisor of any section yet — lesson plans can only be added for your own
+                  section.
+                </p>
+              ) : (
+                <CollegeActionForm action={createCollegeLessonPlan} submitLabel="Add lesson plan">
+                  <select name="course_offering_id" className={selectClass} required><option value="">Course</option>{lessonPlanOfferings.map((item: any) => <option key={item.id} value={item.id}>{item.course_name}</option>)}</select>
+                  <Input name="title" placeholder="Lesson title" required />
+                  <Input name="lesson_date" type="date" required />
+                  <Input name="objectives" placeholder="Learning objectives" />
+                  <Textarea name="content" placeholder="Lesson content" />
+                  <Input name="resources" placeholder="Resources, comma separated" />
+                  <select name="status" className={selectClass}><option value="draft">Draft</option><option value="ready">Ready</option><option value="delivered">Delivered</option><option value="reviewed">Reviewed</option></select>
+                </CollegeActionForm>
+              )}
             </CardContent>
           </Card>
           <Card>

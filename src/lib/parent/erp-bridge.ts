@@ -24,6 +24,24 @@ export interface FamilyExamResult {
   publishedAt: string | null;
 }
 
+export interface FamilyInvoiceItem {
+  id: string;
+  voucherNumber: string;
+  dueDate: string | null;
+  totalAmount: number;
+  paidAmount: number;
+  balance: number;
+  status: string;
+}
+
+export interface FamilyAnnouncementItem {
+  id: string;
+  title: string;
+  body: string | null;
+  priority: string | null;
+  publishedAt: string | null;
+}
+
 export interface FamilyErpEntry {
   erpLinked: true;
   orgType: 'school' | 'college';
@@ -42,6 +60,10 @@ export interface FamilyErpEntry {
   // Only exams the school/college has actually published a report card for — a draft/unpublished
   // mark entry never reaches a parent, same rule the school's own report-card screen follows.
   examResults: FamilyExamResult[];
+  // Fee invoices for this student
+  feeInvoices: FamilyInvoiceItem[];
+  // Recent announcements for this section
+  announcements: FamilyAnnouncementItem[];
 }
 
 export type FamilyErpMap = Record<string, FamilyErpEntry | { erpLinked: false }>;
@@ -114,7 +136,10 @@ export async function getFamilyErpData(
       const reportCardTable = entry.orgType === 'school' ? 'school_report_cards' : 'college_report_cards';
       const examTable = entry.orgType === 'school' ? 'school_exams' : 'college_exams';
 
-      const [{ data: homeworkRows }, { data: attendanceRows }, { data: reportCardRows }] = await Promise.all([
+      const invoiceTable = entry.orgType === 'school' ? 'school_fee_invoices' : 'college_fee_invoices';
+      const announcementTable = entry.orgType === 'school' ? 'school_announcements' : 'college_announcements';
+
+      const [{ data: homeworkRows }, { data: attendanceRows }, { data: reportCardRows }, { data: invoiceRows }, { data: announcementRows }] = await Promise.all([
         (admin.from(homeworkTable) as any)
           .select('id, title, due_at')
           .eq('organization_id', entry.organizationId)
@@ -131,6 +156,21 @@ export async function getFamilyErpData(
           .select(`exam_id, total_marks, obtained_marks, percentage, grade, class_position, published_at, ${examTable}(name, term)`)
           .eq('organization_id', entry.organizationId)
           .eq('student_id', entry.studentId)
+          .not('published_at', 'is', null)
+          .order('published_at', { ascending: false })
+          .limit(5),
+        // Fee invoices for this student — show recent ones
+        (admin.from(invoiceTable) as any)
+          .select('id, voucher_number, due_date, total_amount, paid_amount, status')
+          .eq('organization_id', entry.organizationId)
+          .eq('student_id', entry.studentId)
+          .order('due_date', { ascending: false })
+          .limit(10),
+        // Recent announcements targeted at parents for this section
+        (admin.from(announcementTable) as any)
+          .select('id, title, body, priority, published_at')
+          .eq('organization_id', entry.organizationId)
+          .contains('audience_roles', ['parent'])
           .not('published_at', 'is', null)
           .order('published_at', { ascending: false })
           .limit(5),
@@ -171,12 +211,32 @@ export async function getFamilyErpData(
         };
       });
 
+      const feeInvoices: FamilyInvoiceItem[] = ((invoiceRows || []) as any[]).map((row) => ({
+        id: row.id,
+        voucherNumber: row.voucher_number,
+        dueDate: row.due_date,
+        totalAmount: Number(row.total_amount),
+        paidAmount: Number(row.paid_amount),
+        balance: Math.max(0, Number(row.total_amount) - Number(row.paid_amount)),
+        status: row.status,
+      }));
+
+      const announcements: FamilyAnnouncementItem[] = ((announcementRows || []) as any[]).map((row) => ({
+        id: row.id,
+        title: row.title,
+        body: row.body,
+        priority: row.priority,
+        publishedAt: row.published_at,
+      }));
+
       result[entry.studentId] = {
         erpLinked: true,
         orgType: entry.orgType,
         organizationId: entry.organizationId,
         homework: { upcoming: homework, overdueCount },
         examResults,
+        feeInvoices,
+        announcements,
         attendance: {
           ...attendance,
           percentage: attendance.totalMarked

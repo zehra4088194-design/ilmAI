@@ -25,9 +25,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const { id } = await params;
   const body = await req.json().catch(() => ({}));
-  const updates: Record<string, unknown> = {};
-  if (typeof body.is_demo_eligible === 'boolean') updates.is_demo_eligible = body.is_demo_eligible;
-  if (!Object.keys(updates).length) return NextResponse.json({ error: 'No valid update fields' }, { status: 400 });
+  // Demo eligibility has been removed — no editable fields remain
+  return NextResponse.json({ error: 'No valid update fields' }, { status: 400 });
 
   const adminClient = createServiceClient();
   const { data, error } = await adminClient.from('questions').update(updates as any).eq('id', id).select('*').single();

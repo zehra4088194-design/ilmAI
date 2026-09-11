@@ -17,6 +17,20 @@ export default async function SchoolAcademicsPage() {
   if (!context) redirect('/school-admin');
   const data = await getSchoolAcademics(supabase, context);
   const canManage = hasSchoolPermission(context, 'academics.manage');
+  // Teacher portal split: a teacher can only assign homework / add lesson plans for the section
+  // they're the incharge (homeroom) teacher of — Timetable/Calendar stay org-wide admin actions,
+  // unchanged. Owner/admin/staff are never restricted (inchargeSectionIds stays unused for them).
+  const isTeacherRole = context.membership.member_role === 'teacher';
+  const inchargeSectionIds = isTeacherRole
+    ? data.sections.filter((section: any) => section.homeroom_teacher_id === context.userId).map((section: any) => section.id)
+    : null;
+  const homeworkSections = inchargeSectionIds
+    ? data.sections.filter((section: any) => inchargeSectionIds.includes(section.id))
+    : data.sections;
+  const lessonPlanOfferings = inchargeSectionIds
+    ? data.offerings.filter((offering: any) => inchargeSectionIds.includes(offering.section_id))
+    : data.offerings;
+  const teacherHasNoIncharge = isTeacherRole && inchargeSectionIds!.length === 0;
 
   return (
     <div className="space-y-6">
@@ -26,14 +40,24 @@ export default async function SchoolAcademicsPage() {
           <Card>
             <CardHeader><CardTitle className="text-base">Assign homework</CardTitle></CardHeader>
             <CardContent>
-              <SchoolActionForm action={createHomework} submitLabel="Assign homework">
-                <select name="section_id" className={selectClass} required><option value="">Section</option>{data.sections.map((item: any) => <option key={item.id} value={item.id}>{item.school_classes?.name} - {item.name}</option>)}</select>
-                <select name="subject_offering_id" className={selectClass}><option value="">Subject</option>{data.offerings.map((item: any) => <option key={item.id} value={item.id}>{item.subject_name}</option>)}</select>
-                <Input name="title" placeholder="Homework title" required />
-                <Textarea name="instructions" placeholder="Instructions" />
-                <Input name="due_at" type="datetime-local" />
-                <Input name="attachment_url" placeholder="Attachment URL" />
-              </SchoolActionForm>
+              {teacherHasNoIncharge ? (
+                <p className="text-muted-foreground text-xs">
+                  You&apos;re not the incharge teacher of any section yet — ask an admin to set you as the homeroom
+                  teacher of your class to assign homework here.
+                </p>
+              ) : (
+                <SchoolActionForm action={createHomework} submitLabel="Assign homework">
+                  <select name="section_id" className={selectClass} required><option value="">Section</option>{homeworkSections.map((item: any) => <option key={item.id} value={item.id}>{item.school_classes?.name} - {item.name}</option>)}</select>
+                  <select name="subject_offering_id" className={selectClass}><option value="">Subject</option>{lessonPlanOfferings.map((item: any) => <option key={item.id} value={item.id}>{item.subject_name}</option>)}</select>
+                  <Input name="title" placeholder="Homework title" required />
+                  <Textarea name="instructions" placeholder="Instructions" />
+                  <Input name="due_at" type="datetime-local" />
+                  <Input name="attachment_url" placeholder="Attachment URL" />
+                </SchoolActionForm>
+              )}
+              {isTeacherRole && !teacherHasNoIncharge && (
+                <p className="text-muted-foreground mt-2 text-[11px]">Only your incharge class is shown here — other classes are view-only below.</p>
+              )}
             </CardContent>
           </Card>
           <Card>
@@ -51,15 +75,22 @@ export default async function SchoolAcademicsPage() {
           <Card>
             <CardHeader><CardTitle className="text-base">Lesson plan</CardTitle></CardHeader>
             <CardContent>
-              <SchoolActionForm action={createLessonPlan} submitLabel="Add lesson plan">
-                <select name="subject_offering_id" className={selectClass} required><option value="">Subject</option>{data.offerings.map((item: any) => <option key={item.id} value={item.id}>{item.subject_name}</option>)}</select>
-                <Input name="title" placeholder="Lesson title" required />
-                <Input name="lesson_date" type="date" required />
-                <Input name="objectives" placeholder="Learning objectives" />
-                <Textarea name="content" placeholder="Lesson content" />
-                <Input name="resources" placeholder="Resources, comma separated" />
-                <select name="status" className={selectClass}><option value="draft">Draft</option><option value="ready">Ready</option><option value="delivered">Delivered</option><option value="reviewed">Reviewed</option></select>
-              </SchoolActionForm>
+              {teacherHasNoIncharge ? (
+                <p className="text-muted-foreground text-xs">
+                  You&apos;re not the incharge teacher of any section yet — lesson plans can only be added for your
+                  own class.
+                </p>
+              ) : (
+                <SchoolActionForm action={createLessonPlan} submitLabel="Add lesson plan">
+                  <select name="subject_offering_id" className={selectClass} required><option value="">Subject</option>{lessonPlanOfferings.map((item: any) => <option key={item.id} value={item.id}>{item.subject_name}</option>)}</select>
+                  <Input name="title" placeholder="Lesson title" required />
+                  <Input name="lesson_date" type="date" required />
+                  <Input name="objectives" placeholder="Learning objectives" />
+                  <Textarea name="content" placeholder="Lesson content" />
+                  <Input name="resources" placeholder="Resources, comma separated" />
+                  <select name="status" className={selectClass}><option value="draft">Draft</option><option value="ready">Ready</option><option value="delivered">Delivered</option><option value="reviewed">Reviewed</option></select>
+                </SchoolActionForm>
+              )}
             </CardContent>
           </Card>
           <Card>

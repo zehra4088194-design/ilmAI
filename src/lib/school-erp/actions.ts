@@ -87,6 +87,37 @@ function failure(error: unknown): SchoolActionState {
   return { success: false, message: error instanceof Error ? error.message : 'The update could not be completed.' };
 }
 
+// Teacher portal split: a teacher has academics.manage/attendance.manage org-wide (so they can
+// still *view* every class), but writes are scoped to the one section they're the homeroom/
+// incharge teacher of — owner/admin/staff/accountant are never restricted by this. Checked
+// server-side (not just hidden in the UI) since a direct POST would otherwise bypass a client-only
+// gate. See docs — this is the owner's explicit "un k liye ... us class ka jis k wo incharge hen,
+// baaki classes ko dekh sken bs" requirement.
+async function assertTeacherOwnsSection(db: any, context: SchoolContext, sectionId: string) {
+  if (context.membership.member_role !== 'teacher') return;
+  const { data } = await db
+    .from('school_sections')
+    .select('homeroom_teacher_id')
+    .eq('id', sectionId)
+    .eq('organization_id', context.organization.id)
+    .maybeSingle();
+  if (!data || data.homeroom_teacher_id !== context.userId) {
+    throw new Error('You can only manage the class you are the incharge (homeroom) teacher of — other classes are view-only.');
+  }
+}
+
+async function assertTeacherOwnsSubjectOffering(db: any, context: SchoolContext, subjectOfferingId: string) {
+  if (context.membership.member_role !== 'teacher') return;
+  const { data: offering } = await db
+    .from('school_subject_offerings')
+    .select('section_id')
+    .eq('id', subjectOfferingId)
+    .eq('organization_id', context.organization.id)
+    .maybeSingle();
+  if (!offering) throw new Error('Subject offering not found.');
+  await assertTeacherOwnsSection(db, context, offering.section_id);
+}
+
 async function assertStudentLimit(db: any, organizationId: string) {
   const [{ data: plan }, { count }] = await Promise.all([
     db
@@ -336,7 +367,7 @@ export async function addSchoolMember(_state: SchoolActionState, formData: FormD
   try {
     const email = text(formData, 'email').toLowerCase();
     const role = text(formData, 'member_role');
-    const allowedRoles = ['admin', 'admissions', 'teacher', 'staff', 'accountant', 'parent', 'student'];
+    const allowedRoles = ['admin', 'coordinator', 'admissions', 'teacher', 'staff', 'accountant', 'parent', 'student'];
     if (!z.string().email().safeParse(email).success || !allowedRoles.includes(role)) {
       throw new Error('A valid registered email and role are required.');
     }
@@ -454,11 +485,35 @@ export async function enrollStudent(_state: SchoolActionState, formData: FormDat
     const studentEmail = text(formData, 'student_email').toLowerCase();
     const studentName = optionalText(formData, 'student_name');
     const sectionId = text(formData, 'section_id');
-    const academicYearId = text(formData, 'academic_year_id');
-    if (!studentEmail || !sectionId || !academicYearId) {
-      throw new Error('Student email, section, and academic year are required.');
+    if (!studentEmail || !sectionId) {
+      throw new Error('Student email and section are required.');
     }
     const { db, context } = await mutationContext('admissions.manage', 'enrollment', 'people');
+    // The quick-add card only asks for name/email/section — a hurried principal shouldn't also
+    // have to think about "which academic year" every time. Falls back to the org's current year,
+    // then its most recently-started year, if the picker isn't shown (dashboard quick-add). The
+    // full People-page form still lets an admin pick a specific year explicitly when needed.
+    let academicYearId = text(formData, 'academic_year_id');
+    if (!academicYearId) {
+      const { data: currentYear } = await db
+        .from('school_academic_years')
+        .select('id')
+        .eq('organization_id', context.organization.id)
+        .eq('is_current', true)
+        .maybeSingle();
+      academicYearId = currentYear?.id || '';
+      if (!academicYearId) {
+        const { data: latestYear } = await db
+          .from('school_academic_years')
+          .select('id')
+          .eq('organization_id', context.organization.id)
+          .order('starts_on', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        academicYearId = latestYear?.id || '';
+      }
+      if (!academicYearId) throw new Error('No academic year exists yet — add one from Settings first.');
+    }
     // A brand-new admission has never touched ilm AI before — used to require the student to
     // self-register FIRST with this exact email before a principal could enroll them at all,
     // which is backwards for how a school actually admits students. Same invite-or-find pattern
@@ -785,6 +840,7 @@ export async function saveAttendance(_state: SchoolActionState, formData: FormDa
     if (!sectionId || !attendanceDate || !entries.length)
       throw new Error('Section, date, and at least one attendance entry are required.');
     const { db, context, user } = await mutationContext('attendance.manage', 'attendance', 'attendance');
+    await assertTeacherOwnsSection(db, context, sectionId);
     const allowed = new Set(['present', 'absent', 'late', 'excused', 'leave']);
     const records = entries
       .filter((entry) => entry.studentId && allowed.has(entry.status))
@@ -1421,6 +1477,7 @@ export async function createHomework(_state: SchoolActionState, formData: FormDa
     const title = text(formData, 'title');
     if (!sectionId || !title) throw new Error('Section and title are required.');
     const { db, context, user } = await mutationContext('academics.manage', 'homework', 'academics');
+    await assertTeacherOwnsSection(db, context, sectionId);
     const { data, error } = await db
       .from('school_homework')
       .insert({
@@ -1455,6 +1512,7 @@ export async function createLessonPlan(_state: SchoolActionState, formData: Form
     }
     if (!['draft', 'ready', 'delivered', 'reviewed'].includes(status)) throw new Error('Invalid lesson status.');
     const { db, context, user } = await mutationContext('academics.manage', 'lesson-plan', 'academics');
+    await assertTeacherOwnsSubjectOffering(db, context, subjectOfferingId);
     const resources = text(formData, 'resources')
       .split(',')
       .map((item) => item.trim())

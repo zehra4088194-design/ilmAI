@@ -29,7 +29,7 @@
     },
     "register": {
       "title": "Account banayein",
-      "subtitle": "Free join karein, notes read karein aur limited AI demos try karein.",
+      "subtitle": "Free join karein, notes read karein.",
       "student": "Student",
       "parent": "Parent",
       "orEmail": "Ya email ke saath",
@@ -94,14 +94,5 @@
   "offline": {
     "title": "Downloads",
     "subtitle": "Saved resources offline parhein."
-  },
-  "demo": {
-    "title": "Free Demo Test Try Karein",
-    "subtitle": "5 real MCQs, signup ke baghair.",
-    "cta": "Free demo test try karein",
-    "signupCta": "Free signup",
-    "limitTitle": "Aaj ke free demos use ho gaye",
-    "limitMessage": "Free demos complete ho gaye; account bana kar progress save karein.",
-    "conversionTitle": "Pasand aaya? Free signup se practice aur progress tracking unlock karein."
   }
 }

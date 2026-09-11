@@ -398,14 +398,5 @@
   "analytics": {
     "title": "Analytics",
     "subtitle": "Role-specific learning insights."
-  },
-  "demo": {
-    "title": "Try a Free Demo Test",
-    "subtitle": "5 real MCQs, no signup needed.",
-    "cta": "Try a Free Demo Test - No Signup Needed",
-    "signupCta": "Sign up free",
-    "limitTitle": "Free demos used for today",
-    "limitMessage": "You've used your free demos for today - sign up free for unlimited practice.",
-    "conversionTitle": "Loved it? Sign up free to unlock unlimited practice, AI Tutor, and track your progress."
   }
 }

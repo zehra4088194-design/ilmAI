@@ -96,7 +96,12 @@ function SwipeableNotification({
 
   return (
     <div className="relative overflow-hidden border-b border-border last:border-0">
-      <div className="absolute inset-y-0 right-0 flex w-24 items-center justify-center bg-red-500 text-white">
+      {/* Swipe-to-dismiss reveal — mobile only (matches "Swipe left to dismiss" below, also
+          sm:hidden). Desktop already has the explicit Trash2 button, and several of this app's
+          themes give .bg-card some transparency, which let this solid red block show through the
+          row at rest instead of staying hidden until an actual swipe — sm:hidden is enough since
+          the drag gesture below is unlikely on a desktop mouse anyway. */}
+      <div className="absolute inset-y-0 right-0 flex w-24 items-center justify-center bg-red-500 text-white sm:hidden">
         <Trash2 className="h-5 w-5" />
       </div>
       <motion.div

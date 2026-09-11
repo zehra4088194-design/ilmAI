@@ -19,6 +19,13 @@ export default async function CollegeAttendancePage({ searchParams }: { searchPa
   const canManage = hasCollegePermission(context, 'attendance.manage');
   const canManageStaff = ['owner', 'admin'].includes(context.membership.member_role);
   const biometricDevices = canManageStaff ? await listBiometricDevices('college', context.organization.id) : [];
+  const isTeacherRole = context.membership.member_role === 'teacher';
+  const editableSectionIds = isTeacherRole
+    ? data.sections.filter((section: any) => section.advisor_id === context.userId).map((section: any) => section.id)
+    : null;
+  const scanSections = isTeacherRole
+    ? data.sections.filter((section: any) => editableSectionIds!.includes(section.id))
+    : data.sections;
 
   return (
     <div className="space-y-6">
@@ -30,14 +37,14 @@ export default async function CollegeAttendancePage({ searchParams }: { searchPa
         <Card>
           <CardHeader><CardTitle className="text-base">Scan a handwritten register</CardTitle></CardHeader>
           <CardContent>
-            <CollegeAttendanceScanUploader sections={data.sections} date={date} />
+            <CollegeAttendanceScanUploader sections={scanSections} date={date} />
           </CardContent>
         </Card>
       )}
       <Card>
         <CardHeader><CardTitle className="text-base">Daily register</CardTitle></CardHeader>
         <CardContent>
-          <CollegeAttendanceRegister {...data} canManage={canManage} />
+          <CollegeAttendanceRegister {...data} canManage={canManage} editableSectionIds={editableSectionIds} />
         </CardContent>
       </Card>
       {canManageStaff && (

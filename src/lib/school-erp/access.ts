@@ -55,6 +55,28 @@ const ROLE_PERMISSIONS: Record<SchoolRole, SchoolPermission[]> = {
     'reports.read',
     'audit.read',
   ],
+  // A principal-appointed assistant role: helps run people/admissions/attendance/exams/academics/
+  // communication/PTM day to day, without organization-settings or financial (fees/payroll) access
+  // — those stay owner/admin-only. The owner's explicit "coordinators ya aise hi or bhi boht saare"
+  // ask.
+  coordinator: [
+    'dashboard.read',
+    'people.read',
+    'people.manage',
+    'admissions.read',
+    'admissions.manage',
+    'attendance.read',
+    'attendance.manage',
+    'exams.read',
+    'exams.manage',
+    'academics.read',
+    'academics.manage',
+    'communication.read',
+    'communication.manage',
+    'ptm.read',
+    'ptm.manage',
+    'reports.read',
+  ],
   admissions: [
     'dashboard.read',
     'people.read',
@@ -121,6 +143,7 @@ const ROLE_PERMISSIONS: Record<SchoolRole, SchoolPermission[]> = {
 const ROLE_PRIORITY: SchoolRole[] = [
   'owner',
   'admin',
+  'coordinator',
   'admissions',
   'accountant',
   'teacher',

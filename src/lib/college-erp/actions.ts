@@ -84,6 +84,35 @@ function failure(error: unknown): CollegeActionState {
   return { success: false, message: error instanceof Error ? error.message : 'The update could not be completed.' };
 }
 
+// Teacher portal split — mirrors src/lib/school-erp/actions.ts's assertTeacherOwnsSection/
+// assertTeacherOwnsSubjectOffering exactly, scoped to college_sections.advisor_id instead of
+// school_sections.homeroom_teacher_id (college's "class incharge" column — see
+// docs/SCHOOL_COLLEGE_SEPARATION_TODO.md's school->college column mapping).
+async function assertTeacherOwnsSection(db: any, context: CollegeContext, sectionId: string) {
+  if (context.membership.member_role !== 'teacher') return;
+  const { data } = await db
+    .from('college_sections')
+    .select('advisor_id')
+    .eq('id', sectionId)
+    .eq('organization_id', context.organization.id)
+    .maybeSingle();
+  if (!data || data.advisor_id !== context.userId) {
+    throw new Error('You can only manage the section you are the advisor (incharge) teacher of — other sections are view-only.');
+  }
+}
+
+async function assertTeacherOwnsCourseOffering(db: any, context: CollegeContext, courseOfferingId: string) {
+  if (context.membership.member_role !== 'teacher') return;
+  const { data: offering } = await db
+    .from('college_course_offerings')
+    .select('section_id')
+    .eq('id', courseOfferingId)
+    .eq('organization_id', context.organization.id)
+    .maybeSingle();
+  if (!offering) throw new Error('Course offering not found.');
+  await assertTeacherOwnsSection(db, context, offering.section_id);
+}
+
 async function assertStudentLimit(db: any, organizationId: string) {
   const [{ data: plan }, { count }] = await Promise.all([
     db.from('college_organization_plan_settings').select('max_students').eq('organization_id', organizationId).maybeSingle(),
@@ -347,7 +376,7 @@ export async function addCollegeMember(_state: CollegeActionState, formData: For
   try {
     const email = text(formData, 'email').toLowerCase();
     const role = text(formData, 'member_role');
-    const allowedRoles = ['admin', 'admissions', 'teacher', 'staff', 'accountant', 'parent', 'student'];
+    const allowedRoles = ['admin', 'coordinator', 'admissions', 'teacher', 'staff', 'accountant', 'parent', 'student'];
     if (!z.string().email().safeParse(email).success || !allowedRoles.includes(role)) {
       throw new Error('A valid registered email and role are required.');
     }
@@ -633,6 +662,7 @@ export async function saveCollegeAttendance(_state: CollegeActionState, formData
     if (!sectionId || !attendanceDate || !entries.length)
       throw new Error('Section, date, and at least one attendance entry are required.');
     const { db, context, user } = await mutationContext('attendance.manage', 'attendance', 'attendance');
+    await assertTeacherOwnsSection(db, context, sectionId);
     const allowed = new Set(['present', 'absent', 'late', 'excused', 'leave']);
     const records = entries
       .filter((entry) => entry.studentId && allowed.has(entry.status))
@@ -1209,6 +1239,7 @@ export async function createCollegeAssignment(_state: CollegeActionState, formDa
     const title = text(formData, 'title');
     if (!sectionId || !title) throw new Error('Section and title are required.');
     const { db, context, user } = await mutationContext('academics.manage', 'assignment', 'academics');
+    await assertTeacherOwnsSection(db, context, sectionId);
     const { data, error } = await db
       .from('college_assignments')
       .insert({
@@ -1243,6 +1274,7 @@ export async function createCollegeLessonPlan(_state: CollegeActionState, formDa
     }
     if (!['draft', 'ready', 'delivered', 'reviewed'].includes(status)) throw new Error('Invalid lesson status.');
     const { db, context, user } = await mutationContext('academics.manage', 'lesson-plan', 'academics');
+    await assertTeacherOwnsCourseOffering(db, context, courseOfferingId);
     const resources = text(formData, 'resources').split(',').map((item) => item.trim()).filter(Boolean).slice(0, 20);
     const { data, error } = await db
       .from('college_lesson_plans')

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Building2, CalendarCheck2, CalendarDays, GraduationCap, ReceiptText } from 'lucide-react';
+import { Building2, CalendarCheck2, CalendarDays, GraduationCap, PhoneCall, ReceiptText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { SchoolMetric } from '@/components/features/school-erp/SchoolMetric';
 import { CollegeActionForm } from '@/components/features/college-erp/CollegeActionForm';
 import { ParentTeacherMessenger } from '@/components/features/school-erp/ParentTeacherMessenger';
+import { CallDirectoryList } from '@/components/features/calling/CallDirectoryList';
+import { getCallDirectory, getCallingSettings } from '@/lib/calling/queries';
 import { createCollegeContactMessage, createCollegeLeaveRequest } from '@/lib/college-erp/actions';
 import { requireCollegeContext } from '@/lib/college-erp/access';
 import { getCollegeParentMessagingContacts, getCollegePortalData, getCollegePrincipalContacts } from '@/lib/college-erp/queries';
@@ -33,6 +35,10 @@ export default async function CollegePortalPage() {
   const present = data.attendance.filter((item: any) => item.status === 'present').length;
   const attendanceRate = present + absent ? Math.round((present / (present + absent)) * 100) : 0;
   const outstanding = data.invoices.reduce((sum: number, item: any) => sum + Math.max(0, Number(item.total_amount || 0) - Number(item.paid_amount || 0)), 0);
+  const callingSettings = await getCallingSettings(supabase, 'college', context.organization.id);
+  const callDirectory = callingSettings.enabled
+    ? await getCallDirectory(supabase, 'college', context.organization.id, user.id)
+    : [];
 
   return (
     <main className="bg-background min-h-screen">
@@ -72,6 +78,21 @@ export default async function CollegePortalPage() {
           <div className="flex flex-wrap gap-2">
             {data.students.map((student: any) => (<Badge key={student.id} variant="secondary">{student.full_name}</Badge>))}
           </div>
+        )}
+        {callingSettings.enabled && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-500">
+                  <PhoneCall className="h-4 w-4" />
+                </span>
+                Call directory
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CallDirectoryList institutionType="college" organizationId={context.organization.id} entries={callDirectory} />
+            </CardContent>
+          </Card>
         )}
         <div className="grid gap-5 xl:grid-cols-2">
           <Card>

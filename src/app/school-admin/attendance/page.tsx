@@ -28,6 +28,15 @@ export default async function SchoolAttendancePage({
   const canManageStaff = ['owner', 'admin'].includes(context.membership.member_role);
   const biometricDevices = canManageStaff ? await listBiometricDevices('school', context.organization.id) : [];
   const substituteSuggestions = canManageStaff ? await getSubstituteSuggestions(supabase, context, date) : [];
+  // Teacher portal split: a teacher sees every section (view) but can only mark attendance for the
+  // one they're the incharge/homeroom teacher of. null (owner/admin/staff) = unrestricted.
+  const isTeacherRole = context.membership.member_role === 'teacher';
+  const editableSectionIds = isTeacherRole
+    ? data.sections.filter((section: any) => section.homeroom_teacher_id === context.userId).map((section: any) => section.id)
+    : null;
+  const scanSections = isTeacherRole
+    ? data.sections.filter((section: any) => editableSectionIds!.includes(section.id))
+    : data.sections;
 
   return (
     <div className="space-y-6">
@@ -36,14 +45,14 @@ export default async function SchoolAttendancePage({
         <Card>
           <CardHeader><CardTitle className="text-base">Scan a handwritten register</CardTitle></CardHeader>
           <CardContent>
-            <AttendanceScanUploader sections={data.sections} date={date} />
+            <AttendanceScanUploader sections={scanSections} date={date} />
           </CardContent>
         </Card>
       )}
       <Card>
         <CardHeader><CardTitle className="text-base">Daily register</CardTitle></CardHeader>
         <CardContent>
-          <AttendanceRegister {...data} canManage={canManage} />
+          <AttendanceRegister {...data} canManage={canManage} editableSectionIds={editableSectionIds} />
         </CardContent>
       </Card>
       {canManage && data.absentees.length > 0 && (

@@ -5,6 +5,8 @@ import { PersonalizationModal } from '@/components/features/onboarding/Personali
 import { PublicResourceShell } from '@/components/layout/PublicResourceShell';
 import { resolveInstitutionBranding } from '@/lib/branding/resolveInstitutionBranding';
 import { resolveMembershipRedirect } from '@/lib/auth/resolveMembershipRedirect';
+import { getCallIdentity } from '@/lib/calling/identity';
+import { CallProvider } from '@/components/features/calling/CallProvider';
 import { headers } from 'next/headers';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -71,9 +73,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
   }
 
   const branding = await resolveInstitutionBranding(supabase, user.id);
+  // Only resolved when the stray-URL redirect above didn't already fire (i.e. this is a genuine
+  // /school, /college, or plain consumer page) — school/college membership, if any, for the
+  // voice-calling feature. Null for a plain consumer account, which CallProvider treats as
+  // "render nothing".
+  const callIdentity = await getCallIdentity(supabase, user.id);
 
   return (
-    <>
+    <CallProvider identity={callIdentity}>
       <DashboardShell branding={branding}>{children}</DashboardShell>
       {shouldShowPersonalization && personalizationGradeLevel && (
         <PersonalizationModal
@@ -81,6 +88,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
           subjects={personalizationSubjects}
         />
       )}
-    </>
+    </CallProvider>
   );
 }

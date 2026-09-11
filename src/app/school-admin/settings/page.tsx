@@ -15,10 +15,14 @@ import {
 } from '@/lib/school-erp/actions';
 import { hasSchoolPermission, requireSchoolContext } from '@/lib/school-erp/access';
 import { getSchoolAcademicSetup } from '@/lib/school-erp/queries';
+import { CallingSettingsForm } from '@/components/features/calling/CallingSettingsForm';
+import { updateSchoolCallingSettings } from '@/lib/calling/actions';
+import { getCallingSettings } from '@/lib/calling/queries';
 import { InstitutionPaymentCheckout } from '@/components/features/institution-payments/InstitutionPaymentCheckout';
-import { getActiveStudentCount } from '@/lib/institution-payments/actions';
+import { getActiveStudentCount, getActiveTeacherCount } from '@/lib/institution-payments/actions';
 import { getPlatformSettings } from '@/lib/platform-settings/server';
 import { resolveInstitutionPricing } from '@/lib/platform-settings/shared';
+import { TierLimitsDashboard } from '@/components/features/school-erp/TierLimitsDashboard';
 
 const selectClass = 'border-input bg-background h-10 w-full rounded-lg border px-3 text-sm';
 
@@ -32,12 +36,14 @@ export default async function SchoolSettingsPage() {
     .select('billing_status, plan_tier_id, renews_on')
     .eq('organization_id', context.organization.id)
     .maybeSingle();
-  const [platformSettings, studentCount] = await Promise.all([
+  const [platformSettings, studentCount, teacherCount] = await Promise.all([
     getPlatformSettings(),
     getActiveStudentCount('school', context.organization.id),
+    getActiveTeacherCount('school', context.organization.id),
   ]);
   const monthlyPricing = resolveInstitutionPricing(platformSettings, 'school', 'monthly', studentCount);
   const annualPricing = resolveInstitutionPricing(platformSettings, 'school', 'annual', studentCount);
+  const callingSettings = await getCallingSettings(supabase, 'school', context.organization.id);
 
   return (
     <div className="space-y-6">
@@ -127,6 +133,31 @@ export default async function SchoolSettingsPage() {
             perStudentPkr={platformSettings.institutionPricing.perStudentPkr}
             usdToPkr={platformSettings.exchangeRate.usdToPkr}
           />
+        </CardContent>
+      </Card>
+      <TierLimitsDashboard
+        organizationId={context.organization.id}
+        currentStudents={studentCount}
+        maxStudents={Number(planSettings?.max_students || 200)}
+        currentTeachers={teacherCount}
+        maxTeachers={Number(planSettings?.max_teachers || 25)}
+        billingStatus={planSettings?.billing_status || 'trial'}
+        monthlyPricePkr={Number(planSettings?.monthly_price_pkr || 0)}
+      />
+      <Card>
+            volumeDiscountMinStudents={platformSettings.institutionPricing.volumeDiscountMinStudents}
+            volumeDiscountPercent={platformSettings.institutionPricing.volumeDiscountPercent}
+            perStudentPkr={platformSettings.institutionPricing.perStudentPkr}
+            usdToPkr={platformSettings.exchangeRate.usdToPkr}
+          />
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Voice calling</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <CallingSettingsForm action={updateSchoolCallingSettings} settings={callingSettings} />
         </CardContent>
       </Card>
       <div className="grid gap-5 lg:grid-cols-2">

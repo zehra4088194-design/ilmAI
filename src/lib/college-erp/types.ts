@@ -1,6 +1,6 @@
 import type { CollegeModuleKey } from './modules';
 
-export type CollegeRole = 'owner' | 'admin' | 'admissions' | 'teacher' | 'staff' | 'accountant' | 'parent' | 'student';
+export type CollegeRole = 'owner' | 'admin' | 'coordinator' | 'admissions' | 'teacher' | 'staff' | 'accountant' | 'parent' | 'student';
 
 export type CollegePermission =
   | 'dashboard.read'

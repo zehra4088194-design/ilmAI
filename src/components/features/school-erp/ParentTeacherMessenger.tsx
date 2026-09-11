@@ -62,8 +62,11 @@ export function ParentTeacherMessenger({
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
-      <div className="space-y-1">
+    // Contact list on the right, thread on the left — matches Study Buddies' layout (see
+    // StudentChatClient). `order` keeps DOM/tab order as "list, then thread" and only flips the
+    // visual position at the lg breakpoint where the grid goes two-column.
+    <div className="grid gap-4 lg:grid-cols-[1fr_220px]">
+      <div className="space-y-1 lg:order-2">
         {contacts.map((contact) => (
           <button
             key={contact.profileId}
@@ -88,7 +91,7 @@ export function ParentTeacherMessenger({
           </button>
         ))}
       </div>
-      <div>
+      <div className="lg:order-1">
         {!selected && (
           <p className="text-muted-foreground flex h-64 items-center justify-center gap-2 text-sm">
             <MessageCircle className="h-4 w-4" /> Select someone to start messaging.

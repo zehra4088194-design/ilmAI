@@ -1,6 +1,6 @@
 import type { SchoolModuleKey } from './modules';
 
-export type SchoolRole = 'owner' | 'admin' | 'admissions' | 'teacher' | 'staff' | 'accountant' | 'parent' | 'student';
+export type SchoolRole = 'owner' | 'admin' | 'coordinator' | 'admissions' | 'teacher' | 'staff' | 'accountant' | 'parent' | 'student';
 
 export type SchoolPermission =
   | 'dashboard.read'

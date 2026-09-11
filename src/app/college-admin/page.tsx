@@ -1,10 +1,12 @@
 import Link from 'next/link';
-import { CalendarDays, CircleDollarSign, ClipboardList, GraduationCap, Inbox, UserRoundCheck, Video, FileText, Users } from 'lucide-react';
+import { CalendarDays, CircleDollarSign, ClipboardList, GraduationCap, Inbox, PhoneCall, UserRoundCheck, Video, FileText, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SchoolMetric } from '@/components/features/school-erp/SchoolMetric';
 import { SchoolPageHeader } from '@/components/features/school-erp/SchoolPageHeader';
 import { AbsenceAlertWidget } from '@/components/features/school-erp/AbsenceAlertWidget';
+import { CallDirectoryList } from '@/components/features/calling/CallDirectoryList';
+import { getCallDirectory, getCallingSettings } from '@/lib/calling/queries';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { getCollegeAdminContext } from '@/lib/college/access';
 import { getPendingJoinRequests, getCollegeLectures, getCollegeResources, getApprovedStudents } from '@/lib/college/queries';
@@ -20,6 +22,10 @@ export default async function CollegeAdminHomePage() {
       getCollegeOverview(supabase, newContext),
       getCollegeTodayAbsences(supabase, newContext),
     ]);
+    const callingSettings = await getCallingSettings(supabase, 'college', newContext.organization.id);
+    const callDirectory = callingSettings.enabled
+      ? await getCallDirectory(supabase, 'college', newContext.organization.id, newContext.userId)
+      : [];
     // AbsenceAlertWidget's props (studentName/className/guardianPhone/guardianName/id/status) are
     // identical in shape to CollegeAbsenceAlertRow (sectionName vs className is the only rename) —
     // reused directly rather than building a college-specific twin.
@@ -40,10 +46,25 @@ export default async function CollegeAdminHomePage() {
           description={`${newContext.organization.name} operations for the current academic cycle.`}
           action={
             <Badge variant="outline" className="capitalize">
-              {newContext.membership.member_role}
+              {newContext.membership.designation || newContext.membership.member_role}
             </Badge>
           }
         />
+        {callingSettings.enabled && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-500">
+                  <PhoneCall className="h-4 w-4" />
+                </span>
+                Call directory
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CallDirectoryList institutionType="college" organizationId={newContext.organization.id} entries={callDirectory} />
+            </CardContent>
+          </Card>
+        )}
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           <SchoolMetric label="Active students" value={overview.counts.students} icon={GraduationCap} />
           <SchoolMetric label="Staff members" value={overview.counts.staff} icon={UserRoundCheck} tone="bg-sky-500/10 text-sky-600" />

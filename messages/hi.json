@@ -398,14 +398,5 @@
   "analytics": {
     "title": "Analytics",
     "subtitle": "Role-specific learning insights."
-  },
-  "demo": {
-    "title": "Free Demo Test try karein",
-    "subtitle": "5 real MCQs, signup ki zaroorat nahi.",
-    "cta": "Try a Free Demo Test - No Signup Needed",
-    "signupCta": "Free signup karein",
-    "limitTitle": "Aaj ke free demos use ho gaye",
-    "limitMessage": "Aaj ke free demos use ho gaye - unlimited practice ke liye free signup karein.",
-    "conversionTitle": "Pasand aaya? Free signup karein aur unlimited practice, AI Tutor, aur progress tracking unlock karein."
   }
 }

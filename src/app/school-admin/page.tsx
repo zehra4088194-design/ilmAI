@@ -1,4 +1,4 @@
-import { CalendarDays, CircleDollarSign, ClipboardList, GraduationCap, Sparkles, UserPlus, UserRoundCheck, Users2 } from 'lucide-react';
+import { CalendarDays, CircleDollarSign, ClipboardList, GraduationCap, PhoneCall, Sparkles, UserPlus, UserRoundCheck, Users2 } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,8 @@ import { PercentRingCard } from '@/components/features/school-erp/PercentRingCar
 import { RecentFeePaymentsList, type RecentFeePayment } from '@/components/features/school-erp/RecentFeePaymentsList';
 import { ClassOverviewList, type ClassOverviewRow } from '@/components/features/school-erp/ClassOverviewList';
 import { ReportsQuickLinks } from '@/components/features/school-erp/ReportsQuickLinks';
+import { CallDirectoryList } from '@/components/features/calling/CallDirectoryList';
+import { getCallDirectory, getCallingSettings } from '@/lib/calling/queries';
 import { enrollStudent } from '@/lib/school-erp/actions';
 import { hasSchoolPermission, requireSchoolContext } from '@/lib/school-erp/access';
 import { getSchoolFees, getSchoolOverview, getSchoolPeople, getTodayAbsences } from '@/lib/school-erp/queries';
@@ -33,6 +35,10 @@ export default async function SchoolAdminPage() {
     canReadFees ? getSchoolFees(supabase, context) : Promise.resolve(null),
     canReadPeople ? getSchoolPeople(supabase, context) : Promise.resolve(null),
   ]);
+  const callingSettings = await getCallingSettings(supabase, 'school', context.organization.id);
+  const callDirectory = callingSettings.enabled
+    ? await getCallDirectory(supabase, 'school', context.organization.id, context.userId)
+    : [];
 
   const presentToday = Math.max(0, overview.counts.students - overview.counts.absentToday);
   const attendancePercent = overview.counts.students > 0 ? (presentToday / overview.counts.students) * 100 : 0;
@@ -94,10 +100,25 @@ export default async function SchoolAdminPage() {
         description={`${context.organization.name} operations for the current academic cycle.`}
         action={
           <Badge variant="outline" className="capitalize">
-            {context.membership.member_role}
+            {context.membership.designation || context.membership.member_role}
           </Badge>
         }
       />
+      {callingSettings.enabled && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-500">
+                <PhoneCall className="h-4 w-4" />
+              </span>
+              Call directory
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CallDirectoryList institutionType="school" organizationId={context.organization.id} entries={callDirectory} />
+          </CardContent>
+        </Card>
+      )}
       {canEnrollStudent && people && (
         <Card className="border-emerald-500/25 bg-emerald-500/5">
           <CardHeader>
@@ -112,18 +133,10 @@ export default async function SchoolAdminPage() {
             <SchoolActionForm
               action={enrollStudent}
               submitLabel="Add student"
-              className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+              className="grid gap-3 md:grid-cols-3"
             >
               <Input name="student_name" placeholder="Student's full name" />
               <Input name="student_email" type="email" placeholder="Their email address" required />
-              <select name="academic_year_id" className={selectClass} required>
-                <option value="">Academic year</option>
-                {people.years.map((item: any) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
               <select name="section_id" className={selectClass} required>
                 <option value="">Class / section</option>
                 {people.sections.map((item: any) => (
@@ -134,8 +147,9 @@ export default async function SchoolAdminPage() {
               </select>
             </SchoolActionForm>
             <p className="text-muted-foreground mt-3 text-xs">
-              New to ilm AI? An account is created automatically and they get an email to set a password.
-              Admission number is assigned automatically — see People for roll number and other details.
+              That&apos;s it — they get an email to set a password and complete the rest of their own profile
+              (grade, board, photo, etc). Academic year is picked automatically, and the admission number too —
+              see People if you need to set a roll number or other details later.
             </p>
           </CardContent>
         </Card>

@@ -380,13 +380,38 @@ export async function getR2Text(key: string, bucket?: string) {
   return object ? new TextDecoder().decode(object.body) : null;
 }
 
-export async function getR2SignedUrl(key: string, expiresIn = R2_SIGNED_URL_TTL_SECONDS, bucket?: string) {
+// `downloadFilename`, when given, tells B2/R2 to answer with Content-Disposition: attachment on
+// this specific signed URL (an S3-compatible presigned-GET feature — the disposition rides in the
+// signed query string itself, no proxying required) so opening the link downloads the file with
+// that name instead of navigating the tab to it. Left undefined keeps the previous plain/inline
+// behavior for every other existing caller.
+export async function getR2SignedUrl(
+  key: string,
+  expiresIn = R2_SIGNED_URL_TTL_SECONDS,
+  bucket?: string,
+  downloadFilename?: string
+) {
   const config = resolveConfig(bucket);
   if (!config) throw new Error('R2 is not configured.');
   if (!key || key.includes('..')) throw new Error('Invalid stored object key.');
-  return getSignedUrl(getClient(config), new GetObjectCommand({ Bucket: config.bucket, Key: key }), {
-    expiresIn,
-  });
+  return getSignedUrl(
+    getClient(config),
+    new GetObjectCommand({
+      Bucket: config.bucket,
+      Key: key,
+      ...(downloadFilename
+        ? { ResponseContentDisposition: `attachment; filename="${sanitizeDownloadFilename(downloadFilename)}"` }
+        : {}),
+    }),
+    { expiresIn }
+  );
+}
+
+// Strips characters that would break out of the quoted filename in a Content-Disposition header
+// (quotes, backslashes, CR/LF) — the name itself comes from a user's uploaded file, never trusted
+// verbatim into a header value.
+function sanitizeDownloadFilename(name: string) {
+  return name.replace(/["\\\r\n]/g, '').slice(0, 200) || 'download';
 }
 
 // A presigned PUT — the browser uploads the object bytes directly to B2/R2 over this URL, never

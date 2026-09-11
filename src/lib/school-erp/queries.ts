@@ -367,7 +367,7 @@ export async function getSchoolAttendance(supabase: SupabaseClient, context: Sch
     rows(
       db
         .from('school_sections')
-        .select('id, name, school_classes!school_sections_class_id_fkey(name)')
+        .select('id, name, homeroom_teacher_id, school_classes!school_sections_class_id_fkey(name)')
         .eq('organization_id', organizationId)
         .eq('is_active', true)
     ),
@@ -980,7 +980,7 @@ export async function getSchoolAcademics(supabase: SupabaseClient, context: Scho
     rows(
       db
         .from('school_sections')
-        .select('id, name, school_classes!school_sections_class_id_fkey(name)')
+        .select('id, name, homeroom_teacher_id, school_classes!school_sections_class_id_fkey(name)')
         .eq('organization_id', organizationId)
         .eq('is_active', true)
     ),
@@ -1468,6 +1468,47 @@ export async function getTeacherMessagingContacts(supabase: SupabaseClient, cont
   return Array.from(seen.values());
 }
 
+// Fetch principal/admin contacts for a teacher to message directly (teacher_principal relationship).
+export async function getPrincipalContacts(supabase: SupabaseClient, context: SchoolContext) {
+  const db = supabase as any;
+  const { data: principals } = await db
+    .from('school_memberships')
+    .select('profile_id, profiles!school_memberships_profile_id_fkey(id, full_name, avatar_url)')
+    .eq('organization_id', context.organization.id)
+    .eq('status', 'active')
+    .in('member_role', ['owner', 'admin']);
+
+  const seen = new Map<string, any>();
+  for (const link of principals || []) {
+    const profile = Array.isArray(link.profiles) ? link.profiles[0] : link.profiles;
+    if (!profile || seen.has(profile.id)) continue;
+    seen.set(profile.id, { profileId: profile.id, fullName: profile.full_name, avatarUrl: profile.avatar_url });
+  }
+  return Array.from(seen.values());
+}
+
+// Fetch active students in the same organization for peer-help conversations.
+// The RPC remains the authorization boundary; this query only populates the directory.
+export async function getStudentContacts(supabase: SupabaseClient, context: SchoolContext) {
+  const db = supabase as any;
+  const { data, error } = await db
+    .from('school_memberships')
+    .select('profile_id, profiles!school_memberships_profile_id_fkey(id, full_name, avatar_url)')
+    .eq('organization_id', context.organization.id)
+    .eq('member_role', 'student')
+    .eq('status', 'active')
+    .order('profile_id');
+  if (error) throw new Error(error.message);
+
+  const seen = new Map<string, any>();
+  for (const link of data || []) {
+    const profile = Array.isArray(link.profiles) ? link.profiles[0] : link.profiles;
+    if (!profile || seen.has(profile.id)) continue;
+    seen.set(profile.id, { profileId: profile.id, fullName: profile.full_name, avatarUrl: profile.avatar_url });
+  }
+  return Array.from(seen.values());
+}
+
 // Phase 6d — substitute teacher auto-suggestion. Pure aggregation over school_timetable_entries +
 // school_staff_attendance + school_memberships: for each teacher marked absent on `date`, find
 // their periods that day and which other active teachers have no clashing period at that time and
@@ -1700,4 +1741,30 @@ export async function getDropoutRiskScores(supabase: SupabaseClient, context: Sc
     })
     .filter((s) => s.riskScore > 0)
     .sort((a, b) => b.riskScore - a.riskScore);
+}
+
+// Search chapters by query string (FTS on name) with optional grade level filter.
+// Used by LectureAnnotationForm and TeacherTestStudio for autocomplete.
+export async function searchChapters(
+  supabase: SupabaseClient,
+  query: string,
+  options?: { subjectId?: string; gradeLevels?: string[]; limit?: number }
+) {
+  const db = supabase as any;
+  let q = db
+    .from('chapters')
+    .select('id, name, subject_id, grade_levels, order_index')
+    .ilike('name', `%${query}%`)
+    .eq('is_active', true);
+
+  if (options?.subjectId) {
+    q = q.eq('subject_id', options.subjectId);
+  }
+  if (options?.gradeLevels?.length) {
+    // Match chapters that include ANY of the selected grade levels
+    q = q.or(options.gradeLevels.map((gl) => `grade_levels.cs.[${gl}]`).join(','));
+  }
+
+  const { data } = await q.order('order_index').limit(options?.limit || 10);
+  return (data || []) as { id: string; name: string; subject_id: string; grade_levels: string[] | null; order_index: number }[];
 }

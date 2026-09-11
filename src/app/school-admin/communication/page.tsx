@@ -7,9 +7,10 @@ import { SchoolActionForm } from '@/components/features/school-erp/SchoolActionF
 import { SchoolPageHeader } from '@/components/features/school-erp/SchoolPageHeader';
 import { PrincipalDirectoryMessenger } from '@/components/features/school-erp/PrincipalDirectoryMessenger';
 import { ParentTeacherMessenger } from '@/components/features/school-erp/ParentTeacherMessenger';
+import { TeacherPrincipalMessenger } from '@/components/features/school-erp/TeacherPrincipalMessenger';
 import { createAnnouncement, publishAnnouncement, respondSchoolContactMessage } from '@/lib/school-erp/actions';
 import { hasSchoolPermission, requireSchoolContext } from '@/lib/school-erp/access';
-import { getAnnouncementReadStats, getSchoolCommunication, getTeacherMessagingContacts } from '@/lib/school-erp/queries';
+import { getAnnouncementReadStats, getSchoolCommunication, getTeacherMessagingContacts, getPrincipalContacts } from '@/lib/school-erp/queries';
 import { getInstitutionDirectoryMessages } from '@/lib/institution-directory/queries';
 
 const selectClass = 'border-input bg-background h-10 w-full rounded-lg border px-3 text-sm';
@@ -26,6 +27,7 @@ export default async function SchoolCommunicationPage() {
   const canRespond = ['owner', 'admin', 'admissions', 'teacher', 'accountant'].includes(context.membership.member_role);
   const isTeacher = context.membership.member_role === 'teacher';
   const messagingContacts = isTeacher ? await getTeacherMessagingContacts(supabase, context) : [];
+  const principalContacts = isTeacher ? await getPrincipalContacts(supabase, context) : [];
   const readStats = await getAnnouncementReadStats(
     supabase,
     context.organization.id,
@@ -95,6 +97,18 @@ export default async function SchoolCommunicationPage() {
           <CardContent>
             <ParentTeacherMessenger
               contacts={messagingContacts}
+              organizationId={context.organization.id}
+              currentUserId={context.userId}
+            />
+          </CardContent>
+        </Card>
+      )}
+      {isTeacher && principalContacts.length > 0 && (
+        <Card>
+          <CardHeader><CardTitle className="text-base">Message the Principal</CardTitle></CardHeader>
+          <CardContent>
+            <TeacherPrincipalMessenger
+              contacts={principalContacts}
               organizationId={context.organization.id}
               currentUserId={context.userId}
             />

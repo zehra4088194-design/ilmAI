@@ -103,14 +103,6 @@ export function HeroSection() {
               <Button
                 asChild
                 size="xl"
-                variant="glass"
-                className="h-auto min-h-14 w-full px-5 text-base leading-snug whitespace-normal sm:w-auto sm:px-8 sm:text-lg"
-              >
-                <Link href="/demo">Try Free Demo</Link>
-              </Button>
-              <Button
-                asChild
-                size="xl"
                 variant="outline"
                 className="bg-background/20 h-auto min-h-14 w-full border-violet-500/35 px-5 text-base leading-snug whitespace-normal sm:w-auto sm:px-8 sm:text-lg"
               >

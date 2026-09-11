@@ -18,6 +18,9 @@ import { SchoolActionForm } from '@/components/features/school-erp/SchoolActionF
 import { SchoolMetric } from '@/components/features/school-erp/SchoolMetric';
 import { SchoolOrganizationSwitcher } from '@/components/features/school-erp/SchoolOrganizationSwitcher';
 import { ParentTeacherMessenger } from '@/components/features/school-erp/ParentTeacherMessenger';
+import { PhoneCall } from 'lucide-react';
+import { CallDirectoryList } from '@/components/features/calling/CallDirectoryList';
+import { getCallDirectory, getCallingSettings } from '@/lib/calling/queries';
 import { cancelPtmRequest, createLeaveRequest, createSchoolContactMessage, requestPtm } from '@/lib/school-erp/actions';
 import { getSchoolContexts, requireSchoolContext } from '@/lib/school-erp/access';
 import { getSchoolPortalData } from '@/lib/school-erp/queries';
@@ -58,6 +61,10 @@ export default async function SchoolPortalPage() {
     0
   );
   const kidsZone = role === 'student' ? await getStudentKidsZoneEligibility(supabase, context) : { eligible: false };
+  const callingSettings = await getCallingSettings(supabase, 'school', context.organization.id);
+  const callDirectory = callingSettings.enabled
+    ? await getCallDirectory(supabase, 'school', context.organization.id, user.id)
+    : [];
   // Phase 2c: reuses the exact same "every teacher in the org" contact list the PTM request form
   // (below) already fetches for a parent — no separate query for this.
   const messagingContacts =
@@ -184,6 +191,21 @@ export default async function SchoolPortalPage() {
               </Badge>
             ))}
           </div>
+        )}
+        {callingSettings.enabled && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-500">
+                  <PhoneCall className="h-4 w-4" />
+                </span>
+                Call directory
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CallDirectoryList institutionType="school" organizationId={context.organization.id} entries={callDirectory} />
+            </CardContent>
+          </Card>
         )}
         <div className="grid gap-5 xl:grid-cols-2">
           <Card>

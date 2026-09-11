@@ -17,6 +17,9 @@ import {
 } from '@/lib/college-erp/actions';
 import { requireCollegeContext } from '@/lib/college-erp/access';
 import { getCollegeAcademicSetup } from '@/lib/college-erp/queries';
+import { CallingSettingsForm } from '@/components/features/calling/CallingSettingsForm';
+import { updateCollegeCallingSettings } from '@/lib/calling/actions';
+import { getCallingSettings } from '@/lib/calling/queries';
 import { InstitutionPaymentCheckout } from '@/components/features/institution-payments/InstitutionPaymentCheckout';
 import { getActiveStudentCount } from '@/lib/institution-payments/actions';
 import { getPlatformSettings } from '@/lib/platform-settings/server';
@@ -41,6 +44,7 @@ export default async function CollegeAdminSettingsPage() {
     ]);
     const monthlyPricing = resolveInstitutionPricing(platformSettings, 'college', 'monthly', studentCount);
     const annualPricing = resolveInstitutionPricing(platformSettings, 'college', 'annual', studentCount);
+    const callingSettings = await getCallingSettings(supabase, 'college', newContext.organization.id);
     return (
       <div className="space-y-6">
         <h1 className="text-xl font-bold">Organization setup</h1>
@@ -116,6 +120,14 @@ export default async function CollegeAdminSettingsPage() {
               perStudentPkr={platformSettings.institutionPricing.perStudentPkr}
               usdToPkr={platformSettings.exchangeRate.usdToPkr}
             />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Voice calling</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CallingSettingsForm action={updateCollegeCallingSettings} settings={callingSettings} />
           </CardContent>
         </Card>
         <div className="grid gap-5 xl:grid-cols-2">

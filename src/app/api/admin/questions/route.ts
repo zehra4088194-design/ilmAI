@@ -45,7 +45,6 @@ export async function POST(req: NextRequest) {
     marks?: number;
     board?: string | null;
     year?: number | null;
-    is_demo_eligible?: boolean;
   };
 
   if (!body.subject_id || !body.chapter_id || !body.text?.trim()) {
@@ -74,7 +73,6 @@ export async function POST(req: NextRequest) {
       board: body.board || null,
       year: body.year || null,
       is_verified: true,
-      is_demo_eligible: body.is_demo_eligible === true,
     } as any)
     .select()
     .single();

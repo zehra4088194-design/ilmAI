@@ -32,6 +32,8 @@
     "src/lib/platform-settings/**/*.ts",
     "src/lib/rate-limit/**/*.ts",
     "src/lib/branding/**/*.ts",
+    "src/lib/calling/**/*.ts",
+    "src/components/features/calling/**/*.tsx",
     "src/middleware.ts"
   ],
   "exclude": ["node_modules", ".next"]

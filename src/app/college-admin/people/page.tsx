@@ -56,15 +56,17 @@ export default async function CollegePeoplePage() {
                   <Input name="email" type="email" placeholder="Their email address" required />
                   <select name="member_role" className={selectClass} required>
                     <option value="">Role</option>
-                    {['teacher', 'staff', 'accountant', 'admissions', 'admin'].map((role) => (
+                    {['teacher', 'staff', 'accountant', 'admissions', 'coordinator', 'admin'].map((role) => (
                       <option key={role} value={role} className="capitalize">{role}</option>
                     ))}
                   </select>
-                  <Input name="designation" placeholder="Designation (optional)" />
+                  <Input name="designation" placeholder="Title, e.g. Vice Principal, Discipline Incharge, Sports Coordinator" />
                   <Input name="employee_code" placeholder="Employee code (optional)" />
                 </CollegeActionForm>
                 <p className="text-muted-foreground mt-3 text-xs">
                   No account yet? They&apos;ll get an email to set a password — no need to sign up first.
+                  &quot;Coordinator&quot; is a flexible role — give them any title above and it shows everywhere
+                  instead of the generic role name.
                 </p>
               </CardContent>
             </Card>
@@ -137,6 +139,8 @@ export default async function CollegePeoplePage() {
         <CardHeader><CardTitle className="text-base">Directory</CardTitle></CardHeader>
         <CardContent>
           <PeopleDirectoryTable
+            institutionType="college"
+            organizationId={context.organization.id}
             memberships={data.memberships.map((item: any) => ({
               id: item.id,
               member_role: item.member_role,

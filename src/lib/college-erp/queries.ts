@@ -211,7 +211,7 @@ export async function getCollegePeople(supabase: SupabaseClient, context: Colleg
         .select('*, student:profiles!college_guardians_student_id_fkey(full_name), guardian:profiles!college_guardians_guardian_id_fkey(full_name, email)')
         .eq('organization_id', organizationId)
     ),
-    rows(db.from('college_sections').select('id, name, college_semesters!college_sections_semester_id_fkey(name)').eq('organization_id', organizationId).eq('is_active', true)),
+    rows(db.from('college_sections').select('id, name, advisor_id, college_semesters!college_sections_semester_id_fkey(name)').eq('organization_id', organizationId).eq('is_active', true)),
     rows(db.from('college_academic_years').select('id, name').eq('organization_id', organizationId).order('starts_on', { ascending: false })),
     rows(db.from('college_organization_plan_settings').select('*').eq('organization_id', organizationId).limit(1)),
     db.from('college_enrollments').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId).eq('status', 'active'),
@@ -242,7 +242,7 @@ export async function getCollegeAttendance(supabase: SupabaseClient, context: Co
   const db = supabase as any;
   const organizationId = context.organization.id;
   const [sections, enrollments, records, leaves, staffMembers, staffRecords] = await Promise.all([
-    rows(db.from('college_sections').select('id, name, college_semesters!college_sections_semester_id_fkey(name)').eq('organization_id', organizationId).eq('is_active', true)),
+    rows(db.from('college_sections').select('id, name, advisor_id, college_semesters!college_sections_semester_id_fkey(name)').eq('organization_id', organizationId).eq('is_active', true)),
     rows(
       db
         .from('college_enrollments')
@@ -460,7 +460,7 @@ export async function getCollegeExams(supabase: SupabaseClient, context: College
         .order('entered_at', { ascending: false })
         .limit(500)
     ),
-    rows(db.from('college_sections').select('id, name, college_semesters!college_sections_semester_id_fkey(name)').eq('organization_id', organizationId).eq('is_active', true)),
+    rows(db.from('college_sections').select('id, name, advisor_id, college_semesters!college_sections_semester_id_fkey(name)').eq('organization_id', organizationId).eq('is_active', true)),
     rows(db.from('college_academic_years').select('id, name').eq('organization_id', organizationId).order('starts_on', { ascending: false })),
     rows(db.from('college_course_offerings').select('id, section_id, course_name').eq('organization_id', organizationId).order('course_name')),
     rows(
@@ -691,7 +691,7 @@ export async function getCollegeAcademics(supabase: SupabaseClient, context: Col
         .limit(200)
     ),
     rows(db.from('college_calendar_events').select('*').eq('organization_id', organizationId).order('starts_at', { ascending: false }).limit(200)),
-    rows(db.from('college_sections').select('id, name, college_semesters!college_sections_semester_id_fkey(name)').eq('organization_id', organizationId).eq('is_active', true)),
+    rows(db.from('college_sections').select('id, name, advisor_id, college_semesters!college_sections_semester_id_fkey(name)').eq('organization_id', organizationId).eq('is_active', true)),
     rows(db.from('college_course_offerings').select('id, section_id, course_name, teacher_id').eq('organization_id', organizationId).order('course_name')),
   ]);
   return { assignments, timetable, lessonPlans, events, sections, offerings };
@@ -1026,4 +1026,51 @@ export async function getCollegePrincipalContacts(supabase: SupabaseClient, cont
     const profile = Array.isArray(item.profiles) ? item.profiles[0] : item.profiles;
     return { profileId: item.profile_id, fullName: profile?.full_name || 'Principal', avatarUrl: profile?.avatar_url || null };
   });
+}
+
+// College mirror of searchChapters in school-erp/queries.ts.
+// Search chapters by query string with optional grade level filter.
+export async function searchCollegeChapters(
+  supabase: SupabaseClient,
+  query: string,
+  options?: { subjectId?: string; gradeLevels?: string[]; limit?: number }
+) {
+  const db = supabase as any;
+  let q = db
+    .from('chapters')
+    .select('id, name, subject_id, grade_levels, order_index')
+    .ilike('name', `%${query}%`)
+    .eq('is_active', true);
+
+  if (options?.subjectId) {
+    q = q.eq('subject_id', options.subjectId);
+  }
+  if (options?.gradeLevels?.length) {
+    q = q.or(options.gradeLevels.map((gl) => `grade_levels.cs.[${gl}]`).join(','));
+  }
+
+  const { data } = await q.order('order_index').limit(options?.limit || 10);
+  return (data || []) as { id: string; name: string; subject_id: string; grade_levels: string[] | null; order_index: number }[];
+}
+
+// College mirror of getStudentContacts in school-erp/queries.ts.
+// Fetch active students in the same college for peer-help conversations.
+export async function getCollegeStudentContacts(supabase: SupabaseClient, context: CollegeContext) {
+  const db = supabase as any;
+  const { data, error } = await db
+    .from('college_memberships')
+    .select('profile_id, profiles!college_memberships_profile_id_fkey(id, full_name, avatar_url)')
+    .eq('organization_id', context.organization.id)
+    .eq('member_role', 'student')
+    .eq('status', 'active')
+    .order('profile_id');
+  if (error) throw new Error(error.message);
+
+  const seen = new Map<string, any>();
+  for (const link of data || []) {
+    const profile = Array.isArray(link.profiles) ? link.profiles[0] : link.profiles;
+    if (!profile || seen.has(profile.id)) continue;
+    seen.set(profile.id, { profileId: profile.id, fullName: profile.full_name, avatarUrl: profile.avatar_url });
+  }
+  return Array.from(seen.values());
 }

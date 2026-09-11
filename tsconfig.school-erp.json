@@ -31,6 +31,8 @@
     "src/lib/parent/invite-code.ts",
     "src/lib/institution-directory/**/*.ts",
     "src/lib/college-erp/**/*.ts",
+    "src/lib/calling/**/*.ts",
+    "src/components/features/calling/**/*.tsx",
     "src/middleware.ts"
   ],
   "exclude": ["node_modules", ".next"]

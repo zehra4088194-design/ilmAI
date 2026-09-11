@@ -39,6 +39,23 @@ export async function getActiveStudentCount(institutionType: InstitutionType, or
   return count || 0;
 }
 
+const MEMBERSHIP_TABLE: Record<InstitutionType, string> = {
+  school: 'school_memberships',
+  college: 'college_memberships',
+};
+
+export async function getActiveTeacherCount(institutionType: InstitutionType, organizationId: string) {
+  if (!organizationId) return 0;
+  const db = (await createAdminClient()) as any;
+  const { count } = await db
+    .from(MEMBERSHIP_TABLE[institutionType])
+    .select('id', { count: 'exact', head: true })
+    .eq('organization_id', organizationId)
+    .eq('status', 'active')
+    .in('member_role', ['teacher', 'owner', 'admin', 'staff', 'accountant', 'admissions']);
+  return count || 0;
+}
+
 export type SubmitPaymentState = { success: boolean; message: string; claimCode?: string | null };
 
 // Master prompt Part 6.2: an institution owner/admin submits a manual payment

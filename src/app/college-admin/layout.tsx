@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/server';
 import { getCollegeAdminContext } from '@/lib/college/access';
 import { requireCollegeContext } from '@/lib/college-erp/access';
 import { CollegeAdminSidebar } from '@/components/features/college-erp/CollegeAdminSidebar';
+import { getCallIdentity } from '@/lib/calling/identity';
+import { CallProvider } from '@/components/features/calling/CallProvider';
 
 // Legacy nav for colleges provisioned under the OLD `colleges`/`college_admins` schema (pre-dates
 // the college-erp rebuild — see docs/COLLEGE_ERP_IMPLEMENTATION.md §1). Kept working unchanged so
@@ -29,7 +31,9 @@ export default async function CollegeAdminLayout({ children }: { children: React
   // search, attendance scan, report cards, date-sheet wizard, directory messaging) is built against.
   const { context: newContext } = await requireCollegeContext('dashboard.read');
   if (newContext) {
+    const callIdentity = await getCallIdentity(supabase, user.id);
     return (
+      <CallProvider identity={callIdentity}>
       <div className="bg-background min-h-screen">
         <CollegeAdminSidebar
           organizationName={newContext.organization.name}
@@ -42,6 +46,7 @@ export default async function CollegeAdminLayout({ children }: { children: React
           <div className="mx-auto max-w-7xl">{children}</div>
         </main>
       </div>
+      </CallProvider>
     );
   }
 
