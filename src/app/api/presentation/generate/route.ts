@@ -22,7 +22,7 @@ function cleanNumber(value: unknown, fallback: number, min: number, max: number)
 }
 
 function cleanTheme(value: unknown): PresentationTheme {
-  return PRESENTATION_THEMES.includes(value as PresentationTheme) ? (value as PresentationTheme) : 'dark';
+  return PRESENTATION_THEMES.includes(value as PresentationTheme) ? (value as PresentationTheme) : 'default';
 }
 
 // Best-effort history save into public.presentations. Never blocks/fails generation.

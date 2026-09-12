@@ -1,7 +1,7 @@
 // Simplified down to two modes on purpose — the many named color themes were
 // replaced with a single dark look and a single light look, each paired with
 // dark/light-tagged background photos instead (see PresentationBackground.mode).
-export type PresentationTheme = 'dark' | 'light';
+export type PresentationTheme = 'default' | 'dark' | 'light' | 'solar' | 'ocean' | 'sunset' | 'forest';
 
 export type PresentationSlideType =
   | 'title'
@@ -10,7 +10,10 @@ export type PresentationSlideType =
   | 'quote'
   | 'stats'
   | 'section-break'
-  | 'closing';
+  | 'closing'
+  | 'timeline'
+  | 'image-caption'
+  | 'callout';
 
 export type PresentationColumn = {
   heading: string;
@@ -101,7 +104,7 @@ export const PRESENTATION_BACKGROUND_CATEGORIES = [
 
 export const DEFAULT_PRESENTATION_BACKGROUND_CATEGORY = 'uncategorized';
 
-export const PRESENTATION_THEMES: PresentationTheme[] = ['dark', 'light'];
+export const PRESENTATION_THEMES: PresentationTheme[] = ['default', 'dark', 'light', 'solar', 'ocean', 'sunset', 'forest'];
 
 export const PRESENTATION_SLIDE_TYPES: PresentationSlideType[] = [
   'title',
@@ -111,4 +114,7 @@ export const PRESENTATION_SLIDE_TYPES: PresentationSlideType[] = [
   'stats',
   'section-break',
   'closing',
+  'timeline',
+  'image-caption',
+  'callout',
 ];

@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { Clock, Download, FileText, Loader2, Moon, PenLine, Presentation, Sparkles, Sun, Type } from 'lucide-react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
+import { Clock, Download, FileText, Loader2, Moon, PenLine, Presentation, Sparkles, Sun, Type, Undo2, Redo2, Edit3, Save, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,19 @@ const progressCopy = [
   'Preparing a polished PowerPoint preview...',
 ];
 
+const TOPIC_SUGGESTIONS = [
+  'Photosynthesis for university biology students',
+  'Machine Learning basics in AI',
+  'Climate change impacts on agriculture',
+  'Blockchain technology explained',
+  'The future of renewable energy',
+  'Psychology of human behavior',
+  'Economic theories of inflation',
+  'History of the internet revolution',
+  'Quantum computing fundamentals',
+  'Artificial intelligence in healthcare',
+];
+
 export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 'professional' }: Props) {
   const [topic, setTopic] = useState('');
   const [subject, setSubject] = useState(defaultSubject);
@@ -34,7 +47,7 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
   const [audienceLevel, setAudienceLevel] = useState('University students');
   const [language, setLanguage] = useState('English');
   const [outputStyle, setOutputStyle] = useState(defaultStyle);
-  const [theme, setTheme] = useState<PresentationTheme>('dark');
+  const [theme, setTheme] = useState<PresentationTheme>('default');
   // Purely a rendering preference (see PresentationHeadingFont's doc comment) — never sent to the
   // generate API, just handed straight to PresentationSlideRenderer.
   const [headingFont, setHeadingFont] = useState<PresentationHeadingFont>('default');
@@ -46,9 +59,70 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
   const [history, setHistory] = useState<{ id: string; title: string; created_at: string }[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [activeHistoryId, setActiveHistoryId] = useState<string | null>(null);
+  // Undo/redo stack for slide editing
+  const [slideHistory, setSlideHistory] = useState<PresentationDeck[]>([]);
+  const [slideRedoStack, setSlideRedoStack] = useState<PresentationDeck[]>([]);
+  const [editingSlide, setEditingSlide] = useState<number | null>(null);
   const { user } = useAuth();
 
   const formReady = topic.trim().length > 2;
+
+  // Keyboard shortcut: Ctrl/Cmd + Enter to generate
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+        event.preventDefault();
+        if (formReady && !loading) {
+          generate();
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [formReady, loading]);
+
+  // Auto-save draft to localStorage every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (topic.trim()) {
+        try {
+          localStorage.setItem('ilm-ai-presentation-draft', JSON.stringify({
+            topic,
+            subject,
+            slideCount,
+            tone,
+            audienceLevel,
+            language,
+            outputStyle,
+            theme,
+            headingFont,
+            mode,
+          }));
+        } catch {}
+      }
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [topic, subject, slideCount, tone, audienceLevel, language, outputStyle, theme, headingFont, mode]);
+
+  // Restore draft on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('ilm-ai-presentation-draft');
+      if (saved) {
+        const draft = JSON.parse(saved);
+        if (draft.topic) setTopic(draft.topic);
+        if (draft.subject) setSubject(draft.subject);
+        if (draft.slideCount) setSlideCount(draft.slideCount);
+        if (draft.tone) setTone(draft.tone);
+        if (draft.audienceLevel) setAudienceLevel(draft.audienceLevel);
+        if (draft.language) setLanguage(draft.language);
+        if (draft.outputStyle) setOutputStyle(draft.outputStyle);
+        if (draft.theme) setTheme(draft.theme);
+        if (draft.headingFont) setHeadingFont(draft.headingFont);
+        if (draft.mode) setMode(draft.mode);
+      }
+    } catch {}
+  }, []);
 
   async function loadHistory() {
     if (!user?.id) return;
@@ -176,6 +250,89 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
     }
   }
 
+  // Slide editing functions
+  const pushSlideHistory = useCallback((newDeck: PresentationDeck) => {
+    setSlideHistory(prev => [...prev.slice(-19), newDeck]); // Keep last 20 states
+    setSlideRedoStack([]);
+  }, []);
+
+  const updateSlide = useCallback((slideIndex: number, updatedSlide: any) => {
+    if (!deck) return;
+    const newDeck = {
+      ...deck,
+      slides: deck.slides.map((slide, index) => index === slideIndex ? updatedSlide : slide),
+    };
+    pushSlideHistory(newDeck);
+    setDeck(newDeck);
+    toast.success('Slide updated!');
+  }, [deck, pushSlideHistory]);
+
+  const deleteSlide = useCallback((slideIndex: number) => {
+    if (!deck) return;
+    if (deck.slides.length <= 1) {
+      toast.error('At least one slide is required.');
+      return;
+    }
+    const newDeck = {
+      ...deck,
+      slides: deck.slides.filter((_, index) => index !== slideIndex),
+    };
+    pushSlideHistory(newDeck);
+    setDeck(newDeck);
+    toast.success('Slide deleted!');
+  }, [deck, pushSlideHistory]);
+
+  const undo = useCallback(() => {
+    if (slideHistory.length === 0) return;
+    const previous = slideHistory[slideHistory.length - 1];
+    setSlideRedoStack(prev => [...prev, deck!]);
+    setSlideHistory(prev => prev.slice(0, -1));
+    setDeck(previous);
+    toast.info('Undo successful');
+  }, [slideHistory, deck]);
+
+  const redo = useCallback(() => {
+    if (slideRedoStack.length === 0) return;
+    const next = slideRedoStack[slideRedoStack.length - 1];
+    setSlideHistory(prev => [...prev, deck!]);
+    setSlideRedoStack(prev => prev.slice(0, -1));
+    setDeck(next);
+    toast.info('Redo successful');
+  }, [slideRedoStack, deck]);
+
+  const regenerateSlide = useCallback(async (slideIndex: number) => {
+    if (!deck || !user) return;
+    setLoading(true);
+    try {
+      const res = await fetch('/api/presentation/regenerate-slide', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topic: deck.topic,
+          subject,
+          slideIndex,
+          currentSlide: deck.slides[slideIndex],
+        }),
+      });
+      const json = await res.json();
+      if (json.status === 'error') throw new Error(json.error);
+      
+      const newDeck = {
+        ...deck,
+        slides: deck.slides.map((slide, index) => 
+          index === slideIndex ? json.slide : slide
+        ),
+      };
+      pushSlideHistory(newDeck);
+      setDeck(newDeck);
+      toast.success('Slide regenerated with AI!');
+    } catch {
+      toast.error('Failed to regenerate slide.');
+    } finally {
+      setLoading(false);
+    }
+  }, [deck, user, subject, pushSlideHistory]);
+
   async function downloadPdf() {
     if (!deck) return;
     setExporting(true);
@@ -277,6 +434,23 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
               onChange={setTopic}
               placeholder="Photosynthesis for university biology students"
             />
+            {!topic && (
+              <div className="space-y-2">
+                <p className="text-muted-foreground text-xs font-medium">Quick suggestions:</p>
+                <div className="flex flex-wrap gap-2">
+                  {TOPIC_SUGGESTIONS.map((suggestion) => (
+                    <button
+                      key={suggestion}
+                      type="button"
+                      onClick={() => setTopic(suggestion)}
+                      className="rounded-full border bg-card px-3 py-1 text-xs transition hover:border-violet-400 hover:bg-violet-50"
+                    >
+                      {suggestion.length > 35 ? suggestion.slice(0, 35) + '...' : suggestion}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <Field
               label="Subject / course"
               value={subject}
@@ -326,6 +500,7 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
             <Button variant="gradient" className="w-full" disabled={!formReady || loading} onClick={generate}>
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
               Generate Presentation
+              <span className="ml-2 text-xs opacity-70">Ctrl+Enter</span>
             </Button>
           </CardContent>
         </Card>
@@ -415,18 +590,75 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
               )}
               <PresentationSlideRenderer deck={deck} headingFont={headingFont} />
               <Card>
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0">
                   <CardTitle className="text-base">Slide outline</CardTitle>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="ghost" onClick={undo} disabled={slideHistory.length === 0}>
+                      <Undo2 className="h-4 w-4" />
+                      Undo
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={redo} disabled={slideRedoStack.length === 0}>
+                      <Redo2 className="h-4 w-4" />
+                      Redo
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent className="grid gap-3 md:grid-cols-2">
                   {deck.slides.map((slide, index) => (
                     <div key={index} className="bg-card/80 rounded-xl border p-4">
-                      <p className="text-xs font-semibold tracking-wide text-violet-400 uppercase">
-                        Slide {index + 1} - {slide.type}
-                      </p>
+                      <div className="flex items-start justify-between">
+                        <p className="text-xs font-semibold tracking-wide text-violet-400 uppercase">
+                          Slide {index + 1} - {slide.type}
+                        </p>
+                        <div className="flex gap-1">
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-6 w-6 p-0"
+                            onClick={() => setEditingSlide(index)}
+                          >
+                            <Edit3 className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                            onClick={() => deleteSlide(index)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
                       <h3 className="mt-1 font-semibold">{slide.title || slide.quote || 'Slide'}</h3>
                       {slide.bullets && (
                         <p className="text-muted-foreground mt-2 line-clamp-2 text-sm">{slide.bullets.join(' / ')}</p>
+                      )}
+                      {editingSlide === index && (
+                        <div className="mt-3 space-y-2">
+                          <input
+                            type="text"
+                            value={slide.title || ''}
+                            onChange={(e) => updateSlide(index, { ...slide, title: e.target.value })}
+                            placeholder="Slide title"
+                            className="w-full rounded-md border bg-background px-2 py-1 text-sm"
+                          />
+                          <textarea
+                            value={slide.bullets?.join('\n') || ''}
+                            onChange={(e) => updateSlide(index, { ...slide, bullets: e.target.value.split('\n').filter(Boolean) })}
+                            placeholder="Bullets (one per line)"
+                            className="w-full rounded-md border bg-background px-2 py-1 text-sm"
+                            rows={3}
+                          />
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="w-full"
+                            onClick={() => regenerateSlide(index)}
+                          >
+                            <Sparkles className="h-3.5 w-3.5 mr-1" />
+                            Regenerate with AI
+                          </Button>
+                        </div>
                       )}
                     </div>
                   ))}
@@ -493,8 +725,13 @@ function NumberField({
 }
 
 const THEME_MODE_OPTIONS: { key: PresentationTheme; label: string; description: string; icon: typeof Moon }[] = [
+  { key: 'default', label: 'Default', description: 'Clean white, blue accents', icon: Sun },
   { key: 'dark', label: 'Dark', description: 'Moody background, white text', icon: Moon },
   { key: 'light', label: 'Light', description: 'Bright background, dark text', icon: Sun },
+  { key: 'solar', label: 'Solar', description: 'Warm amber, golden glow', icon: Sun },
+  { key: 'ocean', label: 'Ocean', description: 'Deep blue, calm & focused', icon: Moon },
+  { key: 'sunset', label: 'Sunset', description: 'Warm orange, dramatic', icon: Sun },
+  { key: 'forest', label: 'Forest', description: 'Rich green, natural', icon: Moon },
 ];
 
 function ThemeModePicker({
@@ -509,7 +746,7 @@ function ThemeModePicker({
       <label className="text-muted-foreground mb-1.5 block text-xs font-bold tracking-wide uppercase">
         Slide theme
       </label>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {THEME_MODE_OPTIONS.map(({ key, label, description, icon: Icon }) => {
           const palette = THEMES[key];
           const active = value === key;

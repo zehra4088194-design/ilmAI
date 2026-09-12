@@ -7,10 +7,19 @@ import { cn } from '@/lib/utils/cn';
 
 // Exported so the builder's theme picker can reuse the exact same gradients for
 // its swatch previews instead of duplicating color values in a second place.
-// Deliberately just two entries — the earlier named color themes were replaced
-// by a single polished dark look and a single polished light look, each paired
-// with dark/light-tagged background photos (PresentationBackground.mode).
 export const THEMES = {
+  default: {
+    bg: 'linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 50%, #E2E8F0 100%)',
+    accent: '#2563EB',
+    accent2: '#7C3AED',
+    text: '#0F172A',
+    subtext: '#475569',
+    cardBg: 'rgba(15,23,42,0.04)',
+    overlay: 'linear-gradient(rgba(255,255,255,.9), rgba(255,255,255,.95))',
+    scrimClass: 'bg-white/80',
+    display: 'Inter, sans-serif',
+    body: 'Inter, sans-serif',
+  },
   dark: {
     bg: 'linear-gradient(135deg, #0B1120 0%, #131B36 45%, #1E2A54 100%)',
     accent: '#22D3EE',
@@ -18,7 +27,6 @@ export const THEMES = {
     text: '#F8FAFC',
     subtext: '#B8C4E0',
     cardBg: 'rgba(255,255,255,0.08)',
-    // A dark, moody photo needs a dark scrim so white text stays legible.
     overlay: 'linear-gradient(rgba(6,10,22,.7), rgba(6,10,22,.78))',
     scrimClass: 'bg-slate-950/70',
     display: 'Inter, sans-serif',
@@ -31,9 +39,56 @@ export const THEMES = {
     text: '#0F172A',
     subtext: '#475569',
     cardBg: 'rgba(15,23,42,0.045)',
-    // A bright photo needs a light scrim so dark text stays legible.
     overlay: 'linear-gradient(rgba(255,255,255,.82), rgba(255,255,255,.88))',
     scrimClass: 'bg-white/75',
+    display: 'Inter, sans-serif',
+    body: 'Inter, sans-serif',
+  },
+  solar: {
+    bg: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 50%, #FCD34D 100%)',
+    accent: '#D97706',
+    accent2: '#B45309',
+    text: '#451A03',
+    subtext: '#78350F',
+    cardBg: 'rgba(74,44,22,0.08)',
+    overlay: 'linear-gradient(rgba(254,243,199,.85), rgba(254,243,199,.92))',
+    scrimClass: 'bg-amber-100/80',
+    display: 'Inter, sans-serif',
+    body: 'Inter, sans-serif',
+  },
+  ocean: {
+    bg: 'linear-gradient(135deg, #0C4A6E 0%, #075985 50%, #0369A1 100%)',
+    accent: '#38BDF8',
+    accent2: '#818CF8',
+    text: '#F0F9FF',
+    subtext: '#BAE6FD',
+    cardBg: 'rgba(255,255,255,0.1)',
+    overlay: 'linear-gradient(rgba(12,74,110,.75), rgba(12,74,110,.85))',
+    scrimClass: 'bg-sky-950/70',
+    display: 'Inter, sans-serif',
+    body: 'Inter, sans-serif',
+  },
+  sunset: {
+    bg: 'linear-gradient(135deg, #431407 0%, #7C2D12 50%, #9A3412 100%)',
+    accent: '#FB923C',
+    accent2: '#FDE68A',
+    text: '#FFF7ED',
+    subtext: '#FED7AA',
+    cardBg: 'rgba(255,255,255,0.1)',
+    overlay: 'linear-gradient(rgba(67,20,7,.75), rgba(67,20,7,.85))',
+    scrimClass: 'bg-orange-950/70',
+    display: 'Inter, sans-serif',
+    body: 'Inter, sans-serif',
+  },
+  forest: {
+    bg: 'linear-gradient(135deg, #052E16 0%, #14532D 50%, #166534 100%)',
+    accent: '#4ADE80',
+    accent2: '#FBBF24',
+    text: '#F0FDF4',
+    subtext: '#BBF7D0',
+    cardBg: 'rgba(255,255,255,0.08)',
+    overlay: 'linear-gradient(rgba(5,46,22,.75), rgba(5,46,22,.85))',
+    scrimClass: 'bg-green-950/70',
     display: 'Inter, sans-serif',
     body: 'Inter, sans-serif',
   },
@@ -45,7 +100,7 @@ export const THEMES = {
 export type Theme = Omit<(typeof THEMES)[keyof typeof THEMES], 'display' | 'body'> & { display: string; body: string };
 
 function themeFor(deck: PresentationDeck, headingFont: PresentationHeadingFont = 'default'): Theme {
-  const base = THEMES[deck.theme] || THEMES.dark;
+  const base = THEMES[deck.theme] || THEMES.default;
   if (headingFont === 'handwritten') {
     return { ...base, display: 'var(--font-kalam), cursive' };
   }
@@ -145,6 +200,52 @@ function ClosingSlide({ slide, theme }: { slide: PresentationSlide; theme: Theme
   );
 }
 
+function TimelineSlide({ slide, theme }: { slide: PresentationSlide; theme: Theme }) {
+  return (
+    <div className="flex h-full flex-col justify-center px-6 py-7 sm:px-12">
+      <h2 className="mb-6 text-center text-[clamp(1.2rem,2.8vw,2.1rem)] font-bold" style={{ color: theme.text }}>{slide.title}</h2>
+      <div className="space-y-3 sm:space-y-4">
+        {(slide.bullets || []).slice(0, 8).map((bullet, index) => (
+          <div key={index} className="flex items-start gap-3">
+            <span className="mt-1.5 h-3 w-3 shrink-0 rounded-full" style={{ background: theme.accent }} />
+            <span className="text-[clamp(0.85rem,1.6vw,1.15rem)] leading-relaxed" style={{ color: theme.text }}>{bullet}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ImageCaptionSlide({ slide, theme }: { slide: PresentationSlide; theme: Theme }) {
+  return (
+    <div className="flex h-full flex-col items-center justify-center px-6 py-7 sm:px-12">
+      <div className="mb-4 flex h-36 w-36 items-center justify-center rounded-full" style={{ background: theme.cardBg, border: `3px solid ${theme.accent}` }}>
+        <span className="text-4xl" style={{ color: theme.accent }}>📷</span>
+      </div>
+      <h2 className="mb-3 text-center text-[clamp(1.2rem,2.8vw,2rem)] font-bold" style={{ color: theme.text }}>{slide.title}</h2>
+      {slide.subtitle && <p className="mb-4 text-center text-[clamp(0.9rem,1.8vw,1.2rem)] italic" style={{ color: theme.accent }}>{slide.subtitle}</p>}
+      {(slide.bullets || []).slice(0, 4).map((bullet, index) => (
+        <p key={index} className="text-center text-[clamp(0.85rem,1.5vw,1.1rem)] leading-relaxed" style={{ color: theme.subtext }}>{bullet}</p>
+      ))}
+    </div>
+  );
+}
+
+function CalloutSlide({ slide, theme }: { slide: PresentationSlide; theme: Theme }) {
+  return (
+    <div className="flex h-full flex-col items-center justify-center px-8 py-10">
+      <div className="w-full max-w-2xl rounded-3xl border-2 p-8 text-center" style={{ background: theme.cardBg, borderColor: theme.accent }}>
+        <div className="mb-3 text-5xl" style={{ color: theme.accent }}>⭐</div>
+        <h2 className="mb-4 text-[clamp(1.3rem,3vw,2.2rem)] font-bold" style={{ color: theme.text }}>{slide.title}</h2>
+        {slide.subtitle && <p className="mb-5 text-[clamp(1rem,2vw,1.4rem)] font-semibold" style={{ color: theme.accent }}>{slide.subtitle}</p>}
+        {(slide.bullets || []).slice(0, 4).map((bullet, index) => (
+          <p key={index} className="text-[clamp(0.9rem,1.7vw,1.15rem)] leading-relaxed" style={{ color: theme.text }}>{bullet}</p>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function SlideCanvas({ slide, theme }: { slide: PresentationSlide; theme: Theme }) {
   if (slide.type === 'title') return <TitleSlide slide={slide} theme={theme} />;
   if (slide.type === 'two-column') return <TwoColumnSlide slide={slide} theme={theme} />;
@@ -152,6 +253,9 @@ function SlideCanvas({ slide, theme }: { slide: PresentationSlide; theme: Theme 
   if (slide.type === 'stats') return <StatsSlide slide={slide} theme={theme} />;
   if (slide.type === 'section-break') return <SectionBreakSlide slide={slide} theme={theme} />;
   if (slide.type === 'closing') return <ClosingSlide slide={slide} theme={theme} />;
+  if (slide.type === 'timeline') return <TimelineSlide slide={slide} theme={theme} />;
+  if (slide.type === 'image-caption') return <ImageCaptionSlide slide={slide} theme={theme} />;
+  if (slide.type === 'callout') return <CalloutSlide slide={slide} theme={theme} />;
   return <BulletsSlide slide={slide} theme={theme} />;
 }
 
@@ -227,7 +331,23 @@ function PrintableSlide({ slide, theme, index, total }: { slide: PresentationSli
           </blockquote>
         )}
 
-        {slide.type !== 'title' && slide.type !== 'two-column' && slide.type !== 'stats' && slide.type !== 'quote' && bullets.length > 0 && (
+        {slide.type === 'callout' && (
+          <div style={{ margin: '36px 0 0', maxWidth: 860, background: theme.cardBg, border: `3px solid ${theme.accent}`, borderRadius: 24, padding: '28px 32px' }}>
+            <div style={{ color: theme.accent, fontSize: 40 }}>⭐</div>
+            {slide.subtitle && <p style={{ margin: '10px 0 0', color: theme.accent, fontSize: 26, fontWeight: 700 }}>{slide.subtitle}</p>}
+            <ul style={{ margin: '18px 0 0', paddingLeft: 24, color: theme.text, fontSize: 22, lineHeight: 1.5 }}>
+              {bullets.slice(0, 5).map((bullet, bulletIndex) => <li key={bulletIndex}>{bullet}</li>)}
+            </ul>
+          </div>
+        )}
+
+        {slide.type === 'timeline' && (
+          <ul style={{ margin: '34px 0 0', paddingLeft: 28, maxWidth: 860, color: theme.text, fontSize: 23, lineHeight: 1.6 }}>
+            {bullets.slice(0, 8).map((bullet, bulletIndex) => <li key={bulletIndex} style={{ marginBottom: 10 }}>{bullet}</li>)}
+          </ul>
+        )}
+
+        {slide.type !== 'title' && slide.type !== 'two-column' && slide.type !== 'stats' && slide.type !== 'quote' && slide.type !== 'callout' && slide.type !== 'timeline' && bullets.length > 0 && (
           <ul style={{ margin: '34px 0 0', paddingLeft: 28, maxWidth: 860, color: theme.text, fontSize: 24, lineHeight: 1.55 }}>
             {bullets.slice(0, 6).map((bullet, bulletIndex) => <li key={bulletIndex}>{bullet}</li>)}
           </ul>

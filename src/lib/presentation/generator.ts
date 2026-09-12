@@ -11,7 +11,7 @@ import {
   type PresentationTheme,
 } from './types';
 
-const DEFAULT_THEME: PresentationTheme = 'dark';
+const DEFAULT_THEME: PresentationTheme = 'default';
 
 function cleanString(value: unknown, fallback = '', max = 500) {
   return typeof value === 'string' && value.trim() ? value.trim().slice(0, max) : fallback;
@@ -54,7 +54,7 @@ Strict rules:
 2. Use this schema:
 {
   "topic": "string",
-  "theme": "dark | light",
+  "theme": "default | dark | light | solar | ocean | sunset | forest",
   "slides": [
     {"type":"title","title":"string","subtitle":"string","speakerNotes":"string"},
     {"type":"bullets","title":"string","bullets":["short point"],"speakerNotes":"string"},
@@ -62,10 +62,13 @@ Strict rules:
     {"type":"quote","quote":"string","author":"string","speakerNotes":"string"},
     {"type":"stats","title":"string","stats":[{"value":"92%","label":"short label"}],"speakerNotes":"string"},
     {"type":"section-break","title":"string","speakerNotes":"string"},
-    {"type":"closing","title":"string","subtitle":"string","speakerNotes":"string"}
+    {"type":"closing","title":"string","subtitle":"string","speakerNotes":"string"},
+    {"type":"timeline","title":"string","bullets":["Year: Event description"],"speakerNotes":"string"},
+    {"type":"image-caption","title":"string","bullets":["Image description"],"subtitle":"Caption text","speakerNotes":"string"},
+    {"type":"callout","title":"string","bullets":["Key highlight"],"subtitle":"Emphasized takeaway","speakerNotes":"string"}
   ]
 }
-3. Mix slide types. Do not repeat bullets only.
+3. Mix slide types. Do not repeat bullets only. Include at least one timeline, callout, or image-caption slide for variety.
 4. ${compact ? 'Bulk mode: use 3-4 strong bullets per bullet slide, each 8-14 words.' : 'Per-slide mode: use 4-6 strong bullets per bullet slide, each 8-16 words.'}
 5. ${compact ? 'Bulk mode: use 2-4 bullets per column and speaker notes of 45-80 words.' : 'Per-slide mode: use 3-5 bullets per column and speaker notes of 80-130 words.'}
 6. Keep one central message per slide and avoid paragraphs inside slide content.
@@ -73,7 +76,7 @@ Strict rules:
 8. Build a deliberate story arc: hook, context, core explanation, evidence/example, implications, memorable conclusion.
 9. Never invent a statistic. Use a stats slide only for well-established values; otherwise choose another slide type.
 10. Slide titles must communicate an insight, not generic labels such as "Overview" or "Introduction".
-11. The theme is fixed by the user's dark/light choice — never output a different value than the one given below.
+11. The theme is fixed by the user's choice — never output a different value than the one given below.
 12. Match the requested language. Use Roman Urdu/Urdu-English only when requested.
 13. Do not add fake citations. If references are needed, mention reference placeholders only.`;
 }
