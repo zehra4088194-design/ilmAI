@@ -145,14 +145,6 @@ export default async function SchoolSettingsPage() {
         monthlyPricePkr={Number(planSettings?.monthly_price_pkr || 0)}
       />
       <Card>
-            volumeDiscountMinStudents={platformSettings.institutionPricing.volumeDiscountMinStudents}
-            volumeDiscountPercent={platformSettings.institutionPricing.volumeDiscountPercent}
-            perStudentPkr={platformSettings.institutionPricing.perStudentPkr}
-            usdToPkr={platformSettings.exchangeRate.usdToPkr}
-          />
-        </CardContent>
-      </Card>
-      <Card>
         <CardHeader>
           <CardTitle className="text-base">Voice calling</CardTitle>
         </CardHeader>
