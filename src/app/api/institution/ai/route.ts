@@ -24,17 +24,22 @@ export async function POST(req: NextRequest) {
     const role = context.membership.member_role;
     const studentLike = role === 'student';
     const parentLike = role === 'parent';
-    const staffLike = ['owner','admin','coordinator','teacher','staff'].includes(role);
-
+    const staffLike = ['owner', 'admin', 'coordinator', 'teacher', 'staff'].includes(role);
     const db = supabase as any;
     let evidence: any = {};
+
     if (kind === 'school') {
       const org = context.organization.id;
       if (studentLike || parentLike) {
-        const ids = studentLike ? [user.id] : (await db.from('school_guardians').select('student_id').eq('organization_id', org).eq('guardian_id', user.id))).data?.map((x:any)=>x.student_id) || [];
+        let ids: string[] = [user.id];
+        if (parentLike) {
+          const { data: guardians } = await db.from('school_guardians').select('student_id').eq('organization_id', org).eq('guardian_id', user.id);
+          ids = (guardians || []).map((x: any) => x.student_id).filter(Boolean);
+        }
+        const safeIds = ids.length ? ids : ['00000000-0000-0000-0000-000000000000'];
         const [{ data: marks }, { data: attendance }, { data: exams }] = await Promise.all([
-          db.from('school_report_cards').select('percentage,gpa,grade,class_position,summary,published_at,school_exams(name)').eq('organization_id', org).in('student_id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']).not('published_at','is',null).order('published_at',{ascending:false}).limit(12),
-          db.from('school_attendance_records').select('attendance_date,status,school_timetable_entries(subject_name)').eq('organization_id', org).in('student_id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']).order('attendance_date',{ascending:false}).limit(120),
+          db.from('school_report_cards').select('percentage,gpa,grade,class_position,summary,published_at,school_exams(name)').eq('organization_id', org).in('student_id', safeIds).not('published_at','is',null).order('published_at',{ascending:false}).limit(12),
+          db.from('school_attendance_records').select('attendance_date,status').eq('organization_id', org).in('student_id', safeIds).order('attendance_date',{ascending:false}).limit(120),
           db.from('school_exam_schedules').select('subject_name,exam_date,starts_at,ends_at,room,school_exams(name)').eq('organization_id', org).gte('exam_date',new Date().toISOString().slice(0,10)).order('exam_date').limit(12),
         ]);
         evidence = { studentRecords: marks || [], attendance: attendance || [], upcomingExams: exams || [] };
@@ -48,10 +53,15 @@ export async function POST(req: NextRequest) {
     } else {
       const org = context.organization.id;
       if (studentLike || parentLike) {
-        const ids = studentLike ? [user.id] : (await db.from('college_guardians').select('student_id').eq('organization_id', org).eq('guardian_id', user.id))).data?.map((x:any)=>x.student_id) || [];
+        let ids: string[] = [user.id];
+        if (parentLike) {
+          const { data: guardians } = await db.from('college_guardians').select('student_id').eq('organization_id', org).eq('guardian_id', user.id);
+          ids = (guardians || []).map((x: any) => x.student_id).filter(Boolean);
+        }
+        const safeIds = ids.length ? ids : ['00000000-0000-0000-0000-000000000000'];
         const [{ data: marks }, { data: attendance }, { data: exams }] = await Promise.all([
-          db.from('college_report_cards').select('percentage,gpa,grade,class_position,summary,published_at,college_exams(name)').eq('organization_id', org).in('student_id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']).not('published_at','is',null).order('published_at',{ascending:false}).limit(12),
-          db.from('college_attendance_records').select('attendance_date,status').eq('organization_id', org).in('student_id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']).order('attendance_date',{ascending:false}).limit(120),
+          db.from('college_report_cards').select('percentage,gpa,grade,class_position,summary,published_at,college_exams(name)').eq('organization_id', org).in('student_id', safeIds).not('published_at','is',null).order('published_at',{ascending:false}).limit(12),
+          db.from('college_attendance_records').select('attendance_date,status').eq('organization_id', org).in('student_id', safeIds).order('attendance_date',{ascending:false}).limit(120),
           db.from('college_exam_schedules').select('course_name,exam_date,starts_at,ends_at,room,college_exams(name)').eq('organization_id', org).gte('exam_date',new Date().toISOString().slice(0,10)).order('exam_date').limit(12),
         ]);
         evidence = { studentRecords: marks || [], attendance: attendance || [], upcomingExams: exams || [] };
@@ -65,10 +75,18 @@ export async function POST(req: NextRequest) {
     }
 
     const provider = await resolveAiRoutingProvider('studyTools');
-    const result = await gatewayChat({ provider, strictProvider: true, routingPolicy: 'text', tier: 'mini', maxTokens: 1200, temperature: 0.2, messages: [
-      { role: 'system', content: `You are ilm AI Institution Analyst for a ${kind}. Answer using ONLY the supplied institutional evidence. Be concrete, concise, and show calculations/patterns where possible. Never invent names, marks, attendance, or exams. Role: ${role}.` },
-      { role: 'user', content: `Question: ${question}\n\nInstitution evidence JSON:\n${JSON.stringify(evidence).slice(0, 50000)}` },
-    ] });
+    const result = await gatewayChat({
+      provider,
+      strictProvider: true,
+      routingPolicy: 'text',
+      tier: 'mini',
+      maxTokens: 1200,
+      temperature: 0.2,
+      messages: [
+        { role: 'system', content: `You are ilm AI Institution Analyst for a ${kind}. Answer using ONLY the supplied institutional evidence. Be concrete, concise, and show calculations/patterns where possible. Never invent names, marks, attendance, or exams. Role: ${role}.` },
+        { role: 'user', content: `Question: ${question}\n\nInstitution evidence JSON:\n${JSON.stringify(evidence).slice(0, 50000)}` },
+      ],
+    });
     return NextResponse.json({ answer: result.text, kind, role });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Institution AI failed.' }, { status: 500 });
