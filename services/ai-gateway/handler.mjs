@@ -75,9 +75,9 @@ const DEFAULT_MODEL_MAP = {
     // 'groq'+'mini' route). Reusing the medium/pro model here (confirmed still valid) until a
     // cheaper current small model is picked — override per-tier anytime via GROQ_MINI_MODEL in
     // Coolify without a redeploy (see getModel() below).
-    mini: 'llama-3.3-70b-versatile',
-    medium: 'llama-3.3-70b-versatile',
-    pro: 'llama-3.3-70b-versatile',
+    mini: 'openai/gpt-oss-20b',
+    medium: 'openai/gpt-oss-20b',
+    pro: 'openai/gpt-oss-20b',
   },
   grok: {
     mini: 'grok-4.5',
