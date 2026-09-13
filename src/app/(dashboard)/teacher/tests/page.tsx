@@ -1,34 +1,21 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
 import { TeacherTestStudio } from '@/components/features/teacher/TeacherTestStudio';
 
 export const metadata: Metadata = { title: 'Teacher Test Studio' };
 
 export default async function TeacherTestsPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role, subscription_tier, full_name, avatar_url')
-    .eq('id', user.id)
-    .maybeSingle();
+  const { data: profile } = await supabase.from('profiles').select('role, subscription_tier, full_name, avatar_url').eq('id', user.id).maybeSingle();
   if (!profile || !['teacher', 'admin'].includes(String((profile as any).role))) redirect('/dashboard');
 
-  const planTier = ['PRO', 'ELITE'].includes(String((profile as any).subscription_tier))
-    ? ((profile as any).subscription_tier as 'PRO' | 'ELITE')
-    : 'FREE';
-
-  const [{ data: subjects }, { data: chapters }] = await Promise.all([
+  const planTier = ['PRO', 'ELITE'].includes(String((profile as any).subscription_tier)) ? ((profile as any).subscription_tier as 'PRO' | 'ELITE') : 'FREE';
+  const [{ data: subjects }, { data: chapters }, { data: classes }] = await Promise.all([
     supabase.from('subjects').select('id, name, grade_levels, content_profile').eq('is_active', true).order('name'),
-    supabase
-      .from('chapters')
-      .select('id, subject_id, name, order_index, grade_levels')
-      .eq('is_active', true)
-      .order('order_index'),
+    supabase.from('chapters').select('id, subject_id, name, order_index, grade_levels').eq('is_active', true).order('order_index'),
+    supabase.from('teacher_classes').select('id, name').eq('teacher_id', user.id).order('created_at', { ascending: false }),
   ]);
 
   return (
@@ -36,14 +23,12 @@ export default async function TeacherTestsPage() {
       <div className="print:hidden">
         <p className="text-sm font-semibold text-amber-400">Teacher tools</p>
         <h1 className="text-2xl font-bold sm:text-3xl">Test Paper Studio</h1>
-        <p className="text-muted-foreground mt-1 max-w-3xl text-sm">
-          Build a fresh paper from the uploaded chapter question bank, add your institution name, then print or save it
-          as a branded PDF.
-        </p>
+        <p className="text-muted-foreground mt-1 max-w-3xl text-sm">Build a fresh paper from chapter material, upload/source questions, brand it, and share it directly with your own classes.</p>
       </div>
       <TeacherTestStudio
         subjects={(subjects as any) || []}
         chapters={chapters || []}
+        classes={(classes as any) || []}
         planTier={planTier}
         initialInstitutionName={(profile as any).full_name || undefined}
         initialLogoUrl={(profile as any).avatar_url || undefined}
@@ -51,3 +36,5 @@ export default async function TeacherTestsPage() {
     </div>
   );
 }
+
+import { createClient } from '@/lib/supabase/server';
