@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
 import { TeacherTestStudio } from '@/components/features/teacher/TeacherTestStudio';
 
 export const metadata: Metadata = { title: 'Teacher Test Studio' };
@@ -36,5 +37,3 @@ export default async function TeacherTestsPage() {
     </div>
   );
 }
-
-import { createClient } from '@/lib/supabase/server';
