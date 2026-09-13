@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
 import {
   getPaymentAvailability,
   getPaymentProvider,
@@ -7,6 +6,7 @@ import {
   PaddleRequestError,
   type PaymentRegion,
 } from '@/lib/payments';
+import { createClient } from '@/lib/supabase/server';
 import { getSiteUrl } from '@/lib/utils/siteUrl';
 
 export async function POST(req: NextRequest) {
@@ -14,12 +14,8 @@ export async function POST(req: NextRequest) {
 
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ status: 'error', error: 'Login required' }, { status: 401 });
-    }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ status: 'error', error: 'Login required' }, { status: 401 });
 
     if (getPaymentAvailability(req.headers).consumptionOnly) {
       return NextResponse.json(
@@ -28,41 +24,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { data: activeSubscriptions, error: subscriptionError } = await (supabase.from('subscriptions') as any)
-      .select('id')
-      .eq('user_id', user.id)
-      .in('status', ['active', 'trialing', 'past_due'])
-      .gt('current_period_end', new Date().toISOString())
-      .limit(1);
-    if (subscriptionError) {
-      throw new Error(`Subscription lookup failed: ${subscriptionError.message}`);
-    }
-    if (activeSubscriptions?.length) {
-      return NextResponse.json(
-        {
-          status: 'active_subscription',
-          error:
-            'A paid plan is already active. Contact support to change plans and avoid duplicate billing.',
-        },
-        { status: 409 }
-      );
-    }
-
     const body = (await req.json()) as {
       tier: 'PRO' | 'ELITE';
-      billingCycle?: 'monthly' | 'annual';
+      billingCycle?: 'monthly' | 'annual' | 'one_time';
       provider?: 'paddle' | 'paypro';
       planFamily?: 'parent' | 'teacher' | 'university';
     };
     const { tier } = body;
-    const planFamily =
-      body.planFamily === 'parent' || body.planFamily === 'teacher' || body.planFamily === 'university'
-        ? body.planFamily
-        : undefined;
-    const billingCycle = body.billingCycle === 'annual' ? 'annual' : body.billingCycle === 'monthly' ? 'monthly' : null;
-    // PayPro currently does not support automatic recurring subscriptions for
-    // the local wallet flow. Keep automated checkout on Paddle; JazzCash
-    // remains a manual verification flow from the upgrade page.
+    const planFamily = body.planFamily === 'parent' || body.planFamily === 'teacher' || body.planFamily === 'university'
+      ? body.planFamily
+      : undefined;
+    const billingCycle = body.billingCycle === 'annual' || body.billingCycle === 'one_time' || body.billingCycle === 'monthly'
+      ? body.billingCycle
+      : null;
     const region: PaymentRegion = 'GLOBAL';
     const currency = 'USD';
     checkoutContext = { tier, billingCycle: billingCycle || undefined, region, planFamily };
@@ -74,18 +48,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: 'error', error: 'Invalid billing cycle selected' }, { status: 400 });
     }
     if (!isPaymentRegionConfigured(region, req.headers)) {
+      return NextResponse.json({ status: 'checkout_unavailable', error: 'Paddle checkout is not configured yet.' }, { status: 400 });
+    }
+
+    // One-time is a 30-day paid pass and does not create a recurring subscription.
+    // We still prevent a second active paid entitlement from being layered on top of an existing one.
+    const { data: activeSubscriptions, error: subscriptionError } = await (supabase.from('subscriptions') as any)
+      .select('id')
+      .eq('user_id', user.id)
+      .in('status', ['active', 'trialing', 'past_due'])
+      .gt('current_period_end', new Date().toISOString())
+      .limit(1);
+    if (subscriptionError) throw new Error(`Subscription lookup failed: ${subscriptionError.message}`);
+    if (activeSubscriptions?.length) {
       return NextResponse.json(
-        {
-          status: 'checkout_unavailable',
-          error: 'Paddle checkout is not configured yet.',
-        },
-        { status: 400 }
+        { status: 'active_subscription', error: 'A paid plan is already active. Contact support to change plans and avoid duplicate billing.' },
+        { status: 409 }
       );
     }
 
     const provider = getPaymentProvider(region);
     const appUrl = getSiteUrl();
-
     const session = await provider.createCheckout({
       userId: user.id,
       userEmail: user.email || '',
@@ -109,12 +92,9 @@ export async function POST(req: NextRequest) {
       providerStatus: isPaddleError ? error.status : undefined,
       providerRequestId: isPaddleError ? error.requestId : undefined,
     });
-
-    const errorMessage =
-      process.env.NODE_ENV === 'production'
-        ? 'The checkout session could not be created.'
-        : `The checkout session could not be created: ${message}`;
-
+    const errorMessage = process.env.NODE_ENV === 'production'
+      ? 'The checkout session could not be created.'
+      : `The checkout session could not be created: ${message}`;
     return NextResponse.json({ status: 'error', error: errorMessage }, { status: 500 });
   }
 }
