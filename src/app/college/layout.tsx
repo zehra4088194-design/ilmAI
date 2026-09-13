@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { ClipboardList, CalendarClock, FileText, Bell, Library, Users, LayoutDashboard, Sparkles, Search, Award, Presentation, Camera, BookOpen } from 'lucide-react';
 import { requireCollegeContext } from '@/lib/college-erp/access';
 
@@ -9,6 +10,10 @@ const items = [
 export default async function CollegePortalLayout({ children }: { children: React.ReactNode }) {
   const { context } = await requireCollegeContext('dashboard.read');
   if (!context) return children;
+  // Institution students must use the normal ilm AI student app. The college portal shell is only
+  // for parents and institution staff/teachers; student-specific branding is handled by the
+  // shared dashboard shell.
+  if (context.membership.member_role === 'student') redirect('/dashboard');
   const studentNav = ['student','parent'].includes(context.membership.member_role);
   const teacherNav = ['owner','admin','coordinator','teacher'].includes(context.membership.member_role);
   return <div>
