@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { requireSchoolContext } from '@/lib/school-erp/access';
 import { LayoutDashboard, ClipboardList, CalendarClock, FileText, Bell, Library, Users, Sparkles, Search, Award, Presentation, Camera, BookOpen } from 'lucide-react';
 
@@ -9,6 +10,10 @@ const items = [
 export default async function SchoolPortalLayout({ children }: { children: React.ReactNode }) {
   const { context } = await requireSchoolContext('dashboard.read');
   if (!context) return children;
+  // Institution students must use the normal ilm AI student app. The school portal shell is only
+  // for parents and institution staff/teachers; student-specific branding is handled by the
+  // shared dashboard shell.
+  if (context.membership.member_role === 'student') redirect('/dashboard');
   const studentNav = ['student','parent'].includes(context.membership.member_role);
   const teacherNav = ['owner','admin','coordinator','teacher'].includes(context.membership.member_role);
   return <div>
