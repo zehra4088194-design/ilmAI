@@ -1,116 +1,53 @@
 // ============================================
 // PAYMENTS - PUBLIC ENTRYPOINT
 // ============================================
-// The rest of the app should ONLY import from 'lib/payments' (this file),
-// never from './paddle' directly.
-//
-// Usage:
-//   import { getPaymentProvider } from '@/lib/payments';
-//   const provider = getPaymentProvider('GLOBAL');
-//   const session = await provider.createCheckout({ ... });
-// ============================================
 import type { PaymentProvider, PaymentRegion } from './provider';
 import { paddleProvider } from './paddle';
 import { payproProvider } from './paypro';
 import { isPlayConsumptionOnlyRequest } from './distribution';
 
-export type {
-  PaymentProvider,
-  PaymentRegion,
-  CreateCheckoutParams,
-  CheckoutSession,
-  CancelSubscriptionParams,
-  SubscriptionRecord,
-  WebhookVerificationResult,
-  SubscriptionTier,
-} from './provider';
-export {
-  getPublicRequestUrl,
-  getRequestHost,
-  isPlayConsumptionOnlyHost,
-  isPlayConsumptionOnlyRequest,
-  PLAY_CONSUMPTION_ONLY_HEADER,
-} from './distribution';
+export type { PaymentProvider, PaymentRegion, CreateCheckoutParams, CheckoutSession, CancelSubscriptionParams, SubscriptionRecord, WebhookVerificationResult, SubscriptionTier, BillingCycle } from './provider';
+export { getPublicRequestUrl, getRequestHost, isPlayConsumptionOnlyHost, isPlayConsumptionOnlyRequest, PLAY_CONSUMPTION_ONLY_HEADER } from './distribution';
 export { PaddleRequestError } from './paddle';
 
-export type PaymentAvailability = {
-  paddleConfigured: boolean;
-  localGatewayConfigured: boolean;
-  automatedAvailable: boolean;
-  consumptionOnly: boolean;
-};
+export type PaymentAvailability = { paddleConfigured: boolean; localGatewayConfigured: boolean; automatedAvailable: boolean; consumptionOnly: boolean };
+const PROVIDERS: Partial<Record<PaymentRegion, PaymentProvider>> = { GLOBAL: paddleProvider, PK: payproProvider };
+const PROVIDERS_BY_ID: Record<string, PaymentProvider> = { paddle: paddleProvider, paypro: payproProvider };
 
-const PROVIDERS: Partial<Record<PaymentRegion, PaymentProvider>> = {
-  GLOBAL: paddleProvider,
-  PK: payproProvider,
-};
-
-/** Look up a provider by its string id (used in webhook routes). */
-const PROVIDERS_BY_ID: Record<string, PaymentProvider> = {
-  paddle: paddleProvider,
-  paypro: payproProvider,
-};
-
-/**
- * Get the payment provider for a given region.
- * GLOBAL uses Paddle card checkout; PK can use a local PayPro provider when
- * merchant checkout credentials are configured.
- */
 export function getPaymentProvider(region: PaymentRegion): PaymentProvider {
   const provider = PROVIDERS[region];
-  if (!provider) {
-    throw new Error(`No payment provider configured for region: ${region}`);
-  }
+  if (!provider) throw new Error(`No payment provider configured for region: ${region}`);
   return provider;
 }
-
-/** Get a payment provider by its id (e.g. inside a /api/payments/[provider]/webhook route). */
 export function getPaymentProviderById(id: string): PaymentProvider {
   const provider = PROVIDERS_BY_ID[id];
-  if (!provider) {
-    throw new Error(`Unknown payment provider id: ${id}`);
-  }
+  if (!provider) throw new Error(`Unknown payment provider id: ${id}`);
   return provider;
 }
-
 function hasPaddleBaseCredentials() {
   return Boolean(process.env.PADDLE_API_KEY && process.env.PADDLE_WEBHOOK_SECRET && process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN);
 }
 
 export function getPaymentAvailability(requestHeaders?: Pick<Headers, 'get'>): PaymentAvailability {
   const consumptionOnly = requestHeaders ? isPlayConsumptionOnlyRequest(requestHeaders) : false;
-  const paddleCredentialsConfigured = Boolean(
-    hasPaddleBaseCredentials() &&
-    process.env.PADDLE_PRODUCT_ID_STUDENT_PRO &&
-    process.env.PADDLE_PRODUCT_ID_STUDENT_ELITE
-  );
-  const paddleConfigured = !consumptionOnly && paddleCredentialsConfigured;
+  const productIds = [
+    'PADDLE_PRODUCT_ID_STUDENT_PRO','PADDLE_PRODUCT_ID_STUDENT_ELITE',
+    'PADDLE_PRODUCT_ID_PARENT_PRO','PADDLE_PRODUCT_ID_PARENT_ELITE',
+    'PADDLE_PRODUCT_ID_TEACHER_PRO','PADDLE_PRODUCT_ID_TEACHER_ELITE',
+    'PADDLE_PRODUCT_ID_UNIVERSITY_PRO','PADDLE_PRODUCT_ID_UNIVERSITY_ELITE',
+  ];
+  const paddleProductConfigured = productIds.some((key) => Boolean(process.env[key]));
+  const paddleConfigured = !consumptionOnly && hasPaddleBaseCredentials() && paddleProductConfigured;
   const payproCredentialsConfigured = Boolean(
-    process.env.PAYPRO_CHECKOUT_URL &&
-      process.env.PAYPRO_WEBHOOK_SECRET &&
-      process.env.PAYPRO_PLAN_ID_PRO_MONTHLY &&
-      process.env.PAYPRO_PLAN_ID_PRO_ANNUAL &&
-      process.env.PAYPRO_PLAN_ID_ELITE_MONTHLY &&
-      process.env.PAYPRO_PLAN_ID_ELITE_ANNUAL
+    process.env.PAYPRO_CHECKOUT_URL && process.env.PAYPRO_WEBHOOK_SECRET &&
+    process.env.PAYPRO_PLAN_ID_PRO_MONTHLY && process.env.PAYPRO_PLAN_ID_PRO_ANNUAL &&
+    process.env.PAYPRO_PLAN_ID_ELITE_MONTHLY && process.env.PAYPRO_PLAN_ID_ELITE_ANNUAL
   );
   const localGatewayConfigured = !consumptionOnly && payproCredentialsConfigured;
-  return {
-    paddleConfigured,
-    localGatewayConfigured,
-    automatedAvailable: paddleConfigured || localGatewayConfigured,
-    consumptionOnly,
-  };
+  return { paddleConfigured, localGatewayConfigured, automatedAvailable: paddleConfigured || localGatewayConfigured, consumptionOnly };
 }
-
 export function isPaymentRegionConfigured(region: PaymentRegion, requestHeaders?: Pick<Headers, 'get'>) {
   const availability = getPaymentAvailability(requestHeaders);
-  if (region === 'GLOBAL') return availability.paddleConfigured;
-  if (region === 'PK') return availability.localGatewayConfigured;
-  return false;
+  return region === 'GLOBAL' ? availability.paddleConfigured : region === 'PK' ? availability.localGatewayConfigured : false;
 }
-
-/** Pricing plan -> tier price map, gateway-agnostic. */
-export const PLAN_PRICES: Record<'PRO' | 'ELITE', { monthly: number; annual: number }> = {
-  PRO: { monthly: 2.99, annual: 28.7 },
-  ELITE: { monthly: 4.99, annual: 47.9 },
-};
+export const PLAN_PRICES: Record<'PRO'|'ELITE',{monthly:number;annual:number}> = { PRO:{monthly:2.99,annual:28.7}, ELITE:{monthly:4.99,annual:47.9} };
