@@ -5,9 +5,14 @@ import { createServiceClient } from '@/lib/supabase/service';
 async function canReadBook(db: ReturnType<typeof createServiceClient>, userId: string, book: any) {
   if (book.scope_type === 'global') return true;
   if (!book.organization_id) return false;
-
   const table = book.scope_type === 'school' ? 'school_memberships' : 'college_memberships';
-  const { data } = await db.from(table).select('id').eq('organization_id', book.organization_id).eq('profile_id', userId).eq('status', 'active').maybeSingle();
+  const { data } = await db
+    .from(table)
+    .select('id')
+    .eq('organization_id', book.organization_id)
+    .eq('profile_id', userId)
+    .eq('status', 'active')
+    .maybeSingle();
   return Boolean(data);
 }
 
@@ -36,15 +41,28 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const [{ data: content }, { data: examples }, { data: questions }, { data: children }] = await Promise.all([
     db.from('curriculum_content_blocks').select('id,block_type,ordinal,exact_text,normalized_text,source_page,source_page_end,source_label,metadata').eq('node_id', id).order('ordinal'),
     db.from('curriculum_examples').select('id,ordinal,title,exact_question,exact_solution,explanation,source_page,metadata').eq('node_id', id).order('ordinal'),
-    db.from('curriculum_questions').select('id,question_type,ordinal,question_number,exercise_number,exact_text,options,exact_answer,explanation,marks,difficulty,source_page,metadata').eq('node_id', id).order('ordinal'),
+    db.from('curriculum_questions').select('id,question_type,ordinal,question_number,exercise_number,exact_text,options,marks,difficulty,source_page,metadata').eq('node_id', id).order('ordinal'),
     db.from('curriculum_nodes').select('id,node_type,number,title,slug,depth,sort_order,source_page_start,source_page_end,is_published').eq('book_id', node.book_id).eq('parent_id', id).eq('is_published', true).order('sort_order'),
   ]);
 
   const subject = book?.subjects;
   return NextResponse.json({
     node: {
-      ...node,
-      curriculum_books: undefined,
+      id: node.id,
+      book_id: node.book_id,
+      parent_id: node.parent_id,
+      node_type: node.node_type,
+      number: node.number,
+      title: node.title,
+      slug: node.slug,
+      depth: node.depth,
+      sort_order: node.sort_order,
+      path_numbers: node.path_numbers,
+      path_titles: node.path_titles,
+      raw_heading: node.raw_heading,
+      source_page_start: node.source_page_start,
+      source_page_end: node.source_page_end,
+      metadata: node.metadata,
       book: {
         id: book.id,
         title: book.title,
