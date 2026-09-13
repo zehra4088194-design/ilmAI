@@ -1331,10 +1331,10 @@ function SecuritySettings({
             </p>
           </div>
           {enrollment.qrCode ? (
-            <div className="inline-flex rounded-lg bg-white p-3">
+            <div className="flex justify-center">
               {/* Supabase returns a data URI SVG for this QR code. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={enrollment.qrCode} alt="Two-step verification QR code" className="h-44 w-44" />
+              <img src={enrollment.qrCode} alt="Two-step verification QR code" className="h-auto max-w-full w-64 sm:w-80 md:w-96" />
             </div>
           ) : null}
           {enrollment.secret ? (

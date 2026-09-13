@@ -16,11 +16,12 @@ module.exports = {
       // Baileys keeps a live WebSocket + writes credential files — a single instance only.
       instances: 1,
       exec_mode: 'fork',
-      autorestart: true,
-      // Backs off increasingly on a crash loop instead of hammering WhatsApp's servers.
-      max_restarts: 20,
-      restart_delay: 5_000,
-      exp_backoff_restart_delay: 5_000,
+      autorestart: false,
+      // PM2 auto-restart is disabled: the worker handles its own reconnects (3s delay for
+      // network blips) and exits cleanly (exit code 0) on 515 / loggedOut so PM2 doesn't
+      // kick in and create a restart loop that prevents the QR from ever being scanned.
+      max_restarts: 0,
+      restart_delay: 0,
       max_memory_restart: '300M',
       env: {
         NODE_ENV: 'production',
