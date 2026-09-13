@@ -13,10 +13,9 @@ export default async function TeacherTestsPage() {
   if (!profile || !['teacher', 'admin'].includes(String((profile as any).role))) redirect('/dashboard');
 
   const planTier = ['PRO', 'ELITE'].includes(String((profile as any).subscription_tier)) ? ((profile as any).subscription_tier as 'PRO' | 'ELITE') : 'FREE';
-  const [{ data: subjects }, { data: chapters }, { data: classes }] = await Promise.all([
+  const [{ data: subjects }, { data: chapters }] = await Promise.all([
     supabase.from('subjects').select('id, name, grade_levels, content_profile').eq('is_active', true).order('name'),
     supabase.from('chapters').select('id, subject_id, name, order_index, grade_levels').eq('is_active', true).order('order_index'),
-    supabase.from('teacher_classes').select('id, name').eq('teacher_id', user.id).order('created_at', { ascending: false }),
   ]);
 
   return (
@@ -24,12 +23,11 @@ export default async function TeacherTestsPage() {
       <div className="print:hidden">
         <p className="text-sm font-semibold text-amber-400">Teacher tools</p>
         <h1 className="text-2xl font-bold sm:text-3xl">Test Paper Studio</h1>
-        <p className="text-muted-foreground mt-1 max-w-3xl text-sm">Build a fresh paper from chapter material, upload/source questions, brand it, and share it directly with your own classes.</p>
+        <p className="text-muted-foreground mt-1 max-w-3xl text-sm">Build a fresh paper from chapter material, brand it, and print/save it as a PDF.</p>
       </div>
       <TeacherTestStudio
         subjects={(subjects as any) || []}
         chapters={chapters || []}
-        classes={(classes as any) || []}
         planTier={planTier}
         initialInstitutionName={(profile as any).full_name || undefined}
         initialLogoUrl={(profile as any).avatar_url || undefined}
