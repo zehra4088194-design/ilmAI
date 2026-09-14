@@ -60,8 +60,6 @@ const PDFJS_WORKER_BOOTSTRAP_HASH = "'sha256-PQNBmepyn3corN4iAcIkbTGAzPr+5/ubjCJ
 async function resolveInstitutionPortalHome(supabase: SupabaseClient, userId: string) {
   const schoolRole = await resolveSchoolRole(supabase, userId);
   if (schoolRole) {
-    // Students use the normal ilm AI student app. Their institutional experience is opened
-    // explicitly from the small "My Institution" entry in that dashboard.
     if (schoolRole.role === 'student') return '/dashboard';
     return schoolAdminHomeForRole(schoolRole.role);
   }
@@ -104,9 +102,7 @@ export async function middleware(request: NextRequest) {
   const origin = getRequestSiteUrl(request);
   const playConsumptionOnly = isPlayConsumptionOnlyHost(getRequestHost(request.headers));
 
-  if (pathname === '/api/health' || pathname.startsWith('/api/health/')) {
-    return NextResponse.next();
-  }
+  if (pathname === '/api/health' || pathname.startsWith('/api/health/')) return NextResponse.next();
 
   if (pathname.startsWith('/principal-') && pathname.length > '/principal-'.length) {
     const url = request.nextUrl.clone();
@@ -136,7 +132,6 @@ export async function middleware(request: NextRequest) {
   forwardedHeaders.set('Content-Security-Policy', contentSecurityPolicy);
   if (playConsumptionOnly) forwardedHeaders.set(PLAY_CONSUMPTION_ONLY_HEADER, '1');
   else forwardedHeaders.delete(PLAY_CONSUMPTION_ONLY_HEADER);
-
   const { user, response, supabase } = await updateSession(request, forwardedHeaders);
 
   if (ADMIN_PREFIXES.some((p) => matchesRoutePrefix(pathname, p))) {
@@ -156,9 +151,7 @@ export async function middleware(request: NextRequest) {
   if (COLLEGE_ADMIN_PREFIXES.some((p) => matchesRoutePrefix(pathname, p))) {
     if (!user) return secure(NextResponse.redirect(`${origin}/login?redirect=${encodeURIComponent(requestedPath)}`));
     const collegeRole = await resolveCollegeRole(supabase, user.id);
-    if (collegeRole && (collegeRole.role === 'student' || collegeRole.role === 'parent')) {
-      return secure(NextResponse.redirect(`${origin}${collegeAdminHomeForRole(collegeRole.role)}`));
-    }
+    if (collegeRole && (collegeRole.role === 'student' || collegeRole.role === 'parent')) return secure(NextResponse.redirect(`${origin}${collegeAdminHomeForRole(collegeRole.role)}`));
     if (!collegeRole) {
       const schoolRole = await resolveSchoolRole(supabase, user.id);
       if (schoolRole) return secure(NextResponse.redirect(`${origin}${schoolAdminHomeForRole(schoolRole.role)}`));
@@ -169,9 +162,7 @@ export async function middleware(request: NextRequest) {
   if (SCHOOL_ADMIN_PREFIXES.some((p) => matchesRoutePrefix(pathname, p))) {
     if (!user) return secure(NextResponse.redirect(`${origin}/login?redirect=${encodeURIComponent(requestedPath)}`));
     const schoolRole = await resolveSchoolRole(supabase, user.id);
-    if (schoolRole && (schoolRole.role === 'student' || schoolRole.role === 'parent')) {
-      return secure(NextResponse.redirect(`${origin}${schoolAdminHomeForRole(schoolRole.role)}`));
-    }
+    if (schoolRole && (schoolRole.role === 'student' || schoolRole.role === 'parent')) return secure(NextResponse.redirect(`${origin}${schoolAdminHomeForRole(schoolRole.role)}`));
     if (!schoolRole) {
       const collegeRole = await resolveCollegeRole(supabase, user.id);
       if (collegeRole) return secure(NextResponse.redirect(`${origin}${collegeAdminHomeForRole(collegeRole.role)}`));
@@ -179,11 +170,21 @@ export async function middleware(request: NextRequest) {
     return secure(response);
   }
 
+  // The old institution root dashboards remain for staff/parents. Students always stay in the
+  // normal ilm AI dashboard; their only institution-specific destination is /student-hub.
+  if (pathname === '/school' || pathname === '/college') {
+    if (!user) return secure(NextResponse.redirect(`${origin}/login?redirect=${encodeURIComponent(requestedPath)}`));
+    const schoolRole = pathname === '/school' ? await resolveSchoolRole(supabase, user.id) : null;
+    const collegeRole = pathname === '/college' ? await resolveCollegeRole(supabase, user.id) : null;
+    const role = schoolRole?.role || collegeRole?.role;
+    if (role === 'student') return secure(NextResponse.redirect(`${origin}/dashboard`));
+    return secure(response);
+  }
+
   if (PROTECTED_PREFIXES.some((p) => matchesRoutePrefix(pathname, p))) {
     if (!user) return secure(NextResponse.redirect(`${origin}/login?redirect=${encodeURIComponent(requestedPath)}`));
     if (pathname === '/dashboard') {
       const portalHome = await resolveInstitutionPortalHome(supabase, user.id);
-      // A student intentionally stays on the normal dashboard. Avoid redirecting /dashboard to itself.
       if (portalHome && portalHome !== pathname) return secure(NextResponse.redirect(`${origin}${portalHome}`));
     }
     const onboardingRedirect = await enforceOnboarding(request, supabase);
