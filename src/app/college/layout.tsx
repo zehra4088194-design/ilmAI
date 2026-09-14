@@ -1,7 +1,6 @@
 import Link from 'next/link';
-import { headers } from 'next/headers';
-import { ClipboardList, CalendarClock, FileText, Bell, Library, Users, LayoutDashboard, Sparkles, Search, Award, Presentation, Camera, BookOpen } from 'lucide-react';
 import { requireCollegeContext } from '@/lib/college-erp/access';
+import { ClipboardList, CalendarClock, FileText, Bell, Library, Users, LayoutDashboard, Sparkles, Search, Award, Presentation, Camera, BookOpen } from 'lucide-react';
 
 const items = [
   ['Dashboard', '/college', LayoutDashboard], ['My Institution', '/college/student-hub', Users], ['Attendance', '/college#attendance', ClipboardList], ['Timetable', '/college#timetable', CalendarClock], ['Assignments', '/college#assignments', FileText], ['Exams & Results', '/college#results', FileText], ['Notices', '/college#notices', Bell], ['Institution Library', '/college/library', Library], ['Curriculum Books', '/college/curriculum', BookOpen], ['Institution AI', '/college/institution-ai', Sparkles], ['Certificates & Records', '/college/documents', Award], ['Search anything', '/search', Search],
@@ -11,17 +10,10 @@ export default async function CollegePortalLayout({ children }: { children: Reac
   const { context } = await requireCollegeContext('dashboard.read');
   if (!context) return children;
   const role = context.membership.member_role;
-  const requestPath = (await headers()).get('x-invoke-path') || '';
 
-  // Students use the normal ilm AI dashboard. The only institution-specific screen they enter is
-  // the focused My Institution hub; keep that screen free of the full ERP navigation.
-  if (role === 'student') {
-    if (requestPath === '/college') {
-      const { redirect } = await import('next/navigation');
-      redirect('/dashboard');
-    }
-    return <div>{children}</div>;
-  }
+  // Institution students keep the exact normal ilm AI application shell. Their dedicated
+  // institution information is intentionally a focused page, not a second ERP dashboard.
+  if (role === 'student') return <div>{children}</div>;
 
   const studentNav = role === 'parent';
   const teacherNav = ['owner','admin','coordinator','teacher'].includes(role);
