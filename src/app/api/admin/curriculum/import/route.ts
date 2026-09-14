@@ -72,9 +72,10 @@ export async function POST(req: NextRequest) {
   if (bookError || !book) {
     return NextResponse.json({ error: bookError?.message || 'Unable to create book.' }, { status: 500 });
   }
+  const bookId = book.id;
 
   const { error: importError } = await db.from('curriculum_imports').insert({
-    book_id: book.id,
+    book_id: bookId,
     source_file_name: cleanString(payload.source_file_name) || null,
     source_file_url: cleanString(bookInput.source_file_url) || null,
     source_hash: cleanString(payload.source_hash) || null,
@@ -86,7 +87,7 @@ export async function POST(req: NextRequest) {
   });
 
   if (importError) {
-    await db.from('curriculum_books').delete().eq('id', book.id);
+    await db.from('curriculum_books').delete().eq('id', bookId);
     return NextResponse.json({ error: importError.message }, { status: 500 });
   }
 
@@ -101,7 +102,7 @@ export async function POST(req: NextRequest) {
     const depth = inheritedTitles.length;
 
     const { data: node, error } = await db.from('curriculum_nodes').insert({
-      book_id: book.id,
+      book_id: bookId,
       parent_id: parentId,
       node_type: ['chapter', 'topic', 'subtopic', 'section', 'exercise', 'appendix'].includes(input.node_type) ? input.node_type : depth === 0 ? 'chapter' : depth === 1 ? 'topic' : 'subtopic',
       number,
@@ -196,7 +197,7 @@ export async function POST(req: NextRequest) {
 
     if (Array.isArray(payload.pages)) {
       const rows = payload.pages.map((page: AnyRecord, index: number) => ({
-        book_id: book.id,
+        book_id: bookId,
         page_number: asInt(page.page_number ?? page.number, index + 1),
         printed_page_label: cleanString(page.printed_page_label) || null,
         extracted_text: cleanString(page.extracted_text ?? page.text) || null,
@@ -208,12 +209,12 @@ export async function POST(req: NextRequest) {
       counters.pages += rows.length;
     }
 
-    await db.from('curriculum_imports').update({ status: 'imported', completed_at: new Date().toISOString(), validation_errors: null }).eq('book_id', book.id).order('created_at', { ascending: false }).limit(1);
-    await db.from('curriculum_books').update({ extraction_status: 'ready' }).eq('id', book.id);
-    return NextResponse.json({ ok: true, book_id: book.id, counters });
+    await db.from('curriculum_imports').update({ status: 'imported', completed_at: new Date().toISOString(), validation_errors: null }).eq('book_id', bookId).order('created_at', { ascending: false }).limit(1);
+    await db.from('curriculum_books').update({ extraction_status: 'ready' }).eq('id', bookId);
+    return NextResponse.json({ ok: true, book_id: bookId, counters });
   } catch (e: any) {
-    await db.from('curriculum_books').update({ extraction_status: 'failed' }).eq('id', book.id);
-    await db.from('curriculum_imports').update({ status: 'failed', validation_errors: [{ message: e?.message || 'Import failed' }] }).eq('book_id', book.id).order('created_at', { ascending: false }).limit(1);
-    return NextResponse.json({ error: e?.message || 'Import failed.', book_id: book.id, counters }, { status: 500 });
+    await db.from('curriculum_books').update({ extraction_status: 'failed' }).eq('id', bookId);
+    await db.from('curriculum_imports').update({ status: 'failed', validation_errors: [{ message: e?.message || 'Import failed' }] }).eq('book_id', bookId).order('created_at', { ascending: false }).limit(1);
+    return NextResponse.json({ error: e?.message || 'Import failed.', book_id: bookId, counters }, { status: 500 });
   }
 }
