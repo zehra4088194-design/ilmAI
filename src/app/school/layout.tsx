@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { headers } from 'next/headers';
 import { requireSchoolContext } from '@/lib/school-erp/access';
 import { LayoutDashboard, ClipboardList, CalendarClock, FileText, Bell, Library, Users, Sparkles, Search, Award, Presentation, Camera, BookOpen } from 'lucide-react';
 
@@ -11,17 +10,10 @@ export default async function SchoolPortalLayout({ children }: { children: React
   const { context } = await requireSchoolContext('dashboard.read');
   if (!context) return children;
   const role = context.membership.member_role;
-  const requestPath = (await headers()).get('x-invoke-path') || '';
 
-  // Students use the normal ilm AI dashboard. The only institution-specific screen they enter is
-  // the focused My Institution hub; keep that screen free of the full ERP navigation.
-  if (role === 'student') {
-    if (requestPath === '/school') {
-      const { redirect } = await import('next/navigation');
-      redirect('/dashboard');
-    }
-    return <div>{children}</div>;
-  }
+  // Institution students keep the exact normal ilm AI application shell. Their dedicated
+  // institution information is intentionally a focused page, not a second ERP dashboard.
+  if (role === 'student') return <div>{children}</div>;
 
   const studentNav = role === 'parent';
   const teacherNav = ['owner','admin','coordinator','teacher'].includes(role);
