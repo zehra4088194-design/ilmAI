@@ -5,56 +5,14 @@ import { updateSession } from '@/lib/supabase/middleware';
 import { matchesRoutePrefix } from '@/lib/navigation/route-prefix';
 import { resolveSchoolRole, schoolAdminHomeForRole } from '@/lib/school-erp/access';
 import { resolveCollegeRole, collegeAdminHomeForRole } from '@/lib/college-erp/access';
-import {
-  getPublicRequestUrl,
-  getRequestHost,
-  isPlayConsumptionOnlyHost,
-  PLAY_CONSUMPTION_ONLY_HEADER,
-} from '@/lib/payments/distribution';
+import { getPublicRequestUrl, getRequestHost, isPlayConsumptionOnlyHost, PLAY_CONSUMPTION_ONLY_HEADER } from '@/lib/payments/distribution';
 import { getRequestSiteUrl } from '@/lib/utils/siteUrl';
 
 const AUTH_ROUTES = ['/login', '/register', '/forgot-password'];
-const PROTECTED_PREFIXES = [
-  '/dashboard',
-  '/study',
-  '/practice',
-  '/ai-tutor',
-  '/student-chat',
-  '/progress',
-  '/leaderboard',
-  '/settings',
-  '/mcq',
-  '/flashcards',
-  '/notes',
-  '/scan',
-  '/results',
-  '/subscription',
-  '/bookmarks',
-  '/doubts',
-  '/routine',
-  '/guess-paper',
-  '/full-test',
-  '/parent',
-  '/essay-writer',
-  '/age-counter',
-  '/humanizer',
-  '/university',
-  '/insights',
-  '/planner',
-  '/achievements',
-  '/avatar',
-  '/portfolio',
-  '/career',
-  '/opportunities',
-  '/teacher',
-  '/join-class',
-  '/college/dashboard',
-  '/school',
-];
+const PROTECTED_PREFIXES = ['/dashboard','/study','/practice','/ai-tutor','/student-chat','/progress','/leaderboard','/settings','/mcq','/flashcards','/notes','/scan','/results','/subscription','/bookmarks','/doubts','/routine','/guess-paper','/full-test','/parent','/essay-writer','/age-counter','/humanizer','/university','/insights','/planner','/achievements','/avatar','/portfolio','/career','/opportunities','/teacher','/join-class','/college/dashboard','/school'];
 const ADMIN_PREFIXES = ['/admin'];
 const COLLEGE_ADMIN_PREFIXES = ['/college-admin'];
 const SCHOOL_ADMIN_PREFIXES = ['/school-admin'];
-
 const PDFJS_WORKER_BOOTSTRAP_HASH = "'sha256-PQNBmepyn3corN4iAcIkbTGAzPr+5/ubjCJHc7QNtUU='";
 
 async function resolveInstitutionPortalHome(supabase: SupabaseClient, userId: string) {
@@ -113,17 +71,8 @@ export async function middleware(request: NextRequest) {
   if (playConsumptionOnly && (pathname === '/checkout' || pathname === '/pricing')) {
     return secure(NextResponse.redirect(getPublicRequestUrl(request.headers, request.url, '/subscription')));
   }
-  if (
-    playConsumptionOnly &&
-    request.method === 'POST' &&
-    (pathname === '/api/payments/create-session' || pathname === '/api/institution-plan-inquiry')
-  ) {
-    return secure(
-      NextResponse.json(
-        { status: 'consumption_only', error: 'External purchases are not available in the Play Store app.' },
-        { status: 403 }
-      )
-    );
+  if (playConsumptionOnly && request.method === 'POST' && (pathname === '/api/payments/create-session' || pathname === '/api/institution-plan-inquiry')) {
+    return secure(NextResponse.json({ status: 'consumption_only', error: 'External purchases are not available in the Play Store app.' }, { status: 403 }));
   }
 
   const forwardedHeaders = new Headers(request.headers);
@@ -170,8 +119,6 @@ export async function middleware(request: NextRequest) {
     return secure(response);
   }
 
-  // The old institution root dashboards remain for staff/parents. Students always stay in the
-  // normal ilm AI dashboard; their only institution-specific destination is /student-hub.
   if (pathname === '/school' || pathname === '/college') {
     if (!user) return secure(NextResponse.redirect(`${origin}/login?redirect=${encodeURIComponent(requestedPath)}`));
     const schoolRole = pathname === '/school' ? await resolveSchoolRole(supabase, user.id) : null;
@@ -185,7 +132,16 @@ export async function middleware(request: NextRequest) {
     if (!user) return secure(NextResponse.redirect(`${origin}/login?redirect=${encodeURIComponent(requestedPath)}`));
     if (pathname === '/dashboard') {
       const portalHome = await resolveInstitutionPortalHome(supabase, user.id);
-      if (portalHome && portalHome !== pathname) return secure(NextResponse.redirect(`${origin}${portalHome}`));
+      let refererPath = '';
+      const referer = request.headers.get('referer');
+      if (referer) {
+        try { refererPath = new URL(referer).pathname; } catch { refererPath = ''; }
+      }
+      // /school currently redirects to /dashboard when its tenant context cannot be resolved.
+      // A parent would otherwise be sent straight back to /school by this block, creating an
+      // infinite /school <-> /dashboard loop. Let that recovery dashboard request complete.
+      const recoveringFromSchool = refererPath === '/school' && portalHome === '/school';
+      if (portalHome && portalHome !== pathname && !recoveringFromSchool) return secure(NextResponse.redirect(`${origin}${portalHome}`));
     }
     const onboardingRedirect = await enforceOnboarding(request, supabase);
     if (onboardingRedirect) return secure(onboardingRedirect);
