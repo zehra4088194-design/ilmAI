@@ -25,15 +25,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const { id } = await params;
   const body = await req.json().catch(() => ({}));
-  // Demo eligibility has been removed — no editable fields remain
+  // Demo eligibility has been removed — no editable fields remain.
+  // Keep this endpoint intentionally read-only for updates.
+  void req;
+  void body;
+  void id;
   return NextResponse.json({ error: 'No valid update fields' }, { status: 400 });
-
-  const adminClient = createServiceClient();
-  const { data, error } = await adminClient.from('questions').update(updates as any).eq('id', id).select('*').single();
-  if (error) {
-    console.error('question update error:', error);
-    return NextResponse.json({ error: 'The question could not be updated' }, { status: 500 });
-  }
-
-  return NextResponse.json({ question: data });
 }

@@ -16,15 +16,15 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Login required.' }, { status: 401 });
-  const { data: admin } = await supabase.from('admin_users').select('user_id').eq('user_id', user.id).maybeSingle();
-  if (!admin) return NextResponse.json({ error: 'Admin access required.' }, { status: 403 });
+  const db = createServiceClient();
+  const { data: admin } = await db.from('profiles').select('role').eq('id', user.id).maybeSingle();
+  if (String(admin?.role || '').toLowerCase() !== 'admin') return NextResponse.json({ error: 'Admin access required.' }, { status: 403 });
 
   const body = await req.json();
-  const db = createServiceClient() as any;
   const { data: existing, error: readError } = await db.from('platform_settings').select('value').eq('key', 'subscription_plans').maybeSingle();
   if (readError) return NextResponse.json({ error: readError.message }, { status: 500 });
 
-  const current = existing?.value || {};
+  const current = (existing?.value && typeof existing.value === 'object') ? existing.value as Record<string, any> : {};
   const old = current.teacherPlans || {};
   const plans = {
     free: cleanPlan(body.plans?.free, old.free || { priceUsdMonthly: 0, classroomsMax: 1, studentsMax: 10 }),
