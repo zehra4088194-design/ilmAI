@@ -30,6 +30,7 @@ const path = require('path');
 const http = require('http');
 const pino = require('pino');
 const qrcodeTerminal = require('qrcode-terminal');
+const QRCode = require('qrcode');
 const { createClient } = require('@supabase/supabase-js');
 const {
   default: makeWASocket,
@@ -150,6 +151,22 @@ async function startSock() {
         } catch (error) {
           console.error('[whatsapp-worker] Failed to write last_qr.txt:', error);
         }
+        // Also generate a proper PNG image file that can be opened and scanned
+        // (QRCode.toFile is async — wrapped in an IIFE since this callback isn't async)
+        (async () => {
+          try {
+            const qrPngPath = path.join(__dirname, 'last_qr.png');
+            await QRCode.toFile(qrPngPath, qr, {
+              width: 512,
+              margin: 2,
+              color: { dark: '#000000', light: '#ffffff' }
+            });
+            console.log('[whatsapp-worker] ✅ QR code image saved to:', qrPngPath);
+            console.log('[whatsapp-worker] 📱 Open this PNG file on your computer and scan with WhatsApp > Linked Devices');
+          } catch (error) {
+            console.error('[whatsapp-worker] Failed to generate QR PNG:', error);
+          }
+        })();
       }
 
       if (connection === 'open') {
@@ -162,6 +179,19 @@ async function startSock() {
         state.connected = false;
         const statusCode = lastDisconnect?.error?.output?.statusCode;
         const loggedOut = statusCode === DisconnectReason.loggedOut;
+        
+        // Handle statusCode 515 - session invalid/already linked elsewhere
+        if (statusCode === 515) {
+          console.error(
+            '[whatsapp-worker] ❌ Session invalid (statusCode=515). This means the number is already linked to another device. ' +
+            'Please unlink this number from WhatsApp Web on your phone first, then restart the worker manually.'
+          );
+          // Do NOT auto-restart — it just loops. The user must unlink the number first.
+          // Exit with code 0 so PM2 does NOT auto-restart (autorestart only triggers on non-zero exit).
+          state.startingUp = false;
+          process.exit(0);
+        }
+        
         console.warn(
           '[whatsapp-worker] Connection closed. statusCode=%s loggedOut=%s',
           statusCode,
@@ -173,7 +203,7 @@ async function startSock() {
               `${AUTH_DIR} and restart the worker to scan a fresh QR code.`
           );
           state.startingUp = false;
-          return; // do NOT auto-reconnect — it would just loop on an invalid session.
+          process.exit(0); // exit cleanly so PM2 does NOT auto-restart
         }
         // Any other disconnect reason (network blip, phone offline, WA server restart, etc.) —
         // reconnect automatically so the bot heals itself without a human touching the VPS.

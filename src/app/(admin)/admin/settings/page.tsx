@@ -1,6 +1,8 @@
 import { Metadata } from 'next';
+import Link from 'next/link';
 import { PlatformSettingsForm } from '@/components/features/admin/settings/PlatformSettingsForm';
 import { getPlatformSettings } from '@/lib/platform-settings/server';
+import { Button } from '@/components/ui/button';
 export const metadata: Metadata = { title: 'Admin - Settings' };
 
 export default async function AdminSettingsPage() {
@@ -8,7 +10,10 @@ export default async function AdminSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Platform Settings</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold">Platform Settings</h1>
+        <Button asChild variant="outline"><Link href="/admin/teacher-plans">Teacher Plans & Student Limits</Link></Button>
+      </div>
       <PlatformSettingsForm initialSettings={settings} />
     </div>
   );

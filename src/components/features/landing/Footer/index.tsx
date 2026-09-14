@@ -89,18 +89,29 @@ export function LandingFooter() {
         </div>
 
         {WHATSAPP_CONTACT_NUMBER && (
-          <div className="mb-8 flex justify-center">
+          <div className="mb-6 flex justify-center">
             <a
               href={`https://wa.me/${WHATSAPP_CONTACT_NUMBER}`}
               target="_blank"
               rel="noreferrer"
-              className="border-border bg-card/60 hover:border-emerald-500/40 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors"
+              className="border-border bg-card/60 hover:border-emerald-500/40 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors"
             >
-              <MessageCircle className="h-4 w-4 text-emerald-500" />
-              Contact us on WhatsApp — {WHATSAPP_CONTACT_NAME}
+              <MessageCircle className="h-3 w-3 text-emerald-500" />
+              WhatsApp
             </a>
           </div>
         )}
+        <div className="mb-6 flex justify-center">
+          <a
+            href="mailto:support@ilmai.study"
+            target="_blank"
+            rel="noreferrer"
+            className="border-border bg-card/60 hover:border-emerald-500/40 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors"
+          >
+            <MessageCircle className="h-3 w-3 text-emerald-500" />
+            Email Support
+          </a>
+        </div>
 
         <div className="border-border flex flex-col items-center justify-between gap-4 border-t pt-8 md:flex-row">
           <p className="text-muted-foreground text-center text-sm md:text-left">

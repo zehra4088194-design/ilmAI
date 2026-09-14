@@ -17,24 +17,10 @@ function isDeepLinkWithin(path: string | null | undefined, prefixes: string[]): 
 }
 
 /**
- * Single shared low-level resolver used by both the school and college login-redirect flows
- * (CLAUDE_CODE_MASTER_PROMPT.md Phase 2, §3.3: "a single shared low-level helper... rather than
- * fully copy-pasting SQL — code reuse is fine, but the data and portals themselves stay separate").
- *
- * Priority order (per the master prompt): school membership first, then college membership,
- * then the normal consumer flow. A profile with active memberships in BOTH a school and a college
- * lands on the school portal — that ambiguity is not resolved by this function; see
- * docs/SCHOOL_COLLEGE_SEPARATION_TODO.md §5 for the open "at most one role" decision.
- *
- * `requestedRedirect` (optional) is whatever `?redirect=` the login/callback flow was carrying —
- * e.g. because middleware bounced an unauthenticated visit to a protected page through
- * `/login?redirect=<path>`. It is only honored when it's a genuine deep link into the resolved
- * institution's OWN portal (so "I was trying to reach /school-admin/people" still works); any other
- * value (most commonly the generic `/dashboard` fallback nearly every login flow defaults to) is
- * ignored in favor of the institution home. This is the fix for a real bug: a school/college member
- * logging in through a link that carried `?redirect=/dashboard` used to always land on the generic
- * consumer dashboard instead of their portal, because callers were skipping this resolver entirely
- * whenever an explicit redirect was present.
+ * Single shared low-level resolver used by both the school and college login-redirect flows.
+ * Institution staff/administrative members are routed to their institution portals, while
+ * institution students intentionally remain on the normal consumer student dashboard. The
+ * dashboard shell independently resolves the institution branding for those students.
  */
 export async function resolveMembershipRedirect(
   supabase: SupabaseClient,
@@ -42,7 +28,7 @@ export async function resolveMembershipRedirect(
   requestedRedirect?: string | null
 ): Promise<MembershipRedirectResult> {
   const schoolContext = await getSchoolContext(supabase, userId);
-  if (schoolContext) {
+  if (schoolContext && schoolContext.membership.member_role !== 'student') {
     const home = schoolAdminHomeForRole(schoolContext.membership.member_role);
     return {
       destination: isDeepLinkWithin(requestedRedirect, SCHOOL_PORTAL_PREFIXES) ? requestedRedirect : home,
@@ -51,7 +37,7 @@ export async function resolveMembershipRedirect(
   }
 
   const collegeContext = await getCollegeContext(supabase, userId);
-  if (collegeContext) {
+  if (collegeContext && collegeContext.membership.member_role !== 'student') {
     const home = collegeAdminHomeForRole(collegeContext.membership.member_role);
     return {
       destination: isDeepLinkWithin(requestedRedirect, COLLEGE_PORTAL_PREFIXES) ? requestedRedirect : home,

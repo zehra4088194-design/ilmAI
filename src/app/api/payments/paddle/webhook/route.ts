@@ -6,14 +6,9 @@ import { syncOrganizationSchoolGrants } from '@/lib/school-erp/subscription-casc
 import { syncOrganizationCollegeGrants } from '@/lib/college-erp/subscription-cascade';
 import { processReferralConversion } from '@/lib/referral/convert';
 
-type PaddleBillingCycle = 'monthly' | 'annual';
+type PaddleBillingCycle = 'monthly' | 'annual' | 'one_time';
 type PaddleTier = 'FREE' | 'PRO' | 'ELITE';
-
-type PaddleWebhookEnvelope<T> = {
-  event_type?: string;
-  data?: T;
-};
-
+type PaddleWebhookEnvelope<T> = { event_type?: string; data?: T };
 type PaddleTransactionData = {
   id: string;
   status?: string;
@@ -22,248 +17,133 @@ type PaddleTransactionData = {
   created_at?: string;
   billed_at?: string | null;
   custom_data?: Record<string, unknown> | null;
-  items?: Array<{
-    price?: {
-      id?: string | null;
-      billing_cycle?: {
-        interval?: string | null;
-      } | null;
-    } | null;
-  }>;
+  items?: Array<{ price?: { id?: string | null; billing_cycle?: { interval?: string | null } | null } | null }>;
 };
-
 type PaddleSubscriptionData = {
   id: string;
   status?: 'active' | 'trialing' | 'past_due' | 'canceled' | 'paused';
   customer_id?: string | null;
-  current_billing_period?: {
-    starts_at: string;
-    ends_at: string;
-  } | null;
-  scheduled_change?: {
-    action?: 'cancel' | 'pause' | 'resume' | null;
-  } | null;
+  current_billing_period?: { starts_at: string; ends_at: string } | null;
+  scheduled_change?: { action?: 'cancel' | 'pause' | 'resume' | null } | null;
   custom_data?: Record<string, unknown> | null;
-  items?: Array<{
-    price?: {
-      id?: string | null;
-      billing_cycle?: {
-        interval?: string | null;
-      } | null;
-    } | null;
-  }>;
+  items?: Array<{ price?: { id?: string | null; billing_cycle?: { interval?: string | null } | null } | null }>;
 };
 
-// Every plan (student or parent/teacher/university, PRO or ELITE) now checks out through Paddle's
-// non-catalog price API (see paddle.ts's resolveCheckoutPricing) — the amount is set fresh per
-// checkout from the admin panel's current price, so there's no fixed catalog price id to map back
-// to a tier here. custom_data.tier (set unconditionally in paddleProvider.createCheckout) is the
-// only source of truth for which tier a transaction/subscription is for.
-function resolveTier(fallback?: string | null): PaddleTier {
-  if (fallback === 'PRO' || fallback === 'ELITE') return fallback;
-  return 'FREE';
+function resolveTier(value?: string | null): PaddleTier {
+  return value === 'PRO' || value === 'ELITE' ? value : 'FREE';
 }
-
 function resolveBillingCycle(interval?: string | null, fallback?: string | null): PaddleBillingCycle {
-  if (fallback === 'annual' || fallback === 'monthly') return fallback;
-  return interval === 'year' ? 'annual' : 'monthly';
+  if (fallback === 'monthly' || fallback === 'annual' || fallback === 'one_time') return fallback;
+  if (interval === 'year') return 'annual';
+  if (interval === 'month') return 'monthly';
+  return 'one_time';
 }
-
 function addBillingPeriod(startAt: string, billingCycle: PaddleBillingCycle) {
   const date = new Date(startAt);
-  if (billingCycle === 'annual') {
-    date.setFullYear(date.getFullYear() + 1);
-  } else {
-    date.setMonth(date.getMonth() + 1);
-  }
+  if (billingCycle === 'annual') date.setFullYear(date.getFullYear() + 1);
+  else if (billingCycle === 'monthly') date.setMonth(date.getMonth() + 1);
+  else date.setDate(date.getDate() + 30);
   return date.toISOString();
 }
 
-async function upsertSubscriptionRecord({
-  supabase,
-  userId,
-  tier,
-  status,
-  providerCustomerId,
-  providerSubscriptionId,
-  currentPeriodStart,
-  currentPeriodEnd,
-  cancelAtPeriodEnd,
-}: {
+async function upsertSubscriptionRecord({ supabase, userId, tier, status, providerCustomerId, providerSubscriptionId, currentPeriodStart, currentPeriodEnd, cancelAtPeriodEnd }: {
   supabase: Awaited<ReturnType<typeof createAdminClient>>;
-  userId: string;
-  tier: PaddleTier;
-  status: string;
-  providerCustomerId: string | null;
-  providerSubscriptionId: string;
-  currentPeriodStart: string;
-  currentPeriodEnd: string;
-  cancelAtPeriodEnd: boolean;
+  userId: string; tier: PaddleTier; status: string; providerCustomerId: string | null;
+  providerSubscriptionId: string; currentPeriodStart: string; currentPeriodEnd: string; cancelAtPeriodEnd: boolean;
 }) {
-  const { error } = await (supabase.from('subscriptions') as any).upsert(
-    {
-      user_id: userId,
-      provider: 'paddle',
-      provider_customer_id: providerCustomerId,
-      provider_subscription_id: providerSubscriptionId,
-      tier,
-      status,
-      current_period_start: currentPeriodStart,
-      current_period_end: currentPeriodEnd,
-      cancel_at_period_end: cancelAtPeriodEnd,
-    } as any,
-    { onConflict: 'provider_subscription_id' }
-  );
-  if (error) {
-    throw new Error(`Paddle subscription sync failed: ${error.message}`);
-  }
+  const { error } = await (supabase.from('subscriptions') as any).upsert({
+    user_id: userId,
+    provider: 'paddle',
+    provider_customer_id: providerCustomerId,
+    provider_subscription_id: providerSubscriptionId,
+    tier,
+    status,
+    current_period_start: currentPeriodStart,
+    current_period_end: currentPeriodEnd,
+    cancel_at_period_end: cancelAtPeriodEnd,
+  }, { onConflict: 'provider_subscription_id' });
+  if (error) throw new Error(`Paddle subscription sync failed: ${error.message}`);
 }
 
-async function syncProfileTier({
-  supabase,
-  userId,
-  tier,
-  subscriptionExpiresAt,
-}: {
+async function syncProfileTier({ supabase, userId, tier, subscriptionExpiresAt }: {
   supabase: Awaited<ReturnType<typeof createAdminClient>>;
-  userId: string;
-  tier: PaddleTier;
-  subscriptionExpiresAt: string | null;
+  userId: string; tier: PaddleTier; subscriptionExpiresAt: string | null;
 }) {
-  const { error } = await supabase
-    .from('profiles')
-    .update({
-      subscription_tier: tier,
-      subscription_expires_at: subscriptionExpiresAt,
-    })
-    .eq('id', userId);
-  if (error) {
-    throw new Error(`Paddle profile sync failed: ${error.message}`);
-  }
+  const { error } = await supabase.from('profiles').update({ subscription_tier: tier, subscription_expires_at: subscriptionExpiresAt }).eq('id', userId);
+  if (error) throw new Error(`Paddle profile sync failed: ${error.message}`);
 }
 
-// Institution transactions (see createInstitutionCheckout / create-institution-session route)
-// carry organization_id + institution_type instead of a user tier — there's no profiles row to
-// update; activating the plan means flipping this organization's plan-settings row to
-// billing_status: 'active' with a fresh renews_on date, then cascading that access to every
-// active member the same way the admin's own updateSchoolPlanSettings action does.
-async function activateInstitutionBilling({
-  supabase,
-  organizationId,
-  institutionType,
-  billingCycle,
-  periodEnd,
-}: {
+async function activateInstitutionBilling({ supabase, organizationId, institutionType, billingCycle, periodEnd }: {
   supabase: Awaited<ReturnType<typeof createAdminClient>>;
-  organizationId: string;
-  institutionType: 'school' | 'college';
-  billingCycle: PaddleBillingCycle;
-  periodEnd: string;
+  organizationId: string; institutionType: 'school' | 'college'; billingCycle: PaddleBillingCycle; periodEnd: string;
 }) {
   const table = institutionType === 'school' ? 'school_organization_plan_settings' : 'college_organization_plan_settings';
-  const { error } = await (supabase.from(table) as any).upsert(
-    {
-      organization_id: organizationId,
-      billing_status: 'active',
-      renews_on: periodEnd.slice(0, 10),
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: 'organization_id' }
-  );
-  if (error) {
-    throw new Error(`Paddle institution billing sync failed: ${error.message}`);
-  }
-
-  if (institutionType === 'school') {
-    await syncOrganizationSchoolGrants(organizationId, true);
-  } else {
-    await syncOrganizationCollegeGrants(organizationId, true);
-  }
+  const { error } = await (supabase.from(table) as any).upsert({ organization_id: organizationId, billing_status: 'active', renews_on: periodEnd.slice(0, 10), updated_at: new Date().toISOString() }, { onConflict: 'organization_id' });
+  if (error) throw new Error(`Paddle institution billing sync failed: ${error.message}`);
+  if (institutionType === 'school') await syncOrganizationSchoolGrants(organizationId, true);
+  else await syncOrganizationCollegeGrants(organizationId, true);
 }
 
 async function reconcileProfileAccess(supabase: Awaited<ReturnType<typeof createAdminClient>>, userId: string) {
-  const { data, error } = await (supabase.from('subscriptions') as any)
-    .select('tier, status, current_period_end')
-    .eq('user_id', userId);
-  if (error) {
-    throw new Error(`Paddle access reconciliation failed: ${error.message}`);
-  }
-
+  const { data, error } = await (supabase.from('subscriptions') as any).select('tier, status, current_period_end').eq('user_id', userId);
+  if (error) throw new Error(`Paddle access reconciliation failed: ${error.message}`);
   const access = selectEffectiveSubscription(data || []);
-  await syncProfileTier({
-    supabase,
-    userId,
-    tier: access.tier,
-    subscriptionExpiresAt: access.expiresAt,
-  });
+  await syncProfileTier({ supabase, userId, tier: access.tier, subscriptionExpiresAt: access.expiresAt });
 }
 
 export async function POST(req: NextRequest) {
   const rawBody = await req.text();
   const signature = req.headers.get('paddle-signature');
-
   const provider = getPaymentProviderById('paddle');
   const result = await provider.verifyWebhook(rawBody, signature);
-
-  if (!result.valid) {
-    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
-  }
+  if (!result.valid) return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
 
   const supabase = await createAdminClient();
-
   switch (result.eventType) {
     case 'transaction.completed': {
       const payload = result.payload as PaddleWebhookEnvelope<PaddleTransactionData>;
       const transaction = payload.data;
       const customData = transaction?.custom_data || {};
-
-      // Institution (school/college) payments carry organization_id/institution_type instead of a
-      // user tier — see createInstitutionCheckout. Handled entirely separately from the
-      // profile-tier flow below since there's no profiles row involved.
       const organizationId = typeof customData.organization_id === 'string' ? customData.organization_id : null;
-      const institutionType =
-        customData.institution_type === 'school' || customData.institution_type === 'college'
-          ? customData.institution_type
-          : null;
+      const institutionType = customData.institution_type === 'school' || customData.institution_type === 'college' ? customData.institution_type : null;
       if (organizationId && institutionType) {
-        const billingCycle = resolveBillingCycle(
-          transaction?.items?.[0]?.price?.billing_cycle?.interval,
-          typeof customData.billing_cycle === 'string' ? customData.billing_cycle : null
-        );
+        const billingCycle = resolveBillingCycle(transaction?.items?.[0]?.price?.billing_cycle?.interval, typeof customData.billing_cycle === 'string' ? customData.billing_cycle : null);
         const periodStart = transaction?.billed_at || transaction?.created_at || new Date().toISOString();
-        const periodEnd = addBillingPeriod(periodStart, billingCycle);
+        const periodEnd = addBillingPeriod(periodStart, billingCycle === 'one_time' ? 'monthly' : billingCycle);
         await activateInstitutionBilling({ supabase, organizationId, institutionType, billingCycle, periodEnd });
         break;
       }
 
       const userId = typeof customData.user_id === 'string' ? customData.user_id : null;
       const tier = resolveTier(typeof customData.tier === 'string' ? customData.tier : null);
-      const billingCycle = resolveBillingCycle(
-        transaction?.items?.[0]?.price?.billing_cycle?.interval,
-        typeof customData.billing_cycle === 'string' ? customData.billing_cycle : null
-      );
+      const billingCycle = resolveBillingCycle(transaction?.items?.[0]?.price?.billing_cycle?.interval, typeof customData.billing_cycle === 'string' ? customData.billing_cycle : null);
+      if (!userId || tier === 'FREE') break;
 
-      if (!userId || tier === 'FREE' || !transaction?.subscription_id) {
+      const periodStart = transaction?.billed_at || transaction?.created_at || new Date().toISOString();
+      if (billingCycle === 'one_time') {
+        // Synthetic subscription row gives the existing access resolver one uniform source of truth.
+        // It is intentionally namespaced so no cancellation endpoint will mistake it for a Paddle subscription.
+        const periodEnd = addBillingPeriod(periodStart, 'one_time');
+        await upsertSubscriptionRecord({
+          supabase,
+          userId,
+          tier,
+          status: 'active',
+          providerCustomerId: transaction.customer_id || null,
+          providerSubscriptionId: `one_time:${transaction.id}`,
+          currentPeriodStart: periodStart,
+          currentPeriodEnd: periodEnd,
+          cancelAtPeriodEnd: false,
+        });
+        await reconcileProfileAccess(supabase, userId);
+        await processReferralConversion(userId);
         break;
       }
 
-      const currentPeriodStart = transaction.billed_at || transaction.created_at || new Date().toISOString();
-      const currentPeriodEnd = addBillingPeriod(currentPeriodStart, billingCycle);
-
-      await upsertSubscriptionRecord({
-        supabase,
-        userId,
-        tier,
-        status: 'active',
-        providerCustomerId: transaction.customer_id || null,
-        providerSubscriptionId: transaction.subscription_id,
-        currentPeriodStart,
-        currentPeriodEnd,
-        cancelAtPeriodEnd: false,
-      });
+      if (!transaction?.subscription_id) break;
+      const currentPeriodEnd = addBillingPeriod(periodStart, billingCycle);
+      await upsertSubscriptionRecord({ supabase, userId, tier, status: 'active', providerCustomerId: transaction.customer_id || null, providerSubscriptionId: transaction.subscription_id, currentPeriodStart: periodStart, currentPeriodEnd, cancelAtPeriodEnd: false });
       await reconcileProfileAccess(supabase, userId);
-      // Phase 7b — this fires on every successful transaction, not just the first, but
-      // processReferralConversion no-ops instantly once a referral is already converted.
       await processReferralConversion(userId);
       break;
     }
@@ -276,52 +156,18 @@ export async function POST(req: NextRequest) {
     case 'subscription.paused': {
       const payload = result.payload as PaddleWebhookEnvelope<PaddleSubscriptionData>;
       const subscription = payload.data;
-      if (!subscription?.id) {
-        break;
-      }
-
-      const { data: existing, error: lookupError } = await (supabase.from('subscriptions') as any)
-        .select('user_id, tier')
-        .eq('provider_subscription_id', subscription.id)
-        .maybeSingle();
-      if (lookupError) {
-        throw new Error(`Paddle subscription lookup failed: ${lookupError.message}`);
-      }
-
+      if (!subscription?.id) break;
+      const { data: existing, error: lookupError } = await (supabase.from('subscriptions') as any).select('user_id, tier').eq('provider_subscription_id', subscription.id).maybeSingle();
+      if (lookupError) throw new Error(`Paddle subscription lookup failed: ${lookupError.message}`);
       const customData = subscription.custom_data || {};
-      const customUserId = typeof customData.user_id === 'string' ? customData.user_id : null;
-      const userId = existing?.user_id || customUserId;
-      if (!userId) {
-        break;
-      }
-
-      const fallbackTier =
-        typeof existing?.tier === 'string'
-          ? existing.tier
-          : typeof customData.tier === 'string'
-            ? customData.tier
-            : null;
-      const tier = resolveTier(fallbackTier);
-      if (tier === 'FREE') {
-        break;
-      }
+      const userId = existing?.user_id || (typeof customData.user_id === 'string' ? customData.user_id : null);
+      if (!userId) break;
+      const tier = resolveTier(typeof existing?.tier === 'string' ? existing.tier : typeof customData.tier === 'string' ? customData.tier : null);
+      if (tier === 'FREE') break;
       const currentPeriodStart = subscription.current_billing_period?.starts_at || new Date().toISOString();
       const billingCycle = resolveBillingCycle(subscription.items?.[0]?.price?.billing_cycle?.interval, null);
-      const currentPeriodEnd =
-        subscription.current_billing_period?.ends_at || addBillingPeriod(currentPeriodStart, billingCycle);
-      const cancelAtPeriodEnd = subscription.scheduled_change?.action === 'cancel';
-
-      await upsertSubscriptionRecord({
-        supabase,
-        userId,
-        tier,
-        status: subscription.status || 'active',
-        providerCustomerId: subscription.customer_id || null,
-        providerSubscriptionId: subscription.id,
-        currentPeriodStart,
-        currentPeriodEnd,
-        cancelAtPeriodEnd,
-      });
+      const currentPeriodEnd = subscription.current_billing_period?.ends_at || addBillingPeriod(currentPeriodStart, billingCycle);
+      await upsertSubscriptionRecord({ supabase, userId, tier, status: subscription.status || 'active', providerCustomerId: subscription.customer_id || null, providerSubscriptionId: subscription.id, currentPeriodStart, currentPeriodEnd, cancelAtPeriodEnd: subscription.scheduled_change?.action === 'cancel' });
       await reconcileProfileAccess(supabase, userId);
       break;
     }
@@ -329,36 +175,15 @@ export async function POST(req: NextRequest) {
     case 'subscription.canceled': {
       const payload = result.payload as PaddleWebhookEnvelope<PaddleSubscriptionData>;
       const subscription = payload.data;
-      if (!subscription?.id) {
-        break;
-      }
-
-      const { data: existing, error: lookupError } = await (supabase.from('subscriptions') as any)
-        .select('user_id')
-        .eq('provider_subscription_id', subscription.id)
-        .maybeSingle();
-      if (lookupError) {
-        throw new Error(`Paddle cancellation lookup failed: ${lookupError.message}`);
-      }
-
-      if (!existing?.user_id) {
-        break;
-      }
-
-      const { error: updateError } = await (supabase.from('subscriptions') as any)
-        .update({
-          status: 'canceled',
-          cancel_at_period_end: false,
-          current_period_end: subscription.current_billing_period?.ends_at || new Date().toISOString(),
-        } as any)
-        .eq('provider_subscription_id', subscription.id);
-      if (updateError) {
-        throw new Error(`Paddle cancellation sync failed: ${updateError.message}`);
-      }
+      if (!subscription?.id) break;
+      const { data: existing, error: lookupError } = await (supabase.from('subscriptions') as any).select('user_id').eq('provider_subscription_id', subscription.id).maybeSingle();
+      if (lookupError) throw new Error(`Paddle cancellation lookup failed: ${lookupError.message}`);
+      if (!existing?.user_id) break;
+      const { error: updateError } = await (supabase.from('subscriptions') as any).update({ status: 'canceled', cancel_at_period_end: false, current_period_end: subscription.current_billing_period?.ends_at || new Date().toISOString() }).eq('provider_subscription_id', subscription.id);
+      if (updateError) throw new Error(`Paddle cancellation sync failed: ${updateError.message}`);
       await reconcileProfileAccess(supabase, existing.user_id);
       break;
     }
   }
-
   return NextResponse.json({ received: true });
 }
