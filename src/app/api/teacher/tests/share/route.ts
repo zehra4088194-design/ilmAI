@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (rows.length) {
-    await createNotificationsIfEnabled(service, 'studyReminders', rows.map((row) => ({
+    await createNotificationsIfEnabled(service, 'studyReminders', rows.map((row: any) => ({
       user_id: row.student_id,
       type: 'SYSTEM',
       title: 'New teacher test assigned',
