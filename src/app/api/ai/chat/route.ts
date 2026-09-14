@@ -23,9 +23,6 @@ import { getAdminAiProvider } from '@/lib/platform-settings/shared';
 export const runtime = 'nodejs';
 export const maxDuration = 30;
 
-// Human-readable "who's asking" line for the side-chat system prompt — grade 9/10/11/12 student,
-// university student, teacher, parent, or principal — built from profiles.role/grade_level/
-// education_level rather than trusted from the client, same as subscription_tier just above.
 function describeAsker(profile: { role?: string | null; grade_level?: string | null; education_level?: string | null }) {
   const gradeNumber = (value?: string | null) => {
     const match = value?.match(/(\d{1,2})/);
@@ -78,19 +75,20 @@ When a destination is relevant, end with a short Markdown link such as [Open AI 
       ? `
 Side chat mode:
 - Do not start with a generic welcome or self-introduction
-- Answer the student's exact question directly
-- Keep it compact unless the student asks for detail
+- Answer the user's exact question directly
+- Keep it compact unless the user asks for detail
 - If the message is just "hi/hello", greet warmly in one short line and ask what subject they need help with
-${askerContext?.asker || askerContext?.pageLabel ? `- You're talking to ${askerContext.asker || 'a user'}${askerContext.pageLabel ? `, currently on the "${askerContext.pageLabel}" page in the app` : ''} — tailor tone, depth, and examples accordingly (e.g. simpler language for a younger grade, institution/admin framing for a principal or teacher, practical guidance for a parent). Don't just repeat this back to them.` : ''}
+${askerContext?.asker || askerContext?.pageLabel ? `- You're talking to ${askerContext.asker || 'a user'}${askerContext.pageLabel ? `, currently on the "${askerContext.pageLabel}" page in the app` : ''} — tailor tone, depth, and examples accordingly. Don't just repeat this back to them.` : ''}
+- For teachers/staff: focus on teaching workflows, lesson planning, worksheets, assessments, classroom explanations, and institution tools. Do not recommend textbook/book titles or display library-book search results unless the teacher explicitly asks for a book recommendation AND reliable book information is actually available. Never imply that a book exists in the app when you cannot verify it.
 ${navigationCatalog}`
       : '';
   return `You are ilm AI, an expert tutor for Pakistani students (Grades 9-12, O/A Levels, FBISE & provincial boards).${subject ? `\nThe student has chosen to focus this session on: ${subject}. Keep your answers scoped to that subject unless they explicitly ask about something else.` : ''}
 Rules:
 - Use a Socratic tutoring style. Do not dump the final answer first unless the student explicitly asks for "final answer only".
 - For learning questions, structure the response as: Quick idea, Hint, Next step, Worked example, Final check question.
-- Identify the likely misconception if the student's attempt is wrong or incomplete.
-- Ask one short check question at the end so the student practices the next step.
-- Respond in professional English by default. Use Roman Urdu only when the student explicitly requests it.
+- Identify the likely misconception if the user's attempt is wrong or incomplete.
+- Ask one short check question at the end so the user practices the next step.
+- Respond in professional English by default. Use Roman Urdu only when the user explicitly requests it.
 - For MCQs: explain why each option is right/wrong
 - For math/physics numericals: show readable formulas, substitutions, units, and final answer on separate lines
 - If the question is navigation/help about the app, answer directly and include the relevant link instead of tutoring steps
@@ -142,13 +140,7 @@ export async function POST(req: NextRequest) {
           controller.close();
         },
       });
-      return new Response(readableStream, {
-        headers: {
-          'Content-Type': 'text/plain; charset=utf-8',
-          'X-Provider-Used': 'local',
-          'X-Fallback-Triggered': 'false',
-        },
-      });
+      return new Response(readableStream, { headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Provider-Used': 'local', 'X-Fallback-Triggered': 'false' } });
     }
 
     const requested = typeof requestedProvider === 'string' ? requestedProvider : 'groq';
@@ -161,102 +153,44 @@ export async function POST(req: NextRequest) {
       ? await checkAiSideChatLimit(user.id, userTier)
       : await checkAiMessageLimit(user.id, userTier, 'ai_tutor');
     if (!limitCheck.success) {
-      return new Response(
-        JSON.stringify({
-          error: await getConfiguredLimitExceededMessage(userTier, isSideChat ? 'Side chat' : 'AI Tutor'),
-        }),
-        { status: 429 }
-      );
+      return new Response(JSON.stringify({ error: await getConfiguredLimitExceededMessage(userTier, isSideChat ? 'Side chat' : 'AI Tutor') }), { status: 429 });
     }
 
     const resolvedSubjectId = typeof subjectId === 'string' ? subjectId : null;
-    const [localKnowledgeContext, resourceRagContext] =
-      source === 'ai_tutor'
-        ? await Promise.all([
-            buildSubjectTutorContext({
-              subjectId: resolvedSubjectId,
-              subjectName: typeof subject === 'string' ? subject : null,
-              query: message,
-            }).catch((error) => {
-              console.warn('Subject tutor context unavailable:', error);
-              return null;
-            }),
-            buildSubjectResourceRagContext({
-              subjectId: resolvedSubjectId,
-              query: message,
-            }),
-          ])
-        : [null, null];
-    // Curated local knowledge files first, then indexed resource/past-paper excerpts.
+    const [localKnowledgeContext, resourceRagContext] = source === 'ai_tutor'
+      ? await Promise.all([
+          buildSubjectTutorContext({ subjectId: resolvedSubjectId, subjectName: typeof subject === 'string' ? subject : null, query: message }).catch((error) => { console.warn('Subject tutor context unavailable:', error); return null; }),
+          buildSubjectResourceRagContext({ subjectId: resolvedSubjectId, query: message }),
+        ])
+      : [null, null];
     const subjectContext = [localKnowledgeContext, resourceRagContext].filter(Boolean).join('\n\n') || null;
     const adminProvider = getAdminAiProvider(platformSettings, isSideChat ? 'sideChat' : 'aiTutor') as AiProviderId;
-    // AI Tutor cost/speed chain, for the default "Assistant" tier (not an explicitly-picked
-    // named provider like Claude/GPT): Groq first — free, fast (LPU), and higher-quality
-    // (70B) than the self-hosted model — then the local self-hosted model (grounded with
-    // subjectContext above when available) only once Groq's whole key pool/budget is
-    // exhausted, as a zero-marginal-cost safety net before falling through to whatever the
-    // admin has configured as the last resort below.
     const useAiTutorCostSafeChain = assistantSelected && source === 'ai_tutor';
     const provider: AiProviderId = adminProvider === 'local' ? 'groq' : adminProvider;
 
     const messages = [
-      {
-        role: 'system' as const,
-        content: buildSystemPrompt(typeof subject === 'string' ? subject : undefined, source, subjectContext, {
-          pageLabel: typeof pageLabel === 'string' ? pageLabel : undefined,
-          asker: profile ? describeAsker(profile) : undefined,
-        }),
-      },
-      ...history
-        .filter((m: { role: string; content: string }) => m.content)
-        .map((m: { role: string; content: string }) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+      { role: 'system' as const, content: buildSystemPrompt(typeof subject === 'string' ? subject : undefined, source, subjectContext, { pageLabel: typeof pageLabel === 'string' ? pageLabel : undefined, asker: profile ? describeAsker(profile) : undefined }) },
+      ...history.filter((m: { role: string; content: string }) => m.content).map((m: { role: string; content: string }) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
       { role: 'user' as const, content: message },
     ];
 
     let result;
     if (useAiTutorCostSafeChain) {
       try {
-        result = await gatewayChat({
-          provider: 'groq',
-          tier,
-          messages,
-          maxTokens: 2048,
-          temperature: 0.7,
-          strictProvider: true,
-          routingPolicy: 'text',
-        });
+        result = await gatewayChat({ provider: 'groq', tier, messages, maxTokens: 2048, temperature: 0.7, strictProvider: true, routingPolicy: 'text' });
       } catch (groqError) {
         console.warn('Groq unavailable for AI Tutor; trying local self-hosted model next:', groqError);
       }
       if (!result) {
         try {
-          result = await gatewayChat({
-            provider: 'local',
-            tier,
-            messages,
-            maxTokens: 1600,
-            temperature: 0.55,
-            strictProvider: true,
-            routingPolicy: 'local',
-          });
+          result = await gatewayChat({ provider: 'local', tier, messages, maxTokens: 1600, temperature: 0.55, strictProvider: true, routingPolicy: 'local' });
         } catch (localError) {
           console.warn('Local AI Tutor also unavailable; falling back to admin chat provider:', localError);
         }
       }
     }
-    result ||= await gatewayChat({
-      provider,
-      tier,
-      messages,
-      maxTokens: source === 'side_chat' ? 1100 : 2048,
-      temperature: 0.7,
-      strictProvider: true,
-      routingPolicy: 'text',
-    });
+    result ||= await gatewayChat({ provider, tier, messages, maxTokens: source === 'side_chat' ? 1100 : 2048, temperature: 0.7, strictProvider: true, routingPolicy: 'text' });
 
-    // Simulate a stream so the existing chat UI (which reads response.body as a stream)
-    // keeps its "typing" experience, even though the gateway itself is non-streaming
-    // (necessary for safe key-rotation — see docs for why).
     const encoder = new TextEncoder();
     const text = result.text;
     const readableStream = new ReadableStream({
@@ -271,22 +205,12 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return new Response(readableStream, {
-      headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
-        'X-Provider-Used': result.providerUsed,
-        'X-Fallback-Triggered': String(result.fallbackTriggered || (Boolean(requestedProvider) && result.providerUsed !== requestedProvider)),
-      },
-    });
+    return new Response(readableStream, { headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Provider-Used': result.providerUsed, 'X-Fallback-Triggered': String(result.fallbackTriggered || (Boolean(requestedProvider) && result.providerUsed !== requestedProvider)) } });
   } catch (error) {
     console.error('AI chat error:', error);
     if (error instanceof GatewayError) {
-      return new Response(JSON.stringify({ error: error.message }), {
-        status: error.status === 401 || error.status === 403 ? 502 : 500,
-      });
+      return new Response(JSON.stringify({ error: error.message }), { status: error.status === 401 || error.status === 403 ? 502 : 500 });
     }
-    return new Response(JSON.stringify({ error: 'The AI response could not be generated. Please try again.' }), {
-      status: 500,
-    });
+    return new Response(JSON.stringify({ error: 'The AI response could not be generated. Please try again.' }), { status: 500 });
   }
 }
