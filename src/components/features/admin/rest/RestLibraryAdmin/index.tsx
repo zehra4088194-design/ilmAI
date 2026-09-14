@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Headphones, Loader2, Music2, Plus, Trash2, UploadCloud, Youtube } from 'lucide-react';
@@ -127,42 +127,38 @@ export function RestLibraryAdmin() {
     try {
       const [durationSeconds] = await Promise.all([readAudioDuration(file)]);
 
-      // Step 1: ask our server for a short-lived presigned PUT URL — this call is tiny (just
-      // filename/type/size as JSON), so it can never itself hit a body-size or memory limit.
-      const presignRes = await fetch('/api/admin/audio-files/presign', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          filename: file.name,
-          contentType: file.type,
-          size: file.size,
-          scope: songForm.playlist_id || 'general',
-        }),
-      });
-      const presignJson = await presignRes.json().catch(() => ({}));
-      if (!presignRes.ok) throw new Error(presignJson.error || `Could not prepare the upload (HTTP ${presignRes.status}).`);
-      const { uploadUrl, uri, contentType } = presignJson as { uploadUrl: string; uri: string; contentType: string };
-
-      // Step 2: upload the actual bytes straight to B2 from the browser — this request never
-      // touches our app server, so a large file can no longer OOM the container or outlast a
-      // reverse-proxy timeout the way routing it through our own upload route used to.
-      await new Promise<void>((resolve, reject) => {
+      // Upload through our own origin to avoid browser-to-B2 CORS failures.
+      const uploaded = await new Promise<{ uri: string; size: number; contentType: string }>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
-        xhr.open('PUT', uploadUrl);
-        xhr.setRequestHeader('Content-Type', contentType);
+        xhr.open('POST', '/api/admin/audio-files/upload');
+        xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+        xhr.setRequestHeader('X-Audio-Filename', encodeURIComponent(file.name));
+        xhr.setRequestHeader('X-Audio-Size', String(file.size));
+        xhr.setRequestHeader('X-Audio-Scope', songForm.playlist_id || 'general');
         xhr.upload.onprogress = (event) => {
           if (event.lengthComputable) setUploadPct(Math.round((event.loaded / event.total) * 100));
         };
         xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) resolve();
-          else reject(new Error(`Upload to storage failed (HTTP ${xhr.status}). ${xhr.responseText.slice(0, 200)}`));
+          let response: { uri?: string; size?: number; contentType?: string; error?: string } = {};
+          try {
+            response = JSON.parse(xhr.responseText);
+          } catch {
+            // The status check below reports a useful error for a proxy-generated non-JSON response.
+          }
+          if (xhr.status >= 200 && xhr.status < 300 && response.uri) {
+            resolve({
+              uri: response.uri,
+              size: response.size || file.size,
+              contentType: response.contentType || file.type || 'application/octet-stream',
+            });
+          } else {
+            reject(new Error(response.error || `Upload failed (HTTP ${xhr.status}).`));
+          }
         };
-        xhr.onerror = () =>
-          reject(new Error('Upload failed: network error (connection dropped — this often happens with very large files).'));
+        xhr.onerror = () => reject(new Error('Upload failed: the connection to the server was interrupted.'));
         xhr.send(file);
       });
 
-      const uploaded = { uri, size: file.size, contentType };
       setPendingUpload({ ...uploaded, durationSeconds, fileName: file.name });
       if (!songForm.title.trim()) {
         setSongForm((v) => ({ ...v, title: file.name.replace(/\.[^.]+$/, '') }));

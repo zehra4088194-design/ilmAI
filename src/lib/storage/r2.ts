@@ -1,4 +1,4 @@
-import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+﻿import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 type R2Config = {
@@ -249,6 +249,25 @@ export async function putR2Object(
       ContentType: options.contentType,
       CacheControl: options.cacheControl,
       ContentEncoding: options.contentEncoding,
+    })
+  );
+}
+
+export async function putR2Stream(
+  key: string,
+  body: ReadableStream<Uint8Array>,
+  options: { contentType: string; contentLength?: number },
+  bucket?: string
+) {
+  const config = resolveConfig(bucket);
+  if (!config) throw new Error('R2 is not configured.');
+  await getClient(config).send(
+    new PutObjectCommand({
+      Bucket: config.bucket,
+      Key: key,
+      Body: body,
+      ContentType: options.contentType,
+      ContentLength: options.contentLength,
     })
   );
 }
