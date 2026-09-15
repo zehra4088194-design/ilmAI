@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
 
   const { data: enrollments } = await db.from('class_enrollments').select('student_id').eq('class_id', classId);
   const enrolledIds = new Set((enrollments || []).map((row: any) => String(row.student_id)));
-  const studentIds = (requestedStudentIds.length ? requestedStudentIds : Array.from(enrolledIds)).filter((id) => enrolledIds.has(id));
+  const studentIds = (requestedStudentIds.length ? requestedStudentIds : Array.from(enrolledIds)).filter((id: string) => enrolledIds.has(id));
   if (!studentIds.length) return NextResponse.json({ error: 'No enrolled students selected.' }, { status: 409 });
 
   const snapshot = test.paper_snapshot || {};
