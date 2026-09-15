@@ -33,7 +33,7 @@ export default async function SchoolSettingsPage() {
   const canManageAcademics = hasSchoolPermission(context, 'academics.manage');
   const { data: planSettings } = await supabase
     .from('school_organization_plan_settings')
-    .select('billing_status, plan_tier_id, renews_on')
+    .select('billing_status, plan_tier_id, renews_on, max_students, max_teachers, monthly_price_pkr')
     .eq('organization_id', context.organization.id)
     .maybeSingle();
   const [platformSettings, studentCount, teacherCount] = await Promise.all([
