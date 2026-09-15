@@ -5,8 +5,6 @@ import { DashboardNavbar } from '@/components/layout/DashboardNavbar';
 import { DashboardSidebar } from '@/components/layout/DashboardSidebar';
 import { DashboardFooter } from '@/components/layout/DashboardFooter';
 import { SideChatWidget } from '@/components/features/ai-selector/SideChatWidget';
-import { FreePlanPicker } from '@/components/features/dashboard/FreePlanPicker';
-import { DataRetentionNotice } from '@/components/features/privacy/DataRetentionNotice';
 import { useAuth } from '@/hooks/auth/useAuth';
 import type { InstitutionBranding } from '@/lib/branding/resolveInstitutionBranding';
 
@@ -34,8 +32,6 @@ export function DashboardShell({ children, branding }: { children: ReactNode; br
     setDesktopSidebarOpen((open) => !open);
   };
 
-  const showFreePlanPicker = user?.subscriptionTier === 'FREE' && user.role === 'student';
-
   return (
     <div className="bg-background flex min-h-dvh min-w-0 overflow-x-clip">
       <DashboardSidebar
@@ -53,8 +49,6 @@ export function DashboardShell({ children, branding }: { children: ReactNode; br
           onToggleDesktopSidebar={toggleDesktopSidebar}
         />
         <main className="mt-16 min-w-0 flex-1 p-3 pb-24 sm:p-4 sm:pb-6 md:p-6 lg:p-8">
-          <DataRetentionNotice />
-          {showFreePlanPicker && <div className="mb-5"><FreePlanPicker /></div>}
           {children}
         </main>
         <DashboardFooter />
