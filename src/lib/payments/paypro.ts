@@ -82,3 +82,5 @@ export const payproProvider: PaymentProvider = {
     }
   },
 };
+
+// Billing-cycle plan IDs intentionally include monthly, annual and one-time checkout modes.
