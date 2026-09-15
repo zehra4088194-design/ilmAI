@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Activity, LayoutDashboard, Users, BookOpen, BarChart3, FileQuestion, Settings, Shield, Library, GraduationCap, Menu, X, MessageCircleWarning, Music2, School, Images, Wallet, Fingerprint, University, BookOpenText, Megaphone } from 'lucide-react';
+import { Activity, LayoutDashboard, Users, BookOpen, BarChart3, FileQuestion, Settings, Shield, Library, GraduationCap, Menu, X, MessageCircleWarning, Music2, School, Images, Wallet, Fingerprint, University, BookOpenText, Megaphone, KeyRound } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils/cn';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,7 @@ const ADMIN_NAV = [
   { icon: BarChart3, label: 'Analytics', href: '/admin/analytics' },
   { icon: Activity, label: 'Release Readiness', href: '/admin/release' },
   { icon: Shield, label: 'AI Usage', href: '/admin/ai-usage' },
+  { icon: KeyRound, label: 'AI API Keys', href: '/admin/ai-api-keys' },
   { icon: MessageCircleWarning, label: 'Chat Blocks', href: '/admin/chat-moderation' },
   { icon: Images, label: 'Presentation Images', href: '/admin/presentation-backgrounds' },
   { icon: Megaphone, label: 'House Ads', href: '/admin/house-ads' },
