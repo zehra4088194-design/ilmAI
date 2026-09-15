@@ -1,43 +1,20 @@
 import pptxgen from 'pptxgenjs';
 import { normalizePresentationDeck } from './generator';
-import type { PresentationDeck } from './types';
+import type { PresentationDeck, PresentationTheme } from './types';
 import { presentationBackgroundNameFromUrl, readPresentationBackground } from './backgrounds';
 
-// Mirrors PresentationSlideRenderer's THEMES (web preview) — kept in sync by hand
-// since pptxgenjs needs plain hex strings, not CSS gradients.
 const THEMES = {
-  dark: {
-    bg: '0B1120',
-    accent: '22D3EE',
-    accent2: 'FBBF24',
-    text: 'F8FAFC',
-    subtext: 'B8C4E0',
-    card: '131B36',
-    // Dark scrim over a dark-toned photo so white text stays legible.
-    scrim: '060A16',
-    scrimTransparency: 28,
-  },
-  light: {
-    bg: 'FFFFFF',
-    accent: '2563EB',
-    accent2: 'F59E0B',
-    text: '0F172A',
-    subtext: '475569',
-    card: 'F3F6FC',
-    // Light scrim over a bright photo so dark text stays legible.
-    scrim: 'FFFFFF',
-    scrimTransparency: 18,
-  },
+  dark: { bg: '0B1120', accent: '22D3EE', accent2: 'FBBF24', text: 'F8FAFC', subtext: 'B8C4E0', card: '131B36', scrim: '060A16', scrimTransparency: 28 },
+  light: { bg: 'FFFFFF', accent: '2563EB', accent2: 'F59E0B', text: '0F172A', subtext: '475569', card: 'F3F6FC', scrim: 'FFFFFF', scrimTransparency: 18 },
 } as const;
 
 function themeFor(deck: PresentationDeck) {
-  return THEMES[deck.theme] || THEMES.dark;
+  const key: keyof typeof THEMES = deck.theme === 'light' ? 'light' : 'dark';
+  return THEMES[key];
 }
 
 function addNotes(slide: pptxgen.Slide, notes?: string) {
-  if (notes && typeof slide.addNotes === 'function') {
-    slide.addNotes(notes);
-  }
+  if (notes && typeof slide.addNotes === 'function') slide.addNotes(notes);
 }
 
 export async function exportPresentationToPptx(input: unknown): Promise<ArrayBuffer> {
@@ -49,13 +26,9 @@ export async function exportPresentationToPptx(input: unknown): Promise<ArrayBuf
   pres.subject = deck.topic;
   pres.title = deck.topic;
   pres.company = 'ilm AI';
-  pres.theme = {
-    headFontFace: 'Aptos Display',
-    bodyFontFace: 'Aptos',
-  };
+  pres.theme = { headFontFace: 'Aptos Display', bodyFontFace: 'Aptos' };
 
   const width = 13.333;
-
   const backgroundData = new Map<string, string>();
   await Promise.all(
     deck.slides.map(async (item) => {
@@ -75,24 +48,9 @@ export async function exportPresentationToPptx(input: unknown): Promise<ArrayBuf
     const backgroundImage = backgroundName ? backgroundData.get(backgroundName) : undefined;
     if (backgroundImage) {
       slide.addImage({ data: backgroundImage, x: 0, y: 0, w: width, h: 7.5 });
-      slide.addShape(pres.ShapeType.rect, {
-        x: 0,
-        y: 0,
-        w: width,
-        h: 7.5,
-        fill: { color: theme.scrim, transparency: theme.scrimTransparency },
-        line: { color: theme.scrim, transparency: 100 },
-      });
+      slide.addShape(pres.ShapeType.rect, { x: 0, y: 0, w: width, h: 7.5, fill: { color: theme.scrim, transparency: theme.scrimTransparency }, line: { color: theme.scrim, transparency: 100 } });
     }
-    slide.addText(String(index + 1).padStart(2, '0'), {
-      x: width - 1.2,
-      y: 0.25,
-      w: 0.7,
-      h: 0.3,
-      fontSize: 9,
-      color: theme.subtext,
-      align: 'right',
-    });
+    slide.addText(String(index + 1).padStart(2, '0'), { x: width - 1.2, y: 0.25, w: 0.7, h: 0.3, fontSize: 9, color: theme.subtext, align: 'right' });
 
     switch (item.type) {
       case 'title':
@@ -103,22 +61,10 @@ export async function exportPresentationToPptx(input: unknown): Promise<ArrayBuf
       case 'two-column': {
         slide.addText(item.title || 'Comparison', { x: 0.65, y: 0.65, w: width - 1.3, h: 0.65, fontFace: 'Aptos Display', fontSize: 26, bold: true, color: theme.text, fit: 'shrink' });
         const columnWidth = 5.75;
-        [
-          { col: item.left, x: 0.75 },
-          { col: item.right, x: 6.85 },
-        ].forEach(({ col, x }) => {
+        [{ col: item.left, x: 0.75 }, { col: item.right, x: 6.85 }].forEach(({ col, x }) => {
           slide.addShape(pres.ShapeType.roundRect, { x, y: 1.65, w: columnWidth, h: 4.75, fill: { color: theme.card, transparency: 5 }, line: { color: theme.card } });
           slide.addText(col?.heading || 'Key points', { x: x + 0.3, y: 1.95, w: columnWidth - 0.6, h: 0.45, fontSize: 18, bold: true, color: theme.accent, fit: 'shrink' });
-          slide.addText((col?.bullets || []).map((text) => ({ text, options: { bullet: { indent: 14 }, breakLine: true } })), {
-            x: x + 0.35,
-            y: 2.6,
-            w: columnWidth - 0.7,
-            h: 3.35,
-            fontSize: 13.5,
-            color: theme.text,
-            breakLine: false,
-            fit: 'shrink',
-          });
+          slide.addText((col?.bullets || []).map((text) => ({ text, options: { bullet: { indent: 14 }, breakLine: true } })), { x: x + 0.35, y: 2.6, w: columnWidth - 0.7, h: 3.35, fontSize: 13.5, color: theme.text, breakLine: false, fit: 'shrink' });
         });
         break;
       }
@@ -151,18 +97,9 @@ export async function exportPresentationToPptx(input: unknown): Promise<ArrayBuf
         break;
       default:
         slide.addText(item.title || 'Slide', { x: 0.7, y: 0.7, w: width - 1.4, h: 0.65, fontFace: 'Aptos Display', fontSize: 25, bold: true, color: theme.text, fit: 'shrink' });
-        slide.addText((item.bullets || []).map((text) => ({ text, options: { bullet: { indent: 18 }, breakLine: true } })), {
-          x: 1,
-          y: 1.8,
-          w: width - 2,
-          h: 4.8,
-          fontSize: 17,
-          color: theme.text,
-          fit: 'shrink',
-        });
+        slide.addText((item.bullets || []).map((text) => ({ text, options: { bullet: { indent: 18 }, breakLine: true } })), { x: 1, y: 1.8, w: width - 2, h: 4.8, fontSize: 17, color: theme.text, fit: 'shrink' });
         break;
     }
-
     addNotes(slide, item.speakerNotes);
   });
 
