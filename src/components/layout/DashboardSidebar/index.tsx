@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import {
-  LayoutDashboard, BookOpen, Brain, FileText, TrendingUp, Trophy, Settings,
+  LayoutDashboard, BookOpen, Brain, FileText, TrendingUp, Trophy, Settings, Phone,
   Zap, StickyNote, Bookmark, Star, CreditCard, ChevronRight, X, Menu,
   Library, CalendarClock, HelpCircle, Target, LogOut, Users, PenLine, Cake,
   GraduationCap, Presentation, Mic2, FlaskConical, Quote, BriefcaseBusiness, Network, Video,
@@ -30,6 +30,8 @@ const NAV_GROUPS = [
       { icon: BriefcaseBusiness, label: 'Career', href: '/career', badge: 'AI' },
       { icon: BookOpenText, label: 'Quran Class', href: '/quran' },
       { icon: MessageCircle, label: 'Study Buddies', href: '/student-chat', badge: 'Pro' },
+      { icon: MessageCircle, label: 'Messages', href: '/messages' },
+      { icon: Phone, label: 'Calls', href: '/calls' },
       { icon: Gamepad2, label: 'Games', href: '/games', badge: 'Pro' },
     ],
   },
@@ -125,6 +127,8 @@ const UNIVERSITY_NAV_GROUPS = [
       { icon: BriefcaseBusiness, label: 'Career', href: '/career', badge: 'AI' },
       { icon: BookOpenText, label: 'Quran Class', href: '/quran' },
       { icon: MessageCircle, label: 'Study Buddies', href: '/student-chat', badge: 'Pro' },
+      { icon: MessageCircle, label: 'Messages', href: '/messages' },
+      { icon: Phone, label: 'Calls', href: '/calls' },
     ],
   },
   {
@@ -267,7 +271,9 @@ export function DashboardSidebar({ mobileOpen: controlledMobileOpen, onMobileOpe
       <nav ref={navRef} className="flex-1 p-3 overflow-y-auto space-y-4">
         {user?.role === 'parent' && (
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/30 px-2 mb-1.5">Parent Portal</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/30 px-2 mb-1.5">Parent Portal</p>              <Link href="/messages" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }} className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group', isActive('/messages') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}><MessageCircle className="w-4 h-4 shrink-0 text-sidebar-foreground/40" /><span className="flex-1">Messages</span></Link>
+              <Link href="/calls" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }} className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group', isActive('/calls') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}><Phone className="w-4 h-4 shrink-0 text-sidebar-foreground/40" /><span className="flex-1">Calls</span></Link>
+
             <div className="space-y-0.5">
               <Link href="/parent" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
                 className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
@@ -288,7 +294,9 @@ export function DashboardSidebar({ mobileOpen: controlledMobileOpen, onMobileOpe
         )}
         {user?.role === 'teacher' && (
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/30 px-2 mb-1.5">Teacher Portal</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/30 px-2 mb-1.5">Teacher Portal</p>              <Link href="/messages" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }} className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group', isActive('/messages') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}><MessageCircle className="w-4 h-4 shrink-0 text-sidebar-foreground/40" /><span className="flex-1">Messages</span></Link>
+              <Link href="/calls" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }} className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group', isActive('/calls') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}><Phone className="w-4 h-4 shrink-0 text-sidebar-foreground/40" /><span className="flex-1">Calls</span></Link>
+
             <div className="space-y-0.5">
               <Link href="/teacher/tests" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
                 className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
@@ -330,7 +338,9 @@ export function DashboardSidebar({ mobileOpen: controlledMobileOpen, onMobileOpe
         )}
         {user?.role === 'principal' && (
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/30 px-2 mb-1.5">Principal Portal</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/30 px-2 mb-1.5">Principal Portal</p>              <Link href="/messages" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }} className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group', isActive('/messages') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}><MessageCircle className="w-4 h-4 shrink-0 text-sidebar-foreground/40" /><span className="flex-1">Messages</span></Link>
+              <Link href="/calls" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }} className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group', isActive('/calls') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}><Phone className="w-4 h-4 shrink-0 text-sidebar-foreground/40" /><span className="flex-1">Calls</span></Link>
+
             <div className="space-y-0.5">
               <Link href="/school-admin" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
                 className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { PhoneCall, PhoneIncoming, PhoneOutgoing, Clock3 } from 'lucide-react';
 import { requireSchoolContext } from '@/lib/school-erp/access';
+import { createAdminClient } from '@/lib/supabase/server';
 import { getCallDirectory, getCallingSettings } from '@/lib/calling/queries';
 import { CallDirectoryList } from '@/components/features/calling/CallDirectoryList';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,8 +12,15 @@ export default async function CallsPage() {
   if (!context) redirect('/dashboard');
   const settings = await getCallingSettings(supabase, 'school', context.organization.id);
   const directory = settings.enabled ? await getCallDirectory(supabase, 'school', context.organization.id, context.userId) : [];
-  const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ''}/api/school-communication/call-history`, { headers: { cookie: '' }, cache: 'no-store' }).catch(() => null);
-  const history = res && res.ok ? (await res.json()).calls || [] : [];
+  const admin = await createAdminClient();
+  const adminDb = admin as any;
+  let historyQuery = adminDb.from('school_call_logs').select('id, caller_id, callee_id, status, started_at, ended_at').eq('organization_id', context.organization.id).order('started_at', { ascending: false }).limit(100);
+  if (!['owner', 'admin'].includes(context.membership.member_role)) historyQuery = historyQuery.or(`caller_id.eq.${context.userId},callee_id.eq.${context.userId}`);
+  const { data: historyRows } = await historyQuery;
+  const historyIds = Array.from(new Set((historyRows || []).flatMap((row: any) => [row.caller_id, row.callee_id])));
+  const { data: historyProfiles } = historyIds.length ? await adminDb.from('profiles').select('id, full_name').in('id', historyIds) : { data: [] };
+  const historyById = new Map((historyProfiles || []).map((p: any) => [p.id, p]));
+  const history = (historyRows || []).map((row: any) => ({ ...row, caller: historyById.get(row.caller_id) || null, callee: historyById.get(row.callee_id) || null }));
 
   return (
     <main className="mx-auto w-full max-w-6xl space-y-5 py-3">

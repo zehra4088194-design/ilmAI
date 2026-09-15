@@ -147,6 +147,7 @@ export async function updateSchoolStudentRecord(formData: FormData) {
   if (studentId !== user.id && !canManage) throw new Error('You cannot update another student record.');
 
   const input = studentRecordFromForm(formData);
-  await saveSchoolStudentRecord(supabase as any, context.organization.id, studentId, input);
-  return { success: true, complete: isStudentRecordComplete(input) };
+  const saved = await saveSchoolStudentRecord(supabase as any, context.organization.id, studentId, input);
+  if (saved.is_profile_complete && studentId === user.id) redirect('/school');
+  return { success: true, complete: saved.is_profile_complete };
 }

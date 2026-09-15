@@ -133,23 +133,48 @@ export default async function SchoolAdminPage() {
             <SchoolActionForm
               action={enrollStudent}
               submitLabel="Add student"
-              className="grid gap-3 md:grid-cols-3"
+              className="space-y-4"
             >
-              <Input name="student_name" placeholder="Student's full name" />
-              <Input name="student_email" type="email" placeholder="Their email address" required />
-              <select name="section_id" className={selectClass} required>
-                <option value="">Class / section</option>
-                {people.sections.map((item: any) => (
-                  <option key={item.id} value={item.id}>
-                    {item.school_classes?.name} - {item.name}
-                  </option>
-                ))}
-              </select>
+              <div className="grid gap-3 md:grid-cols-3">
+                <Input name="student_name" placeholder="Student's full name" />
+                <Input name="student_email" type="email" placeholder="Their email address" required />
+                <select name="section_id" className={selectClass} required>
+                  <option value="">Class / section</option>
+                  {people.sections.map((item: any) => (
+                    <option key={item.id} value={item.id}>
+                      {item.school_classes?.name} - {item.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <details className="rounded-xl border p-3">
+                <summary className="cursor-pointer text-sm font-semibold">Complete student record now (optional)</summary>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <Input name="b_form_number" placeholder="B-Form number" />
+                  <Input name="father_cnic" placeholder="Father's CNIC number" />
+                  <Input name="matric_total_marks" type="number" placeholder="Matric total marks" />
+                  <Input name="matric_obtained_marks" type="number" placeholder="Matric obtained marks" />
+                  <Input name="matric_year" type="number" placeholder="Matric year" />
+                  <Input name="date_of_birth" type="date" />
+                  <Input name="gender" placeholder="Gender" />
+                  <Input name="blood_group" placeholder="Blood group" />
+                  <Input name="student_phone" placeholder="Student phone" />
+                  <Input name="address" placeholder="Home address" />
+                  <Input name="city" placeholder="City" />
+                  <Input name="guardian_name" placeholder="Guardian name" />
+                  <Input name="guardian_phone" placeholder="Guardian phone" />
+                  <Input name="guardian_relationship" placeholder="Guardian relationship" />
+                  <Input name="emergency_contact_name" placeholder="Emergency contact name" />
+                  <Input name="emergency_contact_phone" placeholder="Emergency contact phone" />
+                  <Input name="previous_school" placeholder="Previous school" />
+                  <Input name="nationality" placeholder="Nationality" />
+                  <Input name="religion" placeholder="Religion" />
+                  <label className="flex flex-col gap-1 text-xs sm:col-span-2 lg:col-span-1">Student photo<input name="student_photo" type="file" accept="image/*" className="text-sm" /></label>
+                </div>
+              </details>
             </SchoolActionForm>
             <p className="text-muted-foreground mt-3 text-xs">
-              That&apos;s it — they get an email to set a password and complete the rest of their own profile
-              (grade, board, photo, etc). Academic year is picked automatically, and the admission number too —
-              see People if you need to set a roll number or other details later.
+              Leave the record blank for now and the student will be required to complete the missing school details before entering the school portal. If you fill everything here, they go straight in.
             </p>
           </CardContent>
         </Card>
