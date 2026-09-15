@@ -11,6 +11,7 @@
 import type { ChatMessage } from '@/types';
 import { checkProviderDailyLimit } from '@/lib/rate-limit';
 import type { ProviderBudgetKey } from '@/lib/platform-settings/shared';
+import { getAiRuntimeSettings } from '@/lib/ai/runtime-settings';
 
 export type AiProviderId = 'local' | 'groq' | 'grok' | 'claude' | 'gpt' | 'gemini' | 'deepseek' | 'advanced';
 export type ModelTier = 'mini' | 'medium' | 'pro';
@@ -72,10 +73,21 @@ function getProviderBudgetKey(provider: AiProviderId, tier: ModelTier): Provider
 
 async function gatewayFetch(path: string, body: unknown) {
   const provider = typeof body === 'object' && body ? String((body as { provider?: unknown }).provider || '') : '';
+  const requestBody: any = body && typeof body === 'object' ? { ...(body as Record<string, unknown>) } : body;
+  if (requestBody && typeof requestBody === 'object') {
+    const runtime = await getAiRuntimeSettings();
+    const selectedProvider = provider === ADVANCED_GATEWAY_PROVIDER ? 'openrouter' : provider;
+    if (selectedProvider === 'groq' || selectedProvider === 'gemini' || selectedProvider === 'openrouter') {
+      const selection = runtime[selectedProvider];
+      requestBody.key_mode = selection.mode;
+      requestBody.key_number = selection.keyNumber;
+    }
+  }
+
   const res = await fetch(`${GATEWAY_URL}${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GATEWAY_SECRET}` },
-    body: JSON.stringify(body),
+    body: JSON.stringify(requestBody),
     // Gateway does its own multi-key retries; give it room to work
     signal: AbortSignal.timeout(provider === 'local' ? 185000 : 90000),
   });

@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { gatewayChat, GatewayError } from '@/lib/ai/gateway';
+import { getAiRuntimeSettings } from '@/lib/ai/runtime-settings';
 
 /**
  * AI-powered WhatsApp auto-reply — called by the worker (whatsapp-worker/index.js) for every
  * incoming chat message that isn't part of the JazzCash payment flow. Generates a reply through
- * the existing AI gateway (Groq, mini tier — same key-rotation/budget infra every other AI
+ * the existing AI gateway (admin-selected provider/tier — same key-rotation/budget infra every other AI
  * feature uses, see src/lib/ai/gateway.ts), keeps a short rolling history per phone number so
  * multi-turn conversations stay coherent, and enforces the "hand off to the CEO, then go quiet"
  * behavior: once the model decides a conversation should close (see CLOSE_TOKEN below), this
@@ -90,9 +91,10 @@ export async function POST(request: NextRequest) {
 
     let replyText: string;
     try {
+      const whatsappSettings = await getAiRuntimeSettings();
       const result = await gatewayChat({
-        provider: 'groq',
-        tier: 'mini',
+        provider: whatsappSettings.whatsapp.provider,
+        tier: whatsappSettings.whatsapp.tier,
         strictProvider: true,
         maxTokens: 300,
         temperature: 0.6,
