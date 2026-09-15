@@ -1,0 +1,146 @@
+name: Apply AI runtime settings wiring
+
+on:
+  push:
+    paths:
+      - '.github/ai-runtime-patch.trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch AI gateway and WhatsApp runtime
+        shell: python
+        run: |
+          from pathlib import Path
+
+          def patch(path, replacements):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8-sig')
+              original = text
+              for old, new in replacements:
+                  if old not in text:
+                      raise SystemExit(f'Pattern not found in {path}: {old[:120]!r}')
+                  text = text.replace(old, new, 1)
+              if text == original:
+                  raise SystemExit(f'No changes made to {path}')
+              p.write_text(text, encoding='utf-8')
+
+          patch('src/lib/ai/gateway.ts', [
+              (
+                  "import type { ProviderBudgetKey } from '@/lib/platform-settings/shared';\n",
+                  "import type { ProviderBudgetKey } from '@/lib/platform-settings/shared';\nimport { getAiRuntimeSettings } from '@/lib/ai/runtime-settings';\n",
+              ),
+              (
+                  "  const res = await fetch(`${GATEWAY_URL}${path}`, {\n",
+                  "  const requestBody: any = body && typeof body === 'object' ? { ...(body as Record<string, unknown>) } : body;\n  if (requestBody && typeof requestBody === 'object' && path !== '/health') {\n    const runtime = await getAiRuntimeSettings();\n    const selectedProvider = provider === ADVANCED_GATEWAY_PROVIDER ? 'openrouter' : provider;\n    if (selectedProvider === 'groq' || selectedProvider === 'gemini' || selectedProvider === 'openrouter') {\n      const selection = runtime[selectedProvider];\n      requestBody.key_mode = selection.mode;\n      requestBody.key_number = selection.keyNumber;\n    }\n  }\n\n  const res = await fetch(`${GATEWAY_URL}${path}`, {\n",
+              ),
+              (
+                  "    body: JSON.stringify(body),\n",
+                  "    body: JSON.stringify(requestBody),\n",
+              ),
+          ])
+
+          patch('services/ai-gateway/handler.mjs', [
+              (
+                  " * OPENROUTER_API_KEY -> ONE OpenRouter key. It serves the free router first and\n *                       retries on DeepSeek V4 Flash only if that call fails.\n *                       No pool, no JSON, no rotation for this provider.\n",
+                  " * OPENROUTER_API_KEY_1..10 -> ten-key OpenRouter pool (legacy single OPENROUTER_API_KEY\n *                       and OPENROUTER_API_KEYS_JSON remain supported). Rotation is the default;\n *                       the app can request one fixed key number per provider.\n",
+              ),
+              (
+                  "function getKeys(env, prefix) {\n",
+                  "function getKeys(env, prefix) {\n",
+              ),
+              (
+                  "  if ((prefix === 'GROQ_API_KEY' || prefix === 'GEMINI_API_KEY') && numberedKeys.length) {\n",
+                  "  if ((prefix === 'GROQ_API_KEY' || prefix === 'GEMINI_API_KEY' || prefix === 'OPENROUTER_API_KEY') && numberedKeys.length) {\n",
+              ),
+              (
+                  "/**\n * Reserves the next provider key before its network request starts.\n",
+                  "/** Selects either the admin-fixed key or the normal round-robin pool. Fixed mode\n * intentionally never falls through to another key, so the admin choice is strict. */\nasync function withSelectedKey(keys, callFn, label, mode = 'rotation', keyNumber = 1, maxAttempts = DEFAULT_KEY_ATTEMPTS, cursorKey = label) {\n  if (mode === 'fixed') {\n    const index = Math.max(1, Math.min(10, Number(keyNumber) || 1)) - 1;\n    if (!keys[index]) {\n      return { ok: false, error: `${label} fixed key #${index + 1} is not configured` };\n    }\n    try {\n      const result = await callFn(keys[index]);\n      if (result.ok && (!(typeof result.data === 'string') || result.data.trim())) {\n        return { ...result, keyIndexUsed: index + 1 };\n      }\n      const error = result.error || `${label} key #${index + 1} returned an empty response`;\n      recordKeyFailure(label.toLowerCase(), label, index, result.status || 502, error);\n      return { ok: false, error, status: result.status || 502 };\n    } catch (err) {\n      const error = `${label} key #${index + 1} network error: ${err?.message || 'unknown error'}`;\n      recordKeyFailure(label.toLowerCase(), label, index, 'network', error);\n      return { ok: false, error, status: 503 };\n    }\n  }\n  return withKeyRotation(keys, callFn, label, maxAttempts, cursorKey);\n}\n\n/**\n * Reserves the next provider key before its network request starts.\n",
+              ),
+              (
+                  "async function withOpenRouterFallback(env, messages, maxTokens, temperature) {\n  const key = String(env.OPENROUTER_API_KEY || '').trim();\n  if (!key) return { ok: false, error: 'No key configured for OpenRouter (set OPENROUTER_API_KEY)' };\n\n  let lastError = null;\n  for (const model of OPENROUTER_CHAIN) {\n    try {\n      const result = await callOpenRouter(key, model, messages, maxTokens, temperature);\n      if (result.ok && String(result.data || '').trim()) return { ok: true, data: result.data, modelUsed: model };\n      lastError = result.error || `OpenRouter ${model} returned an empty response`;\n      recordKeyFailure('openrouter', `OpenRouter ${model}`, 0, result.status || 502, lastError);\n    } catch (err) {\n      lastError = `OpenRouter ${model} network error: ${err?.message || 'unknown error'}`;\n      recordKeyFailure('openrouter', `OpenRouter ${model}`, 0, 'network', lastError);\n    }\n  }\n\n  return { ok: false, error: `OpenRouter free router and DeepSeek fallback both failed. Last error: ${lastError}` };\n}\n",
+                  "async function withOpenRouterFallback(env, messages, maxTokens, temperature, keyMode = 'rotation', keyNumber = 1) {\n  const keys = getKeys(env, 'OPENROUTER_API_KEY');\n  if (!keys.length) return { ok: false, error: 'No keys configured for OpenRouter (set OPENROUTER_API_KEY_1..10)' };\n\n  const callChain = async (key) => {\n    let lastError = null;\n    for (const model of OPENROUTER_CHAIN) {\n      try {\n        const result = await callOpenRouter(key, model, messages, maxTokens, temperature);\n        if (result.ok && String(result.data || '').trim()) return { ok: true, data: result.data, modelUsed: model };\n        lastError = result.error || `OpenRouter ${model} returned an empty response`;\n      } catch (err) {\n        lastError = `OpenRouter ${model} network error: ${err?.message || 'unknown error'}`;\n      }\n    }\n    return { ok: false, error: `OpenRouter free router and DeepSeek fallback both failed. Last error: ${lastError}`, status: 502 };\n  };\n\n  return withSelectedKey(keys, callChain, 'OpenRouter', keyMode, keyNumber, DEFAULT_KEY_ATTEMPTS, 'openrouter');\n}\n",
+              ),
+              (
+                  "    strict_provider = false,\n",
+                  "    strict_provider = false,\n    key_mode = 'rotation',\n    key_number = 1,\n",
+              ),
+              (
+                  "      DEFAULT_KEY_ATTEMPTS,\n      'groq'\n    );\n",
+                  "      DEFAULT_KEY_ATTEMPTS,\n      'groq'\n    );\n",
+              ),
+              (
+                  "  } else if (provider === 'groq') {\n    result = await withKeyRotation(\n      getKeys(env, 'GROQ_API_KEY'),\n      (k) => callGroq(k, model, messages, max_tokens, temperature),\n      'Assistant',\n      DEFAULT_KEY_ATTEMPTS,\n      'groq'\n    );\n",
+                  "  } else if (provider === 'groq') {\n    result = await withSelectedKey(\n      getKeys(env, 'GROQ_API_KEY'),\n      (k) => callGroq(k, model, messages, max_tokens, temperature),\n      'Assistant',\n      key_mode,\n      key_number,\n      DEFAULT_KEY_ATTEMPTS,\n      'groq'\n    );\n",
+              ),
+              (
+                  "  } else if (provider === 'gemini') {\n    result = await withKeyRotation(\n      getKeys(env, 'GEMINI_API_KEY'),\n      (k) => callGemini(k, model, messages, max_tokens),\n      'Gemini',\n      DEFAULT_KEY_ATTEMPTS,\n      'gemini'\n    );\n",
+                  "  } else if (provider === 'gemini') {\n    result = await withSelectedKey(\n      getKeys(env, 'GEMINI_API_KEY'),\n      (k) => callGemini(k, model, messages, max_tokens),\n      'Gemini',\n      key_mode,\n      key_number,\n      DEFAULT_KEY_ATTEMPTS,\n      'gemini'\n    );\n",
+              ),
+              (
+                  "  } else if (provider === 'openrouter') {\n    result = await withOpenRouterFallback(env, messages, max_tokens, temperature);\n",
+                  "  } else if (provider === 'openrouter') {\n    result = await withOpenRouterFallback(env, messages, max_tokens, temperature, key_mode, key_number);\n",
+              ),
+              (
+                  "  const body = await req.json();\n  const {\n    imageBase64,\n",
+                  "  const body = await req.json();\n  const {\n    imageBase64,\n    key_mode = 'rotation',\n    key_number = 1,\n",
+              ),
+              (
+                  "    'Gemini document scan',\n    DEFAULT_KEY_ATTEMPTS,\n    'gemini'\n  );\n",
+                  "    'Gemini document scan',\n    DEFAULT_KEY_ATTEMPTS,\n    'gemini'\n  );\n",
+              ),
+              (
+                  "  const result = await withKeyRotation(\n    geminiKeys,\n    (key) => callGeminiDocument(key, imageBase64, mimeType, { includeSummary, documentType, language }),\n    'Gemini document scan',\n    DEFAULT_KEY_ATTEMPTS,\n    'gemini'\n  );\n",
+                  "  const result = await withSelectedKey(\n    geminiKeys,\n    (key) => callGeminiDocument(key, imageBase64, mimeType, { includeSummary, documentType, language }),\n    'Gemini document scan',\n    key_mode,\n    key_number,\n    DEFAULT_KEY_ATTEMPTS,\n    'gemini'\n  );\n",
+              ),
+              (
+                  "  const body = await req.json().catch(() => ({}));\n  const { subject } = body;\n",
+                  "  const body = await req.json().catch(() => ({}));\n  const { subject, key_mode = 'rotation', key_number = 1 } = body;\n",
+              ),
+              (
+                  "  const result = await withKeyRotation(\n    getKeys(env, 'GEMINI_API_KEY'),\n    (k) => mintEphemeralToken(k, model, systemInstruction),\n    'Gemini Live Token',\n    DEFAULT_KEY_ATTEMPTS,\n    'gemini'\n  );\n",
+                  "  const result = await withSelectedKey(\n    getKeys(env, 'GEMINI_API_KEY'),\n    (k) => mintEphemeralToken(k, model, systemInstruction),\n    'Gemini Live Token',\n    key_mode,\n    key_number,\n    DEFAULT_KEY_ATTEMPTS,\n    'gemini'\n  );\n",
+              ),
+              (
+                  "        openrouter: Boolean(env.OPENROUTER_API_KEY),\n",
+                  "        openrouter: getKeys(env, 'OPENROUTER_API_KEY').length > 0,\n",
+              ),
+              (
+                  "    openrouter: Boolean(env.OPENROUTER_API_KEY),\n",
+                  "    openrouter: getKeys(env, 'OPENROUTER_API_KEY').length > 0,\n",
+              ),
+              (
+                  "    // OpenRouter is single-key by design, so it never reads a pool.\n    const configuredKeys = provider === 'openrouter' ? (env.OPENROUTER_API_KEY ? 1 : 0) : getKeys(env, prefix).length;\n",
+                  "    const configuredKeys = getKeys(env, prefix).length;\n",
+              ),
+          ])
+
+          patch('src/app/api/whatsapp/ai-reply/route.ts', [
+              (
+                  "import { gatewayChat, GatewayError } from '@/lib/ai/gateway';\n",
+                  "import { gatewayChat, GatewayError } from '@/lib/ai/gateway';\nimport { getAiRuntimeSettings } from '@/lib/ai/runtime-settings';\n",
+              ),
+              (
+                  "      const result = await gatewayChat({\n        provider: 'groq',\n        tier: 'mini',\n",
+                  "      const whatsappSettings = await getAiRuntimeSettings();\n      const result = await gatewayChat({\n        provider: whatsappSettings.whatsapp.provider,\n        tier: whatsappSettings.whatsapp.tier,\n",
+              ),
+              (
+                  " * the existing AI gateway (Groq, mini tier — same key-rotation/budget infra every other AI\n",
+                  " * the existing AI gateway (admin-selected provider/tier — same key-rotation/budget infra every other AI\n",
+              ),
+          ])
+
+          Path('.github/ai-runtime-patch.trigger').unlink()
+      - name: Commit runtime wiring
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/lib/ai/gateway.ts services/ai-gateway/handler.mjs src/app/api/whatsapp/ai-reply/route.ts .github/ai-runtime-patch.trigger
+          git diff --cached --quiet && exit 0
+          git commit -m "feat: enforce admin AI key rotation and WhatsApp model selection"
+          git push
