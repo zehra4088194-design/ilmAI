@@ -27,13 +27,6 @@ function flag(formData: FormData, key: string) {
   return formData.get(key) === 'on' || formData.get(key) === 'true';
 }
 
-/**
- * Server-checked permission gate a client must call before starting a PeerJS call — never trust
- * the client's own read of calling settings, since a stale/tampered client could otherwise skip
- * the check entirely. Also writes an 'initiated' row to {school,college}_call_logs so every call
- * attempt (allowed or not) leaves an audit trail, same discipline as every other mutation in this
- * effort. Returns the new log row's id so the client can later mark it accepted/declined/ended.
- */
 export async function requestCallPermission(
   institutionType: InstitutionType,
   organizationId: string,
@@ -47,8 +40,6 @@ export async function requestCallPermission(
   if (user.id === calleeId) return { allowed: false, reason: 'You cannot call yourself.' };
 
   const db = supabase as any;
-  
-  // Try to get membership role (for org members)
   const [{ data: callerRow }, { data: calleeRow }] = await Promise.all([
     db
       .from(MEMBERSHIP_TABLE[institutionType])
@@ -65,15 +56,35 @@ export async function requestCallPermission(
       .eq('status', 'active')
       .maybeSingle(),
   ]);
-  
-  // For org members: must have active membership
+
   if (callerRow && !calleeRow) return { allowed: false, reason: 'That person is not reachable in this institution.' };
   if (!callerRow && calleeRow) return { allowed: false, reason: 'You are not an active member of this institution.' };
-  
-  // If neither has membership, they're independent users — allow calling if settings permit
+
   const callerRole = callerRow?.member_role || 'student';
   const calleeRole = calleeRow?.member_role || 'student';
-  
+
+  if (
+    (callerRole === 'parent' && calleeRole === 'student') ||
+    (callerRole === 'student' && calleeRole === 'parent')
+  ) {
+    const { data: link } = callerRole === 'parent'
+      ? await db
+          .from(institutionType === 'school' ? 'school_guardians' : 'college_guardians')
+          .select('id')
+          .eq('organization_id', organizationId)
+          .eq('guardian_id', user.id)
+          .eq('student_id', calleeId)
+          .maybeSingle()
+      : await db
+          .from(institutionType === 'school' ? 'school_guardians' : 'college_guardians')
+          .select('id')
+          .eq('organization_id', organizationId)
+          .eq('guardian_id', calleeId)
+          .eq('student_id', user.id)
+          .maybeSingle();
+    if (!link) return { allowed: false, reason: 'Parent and student calls are only available for the linked family relationship.' };
+  }
+
   const settings = await getCallingSettings(supabase, institutionType, organizationId);
   const verdict = canRolesCall(callerRole, calleeRole, settings);
   if (!verdict.allowed) return verdict;
@@ -87,8 +98,6 @@ export async function requestCallPermission(
   return { allowed: true, callId: log.id };
 }
 
-/** Either participant can move a call log forward (accepted/declined/missed/ended) — RLS already
- * restricts updates to `caller_id`/`callee_id` matching auth.uid(), this is just the typed entry point. */
 export async function updateCallStatus(
   institutionType: InstitutionType,
   callId: string,
