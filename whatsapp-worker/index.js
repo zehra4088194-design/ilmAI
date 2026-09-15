@@ -23,6 +23,9 @@ const AUTH_DIR = process.env.WHATSAPP_AUTH_DIR || './auth_info_baileys';
 const APP_BASE_URL = (process.env.WHATSAPP_APP_BASE_URL || '').replace(/\/$/, '');
 const CEO_JID = toJid(process.env.WHATSAPP_CEO_NUMBER || '');
 const PAYMENT_PROOF_BUCKET = 'jazzcash-payment-proofs';
+const PAYMENT_PROOF_EMAIL = process.env.PAYMENT_PROOF_EMAIL || 'proof@ilmai.study';
+const JAZZCASH_PAYMENT_HELP =
+  `JazzCash se payment karne ke baad apne transaction ka screenshot isi WhatsApp chat par bhej dein, ya ${PAYMENT_PROOF_EMAIL} par email kar dein. Payment proof milne ke baad team verify karke 30 minutes ke andar aapka plan activate kar degi.`;
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -303,7 +306,7 @@ async function forwardMediaToCEO(from, digits, msg, mediaKind) {
   }
 }
 
-async function handlePossiblePaymentMessage(from, digits, text, msg) {
+async function handlePossiblePaymentMessage(from, digits, text) {
   const foundTid = extractTid(text);
   const foundCode = extractCode(text);
   if (!foundTid && !foundCode) return false;
@@ -326,6 +329,12 @@ async function handlePossiblePaymentMessage(from, digits, text, msg) {
   pendingPaymentClaims.delete(digits);
   await state.sock?.sendMessage(from, { text: result.message });
   return true;
+}
+
+function isJazzCashPaymentIntent(text) {
+  const normalized = String(text || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  if (!normalized.includes('jazzcash')) return false;
+  return /\b(payment|paid|pay|transfer|sent|send|deposit|jama|bhej|bheji|kar di|kr di|kardi|krdi|payment done|paid kr|paid kar)\b/.test(normalized);
 }
 
 async function logIncoming(digits, text, profile) {
@@ -352,7 +361,7 @@ async function processOneMessage(from, digits, msg) {
   }
 
   const text = getText(msg);
-  const handledAsPayment = await handlePossiblePaymentMessage(from, digits, text, msg);
+  const handledAsPayment = await handlePossiblePaymentMessage(from, digits, text);
   if (handledAsPayment) return;
 
   let profile = null;
@@ -361,6 +370,13 @@ async function processOneMessage(from, digits, msg) {
   }
   await logIncoming(digits, text, profile);
   if (!text) return;
+
+  // Deterministic payment guidance: never send the user into the general AI reply flow for a
+  // message that clearly says a JazzCash payment was made. This keeps the proof instructions exact.
+  if (isJazzCashPaymentIntent(text)) {
+    await state.sock?.sendMessage(from, { text: JAZZCASH_PAYMENT_HELP });
+    return;
+  }
 
   const reply = await getAiReply(digits, text, profile?.full_name || null);
   if (!reply) return;
