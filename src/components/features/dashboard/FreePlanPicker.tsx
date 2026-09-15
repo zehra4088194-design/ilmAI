@@ -1,11 +1,13 @@
 'use client';
 
+import * as React from 'react';
 import Link from 'next/link';
 import { Crown, Rocket, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
-import { convertUsdToPkr, formatPkrAmount } from '@/lib/platform-settings/shared';
+import { convertUsdToPkr } from '@/lib/platform-settings/shared';
+import { formatPkr } from '@/lib/pricing/display';
 
 type Tier = 'FREE' | 'PRO' | 'ELITE';
 
@@ -23,7 +25,7 @@ export function FreePlanPicker() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <p className="text-sm font-semibold text-violet-300">Choose your plan</p>
-          <p className="text-muted-foreground text-sm">Pick any plan below — no single plan is forced on a new user.</p>
+          <p className="text-muted-foreground text-sm">Pick any plan below — no single paid plan is forced on a new user.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {tiers.map((tier) => {
@@ -42,7 +44,7 @@ export function FreePlanPicker() {
         <div>
           <Badge variant="secondary">{selectedPlan.name}</Badge>
           <p className="mt-1 text-2xl font-black">${selectedUsd.toFixed(2)}<span className="text-muted-foreground text-sm font-normal">/mo</span></p>
-          <p className="text-muted-foreground text-sm">= Rs {formatPkrAmount(selectedPkr)}</p>
+          <p className="text-muted-foreground text-sm">= Rs {formatPkr(selectedPkr)}</p>
         </div>
         {selected === 'FREE' ? (
           <Button variant="outline" disabled>Free Plan</Button>
@@ -53,5 +55,3 @@ export function FreePlanPicker() {
     </div>
   );
 }
-
-import * as React from 'react';
