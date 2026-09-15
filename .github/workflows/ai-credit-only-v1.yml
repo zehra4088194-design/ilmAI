@@ -1,4 +1,4 @@
-name: Remove legacy AI usage restrictions
+name: Apply credit-only AI quota policy
 on:
   push:
     branches: [main]
@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Apply credit-only AI policy
+      - name: Apply patch
         shell: bash
         run: |
           set -euo pipefail
@@ -20,114 +20,105 @@ jobs:
           from pathlib import Path
           import re
 
-          def edit(path, transform):
-              p = Path(path)
-              s = p.read_text()
-              n = transform(s)
-              if n == s:
-                  raise SystemExit(f'No change made to {path}; patch anchor missing')
-              p.write_text(n)
+          p = Path('src/lib/rate-limit/index.ts')
+          s = p.read_text()
 
-          rate = Path('src/lib/rate-limit/index.ts')
-          s = rate.read_text()
-          s = s.replace(
-              "export function getAiDailyLimit(tier: SubscriptionTier, _feature: 'side_chat' | 'tool' = 'tool') {\n  if (tier === 'ELITE') return AI_DAILY_LIMITS.ELITE_TOOL;\n  if (tier === 'PRO') return AI_DAILY_LIMITS.PRO_TOOL;\n  return AI_DAILY_LIMITS.FREE_TOOL;\n}",
-              "// Legacy compatibility API. AI access is credit-only now, so callers that still ask\n              // for a daily AI limit receive -1 (unlimited) and the shared credit pool remains\n              // the only user-facing AI quota.\nexport function getAiDailyLimit(_tier: SubscriptionTier, _feature: 'side_chat' | 'tool' = 'tool') {\n  return -1;\n}"
-          )
-          s = s.replace(
-              "    return `You have used all free weekly credits for ${featureLabel}. Pro includes ${pro.limits.aiCreditsMonthly} per month, up to ${pro.limits.aiCreditsDaily} per day.`;",
-              "    return `You have used all free weekly credits for ${featureLabel}. Pro includes ${pro.limits.aiCreditsMonthly} shared credits per month.`;"
-          )
-          rate.write_text(s)
+          old = """export function getAiDailyLimit(tier: SubscriptionTier, _feature: 'side_chat' | 'tool' = 'tool') {
+  if (tier === 'ELITE') return AI_DAILY_LIMITS.ELITE_TOOL;
+  if (tier === 'PRO') return AI_DAILY_LIMITS.PRO_TOOL;
+  return AI_DAILY_LIMITS.FREE_TOOL;
+}"""
+          new = """export function getAiDailyLimit(_tier: SubscriptionTier, _feature: 'side_chat' | 'tool' = 'tool') {
+  // Legacy compatibility helper; AI is governed only by the shared credit wallet.
+  return -1;
+}"""
+          if old not in s:
+              raise SystemExit('getAiDailyLimit anchor missing')
+          s = s.replace(old, new, 1)
 
-          # Replace model-tier and presentation-specific gates with no-op compatibility checks.
-          edit('src/lib/rate-limit/index.ts', lambda s: re.sub(
-              r"export async function checkModelTierLimit\([\s\S]*?\n}\n\nexport async function checkPresentationLimit",
-              "export async function checkModelTierLimit(\n  _userId: string,\n  _tier: SubscriptionTier,\n  _featureKey = 'premium_ai'\n): Promise<QuotaResult> {\n  // Model choice is never a separate user quota. The request is charged only through\n  // the shared AI credit pool.\n  return { success: true, remaining: -1, reset: 0 };\n}\n\nexport async function checkPresentationLimit",
-              s,
-              count=1
-          ).replace(
-              "export async function checkPresentationLimit(\n  userId: string,\n  tier: SubscriptionTier,\n  featureKey = 'university_presentation',\n  requestedSlides = 1\n): Promise<QuotaResult & { maxSlides: number; audience: PlanAudience }> {",
-              "export async function checkPresentationLimit(\n  userId: string,\n  tier: SubscriptionTier,\n  featureKey = 'university_presentation',\n  requestedSlides = 1\n): Promise<QuotaResult & { maxSlides: number; audience: PlanAudience }> {"
-          ).replace(
-              "  const { plan, audience, limits } = await getAudiencePlanLimits(userId, tier);",
-              "  const { audience } = await getAudiencePlanLimits(userId, tier);",
-              1
-          )
-          rate = Path('src/lib/rate-limit/index.ts')
-          s = rate.read_text()
-          # Make the entire presentation checker credit-neutral; actual AI credit consumption remains elsewhere.
-          s = re.sub(
-              r"export async function checkPresentationLimit\([\s\S]*?\n}\n\nexport async function checkFileSummaryLimit",
-              "export async function checkPresentationLimit(\n  userId: string,\n  tier: SubscriptionTier,\n  featureKey = 'university_presentation',\n  requestedSlides = 1\n): Promise<QuotaResult & { maxSlides: number; audience: PlanAudience }> {\n  const audience = (await getAudiencePlanLimits(userId, tier)).audience;\n  return {\n    success: true,\n    remaining: -1,\n    reset: 0,\n    maxSlides: Number.MAX_SAFE_INTEGER,\n    audience,\n  };\n}\n\nexport async function checkFileSummaryLimit",
-              s,
-              count=1
-          )
-          rate.write_text(s)
+          old = "return `You have used all free weekly credits for ${featureLabel}. Pro includes ${pro.limits.aiCreditsMonthly} per month, up to ${pro.limits.aiCreditsDaily} per day.`;"
+          new = "return `You have used all free weekly credits for ${featureLabel}. Pro includes ${pro.limits.aiCreditsMonthly} shared credits per month.`;"
+          if old in s:
+              s = s.replace(old, new, 1)
 
-          # Normalize legacy stored settings so an old admin value cannot re-enable these AI caps.
-          shared = Path('src/lib/platform-settings/shared.ts')
-          s = shared.read_text()
-          s = s.replace(
-              "      limits: {\n        presentationsEnabled: booleanOrFallback(incoming.presentationsEnabled, defaults.presentationsEnabled),\n        presentationSlidesMax: numberOrFallback(incoming.presentationSlidesMax, defaults.presentationSlidesMax),\n      }",
-              "      limits: {\n        presentationsEnabled: true,\n        presentationSlidesMax: Number.MAX_SAFE_INTEGER,\n      }"
-          )
-          # The exact normalizeAudienceLimits return may use result[audience] rather than the spacing above.
-          s = s.replace(
-              "        presentationsEnabled: booleanOrFallback(incoming.presentationsEnabled, defaults.presentationsEnabled),\n        presentationSlidesMax: numberOrFallback(incoming.presentationSlidesMax, defaults.presentationSlidesMax),",
-              "        presentationsEnabled: true,\n        presentationSlidesMax: Number.MAX_SAFE_INTEGER,"
-          )
-          # Legacy daily AI and premium-model caps are preserved in the type for compatibility, but never active.
-          s = re.sub(r"aiCreditsDaily: numberOrFallback\(([^\n]+)\),", "aiCreditsDaily: -1,", s)
-          s = re.sub(r"premiumAiMonthly: numberOrFallback\(([^\n]+)\),", "premiumAiMonthly: -1,", s)
-          # Old admin-created audience settings can also be normalized away on every read.
-          s = s.replace("presentationsEnabled: defaults.presentationsEnabled,", "presentationsEnabled: true,")
-          s = s.replace("presentationSlidesMax: defaults.presentationSlidesMax,", "presentationSlidesMax: Number.MAX_SAFE_INTEGER,")
-          # Prevent legacy University Hub AI-credit settings from becoming a second pool if an old route still reads them.
-          s = re.sub(r"aiCreditsMonthly: Math\.max\(0, numberOrFallback\(([^\n]+), fallback\.aiCreditsMonthly\)\),", "aiCreditsMonthly: Number.MAX_SAFE_INTEGER,", s)
-          shared.write_text(s)
+          start = s.find('export async function checkModelTierLimit(')
+          end = s.find('export async function checkParentAttachmentLimits', start)
+          if start < 0 or end < 0:
+              raise SystemExit('checkModelTierLimit boundaries missing')
+          s = s[:start] + """export async function checkModelTierLimit(
+  _userId: string,
+  _provider: string,
+  _modelTier: 'mini' | 'medium' | 'pro',
+  _userTier: SubscriptionTier = 'PRO'
+) {
+  // No separate premium/model quota. The shared AI credit wallet is authoritative.
+  return { success: true, remaining: -1, reset: 0 };
+}
 
-          ui = Path('src/components/features/admin/settings/PlatformSettingsForm/index.tsx')
-          s = ui.read_text()
+""" + s[end:]
+
+          start = s.find('export async function checkPresentationLimit(')
+          end = s.find('// File Summary / File Test tools:', start)
+          if start < 0 or end < 0:
+              raise SystemExit('checkPresentationLimit boundaries missing')
+          s = s[:start] + """export async function checkPresentationLimit(
+  userId: string,
+  tier: SubscriptionTier,
+  _slideCount: number
+) {
+  const audience = (await getAudiencePlanLimits(userId, tier)).audience;
+  // Presentation generation is governed only by the shared AI credit wallet.
+  return { success: true, remaining: -1, reset: 0, maxSlides: Number.MAX_SAFE_INTEGER, audience };
+}
+
+""" + s[end:]
+          p.write_text(s)
+
+          p = Path('src/components/features/admin/settings/PlatformSettingsForm/index.tsx')
+          s = p.read_text()
           s = s.replace("  BookOpenCheck, DollarSign, GraduationCap, Mail, Moon, Presentation, Printer, Save, ShieldCheck, Sun, UserRoundCog, Users", "  BookOpenCheck, DollarSign, GraduationCap, Mail, Moon, Printer, Save, ShieldCheck, Sun, UserRoundCog, Users")
           s = s.replace("  ['aiCreditsDaily', 'Shared AI/day'],\n", "")
           s = s.replace("  ['premiumAiMonthly', 'Premium AI/month'],\n", "")
-          s = s.replace(
-              "              Change Free, Pro, and Elite prices, daily/weekly usage limits, downloads, and feature toggles here.",
-              "              Change plan prices and non-AI feature limits here. AI usage is controlled only by the shared credit pool."
-          )
-          ui.write_text(s)
-          PY
+          s = s.replace("Change Free, Pro, and Elite prices, daily/weekly usage limits, downloads, and feature toggles here.", "Change plan prices and non-AI feature limits here. AI usage comes from one shared credit pool.")
 
-          # Remove the standalone Presentation Builder audience settings card and the University-plan AI-credit inputs.
-          python3 - <<'PY'
-          from pathlib import Path
-          import re
-          p = Path('src/components/features/admin/settings/PlatformSettingsForm/index.tsx')
-          s = p.read_text()
-          # Remove whole Presentation Builder by audience card if present.
-          s = re.sub(r"\n\s*<Card[^>]*>\s*<CardHeader>[^<]*[\s\S]*?Presentation Builder[^<]*[\s\S]*?</Card>\n", "\n", s, count=1)
-          # More targeted cleanup for common current structure.
-          s = re.sub(r"\n\s*<Card className=\"border-\w+-500/25 bg-\w+-500/5\">\s*\n\s*<CardHeader>\s*\n\s*<CardTitle[^>]*>[^<]*[^\n]*Presentation Builder[\s\S]*?</Card>\s*\n\s*</Card>\s*", "\n", s, count=1)
-          # Remove any NumberField specifically labelled AI credits/month inside University Student Plans.
-          s = re.sub(r"\n\s*<NumberField\s+label=\"AI credits/month\"[\s\S]*?\n\s*\/>\n", "\n", s)
-          s = re.sub(r"\n\s*<NumberField\s+label=\"[^\"]*AI credits[^\"]*\"[\s\S]*?settings\.universityPlans[\s\S]*?\n\s*\/>\n", "\n", s)
-          marker = "      <Card className=\"border-violet-500/25 bg-violet-500/5\">"
-          if marker in s:
-              s = s.replace(marker, "      <Card className=\"border-violet-500/25 bg-violet-500/5\">\n        <CardContent className=\"p-5 text-sm\">\n          <p className=\"font-semibold\">AI usage = shared credits only</p>\n          <p className=\"text-muted-foreground mt-1\">There is no separate daily AI cap, premium-model cap, tool cap, or presentation quota. Flashcards, games, downloads and other non-AI limits remain independently configurable below.</p>\n        </CardContent>")
+          # Remove NumberField controls labelled with AI credits. This removes the old university-plan AI wallet controls too.
+          matches = list(re.finditer(r'\n\s*<NumberField\b[\s\S]*?\n\s*/>\n', s, flags=re.IGNORECASE))
+          for m in reversed(matches):
+              block = m.group(0)
+              if 'AI credits' in block:
+                  s = s[:m.start()] + '\n' + s[m.end():]
+
+          # Remove the presentation audience access/slide cap card from admin settings.
+          heading = 'Presentation Builder, by audience'
+          pos = s.find(heading)
+          if pos >= 0:
+              card_start = s.rfind('<Card', 0, pos)
+              card_end = s.find('</Card>', pos)
+              if card_start >= 0 and card_end >= 0:
+                  s = s[:card_start] + s[card_end + len('</Card>'):]
           p.write_text(s)
+
+          # Prevent old persisted daily/premium values from ever becoming active again.
+          p = Path('src/lib/platform-settings/shared.ts')
+          s = p.read_text()
+          s = re.sub(r'(?m)^(\s*)aiCreditsDaily: numberOrFallback\([^\n]*\),$', r'\1aiCreditsDaily: -1,', s)
+          s = re.sub(r'(?m)^(\s*)premiumAiMonthly: numberOrFallback\([^\n]*\),$', r'\1premiumAiMonthly: -1,', s)
+          p.write_text(s)
+
+          print('AI credit-only patch applied')
           PY
 
-          # Quick sanity check: the source should no longer expose configurable daily/premium AI limits in the admin form.
           if grep -n "Shared AI/day\|Premium AI/month" src/components/features/admin/settings/PlatformSettingsForm/index.tsx; then
-            echo "Legacy AI admin fields still present"; exit 1
+            echo 'Legacy AI controls still present'
+            exit 1
           fi
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/lib/rate-limit/index.ts src/lib/platform-settings/shared.ts src/components/features/admin/settings/PlatformSettingsForm/index.tsx
-          git commit -m "feat: make AI usage credit-only" || true
+          git commit -m "feat: make AI usage credit-only"
           git push
-          git rm -f .github/workflows/ai-credit-only-v1.yml
-          git commit -m "chore: remove one-shot AI credit workflow"
+
+          git rm -f .github/workflows/ai-credit-only-v1.yml .github/workflows/ai-credit-only-v2.yml || true
+          git commit -m "chore: remove one-shot AI quota workflows" || true
           git push
