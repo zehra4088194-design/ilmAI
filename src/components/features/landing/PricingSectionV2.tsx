@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils/cn';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 import { convertUsdToPkr } from '@/lib/platform-settings/shared';
+import { TRANSACTION_FEE_USD } from '@/lib/constants';
 import { formatPkr } from '@/lib/pricing/display';
 
 type Audience = 'students' | 'institutions';
@@ -49,9 +50,8 @@ export function PricingSectionV2() {
       if (!response.ok) throw new Error(json.error || 'The inquiry could not be sent.');
       toast.success('Request sent to the admin team.');
       setMessage('');
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'The inquiry could not be sent.');
-    } finally { setIsSendingInquiry(false); }
+    } catch (error) { toast.error(error instanceof Error ? error.message : 'The inquiry could not be sent.'); }
+    finally { setIsSendingInquiry(false); }
   };
 
   return (
@@ -83,6 +83,7 @@ export function PricingSectionV2() {
               <h3 className="mb-1 text-xl font-bold">{plan.name}</h3>
               <p className="text-4xl font-black">${usd.toFixed(2)}<span className="text-muted-foreground text-sm font-normal">{suffix}</span></p>
               <p className="text-muted-foreground mt-1 text-sm">= Rs {formatPkr(pkr)}{suffix}</p>
+              {!isFree && <p className="text-muted-foreground mt-1 text-xs">+${TRANSACTION_FEE_USD.toFixed(2)} transaction fee</p>}
               <ul className="my-6 space-y-3">{plan.features.map((feature) => <li key={feature} className="flex gap-2 text-sm"><Check className="h-4 w-4 shrink-0 text-green-500" />{feature}</li>)}</ul>
               <Button asChild className="w-full" variant={isFree ? 'outline' : 'gradient'}><Link href={isFree ? '/register' : `/register?redirect=${encodeURIComponent(`/subscription/${key.toLowerCase()}?billing=${billing}`)}`}><Zap className="h-4 w-4" />{isFree ? 'Get started' : `Choose ${plan.name}`}</Link></Button>
             </div>;
@@ -95,10 +96,7 @@ export function PricingSectionV2() {
             <p className="text-muted-foreground mt-4 leading-7">Choose the institution type, plan, and number of students. The total is always displayed in USD first with PKR underneath.</p>
           </div>
           <div className="p-7 lg:p-10">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="text-sm font-medium">Institution type<select value={institutionType} onChange={(e) => setInstitutionType(e.target.value as InstitutionType)} className="border-input bg-background mt-2 h-10 w-full rounded-lg border px-3 text-sm"><option value="school">School</option><option value="college">College</option></select></label>
-              <label className="text-sm font-medium">Plan<select value={institutionPlan} onChange={(e) => setInstitutionPlan(e.target.value as 'PRO' | 'ELITE')} className="border-input bg-background mt-2 h-10 w-full rounded-lg border px-3 text-sm"><option value="PRO">Pro</option><option value="ELITE">Elite</option></select></label>
-            </div>
+            <div className="grid gap-4 sm:grid-cols-2"><label className="text-sm font-medium">Institution type<select value={institutionType} onChange={(e) => setInstitutionType(e.target.value as InstitutionType)} className="border-input bg-background mt-2 h-10 w-full rounded-lg border px-3 text-sm"><option value="school">School</option><option value="college">College</option></select></label><label className="text-sm font-medium">Plan<select value={institutionPlan} onChange={(e) => setInstitutionPlan(e.target.value as 'PRO' | 'ELITE')} className="border-input bg-background mt-2 h-10 w-full rounded-lg border px-3 text-sm"><option value="PRO">Pro</option><option value="ELITE">Elite</option></select></label></div>
             <label className="mt-5 block text-sm font-medium">Number of students<Input className="mt-2" type="number" min={1} max={100000} value={studentCount} onChange={(e) => setStudentCount(e.target.value)} /></label>
             <div className="border-primary/25 bg-primary/10 mt-5 rounded-2xl border p-5">{(() => { const usdPerStudent = settings.subscriptionPlans[institutionPlan].price.USD[billing]; const totalUsd = usdPerStudent * institutionCount * 0.5; return <><p className="text-muted-foreground text-xs font-semibold uppercase">50% discounted total</p><p className="mt-1 text-3xl font-black">${totalUsd.toFixed(2)}<span className="text-muted-foreground text-sm font-normal">/{billing === 'annual' ? 'year' : 'month'}</span></p><p className="text-muted-foreground mt-1 text-sm">= Rs {formatPkr(convertUsdToPkr(totalUsd, settings))}/{billing === 'annual' ? 'year' : 'month'}</p></>; })()}</div>
             <div className="mt-5 grid gap-4 sm:grid-cols-2"><Input value={institutionName} onChange={(e) => setInstitutionName(e.target.value)} placeholder="School / college name" /><Input value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder="Contact person" /><Input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="Contact email" /><Input value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Message or preferred contact time" /></div>
