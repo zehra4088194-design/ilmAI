@@ -259,10 +259,9 @@ export function getAiCreditCost(featureKey = 'general') {
   return AI_CREDIT_COSTS[featureKey] ?? 1;
 }
 
-export function getAiDailyLimit(tier: SubscriptionTier, _feature: 'side_chat' | 'tool' = 'tool') {
-  if (tier === 'ELITE') return AI_DAILY_LIMITS.ELITE_TOOL;
-  if (tier === 'PRO') return AI_DAILY_LIMITS.PRO_TOOL;
-  return AI_DAILY_LIMITS.FREE_TOOL;
+export function getAiDailyLimit(_tier: SubscriptionTier, _feature: 'side_chat' | 'tool' = 'tool') {
+  // Compatibility API. AI usage is governed only by the shared credit wallet.
+  return -1;
 }
 
 async function getConfiguredPlan(tier: SubscriptionTier) {
@@ -302,7 +301,7 @@ export async function getConfiguredLimitExceededMessage(tier: SubscriptionTier, 
   const pro = getPlanFromSettings(settings, 'PRO');
   const elite = getPlanFromSettings(settings, 'ELITE');
   if (tier === 'FREE') {
-    return `You have used all free weekly credits for ${featureLabel}. Pro includes ${pro.limits.aiCreditsMonthly} per month, up to ${pro.limits.aiCreditsDaily} per day.`;
+    return `You have used all free weekly credits for ${featureLabel}. Pro includes ${pro.limits.aiCreditsMonthly} shared credits per month.`;
   }
   if (tier === 'PRO') {
     return `The shared Pro credit pool for ${featureLabel} has been reached. Elite includes ${elite.limits.aiCreditsMonthly} shared credits per month.`;
@@ -462,49 +461,19 @@ export async function consumeOcrCredits(
 // presentationsEnabled is kept as a plan *access* gate (FREE tier doesn't get the
 // feature at all on some audiences), and the slide-count cap is a per-request size
 // limit, not a usage-rate limit — neither of those is what credits are supposed to replace.
-export async function checkPresentationLimit(userId: string, tier: SubscriptionTier, slideCount: number) {
-  const entitlement = await getAudiencePlanLimits(userId, tier);
-  if (!entitlement.limits.presentationsEnabled || slideCount > entitlement.limits.presentationSlidesMax) {
-    return {
-      success: false,
-      remaining: 0,
-      reset: monthWindow().reset,
-      maxSlides: entitlement.limits.presentationSlidesMax,
-      audience: entitlement.audience,
-    };
-  }
-  return {
-    success: true,
-    remaining: -1,
-    reset: 0,
-    maxSlides: entitlement.limits.presentationSlidesMax,
-    audience: entitlement.audience,
-  };
-}
-
-// File Summary / File Test tools: same fix as Presentation Builder above — these
-// routes already gate on the shared AI credit pool separately (checkAiMessageLimit
-// + consumeAiCredits), so the extra monthly count cap here was pure redundant
-// double-gating that could block a user with credits still remaining.
-async function checkAudienceFileLimit(_userId: string, _tier: SubscriptionTier, _feature: 'file_summary' | 'file_test') {
-  return { success: true, remaining: -1, reset: 0 };
+export async function checkPresentationLimit(userId: string, tier: SubscriptionTier, _slideCount: number) {
+  const audience = (await getAudiencePlanLimits(userId, tier)).audience;
+  return { success: true, remaining: -1, reset: 0, maxSlides: Number.MAX_SAFE_INTEGER, audience };
 }
 
 export async function checkFileSummaryLimit(userId: string, tier: SubscriptionTier) {
-  return checkAudienceFileLimit(userId, tier, 'file_summary');
+  return { success: true, remaining: -1, reset: 0 };
 }
 
 export async function checkFileTestLimit(userId: string, tier: SubscriptionTier) {
-  return checkAudienceFileLimit(userId, tier, 'file_test');
+  return { success: true, remaining: -1, reset: 0 };
 }
 
-// University Hub is fully credit-gated: the shared AI credit pool is the only thing that governs
-// access here now. This used to ALSO enforce a plan.limits.universityHubWeekly independent cap on
-// top of credits — a FREE user with most of their weekly credit balance untouched could still get
-// blocked with an "upgrade" message just because they'd already used a small fixed number of
-// University Hub actions that week, unrelated to how many credits they had left. That field (and
-// the weekly-scope check it powered) has been removed — every caller already only ever produced
-// the 'daily' scope below.
 export async function checkUniversityFeatureLimit(userId: string, tier: SubscriptionTier, featureKey: string) {
   const credits = await checkSharedAiLimit(userId, tier, featureKey);
   return { ...credits, scope: 'daily' as const };
@@ -525,18 +494,12 @@ export async function getUniversityLimitExceededMessage(
 }
 
 export async function checkModelTierLimit(
-  userId: string,
-  provider: string,
-  modelTier: 'mini' | 'medium' | 'pro',
-  userTier: SubscriptionTier = 'PRO'
+  _userId: string,
+  _provider: string,
+  _modelTier: 'mini' | 'medium' | 'pro',
+  _userTier: SubscriptionTier = 'PRO'
 ) {
-  void provider;
-  void modelTier;
-  const plan = await getConfiguredPlan(userTier);
-  if (userTier !== 'ELITE' || plan.limits.premiumAiMonthly <= 0) {
-    return { success: false, remaining: 0, reset: monthWindow().reset };
-  }
-  return checkMonthlyLimit(userId, 'premium_ai', plan.limits.premiumAiMonthly);
+  return { success: true, remaining: -1, reset: 0 };
 }
 
 export async function checkParentAttachmentLimits(userId: string, tier: SubscriptionTier, fileSizeBytes: number) {

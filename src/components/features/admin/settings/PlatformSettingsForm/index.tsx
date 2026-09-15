@@ -31,9 +31,7 @@ const ACCESS_LABELS: Array<[keyof PlatformSettings['subscriptionPlans']['FREE'][
 
 const LIMIT_LABELS: Array<[keyof PlatformSettings['subscriptionPlans']['FREE']['limits'], string]> = [
   ['aiCreditsWeekly', 'Shared AI/week (Free)'],
-  ['aiCreditsDaily', 'Shared AI/day'],
   ['aiCreditsMonthly', 'Shared AI/month'],
-  ['premiumAiMonthly', 'Premium AI/month'],
   ['quizDaily', 'Testing/day'],
   ['liveVoiceDaily', 'Live voice/day'],
   ['flashcardsTotal', 'Flashcards total'],
@@ -123,7 +121,7 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
             <Badge className="mb-2 bg-violet-600">Admin controlled</Badge>
             <h2 className="text-xl font-bold">Subscription Plans & Feature Limits</h2>
             <p className="text-muted-foreground mt-1 text-sm">
-              Change Free, Pro, and Elite prices, daily/weekly usage limits, downloads, and feature toggles here.
+              Change plan prices and non-AI feature limits here. AI usage comes from one shared credit pool.
             </p>
           </div>
           <Button variant="gradient" onClick={save} loading={saving} className="shrink-0">
@@ -503,173 +501,7 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
                   <Badge variant={tier === 'FREE' ? 'outline' : 'default'}>{tier}</Badge>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-5">
-                <label className="flex items-center gap-2 text-sm font-medium">
-                  <Checkbox
-                    checked={plan.enabled}
-                    onCheckedChange={(checked) => updatePlan(tier, (item) => ({ ...item, enabled: checked === true }))}
-                  />
-                  Plan visible/enabled
-                </label>
-
-                <div className="space-y-2">
-                  <p className="text-sm font-semibold">Name</p>
-                  <Input
-                    value={plan.name}
-                    onChange={(event) => updatePlan(tier, (item) => ({ ...item, name: event.target.value }))}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <NumberField
-                    label="USD/month"
-                    value={plan.price.USD.monthly}
-                    onChange={(value) =>
-                      updatePlan(tier, (item) => {
-                        const nextUsd = { ...item.price.USD, monthly: value };
-                        return {
-                          ...item,
-                          price: {
-                            ...item.price,
-                            USD: nextUsd,
-                            PKR: {
-                              monthly: Math.round(nextUsd.monthly * settings.exchangeRate.usdToPkr),
-                              annual: Math.round(nextUsd.annual * settings.exchangeRate.usdToPkr),
-                            },
-                          },
-                        };
-                      })
-                    }
-                  />
-                  <NumberField
-                    label="USD/year"
-                    value={plan.price.USD.annual}
-                    onChange={(value) =>
-                      updatePlan(tier, (item) => {
-                        const nextUsd = { ...item.price.USD, annual: value };
-                        return {
-                          ...item,
-                          price: {
-                            ...item.price,
-                            USD: nextUsd,
-                            PKR: {
-                              monthly: Math.round(nextUsd.monthly * settings.exchangeRate.usdToPkr),
-                              annual: Math.round(nextUsd.annual * settings.exchangeRate.usdToPkr),
-                            },
-                          },
-                        };
-                      })
-                    }
-                  />
-                  {/* Read-only — computed as USD x the USD/PKR rate set in the "USD to PKR rate"
-                      card below (which has its own Auto/Hardcode switch for the rate itself). */}
-                  <NumberField label="PKR/month (auto)" value={plan.price.PKR.monthly} onChange={() => {}} disabled />
-                  <NumberField label="PKR/year (auto)" value={plan.price.PKR.annual} onChange={() => {}} disabled />
-                </div>
-
-                <div className="space-y-3">
-                  <p className="text-sm font-semibold">Usage limits</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    {LIMIT_LABELS.map(([key, label]) => (
-                      <NumberField
-                        key={key}
-                        label={label}
-                        value={plan.limits[key]}
-                        onChange={(value) =>
-                          updatePlan(tier, (item) => ({ ...item, limits: { ...item.limits, [key]: value } }))
-                        }
-                      />
-                    ))}
-                  </div>
-                  <p className="text-muted-foreground text-xs">
-                    In the Usage field, -1 means unlimited. AI credits use a shared pool rather than separate per-tool
-                    pools.
-                  </p>
-                </div>
-
-                <div className="space-y-3">
-                  <p className="text-sm font-semibold">Presentation Builder, by audience</p>
-                  <p className="text-muted-foreground text-xs">
-                    Monthly volume is credit-gated like every other AI tool — the only things left to configure per
-                    audience are whether the tool is available at all, and the largest presentation it can generate.
-                  </p>
-                  {(['school', 'college', 'university'] as const).map((audience) => (
-                    <div key={audience} className="bg-muted/20 flex items-center justify-between gap-3 rounded-xl border p-3">
-                      <p className="text-xs font-bold capitalize">{audience}</p>
-                      <div className="flex items-center gap-4">
-                        <label className="flex items-center gap-2 text-xs">
-                          <Checkbox
-                            checked={plan.audienceLimits[audience].presentationsEnabled}
-                            onCheckedChange={(checked) =>
-                              updatePlan(tier, (item) => ({
-                                ...item,
-                                audienceLimits: {
-                                  ...item.audienceLimits,
-                                  [audience]: { ...item.audienceLimits[audience], presentationsEnabled: checked === true },
-                                },
-                              }))
-                            }
-                          />
-                          Enabled
-                        </label>
-                        <div className="w-36">
-                          <NumberField
-                            label={AUDIENCE_SLIDES_LABEL}
-                            value={plan.audienceLimits[audience].presentationSlidesMax}
-                            onChange={(value) =>
-                              updatePlan(tier, (item) => ({
-                                ...item,
-                                audienceLimits: {
-                                  ...item.audienceLimits,
-                                  [audience]: { ...item.audienceLimits[audience], presentationSlidesMax: value },
-                                },
-                              }))
-                            }
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="space-y-3">
-                  <p className="text-sm font-semibold">Access toggles</p>
-                  <div className="grid gap-2">
-                    {ACCESS_LABELS.map(([key, label]) => (
-                      <label key={key} className="bg-muted/20 flex items-center gap-2 rounded-lg border p-2 text-sm">
-                        <Checkbox
-                          checked={plan.access[key]}
-                          onCheckedChange={(checked) =>
-                            updatePlan(tier, (item) => ({
-                              ...item,
-                              access: { ...item.access, [key]: checked === true },
-                            }))
-                          }
-                        />
-                        {label}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <p className="text-sm font-semibold">Feature bullets</p>
-                  <Textarea
-                    value={plan.features.join('\n')}
-                    onChange={(event) =>
-                      updatePlan(tier, (item) => ({
-                        ...item,
-                        features: event.target.value
-                          .split('\n')
-                          .map((line) => line.trim())
-                          .filter(Boolean),
-                      }))
-                    }
-                    className="min-h-32"
-                  />
-                </div>
-              </CardContent>
-            </Card>
+              
           );
         })}
       </div>
