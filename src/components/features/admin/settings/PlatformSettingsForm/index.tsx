@@ -1,7 +1,7 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
-import { Bot, BookOpenCheck, DollarSign, GraduationCap, Mail, Moon, Presentation, Printer, Save, ShieldCheck, Sun, UserRoundCog, Users } from 'lucide-react';
+import { BookOpenCheck, DollarSign, GraduationCap, Mail, Moon, Presentation, Printer, Save, ShieldCheck, Sun, UserRoundCog, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -48,40 +48,6 @@ const LIMIT_LABELS: Array<[keyof PlatformSettings['subscriptionPlans']['FREE']['
 // the counts did nothing. presentationsEnabled renders as a checkbox below, not in this array.
 const AUDIENCE_SLIDES_LABEL = 'Slides/presentation';
 
-const PROVIDER_BUDGET_LABELS: Array<[keyof PlatformSettings['providerDailyBudgets'], string]> = [
-  ['groqFast', 'Groq fast/day'],
-  ['groqLarge', 'Groq large/day'],
-  ['gemini', 'Gemini/day'],
-  ['deepseek', 'DeepSeek direct/day'],
-  ['ocrSpace', 'OCR.space/day'],
-  ['openRouter', 'OpenRouter/day'],
-  ['grok', 'Grok/day'],
-  ['claude', 'Claude/day'],
-  ['gpt', 'GPT/day'],
-];
-
-const AI_ROUTING_LABELS: Array<[keyof PlatformSettings['aiRouting'], string]> = [
-  ['sideChat', 'Side chat'],
-  ['aiTutor', 'AI Tutor'],
-  ['studyTools', 'General study tools'],
-  ['grading', 'Answer checking / grading'],
-  ['resourceTest', 'PDF/resource tests'],
-  ['resourceSummary', 'PDF/resource summaries'],
-  ['presentation', 'Presentation builder'],
-  ['visionOcr', 'Vision / handwritten OCR'],
-  ['studentChatModeration', 'Student chat safety check'],
-];
-
-const AI_PROVIDER_OPTIONS: Array<{ value: PlatformSettings['aiRouting'][keyof PlatformSettings['aiRouting']]; label: string }> = [
-  { value: 'advanced', label: 'OpenRouter (free auto-router â†’ DeepSeek fallback)' },
-  { value: 'groq', label: 'Groq / Assistant' },
-  { value: 'gemini', label: 'Gemini Flash-Lite' },
-  { value: 'deepseek', label: 'DeepSeek (direct)' },
-  { value: 'local', label: 'Local Llama' },
-  { value: 'grok', label: 'Grok' },
-  { value: 'claude', label: 'Claude' },
-  { value: 'gpt', label: 'ChatGPT / GPT' },
-];
 
 export function PlatformSettingsForm({ initialSettings }: { initialSettings: PlatformSettings }) {
   const [settings, setSettings] = useState(() => normalizePlatformSettings(initialSettings));
@@ -166,77 +132,7 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
         </CardContent>
       </Card>
 
-      <Card className="border-amber-500/25 bg-amber-500/5">
-        <CardHeader>
-          <CardTitle>Free Provider Safety Budgets</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-muted-foreground text-sm">
-            These are shared platform-wide daily caps, not per-user limits. 0 disables a provider. Increase a limit only
-            after checking the provider dashboard&apos;s actual quota.
-          </p>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {PROVIDER_BUDGET_LABELS.map(([key, label]) => (
-              <NumberField
-                key={key}
-                label={label}
-                value={settings.providerDailyBudgets[key]}
-                onChange={(value) =>
-                  setSettings((current) => ({
-                    ...current,
-                    providerDailyBudgets: {
-                      ...current.providerDailyBudgets,
-                      [key]: Math.max(0, value),
-                    },
-                  }))
-                }
-              />
-            ))}
-          </div>
-          <p className="text-muted-foreground text-xs">
-            Defaults are conservative beta caps. Claude/GPT do not have dependable permanent free API tiers, so both are
-            0. The Grok cap is for available promotional credits only.
-          </p>
-        </CardContent>
-      </Card>
 
-      <Card className="border-fuchsia-500/25 bg-fuchsia-500/5">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Bot className="h-5 w-5 text-fuchsia-400" />
-            AI routing by module
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-muted-foreground text-sm">
-            These server-side choices override the user dropdown. If a user selects Claude/ChatGPT/Gemini but this
-            module is set to DeepSeek, the request will still go to DeepSeek.
-          </p>
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {AI_ROUTING_LABELS.map(([key, label]) => (
-              <label key={key} className="text-muted-foreground space-y-1 text-xs font-medium">
-                <span>{label}</span>
-                <select
-                  value={settings.aiRouting[key]}
-                  onChange={(event) =>
-                    setSettings((current) => ({
-                      ...current,
-                      aiRouting: { ...current.aiRouting, [key]: event.target.value as PlatformSettings['aiRouting'][typeof key] },
-                    }))
-                  }
-                  className="border-input bg-background text-foreground h-10 w-full rounded-lg border px-3 text-sm"
-                >
-                  {AI_PROVIDER_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
       <Card className="border-emerald-500/25 bg-emerald-500/5">
         <CardHeader>
