@@ -301,8 +301,8 @@ export function StudentChatClient() {
       </Card>
 
       {/* Buddy list on the right, chat thread on the left */}
-      <div className="grid gap-6 xl:grid-cols-[1fr,360px]">
-        <div className="space-y-4 xl:order-2">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr),360px]">
+        <div className="space-y-4 lg:order-2 lg:sticky lg:top-20 lg:self-start">
           {/* Send Request Card */}
           <Card className="border-primary/15 shadow-sm transition-shadow hover:shadow-md">
             <CardHeader className="pb-3">
@@ -447,7 +447,7 @@ export function StudentChatClient() {
         </div>
 
         {/* Chat Thread */}
-        <Card className="border-primary/15 bg-card/95 shadow-xl shadow-black/5 xl:order-1">
+        <Card className="border-primary/15 bg-card/95 shadow-xl shadow-black/5 lg:order-1">
           <CardHeader className="border-border/70 bg-gradient-to-r from-muted/30 to-muted/10 flex-row items-center justify-between border-b pb-4">
             <div>
               <CardTitle className="flex items-center gap-2 text-base">
