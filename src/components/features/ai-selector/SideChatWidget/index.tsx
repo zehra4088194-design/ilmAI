@@ -75,13 +75,14 @@ export function SideChatWidget() {
     let cancelled = false;
     void (async () => {
       const supabase = createClient();
-      const { data, error } = await supabase.from('conversations').select('id,messages').eq('user_id', user.id).eq('source', 'side_chat').order('updated_at', { ascending: false }).limit(1).maybeSingle();
+      const db = supabase as any;
+      const { data, error } = await db.from('conversations').select('id,messages').eq('user_id', user.id).eq('source', 'side_chat').order('updated_at', { ascending: false }).limit(1).maybeSingle();
       if (cancelled) return;
       if (error) console.warn('Side chat load failed:', error.message);
       const id = data?.id || null;
       conversationIdRef.current = id;
       setConversationId(id);
-      setMessages(Array.isArray(data?.messages) ? (data.messages as SideChatMessage[]) : []);
+      setMessages(Array.isArray(data?.messages) ? (data.messages as unknown as SideChatMessage[]) : []);
       setChatLoaded(true);
     })();
     return () => { cancelled = true; };
@@ -98,8 +99,9 @@ export function SideChatWidget() {
   const persistMessages = async (nextMessages: SideChatMessage[], id: string) => {
     if (!user?.id || !chatLoaded) return;
     const supabase = createClient();
+    const db = supabase as any;
     const firstUser = nextMessages.find((message) => message.role === 'user');
-    const { error } = await supabase.from('conversations').upsert({
+    const { error } = await db.from('conversations').upsert({
       id, user_id: user.id, title: firstUser?.content?.slice(0, 80) || 'Quick Help', subject_id: null,
       messages: nextMessages, total_messages: nextMessages.length, provider: 'groq', source: 'side_chat', updated_at: new Date().toISOString(),
     }, { onConflict: 'id' });
