@@ -1,0 +1,293 @@
+name: move-ai-settings-v3
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  move:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Move AI cards
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          settings_path = Path('src/components/features/admin/settings/PlatformSettingsForm/index.tsx')
+          s = settings_path.read_text(encoding='utf-8-sig')
+
+          s = s.replace(
+              "import { Bot, BookOpenCheck, DollarSign, GraduationCap, Mail, Moon, Presentation, Printer, Save, ShieldCheck, Sun, UserRoundCog, Users } from 'lucide-react';",
+              "import { BookOpenCheck, DollarSign, GraduationCap, Mail, Moon, Presentation, Printer, Save, ShieldCheck, Sun, UserRoundCog, Users } from 'lucide-react';"
+          )
+
+          s = re.sub(r"\nconst PROVIDER_BUDGET_LABELS:.*?\n\nconst AI_PROVIDER_OPTIONS:.*?\n\n", "\n", s, flags=re.S)
+
+          card_pattern = r"\n      <Card className=\"border-amber-500/25 bg-amber-500/5\">.*?\n      </Card>\n\n      <Card className=\"border-fuchsia-500/25 bg-fuchsia-500/5\">\n        <CardHeader>\n          <CardTitle className=\"flex items-center gap-2\">\n            <Bot className=\"h-5 w-5 text-fuchsia-400\" />\n            AI routing by module\n          </CardTitle>\n        </CardHeader>\n        <CardContent className=\"space-y-3\">.*?\n        </CardContent>\n      </Card>\n"
+          s2, n = re.subn(card_pattern, "\n", s, flags=re.S)
+          if n != 1:
+              raise SystemExit(f'Expected to remove exactly 1 combined AI-card region, got {n}')
+          s = s2
+          settings_path.write_text(s, encoding='utf-8')
+
+          ai_path = Path('src/app/(admin)/admin/ai-api-keys/page.tsx')
+          a = ai_path.read_text(encoding='utf-8-sig')
+
+          a = a.replace(
+              "import { Bot, KeyRound, RotateCw, Save, MessageCircle, ShieldCheck } from 'lucide-react';",
+              "import { Bot, KeyRound, RotateCw, Save, MessageCircle, ShieldCheck } from 'lucide-react';"
+          )
+          a = a.replace(
+              "import {\n  DEFAULT_AI_RUNTIME_SETTINGS,\n  type AiKeyMode,\n  type AiRuntimeSettings,\n} from '@/lib/ai/runtime-settings';",
+              "import {\n  DEFAULT_AI_RUNTIME_SETTINGS,\n  type AiKeyMode,\n  type AiRuntimeSettings,\n} from '@/lib/ai/runtime-settings';\nimport { normalizePlatformSettings, type PlatformSettings } from '@/lib/platform-settings/shared';"
+          )
+
+          marker = "\nconst KEY_OPTIONS = Array.from({ length: 10 }, (_, index) => index + 1);\n"
+          constants = """
+
+const PROVIDER_BUDGET_LABELS: Array<[keyof PlatformSettings['providerDailyBudgets'], string]> = [
+  ['groqFast', 'Groq fast/day'],
+  ['groqLarge', 'Groq large/day'],
+  ['gemini', 'Gemini/day'],
+  ['deepseek', 'DeepSeek direct/day'],
+  ['ocrSpace', 'OCR.space/day'],
+  ['openRouter', 'OpenRouter/day'],
+  ['grok', 'Grok/day'],
+  ['claude', 'Claude/day'],
+  ['gpt', 'GPT/day'],
+];
+
+const AI_ROUTING_LABELS: Array<[keyof PlatformSettings['aiRouting'], string]> = [
+  ['sideChat', 'Side chat'],
+  ['aiTutor', 'AI Tutor'],
+  ['studyTools', 'General study tools'],
+  ['grading', 'Answer checking / grading'],
+  ['resourceTest', 'PDF/resource tests'],
+  ['resourceSummary', 'PDF/resource summaries'],
+  ['presentation', 'Presentation builder'],
+  ['visionOcr', 'Vision / handwritten OCR'],
+  ['studentChatModeration', 'Student chat safety check'],
+];
+
+const AI_PROVIDER_OPTIONS: Array<{ value: PlatformSettings['aiRouting'][keyof PlatformSettings['aiRouting']]; label: string }> = [
+  { value: 'advanced', label: 'OpenRouter (free auto-router → DeepSeek fallback)' },
+  { value: 'groq', label: 'Groq / Assistant' },
+  { value: 'gemini', label: 'Gemini Flash-Lite' },
+  { value: 'deepseek', label: 'DeepSeek (direct)' },
+  { value: 'local', label: 'Local Llama' },
+  { value: 'grok', label: 'Grok' },
+  { value: 'claude', label: 'Claude' },
+  { value: 'gpt', label: 'ChatGPT / GPT' },
+];
+"""
+          if marker not in a:
+              raise SystemExit('AI page key marker not found')
+          a = a.replace(marker, marker + constants, 1)
+
+          a = a.replace(
+              "  const [settings, setSettings] = useState<AiRuntimeSettings>(DEFAULT_AI_RUNTIME_SETTINGS);\n  const [loading, setLoading] = useState(true);\n  const [saving, setSaving] = useState(false);",
+              "  const [settings, setSettings] = useState<AiRuntimeSettings>(DEFAULT_AI_RUNTIME_SETTINGS);\n  const [platformSettings, setPlatformSettings] = useState<PlatformSettings | null>(null);\n  const [loading, setLoading] = useState(true);\n  const [saving, setSaving] = useState(false);"
+          )
+
+          old_effect = """  useEffect(() => {
+    fetch('/api/admin/ai-runtime-settings')
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Could not load AI settings.');
+        setSettings(data.settings);
+      })
+      .catch((error) => toast.error(error instanceof Error ? error.message : 'Could not load AI settings.'))
+      .finally(() => setLoading(false));
+  }, []);
+"""
+          new_effect = """  useEffect(() => {
+    Promise.all([
+      fetch('/api/admin/ai-runtime-settings').then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Could not load AI settings.');
+        return data.settings as AiRuntimeSettings;
+      }),
+      fetch('/api/admin/platform-settings').then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Could not load platform settings.');
+        return normalizePlatformSettings(data.settings) as PlatformSettings;
+      }),
+    ])
+      .then(([runtime, platform]) => {
+        setSettings(runtime);
+        setPlatformSettings(platform);
+      })
+      .catch((error) => toast.error(error instanceof Error ? error.message : 'Could not load AI settings.'))
+      .finally(() => setLoading(false));
+  }, []);
+"""
+          if old_effect not in a:
+              raise SystemExit('AI load effect not found')
+          a = a.replace(old_effect, new_effect, 1)
+
+          old_save = """  const save = async () => {
+    setSaving(true);
+    try {
+      const response = await fetch('/api/admin/ai-runtime-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settings }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Could not save AI settings.');
+      setSettings(data.settings);
+      toast.success('AI API settings saved. Changes apply to new AI requests.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not save AI settings.');
+    } finally {
+      setSaving(false);
+    }
+  };
+"""
+          new_save = """  const save = async () => {
+    setSaving(true);
+    try {
+      if (!platformSettings) throw new Error('Platform settings are still loading.');
+      const [runtimeResponse, platformResponse] = await Promise.all([
+        fetch('/api/admin/ai-runtime-settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ settings }),
+        }),
+        fetch('/api/admin/platform-settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ settings: platformSettings }),
+        }),
+      ]);
+      const runtimeData = await runtimeResponse.json();
+      const platformData = await platformResponse.json();
+      if (!runtimeResponse.ok) throw new Error(runtimeData.error || 'Could not save AI settings.');
+      if (!platformResponse.ok) throw new Error(platformData.error || 'Could not save platform AI settings.');
+      setSettings(runtimeData.settings);
+      setPlatformSettings(normalizePlatformSettings(platformData.settings));
+      toast.success('AI API settings saved. Changes apply to new AI requests.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not save AI settings.');
+    } finally {
+      setSaving(false);
+    }
+  };
+"""
+          if old_save not in a:
+              raise SystemExit('AI save function not found')
+          a = a.replace(old_save, new_save, 1)
+
+          insert_before = "\n      <Card>\n        <CardContent className=\"p-5 text-sm text-muted-foreground\">"
+          cards = r"""
+
+      {platformSettings ? (
+        <>
+          <Card className="border-amber-500/25 bg-amber-500/5">
+            <CardHeader>
+              <CardTitle>Free Provider Safety Budgets</CardTitle>
+              <CardDescription>
+                Shared platform-wide daily caps for providers. 0 disables a provider. These controls now live with the AI API/key runtime settings.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {PROVIDER_BUDGET_LABELS.map(([key, label]) => (
+                  <label key={key} className="text-sm font-medium">
+                    {label}
+                    <input
+                      type="number"
+                      min={0}
+                      value={platformSettings.providerDailyBudgets[key]}
+                      onChange={(event) =>
+                        setPlatformSettings((current) => current ? ({
+                          ...current,
+                          providerDailyBudgets: {
+                            ...current.providerDailyBudgets,
+                            [key]: Math.max(0, Number(event.target.value) || 0),
+                          },
+                        }) : current)
+                      }
+                      className="mt-1 h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+                    />
+                  </label>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Defaults are conservative beta caps. Raise them only after checking the provider dashboard&apos;s actual quota.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-fuchsia-500/25 bg-fuchsia-500/5">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Bot className="h-5 w-5" /> AI routing by module
+              </CardTitle>
+              <CardDescription>
+                These server-side provider choices override any user model dropdown. The selected provider policy is applied on the server for each module.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {AI_ROUTING_LABELS.map(([key, label]) => (
+                  <label key={key} className="text-sm font-medium">
+                    <span className="text-muted-foreground text-xs">{label}</span>
+                    <select
+                      value={platformSettings.aiRouting[key]}
+                      onChange={(event) =>
+                        setPlatformSettings((current) => current ? ({
+                          ...current,
+                          aiRouting: {
+                            ...current.aiRouting,
+                            [key]: event.target.value as PlatformSettings['aiRouting'][typeof key],
+                          },
+                        }) : current)
+                      }
+                      className="mt-1 h-10 w-full rounded-lg border border-border bg-background px-3 text-sm"
+                    >
+                      {AI_PROVIDER_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                      ))}
+                    </select>
+                  </label>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      ) : null}
+"""
+          if insert_before not in a:
+              raise SystemExit('AI page insertion point not found')
+          a = a.replace(insert_before, cards + insert_before, 1)
+
+          # Keep the loading state useful because this page now loads both settings sets.
+          a = a.replace(
+              "          {loading ? <span className=\"ml-2\">Loading current settings…</span> : null}",
+              "          {loading ? <span className=\"ml-2\">Loading current settings…</span> : null}"
+          )
+          ai_path.write_text(a, encoding='utf-8')
+          PY
+
+      - name: Commit changes and remove helper workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/features/admin/settings/PlatformSettingsForm/index.tsx 'src/app/(admin)/admin/ai-api-keys/page.tsx'
+          git commit -m "feat: move AI budgets and routing into AI API keys" || true
+          git rm .github/workflows/move-ai-settings-v3.yml || true
+          git commit -m "chore: remove temporary AI settings migration workflow" || true
+          git push origin main
