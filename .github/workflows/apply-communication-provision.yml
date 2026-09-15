@@ -1,0 +1,42 @@
+name: Wire class group provisioning
+on:
+  push:
+    branches: [main]
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Patch
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/lib/school-erp/actions.ts')
+          s = p.read_text()
+          s = s.replace(
+              "import { saveSchoolStudentRecord, studentRecordFromForm } from '@/lib/school-erp/student-record';\n",
+              "import { saveSchoolStudentRecord, studentRecordFromForm } from '@/lib/school-erp/student-record';\nimport { ensureSchoolClassGroup } from '@/lib/school-communication/provision';\n"
+          )
+          s = s.replace(
+              "    await audit(db, context, 'create', 'section', data.id);\n    return done('/school-admin/academics', 'Section added.');",
+              "    await audit(db, context, 'create', 'section', data.id);\n    await ensureSchoolClassGroup(context.organization.id, data.id, context.userId);\n    return done('/school-admin/academics', 'Section added.');"
+          )
+          s = s.replace(
+              "  if (await isOrganizationBillingActive(db, context.organization.id)) {\n    await grantSchoolSubscription(context.organization.id, input.profileId);\n  }\n  return data;",
+              "  if (await isOrganizationBillingActive(db, context.organization.id)) {\n    await grantSchoolSubscription(context.organization.id, input.profileId);\n  }\n  await ensureSchoolClassGroup(context.organization.id, input.sectionId, context.userId);\n  return data;"
+          )
+          p.write_text(s)
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/lib/school-erp/actions.ts
+          git commit -m "feat: auto-provision class communication groups" || exit 0
+          git push
+          git rm -f .github/workflows/apply-communication-provision.yml
+          git commit -m "chore: remove one-shot provisioning workflow"
+          git push
