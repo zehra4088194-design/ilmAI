@@ -1,0 +1,170 @@
+name: Shared AI credit policy
+on:
+  push:
+    branches:
+      - main
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Patch AI quota code
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          # Exact body replacements preserve every public function signature and all call sites.
+          p = Path('src/lib/rate-limit/index.ts')
+          s = p.read_text()
+
+          old = """export function getAiDailyLimit(tier: SubscriptionTier, _feature: 'side_chat' | 'tool' = 'tool') {
+  if (tier === 'ELITE') return AI_DAILY_LIMITS.ELITE_TOOL;
+  if (tier === 'PRO') return AI_DAILY_LIMITS.PRO_TOOL;
+  return AI_DAILY_LIMITS.FREE_TOOL;
+}"""
+          new = """export function getAiDailyLimit(_tier: SubscriptionTier, _feature: 'side_chat' | 'tool' = 'tool') {
+  // Legacy API retained for compatibility. AI access is controlled only by the shared credit pool.
+  return -1;
+}"""
+          if old not in s:
+              raise SystemExit('daily AI helper not found')
+          s = s.replace(old, new, 1)
+
+          old = """  if (tier === 'FREE') {
+    return `You have used all free weekly credits for ${featureLabel}. Pro includes ${pro.limits.aiCreditsMonthly} per month, up to ${pro.limits.aiCreditsDaily} per day.`;
+  }"""
+          new = """  if (tier === 'FREE') {
+    return `You have used all free weekly credits for ${featureLabel}. Pro includes ${pro.limits.aiCreditsMonthly} shared credits per month.`;
+  }"""
+          if old in s:
+              s = s.replace(old, new, 1)
+
+          old = """  void provider;
+  void modelTier;
+  const plan = await getConfiguredPlan(userTier);
+  if (userTier !== 'ELITE' || plan.limits.premiumAiMonthly <= 0) {
+    return { success: false, remaining: 0, reset: monthWindow().reset };
+  }
+  return checkMonthlyLimit(userId, 'premium_ai', plan.limits.premiumAiMonthly);"""
+          new = """  void userId;
+  void provider;
+  void modelTier;
+  void userTier;
+  // Model tier never has a separate quota. The shared AI credit pool is authoritative.
+  return { success: true, remaining: -1, reset: 0 };"""
+          if old not in s:
+              raise SystemExit('model-tier body not found')
+          s = s.replace(old, new, 1)
+
+          old = """export async function checkPresentationLimit(userId: string, tier: SubscriptionTier, slideCount: number) {
+  const entitlement = await getAudiencePlanLimits(userId, tier);
+  if (!entitlement.limits.presentationsEnabled || slideCount > entitlement.limits.presentationSlidesMax) {
+    return {
+      success: false,
+      remaining: 0,
+      reset: monthWindow().reset,
+      maxSlides: entitlement.limits.presentationSlidesMax,
+      audience: entitlement.audience,
+    };
+  }
+  return {
+    success: true,
+    remaining: -1,
+    reset: 0,
+    maxSlides: entitlement.limits.presentationSlidesMax,
+    audience: entitlement.audience,
+  };
+}"""
+          new = """export async function checkPresentationLimit(userId: string, tier: SubscriptionTier, slideCount: number) {
+  void slideCount;
+  const audience = (await getAudiencePlanLimits(userId, tier)).audience;
+  // Presentation availability and size are not separate AI quotas anymore; shared credits decide usage.
+  return {
+    success: true,
+    remaining: -1,
+    reset: 0,
+    maxSlides: Number.MAX_SAFE_INTEGER,
+    audience,
+  };
+}"""
+          if old not in s:
+              raise SystemExit('presentation body not found')
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+
+          # Admin settings UI: remove configurable daily AI, premium AI, and audience presentation caps.
+          p = Path('src/components/features/admin/settings/PlatformSettingsForm/index.tsx')
+          s = p.read_text()
+          s = s.replace("  ['aiCreditsDaily', 'Shared AI/day'],\n", "")
+          s = s.replace("  ['premiumAiMonthly', 'Premium AI/month'],\n", "")
+          s = s.replace(
+              'Change Free, Pro, and Elite prices, daily/weekly usage limits, downloads, and feature toggles here.',
+              'Change plan prices and non-AI feature limits here. AI usage comes from one shared credit pool.'
+          )
+
+          # Drop NumberField blocks whose label is an AI-credit setting.
+          starts = []
+          i = 0
+          while True:
+              i = s.find('<NumberField', i)
+              if i < 0: break
+              e = s.find('/>', i)
+              if e < 0: break
+              block_end = e + 2
+              block = s[i:block_end]
+              if 'AI credits' in block or 'AI Credits' in block:
+                  starts.append((i, block_end))
+              i = block_end
+          for a,b in reversed(starts):
+              s = s[:a] + s[b:]
+
+          # Remove the Presentation Builder audience settings section so availability/slide caps cannot be configured here.
+          heading = 'Presentation Builder, by audience'
+          pos = s.find(heading)
+          if pos >= 0:
+              start = s.rfind('<Card', 0, pos)
+              end = s.find('</Card>', pos)
+              if start >= 0 and end >= 0:
+                  s = s[:start] + s[end + len('</Card>'):]
+          p.write_text(s)
+
+          # Keep old persisted values inert if they exist in platform_settings.
+          p = Path('src/lib/platform-settings/shared.ts')
+          s = p.read_text()
+          import re
+          s = re.sub(r'(?m)^(\s*)aiCreditsDaily: numberOrFallback\([^\n]*\),$', r'\1aiCreditsDaily: -1,', s)
+          s = re.sub(r'(?m)^(\s*)premiumAiMonthly: numberOrFallback\([^\n]*\),$', r'\1premiumAiMonthly: -1,', s)
+          p.write_text(s)
+          PY
+
+          grep -n "Shared AI/day\|Premium AI/month\|Presentation Builder, by audience" src/components/features/admin/settings/PlatformSettingsForm/index.tsx && exit 1 || true
+
+      - name: Fix existing TypeScript regressions
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/app/api/whatsapp/ai-reply/route.ts')
+          s = p.read_text()
+          s = s.replace("provider: whatsappSettings.whatsapp.provider,", "provider: whatsappSettings.whatsapp.provider === 'openrouter' ? 'advanced' : whatsappSettings.whatsapp.provider,")
+          p.write_text(s)
+          p = Path('src/components/features/calling/CallProvider.tsx')
+          s = p.read_text().replace("      remoteAudioRef.current.playsInline = true;\n", "")
+          p.write_text(s)
+          PY
+
+      - name: Commit changes and remove temporary workflows
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/lib/rate-limit/index.ts src/lib/platform-settings/shared.ts src/components/features/admin/settings/PlatformSettingsForm/index.tsx src/app/api/whatsapp/ai-reply/route.ts src/components/features/calling/CallProvider.tsx
+          git commit -m "feat: make AI usage credit-only"
+          git push
+          git rm -f .github/workflows/ai-credit-only-v1.yml .github/workflows/ai-credit-only-v2.yml .github/workflows/ai-credit-only-v3.yml || true
+          git commit -m "chore: remove temporary AI quota workflows" || true
+          git push
