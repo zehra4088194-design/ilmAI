@@ -13,10 +13,10 @@ import {
   RotateCw,
 } from 'lucide-react';
 import { Document, Page, pdfjs } from 'react-pdf';
+import { createPortal } from 'react-dom';
 import 'react-pdf/dist/Page/TextLayer.css';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils/cn';
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
@@ -29,26 +29,13 @@ const AUTO_SCROLL_SPEEDS = [
   { label: '3x', pxPerSecond: 220 },
 ] as const;
 
-// How far outside the visible viewport a page is allowed to mount its real canvas. Generous
-// enough that continuous scrolling never shows a blank flash, small enough that a 100+ page
-// document never tries to rasterize more than a handful of pages at once.
 const MOUNT_ROOT_MARGIN = '1400px 0px 1400px 0px';
-const A4_ASPECT = 210 / 297; // width / height fallback until a page tells us its real shape
-
+const A4_ASPECT = 210 / 297;
 const DEFAULT_ZOOM = 1;
 const MIN_ZOOM = 0.7;
 const MAX_ZOOM = 2.25;
-// Chrome's built-in PDF viewer's "100%" rendered noticeably smaller than this viewer's old 100%
-// (users compared the two directly — ours at 70% zoom looked the same size as Chrome's 100%).
-// Rather than just changing the default zoom (which would leave the "100%" label lying about
-// what it shows), the base width itself is scaled down so 100% here now IS what 70% used to
-// render — the zoom control's own range/labels are otherwise untouched.
 const BASE_WIDTH_SCALE = 0.7;
 
-// The margin around the page stack used to be a flat slate-200/950 regardless of which PDF
-// variant loaded, so a dark-mode PDF sat on a plain light-gray (or the reader shell's near-black)
-// strip on either side instead of blending into the page. These reuse the app's own theme preview
-// backgrounds (see lib/constants/themes.ts) — blue for dark PDFs, the paper-toned one for light.
 const MODE_BACKGROUND: Record<'dark' | 'light', string> = {
   dark: '/background-blue.png',
   light: '/background-light.png',
@@ -62,71 +49,42 @@ export function ProtectedPdfViewer({
   mode,
   onLoadError,
 }: {
-  // Blob for an already-downloaded file (offline reads); a real same-origin https:// URL string
-  // for a live read, letting pdf.js stream + render pages as bytes arrive instead of waiting for
-  // the whole file first (see ProtectedResourceReader). This is NOT the same thing as a
-  // `URL.createObjectURL(blob)` blob: URL — pdf.js issuing its own ranged fetch against a blob:
-  // URL is what used to intermittently come back "Unexpected server response (0)"; a genuine
-  // https:// URL is pdf.js's normal, well-supported network-loading path.
   file: Blob | string;
   title: string;
   className?: string;
-  // Driven by the parent's fullscreen auto-hide timer — false fades this toolbar out so only the
-  // page content fills the screen. Always true outside fullscreen.
   toolbarVisible?: boolean;
-  // Which PDF variant is loaded (see ProtectedResourceReader's effectiveMode) — picks the margin
-  // background around the page stack. Omitted falls back to the plain slate-200 it always had.
   mode?: 'dark' | 'light';
-  // Bubbles a load failure up to the parent's richer error UI (retry + "open original file"),
-  // instead of only the small inline error card below.
   onLoadError?: (message: string) => void;
 }) {
   const frameRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
-  // Wraps the whole page stack — this is what the live pinch gesture transforms (see the pinch
-  // effect below) instead of touching react-pdf's own rendering during the gesture.
   const pinchScaleRef = useRef<HTMLDivElement>(null);
+  const speedButtonRef = useRef<HTMLButtonElement>(null);
+  const speedMenuRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<Array<HTMLDivElement | null>>([]);
   const [containerWidth, setContainerWidth] = useState(0);
   const [pages, setPages] = useState(0);
   const [page, setPage] = useState(1);
   const [zoom, setZoom] = useState(DEFAULT_ZOOM);
-  // Mirrors `zoom` for the pinch-gesture effect below, which only attaches its listeners once
-  // (empty deps, so its closures would otherwise see the zoom value from first render forever).
   const zoomRef = useRef(DEFAULT_ZOOM);
-  useEffect(() => {
-    zoomRef.current = zoom;
-  }, [zoom]);
   const [rotation, setRotation] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [autoScrolling, setAutoScrolling] = useState(false);
   const [speedIndex, setSpeedIndex] = useState(1);
   const [speedMenuOpen, setSpeedMenuOpen] = useState(false);
+  const [speedMenuPosition, setSpeedMenuPosition] = useState({ top: 0, left: 0 });
   const [mountedPages, setMountedPages] = useState<Set<number>>(() => new Set([1]));
-  // Per-page aspect ratio (width/height), keyed by 1-based page number. A single global aspect
-  // (taken from page 1 only) used to size every placeholder — mixed-orientation PDFs (a
-  // landscape diagram page inside an otherwise portrait document) would then swap from a
-  // wrongly-sized placeholder to the real canvas the moment that page mounted, snapping the
-  // scroll position and reading as a "vibration"/jitter glitch while scrolling. Tracking each
-  // page's own measured aspect (falling back to the document default only until measured) keeps
-  // every placeholder-to-canvas swap the same height, so nothing shifts under the reader.
   const [pageAspects, setPageAspects] = useState<Record<number, number>>({});
-  // Auto-hides the zoom/page toolbar after 5s of inactivity — independent of the parent's
-  // fullscreen-only toolbarVisible prop below, so it fades even outside fullscreen. Reappears on:
-  // mobile — touching/scrolling the PDF; desktop — moving the mouse over the viewer. The final
-  // visible state ANDs both this and the prop, so fullscreen-fade still applies on top.
   const [toolbarAutoVisible, setToolbarAutoVisible] = useState(true);
   const toolbarHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Auto-load: the viewer starts pulling the document the moment a url is handed to it —
-  // there is no "open" step for the caller to trigger beyond mounting/passing the url.
+  useEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
+
   useEffect(() => {
     const frame = frameRef.current;
     if (!frame) return;
-    // Coalesce rapid-fire ResizeObserver ticks into one width update per animation frame.
-    // Without this, entering/exiting fullscreen (which resizes the viewport repeatedly while the
-    // browser chrome animates in/out) re-renders every page on each tick and the whole document
-    // visibly shakes; rAF-batching settles it to a single clean re-layout once the resize stops.
     let raf = 0;
     const updateWidth = () => {
       cancelAnimationFrame(raf);
@@ -152,30 +110,26 @@ export function ProtectedPdfViewer({
     setRotation(0);
     setError(null);
     setAutoScrolling(false);
+    setSpeedMenuOpen(false);
     setMountedPages(new Set([1]));
     setPageAspects({});
     pageRefs.current = [];
   }, [sourceFile]);
 
-  // Continuous auto-scroll, like a teleprompter: advances the viewport at a steady
-  // pixel-per-second rate and stops itself at the bottom or when the user scrolls manually.
+  // Continuous auto-scroll. The speed is measured in CSS pixels per second so every speed
+  // remains predictable across page sizes and zoom levels.
   useEffect(() => {
     if (!autoScrolling) return;
     const viewport = viewportRef.current;
     if (!viewport) return;
     const pxPerSecond = AUTO_SCROLL_SPEEDS[speedIndex]?.pxPerSecond ?? 60;
-    // The viewport carries the `scroll-smooth` class (scroll-behavior: smooth) for manual page
-    // jumps. Writing `scrollTop +=` every animation frame while that's active makes iOS Safari
-    // treat each write as a brand-new smooth-scroll request that cancels the one before it ever
-    // finishes — the net visible motion is close to zero, which is exactly the "auto-scroll
-    // doesn't work on iPhone" bug. Force plain instant scrolling only for the duration of
-    // auto-scroll, then hand scroll-behavior back to the CSS class (manual jumps stay smooth).
     const previousScrollBehavior = viewport.style.scrollBehavior;
     viewport.style.scrollBehavior = 'auto';
     let raf = 0;
     let last = performance.now();
+
     const step = (now: number) => {
-      const dt = (now - last) / 1000;
+      const dt = Math.min(0.05, Math.max(0, (now - last) / 1000));
       last = now;
       viewport.scrollTop += pxPerSecond * dt;
       if (viewport.scrollTop + viewport.clientHeight >= viewport.scrollHeight - 1) {
@@ -184,8 +138,8 @@ export function ProtectedPdfViewer({
       }
       raf = requestAnimationFrame(step);
     };
-    raf = requestAnimationFrame(step);
 
+    raf = requestAnimationFrame(step);
     const stopOnUserScroll = () => setAutoScrolling(false);
     viewport.addEventListener('wheel', stopOnUserScroll, { passive: true });
     viewport.addEventListener('touchmove', stopOnUserScroll, { passive: true });
@@ -198,8 +152,7 @@ export function ProtectedPdfViewer({
     };
   }, [autoScrolling, speedIndex]);
 
-  // Track which page is centered in view so the page counter stays accurate during
-  // continuous scrolling (both manual and auto).
+  // Keep the page counter in sync with the page occupying the largest visible area.
   useEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport || !pages) return;
@@ -209,9 +162,7 @@ export function ProtectedPdfViewer({
         for (const entry of entries) {
           const index = Number((entry.target as HTMLElement).dataset.pageIndex);
           if (Number.isNaN(index)) continue;
-          if (!best || entry.intersectionRatio > best.ratio) {
-            best = { index, ratio: entry.intersectionRatio };
-          }
+          if (!best || entry.intersectionRatio > best.ratio) best = { index, ratio: entry.intersectionRatio };
         }
         if (best && best.ratio > 0) setPage(best.index + 1);
       },
@@ -221,9 +172,7 @@ export function ProtectedPdfViewer({
     return () => observer.disconnect();
   }, [pages]);
 
-  // Windowed rendering: only pages within MOUNT_ROOT_MARGIN of the viewport ever get a real
-  // <Page> canvas. Everything else stays a lightweight, correctly-sized placeholder — this is
-  // what keeps a long PDF from freezing the tab while still feeling like it "just loaded".
+  // Windowed PDF rendering for long documents.
   useEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport || !pages) return;
@@ -233,22 +182,20 @@ export function ProtectedPdfViewer({
         for (const entry of entries) {
           if (!entry.isIntersecting) continue;
           const index = Number((entry.target as HTMLElement).dataset.pageIndex);
-          if (Number.isNaN(index)) continue;
-          toMount.push(index + 1);
+          if (!Number.isNaN(index)) toMount.push(index + 1);
         }
-        if (toMount.length) {
-          setMountedPages((current) => {
-            const next = new Set(current);
-            let changed = false;
-            for (const pageNumber of toMount) {
-              if (!next.has(pageNumber)) {
-                next.add(pageNumber);
-                changed = true;
-              }
+        if (!toMount.length) return;
+        setMountedPages((current) => {
+          const next = new Set(current);
+          let changed = false;
+          for (const pageNumber of toMount) {
+            if (!next.has(pageNumber)) {
+              next.add(pageNumber);
+              changed = true;
             }
-            return changed ? next : current;
-          });
-        }
+          }
+          return changed ? next : current;
+        });
       },
       { root: viewport, rootMargin: MOUNT_ROOT_MARGIN, threshold: 0 },
     );
@@ -256,85 +203,82 @@ export function ProtectedPdfViewer({
     return () => observer.disconnect();
   }, [pages]);
 
-  // Two-finger pinch inside the viewport scales the PDF like iOS's native PDF viewer: the live
-  // gesture is a plain CSS transform on the whole page stack (instant, 60fps, no react-pdf work),
-  // and only on release does it commit to `zoom` state — which triggers the real re-render at the
-  // new resolution once, instead of react-pdf reflowing/re-rasterizing every mounted page on every
-  // touchmove tick (what made pinching feel slow/stuttery before; a canvas re-render per frame
-  // can't keep up with a fast pinch). `touch-action: pan-x pan-y` on the viewport (below) already
-  // tells the browser not to handle pinch gestures there itself — without that, the pinch would
-  // zoom the whole web page (title bar, sidebar, everything) rather than just the PDF. The
-  // transform's origin tracks the pinch midpoint so the content zooms toward the fingers, the same
-  // way iOS anchors the zoom, rather than always scaling from the top-left corner.
+  // Reliable two-finger pinch zoom. We use a non-passive touch listener so the browser's own
+  // page-level pinch never wins the gesture. During movement only a CSS transform is changed;
+  // react-pdf is re-rendered once after release for the final sharp resolution.
   useEffect(() => {
     const viewport = viewportRef.current;
     const pinchTarget = pinchScaleRef.current;
     if (!viewport || !pinchTarget) return;
-    let pinchStartDistance = 0;
-    let pinchStartZoom = 1;
-    let liveScale = 1;
-    let active = false;
 
-    const distanceBetween = (touches: TouchList) => {
+    let active = false;
+    let startDistance = 0;
+    let startZoom = DEFAULT_ZOOM;
+    let liveZoom = DEFAULT_ZOOM;
+
+    const distance = (touches: TouchList) => {
       const a = touches.item(0);
       const b = touches.item(1);
       if (!a || !b) return 0;
       return Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY);
     };
 
-    const midpointOrigin = (touches: TouchList) => {
+    const setOrigin = (touches: TouchList) => {
       const a = touches.item(0);
       const b = touches.item(1);
-      if (!a || !b) return '50% 50%';
+      if (!a || !b) return;
       const rect = pinchTarget.getBoundingClientRect();
-      const midX = (a.clientX + b.clientX) / 2 - rect.left + viewport.scrollLeft;
-      const midY = (a.clientY + b.clientY) / 2 - rect.top + viewport.scrollTop;
-      return `${midX}px ${midY}px`;
+      const x = (a.clientX + b.clientX) / 2 - rect.left + viewport.scrollLeft;
+      const y = (a.clientY + b.clientY) / 2 - rect.top + viewport.scrollTop;
+      pinchTarget.style.transformOrigin = `${x}px ${y}px`;
     };
 
     const onTouchStart = (event: TouchEvent) => {
       if (event.touches.length !== 2) return;
+      event.preventDefault();
       active = true;
-      pinchStartDistance = distanceBetween(event.touches);
-      pinchStartZoom = zoomRef.current;
-      liveScale = 1;
-      pinchTarget.style.transformOrigin = midpointOrigin(event.touches);
+      startDistance = distance(event.touches);
+      startZoom = zoomRef.current;
+      liveZoom = startZoom;
+      setOrigin(event.touches);
       pinchTarget.style.transition = 'none';
+      pinchTarget.style.willChange = 'transform';
     };
 
     const onTouchMove = (event: TouchEvent) => {
-      if (!active || event.touches.length !== 2 || !pinchStartDistance) return;
+      if (!active || event.touches.length !== 2 || !startDistance) return;
       event.preventDefault();
-      const targetZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, pinchStartZoom * (distanceBetween(event.touches) / pinchStartDistance)));
-      liveScale = targetZoom / pinchStartZoom;
-      pinchTarget.style.transform = `scale(${liveScale})`;
+      const ratio = distance(event.touches) / startDistance;
+      liveZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, startZoom * ratio));
+      pinchTarget.style.transform = `scale(${liveZoom / startZoom})`;
     };
 
-    const commit = () => {
+    const finish = (event?: TouchEvent) => {
       if (!active) return;
+      if (event && event.touches.length >= 2) return;
       active = false;
-      pinchStartDistance = 0;
-      const finalZoom = Number((pinchStartZoom * liveScale).toFixed(2));
-      // Snap the transform back to identity in the same tick `zoom` state updates, so the brief
-      // moment between "release the transform" and "react-pdf re-renders at the new width" never
-      // shows a double-scaled or unscaled flash.
-      pinchTarget.style.transform = 'none';
+      startDistance = 0;
+      const finalZoom = Number(liveZoom.toFixed(2));
       setZoom(finalZoom);
+      requestAnimationFrame(() => {
+        pinchTarget.style.transform = 'none';
+        pinchTarget.style.willChange = 'auto';
+      });
     };
 
-    const onTouchEnd = (event: TouchEvent) => {
-      if (event.touches.length < 2) commit();
-    };
+    const onTouchEnd = (event: TouchEvent) => finish(event);
+    const onTouchCancel = () => finish();
 
-    viewport.addEventListener('touchstart', onTouchStart, { passive: true });
+    viewport.addEventListener('touchstart', onTouchStart, { passive: false });
     viewport.addEventListener('touchmove', onTouchMove, { passive: false });
-    viewport.addEventListener('touchend', onTouchEnd, { passive: true });
-    viewport.addEventListener('touchcancel', onTouchEnd, { passive: true });
+    viewport.addEventListener('touchend', onTouchEnd, { passive: false });
+    viewport.addEventListener('touchcancel', onTouchCancel, { passive: false });
+
     return () => {
       viewport.removeEventListener('touchstart', onTouchStart);
       viewport.removeEventListener('touchmove', onTouchMove);
       viewport.removeEventListener('touchend', onTouchEnd);
-      viewport.removeEventListener('touchcancel', onTouchEnd);
+      viewport.removeEventListener('touchcancel', onTouchCancel);
     };
   }, []);
 
@@ -343,22 +287,15 @@ export function ProtectedPdfViewer({
   const rotated90 = rotation === 90 || rotation === 270;
   const documentAspect = pageAspects[1] ?? A4_ASPECT;
   const pageNumbers = useMemo(() => Array.from({ length: pages }, (_, i) => i + 1), [pages]);
-  // react-pdf reloads the whole document whenever the `file` prop's object identity changes (it
-  // only warns "consider memoizing", it doesn't dedupe for you). A Blob's identity is already
-  // stable across re-renders as long as the caller isn't creating a new one, but wrapping a plain
-  // `string` url the same way keeps both forms equally safe against frequent re-renders
-  // (autoscroll, page tracking, the resize handling during fullscreen) silently reloading the
-  // document from scratch mid-scroll.
   const file = useMemo(() => sourceFile, [sourceFile]);
 
   const jumpToPage = (target: number) => {
-    setPage(target);
-    const node = pageRefs.current[target - 1];
+    const next = Math.min(Math.max(1, target), pages || 1);
+    setPage(next);
+    const node = pageRefs.current[next - 1];
     if (node) node.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  // Keyboard shortcuts: Page navigation and zoom, ignored while the page-jump box (or anything
-  // else) has focus so typing never gets hijacked.
   useEffect(() => {
     const frame = frameRef.current;
     if (!frame) return;
@@ -379,11 +316,9 @@ export function ProtectedPdfViewer({
     };
     frame.addEventListener('keydown', onKeyDown);
     return () => frame.removeEventListener('keydown', onKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, pages]);
 
-  // Toolbar auto-hide: starts visible, fades after 5s idle, and any activity (mouse move on
-  // desktop; touch/scroll on mobile) shows it again and restarts the 5s timer.
+  // Toolbar activity / auto-hide. An open speed menu keeps the toolbar alive.
   useEffect(() => {
     const frame = frameRef.current;
     const viewport = viewportRef.current;
@@ -399,18 +334,61 @@ export function ProtectedPdfViewer({
     scheduleHide();
     frame.addEventListener('mousemove', onActivity);
     viewport.addEventListener('touchstart', onActivity, { passive: true });
-    viewport.addEventListener('touchmove', onActivity, { passive: true });
     viewport.addEventListener('scroll', onActivity, { passive: true });
     return () => {
       if (toolbarHideTimeoutRef.current) clearTimeout(toolbarHideTimeoutRef.current);
       frame.removeEventListener('mousemove', onActivity);
       viewport.removeEventListener('touchstart', onActivity);
-      viewport.removeEventListener('touchmove', onActivity);
       viewport.removeEventListener('scroll', onActivity);
     };
   }, []);
 
-  const toolbarShown = toolbarVisible && toolbarAutoVisible;
+  // Position the speed menu with viewport coordinates and render it into body. This avoids every
+  // possible clipping/stacking context problem from the PDF toolbar and also works in fullscreen.
+  useEffect(() => {
+    if (!speedMenuOpen) return;
+    const updatePosition = () => {
+      const button = speedButtonRef.current;
+      if (!button) return;
+      const rect = button.getBoundingClientRect();
+      const width = 104;
+      const margin = 8;
+      const left = Math.max(margin, Math.min(rect.right - width, window.innerWidth - width - margin));
+      const top = Math.min(rect.bottom + 6, window.innerHeight - 6 - 5 * 32 - 12);
+      setSpeedMenuPosition({ top: Math.max(margin, top), left });
+    };
+    const onDocumentPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (target && (speedMenuRef.current?.contains(target) || speedButtonRef.current?.contains(target))) return;
+      setSpeedMenuOpen(false);
+    };
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    document.addEventListener('pointerdown', onDocumentPointerDown);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+      document.removeEventListener('pointerdown', onDocumentPointerDown);
+    };
+  }, [speedMenuOpen]);
+
+  const toolbarShown = toolbarVisible && (toolbarAutoVisible || speedMenuOpen);
+  const selectedSpeed = AUTO_SCROLL_SPEEDS[speedIndex]?.label ?? '1x';
+
+  const openSpeedMenu = () => {
+    const button = speedButtonRef.current;
+    if (button) {
+      const rect = button.getBoundingClientRect();
+      const width = 104;
+      const margin = 8;
+      const left = Math.max(margin, Math.min(rect.right - width, window.innerWidth - width - margin));
+      const top = Math.min(rect.bottom + 6, window.innerHeight - 6 - 5 * 32 - 12);
+      setSpeedMenuPosition({ top: Math.max(margin, top), left });
+    }
+    setToolbarAutoVisible(true);
+    setSpeedMenuOpen((value) => !value);
+  };
 
   return (
     <div
@@ -426,10 +404,7 @@ export function ProtectedPdfViewer({
       <div className="flex h-full min-h-0 flex-col">
         <div
           className={cn(
-            'flex shrink-0 items-center justify-between gap-2 overflow-hidden border-slate-300 bg-white px-2 shadow-sm transition-all duration-300 ease-in-out sm:px-3',
-            // Height collapses along with opacity (not just opacity alone) so the PDF viewport
-            // below actually reclaims the toolbar's space in fullscreen instead of leaving a
-            // blank invisible strip at the top.
+            'relative z-40 flex shrink-0 items-center justify-between gap-2 overflow-hidden border-slate-300 bg-white px-2 shadow-sm transition-all duration-300 ease-in-out sm:px-3',
             toolbarShown ? 'min-h-9 border-b opacity-100' : 'pointer-events-none min-h-0 border-b-0 py-0 opacity-0',
           )}
         >
@@ -468,32 +443,23 @@ export function ProtectedPdfViewer({
             >
               {autoScrolling ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
             </Button>
-            {/* DropdownMenu (not the previous hand-rolled absolute-positioned div) — that version
-                lived inside this toolbar's `overflow-hidden` (needed for the collapse animation
-                above), which clipped the popover instead of showing it: reported as the speed
-                menu "going behind the PDF, never appearing in front." Radix portals
-                DropdownMenuContent straight to document.body, escaping that clip entirely. */}
-            <DropdownMenu open={speedMenuOpen} onOpenChange={setSpeedMenuOpen}>
-              <DropdownMenuTrigger asChild>
-                <Button type="button" variant="ghost" size="icon-sm" aria-label="Auto-scroll speed" title="Auto-scroll speed">
-                  <Gauge className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-24 bg-white p-1 text-slate-950">
-                {AUTO_SCROLL_SPEEDS.map((speed, index) => (
-                  <DropdownMenuItem
-                    key={speed.label}
-                    onSelect={() => setSpeedIndex(index)}
-                    className={cn(
-                      'justify-center text-xs font-medium',
-                      index === speedIndex ? 'bg-primary/10 text-primary' : 'text-slate-600',
-                    )}
-                  >
-                    {speed.label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+
+            <button
+              ref={speedButtonRef}
+              type="button"
+              onClick={openSpeedMenu}
+              aria-haspopup="menu"
+              aria-expanded={speedMenuOpen}
+              aria-label={`Auto-scroll speed: ${selectedSpeed}`}
+              title={`Auto-scroll speed: ${selectedSpeed}`}
+              className={cn(
+                'inline-flex h-8 w-8 items-center justify-center rounded-lg text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:scale-95',
+                speedMenuOpen ? 'bg-accent text-accent-foreground' : 'hover:bg-accent hover:text-accent-foreground',
+              )}
+            >
+              <Gauge className="h-4 w-4" />
+            </button>
+
             <div className="mx-1 h-5 w-px bg-slate-200" />
             <Button
               type="button"
@@ -530,10 +496,6 @@ export function ProtectedPdfViewer({
 
         <div
           ref={viewportRef}
-          // touch-action: pan-x pan-y tells the browser not to handle multi-touch (pinch) gestures
-          // here itself — otherwise a pinch zooms the whole web page instead of just the PDF (the
-          // reported bug). Single-finger panning/scrolling is unaffected; the pinch effect above
-          // handles the zoom itself.
           className="min-h-0 flex-1 touch-pan-x touch-pan-y overflow-auto overscroll-contain scroll-smooth p-3 [scrollbar-gutter:stable] sm:p-6"
         >
           {error ? (
@@ -545,80 +507,75 @@ export function ProtectedPdfViewer({
           ) : containerWidth > 0 ? (
             <div ref={pinchScaleRef} className="mx-auto w-max">
               <Document
-              file={file}
-              loading={
-                <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-slate-600">
-                  <Loader2 className="text-primary h-8 w-8 animate-spin" />
-                  <p className="text-sm font-medium">Loading the PDF...</p>
-                </div>
-              }
-              onLoadSuccess={({ numPages }) => {
-                setPages(numPages);
-                setPage(1);
-              }}
-              onLoadError={(loadError) => {
-                console.error('Protected PDF render failed:', loadError);
-                const message =
-                  'The response is not a valid PDF, or the connection was interrupted. Reopen the file and try again.';
-                if (onLoadError) onLoadError(message);
-                else setError(message);
-              }}
-              className="mx-auto flex w-max max-w-none flex-col items-center gap-5"
-            >
-              {pageNumbers.map((pageNumber) => {
-                const measuredAspect = pageAspects[pageNumber] ?? documentAspect;
-                const effectiveAspect = rotated90 ? 1 / measuredAspect : measuredAspect;
-                const placeholderHeight = Math.max(200, Math.round(renderedWidth / effectiveAspect));
-                return (
-                  <div
-                    key={pageNumber}
-                    ref={(node) => {
-                      pageRefs.current[pageNumber - 1] = node;
-                    }}
-                    data-page-index={pageNumber - 1}
-                    className="animate-in fade-in group relative w-max duration-300"
-                  >
-                    {mountedPages.has(pageNumber) ? (
-                      <Page
-                        pageNumber={pageNumber}
-                        width={renderedWidth}
-                        rotate={rotation}
-                        renderAnnotationLayer={false}
-                        renderTextLayer
-                        onLoadSuccess={(loadedPage) => {
-                          const view = loadedPage.view; // [x0, y0, x1, y1] at scale 1, unrotated
-                          const [x0, y0, x1, y1] = view;
-                          if (x0 === undefined || y0 === undefined || x1 === undefined || y1 === undefined) return;
-                          const w = x1 - x0;
-                          const h = y1 - y0;
-                          if (w <= 0 || h <= 0) return;
-                          const aspect = w / h;
-                          setPageAspects((current) =>
-                            current[pageNumber] === aspect ? current : { ...current, [pageNumber]: aspect },
-                          );
-                        }}
-                        loading={
-                          <div
-                            className="flex w-full animate-pulse items-center justify-center rounded-sm bg-white ring-1 ring-black/5"
-                            style={{ width: renderedWidth, height: placeholderHeight }}
-                          >
-                            <Loader2 className="text-primary h-7 w-7 animate-spin" />
-                          </div>
-                        }
-                        className="overflow-hidden rounded-sm bg-white shadow-xl ring-1 ring-black/5"
-                      />
-                    ) : (
-                      <div
-                        className="rounded-sm bg-white ring-1 ring-black/5"
-                        style={{ width: renderedWidth, height: placeholderHeight }}
-                      />
-                    )}
-                    <span className="pointer-events-none absolute -top-2 left-2 rounded-full bg-slate-900/70 px-2 py-0.5 text-[10px] font-semibold text-white opacity-0 shadow transition-opacity group-hover:opacity-100">
-                      {pageNumber}
-                    </span>
+                file={file}
+                loading={
+                  <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-slate-600">
+                    <Loader2 className="text-primary h-8 w-8 animate-spin" />
+                    <p className="text-sm font-medium">Loading the PDF...</p>
                   </div>
-                );
-              })}
+                }
+                onLoadSuccess={({ numPages }) => {
+                  setPages(numPages);
+                  setPage(1);
+                }}
+                onLoadError={(loadError) => {
+                  console.error('Protected PDF render failed:', loadError);
+                  const message = 'The response is not a valid PDF, or the connection was interrupted. Reopen the file and try again.';
+                  if (onLoadError) onLoadError(message);
+                  else setError(message);
+                }}
+                className="mx-auto flex w-max max-w-none flex-col items-center gap-5"
+              >
+                {pageNumbers.map((pageNumber) => {
+                  const measuredAspect = pageAspects[pageNumber] ?? documentAspect;
+                  const effectiveAspect = rotated90 ? 1 / measuredAspect : measuredAspect;
+                  const placeholderHeight = Math.max(200, Math.round(renderedWidth / effectiveAspect));
+                  return (
+                    <div
+                      key={pageNumber}
+                      ref={(node) => {
+                        pageRefs.current[pageNumber - 1] = node;
+                      }}
+                      data-page-index={pageNumber - 1}
+                      className="animate-in fade-in group relative w-max duration-300"
+                    >
+                      {mountedPages.has(pageNumber) ? (
+                        <Page
+                          pageNumber={pageNumber}
+                          width={renderedWidth}
+                          rotate={rotation}
+                          renderAnnotationLayer={false}
+                          renderTextLayer
+                          onLoadSuccess={(loadedPage) => {
+                            const [x0, y0, x1, y1] = loadedPage.view;
+                            const w = x1 - x0;
+                            const h = y1 - y0;
+                            if (w <= 0 || h <= 0) return;
+                            const aspect = w / h;
+                            setPageAspects((current) => (current[pageNumber] === aspect ? current : { ...current, [pageNumber]: aspect }));
+                          }}
+                          loading={
+                            <div
+                              className="flex w-full animate-pulse items-center justify-center rounded-sm bg-white ring-1 ring-black/5"
+                              style={{ width: renderedWidth, height: placeholderHeight }}
+                            >
+                              <Loader2 className="text-primary h-7 w-7 animate-spin" />
+                            </div>
+                          }
+                          className="overflow-hidden rounded-sm bg-white shadow-xl ring-1 ring-black/5"
+                        />
+                      ) : (
+                        <div
+                          className="rounded-sm bg-white ring-1 ring-black/5"
+                          style={{ width: renderedWidth, height: placeholderHeight }}
+                        />
+                      )}
+                      <span className="pointer-events-none absolute -top-2 left-2 rounded-full bg-slate-900/70 px-2 py-0.5 text-[10px] font-semibold text-white opacity-0 shadow transition-opacity group-hover:opacity-100">
+                        {pageNumber}
+                      </span>
+                    </div>
+                  );
+                })}
               </Document>
             </div>
           ) : null}
@@ -626,11 +583,44 @@ export function ProtectedPdfViewer({
 
         {autoScrolling && (
           <div className="flex shrink-0 items-center justify-center gap-2 border-t border-slate-300 bg-white/95 px-3 py-1 text-[11px] font-medium text-slate-500">
-            <ChevronDown className="h-3.5 w-3.5 animate-bounce text-primary" />
+            <ChevronDown className="text-primary h-3.5 w-3.5 animate-bounce" />
             Auto-scrolling at {AUTO_SCROLL_SPEEDS[speedIndex]?.label} — scroll or tap pause to stop
           </div>
         )}
       </div>
+
+      {speedMenuOpen &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            ref={speedMenuRef}
+            role="menu"
+            aria-label="Auto-scroll speed"
+            style={{ position: 'fixed', top: speedMenuPosition.top, left: speedMenuPosition.left }}
+            className="z-[99999] w-[104px] rounded-lg border border-slate-200 bg-white p-1.5 text-slate-950 shadow-2xl ring-1 ring-black/5"
+          >
+            {AUTO_SCROLL_SPEEDS.map((speed, index) => (
+              <button
+                key={speed.label}
+                type="button"
+                role="menuitemradio"
+                aria-checked={index === speedIndex}
+                onClick={() => {
+                  setSpeedIndex(index);
+                  setSpeedMenuOpen(false);
+                  if (autoScrolling) setAutoScrolling(true);
+                }}
+                className={cn(
+                  'flex h-8 w-full items-center justify-center rounded-md px-2 text-xs font-medium outline-none transition-colors',
+                  index === speedIndex ? 'bg-primary/10 text-primary' : 'text-slate-700 hover:bg-slate-100',
+                )}
+              >
+                {speed.label}
+              </button>
+            ))}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
