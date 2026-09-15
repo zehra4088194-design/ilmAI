@@ -13,6 +13,7 @@ import { inviteOrFindProfileId } from '@/lib/auth/inviteOrFindProfile';
 import { mapInstitutionRoleToProfileRole } from '@/lib/auth/mapInstitutionRoleToProfileRole';
 import { sendImmediateAttendanceAlerts } from '@/lib/school-erp/notification-queue';
 import { saveSchoolStudentRecord, studentRecordFromForm } from '@/lib/school-erp/student-record';
+import { ensureSchoolClassGroup } from '@/lib/school-communication/provision';
 
 const SUCCESS: SchoolActionState = { success: true, message: 'Saved successfully.' };
 
@@ -332,6 +333,7 @@ export async function createSection(_state: SchoolActionState, formData: FormDat
       .single();
     if (error) throw new Error(error.message);
     await audit(db, context, 'create', 'section', data.id);
+    await ensureSchoolClassGroup(context.organization.id, data.id, context.userId);
     return done('/school-admin/academics', 'Section added.');
   } catch (error) {
     return failure(error);
@@ -478,6 +480,7 @@ async function createEnrollmentRecord(
   if (await isOrganizationBillingActive(db, context.organization.id)) {
     await grantSchoolSubscription(context.organization.id, input.profileId);
   }
+  await ensureSchoolClassGroup(context.organization.id, input.sectionId, context.userId);
   return data;
 }
 
