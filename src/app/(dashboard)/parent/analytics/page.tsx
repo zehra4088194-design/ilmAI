@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { ArrowLeft, LockKeyhole } from 'lucide-react';
+import { ArrowLeft, FileBarChart2, LockKeyhole } from 'lucide-react';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { getPlatformSettings } from '@/lib/platform-settings/server';
 import { getPlanFromSettings } from '@/lib/platform-settings/shared';
@@ -145,17 +145,29 @@ export default async function ParentAnalyticsPage({
   }
 
   return (
-    <ParentDetailedAnalytics
-      linkId={link.id}
-      student={student}
-      tier={tier}
-      snapshots={snapshotsResult.data || []}
-      quizzes={quizzes}
-      studySessions={studySessions}
-      routineTests={routineResult.data || []}
-      reports={(reportsResult.data || []) as any[]}
-      subjects={subjects || []}
-      advanced={advanced}
-    />
+    <div className="space-y-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-muted-foreground text-sm">Detailed view for {student.full_name}</p>
+        </div>
+        <Button asChild variant="outline">
+          <Link href={`/parent/reports?studentId=${encodeURIComponent(student.id)}`}>
+            <FileBarChart2 className="h-4 w-4" /> Daily / Weekly / Monthly Reports
+          </Link>
+        </Button>
+      </div>
+      <ParentDetailedAnalytics
+        linkId={link.id}
+        student={student}
+        tier={tier}
+        snapshots={snapshotsResult.data || []}
+        quizzes={quizzes}
+        studySessions={studySessions}
+        routineTests={routineResult.data || []}
+        reports={(reportsResult.data || []) as any[]}
+        subjects={subjects || []}
+        advanced={advanced}
+      />
+    </div>
   );
 }
