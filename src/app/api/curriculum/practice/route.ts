@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/service';
+import { isCurriculumEnabled } from '@/lib/features/curriculum';
 
 export async function GET(req: NextRequest) {
+  if (!(await isCurriculumEnabled())) {
+    return NextResponse.json({ error: 'Smart Book Practice is currently disabled.' }, { status: 404 });
+  }
+
   const params = req.nextUrl.searchParams;
   const q = params.get('q')?.trim() || '';
   const bookId = params.get('book_id')?.trim() || '';
