@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
-import { CurriculumUiGate } from '@/components/features/curriculum/CurriculumUiGate';
+import { notFound } from 'next/navigation';
+import { isCurriculumEnabled } from '@/lib/features/curriculum';
 
-export default function CurriculumLayout({ children }: { children: ReactNode }) {
-  return <CurriculumUiGate>{children}</CurriculumUiGate>;
+export default async function CurriculumLayout({ children }: { children: ReactNode }) {
+  if (!(await isCurriculumEnabled())) notFound();
+  return children;
 }
