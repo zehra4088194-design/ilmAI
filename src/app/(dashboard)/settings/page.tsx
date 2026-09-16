@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { SettingsTabs } from '@/components/features/settings/SettingsTabs';
 import { getUserGradeLevel } from '@/lib/supabase/getUserGradeLevel';
+import { CurriculumFeatureToggle } from '@/components/features/curriculum/CurriculumFeatureToggle';
 export const metadata: Metadata = { title: 'Settings' };
 
 export default async function SettingsPage({
@@ -22,6 +23,7 @@ export default async function SettingsPage({
         <h1 className="text-2xl font-bold">Settings</h1>
         <p className="text-muted-foreground">Manage your account and preferences.</p>
       </div>
+      <CurriculumFeatureToggle />
       <SettingsTabs
         profile={profile}
         currentGradeLevel={gradeLevel}
