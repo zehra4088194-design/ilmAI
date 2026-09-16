@@ -68,7 +68,7 @@ export function CallProvider({ identity, children }: { identity: CallIdentity | 
     audio.srcObject = stream;
     audio.muted = false;
     audio.volume = 1;
-    audio.playsInline = true;
+    (audio as any).playsInline = true;
     void playRemoteAudio();
   }, [playRemoteAudio]);
 
