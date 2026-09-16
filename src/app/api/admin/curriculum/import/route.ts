@@ -4,6 +4,11 @@ import { createServiceClient } from '@/lib/supabase/service';
 
 type AnyRecord = Record<string, any>;
 
+export const runtime = 'nodejs';
+export const maxDuration = 300;
+
+const BATCH_SIZE = 100;
+
 function cleanString(value: any) {
   return typeof value === 'string' ? value.trim() : value == null ? '' : String(value).trim();
 }
@@ -19,15 +24,7 @@ function asNumberOrNull(value: any) {
   return Number.isFinite(n) ? n : null;
 }
 
-function normalizeQuestionType(value: any) {
-  const type = cleanString(value).toLowerCase().replace(/[ -]/g, '_');
-  if (['mcq', 'short', 'long', 'numerical', 'exercise', 'true_false', 'fill_blank'].includes(type)) return type;
-  if (type.includes('multiple')) return 'mcq';
-  if (type.includes('numeric')) return 'numerical';
-  return 'other';
-}
-
-function safeJson(value: any): AnyRecord {
+function safeJson(value: any) {
   return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
 }
 
@@ -39,13 +36,97 @@ function firstString(...values: any[]) {
   return '';
 }
 
+function normalizeQuestionType(value: any) {
+  const type = cleanString(value).toLowerCase().replace(/[ -]/g, '_');
+  if (['mcq', 'short', 'long', 'numerical', 'exercise', 'true_false', 'fill_blank'].includes(type)) return type;
+  if (type.includes('multiple')) return 'mcq';
+  if (type.includes('numeric')) return 'numerical';
+  return type || 'other';
+}
+
+function pageRefs(value: any) {
+  if (!Array.isArray(value)) return [] as number[];
+  return value.map((v) => asInt(v, -1)).filter((v) => v > 0);
+}
+
+function chunks<T>(items: T[], size = BATCH_SIZE) {
+  const result: T[][] = [];
+  for (let i = 0; i < items.length; i += size) result.push(items.slice(i, i + size));
+  return result;
+}
+
+function recursiveNodes(input: AnyRecord[], parentId: string | null = null) {
+  const out: Array<{ input: AnyRecord; parentId: string | null; treeIndex: number }> = [];
+  input.forEach((node, index) => {
+    out.push({ input: safeJson(node), parentId, treeIndex: index });
+    const nodeId = cleanString(node.id) || null;
+    void nodeId;
+  });
+  return out;
+}
+
+function pickBookMetadata(bookInput: AnyRecord, payload: AnyRecord, usablePageCount: number) {
+  return {
+    title: firstString(bookInput.title),
+    subject_id: cleanString(bookInput.subject_id) || null,
+    grade_level: firstString(bookInput.grade_level, bookInput.grade) || null,
+    board: firstString(bookInput.board) || null,
+    curriculum: firstString(bookInput.curriculum, bookInput.year ? `Revised National Curriculum of Pakistan ${bookInput.year}` : '') || null,
+    edition: firstString(bookInput.edition) || null,
+    publisher: firstString(bookInput.publisher) || null,
+    language: firstString(bookInput.language, bookInput.medium) || null,
+    book_code: firstString(bookInput.book_code) || null,
+    source_resource_id: cleanString(bookInput.source_resource_id) || null,
+    scope_type: ['global', 'school', 'college'].includes(bookInput.scope_type) ? bookInput.scope_type : 'global',
+    organization_id: cleanString(bookInput.organization_id) || null,
+    status: ['draft', 'review', 'published', 'archived'].includes(bookInput.status) ? bookInput.status : 'draft',
+    extraction_status: 'ready',
+    source_file_url: firstString(bookInput.source_file_url) || null,
+    page_count: bookInput.page_count == null ? asInt(bookInput.total_pages, usablePageCount) : asInt(bookInput.page_count),
+    extraction_version: firstString(payload.extraction_version, bookInput.extraction_version) || 'curriculum-structure-v1-ocr-repaired',
+    notes: firstString(bookInput.notes, bookInput.source) || null,
+  };
+}
+
+async function deleteBookChildren(db: any, bookId: string) {
+  const { data: oldNodes, error: nodeReadError } = await db.from('curriculum_nodes').select('id').eq('book_id', bookId);
+  if (nodeReadError) throw new Error(nodeReadError.message);
+  const oldNodeIds = (oldNodes || []).map((row: AnyRecord) => row.id).filter(Boolean);
+  for (const ids of chunks(oldNodeIds)) {
+    if (!ids.length) continue;
+    const deletes = await Promise.all([
+      db.from('curriculum_content_blocks').delete().in('node_id', ids),
+      db.from('curriculum_examples').delete().in('node_id', ids),
+      db.from('curriculum_questions').delete().in('node_id', ids),
+    ]);
+    for (const result of deletes) if (result.error) throw new Error(result.error.message);
+  }
+  if (oldNodeIds.length) {
+    for (const ids of chunks(oldNodeIds)) {
+      const { error } = await db.from('curriculum_nodes').delete().in('id', ids);
+      if (error) throw new Error(error.message);
+    }
+  }
+  const { error: pageDeleteError } = await db.from('curriculum_pages').delete().eq('book_id', bookId);
+  if (pageDeleteError) throw new Error(pageDeleteError.message);
+}
+
+async function batchInsert(db: any, table: string, rows: AnyRecord[]) {
+  for (const batch of chunks(rows)) {
+    if (!batch.length) continue;
+    const { error } = await db.from(table).insert(batch);
+    if (error) throw new Error(`${table}: ${error.message}`);
+  }
+}
+
 export async function POST(req: NextRequest) {
   const auth = await createClient();
   const { data: { user } } = await auth.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
 
   const db = createServiceClient();
-  const { data: profile } = await db.from('profiles').select('role').eq('id', user.id).single();
+  const { data: profile, error: profileError } = await db.from('profiles').select('role').eq('id', user.id).single();
+  if (profileError) return NextResponse.json({ error: 'Unable to verify admin access.' }, { status: 500 });
   if (String(profile?.role || '').toLowerCase() !== 'admin') {
     return NextResponse.json({ error: 'Admin access required.' }, { status: 403 });
   }
@@ -58,362 +139,252 @@ export async function POST(req: NextRequest) {
   }
 
   const bookInput = safeJson(payload.book);
-  if (!cleanString(bookInput.title)) {
-    return NextResponse.json({ error: 'book.title is required.' }, { status: 400 });
-  }
-  if (!Array.isArray(payload.nodes)) {
-    return NextResponse.json({ error: 'nodes must be an array.' }, { status: 400 });
-  }
-  if (!Array.isArray(payload.pages)) {
-    return NextResponse.json({ error: 'pages must be an array for complete textbook imports.' }, { status: 400 });
-  }
+  if (!firstString(bookInput.title)) return NextResponse.json({ error: 'book.title is required.' }, { status: 400 });
+  if (!Array.isArray(payload.nodes)) return NextResponse.json({ error: 'nodes must be an array.' }, { status: 400 });
+  if (!Array.isArray(payload.pages)) return NextResponse.json({ error: 'pages must be an array for complete textbook imports.' }, { status: 400 });
 
-  const usablePages = payload.pages.filter((page: AnyRecord) => firstString(page.raw_text, page.extracted_text, page.text));
-  if (!usablePages.length) {
-    return NextResponse.json({ error: 'pages contains no usable raw_text/extracted_text. Refusing a structure-only import.' }, { status: 400 });
-  }
+  const sourceHash = firstString(payload.source_hash) || null;
+  if (!sourceHash) return NextResponse.json({ error: 'source_hash is required for idempotent textbook imports.' }, { status: 400 });
 
-  const sourceHash = cleanString(payload.source_hash) || null;
-  let bookId: string | null = null;
-  let createdNewBook = false;
-
-  // Re-import safety: reuse the same book when a stable source hash is supplied;
-  // otherwise match the main textbook identity and update it rather than creating duplicates.
   if (sourceHash) {
-    const { data: existingImport } = await db
-      .from('curriculum_imports')
-      .select('book_id')
+    const { data: existingImport, error } = await db.from('curriculum_imports')
+      .select('id,book_id,status,completed_at')
       .eq('source_hash', sourceHash)
-      .eq('status', 'imported')
-      .not('book_id', 'is', null)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (existingImport?.book_id) bookId = existingImport.book_id;
-  }
-
-  if (!bookId) {
-    let existingQuery = db
-      .from('curriculum_books')
-      .select('id')
-      .eq('title', cleanString(bookInput.title))
-      .eq('scope_type', ['global', 'school', 'college'].includes(bookInput.scope_type) ? bookInput.scope_type : 'global');
-    if (bookInput.organization_id) existingQuery = existingQuery.eq('organization_id', bookInput.organization_id);
-    else existingQuery = existingQuery.is('organization_id', null);
-    const { data: existingBook } = await existingQuery.order('updated_at', { ascending: false }).limit(1).maybeSingle();
-    if (existingBook?.id) bookId = existingBook.id;
-  }
-
-  const bookRow = {
-    title: cleanString(bookInput.title),
-    subject_id: bookInput.subject_id || null,
-    grade_level: cleanString(bookInput.grade_level) || null,
-    board: cleanString(bookInput.board) || null,
-    curriculum: cleanString(bookInput.curriculum) || null,
-    edition: cleanString(bookInput.edition) || null,
-    publisher: cleanString(bookInput.publisher) || null,
-    language: cleanString(bookInput.language) || null,
-    book_code: cleanString(bookInput.book_code) || null,
-    source_resource_id: bookInput.source_resource_id || null,
-    scope_type: ['global', 'school', 'college'].includes(bookInput.scope_type) ? bookInput.scope_type : 'global',
-    organization_id: bookInput.organization_id || null,
-    status: ['draft', 'review', 'published', 'archived'].includes(bookInput.status) ? bookInput.status : 'draft',
-    extraction_status: 'ready',
-    source_file_url: cleanString(bookInput.source_file_url) || null,
-    page_count: bookInput.page_count == null ? usablePages.length : asInt(bookInput.page_count),
-    extraction_version: cleanString(payload.extraction_version || bookInput.extraction_version) || 'curriculum-structure-v1-repaired',
-    notes: cleanString(bookInput.notes) || null,
-    created_by: user.id,
-    updated_at: new Date().toISOString(),
-  };
-
-  if (bookId) {
-    const { error: updateError } = await db.from('curriculum_books').update(bookRow).eq('id', bookId);
-    if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
-  } else {
-    const { data: book, error: bookError } = await db.from('curriculum_books').insert(bookRow).select('id').single();
-    if (bookError || !book) {
-      return NextResponse.json({ error: bookError?.message || 'Unable to create book.' }, { status: 500 });
-    }
-    bookId = book.id;
-    createdNewBook = true;
-  }
-
-  const importRow = {
-    book_id: bookId,
-    source_file_name: cleanString(payload.source_file_name) || null,
-    source_file_url: cleanString(bookInput.source_file_url) || null,
-    source_hash: sourceHash,
-    importer: cleanString(payload.importer) || 'chatgpt-json',
-    importer_version: cleanString(payload.importer_version) || 'curriculum-import-v2',
-    status: 'validated',
-    raw_payload: payload,
-    created_by: user.id,
-  };
-
-  const { data: importRecord, error: importError } = await db.from('curriculum_imports').insert(importRow).select('id').single();
-  if (importError || !importRecord) {
-    if (createdNewBook) await db.from('curriculum_books').delete().eq('id', bookId);
-    return NextResponse.json({ error: importError?.message || 'Unable to create import record.' }, { status: 500 });
-  }
-
-  const counters = {
-    nodes: 0,
-    content: 0,
-    examples: 0,
-    questions: 0,
-    pages: 0,
-    concepts: 0,
-    prerequisites: 0,
-  };
-
-  const conceptIdMap = new Map<string, string>();
-  const conceptPrerequisiteRefs: Array<{ conceptIdKey: string; prerequisiteKey: string }> = [];
-
-  // On a true re-import, clear the prior extracted rows for this book so the database
-  // contains exactly the latest JSON rather than duplicated children.
-  if (!createdNewBook) {
-    const { data: oldNodes } = await db.from('curriculum_nodes').select('id').eq('book_id', bookId);
-    const oldNodeIds = (oldNodes || []).map((row: AnyRecord) => row.id).filter(Boolean);
-    if (oldNodeIds.length) {
-      await db.from('curriculum_content_blocks').delete().in('node_id', oldNodeIds);
-      await db.from('curriculum_examples').delete().in('node_id', oldNodeIds);
-      await db.from('curriculum_questions').delete().in('node_id', oldNodeIds);
-      await db.from('curriculum_nodes').delete().eq('book_id', bookId);
-    }
-    await db.from('curriculum_pages').delete().eq('book_id', bookId);
-  }
-
-  async function insertConcepts(input: AnyRecord, nodeId: string | null) {
-    const sourceConcepts = Array.isArray(input.concepts)
-      ? input.concepts
-      : Array.isArray(input.concept_list)
-        ? input.concept_list
-        : [];
-
-    for (let index = 0; index < sourceConcepts.length; index += 1) {
-      const concept = typeof sourceConcepts[index] === 'string' ? { title: sourceConcepts[index] } : safeJson(sourceConcepts[index]);
-      const title = firstString(concept.title, concept.name, concept.concept, concept.text);
-      if (!title) continue;
-
-      const sourceKey = firstString(concept.key, concept.id, concept.code, concept.slo_code, `${nodeId || 'book'}:${index}:${title}`);
-      const { data: row, error } = await db.from('curriculum_concepts').insert({
-        subject_id: concept.subject_id || bookInput.subject_id || null,
-        chapter_id: concept.chapter_id || null,
-        board: firstString(concept.board, bookInput.board) || null,
-        grade_level: firstString(concept.grade_level, bookInput.grade_level) || null,
-        slo_code: cleanString(concept.slo_code) || null,
-        title,
-        description: firstString(concept.description, concept.definition) || null,
-        difficulty: cleanString(concept.difficulty) || null,
-        order_index: asInt(concept.order_index, index),
-      }).select('id').single();
-      if (error || !row) throw new Error(error?.message || `Failed to insert concept ${title}`);
-
-      conceptIdMap.set(sourceKey, row.id);
-      counters.concepts += 1;
-
-      const prerequisites = Array.isArray(concept.prerequisites) ? concept.prerequisites : [];
-      for (const prerequisite of prerequisites) {
-        const prerequisiteKey = typeof prerequisite === 'string'
-          ? cleanString(prerequisite)
-          : firstString(prerequisite?.key, prerequisite?.id, prerequisite?.code, prerequisite?.title, prerequisite?.name);
-        if (prerequisiteKey) conceptPrerequisiteRefs.push({ conceptIdKey: sourceKey, prerequisiteKey });
-      }
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (existingImport?.status === 'imported' && existingImport.book_id) {
+      const [{ count: pages }, { count: nodes }, { count: content }, { count: examples }, { count: questions }] = await Promise.all([
+        db.from('curriculum_pages').select('id', { count: 'exact', head: true }).eq('book_id', existingImport.book_id),
+        db.from('curriculum_nodes').select('id', { count: 'exact', head: true }).eq('book_id', existingImport.book_id),
+        db.from('curriculum_content_blocks').select('id', { count: 'exact', head: true }).in('node_id', (await db.from('curriculum_nodes').select('id').eq('book_id', existingImport.book_id)).data?.map((n: any) => n.id) || ['00000000-0000-0000-0000-000000000000']),
+        db.from('curriculum_examples').select('id', { count: 'exact', head: true }).in('node_id', (await db.from('curriculum_nodes').select('id').eq('book_id', existingImport.book_id)).data?.map((n: any) => n.id) || ['00000000-0000-0000-0000-000000000000']),
+        db.from('curriculum_questions').select('id', { count: 'exact', head: true }).in('node_id', (await db.from('curriculum_nodes').select('id').eq('book_id', existingImport.book_id)).data?.map((n: any) => n.id) || ['00000000-0000-0000-0000-000000000000']),
+      ]);
+      return NextResponse.json({ ok: true, reused: true, book_id: existingImport.book_id, import_id: existingImport.id, counters: { pages: pages || 0, nodes: nodes || 0, content: content || 0, examples: examples || 0, questions: questions || 0, concepts: 0, prerequisites: 0 } });
     }
   }
 
-  async function insertNode(input: AnyRecord, parentId: string | null, inheritedNumbers: string[], inheritedTitles: string[], fallbackOrder: number) {
-    const number = firstString(input.number, input.code, input.section_number) || null;
-    const title = firstString(input.title, input.name, number ? `Section ${number}` : 'Untitled section');
-    const pathNumbers = [...inheritedNumbers, ...(number ? [number] : [])].join(' > ') || null;
-    const pathTitles = [...inheritedTitles, title].join(' > ');
-    const depth = inheritedTitles.length;
+  const usablePageCount = payload.pages.length;
+  const bookRow = pickBookMetadata(bookInput, payload, usablePageCount);
+  let bookId: string | null = null;
+  let importId: string | null = null;
+  let createdNewBook = false;
 
-    const requestedType = cleanString(input.node_type).toLowerCase();
-    const nodeType = ['chapter', 'topic', 'subtopic', 'section', 'exercise', 'appendix'].includes(requestedType)
-      ? requestedType
-      : depth === 0 ? 'chapter' : depth === 1 ? 'topic' : 'subtopic';
-
-    const { data: node, error } = await db.from('curriculum_nodes').insert({
-      book_id: bookId,
-      parent_id: parentId,
-      node_type: nodeType,
-      number,
-      title,
-      slug: firstString(input.slug) || null,
-      depth,
-      sort_order: asInt(input.sort_order, fallbackOrder),
-      path_numbers: pathNumbers,
-      path_titles: pathTitles,
-      raw_heading: firstString(input.raw_heading, input.heading) || null,
-      source_page_start: input.source_page_start == null ? null : asInt(input.source_page_start),
-      source_page_end: input.source_page_end == null ? null : asInt(input.source_page_end),
-      is_published: Boolean(input.is_published ?? bookInput.status === 'published'),
-      metadata: safeJson(input.metadata),
-    }).select('id').single();
-
-    if (error || !node) throw new Error(error?.message || `Failed to insert node ${title}`);
-    counters.nodes += 1;
-
-    if (Array.isArray(input.content)) {
-      const rows = input.content.map((block: AnyRecord, index: number) => ({
-        node_id: node.id,
-        block_type: ['paragraph','definition','example','formula','table','note','procedure','diagram_caption','raw_text','heading','quote','code'].includes(cleanString(block.block_type)) ? cleanString(block.block_type) : 'paragraph',
-        ordinal: asInt(block.ordinal, index),
-        exact_text: firstString(block.exact_text, block.text, block.raw_text),
-        normalized_text: firstString(block.normalized_text, block.verified_text) || null,
-        source_page: block.source_page == null ? null : asInt(block.source_page),
-        source_page_end: block.source_page_end == null ? null : asInt(block.source_page_end),
-        source_label: firstString(block.source_label, block.printed_page_label) || null,
-        metadata: safeJson(block.metadata),
-      })).filter((row: AnyRecord) => row.exact_text);
-      if (rows.length) {
-        const { error: e } = await db.from('curriculum_content_blocks').insert(rows);
-        if (e) throw new Error(e.message);
-        counters.content += rows.length;
-      }
-    }
-
-    if (Array.isArray(input.content_blocks)) {
-      const rows = input.content_blocks.map((block: AnyRecord, index: number) => ({
-        node_id: node.id,
-        block_type: ['paragraph','definition','example','formula','table','note','procedure','diagram_caption','raw_text','heading','quote','code'].includes(cleanString(block.block_type)) ? cleanString(block.block_type) : 'paragraph',
-        ordinal: asInt(block.ordinal, index),
-        exact_text: firstString(block.exact_text, block.text, block.raw_text),
-        normalized_text: firstString(block.normalized_text, block.verified_text) || null,
-        source_page: block.source_page == null ? null : asInt(block.source_page),
-        source_page_end: block.source_page_end == null ? null : asInt(block.source_page_end),
-        source_label: firstString(block.source_label, block.printed_page_label) || null,
-        metadata: safeJson(block.metadata),
-      })).filter((row: AnyRecord) => row.exact_text);
-      if (rows.length) {
-        const { error: e } = await db.from('curriculum_content_blocks').insert(rows);
-        if (e) throw new Error(e.message);
-        counters.content += rows.length;
-      }
-    }
-
-    if (Array.isArray(input.examples)) {
-      const rows = input.examples.map((example: AnyRecord, index: number) => ({
-        node_id: node.id,
-        ordinal: asInt(example.ordinal, index),
-        title: firstString(example.title, example.name) || null,
-        exact_question: firstString(example.exact_question, example.question) || null,
-        exact_solution: firstString(example.exact_solution, example.solution, example.answer) || null,
-        explanation: firstString(example.explanation) || null,
-        source_page: example.source_page == null ? null : asInt(example.source_page),
-        metadata: safeJson(example.metadata),
-      })).filter((row: AnyRecord) => row.exact_question || row.exact_solution || row.explanation);
-      if (rows.length) {
-        const { error: e } = await db.from('curriculum_examples').insert(rows);
-        if (e) throw new Error(e.message);
-        counters.examples += rows.length;
-      }
-    }
-
-    if (Array.isArray(input.questions)) {
-      const rows = input.questions.map((question: AnyRecord, index: number) => ({
-        node_id: node.id,
-        question_type: normalizeQuestionType(question.question_type || question.type),
-        ordinal: asInt(question.ordinal, index),
-        question_number: firstString(question.question_number, question.number) || null,
-        exercise_number: firstString(question.exercise_number) || null,
-        exact_text: firstString(question.exact_text, question.text, question.question),
-        options: question.options && typeof question.options === 'object' ? question.options : null,
-        exact_answer: firstString(question.exact_answer, question.answer) || null,
-        explanation: firstString(question.explanation) || null,
-        marks: asNumberOrNull(question.marks),
-        difficulty: firstString(question.difficulty) || null,
-        source_page: question.source_page == null ? null : asInt(question.source_page),
-        metadata: safeJson(question.metadata),
-      })).filter((row: AnyRecord) => row.exact_text);
-      if (rows.length) {
-        const { error: e } = await db.from('curriculum_questions').insert(rows);
-        if (e) throw new Error(e.message);
-        counters.questions += rows.length;
-      }
-    }
-
-    await insertConcepts(input, node.id);
-
-    if (Array.isArray(input.children)) {
-      for (let i = 0; i < input.children.length; i += 1) {
-        await insertNode(
-          safeJson(input.children[i]),
-          node.id,
-          [...inheritedNumbers, ...(number ? [number] : [])],
-          [...inheritedTitles, title],
-          i,
-        );
-      }
-    }
+  const existingBookQuery = db.from('curriculum_books').select('id').eq('title', bookRow.title).eq('scope_type', bookRow.scope_type);
+  const { data: existingBook, error: existingBookError } = bookRow.organization_id
+    ? await existingBookQuery.eq('organization_id', bookRow.organization_id).maybeSingle()
+    : await existingBookQuery.is('organization_id', null).maybeSingle();
+  if (existingBookError) return NextResponse.json({ error: existingBookError.message }, { status: 500 });
+  if (existingBook?.id) {
+    return NextResponse.json({ error: 'A curriculum book with this identity already exists. Use the existing imported source hash for an idempotent re-run or explicitly remove it first.' }, { status: 409 });
   }
 
   try {
-    // Store page-level source text first. raw_text remains the source transcript;
-    // OCR verification belongs in metadata/normalized fields and never replaces it.
+    const { data: book, error: bookError } = await db.from('curriculum_books').insert({ ...bookRow, created_by: user.id, updated_at: new Date().toISOString() }).select('id').single();
+    if (bookError || !book) throw new Error(bookError?.message || 'Unable to create curriculum book.');
+    bookId = book.id;
+    createdNewBook = true;
+
+    const { data: importRecord, error: importError } = await db.from('curriculum_imports').insert({
+      book_id: bookId,
+      source_file_name: firstString(payload.source_file_name, bookInput.title) || null,
+      source_file_url: firstString(bookInput.source_file_url) || null,
+      source_hash: sourceHash,
+      importer: firstString(payload.importer) || 'chatgpt-json',
+      importer_version: firstString(payload.importer_version, payload.extraction_version) || 'curriculum-import-v3-universal',
+      status: 'validated',
+      raw_payload: payload,
+      created_by: user.id,
+    }).select('id').single();
+    if (importError || !importRecord) throw new Error(importError?.message || 'Unable to create import record.');
+    importId = importRecord.id;
+
+    const counters = { nodes: 0, content: 0, examples: 0, questions: 0, pages: 0, concepts: 0, prerequisites: 0 };
+    const pageMap = new Map<number, AnyRecord>(payload.pages.map((p: AnyRecord) => [asInt(p.page_number ?? p.number), p]));
     const pageRows = payload.pages.map((page: AnyRecord, index: number) => ({
       book_id: bookId,
       page_number: asInt(page.page_number ?? page.number, index + 1),
       printed_page_label: firstString(page.printed_page_label, page.label) || null,
-      extracted_text: firstString(page.raw_text, page.extracted_text, page.text) || null,
+      extracted_text: firstString(page.raw_text, page.extracted_text, page.text) || '',
       image_url: firstString(page.image_url) || null,
       metadata: {
         ...safeJson(page.metadata),
         extraction_confidence: page.extraction_confidence ?? null,
+        ocr_repaired: Boolean(page.ocr_repaired),
         ocr_uncertain_regions: Array.isArray(page.ocr_uncertain_regions) ? page.ocr_uncertain_regions : [],
-        source_raw_text_preserved: true,
+        source_page_number: asInt(page.page_number ?? page.number, index + 1),
+        source_printed_page_label: firstString(page.printed_page_label, page.label) || null,
       },
     }));
-    const { error: pageError } = await db.from('curriculum_pages').upsert(pageRows, { onConflict: 'book_id,page_number' });
-    if (pageError) throw new Error(pageError.message);
+    await batchInsert(db, 'curriculum_pages', pageRows);
     counters.pages = pageRows.length;
 
-    for (let i = 0; i < payload.nodes.length; i += 1) {
-      await insertNode(safeJson(payload.nodes[i]), null, [], [], i);
-    }
+    const sourceNodeToDbId = new Map<string, string>();
+    const insertNode = async (input: AnyRecord, parentDbId: string | null, orderFallback: number) => {
+      const sourceId = firstString(input.id, `${parentDbId || 'root'}:${input.number || ''}:${input.title || input.exact_title || orderFallback}`);
+      const dbNodeId = crypto.randomUUID();
+      sourceNodeToDbId.set(sourceId, dbNodeId);
+      const number = firstString(input.number, input.code, input.section_number) || null;
+      const title = firstString(input.exact_title, input.title, input.name, number ? `Section ${number}` : 'Untitled section');
+      const headingPath = Array.isArray(input.heading_path) ? input.heading_path : [];
+      const sourceDepth = Number.isFinite(Number(input.depth)) ? asInt(input.depth) : (headingPath.length ? headingPath.length - 1 : 0);
+      const sourcePages = [input.start_page, input.end_page].map((v) => asInt(v, 0)).filter((v) => v > 0);
+      const normalizedNodeType = cleanString(input.node_type).toLowerCase();
+      const dbNodeType = ['chapter','topic','subtopic','section','exercise','appendix'].includes(normalizedNodeType)
+        ? normalizedNodeType
+        : normalizedNodeType === 'special_section'
+          ? 'section'
+          : sourceDepth === 0 ? 'chapter' : sourceDepth === 1 ? 'topic' : 'subtopic';
 
-    // Resolve prerequisite references only after all concepts are known.
-    for (const ref of conceptPrerequisiteRefs) {
-      const conceptId = conceptIdMap.get(ref.conceptIdKey);
-      const prerequisiteId = conceptIdMap.get(ref.prerequisiteKey);
-      if (!conceptId || !prerequisiteId) continue;
-      const { error: prerequisiteError } = await db.from('curriculum_prerequisites').upsert({
-        concept_id: conceptId,
-        prerequisite_concept_id: prerequisiteId,
-      }, { onConflict: 'concept_id,prerequisite_concept_id' });
-      if (prerequisiteError) throw new Error(prerequisiteError.message);
-      counters.prerequisites += 1;
-    }
+      const { error: nodeError } = await db.from('curriculum_nodes').insert({
+        id: dbNodeId,
+        book_id: bookId,
+        parent_id: parentDbId,
+        node_type: dbNodeType,
+        number,
+        title,
+        slug: firstString(input.slug) || null,
+        depth: sourceDepth,
+        sort_order: asInt(input.order, orderFallback),
+        path_numbers: Array.isArray(input.heading_path) ? input.heading_path.map((x: any) => cleanString(x)).filter(Boolean).join(' > ') : number,
+        path_titles: headingPath.length ? headingPath.join(' > ') : title,
+        raw_heading: title,
+        source_page_start: sourcePages[0] || null,
+        source_page_end: sourcePages[1] || sourcePages[0] || null,
+        is_published: Boolean(input.is_published ?? false),
+        metadata: {
+          source_node_id: firstString(input.id) || null,
+          source_parent_id: firstString(input.parent_id) || null,
+          source_depth: sourceDepth,
+          source_order: asInt(input.order, orderFallback),
+          source_heading_path: headingPath,
+          source_exact_title: firstString(input.exact_title, input.title) || null,
+          source_node_type: cleanString(input.node_type) || 'section',
+          source_start_page: input.start_page ?? null,
+          source_end_page: input.end_page ?? null,
+          source_page_refs_present: sourcePages.length > 0,
+          source_metadata: safeJson(input.metadata),
+        },
+      });
+      if (nodeError) throw new Error(`curriculum_nodes: ${nodeError.message}`);
+      counters.nodes += 1;
 
-    const validationErrors: Array<{ message: string }> = [];
-    if (bookInput.page_count != null && asInt(bookInput.page_count) !== counters.pages) {
-      validationErrors.push({ message: `book.page_count=${asInt(bookInput.page_count)} but imported pages=${counters.pages}` });
-    }
-    if (!counters.nodes) validationErrors.push({ message: 'No curriculum nodes were imported.' });
-    if (counters.questions === 0 && counters.content === 0) {
-      validationErrors.push({ message: 'No content blocks or questions were imported; verify the JSON extraction.' });
-    }
+      const sourceBlocks = Array.isArray(input.content_blocks) ? input.content_blocks : Array.isArray(input.content) ? input.content : [];
+      const blockRows = sourceBlocks.map((block: AnyRecord, index: number) => {
+        const refs = pageRefs(block.page_refs || block.source_pages || block.page_refs);
+        const sourceType = firstString(block.type, block.block_type) || 'other';
+        const text = firstString(block.text, block.exact_text, block.raw_text);
+        const firstPage = refs[0] || asInt(block.source_page, 0) || asInt(input.start_page, 0) || null;
+        const lastPage = refs[refs.length - 1] || asInt(block.source_page_end, 0) || firstPage || null;
+        const dbBlockType = ['paragraph','definition','example','formula','table','note','procedure','diagram_caption','raw_text','heading','quote','code'].includes(sourceType) ? sourceType : 'raw_text';
+        return text ? {
+          node_id: dbNodeId,
+          block_type: dbBlockType,
+          ordinal: index,
+          exact_text: text,
+          normalized_text: firstString(block.normalized_text, block.verified_text) || null,
+          source_page: firstPage,
+          source_page_end: lastPage,
+          source_label: firstString((pageMap.get(firstPage || 0) || {}).printed_page_label) || null,
+          metadata: {
+            source_type: sourceType,
+            source_page_refs: refs,
+            source_block: safeJson(block),
+          },
+        } : null;
+      }).filter(Boolean) as AnyRecord[];
+      await batchInsert(db, 'curriculum_content_blocks', blockRows);
+      counters.content += blockRows.length;
 
-    if (validationErrors.length) {
-      await db.from('curriculum_imports').update({ status: 'failed', validation_errors: validationErrors, completed_at: new Date().toISOString() }).eq('id', importRecord.id);
-      await db.from('curriculum_books').update({ extraction_status: 'failed' }).eq('id', bookId);
-      return NextResponse.json({ ok: false, error: 'Import validation failed.', book_id: bookId, import_id: importRecord.id, counters, validation_errors: validationErrors }, { status: 422 });
-    }
+      const exampleRows = (Array.isArray(input.examples) ? input.examples : []).map((example: AnyRecord, index: number) => {
+        const refs = pageRefs(example.page_refs);
+        const text = firstString(example.text, example.explanation);
+        const title = firstString(example.title, example.name) || null;
+        const firstPage = refs[0] || asInt(input.start_page, 0) || null;
+        return (text || title) ? {
+          node_id: dbNodeId,
+          ordinal: index,
+          title,
+          exact_question: firstString(example.exact_question, example.question) || null,
+          exact_solution: firstString(example.exact_solution, example.solution, example.answer) || null,
+          explanation: text || null,
+          source_page: firstPage,
+          metadata: { source_text: text || null, source_page_refs: refs, source_example: safeJson(example) },
+        } : null;
+      }).filter(Boolean) as AnyRecord[];
+      await batchInsert(db, 'curriculum_examples', exampleRows);
+      counters.examples += exampleRows.length;
 
-    await db.from('curriculum_imports').update({ status: 'imported', completed_at: new Date().toISOString(), validation_errors: null }).eq('id', importRecord.id);
+      const questionRows = (Array.isArray(input.questions) ? input.questions : []).map((question: AnyRecord, index: number) => {
+        const refs = pageRefs(question.page_refs);
+        const firstPage = refs[0] || asInt(question.source_page, 0) || asInt(input.start_page, 0) || null;
+        const optionValue = Array.isArray(question.options) || (question.options && typeof question.options === 'object') ? question.options : [];
+        const exactAnswer = firstString(question.exact_answer, question.answer) || null;
+        return {
+          node_id: dbNodeId,
+          question_type: normalizeQuestionType(question.type || question.question_type),
+          ordinal: asInt(question.ordinal, index),
+          question_number: firstString(question.number, question.question_number) || null,
+          exercise_number: firstString(question.exercise_number) || null,
+          exact_text: firstString(question.text, question.exact_text, question.question),
+          options: optionValue,
+          exact_answer: exactAnswer,
+          explanation: firstString(question.explanation) || null,
+          marks: asNumberOrNull(question.marks),
+          difficulty: firstString(question.difficulty) || null,
+          source_page: firstPage,
+          metadata: { source_page_refs: refs, source_question: safeJson(question) },
+        };
+      }).filter((row: AnyRecord) => row.exact_text);
+      await batchInsert(db, 'curriculum_questions', questionRows);
+      counters.questions += questionRows.length;
+
+      const conceptRows = (Array.isArray(input.concepts) ? input.concepts : []).map((concept: AnyRecord, index: number) => {
+        const title = firstString(concept.name, concept.title, concept.concept);
+        return title ? {
+          subject_id: cleanString(concept.subject_id) || bookRow.subject_id || null,
+          chapter_id: cleanString(concept.chapter_id) || null,
+          board: firstString(concept.board, bookRow.board) || null,
+          grade_level: firstString(concept.grade_level, bookRow.grade_level) || null,
+          slo_code: firstString(concept.slo_code, concept.code) || null,
+          title,
+          description: firstString(concept.definition, concept.description) || null,
+          difficulty: firstString(concept.difficulty) || null,
+          order_index: asInt(concept.order_index, index),
+        } : null;
+      }).filter(Boolean) as AnyRecord[];
+      await batchInsert(db, 'curriculum_concepts', conceptRows);
+      counters.concepts += conceptRows.length;
+
+      const children = Array.isArray(input.children) ? input.children : [];
+      for (let i = 0; i < children.length; i += 1) await insertNode(safeJson(children[i]), dbNodeId, i);
+      return dbNodeId;
+    };
+
+    for (let i = 0; i < payload.nodes.length; i += 1) await insertNode(safeJson(payload.nodes[i]), null, i);
+
+    if (counters.pages !== asInt(bookRow.page_count, counters.pages)) throw new Error(`Source page count ${bookRow.page_count} does not match imported pages ${counters.pages}.`);
+    const expectedNodeCount = (function countNodes(list: AnyRecord[]): number { return list.reduce((sum: number, n: AnyRecord) => sum + 1 + (Array.isArray(n.children) ? countNodes(n.children) : 0), 0); })(payload.nodes as AnyRecord[]);
+    if (counters.nodes !== expectedNodeCount) throw new Error(`Source node count ${expectedNodeCount} does not match imported nodes ${counters.nodes}.`);
+    if (!counters.nodes) throw new Error('No curriculum nodes were imported.');
+    if (counters.content === 0 && counters.questions === 0 && counters.examples === 0) throw new Error('No fine-grained textbook content was imported.');
+
+    await db.from('curriculum_imports').update({ status: 'imported', completed_at: new Date().toISOString(), validation_errors: null }).eq('id', importId);
     await db.from('curriculum_books').update({ extraction_status: 'ready' }).eq('id', bookId);
 
-    return NextResponse.json({
-      ok: true,
-      book_id: bookId,
-      import_id: importRecord.id,
-      counters,
-    });
-  } catch (e: any) {
-    await db.from('curriculum_books').update({ extraction_status: 'failed' }).eq('id', bookId);
-    await db.from('curriculum_imports').update({ status: 'failed', validation_errors: [{ message: e?.message || 'Import failed' }], completed_at: new Date().toISOString() }).eq('id', importRecord.id);
-    return NextResponse.json({ error: e?.message || 'Import failed.', book_id: bookId, import_id: importRecord.id, counters }, { status: 500 });
+    return NextResponse.json({ ok: true, book_id: bookId, import_id: importId, counters });
+  } catch (error: any) {
+    const message = error?.message || 'Import failed.';
+    if (importId) await db.from('curriculum_imports').update({ status: 'failed', validation_errors: [{ message }], completed_at: new Date().toISOString() }).eq('id', importId);
+    if (bookId && createdNewBook) {
+      try { await deleteBookChildren(db, bookId); } catch (cleanupError) { console.error('[curriculum/import] cleanup failed', cleanupError); }
+      await db.from('curriculum_imports').delete().eq('id', importId || '00000000-0000-0000-0000-000000000000');
+      await db.from('curriculum_books').delete().eq('id', bookId);
+    } else if (bookId) {
+      await db.from('curriculum_books').update({ extraction_status: 'failed' }).eq('id', bookId);
+    }
+    return NextResponse.json({ ok: false, error: message, book_id: bookId, import_id: importId }, { status: 500 });
   }
 }
