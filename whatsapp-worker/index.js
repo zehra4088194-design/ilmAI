@@ -22,10 +22,10 @@ const WORKER_SECRET = process.env.WHATSAPP_WORKER_SECRET || '';
 const AUTH_DIR = process.env.WHATSAPP_AUTH_DIR || './auth_info_baileys';
 const APP_BASE_URL = (process.env.WHATSAPP_APP_BASE_URL || '').replace(/\/$/, '');
 const CEO_JID = toJid(process.env.WHATSAPP_CEO_NUMBER || '');
-const PAYMENT_PROOF_BUCKET = 'jazzcash-payment-proofs';
 const PAYMENT_PROOF_EMAIL = process.env.PAYMENT_PROOF_EMAIL || 'proof@ilmai.study';
-const JAZZCASH_PAYMENT_HELP =
-  `JazzCash se payment karne ke baad apne transaction ka screenshot isi WhatsApp chat par bhej dein, ya ${PAYMENT_PROOF_EMAIL} par email kar dein. Payment proof milne ke baad team verify karke 30 minutes ke andar aapka plan activate kar degi.`;
+const PAYMENT_PROOF_MESSAGE =
+  `Theek hai 👍 JazzCash se payment karne ke baad transaction ka screenshot isi WhatsApp chat par bhej dein, ya ${PAYMENT_PROOF_EMAIL} par email kar dein. Proof milne ke baad team payment verify karke 30 minutes ke andar aapka plan activate kar degi.`;
+const PAYMENT_PROOF_BUCKET = 'jazzcash-payment-proofs';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -40,6 +40,7 @@ const state = { sock: null, connected: false, startingUp: true };
 const pendingPaymentClaims = new Map();
 const PENDING_CLAIM_TTL_MS = 30 * 60 * 1000;
 const phoneQueues = new Map();
+const closedHandoffPhones = new Set();
 
 function getPendingClaim(digits) {
   const existing = pendingPaymentClaims.get(digits);
@@ -76,11 +77,148 @@ function runSerializedForPhone(digits, task) {
   return current;
 }
 
+function getText(msg) {
+  return (
+    msg.message?.conversation ||
+    msg.message?.extendedTextMessage?.text ||
+    msg.message?.buttonsResponseMessage?.selectedDisplayText ||
+    msg.message?.listResponseMessage?.title ||
+    msg.message?.imageMessage?.caption ||
+    msg.message?.videoMessage?.caption ||
+    msg.message?.documentMessage?.caption ||
+    ''
+  );
+}
+
+function getMediaKind(msg) {
+  const message = msg.message || {};
+  if (message.imageMessage) return 'image';
+  if (message.videoMessage) return 'video';
+  if (message.documentMessage) return 'document';
+  if (message.audioMessage) return 'audio';
+  if (message.stickerMessage) return 'sticker';
+  if (message.documentWithCaptionMessage?.message?.documentMessage) return 'document';
+  return null;
+}
+
+function getMediaMessage(msg) {
+  const message = msg.message || {};
+  return (
+    message.imageMessage ||
+    message.videoMessage ||
+    message.documentMessage ||
+    message.audioMessage ||
+    message.stickerMessage ||
+    message.documentWithCaptionMessage?.message?.documentMessage ||
+    null
+  );
+}
+
+function isCeoRequest(text) {
+  const normalized = String(text || '').toLowerCase().replace(/\s+/g, ' ').trim();
+  if (!normalized) return false;
+  return (
+    /\bceo\b/.test(normalized) &&
+    /(baat|bat|talk|speak|speaking|contact|connect|milna|meet|personally|direct|owner|founder)/.test(normalized)
+  ) || (
+    /\b(husnain|founder|owner|boss)\b/.test(normalized) &&
+    /(baat|bat|talk|speak|contact|connect|milna|meet|personally|direct)/.test(normalized)
+  );
+}
+
+function isJazzCashPaid(text) {
+  const normalized = String(text || '').toLowerCase().replace(/\s+/g, ' ').trim();
+  if (!normalized) return false;
+  return (
+    /jazz\s*cash/.test(normalized) &&
+    /(payment|pay|paid|paye|transfer|send|sent|amount)/.test(normalized) &&
+    /(kar\s*(di|dia|diya)|kr\s*(di|dia|diya)|kardi|karna\s*(tha|hai)|done|paid|sent|send|transfer|bhej\s*(di|dia|diya)|made|make|ho\s*giya|hogi|hogaya|ho\s*gaya)/.test(normalized)
+  ) || (
+    /(i\s*(have|'ve)?\s*paid|paid|payment\s*(is|was|done|made|sent)|payment\s*kar)/.test(normalized) &&
+    /jazz\s*cash/.test(normalized)
+  );
+}
+
+async function isConversationClosed(digits) {
+  if (!digits) return false;
+  if (closedHandoffPhones.has(digits)) return true;
+  if (!supabase) return false;
+  try {
+    const { data } = await supabase
+      .from('whatsapp_ai_conversations')
+      .select('status')
+      .eq('phone_digits', digits)
+      .maybeSingle();
+    if (data?.status === 'closed') {
+      closedHandoffPhones.add(digits);
+      return true;
+    }
+  } catch (error) {
+    console.error('[whatsapp-worker] Closed-status lookup failed:', error?.message || error);
+  }
+  return false;
+}
+
+async function markConversationClosed(digits) {
+  if (!digits) return;
+  closedHandoffPhones.add(digits);
+  if (!supabase) return;
+  try {
+    const { data: existing } = await supabase
+      .from('whatsapp_ai_conversations')
+      .select('history')
+      .eq('phone_digits', digits)
+      .maybeSingle();
+    await supabase.from('whatsapp_ai_conversations').upsert(
+      {
+        phone_digits: digits,
+        status: 'closed',
+        history: Array.isArray(existing?.history) ? existing.history : [],
+        closed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'phone_digits' }
+    );
+  } catch (error) {
+    console.error('[whatsapp-worker] Failed to persist CEO handoff:', error?.message || error);
+  }
+}
+
+async function notifyCEOOfHandoff(from, digits, text) {
+  if (!CEO_JID || !state.sock) {
+    console.error('[whatsapp-worker] Cannot notify CEO: CEO number/socket unavailable.');
+    return false;
+  }
+
+  try {
+    const profile = supabase && digits
+      ? (await supabase
+          .from('profiles')
+          .select('full_name, role')
+          .in('phone', candidateStoredFormats(digits))
+          .limit(1)
+          .maybeSingle()).data
+      : null;
+    const senderName = profile?.full_name || 'Unknown sender';
+    const detail =
+      `🚨 CEO handoff request\n` +
+      `Sender: ${senderName}\n` +
+      `Number: ${digits ? `+${digits}` : 'Unknown'}\n` +
+      `Topic/message: ${String(text || '').slice(0, 1500)}`;
+    await state.sock.sendMessage(CEO_JID, { text: detail });
+    console.log('[whatsapp-worker] CEO handoff sent for %s.', digits || 'unknown');
+    return true;
+  } catch (error) {
+    console.error('[whatsapp-worker] Failed to notify CEO:', error);
+    return false;
+  }
+}
+
 if (!WORKER_SECRET) {
   console.warn('[whatsapp-worker] WHATSAPP_WORKER_SECRET is not set.');
 }
 if (!CEO_JID) {
-  console.warn('[whatsapp-worker] WHATSAPP_CEO_NUMBER is not set. Media cannot be forwarded to the CEO.');
+  console.warn('[whatsapp-worker] WHATSAPP_CEO_NUMBER is not set. Media/CEO requests cannot be forwarded.');
 }
 if (!supabase) {
   console.warn('[whatsapp-worker] SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY missing.');
@@ -211,43 +349,6 @@ async function uploadPaymentScreenshot(buffer, mimetype, tid) {
   }
 }
 
-function getText(msg) {
-  return (
-    msg.message?.conversation ||
-    msg.message?.extendedTextMessage?.text ||
-    msg.message?.buttonsResponseMessage?.selectedDisplayText ||
-    msg.message?.listResponseMessage?.title ||
-    msg.message?.imageMessage?.caption ||
-    msg.message?.videoMessage?.caption ||
-    msg.message?.documentMessage?.caption ||
-    ''
-  );
-}
-
-function getMediaKind(msg) {
-  const message = msg.message || {};
-  if (message.imageMessage) return 'image';
-  if (message.videoMessage) return 'video';
-  if (message.documentMessage) return 'document';
-  if (message.audioMessage) return 'audio';
-  if (message.stickerMessage) return 'sticker';
-  if (message.documentWithCaptionMessage?.message?.documentMessage) return 'document';
-  return null;
-}
-
-function getMediaMessage(msg) {
-  const message = msg.message || {};
-  return (
-    message.imageMessage ||
-    message.videoMessage ||
-    message.documentMessage ||
-    message.audioMessage ||
-    message.stickerMessage ||
-    message.documentWithCaptionMessage?.message?.documentMessage ||
-    null
-  );
-}
-
 async function forwardMediaToCEO(from, digits, msg, mediaKind) {
   if (!CEO_JID || !state.sock) {
     console.error('[whatsapp-worker] Cannot forward media: CEO number/socket unavailable.');
@@ -306,7 +407,7 @@ async function forwardMediaToCEO(from, digits, msg, mediaKind) {
   }
 }
 
-async function handlePossiblePaymentMessage(from, digits, text) {
+async function handlePossiblePaymentMessage(from, digits, text, msg) {
   const foundTid = extractTid(text);
   const foundCode = extractCode(text);
   if (!foundTid && !foundCode) return false;
@@ -331,12 +432,6 @@ async function handlePossiblePaymentMessage(from, digits, text) {
   return true;
 }
 
-function isJazzCashPaymentIntent(text) {
-  const normalized = String(text || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
-  if (!normalized.includes('jazzcash')) return false;
-  return /\b(payment|paid|pay|transfer|sent|send|deposit|jama|bhej|bheji|kar di|kr di|kardi|krdi|payment done|paid kr|paid kar)\b/.test(normalized);
-}
-
 async function logIncoming(digits, text, profile) {
   if (!supabase) return;
   await supabase
@@ -346,6 +441,8 @@ async function logIncoming(digits, text, profile) {
 }
 
 async function processOneMessage(from, digits, msg) {
+  if (await isConversationClosed(digits)) return;
+
   const mediaKind = getMediaKind(msg);
 
   // HARD RULE: every incoming picture/file/media is forwarded to the CEO and the sender gets NO reply.
@@ -361,7 +458,32 @@ async function processOneMessage(from, digits, msg) {
   }
 
   const text = getText(msg);
-  const handledAsPayment = await handlePossiblePaymentMessage(from, digits, text);
+
+  // Direct CEO requests bypass AI completely so they can never be misrouted to payment handling.
+  if (isCeoRequest(text)) {
+    await logIncoming(digits, text, null);
+    const notified = await notifyCEOOfHandoff(from, digits, text);
+    await markConversationClosed(digits);
+    if (notified) {
+      await state.sock?.sendMessage(from, {
+        text: 'Theek hai 👍 Aapki baat aur aapka number Husnain Noor tak pohancha diya hai. Woh personally aapse follow up karenge. Ab is chat par hum mazeed automated replies nahi bhejenge.',
+      });
+    } else {
+      await state.sock?.sendMessage(from, {
+        text: 'Theek hai 👍 Main aapki request note kar raha hoon. Husnain Noor ki team aapse follow up karegi.',
+      });
+    }
+    return;
+  }
+
+  // JazzCash payment confirmation is deterministic: no AI guessing and no transaction-ID prompt.
+  if (isJazzCashPaid(text)) {
+    await logIncoming(digits, text, null);
+    await state.sock?.sendMessage(from, { text: PAYMENT_PROOF_MESSAGE });
+    return;
+  }
+
+  const handledAsPayment = await handlePossiblePaymentMessage(from, digits, text, msg);
   if (handledAsPayment) return;
 
   let profile = null;
@@ -370,13 +492,6 @@ async function processOneMessage(from, digits, msg) {
   }
   await logIncoming(digits, text, profile);
   if (!text) return;
-
-  // Deterministic payment guidance: never send the user into the general AI reply flow for a
-  // message that clearly says a JazzCash payment was made. This keeps the proof instructions exact.
-  if (isJazzCashPaymentIntent(text)) {
-    await state.sock?.sendMessage(from, { text: JAZZCASH_PAYMENT_HELP });
-    return;
-  }
 
   const reply = await getAiReply(digits, text, profile?.full_name || null);
   if (!reply) return;
