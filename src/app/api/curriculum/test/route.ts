@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
+import { isCurriculumEnabled } from '@/lib/features/curriculum';
 
 async function readNode(db: ReturnType<typeof createServiceClient>, userId: string, nodeId: string) {
   const { data: node, error } = await db
@@ -20,6 +21,8 @@ async function readNode(db: ReturnType<typeof createServiceClient>, userId: stri
 }
 
 export async function POST(req: NextRequest) {
+  if (!(await isCurriculumEnabled())) return NextResponse.json({ error: 'Curriculum tests are currently disabled.' }, { status: 404 });
+
   const auth = await createClient();
   const { data: { user } } = await auth.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
