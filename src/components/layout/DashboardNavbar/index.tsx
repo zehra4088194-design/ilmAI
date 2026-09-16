@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Search, Menu, X, Zap } from 'lucide-react';
+import { Search, Menu, X, Zap, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/auth/useAuth';
@@ -96,7 +96,6 @@ export function DashboardNavbar({
       >
         {desktopSidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
       </button>
-      {/* Search */}
       <div className="relative max-w-md min-w-0 flex-1">
         <div className="relative">
           <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
@@ -137,7 +136,11 @@ export function DashboardNavbar({
       </div>
       <div className="flex shrink-0 items-center gap-1 sm:gap-2">
         <CreditBalancePill />
-        {/* XP Display */}
+        {user?.role === 'student' && (
+          <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex">
+            <Link href="/student-applications"><FileText className="h-4 w-4" /> Applications</Link>
+          </Button>
+        )}
         {user && (
           <Badge
             data-xp-target
@@ -152,13 +155,10 @@ export function DashboardNavbar({
             <Link href="/subscription">Upgrade Pro</Link>
           </Button>
         )}
-        {/* Language */}
         <div className="hidden sm:block">
           <LanguageSwitcher />
         </div>
-        {/* Theme */}
         <ThemeToggle />
-        {/* Notifications */}
         <NotificationBell />
       </div>
     </header>
