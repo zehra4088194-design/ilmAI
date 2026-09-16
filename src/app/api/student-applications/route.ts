@@ -63,13 +63,10 @@ export async function POST(req: NextRequest) {
   if (error) return json({ error: error.message }, 400);
 
   const guardianIds = institution.guardianIds.filter((id) => id !== user.id && id !== recipientId);
-  const notifications = [recipientId, ...guardianIds].map((id) => ({
-    user_id: id,
-    type: 'SYSTEM',
-    title: recipientId === id ? `New student application: ${subject}` : `Student application copy: ${subject}`,
-    message: `A student has submitted an application to ${institution.name}.` + (startsOn ? ` Dates: ${startsOn}${endsOn ? ` to ${endsOn}` : ''}.` : ''),
-    link: '/student-applications',
-  }));
+  const notifications = [
+    { user_id: recipientId, type: 'SYSTEM', title: `New student application: ${subject}`, message: `A student has submitted an application to ${institution.name}.` + (startsOn ? ` Dates: ${startsOn}${endsOn ? ` to ${endsOn}` : ''}.` : ''), link: '/student-applications/inbox' },
+    ...guardianIds.map((id) => ({ user_id: id, type: 'SYSTEM', title: `Student application copy: ${subject}`, message: `A student has submitted an application to ${institution.name}.` + (startsOn ? ` Dates: ${startsOn}${endsOn ? ` to ${endsOn}` : ''}.` : ''), link: '/parent' })),
+  ];
   if (notifications.length) await (supabase.from('notifications') as any).insert(notifications);
 
   return json({ application: created }, 201);
