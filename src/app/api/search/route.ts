@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { searchAlgoliaCatalog } from '@/lib/search/algolia';
+import { isCurriculumEnabled } from '@/lib/features/curriculum';
 
 export async function GET(req: NextRequest) {
   const query = req.nextUrl.searchParams.get('q')?.trim() || '';
@@ -11,6 +12,12 @@ export async function GET(req: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const curriculumEnabled = await isCurriculumEnabled();
+  const filterDisabledCurriculum = <T extends { href?: string }>(results: T[]) =>
+    curriculumEnabled
+      ? results
+      : results.filter((item) => !item.href?.startsWith('/curriculum') && !item.href?.startsWith('/smart-book-practice'));
+
   const algoliaResults = await searchAlgoliaCatalog(query);
   if (algoliaResults) {
     const [{ data: notes }, { data: collegeLectures }, { data: collegeResources }] = await Promise.all([
@@ -37,7 +44,7 @@ export async function GET(req: NextRequest) {
         .limit(8),
     ]);
     return NextResponse.json({
-      results: [
+      results: filterDisabledCurriculum([
         ...algoliaResults.map(({ objectID: _objectID, ...result }) => result),
         ...(notes || []).map((note) => ({
           id: note.id,
@@ -62,7 +69,7 @@ export async function GET(req: NextRequest) {
             'College resource',
           href: `/college/dashboard?search=${encodeURIComponent(resource.title)}`,
         })),
-      ].slice(0, 20),
+      ]).slice(0, 20),
     });
   }
   const [
@@ -214,7 +221,7 @@ export async function GET(req: NextRequest) {
   }));
 
   return NextResponse.json({
-    results: [
+    results: filterDisabledCurriculum([
       ...subjectResults,
       ...chapterResults,
       ...resourceResults,
@@ -223,6 +230,6 @@ export async function GET(req: NextRequest) {
       ...pastPaperResults,
       ...collegeLectureResults,
       ...collegeResourceResults,
-    ].slice(0, 20),
+    ]).slice(0, 20),
   });
 }
