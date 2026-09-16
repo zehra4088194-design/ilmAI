@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { DirectMessageThread } from '@/components/ui/DirectMessageThread';
 import { CallButton } from '@/components/features/calling/CallButton';
 import { GroupMessageThread } from './GroupMessageThread';
+import { toast } from 'sonner';
 
 type Contact = { id: string; name: string; avatarUrl: string | null; email?: string | null; role: string };
 type Group = { id: string; name: string; group_type: 'class' | 'custom'; section_id?: string | null };
@@ -56,21 +57,30 @@ export function CommunicationHub({ organizationId, currentUserId, currentRole }:
     });
     const json = await res.json();
     if (res.ok) setSelectedConversationId(json.conversation?.id || null);
+    else toast.error(json.error || 'Conversation could not be opened.');
   };
 
   const createGroup = async () => {
     if (groupName.trim().length < 2 || savingGroup) return;
     setSavingGroup(true);
-    const res = await fetch('/api/school-communication/groups', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: groupName.trim(), memberIds: selectedMembers }),
-    });
-    const json = await res.json();
-    if (res.ok && json.group) {
-      setGroups((prev) => [...prev, json.group]);
-      setShowCreateGroup(false); setGroupName(''); setSelectedMembers([]); setTab('groups'); setSelectedGroup(json.group);
+    try {
+      const res = await fetch('/api/school-communication/groups', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: groupName.trim(), memberIds: selectedMembers }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(json.error || 'Group could not be created.');
+        return;
+      }
+      if (json.group) {
+        setGroups((prev) => [...prev, json.group]);
+        setShowCreateGroup(false); setGroupName(''); setSelectedMembers([]); setTab('groups'); setSelectedGroup(json.group);
+        toast.success('Group created.');
+      }
+    } finally {
+      setSavingGroup(false);
     }
-    setSavingGroup(false);
   };
 
   return (
