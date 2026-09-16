@@ -54,7 +54,7 @@ function dateOrNull(value: FormDataEntryValue | null) {
   return text && /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : null;
 }
 
-export function studentRecordFromForm(formData: FormData): StudentRecordInput {
+function studentRecordFromForm(formData: FormData): StudentRecordInput {
   return {
     b_form_number: clean(formData.get('b_form_number')),
     father_cnic: clean(formData.get('father_cnic')),
@@ -78,7 +78,7 @@ export function studentRecordFromForm(formData: FormData): StudentRecordInput {
   };
 }
 
-export function isStudentRecordComplete(record: Partial<StudentRecordInput> | null | undefined) {
+function isStudentRecordComplete(record: Partial<StudentRecordInput> | null | undefined) {
   if (!record) return false;
   return Boolean(
     record.b_form_number?.trim() &&
