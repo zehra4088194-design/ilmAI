@@ -18,6 +18,7 @@ export default function CurriculumReaderPage({ params }: { params: Promise<{ id:
   const [node, setNode] = useState<any>(null);
   const [tab, setTab] = useState<'content' | 'questions' | 'test'>('content');
   const [test, setTest] = useState<any>(null);
+  const [testNodeId, setTestNodeId] = useState('');
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [result, setResult] = useState<any>(null);
   const [busy, setBusy] = useState(false);
@@ -62,18 +63,18 @@ export default function CurriculumReaderPage({ params }: { params: Promise<{ id:
       const res = await fetch('/api/curriculum/test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ node_id: targetNodeId, count: 10 }) });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Unable to start test');
-      setTest(json); setTab('test');
+      setTestNodeId(targetNodeId); setTest(json); setTab('test');
     } catch (e: any) { alert(e.message); } finally { setBusy(false); }
   }
 
   async function submitTest() {
-    if (!test?.attempt_id) return;
+    if (!test?.attempt_id || !testNodeId) return;
     setBusy(true);
     try {
-      const res = await fetch('/api/curriculum/test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'submit', node_id: nodeId, attempt_id: test.attempt_id, answers }) });
+      const res = await fetch('/api/curriculum/test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'submit', node_id: testNodeId, attempt_id: test.attempt_id, answers }) });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Unable to submit test');
-      setResult(json.result); setTest(null);
+      setResult(json.result); setTest(null); setTestNodeId('');
     } catch (e: any) { alert(e.message); } finally { setBusy(false); }
   }
 
@@ -113,7 +114,7 @@ export default function CurriculumReaderPage({ params }: { params: Promise<{ id:
             <div><div className="text-xs font-semibold uppercase tracking-wider text-cyan-300">Find inside the textbook</div><h2 className="mt-1 text-lg font-semibold">Search topics & sub-topics from here</h2></div>
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search topic / sub-topic…" className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none placeholder:text-slate-500 focus:border-sky-400 md:max-w-sm" />
           </div>
-          {(search || related.length > 0) && <div className="mt-4 grid gap-2 sm:grid-cols-2">{related.slice(0, 8).map((item) => <div key={item.id} className={`flex items-center justify-between gap-3 rounded-xl border p-3 transition hover:bg-white/5 ${item.id === nodeId ? 'border-sky-400/40 bg-sky-400/5' : 'border-white/10'}`}><Link href={`/curriculum/${item.id}`} className="min-w-0 flex-1"><div className="text-[11px] uppercase tracking-wider text-sky-300">{item.node_type?.replaceAll('_', ' ')}</div><div className="mt-1 font-medium">{item.title}</div><div className="mt-1 line-clamp-1 text-xs text-slate-500">{item.path_titles}</div></Link><button onClick={() => startTestFor(item.id)} disabled={busy || item.id !== nodeId} className="rounded-lg border border-white/10 px-2.5 py-1.5 text-[11px] text-slate-300 disabled:opacity-40">{item.id === nodeId ? 'Test' : 'Open'}</button></div>)}</div>}
+          {(search || related.length > 0) && <div className="mt-4 grid gap-2 sm:grid-cols-2">{related.slice(0, 8).map((item) => <div key={item.id} className={`flex items-center justify-between gap-3 rounded-xl border p-3 transition hover:bg-white/5 ${item.id === nodeId ? 'border-sky-400/40 bg-sky-400/5' : 'border-white/10'}`}><Link href={`/curriculum/${item.id}`} className="min-w-0 flex-1"><div className="text-[11px] uppercase tracking-wider text-sky-300">{item.node_type?.replaceAll('_', ' ')}</div><div className="mt-1 font-medium">{item.title}</div><div className="mt-1 line-clamp-1 text-xs text-slate-500">{item.path_titles}</div></Link><button onClick={() => startTestFor(item.id)} disabled={busy} className="rounded-lg border border-white/10 px-2.5 py-1.5 text-[11px] text-slate-300 disabled:opacity-40">Test</button></div>)}</div>}
         </section>
 
         <div className="mt-5 flex flex-wrap gap-2 border-b border-white/10 pb-3">
@@ -127,7 +128,7 @@ export default function CurriculumReaderPage({ params }: { params: Promise<{ id:
           </div>
           {(node.content || []).map((block: any) => <Block key={block.id} block={block} />)}
           {(node.examples || []).map((example: any) => <div key={example.id} className="rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.04] p-5"><div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-emerald-300">Example {example.ordinal + 1}</div>{example.title && <h3 className="mb-2 text-lg font-semibold">{example.title}</h3>}{example.exact_question && <div className="whitespace-pre-wrap leading-7">{example.exact_question}</div>}{example.exact_solution && <div className="mt-4 whitespace-pre-wrap border-t border-white/10 pt-4 leading-7 text-slate-300">{example.exact_solution}</div>}</div>)}
-          {(node.children || []).length > 0 && <div className="rounded-2xl border border-white/10 p-5"><div className="flex flex-wrap items-center justify-between gap-3"><h2 className="font-semibold">Inside this section</h2><span className="text-xs text-slate-500">Open any sub-topic and test it separately</span></div><div className="mt-3 grid gap-2 sm:grid-cols-2">{node.children.map((child: any) => <div key={child.id} className="flex items-center justify-between gap-2 rounded-xl bg-white/[0.04] p-3 hover:bg-white/[0.08]"><Link href={`/curriculum/${child.id}`} className="min-w-0 flex-1"><span className="text-sky-300">{child.number}</span> <span className="ml-2">{child.title}</span></Link><button onClick={() => startTestFor(child.id)} disabled={busy || child.id !== nodeId} className="rounded-lg border border-white/10 px-2.5 py-1.5 text-[11px] text-slate-300 disabled:opacity-40">{child.id === nodeId ? 'Test' : 'Open'}</button></div>)}</div></div>}
+          {(node.children || []).length > 0 && <div className="rounded-2xl border border-white/10 p-5"><div className="flex flex-wrap items-center justify-between gap-3"><h2 className="font-semibold">Inside this section</h2><span className="text-xs text-slate-500">Open any sub-topic and test it separately</span></div><div className="mt-3 grid gap-2 sm:grid-cols-2">{node.children.map((child: any) => <div key={child.id} className="flex items-center justify-between gap-2 rounded-xl bg-white/[0.04] p-3 hover:bg-white/[0.08]"><Link href={`/curriculum/${child.id}`} className="min-w-0 flex-1"><span className="text-sky-300">{child.number}</span> <span className="ml-2">{child.title}</span></Link><button onClick={() => startTestFor(child.id)} disabled={busy} className="rounded-lg border border-white/10 px-2.5 py-1.5 text-[11px] text-slate-300 disabled:opacity-40">Test</button></div>)}</div></div>}
         </section>}
 
         {tab === 'questions' && <section className="mt-5 space-y-3">{(node.questions || []).map((q: any, i: number) => <div key={q.id} className="rounded-2xl border border-white/10 p-5"><div className="mb-2 text-xs text-slate-500">{q.question_type.replaceAll('_', ' ')} {q.question_number || i + 1}{q.marks ? ` · ${q.marks} marks` : ''}{q.source_page ? ` · p. ${q.source_page}` : ''}</div><div className="whitespace-pre-wrap leading-7">{q.exact_text}</div>{q.options && <pre className="mt-3 overflow-auto rounded-xl bg-black/20 p-3 text-sm text-slate-300">{JSON.stringify(q.options, null, 2)}</pre>}</div>)}{!(node.questions || []).length && <div className="rounded-2xl border border-dashed border-white/10 p-8 text-center text-slate-500">No saved questions for this topic yet.</div>}</section>}
