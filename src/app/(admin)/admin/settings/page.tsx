@@ -12,7 +12,10 @@ export default async function AdminSettingsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Platform Settings</h1>
-        <Button asChild variant="outline"><Link href="/admin/teacher-plans">Teacher Plans & Student Limits</Link></Button>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline"><Link href="/admin/settings/curriculum">Curriculum / Smart Book</Link></Button>
+          <Button asChild variant="outline"><Link href="/admin/teacher-plans">Teacher Plans & Student Limits</Link></Button>
+        </div>
       </div>
       <PlatformSettingsForm initialSettings={settings} />
     </div>
