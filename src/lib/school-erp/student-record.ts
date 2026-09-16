@@ -54,7 +54,7 @@ function dateOrNull(value: FormDataEntryValue | null) {
   return text && /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : null;
 }
 
-function studentRecordFromForm(formData: FormData): StudentRecordInput {
+export async function studentRecordFromForm(formData: FormData): Promise<StudentRecordInput> {
   return {
     b_form_number: clean(formData.get('b_form_number')),
     father_cnic: clean(formData.get('father_cnic')),
@@ -146,7 +146,7 @@ export async function updateSchoolStudentRecord(formData: FormData) {
   const studentId = canManage && requestedStudentId ? requestedStudentId : user.id;
   if (studentId !== user.id && !canManage) throw new Error('You cannot update another student record.');
 
-  const input = studentRecordFromForm(formData);
+  const input = await studentRecordFromForm(formData);
   const saved = await saveSchoolStudentRecord(supabase as any, context.organization.id, studentId, input);
   if (saved.is_profile_complete && studentId === user.id) redirect('/school');
   return { success: true, complete: saved.is_profile_complete };
