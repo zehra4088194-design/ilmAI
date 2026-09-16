@@ -124,12 +124,33 @@ export async function POST(req: NextRequest) {
   if (name.length < 2) return NextResponse.json({ error: 'Group name is required.' }, { status: 400 });
 
   const db = supabase as any;
-  const { data: members } = await db
-    .from('school_memberships')
-    .select('profile_id')
-    .eq('organization_id', context.organization.id)
-    .eq('status', 'active');
-  const activeIds = new Set((members || []).map((row: any) => row.profile_id));
+  const [{ data: members }, { data: enrollments }, { data: guardians }] = await Promise.all([
+    db
+      .from('school_memberships')
+      .select('profile_id')
+      .eq('organization_id', context.organization.id)
+      .eq('status', 'active'),
+    db
+      .from('school_enrollments')
+      .select('student_id')
+      .eq('organization_id', context.organization.id)
+      .eq('status', 'active'),
+    db
+      .from('school_guardians')
+      .select('guardian_id, student_id')
+      .eq('organization_id', context.organization.id),
+  ]);
+
+  // Staff are stored in school_memberships, while institution students are stored
+  // in school_enrollments. Guardians are linked through school_guardians. A
+  // communication group may include any of the people already visible in the
+  // contacts picker, so validate against all three identity sources.
+  const activeIds = new Set<string>([
+    ...((members || []).map((row: any) => String(row.profile_id))),
+    ...((enrollments || []).map((row: any) => String(row.student_id))),
+    ...((guardians || []).flatMap((row: any) => [row.guardian_id, row.student_id]).filter(Boolean).map(String)),
+    user.id,
+  ]);
   const memberIds = Array.from(new Set([user.id, ...requestedMemberIds])).filter((id) => activeIds.has(id));
 
   const admin = await createAdminClient();
@@ -146,8 +167,17 @@ export async function POST(req: NextRequest) {
     .single();
   if (error) return NextResponse.json({ error: error.message || 'Group could not be created.' }, { status: 500 });
 
-  await adminDb.from('school_communication_group_members').insert(
-    memberIds.map((profileId) => ({ group_id: group.id, profile_id: profileId, member_role: profileId === user.id ? 'admin' : 'member' }))
+  const { error: memberError } = await adminDb.from('school_communication_group_members').insert(
+    memberIds.map((profileId) => ({
+      group_id: group.id,
+      profile_id: profileId,
+      member_role: profileId === user.id ? 'admin' : 'member',
+    }))
   );
+  if (memberError) {
+    await adminDb.from('school_communication_groups').delete().eq('id', group.id);
+    return NextResponse.json({ error: memberError.message || 'Group members could not be added.' }, { status: 500 });
+  }
+
   return NextResponse.json({ group });
 }
