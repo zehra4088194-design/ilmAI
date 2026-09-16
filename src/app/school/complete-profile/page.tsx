@@ -27,7 +27,7 @@ export default async function CompleteSchoolStudentProfilePage() {
           <CardDescription>Your school needs these details before your student portal can open. Information is saved to your school record.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={async (formData: FormData) => { await updateSchoolStudentRecord(formData); }} encType="multipart/form-data" className="grid gap-4 sm:grid-cols-2">
+          <form action={async (formData: FormData) => { 'use server'; await updateSchoolStudentRecord(formData); }} encType="multipart/form-data" className="grid gap-4 sm:grid-cols-2">
             {field('B-Form number', 'b_form_number', record.b_form_number, true)}
             {field("Father's CNIC number", 'father_cnic', record.father_cnic, true)}
             {field('Matric total marks', 'matric_total_marks', record.matric_total_marks, true, 'number')}
