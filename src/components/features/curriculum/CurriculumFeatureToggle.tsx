@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { BookOpen, Eye, EyeOff } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
 
 export const CURRICULUM_UI_STORAGE_KEY = 'ilmai-curriculum-ui-enabled';
 
@@ -40,11 +39,22 @@ export function CurriculumFeatureToggle() {
               </CardDescription>
             </div>
           </div>
-          <Switch
-            checked={enabled}
-            onCheckedChange={handleChange}
+          <button
+            type="button"
+            role="switch"
+            aria-checked={enabled}
             aria-label="Enable curriculum feature"
-          />
+            onClick={() => handleChange(!enabled)}
+            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors ${
+              enabled ? 'border-violet-500 bg-violet-600' : 'border-border bg-muted'
+            }`}
+          >
+            <span
+              className={`block h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                enabled ? 'translate-x-5' : 'translate-x-1'
+              }`}
+            />
+          </button>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
