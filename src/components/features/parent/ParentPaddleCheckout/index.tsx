@@ -83,7 +83,7 @@ export function ParentPaddleCheckout({
           </div>
           <Button type="button" variant="gradient" onClick={startCheckout} disabled={loading} className="sm:min-w-48">
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
-            {loading ? 'Opening checkout…' : 'Continue with Paddle'}
+            {loading ? 'Opening checkout…' : 'Continue with Card'}
           </Button>
         </div>
         <p className="text-muted-foreground text-[11px]">
