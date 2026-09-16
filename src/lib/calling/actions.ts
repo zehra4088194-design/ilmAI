@@ -10,15 +10,15 @@ import { canRolesCall } from './permissions';
 import { getCallingSettings } from './queries';
 import type { CallPermissionResult, InstitutionType } from './types';
 
-const SETTINGS_TABLE: Record<InstitutionType, string> = {
+const SETTINGS_TABLE: Record<'school' | 'college', string> = {
   school: 'school_calling_settings',
   college: 'college_calling_settings',
 };
-const MEMBERSHIP_TABLE: Record<InstitutionType, string> = {
+const MEMBERSHIP_TABLE: Record<'school' | 'college', string> = {
   school: 'school_memberships',
   college: 'college_memberships',
 };
-const CALL_LOG_TABLE: Record<InstitutionType, string> = {
+const CALL_LOG_TABLE: Record<'school' | 'college', string> = {
   school: 'school_call_logs',
   college: 'college_call_logs',
 };
@@ -40,6 +40,22 @@ export async function requestCallPermission(
   if (user.id === calleeId) return { allowed: false, reason: 'You cannot call yourself.' };
 
   const db = supabase as any;
+
+  // Consumer accounts do not belong to a school/college. They still use the exact same
+  // WebRTC/PeerJS provider, but need no institution membership or organization setting.
+  if (institutionType === 'consumer') {
+    const { data: callee } = await db.from('profiles').select('id').eq('id', calleeId).maybeSingle();
+    if (!callee) return { allowed: false, reason: 'That user could not be found.' };
+
+    const settings = await getCallingSettings(supabase, 'consumer', organizationId);
+    const verdict = canRolesCall('student', 'student', settings);
+    if (!verdict.allowed) return verdict;
+
+    // Consumer calls do not depend on an institution-specific call-log table. The returned
+    // identifier only needs to be unique for the live signaling session.
+    return { allowed: true, callId: crypto.randomUUID() };
+  }
+
   const [{ data: callerRow }, { data: calleeRow }] = await Promise.all([
     db
       .from(MEMBERSHIP_TABLE[institutionType])
@@ -103,6 +119,7 @@ export async function updateCallStatus(
   callId: string,
   status: 'accepted' | 'declined' | 'missed' | 'ended'
 ) {
+  if (institutionType === 'consumer') return;
   const supabase = await createClient();
   const db = supabase as any;
   const patch: Record<string, unknown> = { status };
@@ -110,7 +127,7 @@ export async function updateCallStatus(
   await db.from(CALL_LOG_TABLE[institutionType]).update(patch).eq('id', callId);
 }
 
-async function upsertCallingSettings(institutionType: InstitutionType, organizationId: string, formData: FormData, userId: string) {
+async function upsertCallingSettings(institutionType: 'school' | 'college', organizationId: string, formData: FormData, userId: string) {
   const supabase = await createClient();
   const db = supabase as any;
   const { error } = await db.from(SETTINGS_TABLE[institutionType]).upsert(
