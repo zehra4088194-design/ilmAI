@@ -1,10 +1,7 @@
-// Shared types for the voice-calling feature. Deliberately institution-agnostic (works the same
-// for a school_* org and a college_* org) since the calling settings/logs/directory RPC schema is
-// an identical mirror on both sides (see supabase/migrations/20260910120000_voice_calling.sql).
+// Shared types for voice calling. Institution calling supports school/college;
+// consumer calling supports ordinary ilm AI accounts without an institution.
+export type InstitutionType = 'school' | 'college' | 'consumer';
 
-export type InstitutionType = 'school' | 'college';
-
-/** A caller/callee's minimal identity, enough to gate a call and open a signaling channel. */
 export type CallIdentity = {
   userId: string;
   institutionType: InstitutionType;
@@ -23,13 +20,12 @@ export type CallingSettings = {
 };
 
 export const DEFAULT_CALLING_SETTINGS: Omit<CallingSettings, 'organization_id'> = {
-  enabled: false,
+  enabled: true,
   allow_student_student: true,
   allow_student_staff: true,
   allow_parent_staff: true,
 };
 
-/** A directory entry returned by {school,college}_call_directory(). */
 export type CallDirectoryEntry = {
   profile_id: string;
   full_name: string | null;
@@ -42,7 +38,6 @@ export type CallPermissionResult = {
   reason?: string;
 };
 
-/** One row of live call state, shared between the ringing modal and the active-call bar. */
 export type ActiveCallInfo = {
   callId: string;
   peerId: string;
