@@ -50,6 +50,19 @@ export function ParentMessageThread({
   const calling = useCalling();
 
   useEffect(() => {
+    let active = true;
+    fetch(`/api/parent/messages?linkId=${linkId}`, { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((json) => {
+        if (active && json.student) setStudent(json.student);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [linkId]);
+
+  useEffect(() => {
     if (autoOpen) setOpen(true);
   }, [autoOpen]);
 
