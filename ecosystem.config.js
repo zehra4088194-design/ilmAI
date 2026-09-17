@@ -9,9 +9,7 @@ module.exports = {
     {
       name: 'ilm-ai-whatsapp',
       cwd: __dirname + '/whatsapp-worker',
-      // Always load the safety/runtime bridge so PM2 cannot bypass the email-only admin handoff.
-      script: 'node',
-      args: '-r ./media-guard.cjs index.js',
+      script: 'index.js',
       instances: 1,
       exec_mode: 'fork',
       autorestart: false,
