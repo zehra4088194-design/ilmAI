@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient, createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { createNotificationIfEnabled } from '@/lib/notifications/preferences';
 import { getParentLinkAccess } from '@/lib/parent/access';
@@ -22,12 +23,6 @@ export async function GET(req: NextRequest) {
   if (!linkId) return NextResponse.json({ error: 'A link ID is required' }, { status: 400 });
   const access = await getParentLinkAccess(linkId, user.id);
   if (!access) return NextResponse.json({ error: 'This link does not belong to your account.' }, { status: 403 });
-  if (!access.plan.access.parentDashboard) {
-    return NextResponse.json(
-      { error: 'Parent chat is available when the linked student has a Pro or Elite plan.' },
-      { status: 403 }
-    );
-  }
 
   const chatsAdmin = createServiceClient() as any;
   await chatsAdmin
@@ -84,12 +79,6 @@ export async function POST(req: NextRequest) {
   const access = await getParentLinkAccess(linkId, user.id);
   if (!access || !access.link.student_id)
     return NextResponse.json({ error: 'This link does not belong to your account.' }, { status: 403 });
-  if (!access.plan.access.parentDashboard) {
-    return NextResponse.json(
-      { error: 'Parent chat is available when the linked student has a Pro or Elite plan.' },
-      { status: 403 }
-    );
-  }
   const { link } = access;
 
   let attachment: { url: string; name: string; type: string; sizeKb: number } | null = null;
@@ -152,12 +141,6 @@ export async function PATCH(req: NextRequest) {
 
   const access = await getParentLinkAccess(linkId, user.id);
   if (!access) return NextResponse.json({ error: 'This link does not belong to your account.' }, { status: 403 });
-  if (!access.plan.access.parentDashboard) {
-    return NextResponse.json(
-      { error: 'Parent chat is available when the linked student has a Pro or Elite plan.' },
-      { status: 403 }
-    );
-  }
 
   const chatsAdmin = createServiceClient() as any;
   const { error } = await chatsAdmin
