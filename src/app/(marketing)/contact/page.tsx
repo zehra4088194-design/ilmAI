@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { BookOpenCheck, CreditCard, LifeBuoy, Mail, MessageSquareWarning } from 'lucide-react';
+import { BookOpenCheck, CreditCard, LifeBuoy, Mail, MessageCircle, MessageSquareWarning } from 'lucide-react';
 import { Navbar } from '@/components/features/landing/Navbar';
 import { LandingFooter } from '@/components/features/landing/Footer';
 import { ContactForm } from '@/components/features/marketing/ContactForm';
@@ -33,6 +33,8 @@ const CONTACT_TOPICS = [
     text: 'Data requests, abuse reports, accessibility, or responsible-use concerns.',
   },
 ];
+
+const WHATSAPP_CONTACT_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_BOT_NUMBER || '';
 
 export default function ContactPage() {
   return (
@@ -71,11 +73,23 @@ export default function ContactPage() {
               <div className="border-border/70 mt-8 rounded-xl border p-5">
                 <p className="text-sm font-semibold">Direct contact</p>
                 <a
-                  href="mailto:information@ilmai.study"
-                  className="mt-2 block text-sm text-violet-300 underline-offset-4 hover:underline"
+                  href="mailto:support@ilmai.study"
+                  className="mt-2 flex items-center gap-2 text-sm text-violet-300 underline-offset-4 hover:underline"
                 >
-                  information@ilmai.study
+                  <Mail className="h-4 w-4" />
+                  support@ilmai.study
                 </a>
+                {WHATSAPP_CONTACT_NUMBER && (
+                  <a
+                    href={`https://wa.me/${WHATSAPP_CONTACT_NUMBER}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-3 flex items-center gap-2 text-sm text-emerald-400 underline-offset-4 hover:underline"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    WhatsApp: +{WHATSAPP_CONTACT_NUMBER}
+                  </a>
+                )}
               </div>
             </aside>
           </div>
