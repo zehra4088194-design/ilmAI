@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { gatewayChat } from '@/lib/ai/gateway';
+import { gatewayChat, GatewayError } from '@/lib/ai/gateway';
 import { createClient } from '@/lib/supabase/server';
 import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
-import { parseAiJson } from '@/lib/utils/json-extract';
 import {
   checkUniversityFeatureLimit,
   consumeUniversityFeatureCredits,
   getUniversityLimitExceededMessage,
 } from '@/lib/rate-limit';
+import { parseAiJson } from '@/lib/utils/json-extract';
 import type { SubscriptionTier } from '@/types';
 
 export const runtime = 'nodejs';
@@ -27,19 +27,32 @@ type ProjectContent = {
   pitch_script: string;
 };
 
-const fallbackContent: ProjectContent = {
-  proposal: 'Project proposal draft could not be generated. Try again with a clearer one-line idea.',
-  executive_summary: '',
-  business_model: '',
-  timeline: '',
-  flowchart_mermaid: 'flowchart TD\n  A[Idea] --> B[Plan]\n  B --> C[Build]\n  C --> D[Test]\n  D --> E[Present]',
-  architecture: '',
-  budget_estimation: '',
-  risk_analysis: '',
-  report: '',
-  poster_copy: '',
-  pitch_script: '',
-};
+const PROJECT_KEYS: (keyof ProjectContent)[] = [
+  'proposal',
+  'executive_summary',
+  'business_model',
+  'timeline',
+  'flowchart_mermaid',
+  'architecture',
+  'budget_estimation',
+  'risk_analysis',
+  'report',
+  'poster_copy',
+  'pitch_script',
+];
+
+function parseProjectContent(text: string): ProjectContent {
+  const generated = parseAiJson<ProjectContent | null>(text, null);
+  if (!generated || typeof generated !== 'object') {
+    throw new GatewayError('The selected AI service returned invalid project data.', 502);
+  }
+  for (const key of PROJECT_KEYS) {
+    if (typeof generated[key] !== 'string' || !generated[key].trim()) {
+      throw new GatewayError('The selected AI service returned incomplete project data.', 502);
+    }
+  }
+  return generated;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -109,7 +122,8 @@ Do not add markdown fences.`,
       maxTokens: 8000,
       temperature: 0.45,
     });
-    const generated = parseAiJson<ProjectContent>(result.text, fallbackContent);
+
+    const generated = parseProjectContent(result.text);
 
     let projectId: string | null = null;
     let saved = false;
@@ -134,6 +148,9 @@ Do not add markdown fences.`,
     return NextResponse.json({ status: 'success', data: { id: projectId, content: generated, saved } });
   } catch (error) {
     console.error('Project builder error:', error);
-    return NextResponse.json({ status: 'error', error: 'The project could not be generated.' }, { status: 500 });
+    if (error instanceof GatewayError) {
+      return NextResponse.json({ status: 'error', error: 'The selected AI service could not generate the project. Please try again.' }, { status: 502 });
+    }
+    return NextResponse.json({ status: 'error', error: 'The project could not be generated. Please try again.' }, { status: 500 });
   }
 }
