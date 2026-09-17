@@ -41,6 +41,20 @@ export async function requestCallPermission(
 
   const db = supabase as any;
 
+  // A parent/student link is a direct family relationship created by the parent portal.
+  // It is intentionally independent of the student's own plan and of institution membership:
+  // a parent must always be able to call their attached child, whether the child is Free, Pro,
+  // Elite, school-enrolled, college-enrolled, or an ordinary consumer account.
+  const { data: familyLink } = await db
+    .from('parent_student_links')
+    .select('id')
+    .eq('status', 'approved')
+    .or(`and(parent_id.eq.${user.id},student_id.eq.${calleeId}),and(parent_id.eq.${calleeId},student_id.eq.${user.id})`)
+    .maybeSingle();
+  if (familyLink) {
+    return { allowed: true, callId: crypto.randomUUID() };
+  }
+
   // Consumer accounts do not belong to a school/college. They still use the exact same
   // WebRTC/PeerJS provider, but need no institution membership or organization setting.
   if (institutionType === 'consumer') {
