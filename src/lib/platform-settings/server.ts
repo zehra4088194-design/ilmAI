@@ -32,14 +32,15 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
 }
 
 /**
- * Resolve the exact provider selected by the admin for a routing key.
- * Never substitute a different provider here: if the selected provider is
- * unavailable, the calling AI feature must surface an error rather than switch
- * providers silently.
+ * Resolves the provider selected by the admin for a routing key.
+ * `local` is the platform's low-cost local-mode alias and intentionally maps
+ * to Groq, matching the existing platform convention. This is not an error
+ * fallback: provider failure fallback is handled separately by gatewayChat.
  */
 export async function resolveAiRoutingProvider(key: AiRoutingKey): Promise<AiProviderId> {
   const settings = await getPlatformSettings();
-  return getAdminAiProvider(settings, key) as AiProviderId;
+  const adminProvider = getAdminAiProvider(settings, key);
+  return adminProvider === 'local' ? 'groq' : (adminProvider as AiProviderId);
 }
 
 export async function savePlatformSettings(settings: PlatformSettings, updatedBy?: string) {
