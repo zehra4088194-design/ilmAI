@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
   const userIds = users.map((user) => user.id);
   const db = adminClient as any;
 
-  const [schoolMemberships, collegeMemberships, schoolEnrollments, collegeEnrollments, schoolGuardians, collegeGuardians] = await Promise.all([
+  const [schoolMemberships, collegeMemberships, schoolEnrollments, collegeEnrollments, schoolGuardians, collegeGuardians, parentStudentLinks] = await Promise.all([
     userIds.length
       ? db
           .from('school_memberships')
@@ -83,6 +83,9 @@ export async function GET(req: NextRequest) {
           .select('guardian_id, student_id, organization_id, college_organizations(name)')
           .in('guardian_id', userIds)
       : Promise.resolve({ data: [] }),
+    userIds.length
+      ? db.from('parent_student_links').select('parent_id, student_id, status').in('parent_id', userIds).eq('status', 'approved')
+      : Promise.resolve({ data: [] }),
   ]);
 
   const schoolRows = (schoolMemberships.data || []) as any[];
@@ -91,6 +94,7 @@ export async function GET(req: NextRequest) {
   const collegeEnrollmentRows = (collegeEnrollments.data || []) as any[];
   const schoolGuardianRows = (schoolGuardians.data || []) as any[];
   const collegeGuardianRows = (collegeGuardians.data || []) as any[];
+  const parentStudentLinkRows = (parentStudentLinks.data || []) as any[];
 
   const addInstitution = (map: Map<string, string[]>, userId: string, name: unknown) => {
     const normalized = typeof name === 'string' ? name.trim() : '';
@@ -107,6 +111,31 @@ export async function GET(req: NextRequest) {
   for (const row of collegeEnrollmentRows) addInstitution(institutionByUser, row.student_id, row.college_organizations?.name);
   for (const row of schoolGuardianRows) addInstitution(institutionByUser, row.guardian_id, row.school_organizations?.name);
   for (const row of collegeGuardianRows) addInstitution(institutionByUser, row.guardian_id, row.college_organizations?.name);
+
+  // A consumer parent may be connected through parent_student_links without a guardian row.
+  // In that case, inherit the institution name from the linked child's active enrollment.
+  const schoolEnrollmentByStudent = new Map<string, string[]>();
+  const collegeEnrollmentByStudent = new Map<string, string[]>();
+  for (const row of schoolEnrollmentRows) {
+    const name = row.school_organizations?.name;
+    if (typeof name === 'string' && name.trim()) {
+      const list = schoolEnrollmentByStudent.get(row.student_id) || [];
+      if (!list.includes(name.trim())) list.push(name.trim());
+      schoolEnrollmentByStudent.set(row.student_id, list);
+    }
+  }
+  for (const row of collegeEnrollmentRows) {
+    const name = row.college_organizations?.name;
+    if (typeof name === 'string' && name.trim()) {
+      const list = collegeEnrollmentByStudent.get(row.student_id) || [];
+      if (!list.includes(name.trim())) list.push(name.trim());
+      collegeEnrollmentByStudent.set(row.student_id, list);
+    }
+  }
+  for (const row of parentStudentLinkRows) {
+    for (const name of schoolEnrollmentByStudent.get(row.student_id) || []) addInstitution(institutionByUser, row.parent_id, name);
+    for (const name of collegeEnrollmentByStudent.get(row.student_id) || []) addInstitution(institutionByUser, row.parent_id, name);
+  }
 
   const enrichedUsers = users.map((user) => ({
     ...user,
