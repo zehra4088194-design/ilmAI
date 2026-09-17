@@ -5,7 +5,7 @@
   "description": "Standalone 24/7 Baileys WhatsApp bot for ilm AI. Runs as its own PM2 process on the Oracle VPS, separate from the Next.js app (Next API routes are short-lived and can't hold a persistent WhatsApp socket). Talks to the Next app over a small local HTTP API — see README.md.",
   "type": "commonjs",
   "main": "index.js",
-  "scripts": { "start": "node -r ./media-guard.cjs index.js" },
+  "scripts": { "start": "node index.js" },
   "dependencies": {
     "@supabase/supabase-js": "^2.47.0",
     "@whiskeysockets/baileys": "^6.7.9",
