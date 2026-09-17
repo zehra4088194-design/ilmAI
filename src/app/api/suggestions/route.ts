@@ -10,7 +10,7 @@ import { sendAdminNotification } from '@/lib/adminMail';
 // Deliberately NOT Brevo — Brevo is reserved for the app's own transactional emails, not internal
 // notifications like this one.
 const SUGGESTION_EMAIL =
-  process.env.SUGGESTION_EMAIL || process.env.MISTAKE_REPORT_EMAIL || process.env.CONTACT_EMAIL || 'ilmai.study1@gmail.com';
+  process.env.SUGGESTION_EMAIL || process.env.MISTAKE_REPORT_EMAIL || process.env.CONTACT_EMAIL || 'support@ilmai.study';
 
 const MAX_MESSAGE_LENGTH = 4000;
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // keep email attachments small/deliverable
