@@ -15,6 +15,7 @@ export default async function AdminSettingsPage() {
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="outline"><Link href="/admin/settings/curriculum">Curriculum / Smart Book</Link></Button>
           <Button asChild variant="outline"><Link href="/admin/teacher-plans">Teacher Plans & Student Limits</Link></Button>
+          <Button asChild variant="outline"><Link href="/admin/institution-plans">Institution Student Plans</Link></Button>
         </div>
       </div>
       <PlatformSettingsForm initialSettings={settings} />
