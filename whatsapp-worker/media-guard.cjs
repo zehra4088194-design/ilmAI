@@ -1,8 +1,7 @@
-const fs = require('fs');
 const path = require('path');
 const Module = require('module');
 
-// CEO WhatsApp forwarding has been retired. Ignore even a stale VPS env value at runtime.
+// Retire the private CEO WhatsApp destination even when an old VPS env variable is still present.
 delete process.env.WHATSAPP_CEO_NUMBER;
 
 const target = path.resolve(__dirname, 'index.js');
@@ -12,12 +11,8 @@ const SAFE_HELPERS = `
 const WHATSAPP_ADMIN_EMAIL = process.env.WHATSAPP_ADMIN_EMAIL || process.env.CONTACT_EMAIL || process.env.SUGGESTION_EMAIL || 'ilmai.study1@gmail.com';
 
 async function sendAdminHandoffEmail({ senderNumber, senderName, topic, message, requestedAction, attachment }) {
-  if (!APP_BASE_URL) {
-    console.error('[whatsapp-worker] WHATSAPP_APP_BASE_URL is not configured; admin email skipped.');
-    return false;
-  }
-  if (!WORKER_SECRET) {
-    console.error('[whatsapp-worker] WHATSAPP_WORKER_SECRET is not configured; admin email skipped.');
+  if (!APP_BASE_URL || !WORKER_SECRET) {
+    console.error('[whatsapp-worker] App URL/worker secret missing; admin email skipped.');
     return false;
   }
 
@@ -34,7 +29,7 @@ async function sendAdminHandoffEmail({ senderNumber, senderName, topic, message,
       form.append('attachment', blob, attachment.filename || 'whatsapp-attachment');
     }
 
-    const response = await fetch(\`${APP_BASE_URL}/api/internal/whatsapp/handoff\`, {
+    const response = await fetch(\`\${APP_BASE_URL}/api/internal/whatsapp/handoff\`, {
       method: 'POST',
       headers: { 'x-whatsapp-worker-secret': WORKER_SECRET },
       body: form,
@@ -61,7 +56,7 @@ Module.prototype._compile = function patchedCompile(content, filename) {
 
   let next = content;
 
-  // Do not allow the old CEO JID to be constructed, even if a stale environment variable exists.
+  // The old source constructs CEO_JID from WHATSAPP_CEO_NUMBER. Force it to null at runtime.
   next = next.replace(
     /const CEO_JID = toJid\(process\.env\.WHATSAPP_CEO_NUMBER \|\| ''\);/,
     'const CEO_JID = null;'
@@ -72,7 +67,7 @@ Module.prototype._compile = function patchedCompile(content, filename) {
     `const PAYMENT_PROOF_BUCKET = 'jazzcash-payment-proofs';\n${SAFE_HELPERS}`
   );
 
-  // Replace the old WhatsApp-to-CEO text notification with the internal email bridge.
+  // Old CEO notification -> internal email bridge.
   const notifyStart = next.indexOf('async function notifyCEOOfHandoff(');
   const notifyEnd = next.indexOf('\nif (!WORKER_SECRET)', notifyStart);
   if (notifyStart !== -1 && notifyEnd !== -1) {
@@ -82,7 +77,7 @@ Module.prototype._compile = function patchedCompile(content, filename) {
       next.slice(notifyEnd);
   }
 
-  // Replace the old media forwarder with the same email bridge, including the real attachment.
+  // Old CEO media forwarder -> internal email bridge with the original attachment.
   const mediaStart = next.indexOf('async function forwardMediaToCEO(');
   const mediaEnd = next.indexOf('\nasync function handlePossiblePaymentMessage', mediaStart);
   if (mediaStart !== -1 && mediaEnd !== -1) {
@@ -92,6 +87,5 @@ Module.prototype._compile = function patchedCompile(content, filename) {
       next.slice(mediaEnd);
   }
 
-  // No old media-guard snippet / direct WhatsApp CEO escalation is injected anymore.
   return originalCompile.call(this, next, filename);
 };
