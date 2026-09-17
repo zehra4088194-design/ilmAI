@@ -9,7 +9,7 @@ import { sendAdminNotification } from '@/lib/adminMail';
 // so this address never appears in any client-bundled JS/HTML. Deliberately NOT Brevo — Brevo is
 // reserved for the app's own transactional emails (auth, reminders), not internal notifications
 // like this one. See ResourceMistakeReportForm for the client side.
-const MISTAKE_REPORT_EMAIL = process.env.MISTAKE_REPORT_EMAIL || 'ilmai.study1@gmail.com';
+const MISTAKE_REPORT_EMAIL = process.env.MISTAKE_REPORT_EMAIL || 'support@ilmai.study';
 
 const feedbackSchema = z.object({
   kind: z.enum(['mistake', 'suggestion']).optional().default('mistake'),
