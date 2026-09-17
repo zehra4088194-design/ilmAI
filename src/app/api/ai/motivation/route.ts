@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { gatewayChat, GatewayError } from '@/lib/ai/gateway';
+import { gatewayChat } from '@/lib/ai/gateway';
 import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
 import { checkAiMessageLimit, consumeAiCredits, getConfiguredLimitExceededMessage } from '@/lib/rate-limit';
 import type { SubscriptionTier } from '@/types';
@@ -34,13 +34,6 @@ function parseQuotes(text: string): string[] {
     // uses the deterministic local last-resort quotes below.
   }
   return [];
-}
-
-function publicMotivationError(error: unknown) {
-  if (error instanceof GatewayError && error.status === 429) {
-    return 'The AI services are currently at their usage limit. Please try again later.';
-  }
-  return 'Motivation could not be generated right now.';
 }
 
 export async function POST(req: NextRequest) {
@@ -81,14 +74,15 @@ export async function POST(req: NextRequest) {
       maxTokens: 900,
       temperature: 0.9,
     });
+
     const quotes = parseQuotes(result.text);
     if (!quotes.length) return NextResponse.json({ quotes: FALLBACK_QUOTES });
     await consumeAiCredits(user.id, tier, 'motivation');
     return NextResponse.json({ quotes });
   } catch (error) {
     console.error('Motivation generation error:', error);
-    // AI failure does not leave the dashboard blank; deterministic fallback is
-    // only reached after gatewayChat has exhausted the configured AI chain.
-    return NextResponse.json({ quotes: FALLBACK_QUOTES, fallback: true, error: publicMotivationError(error) }, { status: 200 });
+    // gatewayChat has already exhausted the configured AI provider fallback chain.
+    // Keep the dashboard usable with deterministic local content.
+    return NextResponse.json({ quotes: FALLBACK_QUOTES, fallback: true }, { status: 200 });
   }
 }
