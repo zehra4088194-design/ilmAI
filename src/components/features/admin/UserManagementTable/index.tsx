@@ -14,6 +14,9 @@ interface AdminUser {
   full_name: string | null;
   email: string;
   username: string | null;
+  role: string | null;
+  institution_names: string[];
+  institution_display: string;
   sponsored_institution_name: string | null;
   sponsored_institution_type: 'school' | 'college' | null;
   subscription_tier: 'FREE' | 'PRO' | 'ELITE';
@@ -129,7 +132,7 @@ export function UserManagementTable() {
       <div className="relative max-w-sm">
         <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
         <Input
-          placeholder="Search by username, email, name, or school..."
+          placeholder="Search by username, email, name, school, or college..."
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           className="pl-9"
@@ -143,7 +146,9 @@ export function UserManagementTable() {
               <tr className="border-border border-b text-left">
                 <th className="p-4">Username</th>
                 <th className="p-4">Name</th>
+                <th className="p-4">Role</th>
                 <th className="p-4">Email</th>
+                <th className="p-4">Institution</th>
                 <th className="p-4">Signed up</th>
                 <th className="p-4">Sponsor</th>
                 <th className="p-4">Plan</th>
@@ -154,13 +159,13 @@ export function UserManagementTable() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="text-muted-foreground p-6 text-center">
+                  <td colSpan={10} className="text-muted-foreground p-6 text-center">
                     Loading...
                   </td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-muted-foreground p-6 text-center">
+                  <td colSpan={10} className="text-muted-foreground p-6 text-center">
                     No users found.
                   </td>
                 </tr>
@@ -171,7 +176,25 @@ export function UserManagementTable() {
                     <tr key={user.id} className="border-border/50 border-b align-top">
                       <td className="p-4 font-medium">{user.username ? `@${user.username}` : 'Not set'}</td>
                       <td className="p-4">{user.full_name || '—'}</td>
+                      <td className="p-4">
+                        <Badge variant="outline" className="capitalize">
+                          {user.role || 'unknown'}
+                        </Badge>
+                      </td>
                       <td className="text-muted-foreground p-4">{user.email}</td>
+                      <td className="p-4 text-xs">
+                        {user.institution_display === 'Independent (no institution)' ? (
+                          <span className="text-muted-foreground">Independent (no institution)</span>
+                        ) : (
+                          <div className="max-w-[240px] space-y-1">
+                            {user.institution_names.map((name) => (
+                              <div key={name} className="rounded-md bg-violet-500/10 px-2 py-1 font-medium">
+                                {name}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </td>
                       <td className="text-muted-foreground p-4 text-xs whitespace-nowrap">
                         {new Date(user.created_at).toLocaleDateString(undefined, {
                           day: 'numeric',
@@ -254,8 +277,8 @@ export function UserManagementTable() {
                             value={selection.institutionName}
                             disabled={selection.tier === 'FREE'}
                             onChange={(event) => updateSelection(user.id, { institutionName: event.target.value })}
-                            placeholder="School / college name"
-                            aria-label={`Institution name for ${user.email}`}
+                            placeholder="Sponsor school / college"
+                            aria-label={`Sponsor institution name for ${user.email}`}
                           />
                           <div className="flex flex-wrap gap-2">
                             <Button
