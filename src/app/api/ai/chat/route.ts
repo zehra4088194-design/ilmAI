@@ -9,14 +9,12 @@ import {
 } from '@/lib/ai/gateway';
 import { checkAiMessageLimit, checkAiSideChatLimit, consumeAiCredits, getConfiguredLimitExceededMessage } from '@/lib/rate-limit';
 import type { SubscriptionTier } from '@/types';
-import { getLocalSmallTalkResponse, shouldUseLocalSmallTalk } from '@/lib/ai/request-routing';
 import { buildSubjectTutorContext } from '@/lib/resources/subject-tutor-context';
 import { buildSubjectResourceRagContext } from '@/lib/resources/subject-resource-rag';
-import { getPlatformSettings } from '@/lib/platform-settings/server';
-import { getAdminAiProvider } from '@/lib/platform-settings/shared';
+import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
 
 export const runtime = 'nodejs';
-export const maxDuration = 30;
+export const maxDuration = 90;
 
 function describeAsker(profile: { role?: string | null; grade_level?: string | null; education_level?: string | null }) {
   const gradeNumber = (value?: string | null) => { const match = value?.match(/(\d{1,2})/); return match ? match[1] : null; };
@@ -81,6 +79,19 @@ ${subjectContext ? `\nSubject-specific source context:\n- Use the context below 
 \n${MARKDOWN_ANSWER_FORMAT_INSTRUCTION}`;
 }
 
+function publicGatewayError(error: GatewayError) {
+  if (error.status === 401 || error.status === 403) {
+    return 'The AI service is not configured correctly right now. Please try again later.';
+  }
+  if (error.status === 429) {
+    return 'The selected AI service has reached its current usage limit. Please try again later.';
+  }
+  if (error.status === 400) {
+    return 'The AI request was invalid. Please shorten the question or try again.';
+  }
+  return 'The selected AI service is temporarily unavailable. Please try again.';
+}
+
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
@@ -88,46 +99,64 @@ export async function POST(req: NextRequest) {
     if (!user) return new Response(JSON.stringify({ error: 'Login is required.' }), { status: 401 });
     const { data: profile } = await supabase.from('profiles').select('subscription_tier, role, grade_level, education_level').eq('id', user.id).single();
     const userTier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
-    const { message, history = [], provider: requestedProvider, subject, subjectId, source, pageLabel } = await req.json();
+    const { message, history = [], subject, subjectId, source, pageLabel } = await req.json();
     if (!message || typeof message !== 'string') return new Response(JSON.stringify({ error: 'A message is required.' }), { status: 400 });
-    if (shouldUseLocalSmallTalk(message)) {
-      const encoder = new TextEncoder(); const text = getLocalSmallTalkResponse(message, user.id);
-      const readableStream = new ReadableStream({ async start(controller) { for (let i = 0; i < text.length; i += 4) { controller.enqueue(encoder.encode(text.slice(i, i + 4))); await new Promise((r) => setTimeout(r, 8)); } controller.close(); } });
-      return new Response(readableStream, { headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Provider-Used': 'local', 'X-Fallback-Triggered': 'false' } });
-    }
-    const requested = typeof requestedProvider === 'string' ? requestedProvider : 'groq';
-    const assistantSelected = requested === 'groq' || requested === 'assistant';
+
     const tier: ModelTier = 'mini';
     const isSideChat = source === 'side_chat';
-    const platformSettings = await getPlatformSettings();
     const limitCheck = isSideChat ? await checkAiSideChatLimit(user.id, userTier) : await checkAiMessageLimit(user.id, userTier, 'ai_tutor');
     if (!limitCheck.success) return new Response(JSON.stringify({ error: await getConfiguredLimitExceededMessage(userTier, isSideChat ? 'Side chat' : 'AI Tutor') }), { status: 429 });
+
     const resolvedSubjectId = typeof subjectId === 'string' ? subjectId : null;
     const [localKnowledgeContext, resourceRagContext] = source === 'ai_tutor' ? await Promise.all([
       buildSubjectTutorContext({ subjectId: resolvedSubjectId, subjectName: typeof subject === 'string' ? subject : null, query: message }).catch((error) => { console.warn('Subject tutor context unavailable:', error); return null; }),
       buildSubjectResourceRagContext({ subjectId: resolvedSubjectId, query: message }),
     ]) : [null, null];
     const subjectContext = [localKnowledgeContext, resourceRagContext].filter(Boolean).join('\n\n') || null;
-    const adminProvider = getAdminAiProvider(platformSettings, isSideChat ? 'sideChat' : 'aiTutor') as AiProviderId;
-    const useAiTutorCostSafeChain = assistantSelected && source === 'ai_tutor';
-    const provider: AiProviderId = adminProvider === 'local' ? 'groq' : adminProvider;
+
+    // The browser may send UI metadata, but provider selection is server-owned.
+    // Never trust or honor a client-selected provider.
+    const provider: AiProviderId = await resolveAiRoutingProvider(isSideChat ? 'sideChat' : 'aiTutor');
     const messages = [
       { role: 'system' as const, content: buildSystemPrompt(typeof subject === 'string' ? subject : undefined, source, subjectContext, { pageLabel: typeof pageLabel === 'string' ? pageLabel : undefined, asker: profile ? describeAsker(profile) : undefined }) },
       ...history.filter((m: { role: string; content: string }) => m.content).map((m: { role: string; content: string }) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
       { role: 'user' as const, content: message },
     ];
-    let result;
-    if (useAiTutorCostSafeChain) {
-      try { result = await gatewayChat({ provider: 'groq', tier, messages, maxTokens: 2048, temperature: 0.7, strictProvider: true, routingPolicy: 'text' }); } catch (groqError) { console.warn('Groq unavailable for AI Tutor; trying local self-hosted model next:', groqError); }
-      if (!result) try { result = await gatewayChat({ provider: 'local', tier, messages, maxTokens: 1600, temperature: 0.55, strictProvider: true, routingPolicy: 'local' }); } catch (localError) { console.warn('Local AI Tutor also unavailable; falling back to admin chat provider:', localError); }
-    }
-    result ||= await gatewayChat({ provider, tier, messages, maxTokens: source === 'side_chat' ? 1100 : 2048, temperature: 0.7, strictProvider: true, routingPolicy: 'text' });
-    const encoder = new TextEncoder(); const text = result.text;
-    const readableStream = new ReadableStream({ async start(controller) { for (let i = 0; i < text.length; i += 4) { controller.enqueue(encoder.encode(text.slice(i, i + 4))); await new Promise((r) => setTimeout(r, 8)); } await consumeAiCredits(user.id, userTier, isSideChat ? 'side_chat' : 'ai_tutor'); controller.close(); } });
-    return new Response(readableStream, { headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Provider-Used': result.providerUsed, 'X-Fallback-Triggered': String(result.fallbackTriggered || (Boolean(requestedProvider) && result.providerUsed !== requestedProvider)) } });
+
+    const result = await gatewayChat({
+      provider,
+      tier,
+      messages,
+      maxTokens: isSideChat ? 1100 : 2048,
+      temperature: 0.7,
+      strictProvider: true,
+      routingPolicy: 'text',
+    });
+
+    const encoder = new TextEncoder();
+    const text = result.text;
+    const readableStream = new ReadableStream({
+      async start(controller) {
+        for (let i = 0; i < text.length; i += 4) {
+          controller.enqueue(encoder.encode(text.slice(i, i + 4)));
+          await new Promise((r) => setTimeout(r, 8));
+        }
+        await consumeAiCredits(user.id, userTier, isSideChat ? 'side_chat' : 'ai_tutor');
+        controller.close();
+      },
+    });
+    return new Response(readableStream, {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'X-Provider-Used': result.providerUsed,
+        'X-Fallback-Triggered': 'false',
+      },
+    });
   } catch (error) {
     console.error('AI chat error:', error);
-    if (error instanceof GatewayError) return new Response(JSON.stringify({ error: error.message }), { status: error.status === 401 || error.status === 403 ? 502 : 500 });
+    if (error instanceof GatewayError) {
+      return new Response(JSON.stringify({ error: publicGatewayError(error) }), { status: error.status >= 500 ? 502 : error.status });
+    }
     return new Response(JSON.stringify({ error: 'The AI response could not be generated. Please try again.' }), { status: 500 });
   }
 }
