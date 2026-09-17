@@ -32,17 +32,14 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
 }
 
 /**
- * Resolves which AiProviderId a gatewayChat({ strictProvider: true, ... }) call should use for a
- * given admin-configurable routing key, in one place — every AI feature should call this instead
- * of hardcoding a provider, so the /admin provider dropdowns actually control what runs.
- * 'local' isn't a real inference target for most routes (it needs a self-hosted model reachable
- * from the gateway), so it maps to 'groq' as the practical low-cost equivalent, matching the
- * convention already used by chat/resource-test/resource-summary/student-chat routes.
+ * Resolve the exact provider selected by the admin for a routing key.
+ * Never substitute a different provider here: if the selected provider is
+ * unavailable, the calling AI feature must surface an error rather than switch
+ * providers silently.
  */
 export async function resolveAiRoutingProvider(key: AiRoutingKey): Promise<AiProviderId> {
   const settings = await getPlatformSettings();
-  const adminProvider = getAdminAiProvider(settings, key);
-  return adminProvider === 'local' ? 'groq' : adminProvider;
+  return getAdminAiProvider(settings, key) as AiProviderId;
 }
 
 export async function savePlatformSettings(settings: PlatformSettings, updatedBy?: string) {
