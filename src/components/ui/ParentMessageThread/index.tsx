@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { CheckCheck, Send, MessageCircle, Trash2 } from 'lucide-react';
+import { CheckCheck, Send, MessageCircle, Trash2, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton';
@@ -8,6 +8,7 @@ import { ChatAttachmentButton } from '@/components/ui/ChatAttachmentButton';
 import { ChatAttachmentBubble } from '@/components/ui/ChatAttachmentBubble';
 import { cn } from '@/lib/utils/cn';
 import { toast } from 'sonner';
+import { useCalling } from '@/components/features/calling/CallProvider';
 
 interface Message {
   id: string;
@@ -43,6 +44,7 @@ export function ParentMessageThread({
   const [sending, setSending] = useState(false);
   const [open, setOpen] = useState(autoOpen);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const calling = useCalling();
 
   useEffect(() => {
     if (autoOpen) setOpen(true);
@@ -105,6 +107,40 @@ export function ParentMessageThread({
     }
   };
 
+  const callStudent = async () => {
+    if (!calling) {
+      toast.error('Calling is not ready yet.');
+      return;
+    }
+    if (calling.status !== 'idle') return;
+
+    try {
+      const response = await fetch(`/api/parent/messages?linkId=${linkId}`);
+      const json = await response.json();
+      if (!response.ok) throw new Error(json.error || 'The parent link could not be loaded.');
+      const firstMessage = json.messages?.[0];
+      if (firstMessage?.sender_id && firstMessage.sender_id !== currentUserId) {
+        await calling.startCall('consumer', 'consumer', {
+          userId: firstMessage.sender_id,
+          name: 'Linked student',
+          avatarUrl: null,
+        });
+        return;
+      }
+
+      const linkResponse = await fetch(`/api/parent/link?linkId=${linkId}`, { cache: 'no-store' });
+      const linkJson = await linkResponse.json();
+      if (!linkResponse.ok || !linkJson.student) throw new Error(linkJson.error || 'Linked student could not be found.');
+      await calling.startCall('consumer', 'consumer', {
+        userId: linkJson.student.id,
+        name: linkJson.student.full_name || 'Linked student',
+        avatarUrl: linkJson.student.avatar_url || null,
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'The call could not be started.');
+    }
+  };
+
   const send = async (file?: File) => {
     if (!text.trim() && !file) return;
     setSending(true);
@@ -126,7 +162,6 @@ export function ParentMessageThread({
         });
       }
       if (!res.ok) throw new Error();
-      // The next poll tick will pick it up; no optimistic append needed here.
     } catch {
       toast.error('The message could not be sent.');
       setText(content);
@@ -137,9 +172,16 @@ export function ParentMessageThread({
 
   if (!open) {
     return (
-      <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
-        <MessageCircle className="h-3.5 w-3.5" /> Message
-      </Button>
+      <div className="flex gap-2">
+        <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
+          <MessageCircle className="h-3.5 w-3.5" /> Message
+        </Button>
+        {calling && (
+          <Button variant="outline" size="sm" onClick={callStudent} disabled={calling.status !== 'idle'}>
+            <Phone className="h-3.5 w-3.5" /> Call
+          </Button>
+        )}
+      </div>
     );
   }
 
@@ -150,7 +192,20 @@ export function ParentMessageThread({
           <MessageCircle className="h-3.5 w-3.5" /> Live Chat
         </span>
         <div className="flex items-center gap-3">
+          {calling && (
+            <button
+              type="button"
+              onClick={callStudent}
+              disabled={calling.status !== 'idle'}
+              aria-label="Call linked student"
+              title="Call linked student"
+              className="text-muted-foreground hover:text-foreground disabled:opacity-50"
+            >
+              <Phone className="h-3.5 w-3.5" />
+            </button>
+          )}
           <button
+            type="button"
             onClick={clearChat}
             aria-label="Delete chat"
             title="Delete chat"
@@ -158,7 +213,7 @@ export function ParentMessageThread({
           >
             <Trash2 className="h-3.5 w-3.5" />
           </button>
-          <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground text-xs">
+          <button type="button" onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground text-xs">
             Close
           </button>
         </div>
