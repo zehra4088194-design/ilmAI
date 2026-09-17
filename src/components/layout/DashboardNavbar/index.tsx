@@ -9,6 +9,7 @@ import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
 import { NotificationBell } from '@/components/ui/NotificationBell';
 import { CreditBalancePill } from '@/components/features/ai-selector/CreditBalancePill';
+import { usePathname } from 'next/navigation';
 
 type DashboardNavbarProps = {
   mobileMenuOpen?: boolean;
@@ -32,6 +33,8 @@ export function DashboardNavbar({
   onToggleDesktopSidebar,
 }: DashboardNavbarProps = {}) {
   const { user } = useAuth();
+  const pathname = usePathname();
+  const isParentPortal = pathname === '/parent' || pathname?.startsWith('/parent/');
   const [uncontrolledMobileMenuOpen, setUncontrolledMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -136,7 +139,7 @@ export function DashboardNavbar({
         )}
       </div>
       <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-        <CreditBalancePill />
+        {!isParentPortal && <CreditBalancePill />}
         {user?.role === 'student' && (
           <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex">
             <Link href="/student-applications">
