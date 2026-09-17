@@ -3,23 +3,20 @@
  * see .env.oracle.example), so it's NOT managed here; this only keeps the standalone WhatsApp
  * worker (whatsapp-worker/, see its README.md) running 24/7, independent of the app container,
  * so redeploying the app never touches the linked WhatsApp session.
- *
- * If you're NOT using Coolify and run the Next.js app directly on the VPS instead, uncomment the
- * second app below.
  */
 module.exports = {
   apps: [
     {
       name: 'ilm-ai-whatsapp',
       cwd: __dirname + '/whatsapp-worker',
-      script: 'index.js',
-      // Baileys keeps a live WebSocket + writes credential files — a single instance only.
+      // Always load the safety/runtime bridge so PM2 cannot bypass the email-only admin handoff.
+      script: 'node',
+      args: '-r ./media-guard.cjs index.js',
       instances: 1,
       exec_mode: 'fork',
       autorestart: false,
-      // PM2 auto-restart is disabled: the worker handles its own reconnects (3s delay for
-      // network blips) and exits cleanly (exit code 0) on 515 / loggedOut so PM2 doesn't
-      // kick in and create a restart loop that prevents the QR from ever being scanned.
+      // The worker handles normal reconnects itself and exits cleanly on invalid/logged-out
+      // sessions so a PM2 restart loop cannot prevent QR relinking.
       max_restarts: 0,
       restart_delay: 0,
       max_memory_restart: '300M',
@@ -31,7 +28,7 @@ module.exports = {
       time: true,
     },
 
-    // Uncomment if the Next.js app runs directly via PM2 instead of Coolify's Docker deploy:
+    // Uncomment if the Next.js app runs directly via PM2 instead of Coolify's Docker deploy.
     // {
     //   name: 'ilm-ai-web',
     //   cwd: __dirname,
