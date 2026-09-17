@@ -7,7 +7,7 @@ import { parseAiJson } from '@/lib/utils/json-extract';
 import type { SubscriptionTier } from '@/types';
 
 export const runtime = 'nodejs';
-export const maxDuration = 60;
+export const maxDuration = 90;
 
 type WrittenQuestion = {
   id: string;
@@ -40,41 +40,6 @@ type McqExplanation = {
 
 function clampScore(value: unknown, maxMarks: number) {
   return Math.max(0, Math.min(Number(value) || 0, maxMarks));
-}
-
-function gradeShortAnswerInternally(question: WrittenQuestion, answer: string): WrittenEvaluation {
-  const keyPoints = (question.keyPoints || []).map((point) => point.toLowerCase().trim()).filter(Boolean);
-  const normalized = answer.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
-  const maxMarks = Number(question.marks) || 0;
-
-  if (!normalized) {
-    return {
-      id: question.id,
-      score: 0,
-      grade: 'F',
-      feedback: '### Not attempted\n- No written answer was provided.',
-      provider: 'local',
-    };
-  }
-
-  const matched = keyPoints.filter((point) => {
-    const words = point.split(/\s+/).filter((word) => word.length > 3);
-    if (normalized.includes(point)) return true;
-    if (!words.length) return false;
-    const hits = words.filter((word) => normalized.includes(word)).length;
-    return hits / words.length >= 0.6;
-  });
-  const coverage = keyPoints.length ? matched.length / keyPoints.length : Math.min(1, normalized.split(/\s+/).length / 30);
-  const score = clampScore(maxMarks * coverage, maxMarks);
-  const missing = keyPoints.filter((point) => !matched.includes(point)).slice(0, 2);
-
-  return {
-    id: question.id,
-    score,
-    grade: score >= maxMarks * 0.75 ? 'Good' : score >= maxMarks * 0.45 ? 'Partial' : 'Needs work',
-    feedback: `### ${score >= maxMarks * 0.75 ? 'Concept mostly correct' : 'Partial concept match'}\n- Matched ${matched.length}/${Math.max(1, keyPoints.length)} key point(s).\n${missing.length ? `- Missing: **${missing.join('; ')}**.` : '- Main required concept is covered.'}`,
-    provider: 'local',
-  };
 }
 
 async function gradeWrittenBatch({
@@ -127,7 +92,7 @@ Clamp every score between 0 and that question's marks. Award partial marks when 
 
   const parsed = parseAiJson<Array<Partial<WrittenEvaluation>>>(result.text, []);
   if (!Array.isArray(parsed) || parsed.length !== questions.length) {
-    throw new Error(`${provider} returned invalid written grading response.`);
+    throw new Error('The selected AI provider returned invalid written grading data.');
   }
 
   return questions.map((question, index) => {
@@ -187,14 +152,13 @@ async function explainMcqs({
   });
 
   const parsed = parseAiJson<McqExplanation[]>(result.text, []);
-  return Array.isArray(parsed)
-    ? parsed
-        .map((item) => ({
-          index: Number(item.index),
-          explanation: String(item.explanation || '').trim(),
-        }))
-        .filter((item) => Number.isInteger(item.index) && item.explanation)
-    : [];
+  if (!Array.isArray(parsed)) throw new Error('The selected AI provider returned invalid MCQ explanations.');
+  return parsed
+    .map((item) => ({
+      index: Number(item.index),
+      explanation: String(item.explanation || '').trim(),
+    }))
+    .filter((item) => Number.isInteger(item.index) && item.explanation);
 }
 
 export async function POST(req: NextRequest) {
@@ -216,20 +180,18 @@ export async function POST(req: NextRequest) {
     const shortQuestions = writtenQuestions.filter((question) => question.section !== 'long');
     const longQuestions = writtenQuestions.filter((question) => question.section === 'long');
 
-    // Whichever provider /admin has selected for "Grading" now drives every grading sub-call —
-    // previously these were hardcoded to local/groq/deepseek independent of the admin dropdown.
+    // All grading sub-calls use the single provider selected by the admin.
+    // There is intentionally no local grading fallback when that provider fails.
     const gradingProvider = await resolveAiRoutingProvider('grading');
     const [mcqExplanations, shortEvals, longEvals] = await Promise.all([
-      explainMcqs({ mcqs: Array.isArray(mcqs) ? mcqs : [], subjectName, className, provider: gradingProvider }).catch(
-        () => []
-      ),
+      explainMcqs({ mcqs: Array.isArray(mcqs) ? mcqs : [], subjectName, className, provider: gradingProvider }),
       gradeWrittenBatch({
         questions: shortQuestions,
         answers,
         subjectName,
         className,
         provider: gradingProvider,
-      }).catch(() => shortQuestions.map((question) => gradeShortAnswerInternally(question, answers[question.id] || ''))),
+      }),
       gradeWrittenBatch({
         questions: longQuestions,
         answers,
@@ -251,6 +213,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ status: 'success', data: { written: evals, mcqExplanations } });
   } catch (error) {
     console.error('Grade test error:', error);
-    return NextResponse.json({ status: 'error', error: 'Grading failed' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: 'Grading could not be completed. Please try again.' }, { status: 502 });
   }
 }
