@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
 import {
   checkUniversityFeatureLimit,
   consumeUniversityFeatureCredits,
   getUniversityLimitExceededMessage,
 } from '@/lib/rate-limit';
-import { gatewayChat } from '@/lib/ai/gateway';
+import { gatewayChat, GatewayError } from '@/lib/ai/gateway';
 import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
 import { parseAiJson } from '@/lib/utils/json-extract';
+import { createClient } from '@/lib/supabase/server';
 import type { SubscriptionTier } from '@/types';
 
 export const runtime = 'nodejs';
+export const maxDuration = 60;
 
 const STYLES = ['APA 7th Edition', 'MLA 9th Edition', 'Harvard', 'IEEE', 'Chicago'] as const;
 type CitationStyle = (typeof STYLES)[number];
@@ -60,17 +61,24 @@ Rules:
       in_text?: string;
       full_reference?: string;
       verification_note?: string;
-    }>;
-  }>(result.text, {});
+    }> | undefined;
+  }>(result.text, null);
+
+  if (!parsed?.citations || parsed.citations.length !== styles.length) {
+    throw new GatewayError('The selected AI service returned incomplete citation data.', 502);
+  }
 
   return styles.map((style): CitationDraft => {
     const citation = parsed.citations?.find((item) => item.style === style);
+    if (!citation?.in_text || !citation.full_reference) {
+      throw new GatewayError('The selected AI service returned incomplete citation data.', 502);
+    }
     return {
       style,
-      in_text: citation?.in_text || 'Citation draft unavailable',
-      full_reference: citation?.full_reference || `${input}. Verify source details before submission.`,
+      in_text: citation.in_text.trim(),
+      full_reference: citation.full_reference.trim(),
       verification_note:
-        citation?.verification_note || 'Verify author, date, title, publisher/journal, DOI/URL before submission.',
+        citation.verification_note?.trim() || 'Verify author, date, title, publisher/journal, DOI/URL before submission.',
     };
   });
 }
@@ -121,9 +129,10 @@ export async function POST(req: NextRequest) {
       data: styles.length > 0 ? { citations } : citations[0],
     });
   } catch (error) {
-    return NextResponse.json(
-      { status: 'error', error: error instanceof Error ? error.message : 'The citation could not be generated.' },
-      { status: 500 }
-    );
+    console.error('Citation generation error:', error);
+    if (error instanceof GatewayError) {
+      return NextResponse.json({ status: 'error', error: 'The selected AI service could not generate the citation. Please try again.' }, { status: 502 });
+    }
+    return NextResponse.json({ status: 'error', error: 'The citation could not be generated. Please try again.' }, { status: 500 });
   }
 }
