@@ -1,4 +1,13 @@
-﻿import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  AbortMultipartUploadCommand,
+  CompleteMultipartUploadCommand,
+  CreateMultipartUploadCommand,
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+  UploadPartCommand,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 type R2Config = {
@@ -57,7 +66,9 @@ function getSecondaryConfig(): R2Config | null {
   const secretAccessKey = process.env.SECONDARY_STORAGE_SECRET_ACCESS_KEY;
   const bucket = process.env.SECONDARY_STORAGE_BUCKET;
   const region = process.env.SECONDARY_STORAGE_REGION || process.env.OBJECT_STORAGE_REGION || 'auto';
-  const forcePathStyle = Boolean(process.env.SECONDARY_STORAGE_FORCE_PATH_STYLE || process.env.OBJECT_STORAGE_FORCE_PATH_STYLE);
+  const forcePathStyle = Boolean(
+    process.env.SECONDARY_STORAGE_FORCE_PATH_STYLE || process.env.OBJECT_STORAGE_FORCE_PATH_STYLE
+  );
   return endpoint && accessKeyId && secretAccessKey && bucket
     ? { accessKeyId, secretAccessKey, bucket, endpoint, region, forcePathStyle }
     : null;
@@ -134,7 +145,9 @@ function getChatConfig(): R2Config | null {
   const secretAccessKey = process.env.CHAT_STORAGE_SECRET_ACCESS_KEY;
   const bucket = process.env.CHAT_STORAGE_BUCKET;
   const region = process.env.CHAT_STORAGE_REGION || process.env.OBJECT_STORAGE_REGION || 'auto';
-  const forcePathStyle = Boolean(process.env.CHAT_STORAGE_FORCE_PATH_STYLE || process.env.OBJECT_STORAGE_FORCE_PATH_STYLE);
+  const forcePathStyle = Boolean(
+    process.env.CHAT_STORAGE_FORCE_PATH_STYLE || process.env.OBJECT_STORAGE_FORCE_PATH_STYLE
+  );
   return endpoint && accessKeyId && secretAccessKey && bucket
     ? { accessKeyId, secretAccessKey, bucket, endpoint, region, forcePathStyle }
     : null;
@@ -269,6 +282,61 @@ export async function putR2Stream(
       ContentType: options.contentType,
       ContentLength: options.contentLength,
     })
+  );
+}
+
+export async function createR2MultipartUpload(key: string, contentType: string, bucket?: string) {
+  const config = resolveConfig(bucket);
+  if (!config) throw new Error('R2 is not configured.');
+  const result = await getClient(config).send(
+    new CreateMultipartUploadCommand({ Bucket: config.bucket, Key: key, ContentType: contentType })
+  );
+  if (!result.UploadId) throw new Error('Storage did not return a multipart upload ID.');
+  return result.UploadId;
+}
+
+export async function uploadR2Part(key: string, uploadId: string, partNumber: number, body: Buffer, bucket?: string) {
+  const config = resolveConfig(bucket);
+  if (!config) throw new Error('R2 is not configured.');
+  const result = await getClient(config).send(
+    new UploadPartCommand({
+      Bucket: config.bucket,
+      Key: key,
+      UploadId: uploadId,
+      PartNumber: partNumber,
+      Body: body,
+      ContentLength: body.length,
+    })
+  );
+  if (!result.ETag) throw new Error(`Storage did not return an ETag for part ${partNumber}.`);
+  return result.ETag;
+}
+
+export async function completeR2MultipartUpload(
+  key: string,
+  uploadId: string,
+  parts: Array<{ partNumber: number; etag: string }>,
+  bucket?: string
+) {
+  const config = resolveConfig(bucket);
+  if (!config) throw new Error('R2 is not configured.');
+  await getClient(config).send(
+    new CompleteMultipartUploadCommand({
+      Bucket: config.bucket,
+      Key: key,
+      UploadId: uploadId,
+      MultipartUpload: {
+        Parts: parts.map((part) => ({ PartNumber: part.partNumber, ETag: part.etag })),
+      },
+    })
+  );
+}
+
+export async function abortR2MultipartUpload(key: string, uploadId: string, bucket?: string) {
+  const config = resolveConfig(bucket);
+  if (!config) return;
+  await getClient(config).send(
+    new AbortMultipartUploadCommand({ Bucket: config.bucket, Key: key, UploadId: uploadId })
   );
 }
 
@@ -442,9 +510,13 @@ export async function getR2SignedPutUrl(key: string, contentType: string, bucket
   const config = resolveConfig(bucket);
   if (!config) throw new Error('R2 is not configured.');
   if (!key || key.includes('..')) throw new Error('Invalid stored object key.');
-  return getSignedUrl(getClient(config), new PutObjectCommand({ Bucket: config.bucket, Key: key, ContentType: contentType }), {
-    expiresIn,
-  });
+  return getSignedUrl(
+    getClient(config),
+    new PutObjectCommand({ Bucket: config.bucket, Key: key, ContentType: contentType }),
+    {
+      expiresIn,
+    }
+  );
 }
 
 export async function deleteR2Object(key: string, bucket?: string) {

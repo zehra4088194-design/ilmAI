@@ -47,7 +47,7 @@ const SEARCH_STOP_WORDS = new Set([
   'where',
 ]);
 
-async function getDynamicSearchLinks(message: string) {
+async function getDynamicSearchLinks(message: string, gradeLevel?: string) {
   const words = Array.from(
     new Set(
       message
@@ -60,7 +60,8 @@ async function getDynamicSearchLinks(message: string) {
 
   const responses = await Promise.allSettled(
     terms.map(async (term) => {
-      const response = await fetch(`/api/search?q=${encodeURIComponent(term)}`);
+      const gradeQuery = gradeLevel ? `&gradeLevel=${encodeURIComponent(gradeLevel)}` : '';
+      const response = await fetch(`/api/search?q=${encodeURIComponent(term)}${gradeQuery}`);
       if (!response.ok) return [];
       const json = await response.json();
       return (json.results || []) as SearchLinkResult[];
@@ -165,7 +166,7 @@ export function SideChatWidget() {
     setMessages((prev) => [...prev, userMsg, assistantMsg]);
     setIsLoading(true);
 
-    void getDynamicSearchLinks(text).then((dynamicLinks) => {
+    void getDynamicSearchLinks(text, user.gradeLevel).then((dynamicLinks) => {
       if (!dynamicLinks.length) return;
       setMessages((current) =>
         current.map((message) => {

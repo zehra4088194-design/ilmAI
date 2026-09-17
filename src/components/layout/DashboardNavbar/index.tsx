@@ -54,7 +54,8 @@ export function DashboardNavbar({
     }
     const timer = window.setTimeout(async () => {
       try {
-        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        const gradeQuery = user?.gradeLevel ? `&gradeLevel=${encodeURIComponent(user.gradeLevel)}` : '';
+        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}${gradeQuery}`);
         const json = await response.json();
         setSearchResults(json.results || []);
         setSearchOpen(true);

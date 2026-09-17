@@ -5,19 +5,25 @@ import { searchAlgoliaCatalog } from '@/lib/search/algolia';
 
 export async function GET(req: NextRequest) {
   const query = req.nextUrl.searchParams.get('q')?.trim() || '';
+  const gradeLevel = req.nextUrl.searchParams.get('gradeLevel')?.trim() || '';
   if (query.length < 2) return NextResponse.json({ results: [] });
 
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const algoliaResults = await searchAlgoliaCatalog(query);
+  // Algolia's public index is not guaranteed to contain grade facets. Use the
+  // relational catalog whenever a class is selected so other classes cannot
+  // leak into navbar/side-chat results.
+  const algoliaResults = gradeLevel ? null : await searchAlgoliaCatalog(query);
   if (algoliaResults) {
     const [{ data: notes }, { data: collegeLectures }, { data: collegeResources }] = await Promise.all([
       user
         ? supabase
             .from('notes')
-            .select('id, title')
+            .select(
+              'id, title, subject:subjects!notes_subject_id_fkey(grade_levels), chapter:chapters!notes_chapter_id_fkey(grade_levels)'
+            )
             .eq('user_id', user.id)
             .ilike('title', `%${query}%`)
             .order('updated_at', { ascending: false })
@@ -39,13 +45,20 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       results: [
         ...algoliaResults.map(({ objectID: _objectID, ...result }) => result),
-        ...(notes || []).map((note) => ({
-          id: note.id,
-          type: 'note' as const,
-          name: note.title,
-          subtitle: 'My note',
-          href: `/notes?search=${encodeURIComponent(note.title)}`,
-        })),
+        ...(notes || [])
+          .filter(
+            (note: any) =>
+              !gradeLevel ||
+              note.subject?.grade_levels?.includes(gradeLevel) ||
+              note.chapter?.grade_levels?.includes(gradeLevel)
+          )
+          .map((note) => ({
+            id: note.id,
+            type: 'note' as const,
+            name: note.title,
+            subtitle: 'My note',
+            href: `/notes?search=${encodeURIComponent(note.title)}`,
+          })),
         ...(collegeLectures || []).map((lecture) => ({
           id: lecture.id,
           type: 'lecture' as const,
@@ -65,6 +78,23 @@ export async function GET(req: NextRequest) {
       ].slice(0, 20),
     });
   }
+  let subjectsQuery = supabase
+    .from('subjects')
+    .select('id, name, slug, grade_levels')
+    .eq('is_active', true)
+    .ilike('name', `%${query}%`)
+    .order('name')
+    .limit(8);
+  if (gradeLevel) subjectsQuery = subjectsQuery.contains('grade_levels', [gradeLevel]);
+
+  let chaptersQuery = supabase
+    .from('chapters')
+    .select('id, name, slug, grade_levels, subjects(id, name, slug, grade_levels)')
+    .ilike('name', `%${query}%`)
+    .order('name')
+    .limit(8);
+  if (gradeLevel) chaptersQuery = chaptersQuery.contains('grade_levels', [gradeLevel]);
+
   const [
     { data: subjects },
     { data: chapters },
@@ -75,35 +105,28 @@ export async function GET(req: NextRequest) {
     { data: collegeLectures },
     { data: collegeResources },
   ] = await Promise.all([
-    supabase
-      .from('subjects')
-      .select('id, name, slug')
-      .eq('is_active', true)
-      .ilike('name', `%${query}%`)
-      .order('name')
-      .limit(8),
-    supabase
-      .from('chapters')
-      .select('id, name, slug, subjects(id, name, slug)')
-      .ilike('name', `%${query}%`)
-      .order('name')
-      .limit(8),
+    subjectsQuery,
+    chaptersQuery,
     createServiceClient()
       .from('library_resources')
-      .select('id, title, resource_type, book_title, content_section, subjects(name, slug), chapters(name, slug)')
+      .select(
+        'id, title, resource_type, book_title, content_section, subjects(name, slug, grade_levels), chapters(name, slug, grade_levels)'
+      )
       .ilike('title', `%${query}%`)
       .order('created_at', { ascending: false })
       .limit(8),
     supabase
       .from('lectures')
-      .select('id, title, chapters(name, slug, subjects(name, slug))')
+      .select('id, title, chapters(name, slug, grade_levels, subjects(name, slug, grade_levels))')
       .ilike('title', `%${query}%`)
       .order('created_at', { ascending: false })
       .limit(8),
     user
       ? supabase
           .from('notes')
-          .select('id, title')
+          .select(
+            'id, title, subject:subjects!notes_subject_id_fkey(grade_levels), chapter:chapters!notes_chapter_id_fkey(grade_levels)'
+          )
           .eq('user_id', user.id)
           .ilike('title', `%${query}%`)
           .order('updated_at', { ascending: false })
@@ -111,7 +134,7 @@ export async function GET(req: NextRequest) {
       : Promise.resolve({ data: [] as Array<{ id: string; title: string }> }),
     createServiceClient()
       .from('past_papers')
-      .select('id, year, paper_type, subjects(name, slug), chapters(name, slug)')
+      .select('id, year, paper_type, subjects(name, slug, grade_levels), chapters(name, slug, grade_levels)')
       .order('created_at', { ascending: false })
       .limit(60),
     supabase
@@ -127,22 +150,28 @@ export async function GET(req: NextRequest) {
       .order('created_at', { ascending: false })
       .limit(8),
   ]);
+  const matchesGrade = (item: any) =>
+    !gradeLevel ||
+    item.grade_levels?.includes(gradeLevel) ||
+    item.subjects?.grade_levels?.includes(gradeLevel) ||
+    item.chapters?.grade_levels?.includes(gradeLevel) ||
+    item.chapters?.subjects?.grade_levels?.includes(gradeLevel);
 
-  const subjectResults = (subjects || []).map((subject) => ({
+  const subjectResults = (subjects || []).filter(matchesGrade).map((subject) => ({
     id: subject.id,
     type: 'subject' as const,
     name: subject.name,
     subtitle: 'Subject',
     href: `/study/${subject.slug}`,
   }));
-  const chapterResults = (chapters || []).map((chapter: any) => ({
+  const chapterResults = (chapters || []).filter(matchesGrade).map((chapter: any) => ({
     id: chapter.id,
     type: 'chapter' as const,
     name: chapter.name,
     subtitle: chapter.subjects?.name ? `Chapter in ${chapter.subjects.name}` : 'Chapter',
     href: chapter.subjects?.slug ? `/study/${chapter.subjects.slug}/${chapter.slug}` : '/study',
   }));
-  const resourceResults = (resources || []).map((resource: any) => {
+  const resourceResults = (resources || []).filter(matchesGrade).map((resource: any) => {
     const resourceType = resource.resource_type === 'notes' ? 'notes' : 'text_book';
     const params = new URLSearchParams({ type: resourceType, resource: resource.id });
     if (resource.book_title) params.set('book', resource.book_title);
@@ -158,7 +187,7 @@ export async function GET(req: NextRequest) {
       href: `/library/${resource.subjects?.slug || 'general'}?${params}`,
     };
   });
-  const lectureResults = (lectures || []).map((lecture: any) => ({
+  const lectureResults = (lectures || []).filter(matchesGrade).map((lecture: any) => ({
     id: lecture.id,
     type: 'lecture' as const,
     name: lecture.title,
@@ -168,7 +197,7 @@ export async function GET(req: NextRequest) {
         ? `/lectures/${lecture.chapters.subjects.slug}/${lecture.chapters.slug}?lecture=${encodeURIComponent(lecture.id)}`
         : `/lectures?search=${encodeURIComponent(lecture.title)}`,
   }));
-  const noteResults = (notes || []).map((note: any) => ({
+  const noteResults = (notes || []).filter(matchesGrade).map((note: any) => ({
     id: note.id,
     type: 'note' as const,
     name: note.title,
@@ -177,6 +206,7 @@ export async function GET(req: NextRequest) {
   }));
   const normalizedQuery = query.toLocaleLowerCase();
   const pastPaperResults = (pastPapers || [])
+    .filter(matchesGrade)
     .map((paper: any) => {
       const subjectName = paper.subjects?.name || 'General';
       const chapterName = paper.chapters?.name || 'Full Syllabus';
@@ -196,22 +226,26 @@ export async function GET(req: NextRequest) {
     .filter((item) => item.matches)
     .map((item) => item.result)
     .slice(0, 8);
-  const collegeLectureResults = (collegeLectures || []).map((lecture: any) => ({
-    id: lecture.id,
-    type: 'lecture' as const,
-    name: lecture.title,
-    subtitle: [lecture.course_name, lecture.chapter_title].filter(Boolean).join(' - ') || 'College lecture',
-    href: `/college/dashboard?search=${encodeURIComponent(lecture.title)}`,
-  }));
-  const collegeResourceResults = (collegeResources || []).map((resource: any) => ({
-    id: resource.id,
-    type: 'resource' as const,
-    name: resource.title,
-    subtitle:
-      [resource.course_name, resource.chapter_title, resource.resource_type].filter(Boolean).join(' - ') ||
-      'College resource',
-    href: `/college/dashboard?search=${encodeURIComponent(resource.title)}`,
-  }));
+  const collegeLectureResults = gradeLevel
+    ? []
+    : (collegeLectures || []).map((lecture: any) => ({
+        id: lecture.id,
+        type: 'lecture' as const,
+        name: lecture.title,
+        subtitle: [lecture.course_name, lecture.chapter_title].filter(Boolean).join(' - ') || 'College lecture',
+        href: `/college/dashboard?search=${encodeURIComponent(lecture.title)}`,
+      }));
+  const collegeResourceResults = gradeLevel
+    ? []
+    : (collegeResources || []).map((resource: any) => ({
+        id: resource.id,
+        type: 'resource' as const,
+        name: resource.title,
+        subtitle:
+          [resource.course_name, resource.chapter_title, resource.resource_type].filter(Boolean).join(' - ') ||
+          'College resource',
+        href: `/college/dashboard?search=${encodeURIComponent(resource.title)}`,
+      }));
 
   return NextResponse.json({
     results: [

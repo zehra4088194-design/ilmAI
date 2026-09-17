@@ -67,15 +67,22 @@ export function RestLibraryAdmin() {
   const [songForm, setSongForm] = useState({ playlist_id: '', title: '', artist: '', youtube_url: '', order_index: 0 });
   const [saving, setSaving] = useState(false);
   const [uploadPct, setUploadPct] = useState<number | null>(null);
-  const [pendingUpload, setPendingUpload] = useState<{ uri: string; size: number; contentType: string; durationSeconds: number | null; fileName: string } | null>(null);
+  const [pendingUpload, setPendingUpload] = useState<{
+    uri: string;
+    size: number;
+    contentType: string;
+    durationSeconds: number | null;
+    fileName: string;
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const sortedPlaylists = useMemo(
-    () => playlists.map((playlist) => ({
-      ...playlist,
-      playlist_songs: [...(playlist.playlist_songs || [])].sort((a, b) => a.order_index - b.order_index),
-    })),
-    [playlists],
+    () =>
+      playlists.map((playlist) => ({
+        ...playlist,
+        playlist_songs: [...(playlist.playlist_songs || [])].sort((a, b) => a.order_index - b.order_index),
+      })),
+    [playlists]
   );
 
   const load = useCallback(async () => {
@@ -124,40 +131,82 @@ export function RestLibraryAdmin() {
     if (!file) return;
     setPendingUpload(null);
     setUploadPct(0);
+    let multipart: { key: string; uploadId: string } | null = null;
     try {
       const [durationSeconds] = await Promise.all([readAudioDuration(file)]);
 
-      // Upload through our own origin to avoid browser-to-B2 CORS failures.
-      const uploaded = await new Promise<{ uri: string; size: number; contentType: string }>((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', '/api/admin/audio-files/upload');
-        xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
-        xhr.setRequestHeader('X-Audio-Filename', encodeURIComponent(file.name));
-        xhr.setRequestHeader('X-Audio-Size', String(file.size));
-        xhr.setRequestHeader('X-Audio-Scope', songForm.playlist_id || 'general');
-        xhr.upload.onprogress = (event) => {
-          if (event.lengthComputable) setUploadPct(Math.round((event.loaded / event.total) * 100));
-        };
-        xhr.onload = () => {
-          let response: { uri?: string; size?: number; contentType?: string; error?: string } = {};
-          try {
-            response = JSON.parse(xhr.responseText);
-          } catch {
-            // The status check below reports a useful error for a proxy-generated non-JSON response.
-          }
-          if (xhr.status >= 200 && xhr.status < 300 && response.uri) {
-            resolve({
-              uri: response.uri,
-              size: response.size || file.size,
-              contentType: response.contentType || file.type || 'application/octet-stream',
-            });
-          } else {
-            reject(new Error(response.error || `Upload failed (HTTP ${xhr.status}).`));
-          }
-        };
-        xhr.onerror = () => reject(new Error('Upload failed: the connection to the server was interrupted.'));
-        xhr.send(file);
+      const initRes = await fetch('/api/admin/audio-files/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Audio-Action': 'init' },
+        body: JSON.stringify({
+          filename: file.name,
+          contentType: file.type,
+          size: file.size,
+          scope: songForm.playlist_id || 'general',
+        }),
       });
+      const initJson = await initRes.json().catch(() => ({}));
+      if (!initRes.ok) throw new Error(initJson.error || 'Could not start audio upload.');
+      const { uploadId, key, partSize, contentType } = initJson as {
+        uploadId: string;
+        key: string;
+        partSize: number;
+        contentType: string;
+      };
+      multipart = { key, uploadId };
+      const parts: Array<{ partNumber: number; etag: string }> = [];
+      for (let offset = 0, partNumber = 1; offset < file.size; offset += partSize, partNumber += 1) {
+        const chunk = file.slice(offset, Math.min(offset + partSize, file.size));
+        const part = await new Promise<{ partNumber: number; etag: string }>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('POST', '/api/admin/audio-files/upload');
+          xhr.setRequestHeader('Content-Type', contentType);
+          xhr.setRequestHeader('X-Audio-Action', 'part');
+          xhr.setRequestHeader('X-Audio-Key', key);
+          xhr.setRequestHeader('X-Audio-Upload-Id', uploadId);
+          xhr.setRequestHeader('X-Audio-Part-Number', String(partNumber));
+          xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+              setUploadPct(Math.round(((offset + event.loaded) / file.size) * 100));
+            }
+          };
+          xhr.onload = () => {
+            let response: { partNumber?: number; etag?: string; error?: string };
+            try {
+              response = JSON.parse(xhr.responseText || '{}') as {
+                partNumber?: number;
+                etag?: string;
+                error?: string;
+              };
+            } catch {
+              reject(new Error(`Audio part upload returned invalid data (HTTP ${xhr.status}).`));
+              return;
+            }
+            if (xhr.status >= 200 && xhr.status < 300 && response.etag) {
+              resolve({ partNumber: response.partNumber || partNumber, etag: response.etag });
+            } else {
+              reject(new Error(response.error || `Audio part upload failed (HTTP ${xhr.status}).`));
+            }
+          };
+          xhr.onerror = () => reject(new Error('Audio part upload connection was interrupted.'));
+          xhr.send(chunk);
+        });
+        parts.push(part);
+      }
+      const completeRes = await fetch('/api/admin/audio-files/upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Audio-Action': 'complete',
+          'X-Audio-Key': key,
+          'X-Audio-Upload-Id': uploadId,
+        },
+        body: JSON.stringify({ parts }),
+      });
+      const completeJson = await completeRes.json().catch(() => ({}));
+      if (!completeRes.ok) throw new Error(completeJson.error || 'Could not complete audio upload.');
+      multipart = null;
+      const uploaded = { uri: String(completeJson.uri), size: file.size, contentType };
 
       setPendingUpload({ ...uploaded, durationSeconds, fileName: file.name });
       if (!songForm.title.trim()) {
@@ -165,6 +214,21 @@ export function RestLibraryAdmin() {
       }
       toast.success('Audio uploaded — now save the track below.');
     } catch (error) {
+      if (multipart) {
+        try {
+          await fetch('/api/admin/audio-files/upload', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Audio-Action': 'abort',
+              'X-Audio-Key': multipart.key,
+              'X-Audio-Upload-Id': multipart.uploadId,
+            },
+          });
+        } catch (abortError) {
+          console.error('[audio-upload] failed to abort multipart upload:', abortError);
+        }
+      }
       toast.error(error instanceof Error ? error.message : 'Upload failed.');
     } finally {
       setUploadPct(null);
@@ -208,7 +272,13 @@ export function RestLibraryAdmin() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Track could not be saved.');
-      setSongForm((current) => ({ ...current, title: '', artist: '', youtube_url: '', order_index: current.order_index + 1 }));
+      setSongForm((current) => ({
+        ...current,
+        title: '',
+        artist: '',
+        youtube_url: '',
+        order_index: current.order_index + 1,
+      }));
       setPendingUpload(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
       toast.success('Track added to the playlist.');
@@ -241,7 +311,7 @@ export function RestLibraryAdmin() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Rest & Audio Library</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="text-muted-foreground mt-1 text-sm">
           Manage Pro relaxing playlists — upload real audio files (stored in the dedicated B2 audio bucket) or link a
           YouTube video. Students listen to these during study breaks.
         </p>
@@ -249,42 +319,89 @@ export function RestLibraryAdmin() {
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2"><Music2 className="h-5 w-5 text-violet-400" />Create Playlist</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Music2 className="h-5 w-5 text-violet-400" />
+              Create Playlist
+            </CardTitle>
+          </CardHeader>
           <CardContent className="space-y-3">
-            <Input placeholder="Relax / Focus / Sleep" value={playlistForm.name} onChange={(e) => setPlaylistForm((v) => ({ ...v, name: e.target.value }))} />
-            <Textarea placeholder="Short description" value={playlistForm.description} onChange={(e) => setPlaylistForm((v) => ({ ...v, description: e.target.value }))} />
-            <Input placeholder="Cover image URL optional" value={playlistForm.cover_image_url} onChange={(e) => setPlaylistForm((v) => ({ ...v, cover_image_url: e.target.value }))} />
-            <Button onClick={createPlaylist} loading={saving} variant="gradient"><Plus className="h-4 w-4" /> Add playlist</Button>
+            <Input
+              placeholder="Relax / Focus / Sleep"
+              value={playlistForm.name}
+              onChange={(e) => setPlaylistForm((v) => ({ ...v, name: e.target.value }))}
+            />
+            <Textarea
+              placeholder="Short description"
+              value={playlistForm.description}
+              onChange={(e) => setPlaylistForm((v) => ({ ...v, description: e.target.value }))}
+            />
+            <Input
+              placeholder="Cover image URL optional"
+              value={playlistForm.cover_image_url}
+              onChange={(e) => setPlaylistForm((v) => ({ ...v, cover_image_url: e.target.value }))}
+            />
+            <Button onClick={createPlaylist} loading={saving} variant="gradient">
+              <Plus className="h-4 w-4" /> Add playlist
+            </Button>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>Add Track</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>Add Track</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-3">
-            <select className="h-10 w-full rounded-lg border px-3 text-sm" value={songForm.playlist_id} onChange={(e) => setSongForm((v) => ({ ...v, playlist_id: e.target.value }))}>
+            <select
+              className="h-10 w-full rounded-lg border px-3 text-sm"
+              value={songForm.playlist_id}
+              onChange={(e) => setSongForm((v) => ({ ...v, playlist_id: e.target.value }))}
+            >
               <option value="">Select playlist</option>
-              {playlists.map((playlist) => <option key={playlist.id} value={playlist.id}>{playlist.name}</option>)}
+              {playlists.map((playlist) => (
+                <option key={playlist.id} value={playlist.id}>
+                  {playlist.name}
+                </option>
+              ))}
             </select>
 
-            <div className="flex gap-2 rounded-lg border border-border/70 bg-muted/30 p-1">
+            <div className="border-border/70 bg-muted/30 flex gap-2 rounded-lg border p-1">
               <button
                 type="button"
                 onClick={() => setSongMode('audio')}
-                className={cn('flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-semibold transition', songMode === 'audio' ? 'bg-violet-600 text-white shadow' : 'text-muted-foreground hover:text-foreground')}
+                className={cn(
+                  'flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-semibold transition',
+                  songMode === 'audio'
+                    ? 'bg-violet-600 text-white shadow'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
               >
                 <Headphones className="h-3.5 w-3.5" /> Upload audio
               </button>
               <button
                 type="button"
                 onClick={() => setSongMode('youtube')}
-                className={cn('flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-semibold transition', songMode === 'youtube' ? 'bg-violet-600 text-white shadow' : 'text-muted-foreground hover:text-foreground')}
+                className={cn(
+                  'flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-semibold transition',
+                  songMode === 'youtube'
+                    ? 'bg-violet-600 text-white shadow'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
               >
                 <Youtube className="h-3.5 w-3.5" /> YouTube link
               </button>
             </div>
 
-            <Input placeholder="Track title" value={songForm.title} onChange={(e) => setSongForm((v) => ({ ...v, title: e.target.value }))} />
-            <Input placeholder="Artist optional" value={songForm.artist} onChange={(e) => setSongForm((v) => ({ ...v, artist: e.target.value }))} />
+            <Input
+              placeholder="Track title"
+              value={songForm.title}
+              onChange={(e) => setSongForm((v) => ({ ...v, title: e.target.value }))}
+            />
+            <Input
+              placeholder="Artist optional"
+              value={songForm.artist}
+              onChange={(e) => setSongForm((v) => ({ ...v, artist: e.target.value }))}
+            />
 
             {songMode === 'audio' ? (
               <div className="space-y-2">
@@ -296,7 +413,7 @@ export function RestLibraryAdmin() {
                   className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-violet-600 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-violet-700"
                 />
                 {uploadPct !== null && (
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                  <div className="bg-muted h-1.5 w-full overflow-hidden rounded-full">
                     <div className="h-full bg-violet-600 transition-all" style={{ width: `${uploadPct}%` }} />
                   </div>
                 )}
@@ -308,16 +425,27 @@ export function RestLibraryAdmin() {
                 )}
               </div>
             ) : (
-              <Input placeholder="YouTube URL" value={songForm.youtube_url} onChange={(e) => setSongForm((v) => ({ ...v, youtube_url: e.target.value }))} />
+              <Input
+                placeholder="YouTube URL"
+                value={songForm.youtube_url}
+                onChange={(e) => setSongForm((v) => ({ ...v, youtube_url: e.target.value }))}
+              />
             )}
 
-            <Button onClick={addSong} loading={saving} variant="gradient"><Plus className="h-4 w-4" /> Add track</Button>
+            <Button onClick={addSong} loading={saving} variant="gradient">
+              <Plus className="h-4 w-4" /> Add track
+            </Button>
           </CardContent>
         </Card>
       </div>
 
       {loading ? (
-        <Card><CardContent className="p-8 text-center text-sm text-muted-foreground"><Loader2 className="mr-2 inline h-4 w-4 animate-spin" />Loading playlists...</CardContent></Card>
+        <Card>
+          <CardContent className="text-muted-foreground p-8 text-center text-sm">
+            <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />
+            Loading playlists...
+          </CardContent>
+        </Card>
       ) : (
         <div className="grid gap-5">
           {sortedPlaylists.map((playlist) => (
@@ -327,31 +455,48 @@ export function RestLibraryAdmin() {
                   <span>{playlist.name}</span>
                   <div className="flex items-center gap-2">
                     <Badge>Pro</Badge>
-                    <Button size="icon-sm" variant="ghost" onClick={() => deletePlaylist(playlist.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    <Button size="icon-sm" variant="ghost" onClick={() => deletePlaylist(playlist.id)}>
+                      <Trash2 className="text-destructive h-4 w-4" />
+                    </Button>
                   </div>
                 </CardTitle>
-                <p className="text-sm text-muted-foreground">{playlist.description || 'No description'}</p>
+                <p className="text-muted-foreground text-sm">{playlist.description || 'No description'}</p>
               </CardHeader>
               <CardContent className="grid gap-2 md:grid-cols-2">
-                {playlist.playlist_songs?.length ? playlist.playlist_songs.map((song) => (
-                  <div key={song.id} className="flex items-center gap-3 rounded-xl border border-border/70 bg-muted/25 p-2">
-                    {song.source_type === 'audio' ? (
-                      <div className="flex h-12 w-20 shrink-0 items-center justify-center rounded bg-violet-500/15 text-violet-400">
-                        <Headphones className="h-5 w-5" />
+                {playlist.playlist_songs?.length ? (
+                  playlist.playlist_songs.map((song) => (
+                    <div
+                      key={song.id}
+                      className="border-border/70 bg-muted/25 flex items-center gap-3 rounded-xl border p-2"
+                    >
+                      {song.source_type === 'audio' ? (
+                        <div className="flex h-12 w-20 shrink-0 items-center justify-center rounded bg-violet-500/15 text-violet-400">
+                          <Headphones className="h-5 w-5" />
+                        </div>
+                      ) : (
+                        <img
+                          src={
+                            song.thumbnail_url || `https://img.youtube.com/vi/${song.youtube_video_id}/hqdefault.jpg`
+                          }
+                          alt=""
+                          className="h-12 w-20 rounded object-cover"
+                        />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold">{song.title}</p>
+                        <p className="text-muted-foreground truncate text-xs">
+                          {song.artist || (song.source_type === 'audio' ? 'Uploaded audio' : song.youtube_video_id)}
+                          {song.duration_seconds ? ` · ${formatDuration(song.duration_seconds)}` : ''}
+                        </p>
                       </div>
-                    ) : (
-                      <img src={song.thumbnail_url || `https://img.youtube.com/vi/${song.youtube_video_id}/hqdefault.jpg`} alt="" className="h-12 w-20 rounded object-cover" />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold">{song.title}</p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {song.artist || (song.source_type === 'audio' ? 'Uploaded audio' : song.youtube_video_id)}
-                        {song.duration_seconds ? ` · ${formatDuration(song.duration_seconds)}` : ''}
-                      </p>
+                      <Button size="icon-sm" variant="ghost" onClick={() => deleteSong(song.id)}>
+                        <Trash2 className="text-destructive h-4 w-4" />
+                      </Button>
                     </div>
-                    <Button size="icon-sm" variant="ghost" onClick={() => deleteSong(song.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                  </div>
-                )) : <p className="text-sm text-muted-foreground">No tracks yet.</p>}
+                  ))
+                ) : (
+                  <p className="text-muted-foreground text-sm">No tracks yet.</p>
+                )}
               </CardContent>
             </Card>
           ))}
