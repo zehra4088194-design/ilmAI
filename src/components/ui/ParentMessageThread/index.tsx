@@ -23,6 +23,8 @@ interface Message {
   attachment_size_kb?: number | null;
 }
 
+type LinkedStudent = { id: string; full_name: string | null; avatar_url: string | null };
+
 /**
  * Chat between a parent and their linked student, used on both the Parent
  * Dashboard (per student card) and the student's Settings > Parent Link tab.
@@ -43,6 +45,7 @@ export function ParentMessageThread({
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [open, setOpen] = useState(autoOpen);
+  const [student, setStudent] = useState<LinkedStudent | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const calling = useCalling();
 
@@ -71,6 +74,7 @@ export function ParentMessageThread({
           if (!active) return;
           const next: Message[] = json.messages || [];
           setMessages(next);
+          if (json.student) setStudent(json.student);
           const unread = next.some((item) => item.sender_id !== currentUserId && !item.read_at);
           if (unread) {
             hadUnread = true;
@@ -113,32 +117,16 @@ export function ParentMessageThread({
       return;
     }
     if (calling.status !== 'idle') return;
-
-    try {
-      const response = await fetch(`/api/parent/messages?linkId=${linkId}`);
-      const json = await response.json();
-      if (!response.ok) throw new Error(json.error || 'The parent link could not be loaded.');
-      const firstMessage = json.messages?.[0];
-      if (firstMessage?.sender_id && firstMessage.sender_id !== currentUserId) {
-        await calling.startCall('consumer', 'consumer', {
-          userId: firstMessage.sender_id,
-          name: 'Linked student',
-          avatarUrl: null,
-        });
-        return;
-      }
-
-      const linkResponse = await fetch(`/api/parent/link?linkId=${linkId}`, { cache: 'no-store' });
-      const linkJson = await linkResponse.json();
-      if (!linkResponse.ok || !linkJson.student) throw new Error(linkJson.error || 'Linked student could not be found.');
-      await calling.startCall('consumer', 'consumer', {
-        userId: linkJson.student.id,
-        name: linkJson.student.full_name || 'Linked student',
-        avatarUrl: linkJson.student.avatar_url || null,
-      });
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'The call could not be started.');
+    if (!student?.id) {
+      toast.error('Linked student could not be found.');
+      return;
     }
+
+    await calling.startCall('consumer', 'consumer', {
+      userId: student.id,
+      name: student.full_name || 'Linked student',
+      avatarUrl: student.avatar_url || null,
+    });
   };
 
   const send = async (file?: File) => {
@@ -177,7 +165,7 @@ export function ParentMessageThread({
           <MessageCircle className="h-3.5 w-3.5" /> Message
         </Button>
         {calling && (
-          <Button variant="outline" size="sm" onClick={callStudent} disabled={calling.status !== 'idle'}>
+          <Button variant="outline" size="sm" onClick={callStudent} disabled={calling.status !== 'idle' || !student}>
             <Phone className="h-3.5 w-3.5" /> Call
           </Button>
         )}
@@ -196,7 +184,7 @@ export function ParentMessageThread({
             <button
               type="button"
               onClick={callStudent}
-              disabled={calling.status !== 'idle'}
+              disabled={calling.status !== 'idle' || !student}
               aria-label="Call linked student"
               title="Call linked student"
               className="text-muted-foreground hover:text-foreground disabled:opacity-50"
