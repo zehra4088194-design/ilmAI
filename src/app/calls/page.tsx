@@ -22,7 +22,21 @@ export default async function CallsPage() {
   const organizationId = schoolContext?.organization.id || collegeContext?.organization.id || 'consumer';
   const currentRole = schoolContext?.membership.member_role || collegeContext?.membership.member_role || 'student';
   const settings = await getCallingSettings(supabase, institutionType, organizationId);
-  const directory = await getCallDirectory(supabase, institutionType, organizationId, user.id);
+  let directory = await getCallDirectory(supabase, institutionType, organizationId, user.id);
+
+  // A parent using a plain consumer account is only offered their explicitly linked children
+  // here. This keeps the general call system useful for students while preventing a parent from
+  // receiving an unrelated global contact directory.
+  if (institutionType === 'consumer' && currentRole === 'parent') {
+    const db = createAdminClient() as any;
+    const { data: links } = await db
+      .from('parent_student_links')
+      .select('student_id')
+      .eq('parent_id', user.id)
+      .eq('status', 'approved');
+    const studentIds = new Set((links || []).map((row: any) => row.student_id).filter(Boolean));
+    directory = directory.filter((entry) => studentIds.has(entry.profile_id));
+  }
 
   const admin = await createAdminClient();
   const adminDb = admin as any;
@@ -70,7 +84,7 @@ export default async function CallsPage() {
                     <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{person.full_name || 'ilm AI user'}</p><p className="text-muted-foreground text-xs capitalize">{person.member_role}</p></div>
                     <CallButton institutionType="consumer" organizationId="consumer" target={{ userId: person.profile_id, name: person.full_name || 'ilm AI user', avatarUrl: person.avatar_url }} />
                   </div>
-                )) : <p className="text-muted-foreground py-6 text-center text-sm">No other users are available to call.</p>}
+                )) : <p className="text-muted-foreground py-6 text-center text-sm">No linked students are available to call.</p>}
               </div>
             ) : (
               <CallDirectoryList institutionType={institutionType} organizationId={organizationId} entries={directory} />
