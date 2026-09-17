@@ -51,13 +51,12 @@ export async function GET(req: NextRequest) {
     }))
   );
 
-  const { data: student } = await chatsAdmin
-    .from('profiles')
-    .select('id, full_name, avatar_url')
-    .eq('id', access.link.student_id)
-    .maybeSingle();
+  const counterpartyId = user.id === access.link.parent_id ? access.link.student_id : access.link.parent_id;
+  const { data: contact } = counterpartyId
+    ? await chatsAdmin.from('profiles').select('id, full_name, avatar_url, role').eq('id', counterpartyId).maybeSingle()
+    : { data: null };
 
-  return NextResponse.json({ messages, student: student || null });
+  return NextResponse.json({ messages, contact: contact || null });
 }
 
 export async function POST(req: NextRequest) {
