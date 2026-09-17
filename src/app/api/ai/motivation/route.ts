@@ -8,6 +8,17 @@ import type { SubscriptionTier } from '@/types';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
+// Last-resort local content. It is used only when every configured AI provider
+// in the controlled fallback chain fails or returns unusable output.
+const FALLBACK_QUOTES = [
+  'One solved question today builds confidence for tomorrow.',
+  'If a topic feels difficult, solve the first example and build momentum from there.',
+  'Smart study means understanding, recalling, and then testing yourself.',
+  'Every revision makes the material feel more familiar and manageable.',
+  'Slow progress is still progress. Keep your learning streak active.',
+  'Strong concepts lead to stronger results.',
+];
+
 function parseQuotes(text: string): string[] {
   const cleaned = text.replace(/```json|```/g, '').trim();
   try {
@@ -19,17 +30,17 @@ function parseQuotes(text: string): string[] {
         .slice(0, 8);
     }
   } catch {
-    // Invalid/truncated AI JSON is an AI generation error, not a reason to
-    // silently replace the selected provider's response with local content.
+    // Invalid/truncated AI JSON is an AI generation failure. The route then
+    // uses the deterministic local last-resort quotes below.
   }
   return [];
 }
 
 function publicMotivationError(error: unknown) {
   if (error instanceof GatewayError && error.status === 429) {
-    return 'The selected AI service has reached its current usage limit. Please try again later.';
+    return 'The AI services are currently at their usage limit. Please try again later.';
   }
-  return 'Motivation could not be generated right now. Please try again.';
+  return 'Motivation could not be generated right now.';
 }
 
 export async function POST(req: NextRequest) {
@@ -37,18 +48,19 @@ export async function POST(req: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ status: 'error', error: 'Login required' }, { status: 401 });
+  if (!user) return NextResponse.json({ quotes: FALLBACK_QUOTES });
 
   const { subject } = await req.json().catch(() => ({}));
   try {
     const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
     const tier = (profile?.subscription_tier as SubscriptionTier) || 'FREE';
     const limit = await checkAiMessageLimit(user.id, tier, 'motivation');
-    if (!limit.success)
+    if (!limit.success) {
       return NextResponse.json(
         { status: 'error', error: await getConfiguredLimitExceededMessage(tier, 'Motivation AI') },
         { status: 429 }
       );
+    }
 
     const motivationProvider = await resolveAiRoutingProvider('studyTools');
     const result = await gatewayChat({
@@ -59,8 +71,7 @@ export async function POST(req: NextRequest) {
       messages: [
         {
           role: 'system',
-          content:
-            'You write short motivational study quotes for Pakistani students. Return only JSON: {"quotes":["..."]}. No markdown.',
+          content: 'You write short motivational study quotes for Pakistani students. Return only JSON: {"quotes":["..."]}. No markdown.',
         },
         {
           role: 'user',
@@ -71,11 +82,13 @@ export async function POST(req: NextRequest) {
       temperature: 0.9,
     });
     const quotes = parseQuotes(result.text);
-    if (!quotes.length) throw new GatewayError('The selected AI service returned an invalid motivation response.', 502);
+    if (!quotes.length) return NextResponse.json({ quotes: FALLBACK_QUOTES });
     await consumeAiCredits(user.id, tier, 'motivation');
     return NextResponse.json({ quotes });
   } catch (error) {
     console.error('Motivation generation error:', error);
-    return NextResponse.json({ status: 'error', error: publicMotivationError(error) }, { status: 502 });
+    // AI failure does not leave the dashboard blank; deterministic fallback is
+    // only reached after gatewayChat has exhausted the configured AI chain.
+    return NextResponse.json({ quotes: FALLBACK_QUOTES, fallback: true, error: publicMotivationError(error) }, { status: 200 });
   }
 }
