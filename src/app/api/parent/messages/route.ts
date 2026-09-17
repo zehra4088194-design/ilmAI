@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { createNotificationIfEnabled } from '@/lib/notifications/preferences';
 import { getParentLinkAccess } from '@/lib/parent/access';
@@ -51,7 +50,14 @@ export async function GET(req: NextRequest) {
       ),
     }))
   );
-  return NextResponse.json({ messages });
+
+  const { data: student } = await chatsAdmin
+    .from('profiles')
+    .select('id, full_name, avatar_url')
+    .eq('id', access.link.student_id)
+    .maybeSingle();
+
+  return NextResponse.json({ messages, student: student || null });
 }
 
 export async function POST(req: NextRequest) {
@@ -154,9 +160,6 @@ export async function PATCH(req: NextRequest) {
   return NextResponse.json({ status: 'success' });
 }
 
-// Clears this chat's history (live rows + archived ones) — deliberately does NOT touch the
-// parent_student_links row itself, since that's the actual parent<->student relationship, not
-// just a chat thread. Either the parent or the linked student may clear it, same as GET/POST above.
 export async function DELETE(req: NextRequest) {
   const user = await getUser();
   if (!user) return NextResponse.json({ error: 'Login required' }, { status: 401 });
