@@ -21,7 +21,11 @@ const PORT = Number(process.env.WHATSAPP_WORKER_PORT || 4310);
 const WORKER_SECRET = process.env.WHATSAPP_WORKER_SECRET || '';
 const AUTH_DIR = process.env.WHATSAPP_AUTH_DIR || './auth_info_baileys';
 const APP_BASE_URL = (process.env.WHATSAPP_APP_BASE_URL || '').replace(/\/$/, '');
-const CEO_JID = toJid(process.env.WHATSAPP_CEO_NUMBER || '');
+const WHATSAPP_ADMIN_EMAIL =
+  process.env.WHATSAPP_ADMIN_EMAIL ||
+  process.env.CONTACT_EMAIL ||
+  process.env.SUGGESTION_EMAIL ||
+  'ilmai.study1@gmail.com';
 const PAYMENT_PROOF_EMAIL = process.env.PAYMENT_PROOF_EMAIL || 'proof@ilmai.study';
 const PAYMENT_PROOF_MESSAGE =
   `Theek hai 👍 JazzCash se payment karne ke baad transaction ka screenshot isi WhatsApp chat par bhej dein, ya ${PAYMENT_PROOF_EMAIL} par email kar dein. Proof milne ke baad team payment verify karke 30 minutes ke andar aapka plan activate kar degi.`;
@@ -117,13 +121,14 @@ function getMediaMessage(msg) {
 function isCeoRequest(text) {
   const normalized = String(text || '').toLowerCase().replace(/\s+/g, ' ').trim();
   if (!normalized) return false;
-  return (
-    /\bceo\b/.test(normalized) &&
-    /(baat|bat|talk|speak|speaking|contact|connect|milna|meet|personally|direct|owner|founder)/.test(normalized)
-  ) || (
-    /\b(husnain|founder|owner|boss)\b/.test(normalized) &&
-    /(baat|bat|talk|speak|contact|connect|milna|meet|personally|direct)/.test(normalized)
-  );
+
+  const directContactIntent =
+    /(baat|bat|talk|speak|speaking|contact|connect|milna|meet|personally|direct|help)/.test(normalized);
+
+  if (/\b(admin|ceo)\b/.test(normalized) && directContactIntent) return true;
+  if (/\b(husnain|founder|owner|boss)\b/.test(normalized) && directContactIntent) return true;
+
+  return false;
 }
 
 function isJazzCashPaid(text) {
@@ -180,48 +185,57 @@ async function markConversationClosed(digits) {
       { onConflict: 'phone_digits' }
     );
   } catch (error) {
-    console.error('[whatsapp-worker] Failed to persist CEO handoff:', error?.message || error);
+    console.error('[whatsapp-worker] Failed to persist admin handoff:', error?.message || error);
   }
 }
 
-async function notifyCEOOfHandoff(from, digits, text) {
-  if (!CEO_JID || !state.sock) {
-    console.error('[whatsapp-worker] Cannot notify CEO: CEO number/socket unavailable.');
+async function sendAdminHandoffEmail({
+  senderNumber,
+  senderName,
+  topic,
+  message,
+  requestedAction,
+  attachment,
+}) {
+  if (!APP_BASE_URL || !WORKER_SECRET) {
+    console.error('[whatsapp-worker] App URL/worker secret missing; admin email skipped.');
     return false;
   }
 
   try {
-    const profile = supabase && digits
-      ? (await supabase
-          .from('profiles')
-          .select('full_name, role')
-          .in('phone', candidateStoredFormats(digits))
-          .limit(1)
-          .maybeSingle()).data
-      : null;
-    const senderName = profile?.full_name || 'Unknown sender';
-    const detail =
-      `🚨 CEO handoff request\n` +
-      `Sender: ${senderName}\n` +
-      `Number: ${digits ? `+${digits}` : 'Unknown'}\n` +
-      `Topic/message: ${String(text || '').slice(0, 1500)}`;
-    await state.sock.sendMessage(CEO_JID, { text: detail });
-    console.log('[whatsapp-worker] CEO handoff sent for %s.', digits || 'unknown');
+    const form = new FormData();
+    form.append('senderNumber', String(senderNumber || 'unknown'));
+    form.append('senderName', String(senderName || 'Unknown sender'));
+    form.append('topic', String(topic || '').slice(0, 240));
+    form.append('message', String(message || '').slice(0, 6000));
+    form.append('requestedAction', String(requestedAction || 'Admin contact').slice(0, 160));
+
+    if (attachment?.buffer) {
+      const blob = new Blob([attachment.buffer], {
+        type: attachment.contentType || 'application/octet-stream',
+      });
+      form.append('attachment', blob, attachment.filename || 'whatsapp-attachment');
+    }
+
+    const response = await fetch(`${APP_BASE_URL}/api/internal/whatsapp/handoff`, {
+      method: 'POST',
+      headers: { 'x-whatsapp-worker-secret': WORKER_SECRET },
+      body: form,
+      signal: AbortSignal.timeout(30_000),
+    });
+
+    if (!response.ok) {
+      const detail = await response.text().catch(() => '');
+      console.error('[whatsapp-worker] Admin handoff email failed:', response.status, detail.slice(0, 500));
+      return false;
+    }
+
+    console.log('[whatsapp-worker] Admin handoff email sent to %s.', WHATSAPP_ADMIN_EMAIL);
     return true;
   } catch (error) {
-    console.error('[whatsapp-worker] Failed to notify CEO:', error);
+    console.error('[whatsapp-worker] Admin handoff email request failed:', error?.message || error);
     return false;
   }
-}
-
-if (!WORKER_SECRET) {
-  console.warn('[whatsapp-worker] WHATSAPP_WORKER_SECRET is not set.');
-}
-if (!CEO_JID) {
-  console.warn('[whatsapp-worker] WHATSAPP_CEO_NUMBER is not set. Media/CEO requests cannot be forwarded.');
-}
-if (!supabase) {
-  console.warn('[whatsapp-worker] SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY missing.');
 }
 
 async function startSock() {
@@ -349,14 +363,9 @@ async function uploadPaymentScreenshot(buffer, mimetype, tid) {
   }
 }
 
-async function forwardMediaToCEO(from, digits, msg, mediaKind) {
-  if (!CEO_JID || !state.sock) {
-    console.error('[whatsapp-worker] Cannot forward media: CEO number/socket unavailable.');
-    return;
-  }
-
+async function forwardMediaToAdminEmail(from, digits, msg, mediaKind) {
   const media = getMediaMessage(msg);
-  if (!media) return;
+  if (!media) return false;
 
   try {
     const buffer = await downloadMediaMessage(msg, 'buffer', {}, {
@@ -364,56 +373,65 @@ async function forwardMediaToCEO(from, digits, msg, mediaKind) {
       reuploadRequest: state.sock.updateMediaMessage,
     });
 
-    const profile = supabase && digits
-      ? (await supabase
-          .from('profiles')
-          .select('full_name, role')
-          .in('phone', candidateStoredFormats(digits))
-          .limit(1)
-          .maybeSingle()).data
-      : null;
+    let profile = null;
+    if (supabase && digits) {
+      profile = (await supabase
+        .from('profiles')
+        .select('full_name', 'role')
+        .in('phone', candidateStoredFormats(digits))
+        .limit(1)
+        .maybeSingle()).data;
+    }
 
     const senderName = profile?.full_name || msg.pushName || 'Unknown sender';
     const caption = getText(msg);
+    const mediaLabel = mediaKind === 'document' ? (media.fileName || 'document') : mediaKind;
     const detail =
-      `📩 WhatsApp media received\n` +
-      `Sender: ${senderName}\n` +
-      `Number: ${digits ? `+${digits}` : 'Unknown'}\n` +
-      `Type: ${mediaKind}` +
-      (caption ? `\nCaption: ${caption.slice(0, 1000)}` : '');
+      'WhatsApp media received\n' +
+      'Sender: ' + senderName + '\n' +
+      'Number: +' + (digits || 'unknown') + '\n' +
+      'Role: ' + (profile?.role || 'unknown') + '\n' +
+      'Type: ' + mediaLabel +
+      (caption ? '\nCaption: ' + caption.slice(0, 1000) : '') +
+      '\n\nNo reply was sent to the sender.';
 
-    await state.sock.sendMessage(CEO_JID, { text: detail });
+    const ok = await sendAdminHandoffEmail({
+      senderNumber: digits,
+      senderName,
+      topic: 'WhatsApp media received',
+      message: detail,
+      requestedAction: 'Review incoming WhatsApp media',
+      attachment: {
+        buffer,
+        filename: media.fileName || `whatsapp-${mediaKind}-${Date.now()}`,
+        contentType: media.mimetype || 'application/octet-stream',
+      },
+    });
 
-    if (mediaKind === 'image') {
-      await state.sock.sendMessage(CEO_JID, { image: buffer, mimetype: media.mimetype || 'image/jpeg', caption: caption || undefined });
-    } else if (mediaKind === 'video') {
-      await state.sock.sendMessage(CEO_JID, { video: buffer, mimetype: media.mimetype || 'video/mp4', caption: caption || undefined });
-    } else if (mediaKind === 'document') {
-      await state.sock.sendMessage(CEO_JID, {
-        document: buffer,
-        mimetype: media.mimetype || 'application/octet-stream',
-        fileName: media.fileName || `whatsapp-file-${Date.now()}`,
-        caption: caption || undefined,
-      });
-    } else if (mediaKind === 'audio') {
-      await state.sock.sendMessage(CEO_JID, { audio: buffer, mimetype: media.mimetype || 'audio/ogg', ptt: Boolean(media.ptt) });
-    } else if (mediaKind === 'sticker') {
-      await state.sock.sendMessage(CEO_JID, { sticker: buffer });
-    }
-
-    console.log('[whatsapp-worker] Forwarded %s from %s to CEO.', mediaKind, digits || 'unknown');
+    console.log('[whatsapp-worker] Media handoff email %s for %s.', ok ? 'sent' : 'failed', digits || 'unknown');
+    return ok;
   } catch (error) {
-    console.error('[whatsapp-worker] Failed to forward media to CEO:', error);
+    console.error('[whatsapp-worker] Failed to prepare media email:', error?.message || error);
+    return false;
   }
 }
 
 async function handlePossiblePaymentMessage(from, digits, text, msg) {
-  const foundTid = extractTid(text);
   const foundCode = extractCode(text);
-  if (!foundTid && !foundCode) return false;
+  const hasTidLabel = /\bT\.?I\.?D\.?\b/i.test(text);
+
+  // Never treat an ordinary phone number, email, or other long digit string as a payment/TID.
+  // Payment parsing starts only when the user supplied an explicit TID label or a valid plan/claim code.
+  if (!hasTidLabel && !foundCode) return false;
+
+  const foundTid = extractTid(text);
+  const fallbackBareTid =
+    !foundTid && foundCode
+      ? String(text).match(/\b\d{9,20}\b/)?.[0] || null
+      : null;
 
   const claim = touchPendingClaim(digits, {
-    ...(foundTid ? { tid: foundTid } : {}),
+    ...((foundTid || fallbackBareTid) ? { tid: foundTid || fallbackBareTid } : {}),
     ...(foundCode ? { code: foundCode } : {}),
   });
 
@@ -441,42 +459,50 @@ async function logIncoming(digits, text, profile) {
 }
 
 async function processOneMessage(from, digits, msg) {
-  if (await isConversationClosed(digits)) return;
-
   const mediaKind = getMediaKind(msg);
 
-  // HARD RULE: every incoming picture/file/media is forwarded to the CEO and the sender gets NO reply.
-  // This runs before the JazzCash and AI handlers on purpose.
+  // HARD RULE: every incoming picture/file/media is emailed to the admin and the sender gets NO reply.
+  // This always runs before the closed-handoff, payment, and AI handlers.
   if (mediaKind) {
     const text = getText(msg);
     const profile = supabase && digits
       ? (await supabase.from('profiles').select('id, full_name, role').in('phone', candidateStoredFormats(digits)).limit(1).maybeSingle()).data
       : null;
     await logIncoming(digits, text || `[${mediaKind}]`, profile);
-    await forwardMediaToCEO(from, digits, msg, mediaKind);
+    await forwardMediaToAdminEmail(from, digits, msg, mediaKind);
     return;
   }
 
+  // Once a user has been handed off to the admin, all later text is silently logged/ignored.
+  if (await isConversationClosed(digits)) return;
+
   const text = getText(msg);
 
-  // Direct CEO requests bypass AI completely so they can never be misrouted to payment handling.
+  // Direct admin/CEO requests bypass AI and payment parsing completely.
   if (isCeoRequest(text)) {
-    await logIncoming(digits, text, null);
-    const notified = await notifyCEOOfHandoff(from, digits, text);
+    const profile = supabase && digits
+      ? (await supabase.from('profiles').select('id, full_name, role').in('phone', candidateStoredFormats(digits)).limit(1).maybeSingle()).data
+      : null;
+    await logIncoming(digits, text, profile);
+
+    const notified = await sendAdminHandoffEmail({
+      senderNumber: digits,
+      senderName: profile?.full_name || msg.pushName || 'Unknown sender',
+      topic: 'Admin / CEO contact request',
+      message: text,
+      requestedAction: 'User requested direct contact with Husnain Noor / the admin',
+    });
+
     await markConversationClosed(digits);
     if (notified) {
       await state.sock?.sendMessage(from, {
-        text: 'Theek hai 👍 Aapki baat aur aapka number Husnain Noor tak pohancha diya hai. Woh personally aapse follow up karenge. Ab is chat par hum mazeed automated replies nahi bhejenge.',
-      });
-    } else {
-      await state.sock?.sendMessage(from, {
-        text: 'Theek hai 👍 Main aapki request note kar raha hoon. Husnain Noor ki team aapse follow up karegi.',
+        text: 'Theek hai 👍 Aapki request note kar li gayi hai. Husnain Noor ki team aapse follow up karegi. Ab is chat par hum mazeed automated replies nahi bhejenge.',
       });
     }
     return;
   }
 
-  // JazzCash payment confirmation is deterministic: no AI guessing and no transaction-ID prompt.
+  // JazzCash payment intent is deterministic and intentionally narrow.
   if (isJazzCashPaid(text)) {
     await logIncoming(digits, text, null);
     await state.sock?.sendMessage(from, { text: PAYMENT_PROOF_MESSAGE });
