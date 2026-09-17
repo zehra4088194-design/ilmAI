@@ -59,7 +59,7 @@ async function schoolRoleReceivesInstitutionGrant(db: any, organizationId: strin
 export async function grantSchoolSubscription(organizationId: string, profileId: string) {
   const admin = (await createAdminClient()) as any;
   const { tier, periodEnd, billingScope } = await resolveGrantParams(admin, organizationId);
-  if (!(await schoolRoleReceivesInstitutionGrant(admin, organizationId, profileId, billingScope))) {
+  if (!(await isOrganizationBillingActive(admin, organizationId)) || !(await schoolRoleReceivesInstitutionGrant(admin, organizationId, profileId, billingScope))) {
     await admin
       .from('subscriptions')
       .update({ status: 'canceled' })
@@ -94,6 +94,7 @@ export async function revokeSchoolSubscription(organizationId: string, profileId
 
 export async function syncOrganizationSchoolGrants(organizationId: string, shouldGrant: boolean) {
   const admin = (await createAdminClient()) as any;
+  const billingActive = await isOrganizationBillingActive(admin, organizationId);
   const { data: members } = await admin
     .from('school_memberships')
     .select('profile_id, member_role')
@@ -106,14 +107,7 @@ export async function syncOrganizationSchoolGrants(organizationId: string, shoul
   const allProfileIds = Array.from(new Set(rows.map((row) => row.profileId)));
   if (!allProfileIds.length) return;
 
-  const targetIds = shouldGrant
-    ? (() => {
-        const billingScope = rows.length ? undefined : undefined;
-        return allProfileIds;
-      })()
-    : [];
-
-  if (shouldGrant) {
+  if (shouldGrant && billingActive) {
     const { tier, periodEnd, billingScope } = await resolveGrantParams(admin, organizationId);
     const targetRows = billingScope === 'institution_wide'
       ? rows
