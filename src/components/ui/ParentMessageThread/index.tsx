@@ -23,7 +23,7 @@ interface Message {
   attachment_size_kb?: number | null;
 }
 
-type LinkedStudent = { id: string; full_name: string | null; avatar_url: string | null };
+type Contact = { id: string; full_name: string | null; avatar_url: string | null; role?: string | null };
 
 /**
  * Chat between a parent and their linked student, used on both the Parent
@@ -45,7 +45,7 @@ export function ParentMessageThread({
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [open, setOpen] = useState(autoOpen);
-  const [student, setStudent] = useState<LinkedStudent | null>(null);
+  const [contact, setContact] = useState<Contact | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const calling = useCalling();
 
@@ -54,7 +54,7 @@ export function ParentMessageThread({
     fetch(`/api/parent/messages?linkId=${linkId}`, { cache: 'no-store' })
       .then((r) => r.json())
       .then((json) => {
-        if (active && json.student) setStudent(json.student);
+        if (active && json.contact) setContact(json.contact);
       })
       .catch(() => {});
     return () => {
@@ -87,7 +87,7 @@ export function ParentMessageThread({
           if (!active) return;
           const next: Message[] = json.messages || [];
           setMessages(next);
-          if (json.student) setStudent(json.student);
+          if (json.contact) setContact(json.contact);
           const unread = next.some((item) => item.sender_id !== currentUserId && !item.read_at);
           if (unread) {
             hadUnread = true;
@@ -124,21 +124,21 @@ export function ParentMessageThread({
     }
   };
 
-  const callStudent = async () => {
+  const callContact = async () => {
     if (!calling) {
       toast.error('Calling is not ready yet.');
       return;
     }
     if (calling.status !== 'idle') return;
-    if (!student?.id) {
-      toast.error('Linked student could not be found.');
+    if (!contact?.id) {
+      toast.error('The linked contact could not be found.');
       return;
     }
 
     await calling.startCall('consumer', 'consumer', {
-      userId: student.id,
-      name: student.full_name || 'Linked student',
-      avatarUrl: student.avatar_url || null,
+      userId: contact.id,
+      name: contact.full_name || 'Contact',
+      avatarUrl: contact.avatar_url || null,
     });
   };
 
@@ -178,7 +178,7 @@ export function ParentMessageThread({
           <MessageCircle className="h-3.5 w-3.5" /> Message
         </Button>
         {calling && (
-          <Button variant="outline" size="sm" onClick={callStudent} disabled={calling.status !== 'idle' || !student}>
+          <Button variant="outline" size="sm" onClick={callContact} disabled={calling.status !== 'idle' || !contact}>
             <Phone className="h-3.5 w-3.5" /> Call
           </Button>
         )}
@@ -196,10 +196,10 @@ export function ParentMessageThread({
           {calling && (
             <button
               type="button"
-              onClick={callStudent}
-              disabled={calling.status !== 'idle' || !student}
-              aria-label="Call linked student"
-              title="Call linked student"
+              onClick={callContact}
+              disabled={calling.status !== 'idle' || !contact}
+              aria-label="Call contact"
+              title="Call contact"
               className="text-muted-foreground hover:text-foreground disabled:opacity-50"
             >
               <Phone className="h-3.5 w-3.5" />
