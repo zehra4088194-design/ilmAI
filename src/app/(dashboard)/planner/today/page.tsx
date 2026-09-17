@@ -22,9 +22,7 @@ type AutoRevisionParams = {
 export default async function TodayPlannerPage({ searchParams }: { searchParams: Promise<AutoRevisionParams> }) {
   const supabase = await createClient();
   const db = supabase as any;
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   const {
     session: highlightedSessionId,
     autoRevision,
@@ -34,9 +32,6 @@ export default async function TodayPlannerPage({ searchParams }: { searchParams:
     autoRevisionFailed,
   } = await searchParams;
 
-  // Phase 4a/4b entry point: a weak-subject or exam-countdown notification link lands here with
-  // ?autoRevision=weak_subject|exam_countdown&subjectId=... instead of just /practice. Generate the
-  // mini plan server-side, then redirect to strip the query params so a refresh doesn't re-trigger it.
   if ((autoRevision === 'weak_subject' || autoRevision === 'exam_countdown') && subjectId) {
     const result = await generateAutoRevisionPlan({
       reason: autoRevision,
@@ -55,41 +50,21 @@ export default async function TodayPlannerPage({ searchParams }: { searchParams:
     .order('created_at', { ascending: true });
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <div className="mx-auto max-w-6xl space-y-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="text-sm font-semibold text-violet-400">Today</p>
-          <h1 className="mt-1 text-2xl font-bold md:text-3xl">Study checklist</h1>
+          <p className="text-sm font-semibold uppercase tracking-wider text-violet-500">Personal study command center</p>
+          <h1 className="mt-1 text-3xl font-bold tracking-tight md:text-4xl">Own your day.</h1>
+          <p className="text-muted-foreground mt-1 max-w-2xl text-sm md:text-base">Your next action, study load and focus timer — all in one place.</p>
         </div>
-        <Button asChild variant="outline">
-          <Link href="/planner/week">Week view</Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild variant="outline"><Link href="/planner/week">Week view</Link></Button>
+          <Button asChild variant="gradient"><Link href="/planner/setup"><Sparkles className="h-4 w-4" /> Plan smarter</Link></Button>
+        </div>
       </div>
-      {autoRevisionReady && (
-        <div className="flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-700 dark:text-emerald-300">
-          <Sparkles className="h-4 w-4 shrink-0" />A focused revision plan was added to your checklist.
-        </div>
-      )}
-      {autoRevisionFailed && (
-        <div className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300">
-          <TriangleAlert className="h-4 w-4 shrink-0" />The revision plan could not be generated. Try Planner &gt; Create plan instead.
-        </div>
-      )}
-      {sessions?.length ? (
-        <TodayPlannerClient
-          sessions={sessions as unknown as PlannerSessionItem[]}
-          highlightedSessionId={highlightedSessionId}
-        />
-      ) : (
-        <div className="glass rounded-xl p-6 text-center">
-          <CalendarPlus className="mx-auto mb-3 h-8 w-8 text-violet-400" />
-          <p className="font-semibold">No sessions planned for today</p>
-          <p className="text-muted-foreground mt-1 text-sm">Generate a plan to fill your checklist.</p>
-          <Button asChild variant="gradient" className="mt-4">
-            <Link href="/planner/setup">Create plan</Link>
-          </Button>
-        </div>
-      )}
+      {autoRevisionReady && <div className="flex items-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-700 dark:text-emerald-300"><Sparkles className="h-4 w-4 shrink-0" />A focused revision plan was added using your study signals.</div>}
+      {autoRevisionFailed && <div className="flex items-center gap-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300"><TriangleAlert className="h-4 w-4 shrink-0" />The revision plan could not be generated. Open Planner Setup to try again.</div>}
+      {sessions?.length ? <TodayPlannerClient sessions={sessions as unknown as PlannerSessionItem[]} highlightedSessionId={highlightedSessionId} /> : <div className="glass rounded-3xl p-8 text-center"><CalendarPlus className="mx-auto mb-3 h-9 w-9 text-violet-400" /><p className="text-lg font-semibold">Your day is wide open.</p><p className="text-muted-foreground mt-1 text-sm">Build a smart plan and ilm AI will turn it into focused study sessions.</p><Button asChild variant="gradient" className="mt-5"><Link href="/planner/setup"><Sparkles className="h-4 w-4" /> Build my study plan</Link></Button></div>}
     </div>
   );
 }
