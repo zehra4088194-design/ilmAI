@@ -80,15 +80,9 @@ ${subjectContext ? `\nSubject-specific source context:\n- Use the context below 
 }
 
 function publicGatewayError(error: GatewayError) {
-  if (error.status === 401 || error.status === 403) {
-    return 'The AI service is not configured correctly right now. Please try again later.';
-  }
-  if (error.status === 429) {
-    return 'The selected AI service has reached its current usage limit. Please try again later.';
-  }
-  if (error.status === 400) {
-    return 'The AI request was invalid. Please shorten the question or try again.';
-  }
+  if (error.status === 401 || error.status === 403) return 'The AI service is not configured correctly right now. Please try again later.';
+  if (error.status === 429) return 'The selected AI service has reached its current usage limit. Please try again later.';
+  if (error.status === 400) return 'The AI request was invalid. Please shorten the question or try again.';
   return 'The selected AI service is temporarily unavailable. Please try again.';
 }
 
@@ -114,8 +108,7 @@ export async function POST(req: NextRequest) {
     ]) : [null, null];
     const subjectContext = [localKnowledgeContext, resourceRagContext].filter(Boolean).join('\n\n') || null;
 
-    // The browser may send UI metadata, but provider selection is server-owned.
-    // Never trust or honor a client-selected provider.
+    // Provider selection is server-owned. The client cannot choose a provider.
     const provider: AiProviderId = await resolveAiRoutingProvider(isSideChat ? 'sideChat' : 'aiTutor');
     const messages = [
       { role: 'system' as const, content: buildSystemPrompt(typeof subject === 'string' ? subject : undefined, source, subjectContext, { pageLabel: typeof pageLabel === 'string' ? pageLabel : undefined, asker: profile ? describeAsker(profile) : undefined }) },
@@ -123,15 +116,8 @@ export async function POST(req: NextRequest) {
       { role: 'user' as const, content: message },
     ];
 
-    const result = await gatewayChat({
-      provider,
-      tier,
-      messages,
-      maxTokens: isSideChat ? 1100 : 2048,
-      temperature: 0.7,
-      strictProvider: true,
-      routingPolicy: 'text',
-    });
+    // gatewayChat tries the admin-selected provider first, then its controlled fallback chain.
+    const result = await gatewayChat({ provider, tier, messages, maxTokens: isSideChat ? 1100 : 2048, temperature: 0.7, strictProvider: true, routingPolicy: 'text' });
 
     const encoder = new TextEncoder();
     const text = result.text;
@@ -149,7 +135,7 @@ export async function POST(req: NextRequest) {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
         'X-Provider-Used': result.providerUsed,
-        'X-Fallback-Triggered': 'false',
+        'X-Fallback-Triggered': String(Boolean(result.fallbackTriggered)),
       },
     });
   } catch (error) {
