@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { generateFlashcardsViaGateway } from '@/lib/ai/gateway';
+import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
 import { checkAiMessageLimit, consumeAiCredits, getConfiguredLimitExceededMessage } from '@/lib/rate-limit';
 import type { SubscriptionTier } from '@/types';
 
 export const runtime = 'nodejs';
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
@@ -26,9 +27,17 @@ export async function POST(req: NextRequest) {
     const { topic, subjectId, count = 10 } = await req.json();
     if (!topic) return NextResponse.json({ status: 'error', error: 'A topic is required' }, { status: 400 });
 
-    const aiResult = await generateFlashcardsViaGateway(topic, subjectId || 'General', count, 'gemini', 'mini');
+    // Provider is resolved on the server from the admin routing setting.
+    const provider = await resolveAiRoutingProvider('studyTools');
+    const aiResult = await generateFlashcardsViaGateway(topic, subjectId || 'General', count, provider, 'mini');
     const cleaned = aiResult.replace(/```json|```/g, '').trim();
-    const cards = JSON.parse(cleaned);
+    let cards: Array<{ front: string; back: string; hint?: string }>;
+    try {
+      cards = JSON.parse(cleaned);
+    } catch {
+      throw new Error('The selected AI provider returned an invalid flashcard format.');
+    }
+    if (!Array.isArray(cards) || cards.length === 0) throw new Error('The selected AI provider returned no flashcards.');
 
     // flashcard_decks.id and flashcards.id are both `uuid default
     // uuid_generate_v4()` in the schema, so we let Postgres generate them and
@@ -69,6 +78,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ status: 'success', data: { deckId, cardCount: cards.length } });
   } catch (error) {
     console.error('Flashcard generation error:', error);
-    return NextResponse.json({ status: 'error', error: 'Flashcards could not be generated.' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: 'Flashcards could not be generated. Please try again.' }, { status: 500 });
   }
 }
