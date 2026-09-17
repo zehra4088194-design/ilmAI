@@ -5,13 +5,14 @@ import { DashboardNavbar } from '@/components/layout/DashboardNavbar';
 import { DashboardSidebar } from '@/components/layout/DashboardSidebar';
 import { DashboardFooter } from '@/components/layout/DashboardFooter';
 import { SideChatWidget } from '@/components/features/ai-selector/SideChatWidget';
-import { DataRetentionNotice } from '@/components/features/privacy/DataRetentionNotice';
+import { useAuth } from '@/hooks/auth/useAuth';
 import type { InstitutionBranding } from '@/lib/branding/resolveInstitutionBranding';
 
 export function DashboardShell({ children, branding }: { children: ReactNode; branding?: InstitutionBranding | null }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
   const [desktopAutoCloseEnabled, setDesktopAutoCloseEnabled] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
     if (!desktopSidebarOpen || !desktopAutoCloseEnabled) return;
@@ -47,13 +48,7 @@ export function DashboardShell({ children, branding }: { children: ReactNode; br
           desktopSidebarOpen={desktopSidebarOpen}
           onToggleDesktopSidebar={toggleDesktopSidebar}
         />
-        {/* pb-24 on mobile only — SideChatWidget's floating bubble sits fixed at right-5 bottom-5
-            (56px + 20px margin) and otherwise overlaps the last row's action buttons on any page
-            whose content reaches the bottom of a short mobile viewport (reported: it covered the
-            "Open" button on the Downloads list). sm:pb-* drops back down since the bubble has
-            plenty of empty page below it on larger screens. */}
         <main className="mt-16 min-w-0 flex-1 p-3 pb-24 sm:p-4 sm:pb-6 md:p-6 lg:p-8">
-          <DataRetentionNotice />
           {children}
         </main>
         <DashboardFooter />

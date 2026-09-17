@@ -3,6 +3,7 @@ import { SchoolAdminSidebar } from '@/components/features/school-erp/SchoolAdmin
 import { getSchoolContexts, requireSchoolContext, schoolAdminHomeForRole } from '@/lib/school-erp/access';
 import { getCallIdentity } from '@/lib/calling/identity';
 import { CallProvider } from '@/components/features/calling/CallProvider';
+import { DashboardFooter } from '@/components/layout/DashboardFooter';
 
 export default async function SchoolAdminLayout({ children }: { children: React.ReactNode }) {
   const { user, supabase, context } = await requireSchoolContext('dashboard.read');
@@ -22,20 +23,23 @@ export default async function SchoolAdminLayout({ children }: { children: React.
 
   return (
     <CallProvider identity={callIdentity}>
-    <div className="bg-background min-h-screen">
-      <SchoolAdminSidebar
-        organizationName={context.organization.name}
-        organizationId={context.organization.id}
-        organizationLogoUrl={context.organization.logo_url}
-        organizations={organizations}
-        role={context.membership.member_role}
-        permissions={context.permissions}
-        enabledModules={context.enabledModules}
-      />
-      <main className="min-w-0 p-4 pt-18 sm:p-6 sm:pt-18 lg:ml-64 lg:p-8">
-        <div className="mx-auto max-w-7xl">{children}</div>
-      </main>
-    </div>
+      <div className="bg-background min-h-screen">
+        <SchoolAdminSidebar
+          organizationName={context.organization.name}
+          organizationId={context.organization.id}
+          organizationLogoUrl={context.organization.logo_url}
+          organizations={organizations}
+          role={context.membership.member_role}
+          permissions={context.permissions}
+          enabledModules={context.enabledModules}
+        />
+        <main className="min-w-0 p-4 pt-18 sm:p-6 sm:pt-18 lg:ml-64 lg:p-8">
+          <div className="mx-auto max-w-7xl">{children}</div>
+        </main>
+        <div className="lg:ml-64">
+          <DashboardFooter />
+        </div>
+      </div>
     </CallProvider>
   );
 }

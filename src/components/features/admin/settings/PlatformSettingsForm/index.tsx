@@ -1,7 +1,7 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
-import { Bot, BookOpenCheck, DollarSign, GraduationCap, Mail, Moon, Presentation, Printer, Save, ShieldCheck, Sun, UserRoundCog, Users } from 'lucide-react';
+import { BookOpenCheck, DollarSign, GraduationCap, Mail, Moon, Printer, Presentation, Save, ShieldCheck, Sun, UserRoundCog, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -31,9 +31,7 @@ const ACCESS_LABELS: Array<[keyof PlatformSettings['subscriptionPlans']['FREE'][
 
 const LIMIT_LABELS: Array<[keyof PlatformSettings['subscriptionPlans']['FREE']['limits'], string]> = [
   ['aiCreditsWeekly', 'Shared AI/week (Free)'],
-  ['aiCreditsDaily', 'Shared AI/day'],
   ['aiCreditsMonthly', 'Shared AI/month'],
-  ['premiumAiMonthly', 'Premium AI/month'],
   ['quizDaily', 'Testing/day'],
   ['liveVoiceDaily', 'Live voice/day'],
   ['flashcardsTotal', 'Flashcards total'],
@@ -48,40 +46,6 @@ const LIMIT_LABELS: Array<[keyof PlatformSettings['subscriptionPlans']['FREE']['
 // the counts did nothing. presentationsEnabled renders as a checkbox below, not in this array.
 const AUDIENCE_SLIDES_LABEL = 'Slides/presentation';
 
-const PROVIDER_BUDGET_LABELS: Array<[keyof PlatformSettings['providerDailyBudgets'], string]> = [
-  ['groqFast', 'Groq fast/day'],
-  ['groqLarge', 'Groq large/day'],
-  ['gemini', 'Gemini/day'],
-  ['deepseek', 'DeepSeek direct/day'],
-  ['ocrSpace', 'OCR.space/day'],
-  ['openRouter', 'OpenRouter/day'],
-  ['grok', 'Grok/day'],
-  ['claude', 'Claude/day'],
-  ['gpt', 'GPT/day'],
-];
-
-const AI_ROUTING_LABELS: Array<[keyof PlatformSettings['aiRouting'], string]> = [
-  ['sideChat', 'Side chat'],
-  ['aiTutor', 'AI Tutor'],
-  ['studyTools', 'General study tools'],
-  ['grading', 'Answer checking / grading'],
-  ['resourceTest', 'PDF/resource tests'],
-  ['resourceSummary', 'PDF/resource summaries'],
-  ['presentation', 'Presentation builder'],
-  ['visionOcr', 'Vision / handwritten OCR'],
-  ['studentChatModeration', 'Student chat safety check'],
-];
-
-const AI_PROVIDER_OPTIONS: Array<{ value: PlatformSettings['aiRouting'][keyof PlatformSettings['aiRouting']]; label: string }> = [
-  { value: 'advanced', label: 'OpenRouter (free auto-router â†’ DeepSeek fallback)' },
-  { value: 'groq', label: 'Groq / Assistant' },
-  { value: 'gemini', label: 'Gemini Flash-Lite' },
-  { value: 'deepseek', label: 'DeepSeek (direct)' },
-  { value: 'local', label: 'Local Llama' },
-  { value: 'grok', label: 'Grok' },
-  { value: 'claude', label: 'Claude' },
-  { value: 'gpt', label: 'ChatGPT / GPT' },
-];
 
 export function PlatformSettingsForm({ initialSettings }: { initialSettings: PlatformSettings }) {
   const [settings, setSettings] = useState(() => normalizePlatformSettings(initialSettings));
@@ -89,7 +53,7 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
   const [isRefreshingRate, setIsRefreshingRate] = useState(false);
 
   // Recomputes PKR from USD * rate for every tier EXCEPT ones the admin has
-  // hardcoded (plan.pkrManual) â€” those keep whatever PKR value was typed in,
+  // hardcoded (plan.pkrManual) — those keep whatever PKR value was typed in,
   // untouched by rate changes/refreshes, same rule normalizePlatformSettings
   // enforces server-side.
   const withConvertedPkrPrices = (current: PlatformSettings, usdToPkr = current.exchangeRate.usdToPkr) => ({
@@ -157,84 +121,12 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
             <Badge className="mb-2 bg-violet-600">Admin controlled</Badge>
             <h2 className="text-xl font-bold">Subscription Plans & Feature Limits</h2>
             <p className="text-muted-foreground mt-1 text-sm">
-              Change Free, Pro, and Elite prices, daily/weekly usage limits, downloads, and feature toggles here.
+              Change plan prices and non-AI feature limits here. AI usage comes from one shared credit pool.
             </p>
           </div>
           <Button variant="gradient" onClick={save} loading={saving} className="shrink-0">
             <Save className="h-4 w-4" /> Save settings
           </Button>
-        </CardContent>
-      </Card>
-
-      <Card className="border-amber-500/25 bg-amber-500/5">
-        <CardHeader>
-          <CardTitle>Free Provider Safety Budgets</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-muted-foreground text-sm">
-            These are shared platform-wide daily caps, not per-user limits. 0 disables a provider. Increase a limit only
-            after checking the provider dashboard&apos;s actual quota.
-          </p>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {PROVIDER_BUDGET_LABELS.map(([key, label]) => (
-              <NumberField
-                key={key}
-                label={label}
-                value={settings.providerDailyBudgets[key]}
-                onChange={(value) =>
-                  setSettings((current) => ({
-                    ...current,
-                    providerDailyBudgets: {
-                      ...current.providerDailyBudgets,
-                      [key]: Math.max(0, value),
-                    },
-                  }))
-                }
-              />
-            ))}
-          </div>
-          <p className="text-muted-foreground text-xs">
-            Defaults are conservative beta caps. Claude/GPT do not have dependable permanent free API tiers, so both are
-            0. The Grok cap is for available promotional credits only.
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card className="border-fuchsia-500/25 bg-fuchsia-500/5">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Bot className="h-5 w-5 text-fuchsia-400" />
-            AI routing by module
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-muted-foreground text-sm">
-            These server-side choices override the user dropdown. If a user selects Claude/ChatGPT/Gemini but this
-            module is set to DeepSeek, the request will still go to DeepSeek.
-          </p>
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {AI_ROUTING_LABELS.map(([key, label]) => (
-              <label key={key} className="text-muted-foreground space-y-1 text-xs font-medium">
-                <span>{label}</span>
-                <select
-                  value={settings.aiRouting[key]}
-                  onChange={(event) =>
-                    setSettings((current) => ({
-                      ...current,
-                      aiRouting: { ...current.aiRouting, [key]: event.target.value as PlatformSettings['aiRouting'][typeof key] },
-                    }))
-                  }
-                  className="border-input bg-background text-foreground h-10 w-full rounded-lg border px-3 text-sm"
-                >
-                  {AI_PROVIDER_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ))}
-          </div>
         </CardContent>
       </Card>
 
@@ -332,7 +224,7 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
               }
             }}
           >
-            {isRefreshingRate ? 'Refreshingâ€¦' : 'Refresh rate now'}
+            {isRefreshingRate ? 'Refreshing…' : 'Refresh rate now'}
           </Button>
         </CardContent>
       </Card>
@@ -346,7 +238,7 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-muted-foreground text-sm">
-            A parent account&apos;s own plan â€” separate from any child&apos;s subscription. Caps how many children a
+            A parent account&apos;s own plan — separate from any child&apos;s subscription. Caps how many children a
             parent can link and whether they see the full analytics dashboard.
           </p>
           <NumberField
@@ -422,7 +314,7 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
         <CardContent className="space-y-3">
           <p className="text-muted-foreground text-sm">
             A single flat PKR rate per active enrolled student per month, same for schools and colleges.
-            Annual and volume-tier totals are always computed from this + the discount percentages below â€”
+            Annual and volume-tier totals are always computed from this + the discount percentages below —
             never entered by hand on the checkout screen.
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -577,10 +469,10 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
           >
             <span>
               <span className="text-sm font-semibold">
-                {settings.dailyStudyEmailsEnabled ? 'Enabled â€” sending every morning' : 'Disabled â€” not sending'}
+                {settings.dailyStudyEmailsEnabled ? 'Enabled — sending every morning' : 'Disabled — not sending'}
               </span>
               <span className="text-muted-foreground mt-1 block text-xs leading-5">
-                Controls the daily-morning AI study email cron for every user who opted in. Off by default â€” no
+                Controls the daily-morning AI study email cron for every user who opted in. Off by default — no
                 emails go out until this is switched on here. Doesn&apos;t affect the accompanying in-app
                 notification, which always goes out regardless of this setting (per-user notification
                 preferences still apply).
@@ -665,8 +557,6 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
                       })
                     }
                   />
-                  {/* Read-only — computed as USD x the USD/PKR rate set in the "USD to PKR rate"
-                      card below (which has its own Auto/Hardcode switch for the rate itself). */}
                   <NumberField label="PKR/month (auto)" value={plan.price.PKR.monthly} onChange={() => {}} disabled />
                   <NumberField label="PKR/year (auto)" value={plan.price.PKR.annual} onChange={() => {}} disabled />
                 </div>
@@ -689,51 +579,6 @@ export function PlatformSettingsForm({ initialSettings }: { initialSettings: Pla
                     In the Usage field, -1 means unlimited. AI credits use a shared pool rather than separate per-tool
                     pools.
                   </p>
-                </div>
-
-                <div className="space-y-3">
-                  <p className="text-sm font-semibold">Presentation Builder, by audience</p>
-                  <p className="text-muted-foreground text-xs">
-                    Monthly volume is credit-gated like every other AI tool — the only things left to configure per
-                    audience are whether the tool is available at all, and the largest presentation it can generate.
-                  </p>
-                  {(['school', 'college', 'university'] as const).map((audience) => (
-                    <div key={audience} className="bg-muted/20 flex items-center justify-between gap-3 rounded-xl border p-3">
-                      <p className="text-xs font-bold capitalize">{audience}</p>
-                      <div className="flex items-center gap-4">
-                        <label className="flex items-center gap-2 text-xs">
-                          <Checkbox
-                            checked={plan.audienceLimits[audience].presentationsEnabled}
-                            onCheckedChange={(checked) =>
-                              updatePlan(tier, (item) => ({
-                                ...item,
-                                audienceLimits: {
-                                  ...item.audienceLimits,
-                                  [audience]: { ...item.audienceLimits[audience], presentationsEnabled: checked === true },
-                                },
-                              }))
-                            }
-                          />
-                          Enabled
-                        </label>
-                        <div className="w-36">
-                          <NumberField
-                            label={AUDIENCE_SLIDES_LABEL}
-                            value={plan.audienceLimits[audience].presentationSlidesMax}
-                            onChange={(value) =>
-                              updatePlan(tier, (item) => ({
-                                ...item,
-                                audienceLimits: {
-                                  ...item.audienceLimits,
-                                  [audience]: { ...item.audienceLimits[audience], presentationSlidesMax: value },
-                                },
-                              }))
-                            }
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
                 </div>
 
                 <div className="space-y-3">
@@ -971,5 +816,3 @@ function NumberField({
     </label>
   );
 }
-
-

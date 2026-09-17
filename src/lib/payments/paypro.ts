@@ -10,16 +10,18 @@ import type {
 const PAYPRO_CHECKOUT_URL = process.env.PAYPRO_CHECKOUT_URL;
 const PAYPRO_WEBHOOK_SECRET = process.env.PAYPRO_WEBHOOK_SECRET;
 
-const PAYPRO_PLAN_IDS = {
+const PAYPRO_PLAN_IDS: Record<Exclude<CreateCheckoutParams['tier'], 'FREE'>, Record<CreateCheckoutParams['billingCycle'], string | undefined>> = {
   PRO: {
     monthly: process.env.PAYPRO_PLAN_ID_PRO_MONTHLY,
     annual: process.env.PAYPRO_PLAN_ID_PRO_ANNUAL,
+    one_time: process.env.PAYPRO_PLAN_ID_PRO_ONE_TIME,
   },
   ELITE: {
     monthly: process.env.PAYPRO_PLAN_ID_ELITE_MONTHLY,
     annual: process.env.PAYPRO_PLAN_ID_ELITE_ANNUAL,
+    one_time: process.env.PAYPRO_PLAN_ID_ELITE_ONE_TIME,
   },
-} as const;
+};
 
 function getPlanId(params: CreateCheckoutParams) {
   const planId = PAYPRO_PLAN_IDS[params.tier][params.billingCycle];
@@ -80,3 +82,5 @@ export const payproProvider: PaymentProvider = {
     }
   },
 };
+
+// Billing-cycle plan IDs intentionally include monthly, annual and one-time checkout modes.

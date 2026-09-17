@@ -4,6 +4,7 @@ import { convertUsdToPkr } from '@/lib/platform-settings/shared';
 import { TRANSACTION_FEE_USD } from '@/lib/constants';
 import { generatePaymentQR } from '@/lib/payments/paymentQr';
 import { ParentPlanCheckout } from '@/components/features/parent/ParentPlanCheckout';
+import { ParentPaddleCheckout } from '@/components/features/parent/ParentPaddleCheckout';
 
 export const metadata = { title: 'Parent Plan Checkout | ilm AI' };
 
@@ -21,14 +22,17 @@ export default async function ParentPricingCheckoutPage({ params }: { params: Pr
   const walletQr = totalPkr > 0 ? await generatePaymentQR(totalPkr) : null;
 
   return (
-    <ParentPlanCheckout
-      tier={tier}
-      priceUsd={plan.priceUsdMonthly}
-      pkrPrice={pkrPrice}
-      feePkr={feePkr}
-      totalPkr={totalPkr}
-      childrenMax={plan.childrenMax}
-      walletQrDataUrl={walletQr?.qrDataUrl ?? null}
-    />
+    <div className="mx-auto max-w-2xl space-y-6">
+      <ParentPaddleCheckout tier={tier} monthlyPriceUsd={plan.priceUsdMonthly} />
+      <ParentPlanCheckout
+        tier={tier}
+        priceUsd={plan.priceUsdMonthly}
+        pkrPrice={pkrPrice}
+        feePkr={feePkr}
+        totalPkr={totalPkr}
+        childrenMax={plan.childrenMax}
+        walletQrDataUrl={walletQr?.qrDataUrl ?? null}
+      />
+    </div>
   );
 }

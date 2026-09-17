@@ -34,9 +34,9 @@
  * GPT_API_KEYS_JSON -> JSON array with up to 20 OpenAI keys
  * GEMINI_API_KEYS_JSON or GEMINI_API_KEY_1..10 -> ten-key Gemini pool
  * OCRSPACE_API_KEYS_JSON -> JSON array with up to 20 OCR.space keys
- * OPENROUTER_API_KEY -> ONE OpenRouter key. It serves the free router first and
- *                       retries on DeepSeek V4 Flash only if that call fails.
- *                       No pool, no JSON, no rotation for this provider.
+ * OPENROUTER_API_KEY_1..10 -> ten-key OpenRouter pool (legacy single OPENROUTER_API_KEY
+ *                       and OPENROUTER_API_KEYS_JSON remain supported). Rotation is the default;
+ *                       the app can request one fixed key number per provider.
  * DEEPSEEK_API_KEY -> one direct DeepSeek key
  * Numbered PREFIX_1 .. PREFIX_20 secrets remain backwards-compatible.
  *
@@ -201,7 +201,7 @@ function getKeyHealth(env) {
 
   return providers.map(([provider, prefix]) => {
     // OpenRouter is single-key by design, so it never reads a pool.
-    const configuredKeys = provider === 'openrouter' ? (env.OPENROUTER_API_KEY ? 1 : 0) : getKeys(env, prefix).length;
+    const configuredKeys = getKeys(env, prefix).length;
     const failures = Array.from(keyFailures.values())
       .filter((item) => item.provider === provider)
       .sort((left, right) => String(right.lastFailedAt).localeCompare(String(left.lastFailedAt)));
@@ -234,7 +234,7 @@ function getKeys(env, prefix) {
   // The production Groq/Gemini pools intentionally use ten explicit Coolify
   // slots. When any numbered slots exist, ignore legacy JSON/single fields so
   // an old secret cannot silently become an eleventh key or alter 1..10 order.
-  if ((prefix === 'GROQ_API_KEY' || prefix === 'GEMINI_API_KEY') && numberedKeys.length) {
+  if ((prefix === 'GROQ_API_KEY' || prefix === 'GEMINI_API_KEY' || prefix === 'OPENROUTER_API_KEY') && numberedKeys.length) {
     return [...new Set(numberedKeys.map((key) => String(key).trim()).filter(Boolean))].slice(0, 10);
   }
   const jsonSecretName = `${prefix.replace(/_KEY$/, '_KEYS')}_JSON`;
@@ -253,6 +253,25 @@ function getKeys(env, prefix) {
   if (env[prefix]) keys.push(env[prefix]);
   keys.push(...numberedKeys);
   return [...new Set(keys.map((key) => String(key).trim()).filter(Boolean))].slice(0, KEY_COUNT);
+}
+
+/** Selects either the admin-fixed key or the normal round-robin pool. Fixed mode
+ * intentionally never falls through to another key, so the admin choice is strict. */
+async function withSelectedKey(keys, callFn, label, mode = 'rotation', keyNumber = 1, maxAttempts = DEFAULT_KEY_ATTEMPTS, cursorKey = label) {
+  if (mode === 'fixed') {
+    const index = Math.max(1, Math.min(10, Number(keyNumber) || 1)) - 1;
+    if (!keys[index]) return { ok: false, error: `${label} fixed key #${index + 1} is not configured` };
+    try {
+      const result = await callFn(keys[index]);
+      if (result.ok && (!(typeof result.data === 'string') || result.data.trim())) {
+        return { ...result, keyIndexUsed: index + 1 };
+      }
+      return { ok: false, error: result.error || `${label} key #${index + 1} failed`, status: result.status || 502 };
+    } catch (error) {
+      return { ok: false, error: `${label} key #${index + 1} network error: ${error?.message || 'unknown error'}`, status: 503 };
+    }
+  }
+  return withKeyRotation(keys, callFn, label, maxAttempts, cursorKey);
 }
 
 /**
@@ -455,24 +474,25 @@ async function callDeepSeek(key, model, messages, maxTokens, temperature) {
  * fails does the same key retry on DeepSeek V4 Flash. A successful free-router
  * reply returns immediately, so DeepSeek is never billed a second request.
  */
-async function withOpenRouterFallback(env, messages, maxTokens, temperature) {
-  const key = String(env.OPENROUTER_API_KEY || '').trim();
-  if (!key) return { ok: false, error: 'No key configured for OpenRouter (set OPENROUTER_API_KEY)' };
+async function withOpenRouterFallback(env, messages, maxTokens, temperature, keyMode = 'rotation', keyNumber = 1) {
+  const keys = getKeys(env, 'OPENROUTER_API_KEY');
+  if (!keys.length) return { ok: false, error: 'No keys configured for OpenRouter (set OPENROUTER_API_KEY_1..10)' };
 
-  let lastError = null;
-  for (const model of OPENROUTER_CHAIN) {
-    try {
-      const result = await callOpenRouter(key, model, messages, maxTokens, temperature);
-      if (result.ok && String(result.data || '').trim()) return { ok: true, data: result.data, modelUsed: model };
-      lastError = result.error || `OpenRouter ${model} returned an empty response`;
-      recordKeyFailure('openrouter', `OpenRouter ${model}`, 0, result.status || 502, lastError);
-    } catch (err) {
-      lastError = `OpenRouter ${model} network error: ${err?.message || 'unknown error'}`;
-      recordKeyFailure('openrouter', `OpenRouter ${model}`, 0, 'network', lastError);
+  const callChain = async (key) => {
+    let lastError = null;
+    for (const model of OPENROUTER_CHAIN) {
+      try {
+        const result = await callOpenRouter(key, model, messages, maxTokens, temperature);
+        if (result.ok && String(result.data || '').trim()) return { ok: true, data: result.data, modelUsed: model };
+        lastError = result.error || `OpenRouter ${model} returned an empty response`;
+      } catch (error) {
+        lastError = `OpenRouter ${model} network error: ${error?.message || 'unknown error'}`;
+      }
     }
-  }
+    return { ok: false, error: `OpenRouter free router and DeepSeek fallback both failed. Last error: ${lastError}`, status: 502 };
+  };
 
-  return { ok: false, error: `OpenRouter free router and DeepSeek fallback both failed. Last error: ${lastError}` };
+  return withSelectedKey(keys, callChain, 'OpenRouter', keyMode, keyNumber, DEFAULT_KEY_ATTEMPTS, 'openrouter');
 }
 
 function parseGeminiDocumentPayload(rawText, includeSummary) {
@@ -633,6 +653,8 @@ async function handleChat(req, env) {
     max_tokens = 2048,
     temperature = 0.7,
     strict_provider = false,
+    key_mode = 'rotation',
+    key_number = 1,
   } = body;
 
   if (!messages || !Array.isArray(messages)) return json({ error: 'messages array required' }, 400);
@@ -643,10 +665,12 @@ async function handleChat(req, env) {
   if (provider === 'local') {
     result = await callLocalLlama(env, model, messages, max_tokens, temperature);
   } else if (provider === 'groq') {
-    result = await withKeyRotation(
+    result = await withSelectedKey(
       getKeys(env, 'GROQ_API_KEY'),
       (k) => callGroq(k, model, messages, max_tokens, temperature),
       'Assistant',
+      key_mode,
+      key_number,
       DEFAULT_KEY_ATTEMPTS,
       'groq'
     );
@@ -675,10 +699,12 @@ async function handleChat(req, env) {
       'gpt'
     );
   } else if (provider === 'gemini') {
-    result = await withKeyRotation(
+    result = await withSelectedKey(
       getKeys(env, 'GEMINI_API_KEY'),
       (k) => callGemini(k, model, messages, max_tokens),
       'Gemini',
+      key_mode,
+      key_number,
       DEFAULT_KEY_ATTEMPTS,
       'gemini'
     );
@@ -691,7 +717,7 @@ async function handleChat(req, env) {
       'deepseek'
     );
   } else if (provider === 'openrouter') {
-    result = await withOpenRouterFallback(env, messages, max_tokens, temperature);
+    result = await withOpenRouterFallback(env, messages, max_tokens, temperature, key_mode, key_number);
   } else {
     return json({ error: `Unknown provider: ${provider}` }, 400);
   }
@@ -735,6 +761,8 @@ async function handleDocumentScan(req, env) {
   const body = await req.json();
   const {
     imageBase64,
+    key_mode = 'rotation',
+    key_number = 1,
     mimeType = 'image/jpeg',
     includeSummary = false,
     documentType = 'document',
@@ -743,10 +771,12 @@ async function handleDocumentScan(req, env) {
   if (!imageBase64) return json({ error: 'imageBase64 required' }, 400);
 
   const geminiKeys = getKeys(env, 'GEMINI_API_KEY');
-  const result = await withKeyRotation(
+  const result = await withSelectedKey(
     geminiKeys,
     (key) => callGeminiDocument(key, imageBase64, mimeType, { includeSummary, documentType, language }),
     'Gemini document scan',
+    key_mode,
+    key_number,
     DEFAULT_KEY_ATTEMPTS,
     'gemini'
   );
@@ -779,17 +809,19 @@ async function handleOcrSpace(req, env) {
 // ---------------- ROUTE: /live/token ----------------
 async function handleLiveToken(req, env) {
   const body = await req.json().catch(() => ({}));
-  const { subject } = body;
+  const { subject, key_mode = 'rotation', key_number = 1 } = body;
 
   const model = env.GEMINI_LIVE_MODEL || DEFAULT_LIVE_MODEL;
   const systemInstruction = subject
     ? `${LIVE_TEACHER_SYSTEM_INSTRUCTION}\n\nAaj ka focus subject: ${subject}.`
     : LIVE_TEACHER_SYSTEM_INSTRUCTION;
 
-  const result = await withKeyRotation(
+  const result = await withSelectedKey(
     getKeys(env, 'GEMINI_API_KEY'),
     (k) => mintEphemeralToken(k, model, systemInstruction),
     'Gemini Live Token',
+    key_mode,
+    key_number,
     DEFAULT_KEY_ATTEMPTS,
     'gemini'
   );
@@ -825,7 +857,7 @@ export default {
         gpt: getKeys(env, 'GPT_API_KEY').length > 0,
         gemini: getKeys(env, 'GEMINI_API_KEY').length > 0,
         deepseek: getKeys(env, 'DEEPSEEK_API_KEY').length > 0,
-        openrouter: Boolean(env.OPENROUTER_API_KEY),
+        openrouter: getKeys(env, 'OPENROUTER_API_KEY').length > 0,
         ocrSpace: getKeys(env, 'OCRSPACE_API_KEY').length > 0,
       };
       const ready = providers.local || providers.gemini || providers.deepseek || providers.groq;

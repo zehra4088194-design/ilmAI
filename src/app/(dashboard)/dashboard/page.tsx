@@ -20,6 +20,7 @@ import { InstallAppButton } from '@/components/features/dashboard/InstallAppButt
 import { StudyBuddyCard } from '@/components/features/dashboard/StudyBuddyCard';
 import { ReferralCard } from '@/components/features/dashboard/ReferralCard';
 import { HouseAdBanner } from '@/components/features/ads/HouseAdBanner';
+import { InstitutionQuickAccess } from '@/components/features/institution/InstitutionQuickAccess';
 
 export const metadata: Metadata = { title: 'Dashboard' };
 
@@ -38,12 +39,14 @@ export default async function DashboardPage() {
     .eq('student_id', user!.id)
     .eq('status', 'approved')
     .maybeSingle();
+
   if (profile?.education_level === 'university') {
     return (
       <div className="space-y-6">
         <InstallAppButton />
         <HouseAdBanner slot="store_products" />
         {!approvedParentLink && <ParentConnectPrompt />}
+        <InstitutionQuickAccess />
         <UniversityDashboard profile={profile} />
       </div>
     );
@@ -161,13 +164,13 @@ export default async function DashboardPage() {
           </Button>
         </div>
       )}
-      {/* Live ilmai.store products — no admin setup, appears/disappears with the store's own catalog. */}
       <HouseAdBanner slot="store_products" />
       <WelcomeSection
         name={profile?.full_name || 'Student'}
         streak={profile?.streak || 0}
         institutionName={profile?.sponsored_institution_name}
       />
+      <InstitutionQuickAccess />
       {!approvedParentLink && <ParentConnectPrompt />}
       <StudyBuddyCard myStreak={profile?.streak || 0} />
       <ReferralCard />

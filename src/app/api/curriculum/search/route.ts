@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/service';
+import { isCurriculumEnabled } from '@/lib/features/curriculum';
 
 export async function GET(req: NextRequest) {
+  if (!(await isCurriculumEnabled())) return NextResponse.json({ error: 'Curriculum is currently disabled.' }, { status: 404 });
+
   const q = req.nextUrl.searchParams.get('q')?.trim() || '';
   const grade = req.nextUrl.searchParams.get('grade')?.trim() || '';
   const subjectId = req.nextUrl.searchParams.get('subject_id')?.trim() || '';

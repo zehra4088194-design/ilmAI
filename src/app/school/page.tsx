@@ -25,6 +25,7 @@ import { cancelPtmRequest, createLeaveRequest, createSchoolContactMessage, reque
 import { getSchoolContexts, requireSchoolContext } from '@/lib/school-erp/access';
 import { getSchoolPortalData } from '@/lib/school-erp/queries';
 import { getStudentKidsZoneEligibility } from '@/lib/school-erp/kids-zone';
+import { getOwnSchoolStudentRecord } from '@/lib/school-erp/student-record';
 
 function ptmStatusVariant(
   status: string
@@ -48,6 +49,10 @@ export default async function SchoolPortalPage() {
   if (!context) redirect('/dashboard');
   const data = await getSchoolPortalData(supabase, context);
   const role = context.membership.member_role;
+  if (role === 'student') {
+    const studentRecord = await getOwnSchoolStudentRecord(context.organization.id);
+    if (studentRecord && !studentRecord.is_profile_complete) redirect('/school/complete-profile');
+  }
   const organizations = (await getSchoolContexts(supabase, user.id)).map((item) => ({
     id: item.organization.id,
     name: item.organization.name,

@@ -696,9 +696,9 @@ export function normalizePlatformSettings(input: unknown): PlatformSettings {
         pkrManual,
         limits: {
           aiCreditsWeekly: numberOrFallback(incomingLimits.aiCreditsWeekly, fallback.limits.aiCreditsWeekly),
-          aiCreditsDaily: numberOrFallback(incomingLimits.aiCreditsDaily, fallback.limits.aiCreditsDaily),
+          aiCreditsDaily: -1,
           aiCreditsMonthly: numberOrFallback(incomingLimits.aiCreditsMonthly, fallback.limits.aiCreditsMonthly),
-          premiumAiMonthly: numberOrFallback(incomingLimits.premiumAiMonthly, fallback.limits.premiumAiMonthly),
+          premiumAiMonthly: -1,
           quizDaily: numberOrFallback(incomingLimits.quizDaily, fallback.limits.quizDaily),
           liveVoiceDaily: numberOrFallback(incomingLimits.liveVoiceDaily, fallback.limits.liveVoiceDaily),
           flashcardsTotal: numberOrFallback(incomingLimits.flashcardsTotal, fallback.limits.flashcardsTotal),

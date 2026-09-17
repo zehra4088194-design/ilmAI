@@ -12,6 +12,8 @@ import type { SchoolActionState, SchoolContext, SchoolPermission } from './types
 import { inviteOrFindProfileId } from '@/lib/auth/inviteOrFindProfile';
 import { mapInstitutionRoleToProfileRole } from '@/lib/auth/mapInstitutionRoleToProfileRole';
 import { sendImmediateAttendanceAlerts } from '@/lib/school-erp/notification-queue';
+import { saveSchoolStudentRecord, studentRecordFromForm } from '@/lib/school-erp/student-record';
+import { ensureSchoolClassGroup } from '@/lib/school-communication/provision';
 
 const SUCCESS: SchoolActionState = { success: true, message: 'Saved successfully.' };
 
@@ -331,6 +333,7 @@ export async function createSection(_state: SchoolActionState, formData: FormDat
       .single();
     if (error) throw new Error(error.message);
     await audit(db, context, 'create', 'section', data.id);
+    await ensureSchoolClassGroup(context.organization.id, data.id, context.userId);
     return done('/school-admin/academics', 'Section added.');
   } catch (error) {
     return failure(error);
@@ -477,6 +480,7 @@ async function createEnrollmentRecord(
   if (await isOrganizationBillingActive(db, context.organization.id)) {
     await grantSchoolSubscription(context.organization.id, input.profileId);
   }
+  await ensureSchoolClassGroup(context.organization.id, input.sectionId, context.userId);
   return data;
 }
 
@@ -533,6 +537,13 @@ export async function enrollStudent(_state: SchoolActionState, formData: FormDat
       admissionNumber,
       rollNumber: optionalText(formData, 'roll_number'),
     });
+    const recordInput = studentRecordFromForm(formData);
+    const studentPhotoFile = formData.get('student_photo');
+    if (studentPhotoFile instanceof File && studentPhotoFile.size > 0) {
+      if (!studentPhotoFile.type.startsWith('image/')) throw new Error('Student photo must be an image file.');
+      recordInput.photo_url = await uploadStudentPhoto(db, context.organization.id, studentPhotoFile);
+    }
+    await saveSchoolStudentRecord(db, context.organization.id, profile.id, recordInput);
     return done(
       '/school-admin/people',
       profile.invited ? `Student enrolled — an invite email was sent to ${studentEmail}.` : 'Student enrolled.'

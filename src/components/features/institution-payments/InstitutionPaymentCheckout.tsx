@@ -17,19 +17,11 @@ type Props = {
   institutionType: InstitutionType;
   organizationId: string;
   planTierId: string | null;
-  // Precomputed server-side via resolveInstitutionPricing() — the component
-  // never re-derives discount math for the ACTUAL charge, so there is exactly
-  // one place (Part 6.1's global admin pricing + volume/annual discount %)
-  // that computes the amount that's really billed.
   monthly: CyclePrice;
   annual: CyclePrice;
   annualDiscountPercent?: number;
   volumeDiscountApplied?: boolean;
   defaultContactEmail?: string;
-  // Below: purely for the "plan for growth" calculator — lets an admin type a
-  // hypothetical student count and preview whether it crosses the volume-
-  // discount threshold. This NEVER changes what "Pay now" or the QR charge —
-  // billing always uses the real active student count computed server-side.
   currentStudentCount?: number;
   volumeDiscountMinStudents?: number;
   volumeDiscountPercent?: number;
@@ -52,40 +44,22 @@ export function InstitutionPaymentCheckout({
   perStudentPkr = 0,
   usdToPkr = 280,
 }: Props) {
-  // Step 1 ('plan') is just the billing-cycle choice + price preview, like the
-  // student subscription flow's "pick a plan" screen before its own separate
-  // checkout page. Step 2 ('payment') is where "Pay now by card" and the
-  // manual JazzCash/bank claim form actually appear — kept as a step
-  // within this same card (rather than a full page nav) since it's one tab of
-  // the settings page, not a standalone checkout route.
   const [step, setStep] = useState<'plan' | 'payment'>('plan');
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const [method, setMethod] = useState<PaymentMethod>('jazzcash');
   const [payingNow, setPayingNow] = useState(false);
   const [plannedStudents, setPlannedStudents] = useState(currentStudentCount);
   const boundAction = submitInstitutionPaymentVerification.bind(null, institutionType);
-  const [state, formAction, pending] = useActionState<SubmitPaymentState, FormData>(boundAction, {
-    success: false,
-    message: '',
-  });
+  const [state, formAction, pending] = useActionState<SubmitPaymentState, FormData>(boundAction, { success: false, message: '' });
 
   const amount = cycle === 'annual' ? annual : monthly;
-  // With no active students yet, per-student pricing resolves to 0 — nothing to
-  // actually charge, so payment is blocked until the institution has enrolled
-  // students to bill for (mirrors resolveInstitutionPricing's real server math).
-  const hasBillableStudents = currentStudentCount > 0 && amount.pkr > 0;
+  const hasBillableStudents = currentStudentCount > 0 && amount.usd > 0;
 
-  // Real, automatic checkout — Paddle charges the card immediately and the webhook activates the
-  // plan itself, no admin review needed. This is separate from ManualPaymentMethodPicker's "card"
-  // option below, which (per its own comment) still only files a manual claim for an admin to
-  // verify — until this existed, "pay by card" for an institution never actually charged anything.
   const payNowWithCard = async () => {
     setPayingNow(true);
     try {
       const response = await fetch('/api/payments/create-institution-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ billingCycle: cycle }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ billingCycle: cycle }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data.url) throw new Error(data.error || 'Could not start checkout.');
@@ -95,133 +69,61 @@ export function InstitutionPaymentCheckout({
       setPayingNow(false);
     }
   };
+
   const feePkr = Math.round(TRANSACTION_FEE_USD * usdToPkr);
   const amountPkrWithFee = amount.pkr + feePkr;
-
-  // "Plan for growth" preview — mirrors resolveInstitutionPricing()'s exact formula so the number
-  // shown here always matches what the real charge would become once the school's active student
-  // count actually crosses the threshold. This only previews the volume-discount tier; it never
-  // feeds into payNowWithCard or the QR, which always use the org's real current student count.
   const previewEligible = volumeDiscountMinStudents > 0 && plannedStudents >= volumeDiscountMinStudents;
   const previewBasePkr = perStudentPkr * plannedStudents;
   const previewAfterVolume = previewEligible ? previewBasePkr * (1 - volumeDiscountPercent / 100) : previewBasePkr;
-  const previewPkr = Math.round(
-    cycle === 'annual' ? previewAfterVolume * 12 * (1 - annualDiscountPercent / 100) : previewAfterVolume
-  );
+  const previewPkr = Math.round(cycle === 'annual' ? previewAfterVolume * 12 * (1 - annualDiscountPercent / 100) : previewAfterVolume);
   const previewUsd = Math.round((previewPkr / usdToPkr) * 100) / 100;
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Renew / upgrade plan</CardTitle>
-      </CardHeader>
+      <CardHeader><CardTitle className="text-base">Renew / upgrade plan</CardTitle></CardHeader>
       <CardContent className="space-y-5">
         {step === 'plan' ? (
           <>
             <div className="flex flex-wrap items-center gap-2">
               {(['monthly', 'annual'] as BillingCycle[]).map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setCycle(option)}
-                  className={cn(
-                    'rounded-full border px-3 py-1.5 text-xs font-semibold transition',
-                    cycle === option ? 'border-violet-400 bg-violet-500/10 text-violet-500' : 'border-input text-muted-foreground'
-                  )}
-                >
+                <button key={option} type="button" onClick={() => setCycle(option)} className={cn('rounded-full border px-3 py-1.5 text-xs font-semibold transition', cycle === option ? 'border-violet-400 bg-violet-500/10 text-violet-500' : 'border-input text-muted-foreground')}>
                   {option === 'monthly' ? 'Monthly' : `Annual${annualDiscountPercent ? ` (-${annualDiscountPercent}%)` : ''}`}
                 </button>
               ))}
             </div>
 
             <div className="rounded-xl border bg-muted/30 p-4 text-center">
-              <p className="text-2xl font-bold">
-                PKR {amount.pkr.toLocaleString()} <span className="text-muted-foreground text-sm font-normal">/ {cycle}</span>
-              </p>
-              <p className="text-muted-foreground text-xs">
-                {perStudentPkr.toLocaleString()} × {currentStudentCount} student{currentStudentCount === 1 ? '' : 's'} · ≈ ${amount.usd.toFixed(2)}
-              </p>
-              {volumeDiscountApplied && (
-                <p className="mt-1 text-xs font-semibold text-emerald-600">Volume discount applied</p>
-              )}
+              <p className="text-2xl font-bold">${amount.usd.toFixed(2)} <span className="text-muted-foreground text-sm font-normal">/ {cycle}</span></p>
+              <p className="text-muted-foreground mt-1 text-sm">= Rs {Math.round(amount.pkr).toLocaleString()}</p>
+              <p className="text-muted-foreground mt-1 text-xs">{perStudentPkr.toLocaleString()} × {currentStudentCount} active student{currentStudentCount === 1 ? '' : 's'}</p>
+              {volumeDiscountApplied && <p className="mt-1 text-xs font-semibold text-emerald-600">Volume discount applied</p>}
             </div>
 
             {volumeDiscountMinStudents > 0 && (
               <div className="rounded-xl border border-dashed p-3">
                 <p className="mb-2 text-xs font-semibold">Plan for growth</p>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-muted-foreground text-xs">Students:</span>
-                  <input
-                    type="number"
-                    min={0}
-                    value={plannedStudents}
-                    onChange={(e) => setPlannedStudents(Math.max(0, Number(e.target.value) || 0))}
-                    className="border-input bg-background h-8 w-24 rounded-lg border px-2 text-sm"
-                  />
-                  <span className="text-muted-foreground text-xs">
-                    (currently {currentStudentCount} active{plannedStudents !== currentStudentCount ? ' — this is a what-if preview only' : ''})
-                  </span>
-                </div>
-                {previewEligible ? (
-                  <p className="mt-2 text-xs font-semibold text-emerald-600">
-                    At {plannedStudents} students you&apos;d qualify for the {volumeDiscountPercent}% volume discount — PKR {previewPkr.toLocaleString()}/{cycle} (≈ ${previewUsd.toFixed(2)}).
-                  </p>
-                ) : (
-                  <p className="text-muted-foreground mt-2 text-xs">
-                    Reach {volumeDiscountMinStudents} students to unlock a {volumeDiscountPercent}% discount automatically
-                    (would become PKR {previewPkr.toLocaleString()}/{cycle}).
-                  </p>
-                )}
-                <p className="text-muted-foreground mt-1 text-[11px]">
-                  This is only a preview — actual billing always uses your real active student count, checked at
-                  payment time.
-                </p>
+                <div className="flex flex-wrap items-center gap-2"><span className="text-muted-foreground text-xs">Students:</span><input type="number" min={0} value={plannedStudents} onChange={(e) => setPlannedStudents(Math.max(0, Number(e.target.value) || 0))} className="border-input bg-background h-8 w-24 rounded-lg border px-2 text-sm" /><span className="text-muted-foreground text-xs">(currently {currentStudentCount}{plannedStudents !== currentStudentCount ? ' — what-if preview only' : ''})</span></div>
+                {previewEligible ? <p className="mt-2 text-xs font-semibold text-emerald-600">At {plannedStudents} students you&apos;d qualify for the {volumeDiscountPercent}% volume discount — ${previewUsd.toFixed(2)}/{cycle}, = Rs {previewPkr.toLocaleString()}/{cycle}.</p> : <p className="text-muted-foreground mt-2 text-xs">Reach {volumeDiscountMinStudents} students to unlock a {volumeDiscountPercent}% discount automatically (would become ${previewUsd.toFixed(2)}/{cycle}, = Rs {previewPkr.toLocaleString()}/{cycle}).</p>}
+                <p className="text-muted-foreground mt-1 text-[11px]">This is only a preview — actual billing always uses your real active student count, checked at payment time.</p>
               </div>
             )}
 
-            {hasBillableStudents ? (
-              <Button type="button" variant="gradient" className="w-full" onClick={() => setStep('payment')}>
-                Continue to payment
-              </Button>
-            ) : (
-              <p className="text-muted-foreground text-center text-xs">
-                Enroll active students first — plan cost is billed per student, so there&apos;s nothing to charge yet.
-              </p>
-            )}
+            {hasBillableStudents ? <Button type="button" variant="gradient" className="w-full" onClick={() => setStep('payment')}>Continue to payment</Button> : <p className="text-muted-foreground text-center text-xs">Enroll active students first — plan cost is billed per student, so there&apos;s nothing to charge yet.</p>}
           </>
         ) : (
           <>
-            <button
-              type="button"
-              onClick={() => setStep('plan')}
-              className="text-muted-foreground flex items-center gap-1 text-xs font-medium hover:text-foreground"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" /> Back to plan
-            </button>
+            <button type="button" onClick={() => setStep('plan')} className="text-muted-foreground flex items-center gap-1 text-xs font-medium hover:text-foreground"><ArrowLeft className="h-3.5 w-3.5" />Back to plan</button>
 
             <div className="rounded-xl border bg-muted/30 p-4 text-center">
-              <p className="text-lg font-bold">
-                PKR {amount.pkr.toLocaleString()} <span className="text-muted-foreground text-sm font-normal">/ {cycle}</span>
-              </p>
-              <p className="text-muted-foreground mt-1 text-xs">
-                +${TRANSACTION_FEE_USD.toFixed(2)} transaction fee (≈ PKR {feePkr.toLocaleString()}) — PKR{' '}
-                {amountPkrWithFee.toLocaleString()} total for wallet payment
-              </p>
+              <p className="text-lg font-bold">${amount.usd.toFixed(2)} <span className="text-muted-foreground text-sm font-normal">/ {cycle}</span></p>
+              <p className="text-muted-foreground mt-1 text-sm">= Rs {Math.round(amount.pkr).toLocaleString()}</p>
+              <p className="text-muted-foreground mt-1 text-xs">+${TRANSACTION_FEE_USD.toFixed(2)} transaction fee (= Rs {feePkr.toLocaleString()}) · Total ${((amount.usd + TRANSACTION_FEE_USD)).toFixed(2)} / Rs {amountPkrWithFee.toLocaleString()}</p>
             </div>
 
-            <Button type="button" variant="gradient" className="w-full" loading={payingNow} onClick={payNowWithCard}>
-              <CreditCard className="h-4 w-4" /> Pay ${amount.usd.toFixed(2)} now by card — activates instantly
-            </Button>
-            <p className="text-muted-foreground -mt-2 text-center text-xs">
-              Or send payment manually below and an admin will verify and activate it.
-            </p>
+            <Button type="button" variant="gradient" className="w-full" loading={payingNow} onClick={payNowWithCard}><CreditCard className="h-4 w-4" />Pay ${amount.usd.toFixed(2)} now by card — activates instantly</Button>
+            <p className="text-muted-foreground -mt-2 text-center text-xs">Or send payment manually below and an admin will verify and activate it.</p>
 
-            <ManualPaymentMethodPicker
-              method={method}
-              onMethodChange={setMethod}
-              proofContext="Hi, I want to confirm my institution plan payment."
-              scannableAmountPkr={amountPkrWithFee}
-            />
+            <ManualPaymentMethodPicker method={method} onMethodChange={setMethod} proofContext="Hi, I want to confirm my institution plan payment." scannableAmountPkr={amountPkrWithFee} />
 
             <form action={formAction} className="space-y-3">
               <input type="hidden" name="organization_id" value={organizationId} />
@@ -229,28 +131,11 @@ export function InstitutionPaymentCheckout({
               <input type="hidden" name="billing_cycle" value={cycle} />
               <input type="hidden" name="method" value={method} />
               <input type="hidden" name="amount_usd" value={amount.usd} />
-              {/* Includes the transaction fee — matches what the QR/on-screen total actually asks for,
-                  so the admin's manual verification isn't short by the fee amount. */}
               <input type="hidden" name="amount_pkr" value={amountPkrWithFee} />
-              <input
-                name="contact_email"
-                type="email"
-                required
-                defaultValue={defaultContactEmail}
-                placeholder="Your email"
-                className="border-input bg-background h-10 w-full rounded-lg border px-3 text-sm"
-              />
-              <textarea
-                name="notes"
-                placeholder="Optional note (transaction ID, etc.)"
-                className="border-input bg-background min-h-16 w-full rounded-lg border px-3 py-2 text-sm"
-              />
-              <Button type="submit" variant="gradient" className="w-full" disabled={pending}>
-                {pending ? 'Submitting...' : "I've sent the payment"}
-              </Button>
-              {state.message && (
-                <p className={cn('text-sm', state.success ? 'text-emerald-600' : 'text-red-500')}>{state.message}</p>
-              )}
+              <input name="contact_email" type="email" required defaultValue={defaultContactEmail} placeholder="Your email" className="border-input bg-background h-10 w-full rounded-lg border px-3 text-sm" />
+              <textarea name="notes" placeholder="Optional note (transaction ID, etc.)" className="border-input bg-background min-h-16 w-full rounded-lg border px-3 py-2 text-sm" />
+              <Button type="submit" variant="gradient" className="w-full" disabled={pending}>{pending ? 'Submitting...' : "I've sent the payment"}</Button>
+              {state.message && <p className={cn('text-sm', state.success ? 'text-emerald-600' : 'text-red-500')}>{state.message}</p>}
             </form>
           </>
         )}
