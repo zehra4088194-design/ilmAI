@@ -1,15 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/server';
 import { selectEffectiveSubscription } from '@/lib/payments/subscription-access';
 
-// College-side mirror of src/lib/school-erp/subscription-cascade.ts — see that file's header
-// comment for the full rationale. Deliberately a separate module (own grant-id namespace
-// `college_erp:...` vs `school_erp:...`) rather than a shared generic "institution" cascade, per
-// CLAUDE_CODE_MASTER_PROMPT.md's "data and portals stay separate" instruction — even though the
-// logic underneath is identical in shape.
 const COLLEGE_GRANT_PROVIDER = 'college_erp';
-// Far-future end date used when billing_status is 'active'. When billing_status
-// is 'trial', the plan row's own trial_ends_at is used instead — see
-// resolveGrantParams and /api/cron/expire-institution-trials.
 const COLLEGE_GRANT_PERIOD_END = '2099-12-31T00:00:00.000Z';
 
 function collegeGrantSubscriptionId(organizationId: string, profileId: string) {
@@ -19,12 +11,15 @@ function collegeGrantSubscriptionId(organizationId: string, profileId: string) {
 async function resolveGrantParams(db: any, organizationId: string) {
   const { data: plan } = await db
     .from('college_organization_plan_settings')
-    .select('grant_tier, billing_status, trial_ends_at')
+    .select('grant_tier, billing_status, trial_ends_at, billing_scope')
     .eq('organization_id', organizationId)
     .maybeSingle();
   const tier: 'PRO' | 'ELITE' = plan?.grant_tier === 'ELITE' ? 'ELITE' : 'PRO';
-  const periodEnd = plan?.billing_status === 'trial' && plan?.trial_ends_at ? plan.trial_ends_at : COLLEGE_GRANT_PERIOD_END;
-  return { tier, periodEnd };
+  const periodEnd = plan?.billing_status === 'trial' && plan?.trial_ends_at
+    ? plan.trial_ends_at
+    : COLLEGE_GRANT_PERIOD_END;
+  const billingScope = plan?.billing_scope === 'institution_wide' ? 'institution_wide' : 'management';
+  return { tier, periodEnd, billingScope } as const;
 }
 
 async function reconcileProfileTier(db: any, profileId: string) {
@@ -49,9 +44,29 @@ export async function isCollegeOrganizationBillingActive(db: any, organizationId
   return false;
 }
 
+async function collegeRoleReceivesInstitutionGrant(db: any, organizationId: string, profileId: string, billingScope: 'management' | 'institution_wide') {
+  if (billingScope === 'institution_wide') return true;
+  const { data: membership } = await db
+    .from('college_memberships')
+    .select('member_role')
+    .eq('organization_id', organizationId)
+    .eq('profile_id', profileId)
+    .eq('status', 'active')
+    .maybeSingle();
+  return !['student', 'parent'].includes(String(membership?.member_role || ''));
+}
+
 export async function grantCollegeSubscription(organizationId: string, profileId: string) {
   const admin = (await createAdminClient()) as any;
-  const { tier, periodEnd } = await resolveGrantParams(admin, organizationId);
+  const { tier, periodEnd, billingScope } = await resolveGrantParams(admin, organizationId);
+  if (!(await collegeRoleReceivesInstitutionGrant(admin, organizationId, profileId, billingScope))) {
+    await admin
+      .from('subscriptions')
+      .update({ status: 'canceled' })
+      .eq('provider_subscription_id', collegeGrantSubscriptionId(organizationId, profileId));
+    await reconcileProfileTier(admin, profileId);
+    return;
+  }
   await admin.from('subscriptions').upsert(
     {
       user_id: profileId,
@@ -77,48 +92,57 @@ export async function revokeCollegeSubscription(organizationId: string, profileI
   await reconcileProfileTier(admin, profileId);
 }
 
-/**
- * Toggles the college grant for every active member of an institution. Bulk by design — see
- * school's syncOrganizationSchoolGrants for why (a 500-member institution run one member at a
- * time times out mid-cascade).
- */
 export async function syncOrganizationCollegeGrants(organizationId: string, shouldGrant: boolean) {
   const admin = (await createAdminClient()) as any;
   const { data: members } = await admin
     .from('college_memberships')
-    .select('profile_id')
+    .select('profile_id, member_role')
     .eq('organization_id', organizationId)
     .eq('status', 'active');
-  const profileIds = Array.from(new Set<string>((members || []).map((member: any) => String(member.profile_id))));
-  if (!profileIds.length) return;
+  const rows = (members || []).map((member: any) => ({
+    profileId: String(member.profile_id),
+    role: String(member.member_role || ''),
+  }));
+  const allProfileIds = Array.from(new Set(rows.map((row) => row.profileId)));
+  if (!allProfileIds.length) return;
 
   if (shouldGrant) {
-    const { tier, periodEnd } = await resolveGrantParams(admin, organizationId);
-    const now = new Date().toISOString();
-    await admin.from('subscriptions').upsert(
-      profileIds.map((profileId) => ({
-        user_id: profileId,
-        provider: COLLEGE_GRANT_PROVIDER,
-        provider_subscription_id: collegeGrantSubscriptionId(organizationId, profileId),
-        tier,
-        status: 'active',
-        current_period_start: now,
-        current_period_end: periodEnd,
-        cancel_at_period_end: false,
-      })),
-      { onConflict: 'provider_subscription_id' }
-    );
+    const { tier, periodEnd, billingScope } = await resolveGrantParams(admin, organizationId);
+    const targetRows = billingScope === 'institution_wide'
+      ? rows
+      : rows.filter((row) => !['student', 'parent'].includes(row.role));
+    const eligibleIds = Array.from(new Set(targetRows.map((row) => row.profileId)));
+    const staleIds = allProfileIds.filter((id) => !eligibleIds.includes(id));
+    if (eligibleIds.length) {
+      const now = new Date().toISOString();
+      await admin.from('subscriptions').upsert(
+        eligibleIds.map((profileId) => ({
+          user_id: profileId,
+          provider: COLLEGE_GRANT_PROVIDER,
+          provider_subscription_id: collegeGrantSubscriptionId(organizationId, profileId),
+          tier,
+          status: 'active',
+          current_period_start: now,
+          current_period_end: periodEnd,
+          cancel_at_period_end: false,
+        })),
+        { onConflict: 'provider_subscription_id' }
+      );
+    }
+    if (staleIds.length) {
+      await admin
+        .from('subscriptions')
+        .update({ status: 'canceled' })
+        .in('provider_subscription_id', staleIds.map((profileId) => collegeGrantSubscriptionId(organizationId, profileId)));
+    }
   } else {
     await admin
       .from('subscriptions')
       .update({ status: 'canceled' })
-      .in(
-        'provider_subscription_id',
-        profileIds.map((profileId) => collegeGrantSubscriptionId(organizationId, profileId))
-      );
+      .in('provider_subscription_id', allProfileIds.map((profileId) => collegeGrantSubscriptionId(organizationId, profileId)));
   }
 
-  await reconcileProfileTiers(admin, profileIds);
+  await reconcileProfileTiers(admin, allProfileIds);
 }
 
 async function reconcileProfileTiers(db: any, profileIds: string[]) {
