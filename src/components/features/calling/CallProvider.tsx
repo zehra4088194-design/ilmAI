@@ -31,6 +31,14 @@ type CallingContextValue = {
 const CallingContext = createContext<CallingContextValue | null>(null);
 export function useCalling() { return useContext(CallingContext); }
 
+function microphoneErrorMessage(error: unknown) {
+  const name = typeof error === 'object' && error && 'name' in error ? String((error as { name?: unknown }).name) : '';
+  if (name === 'NotAllowedError' || name === 'PermissionDeniedError') return 'Microphone permission was denied. Allow microphone access for ilmai.study and try again.';
+  if (name === 'NotFoundError' || name === 'DevicesNotFoundError') return 'No microphone was found on this device.';
+  if (name === 'NotReadableError' || name === 'TrackStartError') return 'The microphone is busy or unavailable. Close other apps using it and try again.';
+  return 'Could not access the microphone. Check your browser permission and try again.';
+}
+
 export function CallProvider({ identity, children }: { identity: CallIdentity | null; children: ReactNode }) {
   const [status, setStatus] = useState<CallStatus>('idle');
   const [incomingCall, setIncomingCall] = useState<IncomingCallState | null>(null);
@@ -109,8 +117,16 @@ export function CallProvider({ identity, children }: { identity: CallIdentity | 
     setError(null);
     const verdict = await requestCallPermission(institutionType, organizationId, target.userId);
     if (!verdict.allowed || !verdict.callId) { setError(verdict.reason || 'This call is not allowed.'); return; }
+
+    let stream: MediaStream;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err) {
+      setError(microphoneErrorMessage(err));
+      return;
+    }
+
+    try {
       localStreamRef.current = stream;
       const peer = await ensurePeer();
       setStatus('calling');
@@ -122,8 +138,10 @@ export function CallProvider({ identity, children }: { identity: CallIdentity | 
       });
       if (!identity) return;
       await send(target.userId, { type: 'invite', callId: verdict.callId, fromId: identity.userId, fromName: identity.fullName || 'Someone', fromAvatarUrl: identity.avatarUrl, peerId: peer.id, institutionType, organizationId });
-    } catch {
-      setError('Could not access the microphone. Check your browser permission and try again.'); resetToIdle();
+    } catch (err) {
+      console.error('Call start failed after microphone access:', err);
+      setError('Could not start the call. Check your connection and try again.');
+      resetToIdle();
     }
   }, [attachRemoteStream, ensurePeer, identity, resetToIdle, send]);
 
@@ -131,8 +149,18 @@ export function CallProvider({ identity, children }: { identity: CallIdentity | 
     const invite = incomingCall;
     if (!invite) return;
     setIncomingCall(null); setError(null);
+
+    let stream: MediaStream;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err) {
+      setError(microphoneErrorMessage(err));
+      setIncomingCall(invite);
+      setStatus('ringing');
+      return;
+    }
+
+    try {
       localStreamRef.current = stream;
       const peer = await ensurePeer();
       const call = peer.call(invite.peerId, stream);
@@ -142,8 +170,10 @@ export function CallProvider({ identity, children }: { identity: CallIdentity | 
       call.on('close', resetToIdle);
       await updateCallStatus(invite.institutionType, invite.callId, 'accepted');
       await send(invite.fromId, { type: 'accepted', callId: invite.callId, peerId: peer.id });
-    } catch {
-      setError('Could not access the microphone. Check your browser permission and try again.'); resetToIdle();
+    } catch (err) {
+      console.error('Incoming call accept failed after microphone access:', err);
+      setError('Could not connect the call. Check your connection and try again.');
+      resetToIdle();
     }
   }, [attachRemoteStream, ensurePeer, incomingCall, resetToIdle, send]);
 
