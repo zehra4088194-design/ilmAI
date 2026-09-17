@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, timingSafeEqual } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { sendAdminNotification } from '@/lib/adminMail';
 import { checkDailyLimit } from '@/lib/rate-limit';
@@ -22,8 +22,7 @@ function timingSafeTokenMatches(received: string, expected: string) {
   const receivedBuffer = Buffer.from(received);
   const expectedBuffer = Buffer.from(expected);
   return (
-    receivedBuffer.length === expectedBuffer.length &&
-    require('node:crypto').timingSafeEqual(receivedBuffer, expectedBuffer)
+    receivedBuffer.length === expectedBuffer.length && timingSafeEqual(receivedBuffer, expectedBuffer)
   );
 }
 
