@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('Chapter quiz creation failed:', error);
     return NextResponse.json(
-      { status: 'error', error: error instanceof Error ? error.message : 'The chapter quiz could not be started.' },
+      { status: 'error', error: 'The chapter quiz could not be started. Please try again.' },
       { status: 500 }
     );
   }
