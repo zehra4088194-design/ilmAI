@@ -29,6 +29,22 @@ async function resolveInstitutionPortalHome(supabase: SupabaseClient, userId: st
   return null;
 }
 
+async function institutionPlanSetupPath(supabase: SupabaseClient, userId: string) {
+  const schoolRole = await resolveSchoolRole(supabase, userId);
+  if (schoolRole && ['owner', 'admin'].includes(schoolRole.role)) {
+    const { data } = await (supabase as any).from('school_organization_plan_settings')
+      .select('plan_setup_complete').eq('organization_id', schoolRole.organizationId).maybeSingle();
+    if (data && data.plan_setup_complete === false) return '/institution-plan-setup';
+  }
+  const collegeRole = await resolveCollegeRole(supabase, userId);
+  if (collegeRole && ['owner', 'admin'].includes(collegeRole.role)) {
+    const { data } = await (supabase as any).from('college_organization_plan_settings')
+      .select('plan_setup_complete').eq('organization_id', collegeRole.organizationId).maybeSingle();
+    if (data && data.plan_setup_complete === false) return '/institution-plan-setup';
+  }
+  return null;
+}
+
 function buildContentSecurityPolicy(nonce: string) {
   const developmentEval = process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : '';
   return [
@@ -88,6 +104,11 @@ export async function middleware(request: NextRequest) {
     return secure(response);
   }
 
+  if (pathname === '/institution-plan-setup') {
+    if (!user) return secure(NextResponse.redirect(`${origin}/login?redirect=${encodeURIComponent(requestedPath)}`));
+    return secure(response);
+  }
+
   if (matchesRoutePrefix(pathname, '/teacher')) {
     if (!user) return secure(NextResponse.redirect(`${origin}/login?redirect=${encodeURIComponent(requestedPath)}`));
     const portalHome = await resolveInstitutionPortalHome(supabase, user.id);
@@ -116,6 +137,10 @@ export async function middleware(request: NextRequest) {
       const collegeRole = await resolveCollegeRole(supabase, user.id);
       if (collegeRole) return secure(NextResponse.redirect(`${origin}${collegeAdminHomeForRole(collegeRole.role)}`));
     }
+    if (schoolRole && ['owner','admin'].includes(schoolRole.role)) {
+      const setupPath = await institutionPlanSetupPath(supabase, user.id);
+      if (setupPath) return secure(NextResponse.redirect(`${origin}${setupPath}`));
+    }
     return secure(response);
   }
 
@@ -131,15 +156,14 @@ export async function middleware(request: NextRequest) {
   if (PROTECTED_PREFIXES.some((p) => matchesRoutePrefix(pathname, p))) {
     if (!user) return secure(NextResponse.redirect(`${origin}/login?redirect=${encodeURIComponent(requestedPath)}`));
     if (pathname === '/dashboard') {
+      const setupPath = await institutionPlanSetupPath(supabase, user.id);
+      if (setupPath) return secure(NextResponse.redirect(`${origin}${setupPath}`));
       const portalHome = await resolveInstitutionPortalHome(supabase, user.id);
       let refererPath = '';
       const referer = request.headers.get('referer');
       if (referer) {
         try { refererPath = new URL(referer).pathname; } catch { refererPath = ''; }
       }
-      // /school currently redirects to /dashboard when its tenant context cannot be resolved.
-      // A parent would otherwise be sent straight back to /school by this block, creating an
-      // infinite /school <-> /dashboard loop. Let that recovery dashboard request complete.
       const recoveringFromSchool = refererPath === '/school' && portalHome === '/school';
       if (portalHome && portalHome !== pathname && !recoveringFromSchool) return secure(NextResponse.redirect(`${origin}${portalHome}`));
     }
@@ -149,6 +173,8 @@ export async function middleware(request: NextRequest) {
   }
 
   if (AUTH_ROUTES.includes(pathname) && user) {
+    const setupPath = await institutionPlanSetupPath(supabase, user.id);
+    if (setupPath) return secure(NextResponse.redirect(`${origin}${setupPath}`));
     const portalHome = await resolveInstitutionPortalHome(supabase, user.id);
     return secure(NextResponse.redirect(`${origin}${portalHome || '/dashboard'}`));
   }
