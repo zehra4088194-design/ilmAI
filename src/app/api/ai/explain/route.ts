@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { explainConceptViaGateway } from '@/lib/ai/gateway';
+import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
 import { checkAiMessageLimit, consumeAiCredits } from '@/lib/rate-limit';
 import type { SubscriptionTier } from '@/types';
 
 export const runtime = 'nodejs';
+export const maxDuration = 60;
+
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
@@ -27,17 +30,18 @@ export async function POST(req: NextRequest) {
     if (!concept || !subject)
       return NextResponse.json({ status: 'error', error: 'A concept and subject are required' }, { status: 400 });
 
+    const provider = await resolveAiRoutingProvider('studyTools');
     const explanation = await explainConceptViaGateway(
       concept,
       subject,
       profile?.grade_level || 'GRADE_10',
-      'gemini',
+      provider,
       'mini'
     );
     await consumeAiCredits(user.id, tier, 'explain');
     return NextResponse.json({ status: 'success', data: { explanation } });
   } catch (error) {
     console.error('Explain API error:', error);
-    return NextResponse.json({ status: 'error', error: 'The explanation could not be generated' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: 'The explanation could not be generated. Please try again.' }, { status: 500 });
   }
 }
