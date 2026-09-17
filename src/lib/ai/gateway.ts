@@ -88,7 +88,6 @@ async function gatewayFetch(path: string, body: unknown) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GATEWAY_SECRET}` },
     body: JSON.stringify(requestBody),
-    // Gateway does its own multi-key retries; give it room to work
     signal: AbortSignal.timeout(provider === 'local' ? 185000 : 90000),
   });
   const contentType = res.headers.get('content-type') || '';
@@ -105,100 +104,74 @@ async function gatewayFetch(path: string, body: unknown) {
   return data;
 }
 
-/** Send a chat completion through the gateway. Non-streaming by design — see docs for why. */
+/**
+ * Send a chat completion through the gateway.
+ *
+ * Provider routing is intentionally strict at this layer. The Next.js
+ * application resolves the provider from the admin routing setting and this
+ * function attempts that provider only. There is no hidden Gemini/DeepSeek
+ * fallback here, even when an older caller omits strictProvider.
+ */
 export async function gatewayChat({
   provider,
   tier,
   messages,
   maxTokens = 2048,
   temperature = 0.7,
-  strictProvider = false,
+  strictProvider = true,
   routingPolicy = 'text',
   validateResponse,
 }: GatewayChatRequest): Promise<GatewayChatResponse> {
-  const providerChain: Array<{ provider: AiProviderId; tier: ModelTier }> =
-    routingPolicy === 'gemini'
-      ? [{ provider: 'gemini', tier }]
-      : routingPolicy === 'local'
-        ? [{ provider: 'local', tier: 'mini' }]
-        : routingPolicy === 'tutor' || routingPolicy === 'presentation'
-          ? [
-              { provider: 'gemini', tier },
-              { provider: 'deepseek', tier },
-            ]
-          : [
-              { provider: 'gemini', tier },
-              { provider: 'deepseek', tier },
-            ];
-  const primaryProvider = providerChain[0]?.provider || provider;
-  const attempts: GatewayChatRequest[] = strictProvider
-    ? [{ provider, tier, messages, maxTokens, temperature, strictProvider: true, routingPolicy, validateResponse }]
-    : providerChain.map((attempt) => ({
-        ...attempt,
-        messages,
-        maxTokens,
-        temperature,
-        routingPolicy,
-        validateResponse,
-      }));
-  const seen = new Set<string>();
-  let lastError: unknown;
+  const attempt: GatewayChatRequest = {
+    provider,
+    tier,
+    messages,
+    maxTokens,
+    temperature,
+    strictProvider: true,
+    routingPolicy,
+    validateResponse,
+  };
 
-  for (const attempt of attempts) {
-    const key = `${attempt.provider}:${attempt.tier}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-
-    try {
-      const budgetKey = getProviderBudgetKey(attempt.provider, attempt.tier);
-      if (budgetKey) {
-        const budget = await checkProviderDailyLimit(budgetKey);
-        if (!budget.success) {
-          lastError = new GatewayError(`${attempt.provider} has reached its free daily budget.`, 429, {
-            provider: attempt.provider,
-            reset: budget.reset,
-          });
-          continue;
-        }
+  try {
+    const budgetKey = getProviderBudgetKey(attempt.provider, attempt.tier);
+    if (budgetKey) {
+      const budget = await checkProviderDailyLimit(budgetKey);
+      if (!budget.success) {
+        throw new GatewayError(`${attempt.provider} has reached its free daily budget.`, 429, {
+          provider: attempt.provider,
+          reset: budget.reset,
+        });
       }
-
-      const data = (await gatewayFetch('/chat', {
-        provider: attempt.provider === 'advanced' ? ADVANCED_GATEWAY_PROVIDER : attempt.provider,
-        tier: attempt.tier,
-        messages,
-        max_tokens: maxTokens,
-        temperature,
-        // Next.js owns the provider chain so every attempted provider can be
-        // admitted against its platform-wide free budget exactly once.
-        strict_provider: true,
-      })) as GatewayChatResponse;
-
-      if (isUsableAiResponse(data.text || '') && (!validateResponse || validateResponse(data.text))) {
-        const rawProviderUsed = String(data.providerUsed || '');
-        const rawOriginalProvider = data.originalProvider ? String(data.originalProvider) : undefined;
-        const providerUsed = rawProviderUsed === ADVANCED_GATEWAY_PROVIDER ? 'advanced' : data.providerUsed;
-        const originalProvider = rawOriginalProvider === ADVANCED_GATEWAY_PROVIDER ? 'advanced' : data.originalProvider;
-        return {
-          ...data,
-          providerUsed: providerUsed as AiProviderId,
-          fallbackTriggered: data.fallbackTriggered || attempt.provider !== primaryProvider,
-          originalProvider:
-            (originalProvider as AiProviderId | undefined) ||
-            (attempt.provider !== primaryProvider ? primaryProvider : undefined),
-        };
-      }
-
-      lastError = new GatewayError('AI provider returned an unusable response.', 502, data);
-    } catch (error) {
-      if (error instanceof GatewayError && (error.status === 401 || error.status === 403)) {
-        throw error;
-      }
-      lastError = error;
     }
-  }
 
-  if (lastError instanceof GatewayError) throw lastError;
-  throw new GatewayError('AI gateway failed on all providers.', 502, lastError);
+    const data = (await gatewayFetch('/chat', {
+      provider: attempt.provider === 'advanced' ? ADVANCED_GATEWAY_PROVIDER : attempt.provider,
+      tier: attempt.tier,
+      messages,
+      max_tokens: maxTokens,
+      temperature,
+      strict_provider: true,
+    })) as GatewayChatResponse;
+
+    if (!isUsableAiResponse(data.text || '') || (validateResponse && !validateResponse(data.text))) {
+      throw new GatewayError('AI provider returned an unusable response.', 502, data);
+    }
+
+    const rawProviderUsed = String(data.providerUsed || '');
+    const rawOriginalProvider = data.originalProvider ? String(data.originalProvider) : undefined;
+    const providerUsed = rawProviderUsed === ADVANCED_GATEWAY_PROVIDER ? 'advanced' : data.providerUsed;
+    const originalProvider = rawOriginalProvider === ADVANCED_GATEWAY_PROVIDER ? 'advanced' : data.originalProvider;
+    return {
+      ...data,
+      providerUsed: providerUsed as AiProviderId,
+      fallbackTriggered: false,
+      originalProvider: originalProvider as AiProviderId | undefined,
+    };
+  } catch (error) {
+    if (error instanceof GatewayError) throw error;
+    throw new GatewayError('The selected AI provider could not generate a response.', 502, error);
+  }
 }
 
 /** Convenience wrapper matching the shape used by the old direct-SDK client. */
@@ -217,7 +190,7 @@ export async function sendAiMessage(opts: {
       .filter((m) => m.role !== 'system')
       .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
   ];
-  const result = await gatewayChat({ provider, tier, messages: formatted });
+  const result = await gatewayChat({ provider, tier, messages: formatted, strictProvider: true });
   return result.text;
 }
 
@@ -242,7 +215,7 @@ export const MARKDOWN_ANSWER_FORMAT_INSTRUCTION = `Format your answer as a well-
   {"type":"line","title":"y = x^2","xLabel":"x","yLabel":"y","series":[{"name":"x^2","fn":"x^2","xMin":-10,"xMax":10,"steps":40}]}
   \`\`\`
   - "type" is one of "line", "bar", "scatter", "pie"
-  - For a mathematical function, ALWAYS use "fn" (a plain math expression in terms of x, e.g. "x^2", "sin(x)", "2*x+3") with "xMin"/"xMax"/"steps" — it is evaluated exactly, so never hand-compute and list out the (x, y) points yourself
+  - For a mathematical function, ALWAYS use "fn" (a plain math expression in terms of x, e.g. "x^2", "sin(x)", "2*x+3") with "xMin"/"xMax"/steps" — it is evaluated exactly, so never hand-compute and list out the (x, y) points yourself
   - For anything else (comparisons, survey results, bar/pie data), use "data": an array of {"x":...,"y":...} points instead of "fn" — every point needs a real number, never a placeholder like "<value>"
   - "series" can have more than one entry to plot multiple functions/datasets on the same chart
   - Only emit a chart block when a visual actually helps (a real function, a comparison, a distribution) AND you are confident in the actual numbers. If real-world data (e.g. a country's GDP by year) isn't reliably known to you, say so in plain text and suggest where to find it — do NOT invent numbers and do NOT output a code block of placeholders/blanks for the student to fill in
@@ -251,7 +224,7 @@ export const MARKDOWN_ANSWER_FORMAT_INSTRUCTION = `Format your answer as a well-
 function buildSystemPrompt(subject?: string): string {
   const base = `You are ilm AI, an expert tutor for Pakistani students (Grades 9-12, O/A Levels).
 You specialize in FBISE and provincial board curricula.
-- Explain concepts clearly in professional English by default. Use Roman Urdu only when the student explicitly requests it.
+- Explain concepts clearly in professional English. Use Roman Urdu only when the student explicitly requests it.
 - For MCQs, explain why each option is correct or incorrect
 - Encourage and motivate students
 - Be concise but thorough
@@ -278,13 +251,13 @@ Return ONLY valid JSON array: [{"text":"...","options":[{"id":"a","text":"..."}]
     messages: [
       {
         role: 'system',
-        content:
-          'You are an expert question generator for Pakistani board exams. Return only valid JSON, no markdown fences.',
+        content: 'You are an expert question generator for Pakistani board exams. Return only valid JSON, no markdown fences.',
       },
       { role: 'user', content: prompt },
     ],
     maxTokens: 4096,
     temperature: 0.3,
+    strictProvider: true,
   });
   return result.text;
 }
@@ -311,6 +284,7 @@ export async function explainConceptViaGateway(
     ],
     maxTokens: 1024,
     temperature: 0.5,
+    strictProvider: true,
   });
   return result.text;
 }
@@ -328,8 +302,7 @@ export async function generateFlashcardsViaGateway(
     messages: [
       {
         role: 'system',
-        content:
-          'Expert flashcard creator for Pakistani board exams. Return only valid JSON array, no markdown fences.',
+        content: 'Expert flashcard creator for Pakistani board exams. Return only valid JSON array, no markdown fences.',
       },
       {
         role: 'user',
@@ -338,6 +311,7 @@ export async function generateFlashcardsViaGateway(
     ],
     maxTokens: 2048,
     temperature: 0.4,
+    strictProvider: true,
   });
   return result.text;
 }
@@ -364,13 +338,13 @@ Return ONLY valid JSON array: [{"slo_code":"...","title":"...","description":"..
     messages: [
       {
         role: 'system',
-        content:
-          'You are a curriculum designer for Pakistani board exams. Return only valid JSON array, no markdown fences.',
+        content: 'You are a curriculum designer for Pakistani board exams. Return only valid JSON array, no markdown fences.',
       },
       { role: 'user', content: prompt },
     ],
     maxTokens: 4096,
     temperature: 0.3,
+    strictProvider: true,
   });
   return result.text;
 }
@@ -383,14 +357,7 @@ export async function tagQuestionsWithConceptsViaGateway(params: {
 }): Promise<string> {
   const conceptList = params.concepts.map((c) => `${c.id}: ${c.title}`).join('\n');
   const questionList = params.questions.map((q) => `${q.id}: ${q.text.slice(0, 300)}`).join('\n');
-  const prompt = `Concepts (id: title):
-${conceptList}
-
-Questions (id: text):
-${questionList}
-
-For each question, pick the single best-matching concept id from the list above, or null if none genuinely fit.
-Return ONLY valid JSON array: [{"questionId":"...","conceptId":"..."|null}]`;
+  const prompt = `Concepts (id: title):\n${conceptList}\n\nQuestions (id: text):\n${questionList}\n\nFor each question, pick the single best-matching concept id from the list above, or null if none genuinely fit.\nReturn ONLY valid JSON array: [{"questionId":"...","conceptId":"..."|null}]`;
   const result = await gatewayChat({
     provider: params.provider || 'gemini',
     tier: params.tier || 'mini',
@@ -403,6 +370,7 @@ Return ONLY valid JSON array: [{"questionId":"...","conceptId":"..."|null}]`;
     ],
     maxTokens: 2048,
     temperature: 0.1,
+    strictProvider: true,
   });
   return result.text;
 }
