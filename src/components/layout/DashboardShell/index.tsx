@@ -5,14 +5,13 @@ import { DashboardNavbar } from '@/components/layout/DashboardNavbar';
 import { DashboardSidebar } from '@/components/layout/DashboardSidebar';
 import { DashboardFooter } from '@/components/layout/DashboardFooter';
 import { SideChatWidget } from '@/components/features/ai-selector/SideChatWidget';
-import { useAuth } from '@/hooks/auth/useAuth';
+import { FeatureTour } from '@/components/features/onboarding/FeatureTour';
 import type { InstitutionBranding } from '@/lib/branding/resolveInstitutionBranding';
 
 export function DashboardShell({ children, branding }: { children: ReactNode; branding?: InstitutionBranding | null }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
   const [desktopAutoCloseEnabled, setDesktopAutoCloseEnabled] = useState(true);
-  const { user } = useAuth();
 
   useEffect(() => {
     if (!desktopSidebarOpen || !desktopAutoCloseEnabled) return;
@@ -54,6 +53,7 @@ export function DashboardShell({ children, branding }: { children: ReactNode; br
         <DashboardFooter />
       </div>
       <SideChatWidget />
+      <FeatureTour mobileMenuOpen={mobileMenuOpen} onMobileMenuChange={setMobileMenuOpen} />
     </div>
   );
 }
