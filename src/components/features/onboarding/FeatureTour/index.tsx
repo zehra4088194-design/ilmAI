@@ -329,7 +329,7 @@ export function FeatureTour({
     let cancelled = false;
     let retryTimer: number | undefined;
 
-    const updatePosition = () => {
+    const updatePosition = (shouldScroll = false) => {
       if (cancelled) return;
 
       const target = findVisibleElement(step.selector);
@@ -341,7 +341,9 @@ export function FeatureTour({
       }
 
       if (target) {
-        target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+        if (shouldScroll) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+        }
         const rect = target.getBoundingClientRect();
         const padding = 6;
         const nextRect = {
@@ -381,7 +383,7 @@ export function FeatureTour({
       });
     };
 
-    const frame = window.requestAnimationFrame(updatePosition);
+    const frame = window.requestAnimationFrame(() => updatePosition(true));
     const handleResize = () => updatePosition();
     const handleScroll = () => updatePosition();
     window.addEventListener('resize', handleResize);
