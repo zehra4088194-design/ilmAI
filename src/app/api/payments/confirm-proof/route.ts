@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { checkDailyLimit } from '@/lib/rate-limit';
+import { createClient } from '@/lib/supabase/server';
 import { sendAdminNotification } from '@/lib/adminMail';
 
 // Manual JazzCash/Easypaisa/bank-transfer payment proof (institution plans, fee vouchers, parent
@@ -36,6 +37,17 @@ export async function POST(request: NextRequest) {
   const name = String(form.get('name') || '').trim().slice(0, 120);
   const phone = String(form.get('phone') || '').trim().slice(0, 30);
   const context = String(form.get('context') || '').trim().slice(0, 300);
+
+  let accountEmail = '';
+  let accountUserId = '';
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    accountEmail = user?.email || '';
+    accountUserId = user?.id || '';
+  } catch {
+    // Manual proof can still be submitted without a signed-in session.
+  }
   const image = form.get('image');
 
   if (!name || !phone) {
@@ -60,7 +72,13 @@ export async function POST(request: NextRequest) {
     await sendAdminNotification({
       to: PAYMENT_PROOF_EMAIL,
       subject: `[ilm AI] Payment proof: ${context || 'manual payment'}`,
-      fields: { 'Name on transaction': name, 'Sender number': phone, Context: context },
+      fields: {
+        'Account email': accountEmail,
+        'Account user ID': accountUserId,
+        'Name on transaction': name,
+        'Sender number': phone,
+        Context: context,
+      },
       attachments: [
         {
           filename: image.name || 'proof.png',
