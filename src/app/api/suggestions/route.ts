@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { checkDailyLimit } from '@/lib/rate-limit';
 import { sendAdminNotification } from '@/lib/adminMail';
+import { createClient } from '@/lib/supabase/server';
 
 // General "have a suggestion?" box (e.g. the Support dialog) — takes a message plus an optional
 // screenshot (a pricing page, a bug, anything) and sends it server-side via SMTP
@@ -36,6 +37,17 @@ export async function POST(request: NextRequest) {
   const page = String(form.get('page') || '').trim().slice(0, 500);
   const image = form.get('image');
 
+  let accountEmail = '';
+  let accountUserId = '';
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    accountEmail = user?.email || '';
+    accountUserId = user?.id || '';
+  } catch {
+    // Public suggestions remain available without sign-in.
+  }
+
   if (!message || message.length > MAX_MESSAGE_LENGTH) {
     return NextResponse.json({ error: 'Enter a message before sending.' }, { status: 400 });
   }
@@ -66,7 +78,12 @@ export async function POST(request: NextRequest) {
     await sendAdminNotification({
       to: SUGGESTION_EMAIL,
       subject: '[ilm AI] New suggestion',
-      fields: { Message: message, 'Page URL': page },
+      fields: {
+        'Account email': accountEmail,
+        'Account user ID': accountUserId,
+        Message: message,
+        'Page URL': page,
+      },
       attachments,
     });
     return NextResponse.json({ ok: true });
