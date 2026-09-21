@@ -122,13 +122,46 @@ export function PharmaPulseClient() {
   const [shownAnswers, setShownAnswers] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
+    let cancelled = false;
+
+    const localHistory = (() => {
+      try {
+        const stored = JSON.parse(localStorage.getItem('pharmapulse_history') || '[]');
+        return Array.isArray(stored) ? stored.filter((item): item is string => typeof item === 'string') : [];
+      } catch {
+        return [];
+      }
+    })();
+
     try {
-      setHistory(JSON.parse(localStorage.getItem('pharmapulse_history') || '[]'));
       setMode((localStorage.getItem('pharmapulse_mode') as PharmaMode) || 'student');
       setBright(localStorage.getItem('pharmapulse_bright') === 'true');
     } catch {
-      setHistory([]);
+      // Keep the defaults when browser storage is unavailable.
     }
+
+    (async () => {
+      try {
+        const res = await fetch('/api/ai/pharmapulse', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'history-list' }),
+        });
+        const json = await res.json();
+        if (!cancelled && json.status === 'success' && Array.isArray(json.data?.result)) {
+          setHistory(json.data.result.filter((item: unknown): item is string => typeof item === 'string'));
+          return;
+        }
+      } catch {
+        // Fall back to browser history for older locally-saved entries.
+      }
+
+      if (!cancelled) setHistory(localHistory);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -346,9 +379,23 @@ export function PharmaPulseClient() {
                   <button
                     type="button"
                     className="text-muted-foreground hover:text-destructive text-xs"
-                    onClick={() => {
+                    onClick={async () => {
+                      const previous = history;
                       setHistory([]);
-                      localStorage.removeItem('pharmapulse_history');
+
+                      try {
+                        const res = await fetch('/api/ai/pharmapulse', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ action: 'history-clear' }),
+                        });
+                        const json = await res.json();
+                        if (json.status !== 'success') throw new Error(json.error || 'Unable to clear history');
+                        localStorage.removeItem('pharmapulse_history');
+                      } catch {
+                        setHistory(previous);
+                        toast.error('PharmaPulse history could not be cleared.');
+                      }
                     }}
                   >
                     Clear
