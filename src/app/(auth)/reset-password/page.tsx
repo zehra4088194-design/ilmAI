@@ -48,6 +48,27 @@ export default function ResetPasswordPage() {
       return;
     }
 
+    // Invitation/recovery links already leave us with a valid authenticated
+    // session. Before forcing a logout, resolve institution membership so an
+    // invited coordinator/teacher/owner can go straight to their portal instead
+    // of being sent through the consumer login/onboarding flow again.
+    try {
+      const response = await fetch('/api/auth/post-login-destination?redirect=%2Fdashboard', {
+        cache: 'no-store',
+      });
+      const data = await response.json().catch(() => null);
+      const destination = typeof data?.destination === 'string' ? data.destination : '/dashboard';
+      if (destination !== '/dashboard') {
+        toast.success('Password updated. Welcome to your institution portal.');
+        router.replace(destination);
+        router.refresh();
+        return;
+      }
+    } catch {
+      // Fall through to the existing secure logout/login flow for ordinary
+      // password recovery if membership resolution is unavailable.
+    }
+
     await supabase.auth.signOut();
     toast.success('Password updated. Log in with your new password.');
     router.replace('/login?password=updated');
