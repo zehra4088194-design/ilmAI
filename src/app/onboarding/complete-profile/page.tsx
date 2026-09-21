@@ -19,7 +19,26 @@ export default async function CompleteProfilePage() {
     .eq('id', user.id)
     .single();
 
-  if (!needsProfileCompletion(profile ?? null)) {
+  // This page is student-only. Institution membership is authoritative, so a
+  // coordinator/teacher/owner account whose legacy profiles.role still says
+  // "student" must never see the student completion wizard.
+  const [{ data: schoolMemberships }, { data: collegeMemberships }] = await Promise.all([
+    (supabase as any)
+      .from('school_memberships')
+      .select('member_role')
+      .eq('profile_id', user.id)
+      .eq('status', 'active'),
+    (supabase as any)
+      .from('college_memberships')
+      .select('member_role')
+      .eq('profile_id', user.id)
+      .eq('status', 'active'),
+  ]);
+  const hasInstitutionNonStudentMembership =
+    (schoolMemberships || []).some((row: any) => row.member_role !== 'student') ||
+    (collegeMemberships || []).some((row: any) => row.member_role !== 'student');
+
+  if (hasInstitutionNonStudentMembership || !needsProfileCompletion(profile ?? null)) {
     redirect('/dashboard');
   }
 
