@@ -47,7 +47,27 @@ export async function enforceOnboarding(
     return null;
   }
 
-  if (profile.role !== 'student') {
+  // Institution membership is authoritative for portal accounts. A person can be
+  // a school/college coordinator, teacher, owner, etc. while their global profiles.role
+  // is still "student" (legacy accounts or an existing consumer account later invited
+  // into an institution). Never send such a member through student onboarding.
+  const [{ data: schoolMemberships }, { data: collegeMemberships }] = await Promise.all([
+    (supabase as any)
+      .from('school_memberships')
+      .select('member_role')
+      .eq('profile_id', user.id)
+      .eq('status', 'active'),
+    (supabase as any)
+      .from('college_memberships')
+      .select('member_role')
+      .eq('profile_id', user.id)
+      .eq('status', 'active'),
+  ]);
+  const hasInstitutionNonStudentMembership =
+    (schoolMemberships || []).some((row: any) => row.member_role !== 'student') ||
+    (collegeMemberships || []).some((row: any) => row.member_role !== 'student');
+
+  if (profile.role !== 'student' || hasInstitutionNonStudentMembership) {
     return null;
   }
 
