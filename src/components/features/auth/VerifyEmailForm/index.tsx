@@ -72,12 +72,31 @@ export function VerifyEmailForm() {
 
     window.sessionStorage.removeItem(PENDING_EMAIL_KEY);
     toast.success('Email verified successfully.');
-    const destination =
+
+    // Keep the verification path consistent with normal password/OAuth login.
+    // In particular, an institutional teacher/coordinator-style account must
+    // never be sent into the student onboarding wizard. Pending institutional
+    // join requests have no active membership yet, so the shared resolver will
+    // correctly leave them on the normal dashboard until the school approves them.
+    const fallbackDestination =
       role === 'parent'
         ? '/parent'
         : educationLevel === 'university'
           ? '/onboarding/complete-profile'
-          : '/onboarding/class';
+          : '/dashboard';
+
+    let destination = fallbackDestination;
+    try {
+      const response = await fetch(
+        `/api/auth/post-login-destination?redirect=${encodeURIComponent(fallbackDestination)}`,
+        { cache: 'no-store' }
+      );
+      const json = await response.json().catch(() => null);
+      if (typeof json?.destination === 'string') destination = json.destination;
+    } catch {
+      // Keep the role-aware fallback if the shared resolver is unavailable.
+    }
+
     window.location.assign(destination);
   };
 
