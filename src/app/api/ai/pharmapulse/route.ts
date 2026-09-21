@@ -22,6 +22,39 @@ function cleanString(value: unknown, fallback = '') {
   return typeof value === 'string' && value.trim() ? value.trim().slice(0, 700) : fallback;
 }
 
+function normalizeMedicineKey(value: unknown) {
+  return cleanString(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 180);
+}
+
+function getModeResult(row: any, mode: 'student' | 'patient') {
+  const values = row?.results_by_mode;
+  if (!values || typeof values !== 'object' || Array.isArray(values)) return null;
+  return values[mode] && typeof values[mode] === 'object' ? values[mode] : null;
+}
+
+async function findPharmaHistoryRow(supabase: any, userId: string, term: string) {
+  const key = normalizeMedicineKey(term);
+  if (!key) return null;
+
+  const table = (supabase as any).from('pharmapulse_history');
+
+  const { data: byLookup, error: lookupError } = await table
+    .select('id,user_id,medicine_key,medicine_name,lookup_terms,results_by_mode,created_at,updated_at')
+    .eq('user_id', userId)
+    .contains('lookup_terms', [key])
+    .order('updated_at', { ascending: false })
+    .limit(1);
+
+  if (lookupError) throw lookupError;
+  return (byLookup || [])[0] || null;
+}
+
+
 function buildDrugPrompt(query: string, mode: string) {
   const modeInstr =
     mode === 'patient'
@@ -152,7 +185,29 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const action = cleanString(body.action, 'drug');
     const query = cleanString(body.query);
-    const mode = cleanString(body.mode, 'student');
+    const mode = cleanString(body.mode, 'student') === 'patient' ? 'patient' : 'student';
+    const historyTable = (supabase as any).from('pharmapulse_history');
+
+    if (action === 'history-list') {
+      const { data, error } = await historyTable
+        .select('medicine_name,updated_at')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false })
+        .limit(12);
+
+      if (error) throw error;
+      return NextResponse.json({
+        status: 'success',
+        data: { action, result: (data || []).map((row: any) => row.medicine_name).filter(Boolean) },
+      });
+    }
+
+    if (action === 'history-clear') {
+      const { error } = await historyTable.delete().eq('user_id', user.id);
+      if (error) throw error;
+      return NextResponse.json({ status: 'success', data: { action, result: true } });
+    }
+
     if (!query) return NextResponse.json({ status: 'error', error: 'A medicine name is required' }, { status: 400 });
 
     if (action === 'suggestions') {
@@ -191,6 +246,17 @@ export async function POST(req: NextRequest) {
         .map((item) => ({ name: cleanString(item.name), cls: cleanString(item.cls, 'Medicine') }));
       if (suggestions.length) await consumeAiCredits(user.id, suggestionTier, 'pharmapulse_drug');
       return NextResponse.json({ status: 'success', data: { action, result: suggestions } });
+    }
+
+    if (action === 'drug') {
+      const cachedRow = await findPharmaHistoryRow(supabase, user.id, query);
+      const cachedResult = getModeResult(cachedRow, mode);
+      if (cachedResult) {
+        return NextResponse.json({
+          status: 'success',
+          data: { action, result: cachedResult, cached: true },
+        });
+      }
     }
 
     const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
@@ -241,7 +307,56 @@ export async function POST(req: NextRequest) {
     }
 
     await consumeUniversityFeatureCredits(user.id, tier, action === 'mcq' ? 'pharmapulse_mcq' : 'pharmapulse_drug');
-    return NextResponse.json({ status: 'success', data: { action, result: parsed } });
+
+    if (action === 'drug') {
+      const canonicalName = cleanString((parsed as Record<string, unknown>)?.medicine_name, query);
+      const canonicalKey = normalizeMedicineKey(canonicalName);
+      const existingRow =
+        (await findPharmaHistoryRow(supabase, user.id, canonicalName)) ||
+        (await findPharmaHistoryRow(supabase, user.id, query));
+
+      const existingTerms = Array.isArray(existingRow?.lookup_terms)
+        ? existingRow.lookup_terms.filter((value: unknown): value is string => typeof value === 'string')
+        : [];
+      const aliases = Array.isArray((parsed as Record<string, unknown>)?.aliases)
+        ? ((parsed as Record<string, unknown>).aliases as unknown[]).filter(
+            (value): value is string => typeof value === 'string'
+          )
+        : [];
+      const lookupTerms = Array.from(
+        new Set(
+          [query, canonicalName, ...aliases]
+            .map(normalizeMedicineKey)
+            .filter(Boolean)
+            .concat(existingTerms)
+        )
+      ).slice(0, 40);
+
+      const existingResults =
+        existingRow?.results_by_mode &&
+        typeof existingRow.results_by_mode === 'object' &&
+        !Array.isArray(existingRow.results_by_mode)
+          ? existingRow.results_by_mode
+          : {};
+
+      const { error: historyError } = await historyTable.upsert(
+        {
+          user_id: user.id,
+          medicine_key: existingRow?.medicine_key || canonicalKey,
+          medicine_name: canonicalName,
+          lookup_terms: lookupTerms,
+          results_by_mode: { ...existingResults, [mode]: parsed },
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id,medicine_key' }
+      );
+
+      if (historyError) {
+        console.error('PharmaPulse history save failed:', historyError);
+      }
+    }
+
+    return NextResponse.json({ status: 'success', data: { action, result: parsed, cached: false } });
   } catch (error) {
     console.error('PharmaPulse route error:', error);
     return NextResponse.json(
