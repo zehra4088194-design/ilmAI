@@ -214,7 +214,11 @@ export const MARKDOWN_ANSWER_FORMAT_INSTRUCTION = `Format your answer as a well-
 - If data is missing or units are inconsistent, say so instead of guessing.
 - For a question with one definitive answer, end with a line starting exactly **Final Answer:** followed by the concise answer. Do not use that label for open-ended questions.
 - Use short code blocks for code and Markdown tables for datasets/comparisons.
+<<<<<<< HEAD
 - For graphs, use a fenced \`\`\`chart block containing only the chart JSON schema already supported by the app.
+=======
+- For graphs, use a fenced chart block containing only the chart JSON schema already supported by the app.
+>>>>>>> 9207a1aebf2d99b2b15c3973721d3a7a3c3881b7
 - Keep paragraphs short.`;
 
 function buildSystemPrompt(subject?: string): string {
