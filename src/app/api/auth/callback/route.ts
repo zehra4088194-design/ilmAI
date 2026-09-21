@@ -26,7 +26,13 @@ function resolveGradeLevel(value: unknown): GradeLevel | null {
 }
 
 function resolveRole(value: unknown): Database['public']['Enums']['user_role'] | null {
-  return value === 'parent' || value === 'teacher' || value === 'admin' || value === 'student' ? value : null;
+  return value === 'parent' ||
+    value === 'teacher' ||
+    value === 'admin' ||
+    value === 'principal' ||
+    value === 'student'
+    ? value
+    : null;
 }
 
 function resolveEducationLevel(value: unknown): EducationLevel | null {
