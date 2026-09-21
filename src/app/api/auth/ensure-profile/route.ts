@@ -64,7 +64,14 @@ export async function POST() {
   if (!user) return NextResponse.json({ error: 'Authentication is required' }, { status: 401 });
 
   const metadata = user.user_metadata || {};
-  const role = metadata.role === 'parent' ? 'parent' : metadata.role === 'teacher' ? 'teacher' : 'student';
+  const role =
+    metadata.role === 'parent'
+      ? 'parent'
+      : metadata.role === 'teacher'
+        ? 'teacher'
+        : metadata.role === 'principal'
+          ? 'principal'
+          : 'student';
   const signupInstitutionId =
     typeof metadata.signup_institution_id === 'string' ? metadata.signup_institution_id : null;
   const signupRoleRequested =
