@@ -43,7 +43,7 @@ function normalizeBlock(block: string): string {
   // Wrap any such environment in $$ — but skip content already inside a $...$/$$...$$ pair
   // (matched first, left untouched) so correctly-delimited math is never double-wrapped.
   normalized = normalized.replace(
-    /\$\$[\s\S]*?\$\$|\$[^$\n]*?\$|\\begin\{([a-zA-Z*]+)\}[\s\S]*?\\end\{\1\}/g,
+    /\$\$[\s\S]*?\$\$|\$[^$\n]*?\$|(?:\\begin\{([a-zA-Z*]+)\}[\s\S]*?\\end\{\1\})/g,
     (whole, envName: string | undefined) => (envName ? `$$${whole}$$` : whole)
   );
 

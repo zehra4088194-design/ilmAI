@@ -6,7 +6,7 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Login is required.' }, { status: 401 });
 
-  const { data, error } = await (supabase.from('student_applications') as any)
+  const { data, error } = await ((supabase as any).from('student_applications') as any)
     .select('id,student_id,institution_type,institution_id,recipient_type,application_type,subject,body,starts_on,ends_on,status,response_note,created_at,updated_at')
     .eq('recipient_id', user.id)
     .order('created_at', { ascending: false })
@@ -18,7 +18,9 @@ export async function GET() {
   const profiles = studentIds.length
     ? await (supabase.from('profiles') as any).select('id,full_name,email').in('id', studentIds)
     : { data: [] };
-  const profileMap = new Map((profiles.data || []).map((profile: any) => [profile.id, profile]));
+  const profileMap = new Map<string, { full_name: string | null; email: string | null }>(
+    (profiles.data || []).map((profile: any) => [profile.id, profile])
+  );
 
   const schoolOrgIds = [...new Set(rows.filter((row: any) => row.institution_type === 'school').map((row: any) => row.institution_id))];
   const collegeOrgIds = [...new Set(rows.filter((row: any) => row.institution_type === 'college').map((row: any) => row.institution_id))];

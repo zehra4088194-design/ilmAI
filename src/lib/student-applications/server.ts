@@ -113,7 +113,7 @@ export async function getStudentApplicationContext(userId: string): Promise<Stud
 
 export async function getOwnStudentApplications(userId: string) {
   const supabase = await createClient();
-  const result = await (supabase.from('student_applications') as any)
+  const result = await ((supabase as any).from('student_applications') as any)
     .select('id,institution_type,institution_id,recipient_type,recipient_id,application_type,subject,body,starts_on,ends_on,status,response_note,created_at,updated_at')
     .eq('student_id', userId)
     .order('created_at', { ascending: false })
@@ -123,7 +123,7 @@ export async function getOwnStudentApplications(userId: string) {
 
 export async function getOwnTemplates(userId: string) {
   const supabase = await createClient();
-  const result = await (supabase.from('student_application_templates') as any)
+  const result = await ((supabase as any).from('student_application_templates') as any)
     .select('id,institution_type,institution_id,application_type,title,subject,body,created_at,updated_at')
     .eq('student_id', userId)
     .order('created_at', { ascending: false })

@@ -62,7 +62,7 @@ Rules:
       full_reference?: string;
       verification_note?: string;
     }> | undefined;
-  }>(result.text, null);
+  }>(result.text, {});
 
   if (!parsed?.citations || parsed.citations.length !== styles.length) {
     throw new GatewayError('The selected AI service returned incomplete citation data.', 502);

@@ -24,17 +24,21 @@ export default async function ParentLayout({ children }: ParentLayoutProps) {
 
   if (profile?.role !== 'parent' || profile.subscription_tier !== 'FREE' || !links?.length) return children;
 
-  const studentIds = links.map((link) => link.student_id).filter(Boolean);
+  const studentIds = links
+    .map((link) => link.student_id)
+    .filter((studentId): studentId is string => Boolean(studentId));
   const { data: students } = await supabase
     .from('profiles')
     .select('id, full_name, avatar_url')
     .in('id', studentIds);
 
   const studentMap = new Map((students || []).map((student) => [student.id, student]));
-  const communicationLinks = links.map((link) => ({
+  const communicationLinks = links
+    .filter((link): link is typeof link & { student_id: string } => Boolean(link.student_id))
+    .map((link) => ({
     id: link.id,
     student: studentMap.get(link.student_id) || null,
-  }));
+    }));
 
   return (
     <>

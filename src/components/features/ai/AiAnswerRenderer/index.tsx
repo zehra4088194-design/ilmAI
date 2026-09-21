@@ -93,7 +93,9 @@ export function AiAnswerRenderer({ content, className, card = true, label, feedb
       });
       const json = await res.json();
       if (json.status === 'error') throw new Error(json.error);
-      toast.success(isHelpful ? 'Thank you. We are glad this helped.' : 'Feedback received. We will use it to improve.');
+      toast.success(
+        isHelpful ? 'Thank you. We are glad this helped.' : 'Feedback received. We will use it to improve.'
+      );
     } catch {
       // Non-fatal — feedback is a nice-to-have, don't block the reading experience
     }
@@ -109,13 +111,13 @@ export function AiAnswerRenderer({ content, className, card = true, label, feedb
             <a
               href={href}
               {...props}
-              className="not-prose my-1 inline-flex items-center rounded-lg border border-primary/35 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary no-underline transition-colors hover:bg-primary/20"
+              className="not-prose border-primary/35 bg-primary/10 text-primary hover:bg-primary/20 my-1 inline-flex items-center rounded-lg border px-3 py-1.5 text-xs font-semibold no-underline transition-colors"
             >
               {children}
             </a>
           ),
           table: ({ children }) => (
-            <div className="not-prose my-3 overflow-x-auto rounded-xl border border-border/70">
+            <div className="not-prose border-border/70 my-3 overflow-x-auto rounded-xl border">
               <table className="w-full text-left text-sm">{children}</table>
             </div>
           ),
@@ -130,7 +132,9 @@ export function AiAnswerRenderer({ content, className, card = true, label, feedb
                 <div className="not-prose ai-final-answer my-3 flex items-start justify-between gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3.5">
                   <div className="flex items-start gap-2.5">
                     <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                    <p className="m-0 text-sm leading-relaxed font-semibold text-emerald-800 dark:text-emerald-300">{children}</p>
+                    <p className="m-0 text-sm leading-relaxed font-semibold text-emerald-800 dark:text-emerald-300">
+                      {children}
+                    </p>
                   </div>
                   <span className="ai-well-done hidden shrink-0 -rotate-6 text-lg text-emerald-600 sm:inline-block dark:text-emerald-400">
                     {pickWellDoneNote(normalizedContent)}
@@ -150,7 +154,9 @@ export function AiAnswerRenderer({ content, className, card = true, label, feedb
             const codeProps = (codeElement as { props?: { className?: string; children?: unknown } })?.props;
             const language = /language-(\w+)/.exec(codeProps?.className || '')?.[1];
             if (language === 'chart' || language === 'json' || !language) {
-              const raw = Array.isArray(codeProps?.children) ? codeProps.children.join('') : String(codeProps?.children ?? '');
+              const raw = Array.isArray(codeProps?.children)
+                ? codeProps.children.join('')
+                : String(codeProps?.children ?? '');
               const trimmed = raw.replace(/\n$/, '');
               if (language === 'chart') return <ChartBlock spec={trimmed} />;
               if (parseChartSpec(trimmed)) return <ChartBlock spec={trimmed} />;
@@ -169,38 +175,42 @@ export function AiAnswerRenderer({ content, className, card = true, label, feedb
   return (
     <div className="ai-doc p-4 sm:p-5">
       {label && (
-        <div className="flex items-center gap-1.5 mb-2 text-xs font-semibold text-violet-500 dark:text-violet-400">
-          <Sparkles className="w-3.5 h-3.5" />
+        <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-violet-500 dark:text-violet-400">
+          <Sparkles className="h-3.5 w-3.5" />
           {label}
         </div>
       )}
       {body}
       {feedback && (
-        <div className="flex items-center gap-3 mt-4 pt-3 border-t border-border/60">
-          <span className="text-xs text-muted-foreground">Was this helpful?</span>
+        <div className="border-border/60 mt-4 flex items-center gap-3 border-t pt-3">
+          <span className="text-muted-foreground text-xs">Was this helpful?</span>
           <button
             type="button"
             onClick={() => submitFeedback(true)}
             disabled={!!voted}
             className={cn(
-              'inline-flex items-center gap-1 text-xs rounded-full px-2.5 py-1 border transition-colors',
-              voted === 'up' ? 'border-green-500/40 bg-green-500/10 text-green-600 dark:text-green-400' : 'border-border hover:bg-muted/50',
+              'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs transition-colors',
+              voted === 'up'
+                ? 'border-green-500/40 bg-green-500/10 text-green-600 dark:text-green-400'
+                : 'border-border hover:bg-muted/50',
               voted && voted !== 'up' && 'opacity-40'
             )}
           >
-            <ThumbsUp className="w-3.5 h-3.5" /> Yes
+            <ThumbsUp className="h-3.5 w-3.5" /> Yes
           </button>
           <button
             type="button"
             onClick={() => submitFeedback(false)}
             disabled={!!voted}
             className={cn(
-              'inline-flex items-center gap-1 text-xs rounded-full px-2.5 py-1 border transition-colors',
-              voted === 'down' ? 'border-red-500/40 bg-red-500/10 text-red-600 dark:text-red-400' : 'border-border hover:bg-muted/50',
+              'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs transition-colors',
+              voted === 'down'
+                ? 'border-red-500/40 bg-red-500/10 text-red-600 dark:text-red-400'
+                : 'border-border hover:bg-muted/50',
               voted && voted !== 'down' && 'opacity-40'
             )}
           >
-            <ThumbsDown className="w-3.5 h-3.5" /> No
+            <ThumbsDown className="h-3.5 w-3.5" /> No
           </button>
         </div>
       )}

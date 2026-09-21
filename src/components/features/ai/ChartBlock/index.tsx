@@ -48,6 +48,47 @@ type ChartSpec = {
   series: ChartSeries[];
 };
 
+const CHART_TYPES = new Set<ChartSpec['type']>(['line', 'bar', 'scatter', 'pie']);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function asChartPoint(value: unknown, fallbackX?: string | number): ChartPoint | null {
+  if (typeof value === 'number' && Number.isFinite(value) && fallbackX !== undefined) {
+    return { x: fallbackX, y: value };
+  }
+  if (!isRecord(value)) return null;
+  const x = value.x ?? fallbackX;
+  const y = value.y;
+  if ((typeof x !== 'string' && typeof x !== 'number') || typeof y !== 'number' || !Number.isFinite(y)) return null;
+  return { x, y };
+}
+
+function titleText(value: unknown): string | undefined {
+  if (typeof value === 'string') return value;
+  if (isRecord(value) && typeof value.text === 'string') return value.text;
+  return undefined;
+}
+
+function axisTitle(scales: unknown, axis: 'x' | 'y'): string | undefined {
+  if (!isRecord(scales)) return undefined;
+  const config = scales[axis] ?? scales[`${axis}Axis`];
+  if (!isRecord(config)) return undefined;
+  return titleText(config.title);
+}
+
+function stripChartFence(raw: string): string {
+  let value = raw.trim();
+  let previous = '';
+  while (value !== previous) {
+    previous = value;
+    const match = /^```(?:chart|json)?\s*([\s\S]*?)\s*```$/i.exec(value);
+    value = match ? match[1].trim() : value;
+  }
+  return value;
+}
+
 function resolveSeriesData(series: ChartSeries): ChartPoint[] {
   if (series.fn) {
     const xMin = Number.isFinite(series.xMin) ? (series.xMin as number) : -10;
@@ -75,10 +116,63 @@ function resolveSeriesData(series: ChartSeries): ChartPoint[] {
 // model occasionally forgets the exact tag even when the data itself is real.
 export function parseSpec(raw: string): ChartSpec | null {
   try {
-    const spec = JSON.parse(raw) as ChartSpec;
-    if (!spec || !Array.isArray(spec.series) || spec.series.length === 0) return null;
-    if (!['line', 'bar', 'scatter', 'pie'].includes(spec.type)) return null;
-    return spec;
+    const input = JSON.parse(stripChartFence(raw)) as unknown;
+    if (!isRecord(input) || typeof input.type !== 'string' || !CHART_TYPES.has(input.type as ChartSpec['type']))
+      return null;
+
+    const type = input.type as ChartSpec['type'];
+    const title = titleText(input.title);
+    const nativeSeries = input.series;
+    if (Array.isArray(nativeSeries) && nativeSeries.length > 0) {
+      const series = nativeSeries.filter(isRecord).map((item, index): ChartSeries => ({
+        name: typeof item.name === 'string' ? item.name : `Series ${index + 1}`,
+        color: typeof item.color === 'string' ? item.color : undefined,
+        data: Array.isArray(item.data)
+          ? item.data.map((point) => asChartPoint(point)).filter((point): point is ChartPoint => point !== null)
+          : undefined,
+        fn: typeof item.fn === 'string' ? item.fn : undefined,
+        xMin: typeof item.xMin === 'number' ? item.xMin : undefined,
+        xMax: typeof item.xMax === 'number' ? item.xMax : undefined,
+        steps: typeof item.steps === 'number' ? item.steps : undefined,
+      }));
+      if (series.length === 0) return null;
+      return {
+        type,
+        title,
+        xLabel: typeof input.xLabel === 'string' ? input.xLabel : undefined,
+        yLabel: typeof input.yLabel === 'string' ? input.yLabel : undefined,
+        series,
+      };
+    }
+
+    const data = input.data;
+    if (!isRecord(data) || !Array.isArray(data.datasets) || data.datasets.length === 0) return null;
+    const labels = Array.isArray(data.labels) ? data.labels : [];
+    const series = data.datasets
+      .filter(isRecord)
+      .map((dataset, index): ChartSeries => {
+        const values = Array.isArray(dataset.data) ? dataset.data : [];
+        const points = values
+          .map((value, valueIndex) => asChartPoint(value, labels[valueIndex] as string | number | undefined))
+          .filter((point): point is ChartPoint => point !== null);
+        return {
+          name: typeof dataset.label === 'string' ? dataset.label : `Series ${index + 1}`,
+          color: typeof dataset.backgroundColor === 'string' ? dataset.backgroundColor : undefined,
+          data: points,
+        };
+      })
+      .filter((series) => series.data && series.data.length > 0);
+    if (series.length === 0) return null;
+
+    const options = isRecord(input.options) ? input.options : undefined;
+    const scales = options?.scales;
+    return {
+      type,
+      title,
+      xLabel: axisTitle(scales, 'x'),
+      yLabel: axisTitle(scales, 'y'),
+      series,
+    };
   } catch {
     return null;
   }
@@ -96,6 +190,9 @@ export function ChartBlock({ spec: raw }: { spec: string }) {
   const resolvedSeries = useMemo(
     () => (spec ? spec.series.map((series) => ({ ...series, points: resolveSeriesData(series) })) : []),
     [spec]
+  );
+  const lineUsesNumericXAxis = resolvedSeries.every((series) =>
+    series.points.every((point) => typeof point.x === 'number')
   );
 
   if (!spec) {
@@ -137,7 +234,10 @@ export function ChartBlock({ spec: raw }: { spec: string }) {
                 stroke="currentColor"
                 label={spec.xLabel ? { value: spec.xLabel, position: 'insideBottom', offset: -5 } : undefined}
               />
-              <YAxis stroke="currentColor" label={spec.yLabel ? { value: spec.yLabel, angle: -90, position: 'insideLeft' } : undefined} />
+              <YAxis
+                stroke="currentColor"
+                label={spec.yLabel ? { value: spec.yLabel, angle: -90, position: 'insideLeft' } : undefined}
+              />
               <Tooltip contentStyle={tooltipStyle} />
               {resolvedSeries.length > 1 && <Legend />}
               {resolvedSeries.map((series, index) => (
@@ -170,7 +270,12 @@ export function ChartBlock({ spec: raw }: { spec: string }) {
               <Tooltip contentStyle={tooltipStyle} cursor={{ strokeDasharray: '3 3' }} />
               {resolvedSeries.length > 1 && <Legend />}
               {resolvedSeries.map((series, index) => (
-                <Scatter key={series.name} name={series.name} data={series.points} fill={series.color || COLORS[index % COLORS.length]} />
+                <Scatter
+                  key={series.name}
+                  name={series.name}
+                  data={series.points}
+                  fill={series.color || COLORS[index % COLORS.length]}
+                />
               ))}
             </ScatterChart>
           ) : (
@@ -178,12 +283,15 @@ export function ChartBlock({ spec: raw }: { spec: string }) {
               <CartesianGrid strokeDasharray="3 3" className="opacity-20" />
               <XAxis
                 dataKey="x"
-                type="number"
-                domain={['dataMin', 'dataMax']}
+                type={lineUsesNumericXAxis ? 'number' : 'category'}
+                domain={lineUsesNumericXAxis ? ['dataMin', 'dataMax'] : undefined}
                 stroke="currentColor"
                 label={spec.xLabel ? { value: spec.xLabel, position: 'insideBottom', offset: -5 } : undefined}
               />
-              <YAxis stroke="currentColor" label={spec.yLabel ? { value: spec.yLabel, angle: -90, position: 'insideLeft' } : undefined} />
+              <YAxis
+                stroke="currentColor"
+                label={spec.yLabel ? { value: spec.yLabel, angle: -90, position: 'insideLeft' } : undefined}
+              />
               <Tooltip contentStyle={tooltipStyle} />
               {resolvedSeries.length > 1 && <Legend />}
               {resolvedSeries.map((series, index) => (

@@ -104,15 +104,15 @@ export async function syncOrganizationCollegeGrants(organizationId: string, shou
     profileId: String(member.profile_id),
     role: String(member.member_role || ''),
   }));
-  const allProfileIds = Array.from(new Set(rows.map((row) => row.profileId)));
+  const allProfileIds: string[] = Array.from(new Set(rows.map((row: { profileId: string }) => row.profileId)));
   if (!allProfileIds.length) return;
 
   if (shouldGrant && billingActive) {
     const { tier, periodEnd, billingScope } = await resolveGrantParams(admin, organizationId);
     const targetRows = billingScope === 'institution_wide'
       ? rows
-      : rows.filter((row) => !['student', 'parent'].includes(row.role));
-    const eligibleIds = Array.from(new Set(targetRows.map((row) => row.profileId)));
+      : rows.filter((row: { role: string }) => !['student', 'parent'].includes(row.role));
+    const eligibleIds: string[] = Array.from(new Set(targetRows.map((row: { profileId: string }) => row.profileId)));
     const staleIds = allProfileIds.filter((id) => !eligibleIds.includes(id));
     if (eligibleIds.length) {
       const now = new Date().toISOString();

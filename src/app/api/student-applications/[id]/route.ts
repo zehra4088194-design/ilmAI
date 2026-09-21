@@ -13,7 +13,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const responseNote = typeof body?.responseNote === 'string' ? body.responseNote.trim().slice(0, 4000) : null;
   if (!ALLOWED.has(status)) return NextResponse.json({ error: 'Invalid status.' }, { status: 400 });
 
-  const { data: application, error } = await (supabase.from('student_applications') as any)
+  const { data: application, error } = await ((supabase as any).from('student_applications') as any)
     .update({ status, response_note: responseNote, reviewed_by: user.id, reviewed_at: new Date().toISOString() })
     .eq('id', id)
     .eq('recipient_id', user.id)

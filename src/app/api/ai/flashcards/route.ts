@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
       front: c.front,
       back: c.back,
       hint: c.hint || null,
-      difficulty: 'MEDIUM',
+      difficulty: 'MEDIUM' as const,
       next_review_at: new Date().toISOString(),
       interval: 1,
       ease_factor: 2.5,

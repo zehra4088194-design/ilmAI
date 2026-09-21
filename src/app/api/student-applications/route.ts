@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
   const recipientId = recipientType === 'principal' ? institution.principalId : institution.classInchargeId;
   if (!recipientId) return json({ error: recipientType === 'principal' ? 'No principal is configured for this institution.' : 'No class incharge/advisor is assigned to your current class.' }, 400);
 
-  const { data: created, error } = await (supabase.from('student_applications') as any)
+  const { data: created, error } = await ((supabase as any).from('student_applications') as any)
     .insert({
       student_id: user.id,
       institution_type: institutionType,
