@@ -58,7 +58,14 @@ export function VerifyEmailForm() {
     }
 
     const metadata = data.user.user_metadata || {};
-    const role = metadata.role === 'parent' ? 'parent' : 'student';
+    const role =
+      metadata.role === 'parent'
+        ? 'parent'
+        : metadata.role === 'teacher'
+          ? 'teacher'
+          : metadata.role === 'principal'
+            ? 'principal'
+            : 'student';
     const educationLevel = metadata.education_level;
     const gender = metadata.gender;
     const preferredLanguage = metadata.preferred_language === 'roman-ur' ? 'roman-ur' : 'en';
