@@ -41,7 +41,7 @@ export async function getCallDirectory(
   if (institutionType === 'consumer') {
     const { data } = await db
       .from('profiles')
-      .select('id, full_name, avatar_url, role')
+      .select('id, full_name, avatar_url, role, phone')
       .order('full_name', { ascending: true })
       .limit(200);
     const list = (data || []).map((item: any) => ({
@@ -49,11 +49,14 @@ export async function getCallDirectory(
       full_name: item.full_name,
       avatar_url: item.avatar_url,
       member_role: item.role || 'student',
+      phone: item.phone || null,
     })) as CallDirectoryEntry[];
     return excludeUserId ? list.filter((item) => item.profile_id !== excludeUserId) : list;
   }
 
-  const { data, error } = await db.rpc(DIRECTORY_RPC[institutionType]!, { p_organization_id: organizationId });
+  const { data, error } = await db.rpc(DIRECTORY_RPC[institutionType]!, {
+    p_organization_id: organizationId,
+  });
   if (error || !data) return [];
   const list = data as CallDirectoryEntry[];
   return excludeUserId ? list.filter((item) => item.profile_id !== excludeUserId) : list;
