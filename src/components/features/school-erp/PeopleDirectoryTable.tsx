@@ -12,15 +12,18 @@ type MembershipRow = {
   member_role: string;
   designation: string | null;
   status: string;
-  profiles: { id?: string; full_name: string | null; email: string | null; phone: string | null; avatar_url?: string | null } | null;
+  profiles: {
+    id?: string;
+    full_name: string | null;
+    email: string | null;
+    phone: string | null;
+    avatar_url?: string | null;
+  } | null;
 };
 
 /**
- * Client-side searchable directory table. Renders the school/college People roster with a
- * name-search box and a phone-number column (the master prompt's canonical example of where
- * name-search + visible phone numbers are needed — see point 15 / Part 4.2). `institutionType`/
- * `organizationId` are optional so this component keeps working for any call site that hasn't
- * been updated to pass them — the Call column just doesn't render without them.
+ * Client-side searchable directory table with visible phone numbers. Calling no longer starts
+ * an in-browser voice session; its action is a normal tel: link to the saved phone number.
  */
 export function PeopleDirectoryTable({
   memberships,
@@ -32,17 +35,21 @@ export function PeopleDirectoryTable({
   organizationId?: string;
 }) {
   const getSearchableText = useCallback(
-    (item: MembershipRow) => `${item.profiles?.full_name || ''} ${item.profiles?.email || ''}`,
+    (item: MembershipRow) =>
+      `${item.profiles?.full_name || ''} ${item.profiles?.email || ''} ${item.profiles?.phone || ''}`,
     []
   );
-  const { query, setQuery, filtered, isFiltering } = useNameSearch(memberships, getSearchableText);
+  const { query, setQuery, filtered, isFiltering } = useNameSearch(
+    memberships,
+    getSearchableText
+  );
 
   return (
     <div className="space-y-4">
       <PersonSearchInput
         value={query}
         onChange={setQuery}
-        placeholder="Search people by name or email..."
+        placeholder="Search people by name, email or phone..."
         resultCount={isFiltering ? filtered.length : undefined}
       />
       <div className="overflow-x-auto">
@@ -67,7 +74,9 @@ export function PeopleDirectoryTable({
                 <td className="capitalize">{item.member_role}</td>
                 <td>{item.designation || '-'}</td>
                 <td>
-                  <Badge variant={item.status === 'active' ? 'secondary' : 'outline'}>{item.status}</Badge>
+                  <Badge variant={item.status === 'active' ? 'secondary' : 'outline'}>
+                    {item.status}
+                  </Badge>
                 </td>
                 {institutionType && organizationId && (
                   <td className="text-center">
@@ -79,6 +88,7 @@ export function PeopleDirectoryTable({
                           userId: item.profiles.id,
                           name: item.profiles.full_name || 'Member',
                           avatarUrl: item.profiles.avatar_url || null,
+                          phone: item.profiles.phone,
                         }}
                         className="mx-auto"
                       />
@@ -89,7 +99,10 @@ export function PeopleDirectoryTable({
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={institutionType && organizationId ? 7 : 6} className="text-muted-foreground py-6 text-center">
+                <td
+                  colSpan={institutionType && organizationId ? 7 : 6}
+                  className="text-muted-foreground py-6 text-center"
+                >
                   No matches.
                 </td>
               </tr>
