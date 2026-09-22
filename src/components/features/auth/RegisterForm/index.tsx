@@ -320,6 +320,13 @@ export function RegisterForm() {
   const institutionSuggestions = institutionSuggestionsOpen
     ? suggestInstitutions(institutionSuggestionList, institutionNameValue)
     : [];
+  // "School/College Student" is already the user's persona. At the next step
+  // they only need to distinguish School vs College; University must not appear
+  // because the separate "University Student" identity already exists.
+  const signupEducationLevels =
+    identity === 'school-college'
+      ? EDUCATION_LEVELS.filter((level) => level.value === 'school' || level.value === 'college')
+      : EDUCATION_LEVELS;
   const birthDateValue = watch('birthDate');
   const isYoungChild = Boolean(
     identity && ['parent', 'university', 'school-college', 'kid'].includes(identity) &&
@@ -1113,7 +1120,7 @@ export function RegisterForm() {
 
           {currentStep.id === 'education' && (
             <div className="grid gap-3">
-              {EDUCATION_LEVELS.map((level) => {
+              {signupEducationLevels.map((level) => {
                 const Icon = level.value === 'school' ? School : level.value === 'college' ? Building2 : GraduationCap;
                 return (
                   <button
