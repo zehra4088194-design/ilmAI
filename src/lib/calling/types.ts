@@ -1,5 +1,5 @@
-// Shared types for voice calling. Institution calling supports school/college;
-// consumer calling supports ordinary ilm AI accounts without an institution.
+// The person-to-person web voice feature is currently disabled in favor of normal phone dialing.
+// These shared types remain for compatibility with the legacy calling code.
 export type InstitutionType = 'school' | 'college' | 'consumer';
 
 export type CallIdentity = {
@@ -31,6 +31,7 @@ export type CallDirectoryEntry = {
   full_name: string | null;
   avatar_url: string | null;
   member_role: string;
+  phone: string | null;
 };
 
 export type CallPermissionResult = {
