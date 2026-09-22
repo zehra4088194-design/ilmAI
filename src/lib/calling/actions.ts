@@ -28,111 +28,16 @@ function flag(formData: FormData, key: string) {
 }
 
 export async function requestCallPermission(
-  institutionType: InstitutionType,
-  organizationId: string,
-  calleeId: string
+  _institutionType: InstitutionType,
+  _organizationId: string,
+  _calleeId: string
 ): Promise<CallPermissionResult & { callId?: string }> {
   // Person-to-person browser calling has been retired. Directory contacts now use the device's
-  // normal phone dialer through a tel: link, so legacy/stale clients must not start web calls.
-  void institutionType;
-  void organizationId;
-  void calleeId;
-  return { allowed: false, reason: 'In-app calling is disabled. Use the phone number in the directory.' }; 
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { allowed: false, reason: 'You must be signed in.' };
-  if (user.id === calleeId) return { allowed: false, reason: 'You cannot call yourself.' };
-
-  const db = supabase as any;
-
-  // A parent/student link is a direct family relationship created by the parent portal.
-  // It is intentionally independent of the student's own plan and of institution membership:
-  // a parent must always be able to call their attached child, whether the child is Free, Pro,
-  // Elite, school-enrolled, college-enrolled, or an ordinary consumer account.
-  const { data: familyLink } = await db
-    .from('parent_student_links')
-    .select('id')
-    .eq('status', 'approved')
-    .or(`and(parent_id.eq.${user.id},student_id.eq.${calleeId}),and(parent_id.eq.${calleeId},student_id.eq.${user.id})`)
-    .maybeSingle();
-  if (familyLink) {
-    return { allowed: true, callId: crypto.randomUUID() };
-  }
-
-  // Consumer accounts do not belong to a school/college. They still use the exact same
-  // WebRTC/PeerJS provider, but need no institution membership or organization setting.
-  if (institutionType === 'consumer') {
-    const { data: callee } = await db.from('profiles').select('id').eq('id', calleeId).maybeSingle();
-    if (!callee) return { allowed: false, reason: 'That user could not be found.' };
-
-    const settings = await getCallingSettings(supabase, 'consumer', organizationId);
-    const verdict = canRolesCall('student', 'student', settings);
-    if (!verdict.allowed) return verdict;
-
-    // Consumer calls do not depend on an institution-specific call-log table. The returned
-    // identifier only needs to be unique for the live signaling session.
-    return { allowed: true, callId: crypto.randomUUID() };
-  }
-
-  const [{ data: callerRow }, { data: calleeRow }] = await Promise.all([
-    db
-      .from(MEMBERSHIP_TABLE[institutionType])
-      .select('member_role')
-      .eq('organization_id', organizationId)
-      .eq('profile_id', user.id)
-      .eq('status', 'active')
-      .maybeSingle(),
-    db
-      .from(MEMBERSHIP_TABLE[institutionType])
-      .select('member_role')
-      .eq('organization_id', organizationId)
-      .eq('profile_id', calleeId)
-      .eq('status', 'active')
-      .maybeSingle(),
-  ]);
-
-  if (callerRow && !calleeRow) return { allowed: false, reason: 'That person is not reachable in this institution.' };
-  if (!callerRow && calleeRow) return { allowed: false, reason: 'You are not an active member of this institution.' };
-
-  const callerRole = callerRow?.member_role || 'student';
-  const calleeRole = calleeRow?.member_role || 'student';
-
-  if (
-    (callerRole === 'parent' && calleeRole === 'student') ||
-    (callerRole === 'student' && calleeRole === 'parent')
-  ) {
-    const { data: link } = callerRole === 'parent'
-      ? await db
-          .from(institutionType === 'school' ? 'school_guardians' : 'college_guardians')
-          .select('id')
-          .eq('organization_id', organizationId)
-          .eq('guardian_id', user.id)
-          .eq('student_id', calleeId)
-          .maybeSingle()
-      : await db
-          .from(institutionType === 'school' ? 'school_guardians' : 'college_guardians')
-          .select('id')
-          .eq('organization_id', organizationId)
-          .eq('guardian_id', calleeId)
-          .eq('student_id', user.id)
-          .maybeSingle();
-    if (!link) return { allowed: false, reason: 'Parent and student calls are only available for the linked family relationship.' };
-  }
-
-  const settings = await getCallingSettings(supabase, institutionType, organizationId);
-  const verdict = canRolesCall(callerRole, calleeRole, settings);
-  if (!verdict.allowed) return verdict;
-
-  const { data: log, error } = await db
-    .from(CALL_LOG_TABLE[institutionType])
-    .insert({ organization_id: organizationId, caller_id: user.id, callee_id: calleeId, status: 'initiated' })
-    .select('id')
-    .single();
-  if (error) return { allowed: false, reason: 'Could not start the call log — try again.' };
-  return { allowed: true, callId: log.id };
+  // normal phone dialer through a tel: link, so legacy/stale clients cannot start web calls.
+  return {
+    allowed: false,
+    reason: 'In-app calling is disabled. Use the phone number in the directory.',
+  };
 }
 
 export async function updateCallStatus(
