@@ -127,6 +127,7 @@ function SchoolJoinStep({ onDone }: { onDone: () => void }) {
 export function CompleteProfileStep({
   initialGender,
   skipWhoAmI = false,
+  lockEducationLevel = false,
   initialUsername = '',
   initialEducationLevel = 'school',
   initialBoard = '',
@@ -346,21 +347,32 @@ export function CompleteProfileStep({
             <p className="text-muted-foreground text-xs">Used to personalize your theme and dashboard.</p>
           </div>
         )}
-        <div className="grid gap-2">
-          {EDUCATION_LEVELS.map((level) => (
-            <button
-              key={level.value}
-              type="button"
-              aria-pressed={educationLevel === level.value}
-              data-selectable="true"
-              onClick={() => setEducationLevel(level.value)}
-              className={`rounded-xl border px-4 py-3 text-left transition-colors ${educationLevel === level.value ? 'border-primary shadow-primary/15 shadow-sm' : 'border-border'}`}
-            >
-              <span className="block text-sm font-semibold">{level.label}</span>
-              <span className="text-muted-foreground text-xs">{level.description}</span>
-            </button>
-          ))}
-        </div>
+        {lockEducationLevel ? (
+          <div className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3">
+            <span className="block text-sm font-semibold">
+              {EDUCATION_LEVELS.find((level) => level.value === educationLevel)?.label || educationLevel}
+            </span>
+            <span className="text-muted-foreground text-xs">
+              This was already selected during signup, so we won't ask you again.
+            </span>
+          </div>
+        ) : (
+          <div className="grid gap-2">
+            {EDUCATION_LEVELS.map((level) => (
+              <button
+                key={level.value}
+                type="button"
+                aria-pressed={educationLevel === level.value}
+                data-selectable="true"
+                onClick={() => setEducationLevel(level.value)}
+                className={`rounded-xl border px-4 py-3 text-left transition-colors ${educationLevel === level.value ? 'border-primary shadow-primary/15 shadow-sm' : 'border-border'}`}
+              >
+                <span className="block text-sm font-semibold">{level.label}</span>
+                <span className="text-muted-foreground text-xs">{level.description}</span>
+              </button>
+            ))}
+          </div>
+        )}
 
         {!usernameAlreadyKnown && (
           <div className="space-y-1.5">
