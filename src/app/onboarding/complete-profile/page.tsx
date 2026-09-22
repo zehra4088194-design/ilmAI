@@ -56,6 +56,7 @@ export default async function CompleteProfilePage() {
     <CompleteProfileStep
       initialGender={profile?.gender === 'girl' || profile?.gender === 'boy' ? profile.gender : null}
       skipWhoAmI={!isGoogleAuth}
+      lockEducationLevel={!isGoogleAuth}
       initialUsername={profile?.username || ''}
       initialEducationLevel={
         profile?.education_level === 'college' || profile?.education_level === 'university'
