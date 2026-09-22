@@ -32,6 +32,13 @@ export async function requestCallPermission(
   organizationId: string,
   calleeId: string
 ): Promise<CallPermissionResult & { callId?: string }> {
+  // Person-to-person browser calling has been retired. Directory contacts now use the device's
+  // normal phone dialer through a tel: link, so legacy/stale clients must not start web calls.
+  void institutionType;
+  void organizationId;
+  void calleeId;
+  return { allowed: false, reason: 'In-app calling is disabled. Use the phone number in the directory.' }; 
+
   const supabase = await createClient();
   const {
     data: { user },
