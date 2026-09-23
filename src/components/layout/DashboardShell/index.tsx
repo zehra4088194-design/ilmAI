@@ -11,23 +11,23 @@ import type { InstitutionBranding } from '@/lib/branding/resolveInstitutionBrand
 export function DashboardShell({ children, branding }: { children: ReactNode; branding?: InstitutionBranding | null }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
-  const [desktopAutoCloseEnabled, setDesktopAutoCloseEnabled] = useState(true);
+  const [desktopSidebarHovered, setDesktopSidebarHovered] = useState(false);
+  const [featureTourOpen, setFeatureTourOpen] = useState(false);
 
   useEffect(() => {
-    if (!desktopSidebarOpen || !desktopAutoCloseEnabled) return;
+    if (!desktopSidebarOpen || desktopSidebarHovered || featureTourOpen) return;
+
     const timer = window.setTimeout(() => {
       setDesktopSidebarOpen(false);
-      setDesktopAutoCloseEnabled(false);
     }, 10_000);
+
     return () => window.clearTimeout(timer);
-  }, [desktopAutoCloseEnabled, desktopSidebarOpen]);
+  }, [desktopSidebarHovered, desktopSidebarOpen, featureTourOpen]);
 
   const setDesktopSidebar = (open: boolean) => {
-    setDesktopAutoCloseEnabled(false);
     setDesktopSidebarOpen(open);
   };
   const toggleDesktopSidebar = () => {
-    setDesktopAutoCloseEnabled(false);
     setDesktopSidebarOpen((open) => !open);
   };
 
@@ -38,6 +38,7 @@ export function DashboardShell({ children, branding }: { children: ReactNode; br
         onMobileOpenChange={setMobileMenuOpen}
         desktopOpen={desktopSidebarOpen}
         onDesktopOpenChange={setDesktopSidebar}
+        onDesktopHoverChange={setDesktopSidebarHovered}
         branding={branding}
       />
       <div className={`flex min-h-dvh min-w-0 flex-1 flex-col transition-[margin] duration-300 ${desktopSidebarOpen ? 'lg:ml-64' : 'lg:ml-0'}`}>
@@ -53,7 +54,11 @@ export function DashboardShell({ children, branding }: { children: ReactNode; br
         <DashboardFooter />
       </div>
       <SideChatWidget />
-      <FeatureTour mobileMenuOpen={mobileMenuOpen} onMobileMenuChange={setMobileMenuOpen} />
+      <FeatureTour
+        mobileMenuOpen={mobileMenuOpen}
+        onMobileMenuChange={setMobileMenuOpen}
+        onTourOpenChange={setFeatureTourOpen}
+      />
     </div>
   );
 }
