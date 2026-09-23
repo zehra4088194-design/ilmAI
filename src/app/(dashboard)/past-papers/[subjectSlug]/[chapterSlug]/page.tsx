@@ -7,6 +7,26 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { HouseAdBanner } from '@/components/features/ads/HouseAdBanner';
 
+export async function generateMetadata({ params }: { params: Promise<{ subjectSlug: string; chapterSlug: string }> }) {
+  const { subjectSlug, chapterSlug } = await params;
+  const supabase = await createClient();
+  const { data: subject } = subjectSlug === 'general'
+    ? { data: null }
+    : await supabase.from('subjects').select('id,name').eq('slug', subjectSlug).maybeSingle();
+  const { data: chapter } = chapterSlug === 'full-syllabus' || !subject
+    ? { data: null }
+    : await supabase.from('chapters').select('name').eq('subject_id', subject.id).eq('slug', chapterSlug).maybeSingle();
+  const subjectName = subject?.name || subjectSlug;
+  const chapterName = chapter?.name || 'Full Syllabus';
+  const title = `${subjectName} ${chapterName} Past Papers | ilm AI`;
+  return {
+    title,
+    description: `Verified ${subjectName} ${chapterName} past papers with chapter and exam details on ilm AI.`,
+    alternates: { canonical: `/past-papers/${subjectSlug}/${chapterSlug}` },
+  };
+}
+
+
 export default async function PastPaperChapterPage({ params }: { params: Promise<{ subjectSlug: string; chapterSlug: string }> }) {
   const { subjectSlug, chapterSlug } = await params;
   const supabase = await createClient();
