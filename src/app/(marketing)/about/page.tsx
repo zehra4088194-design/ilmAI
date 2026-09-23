@@ -72,12 +72,9 @@ export default function AboutPage() {
                       because they use a learner’s selected level, subjects, history, or private files.
                     </p>
                     <p>
-                      Public pages and study guides are available without signing in. Paid plans fund AI processing and
-                      expanded limits; the core product also includes a free tier. Current inclusions and prices are
-                      <a href="https://ilmai.store" className="text-violet-300 underline-offset-4 hover:underline">
-                        official IlmAI Store
-                      </a>
-                      . Current plan inclusions and prices are listed on the{' '}
+                      Public pages and study guides are available without signing in. The public study-topic catalog connects
+                      chapter-level notes, verified questions, textbook material, and past-paper resources in one place.
+                      Printed and other paid study products are handled separately through the{' '}
                       <Link href="/pricing" className="text-violet-300 underline-offset-4 hover:underline">
                         pricing page
                       </Link>
