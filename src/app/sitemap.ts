@@ -114,8 +114,10 @@ async function getAcademicEntries(baseUrl: string): Promise<MetadataRoute.Sitema
     }
   }
   for (const paper of papers || []) {
-    const subjectSlug = Array.isArray(paper.subjects) ? paper.subjects[0]?.slug : paper.subjects?.slug;
-    const chapterSlug = Array.isArray(paper.chapters) ? paper.chapters[0]?.slug : paper.chapters?.slug;
+    const paperSubjectRelation = (paper as any).subjects;
+    const paperChapterRelation = (paper as any).chapters;
+    const subjectSlug = Array.isArray(paperSubjectRelation) ? paperSubjectRelation[0]?.slug : paperSubjectRelation?.slug;
+    const chapterSlug = Array.isArray(paperChapterRelation) ? paperChapterRelation[0]?.slug : paperChapterRelation?.slug;
     if (!subjectSlug) continue;
     paperEntries.push({
       url: `${baseUrl}/past-papers/${subjectSlug}/${chapterSlug || 'full-syllabus'}/${paper.id}`,
