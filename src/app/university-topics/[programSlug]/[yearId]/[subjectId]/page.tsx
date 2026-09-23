@@ -171,7 +171,7 @@ export default async function UniversityAcademicTopicPage({ params }: { params: 
           Public topic page for {subject.name}. <a href="https://ilmai.store" className="hover:text-foreground">Official IlmAI Store</a> · <Link href="https://ilmai.study" className="hover:text-foreground">ilm AI study platform</Link>
         </footer>
       </div>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\u003c') }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }} />
     </main>
   );
 }
