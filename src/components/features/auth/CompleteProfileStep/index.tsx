@@ -138,6 +138,7 @@ export function CompleteProfileStep({
   // explicit choice there) — only a Google/OAuth sign-in (no role metadata at all) still needs to
   // pick "who are you" here. See complete-profile/page.tsx for the exact detection.
   skipWhoAmI?: boolean;
+  lockEducationLevel?: boolean;
   initialUsername?: string;
   initialEducationLevel?: EducationLevel;
   initialBoard?: string;
