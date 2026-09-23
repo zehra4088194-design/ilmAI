@@ -7,6 +7,21 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { HouseAdBanner } from '@/components/features/ads/HouseAdBanner';
 
+export async function generateMetadata({ params }: { params: Promise<{ subjectSlug: string }> }) {
+  const { subjectSlug } = await params;
+  const supabase = await createClient();
+  const { data: subject } = subjectSlug === 'general'
+    ? { data: null }
+    : await supabase.from('subjects').select('name').eq('slug', subjectSlug).maybeSingle();
+  const name = subject?.name || subjectSlug;
+  return {
+    title: `${name} Past Papers | ilm AI`,
+    description: `Browse verified ${name} past papers by chapter and syllabus on ilm AI.`,
+    alternates: { canonical: `/past-papers/${subjectSlug}` },
+  };
+}
+
+
 export default async function PastPaperSubjectPage({ params }: { params: Promise<{ subjectSlug: string }> }) {
   const { subjectSlug } = await params;
   const supabase = await createClient();
