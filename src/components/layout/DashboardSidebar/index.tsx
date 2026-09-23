@@ -173,10 +173,11 @@ type DashboardSidebarProps = {
   onMobileOpenChange?: (open: boolean) => void;
   desktopOpen?: boolean;
   onDesktopOpenChange?: (open: boolean) => void;
+  onDesktopHoverChange?: (hovered: boolean) => void;
   branding?: InstitutionBranding | null;
 };
 
-export function DashboardSidebar({ mobileOpen: controlledMobileOpen, onMobileOpenChange, desktopOpen = true, onDesktopOpenChange, branding }: DashboardSidebarProps = {}) {
+export function DashboardSidebar({ mobileOpen: controlledMobileOpen, onMobileOpenChange, desktopOpen = true, onDesktopOpenChange, onDesktopHoverChange, branding }: DashboardSidebarProps = {}) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { user, signOut } = useAuth();
@@ -479,7 +480,11 @@ export function DashboardSidebar({ mobileOpen: controlledMobileOpen, onMobileOpe
   return (
     <>
       {/* Desktop */}
-      <aside className={`bg-sidebar border-sidebar-border fixed top-0 left-0 z-40 hidden h-dvh w-64 flex-col overflow-hidden border-r transition-transform duration-300 lg:flex ${desktopOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside
+        onMouseEnter={() => onDesktopHoverChange?.(true)}
+        onMouseLeave={() => onDesktopHoverChange?.(false)}
+        className={`bg-sidebar border-sidebar-border fixed top-0 left-0 z-40 hidden h-dvh w-64 flex-col overflow-hidden border-r transition-transform duration-300 lg:flex ${desktopOpen ? 'translate-x-0' : '-translate-x-full'}`}
+      >
         <SidebarContent />
       </aside>
 
