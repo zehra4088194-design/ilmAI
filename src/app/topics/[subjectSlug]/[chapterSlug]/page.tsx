@@ -223,15 +223,15 @@ export default async function AcademicTopicPage({ params }: { params: Promise<Pa
 
         <section className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            ['Resources', topic.resources.length, Library],
-            ['MCQs', questionGroups.mcq?.length || questionGroups.mcqs?.length || 0, ListChecks],
-            ['Short/Long', (questionGroups.short?.length || 0) + (questionGroups.long?.length || 0), FileQuestion],
-            ['Past Papers', topic.papers.length, FileCheck2],
-          ].map(([label, value, Icon]) => (
-            <div key={String(label)} className="rounded-2xl border border-border/70 bg-card/50 p-5">
+            { label: 'Resources', value: topic.resources.length, icon: Library },
+            { label: 'MCQs', value: questionGroups.mcq?.length || questionGroups.mcqs?.length || 0, icon: ListChecks },
+            { label: 'Short/Long', value: (questionGroups.short?.length || 0) + (questionGroups.long?.length || 0), icon: FileQuestion },
+            { label: 'Past Papers', value: topic.papers.length, icon: FileCheck2 },
+          ].map(({ label, value, icon: Icon }) => (
+            <div key={label} className="rounded-2xl border border-border/70 bg-card/50 p-5">
               <Icon className="h-5 w-5 text-primary" />
-              <div className="mt-3 text-2xl font-bold">{String(value)}</div>
-              <div className="text-xs text-muted-foreground">{String(label)}</div>
+              <div className="mt-3 text-2xl font-bold">{value}</div>
+              <div className="text-xs text-muted-foreground">{label}</div>
             </div>
           ))}
         </section>
