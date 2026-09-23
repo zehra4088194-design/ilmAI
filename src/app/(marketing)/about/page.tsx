@@ -74,7 +74,10 @@ export default function AboutPage() {
                     <p>
                       Public pages and study guides are available without signing in. Paid plans fund AI processing and
                       expanded limits; the core product also includes a free tier. Current inclusions and prices are
-                      listed on the{' '}
+                      <a href="https://ilmai.store" className="text-violet-300 underline-offset-4 hover:underline">
+                        official IlmAI Store
+                      </a>
+                      . Current plan inclusions and prices are listed on the{' '}
                       <Link href="/pricing" className="text-violet-300 underline-offset-4 hover:underline">
                         pricing page
                       </Link>
