@@ -66,7 +66,8 @@ async function getAcademicEntries(baseUrl: string): Promise<MetadataRoute.Sitema
   ]);
   const topics: MetadataRoute.Sitemap = [];
   for (const row of topicRows || []) {
-    const subjectSlug = Array.isArray(row.subjects) ? row.subjects[0]?.slug : row.subjects?.slug;
+    const subjectRelation = (row as any).subjects;
+    const subjectSlug = Array.isArray(subjectRelation) ? subjectRelation[0]?.slug : subjectRelation?.slug;
     if (!subjectSlug || !row.slug || !supportedChapterIds.has(row.id)) continue;
     topics.push({
       url: `${baseUrl}/topics/${subjectSlug}/${row.slug}`,
