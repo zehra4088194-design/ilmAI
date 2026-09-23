@@ -34,23 +34,36 @@ const STATIC_ROUTES = [
 // per-chapter pages that content lives on were never listed anywhere for a crawler to discover.
 async function getAcademicEntries(baseUrl: string): Promise<MetadataRoute.Sitemap> {
   const supabase = createServiceClient();
-  const [{ data: topicRows }, { data: papers }] = await Promise.all([
+  const [{ data: topicRows }, { data: publicResources }, { data: questions }, { data: papers }] = await Promise.all([
     supabase
       .from('chapters')
       .select('id,slug,subject_id,subjects!inner(slug)')
       .eq('is_active', true)
       .not('slug', 'is', null),
+    (supabase.from('library_resources') as any)
+      .select('chapter_id')
+      .eq('importer_status', 'approved')
+      .not('chapter_id', 'is', null),
+    (supabase.from('questions') as any)
+      .select('chapter_id')
+      .eq('is_verified', true)
+      .not('correct_answer', 'is', null)
+      .not('chapter_id', 'is', null),
     (supabase.from('past_papers') as any)
-      .select('id,year,subject_id,chapter_id,subjects(slug),chapters(slug)')
+      .select('id,year,subject_id,chapter_id,created_at,subjects(slug),chapters(slug)')
       .eq('is_verified', true)
       .eq('extraction_status', 'approved')
       .not('subject_id', 'is', null),
   ]);
 
+  const supportedChapterIds = new Set<string>([
+    ...(publicResources || []).map((row: { chapter_id: string | null }) => row.chapter_id).filter(Boolean) as string[],
+    ...(questions || []).map((row: { chapter_id: string | null }) => row.chapter_id).filter(Boolean) as string[],
+  ]);
   const topics: MetadataRoute.Sitemap = [];
   for (const row of topicRows || []) {
     const subjectSlug = Array.isArray(row.subjects) ? row.subjects[0]?.slug : row.subjects?.slug;
-    if (!subjectSlug || !row.slug) continue;
+    if (!subjectSlug || !row.slug || !supportedChapterIds.has(row.id)) continue;
     topics.push({
       url: `${baseUrl}/topics/${subjectSlug}/${row.slug}`,
       changeFrequency: 'weekly',
@@ -65,7 +78,7 @@ async function getAcademicEntries(baseUrl: string): Promise<MetadataRoute.Sitema
     if (!subjectSlug) continue;
     paperEntries.push({
       url: `${baseUrl}/past-papers/${subjectSlug}/${chapterSlug || 'full-syllabus'}/${paper.id}`,
-      lastModified: paper.year ? new Date(`${paper.year}-01-01T00:00:00Z`) : undefined,
+      lastModified: paper.created_at ? new Date(paper.created_at) : undefined,
       changeFrequency: 'yearly',
       priority: 0.55,
     });
