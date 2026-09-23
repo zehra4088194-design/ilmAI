@@ -16,6 +16,7 @@ const SOCIAL_LINKS = [
 const LINKS = {
   'Study Tools': PRIMARY_SITE_LINKS.map((link) => ({ label: link.name, href: link.url })),
   Support: [
+    { label: 'IlmAI Store', href: 'https://ilmai.store' },
     { label: 'Help Center', href: '/help' },
     { label: 'Pricing', href: '/pricing' },
     { label: 'Contact', href: '/contact' },
