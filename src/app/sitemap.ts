@@ -17,6 +17,7 @@ const STATIC_ROUTES = [
   { path: '/library', priority: 0.95, changeFrequency: 'weekly' as const },
   { path: '/past-papers', priority: 0.9, changeFrequency: 'weekly' as const },
   { path: '/colleges', priority: 0.6, changeFrequency: 'weekly' as const },
+  { path: '/topics', priority: 0.8, changeFrequency: 'weekly' as const },
   { path: '/university-topics', priority: 0.75, changeFrequency: 'weekly' as const },
   { path: '/contact', priority: 0.4, changeFrequency: 'yearly' as const },
   { path: '/help', priority: 0.6, changeFrequency: 'monthly' as const },
