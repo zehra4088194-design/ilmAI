@@ -17,6 +17,7 @@ const STATIC_ROUTES = [
   { path: '/library', priority: 0.95, changeFrequency: 'weekly' as const },
   { path: '/past-papers', priority: 0.9, changeFrequency: 'weekly' as const },
   { path: '/colleges', priority: 0.6, changeFrequency: 'weekly' as const },
+  { path: '/university-topics', priority: 0.75, changeFrequency: 'weekly' as const },
   { path: '/contact', priority: 0.4, changeFrequency: 'yearly' as const },
   { path: '/help', priority: 0.6, changeFrequency: 'monthly' as const },
   { path: '/privacy', priority: 0.4, changeFrequency: 'yearly' as const },
@@ -34,7 +35,7 @@ const STATIC_ROUTES = [
 // per-chapter pages that content lives on were never listed anywhere for a crawler to discover.
 async function getAcademicEntries(baseUrl: string): Promise<MetadataRoute.Sitemap> {
   const supabase = createServiceClient();
-  const [{ data: topicRows }, { data: publicResources }, { data: questions }, { data: papers }] = await Promise.all([
+  const [{ data: topicRows }, { data: publicResources }, { data: questions }, { data: papers }, { data: universityLinks }] = await Promise.all([
     supabase
       .from('chapters')
       .select('id,slug,subject_id,subjects!inner(slug)')
@@ -54,6 +55,9 @@ async function getAcademicEntries(baseUrl: string): Promise<MetadataRoute.Sitema
       .eq('is_verified', true)
       .eq('extraction_status', 'approved')
       .not('subject_id', 'is', null),
+    (supabase.from('university_program_year_subjects') as any)
+      .select('program_year_id,subject_id')
+      .order('sort_order'),
   ]);
 
   const supportedChapterIds = new Set<string>([
@@ -72,6 +76,41 @@ async function getAcademicEntries(baseUrl: string): Promise<MetadataRoute.Sitema
   }
 
   const paperEntries: MetadataRoute.Sitemap = [];
+
+  // University topic URLs are built from scalar IDs first, then resolved to the
+  // semantic program slug. This avoids assuming nested PostgREST relation names.
+  const universityTopicEntries: MetadataRoute.Sitemap = [];
+  if (universityLinks?.length) {
+    const yearIds = [...new Set(universityLinks.map((row: { program_year_id: string }) => row.program_year_id))];
+    const subjectIds = [...new Set(universityLinks.map((row: { subject_id: string }) => row.subject_id))];
+    const [{ data: universityYears }, { data: universitySubjects }] = await Promise.all([
+      (supabase.from('university_program_years') as any).select('id,program_id').in('id', yearIds),
+      (supabase.from('university_subjects') as any).select('id,is_active').in('id', subjectIds).eq('is_active', true),
+    ]);
+    const programIds = [...new Set((universityYears || []).map((row: { program_id: string }) => row.program_id))];
+    const { data: universityPrograms } = await (supabase.from('university_degree_programs') as any)
+      .select('id,slug,is_active')
+      .in('id', programIds)
+      .eq('is_active', true);
+    const validSubjects = new Set((universitySubjects || []).map((row: { id: string }) => row.id));
+    const programSlugById = new Map((universityPrograms || []).map((row: { id: string; slug: string }) => [row.id, row.slug]));
+    const programIdByYearId = new Map((universityYears || []).map((row: { id: string; program_id: string }) => [row.id, row.program_id]));
+    const seen = new Set<string>();
+    for (const link of universityLinks || []) {
+      if (!validSubjects.has(link.subject_id)) continue;
+      const programId = programIdByYearId.get(link.program_year_id);
+      const programSlug = programId ? programSlugById.get(programId) : null;
+      if (!programSlug) continue;
+      const key = `${programSlug}/${link.program_year_id}/${link.subject_id}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      universityTopicEntries.push({
+        url: `${baseUrl}/university-topics/${key}`,
+        changeFrequency: 'weekly',
+        priority: 0.65,
+      });
+    }
+  }
   for (const paper of papers || []) {
     const subjectSlug = Array.isArray(paper.subjects) ? paper.subjects[0]?.slug : paper.subjects?.slug;
     const chapterSlug = Array.isArray(paper.chapters) ? paper.chapters[0]?.slug : paper.chapters?.slug;
@@ -84,7 +123,7 @@ async function getAcademicEntries(baseUrl: string): Promise<MetadataRoute.Sitema
     });
   }
 
-  return [...topics, ...paperEntries];
+  return [...topics, ...paperEntries, ...universityTopicEntries];
 }
 
 async function getLibraryEntries(baseUrl: string): Promise<MetadataRoute.Sitemap> {
