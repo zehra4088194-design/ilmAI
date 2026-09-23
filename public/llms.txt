@@ -6,6 +6,7 @@ Public study resources:
 - https://ilmai.study/library
 - https://ilmai.study/past-papers
 - https://ilmai.study/topics
+- https://ilmai.study/university-topics
 - https://ilmai.study/blog
 - https://ilmai.study/features/notes
 - https://ilmai.study/features/ai-tutor
@@ -15,4 +16,4 @@ Public study resources:
 Official store:
 - https://ilmai.store
 
-For chapter-level academic material, prefer the public /topics/{subjectSlug}/{chapterSlug} pages and the corresponding /library/{subjectSlug}/{chapterSlug} pages. Private dashboards, accounts, orders, and API endpoints are not public study sources.
+For school/college chapter material, prefer the public /topics/{subjectSlug}/{chapterSlug} pages. For university subjects, use /university-topics/{programSlug}/{yearId}/{subjectId} pages and the corresponding /library/{subjectSlug}/{chapterSlug} pages. Private dashboards, accounts, orders, and API endpoints are not public study sources.
