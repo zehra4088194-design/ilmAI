@@ -62,7 +62,7 @@ async function getTopic(subjectSlug: string, chapterSlug: string) {
 
   if (!chapter) return null;
 
-  const [{ data: resources }, { data: questions }, { data: papers }, { data: chunks }] = await Promise.all([
+  const [{ data: resources }, { data: questions }, { data: papers }] = await Promise.all([
     db
       .from('library_resources')
       .select('id,title,description,resource_type,book_title,content_section,has_context_text')
@@ -90,15 +90,19 @@ async function getTopic(subjectSlug: string, chapterSlug: string) {
       .eq('extraction_status', 'approved')
       .order('year', { ascending: false })
       .limit(15),
-    db
-      .from('resource_source_chunks')
-      .select('resource_id,chunk_index,page_number,heading,text')
-      .eq('resource_kind', 'library')
-      .order('chunk_index')
-      .limit(60),
   ]);
 
   const resourceRows = (resources || []) as ResourceRow[];
+  const resourceIds = resourceRows.map((resource) => resource.id);
+  const { data: chunks } = resourceIds.length
+    ? await db
+        .from('resource_source_chunks')
+        .select('resource_id,chunk_index,page_number,heading,text')
+        .eq('resource_kind', 'library')
+        .in('resource_id', resourceIds)
+        .order('chunk_index')
+        .limit(Math.min(80, Math.max(16, resourceIds.length * 2)))
+    : { data: [] as ChunkRow[] };
   const resourceIds = new Set(resourceRows.map((resource) => resource.id));
   const excerptByResource = new Map<string, ChunkRow>();
   for (const chunk of (chunks || []) as ChunkRow[]) {
