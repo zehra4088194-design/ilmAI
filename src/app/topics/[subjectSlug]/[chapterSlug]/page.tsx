@@ -93,15 +93,15 @@ async function getTopic(subjectSlug: string, chapterSlug: string) {
   ]);
 
   const resourceRows = (resources || []) as ResourceRow[];
-  const resourceIds = resourceRows.map((resource) => resource.id);
-  const { data: chunks } = resourceIds.length
+  const resourceIdList = resourceRows.map((resource) => resource.id);
+  const { data: chunks } = resourceIdList.length
     ? await db
         .from('resource_source_chunks')
         .select('resource_id,chunk_index,page_number,heading,text')
         .eq('resource_kind', 'library')
-        .in('resource_id', resourceIds)
+        .in('resource_id', resourceIdList)
         .order('chunk_index')
-        .limit(Math.min(80, Math.max(16, resourceIds.length * 2)))
+        .limit(Math.min(80, Math.max(16, resourceIdList.length * 2)))
     : { data: [] as ChunkRow[] };
   const resourceIds = new Set(resourceRows.map((resource) => resource.id));
   const excerptByResource = new Map<string, ChunkRow>();
