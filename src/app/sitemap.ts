@@ -9,6 +9,8 @@ const STATIC_ROUTES = [
   { path: '/features/lectures', priority: 0.95, changeFrequency: 'monthly' as const },
   { path: '/features/ai-tutor', priority: 0.95, changeFrequency: 'monthly' as const },
   { path: '/features/presentation-builder', priority: 0.95, changeFrequency: 'monthly' as const },
+  { path: '/features/scan', priority: 0.9, changeFrequency: 'monthly' as const },
+  { path: '/features/doubts', priority: 0.9, changeFrequency: 'monthly' as const },
   { path: '/about', priority: 0.8, changeFrequency: 'monthly' as const },
   { path: '/pricing', priority: 0.5, changeFrequency: 'monthly' as const },
   { path: '/blog', priority: 0.6, changeFrequency: 'weekly' as const },
@@ -30,6 +32,48 @@ const STATIC_ROUTES = [
 // `/library` URL was in the sitemap; Google Search Console had nothing to actually index for a
 // student's real search ("class 9 biology chapter 3 mcqs") because the per-subject and
 // per-chapter pages that content lives on were never listed anywhere for a crawler to discover.
+async function getAcademicEntries(baseUrl: string): Promise<MetadataRoute.Sitemap> {
+  const supabase = createServiceClient();
+  const [{ data: topicRows }, { data: papers }] = await Promise.all([
+    supabase
+      .from('chapters')
+      .select('id,slug,subject_id,subjects!inner(slug)')
+      .eq('is_active', true)
+      .not('slug', 'is', null),
+    (supabase.from('past_papers') as any)
+      .select('id,year,subject_id,chapter_id,subjects(slug),chapters(slug)')
+      .eq('is_verified', true)
+      .eq('extraction_status', 'approved')
+      .not('subject_id', 'is', null),
+  ]);
+
+  const topics: MetadataRoute.Sitemap = [];
+  for (const row of topicRows || []) {
+    const subjectSlug = Array.isArray(row.subjects) ? row.subjects[0]?.slug : row.subjects?.slug;
+    if (!subjectSlug || !row.slug) continue;
+    topics.push({
+      url: `${baseUrl}/topics/${subjectSlug}/${row.slug}`,
+      changeFrequency: 'weekly',
+      priority: 0.75,
+    });
+  }
+
+  const paperEntries: MetadataRoute.Sitemap = [];
+  for (const paper of papers || []) {
+    const subjectSlug = Array.isArray(paper.subjects) ? paper.subjects[0]?.slug : paper.subjects?.slug;
+    const chapterSlug = Array.isArray(paper.chapters) ? paper.chapters[0]?.slug : paper.chapters?.slug;
+    if (!subjectSlug) continue;
+    paperEntries.push({
+      url: `${baseUrl}/past-papers/${subjectSlug}/${chapterSlug || 'full-syllabus'}/${paper.id}`,
+      lastModified: paper.year ? new Date(`${paper.year}-01-01T00:00:00Z`) : undefined,
+      changeFrequency: 'yearly',
+      priority: 0.55,
+    });
+  }
+
+  return [...topics, ...paperEntries];
+}
+
 async function getLibraryEntries(baseUrl: string): Promise<MetadataRoute.Sitemap> {
   const supabase = createServiceClient();
   const [{ data: subjects }, { data: resources }] = await Promise.all([
@@ -93,5 +137,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     return [];
   });
 
-  return [...staticEntries, ...articleEntries, ...libraryEntries];
+  const academicEntries = await getAcademicEntries(baseUrl).catch((error) => {
+    console.error('[sitemap] Failed to load academic entries:', error);
+    return [];
+  });
+
+  return [...staticEntries, ...articleEntries, ...libraryEntries, ...academicEntries];
 }
