@@ -6,6 +6,26 @@ import { createServiceClient } from '@/lib/supabase/service';
 import { Badge } from '@/components/ui/badge';
 import { PastPaperDetailClient } from '@/components/features/past-papers/PastPaperDetailClient';
 
+export async function generateMetadata({ params }: { params: Promise<{ subjectSlug: string; chapterSlug: string; paperId: string }> }) {
+  const { subjectSlug, chapterSlug, paperId } = await params;
+  const db = createServiceClient();
+  const { data: paper } = await (db.from('past_papers') as any)
+    .select('year,paper_type,is_verified,subjects(name),chapters(name)')
+    .eq('id', paperId)
+    .maybeSingle();
+  if (!paper) return { title: 'Past Paper Not Found', robots: { index: false, follow: false } };
+  const subjectName = paper.subjects?.name || subjectSlug;
+  const chapterName = paper.chapters?.name || 'Full Syllabus';
+  const title = `${subjectName} ${paper.year} ${paper.paper_type} Past Paper | ilm AI`;
+  return {
+    title,
+    description: `Verified ${subjectName} ${paper.year} ${paper.paper_type} past paper for ${chapterName}.`,
+    alternates: { canonical: `/past-papers/${subjectSlug}/${chapterSlug}/${paperId}` },
+    openGraph: { type: 'article', title, description: `Verified ${subjectName} ${paper.year} ${paper.paper_type} past paper for ${chapterName}.` },
+  };
+}
+
+
 export default async function PastPaperFilePage({
   params,
 }: {
