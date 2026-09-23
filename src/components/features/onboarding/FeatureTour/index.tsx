@@ -285,9 +285,11 @@ function findVisibleElement(selector: string) {
 export function FeatureTour({
   mobileMenuOpen,
   onMobileMenuChange,
+  onTourOpenChange,
 }: {
   mobileMenuOpen: boolean;
   onMobileMenuChange: (open: boolean) => void;
+  onTourOpenChange?: (open: boolean) => void;
 }) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
@@ -308,6 +310,7 @@ export function FeatureTour({
   const closeTour = useCallback(() => {
     if (storageKey) window.localStorage.setItem(storageKey, 'completed');
     setOpen(false);
+    onTourOpenChange?.(false);
     setTargetRect(null);
     if (openedMobileMenuByTour.current) {
       onMobileMenuChange(false);
@@ -318,9 +321,12 @@ export function FeatureTour({
   useEffect(() => {
     if (!user?.id || !storageKey || typeof window === 'undefined') return;
     if (window.localStorage.getItem(storageKey) === 'completed') return;
-    const timer = window.setTimeout(() => setOpen(true), 700);
+    const timer = window.setTimeout(() => {
+      setOpen(true);
+      onTourOpenChange?.(true);
+    }, 700);
     return () => window.clearTimeout(timer);
-  }, [storageKey, user?.id]);
+  }, [onTourOpenChange, storageKey, user?.id]);
 
   useEffect(() => {
     if (!open || !step || typeof window === 'undefined') return;
@@ -401,7 +407,6 @@ export function FeatureTour({
   useEffect(() => {
     if (!open) return;
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') closeTour();
       if (event.key === 'ArrowRight') setStepIndex((index) => Math.min(index + 1, steps.length - 1));
       if (event.key === 'ArrowLeft') setStepIndex((index) => Math.max(index - 1, 0));
     };
