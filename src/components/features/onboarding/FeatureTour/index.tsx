@@ -316,7 +316,7 @@ export function FeatureTour({
       onMobileMenuChange(false);
       openedMobileMenuByTour.current = false;
     }
-  }, [onMobileMenuChange, storageKey]);
+  }, [onMobileMenuChange, onTourOpenChange, storageKey]);
 
   useEffect(() => {
     if (!user?.id || !storageKey || typeof window === 'undefined') return;
