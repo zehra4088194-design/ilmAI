@@ -4,6 +4,42 @@ import { createServiceClient } from '@/lib/supabase/service';
 import { searchAlgoliaCatalog } from '@/lib/search/algolia';
 import { isCurriculumEnabled } from '@/lib/features/curriculum';
 
+
+async function searchPublicTopicContent(query: string) {
+  const db = createServiceClient() as any;
+  const { data, error } = await db.rpc('search_public_topic_content', { p_query: query, p_limit: 10 });
+  if (error) {
+    console.warn('[search] Public topic-content search unavailable:', error);
+    return [] as any[];
+  }
+  return Array.isArray(data) ? data : [];
+}
+
+function mapPublicTopicContent(rows: any[], gradeLevel: string) {
+  const seen = new Set<string>();
+  return rows
+    .filter((row) => !gradeLevel || !row.grade_level || row.grade_level === gradeLevel)
+    .map((row) => {
+      const href = row.subject_slug && row.chapter_slug
+        ? `/topics/${row.subject_slug}/${row.chapter_slug}`
+        : row.subject_slug
+          ? `/topics/${row.subject_slug}`
+          : '/topics';
+      return {
+        id: `${row.resource_id}-${row.subject_slug}-${row.chapter_slug || 'subject'}`,
+        type: 'study-topic' as const,
+        name: row.chapter_name ? `${row.subject_name} — ${row.chapter_name}` : row.subject_name || 'Study topic',
+        subtitle: [row.resource_title, row.content_section, row.grade_level].filter(Boolean).join(' · ') || 'Public study material',
+        href,
+      };
+    })
+    .filter((row) => {
+      if (seen.has(row.href)) return false;
+      seen.add(row.href);
+      return true;
+    });
+}
+
 export async function GET(req: NextRequest) {
   const query = req.nextUrl.searchParams.get('q')?.trim() || '';
   const gradeLevel = req.nextUrl.searchParams.get('gradeLevel')?.trim() || '';
@@ -24,8 +60,10 @@ export async function GET(req: NextRequest) {
           (item) => !item.href?.startsWith('/curriculum') && !item.href?.startsWith('/smart-book-practice')
         );
 
+  const publicTopicContentPromise = searchPublicTopicContent(query);
   const algoliaResults = gradeLevel ? null : await searchAlgoliaCatalog(query);
   if (algoliaResults) {
+    const publicTopicResults = mapPublicTopicContent(await publicTopicContentPromise, gradeLevel);
     const [{ data: notes }, { data: collegeLectures }, { data: collegeResources }] = await Promise.all([
       user
         ? supabase
@@ -53,6 +91,7 @@ export async function GET(req: NextRequest) {
     ]);
     return NextResponse.json({
       results: filterDisabledCurriculum([
+        ...publicTopicResults,
         ...algoliaResults.map(({ objectID: _objectID, ...result }) => result),
         ...(notes || [])
           .filter(
@@ -193,7 +232,9 @@ export async function GET(req: NextRequest) {
         : resource.resource_type || 'Library resource',
       // Search should land on the book/chapter catalog first so the visitor
       // can choose reading, MCQs, short, or long files intentionally.
-      href: `/library/${resource.subjects?.slug || 'general'}?${params}`,
+      href: resource.subjects?.slug && resource.chapters?.slug
+        ? `/topics/${resource.subjects.slug}/${resource.chapters.slug}`
+        : `/library/${resource.subjects?.slug || 'general'}?${params}`,
     };
   });
   const lectureResults = (lectures || []).filter(matchesGrade).map((lecture: any) => ({
@@ -256,8 +297,11 @@ export async function GET(req: NextRequest) {
         href: `/college/dashboard?search=${encodeURIComponent(resource.title)}`,
       }));
 
+  const publicTopicResults = mapPublicTopicContent(await publicTopicContentPromise, gradeLevel);
+
   return NextResponse.json({
     results: filterDisabledCurriculum([
+      ...publicTopicResults,
       ...subjectResults,
       ...chapterResults,
       ...resourceResults,

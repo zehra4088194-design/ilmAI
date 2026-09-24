@@ -119,6 +119,7 @@ export const PRIMARY_SITE_LINKS = [
   { name: 'Notes', url: '/features/notes' },
   { name: 'Lectures', url: '/features/lectures' },
   { name: 'Library', url: '/library' },
+  { name: 'Study Topics', url: '/topics' },
   { name: 'AI Tutor', url: '/features/ai-tutor' },
   { name: 'Scan & Solve', url: '/features/scan' },
   { name: 'Ask a Teacher', url: '/features/doubts' },
