@@ -149,6 +149,11 @@ export default async function DashboardPage() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
+      <WelcomeSection
+        name={profile?.full_name || 'Student'}
+        streak={profile?.streak || 0}
+        institutionName={profile?.sponsored_institution_name}
+      />
       <InstallAppButton />
       {profile?.subscription_tier === 'FREE' && (
         <div className="flex flex-col gap-3 rounded-2xl border border-violet-500/30 bg-gradient-to-r from-violet-600/15 via-indigo-500/10 to-cyan-500/10 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
@@ -164,11 +169,6 @@ export default async function DashboardPage() {
         </div>
       )}
       <HouseAdBanner slot="store_products" />
-      <WelcomeSection
-        name={profile?.full_name || 'Student'}
-        streak={profile?.streak || 0}
-        institutionName={profile?.sponsored_institution_name}
-      />
       <InstitutionQuickAccess />
       {!approvedParentLink && <ParentConnectPrompt />}
       <StudyBuddyCard myStreak={profile?.streak || 0} />
