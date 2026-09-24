@@ -901,10 +901,14 @@ export function SettingsTabs({
                 </p>
               </div>
               <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-4">
-                <p className="text-sm font-medium">No institution connection found.</p>
+                <p className="text-sm font-medium">No active institution connection found.</p>
                 <p className="text-muted-foreground mt-1 text-xs leading-5">
-                  Applications become available in the top navbar after your active school or college connection is set up.
+                  You can still open the Applications area here. Once a school or college connection becomes active,
+                  the Applications shortcut will move to the top navbar automatically.
                 </p>
+                <Button asChild variant="outline" size="sm" className="mt-3">
+                  <Link href="/student-applications">Open Applications</Link>
+                </Button>
               </div>
             </div>
           )}
