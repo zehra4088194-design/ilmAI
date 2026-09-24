@@ -97,6 +97,7 @@ export function SettingsTabs({
   initialParentView,
   autoStartMfa,
   continueAfterMfaHref,
+  hasInstitutionConnection,
 }: {
   profile: any;
   currentGradeLevel: GradeLevel | null;
@@ -837,8 +838,7 @@ export function SettingsTabs({
             </div>
           )}
           {activeTab === 'parent-link' && (
-            <div className="space-y-5">
-              <ReferralCard />
+            <div className="space-y-4">
               <div>
                 <h3 className="mb-1 flex items-center gap-2 font-semibold">
                   <Users className="h-4 w-4 text-violet-400" />
