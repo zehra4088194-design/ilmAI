@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Search, Menu, X, Zap, FileText } from 'lucide-react';
+import { Search, Menu, X, Zap, FileText, Share2 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/auth/useAuth';
@@ -39,6 +39,9 @@ export function DashboardNavbar({
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [hasInstitutionConnection, setHasInstitutionConnection] = useState(false);
+  const [referralUrl, setReferralUrl] = useState<string | null>(null);
   const mobileMenuOpen = controlledMobileMenuOpen ?? uncontrolledMobileMenuOpen;
   const setMobileMenuOpen = setUncontrolledMobileMenuOpen;
 
@@ -48,6 +51,52 @@ export function DashboardNavbar({
     window.addEventListener('ilm-ai-dashboard-menu-state', sync);
     return () => window.removeEventListener('ilm-ai-dashboard-menu-state', sync);
   }, [controlledMobileMenuOpen]);
+
+  useEffect(() => {
+    if (user?.role !== 'student') {
+      setHasInstitutionConnection(false);
+      return;
+    }
+    let cancelled = false;
+    fetch('/api/student-applications/availability')
+      .then((response) => (response.ok ? response.json() : { connected: false }))
+      .then((json) => {
+        if (!cancelled) setHasInstitutionConnection(Boolean(json.connected));
+      })
+      .catch(() => {
+        if (!cancelled) setHasInstitutionConnection(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, user?.role]);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setReferralUrl(null);
+      return;
+    }
+    let cancelled = false;
+    fetch('/api/referral/code')
+      .then((response) => (response.ok ? response.json() : null))
+      .then((json) => {
+        if (cancelled || json?.status !== 'success' || !json.data?.code) return;
+        setReferralUrl(window.location.origin + '/register?ref=' + encodeURIComponent(json.data.code));
+      })
+      .catch(() => {
+        if (!cancelled) setReferralUrl(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!shareOpen) return;
+    const close = () => setShareOpen(false);
+    document.addEventListener('pointerdown', close);
+    return () => document.removeEventListener('pointerdown', close);
+  }, [shareOpen]);
 
   useEffect(() => {
     const query = searchQuery.trim();
@@ -68,6 +117,26 @@ export function DashboardNavbar({
     }, 250);
     return () => window.clearTimeout(timer);
   }, [searchQuery]);
+
+  const shareLink = referralUrl || (typeof window !== 'undefined' ? window.location.origin : 'https://ilmai.study');
+  const shareMessage = 'Join ilm AI — study smarter with AI-powered learning tools.';
+
+  const openShareTarget = (target: 'whatsapp' | 'instagram' | 'facebook' | 'x') => {
+    const fullMessage = shareMessage + ' ' + shareLink;
+    let url = '';
+    if (target === 'whatsapp') {
+      url = 'https://wa.me/?text=' + encodeURIComponent(fullMessage);
+    } else if (target === 'facebook') {
+      url = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(shareLink);
+    } else if (target === 'x') {
+      url = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(shareMessage) + '&url=' + encodeURIComponent(shareLink);
+    } else {
+      void navigator.clipboard?.writeText(shareLink);
+      url = 'https://www.instagram.com/';
+    }
+    window.open(url, '_blank', 'noopener,noreferrer');
+    setShareOpen(false);
+  };
 
   const toggleMobileMenu = () => {
     if (onToggleMobileMenu) {
@@ -140,7 +209,49 @@ export function DashboardNavbar({
       </div>
       <div className="flex shrink-0 items-center gap-1 sm:gap-2">
         {!isParentPortal && <CreditBalancePill />}
-        {user?.role === 'student' && (
+
+        {user && (
+          <div className="relative" onPointerDown={(event) => event.stopPropagation()}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => setShareOpen((open) => !open)}
+              aria-expanded={shareOpen}
+              aria-haspopup="menu"
+              title="Share ilm AI"
+            >
+              <Share2 className="h-4 w-4" />
+              <span className="hidden md:inline">Share ilm AI</span>
+            </Button>
+            {shareOpen && (
+              <div className="border-border bg-popover text-popover-foreground absolute top-12 right-0 z-[120] w-52 overflow-hidden rounded-xl border p-1.5 shadow-xl">
+                <p className="text-muted-foreground px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider">
+                  Share ilm AI
+                </p>
+                {([
+                  ['whatsapp', 'WhatsApp'],
+                  ['instagram', 'Instagram'],
+                  ['facebook', 'Facebook'],
+                  ['x', 'X'],
+                ] as const).map(([target, label]) => (
+                  <button
+                    key={target}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => openShareTarget(target)}
+                    className="hover:bg-muted flex w-full items-center rounded-lg px-2.5 py-2 text-left text-sm font-medium transition-colors"
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {user?.role === 'student' && hasInstitutionConnection && (
           <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex">
             <Link href="/student-applications">
               <FileText className="h-4 w-4" /> Applications
