@@ -1,0 +1,272 @@
+'use client';
+import { useEffect, useRef, useState } from 'react';
+import { CheckCheck, Send, MessageCircle, Trash2, Phone } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton';
+import { ChatAttachmentButton } from '@/components/ui/ChatAttachmentButton';
+import { ChatAttachmentBubble } from '@/components/ui/ChatAttachmentBubble';
+import { cn } from '@/lib/utils/cn';
+import { toast } from 'sonner';
+import { useCalling } from '@/components/features/calling/CallProvider';
+
+interface Message {
+  id: string;
+  link_id: string;
+  sender_id: string;
+  content: string;
+  created_at: string;
+  read_at?: string | null;
+  attachment_signed_url?: string | null;
+  attachment_name?: string | null;
+  attachment_type?: string | null;
+  attachment_size_kb?: number | null;
+}
+
+type Contact = { id: string; full_name: string | null; avatar_url: string | null; role?: string | null };
+
+/**
+ * Chat between a parent and their linked student, used on both the Parent
+ * Dashboard (per student card) and the student's Settings > Parent Link tab.
+ * Polls the API route on a short interval rather than subscribing to
+ * Supabase Realtime (kept simple; can be switched back to Realtime later
+ * if instant delivery is needed).
+ */
+export function ParentMessageThread({
+  linkId,
+  currentUserId,
+  autoOpen = false,
+}: {
+  linkId: string;
+  currentUserId: string;
+  autoOpen?: boolean;
+}) {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [text, setText] = useState('');
+  const [sending, setSending] = useState(false);
+  const [open, setOpen] = useState(autoOpen);
+  const [contact, setContact] = useState<Contact | null>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const calling = useCalling();
+
+  useEffect(() => {
+    let active = true;
+    fetch(`/api/parent/messages?linkId=${linkId}`, { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((json) => {
+        if (active && json.contact) setContact(json.contact);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [linkId]);
+
+  useEffect(() => {
+    if (autoOpen) setOpen(true);
+  }, [autoOpen]);
+
+  const markRead = async () => {
+    await fetch('/api/parent/messages', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ linkId }),
+    }).catch(() => {});
+  };
+
+  useEffect(() => {
+    if (!open) return;
+
+    let active = true;
+    let hadUnread = false;
+
+    const load = () => {
+      fetch(`/api/parent/messages?linkId=${linkId}`)
+        .then((r) => r.json())
+        .then((json) => {
+          if (!active) return;
+          const next: Message[] = json.messages || [];
+          setMessages(next);
+          if (json.contact) setContact(json.contact);
+          const unread = next.some((item) => item.sender_id !== currentUserId && !item.read_at);
+          if (unread) {
+            hadUnread = true;
+            markRead();
+          } else if (hadUnread) {
+            hadUnread = false;
+          }
+        });
+    };
+
+    load();
+    markRead();
+    const timer = window.setInterval(load, 4000);
+
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [open, linkId, currentUserId]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const clearChat = async () => {
+    if (!window.confirm('Delete this chat? This removes every message and cannot be undone.')) return;
+    try {
+      const res = await fetch(`/api/parent/messages?linkId=${linkId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error();
+      setMessages([]);
+      toast.success('Chat deleted.');
+    } catch {
+      toast.error('The chat could not be deleted.');
+    }
+  };
+
+  const callContact = async () => {
+    if (!calling) {
+      toast.error('Calling is not ready yet.');
+      return;
+    }
+    if (calling.status !== 'idle') return;
+    if (!contact?.id) {
+      toast.error('The linked contact could not be found.');
+      return;
+    }
+
+    await calling.startCall('consumer', 'consumer', {
+      userId: contact.id,
+      name: contact.full_name || 'Contact',
+      avatarUrl: contact.avatar_url || null,
+    });
+  };
+
+  const send = async (file?: File) => {
+    if (!text.trim() && !file) return;
+    setSending(true);
+    const content = text.trim();
+    setText('');
+    try {
+      let res: Response;
+      if (file) {
+        const formData = new FormData();
+        formData.set('linkId', linkId);
+        formData.set('content', content);
+        formData.set('file', file);
+        res = await fetch('/api/parent/messages', { method: 'POST', body: formData });
+      } else {
+        res = await fetch('/api/parent/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ linkId, content }),
+        });
+      }
+      if (!res.ok) throw new Error();
+    } catch {
+      toast.error('The message could not be sent.');
+      setText(content);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  if (!open) {
+    return (
+      <div className="flex gap-2">
+        <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
+          <MessageCircle className="h-3.5 w-3.5" /> Message
+        </Button>
+        {calling && (
+          <Button variant="outline" size="sm" onClick={callContact} disabled={calling.status !== 'idle' || !contact}>
+            <Phone className="h-3.5 w-3.5" /> Call
+          </Button>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="border-border overflow-hidden rounded-xl border">
+      <div className="border-border bg-muted/30 flex items-center justify-between border-b px-3 py-2">
+        <span className="flex items-center gap-1.5 text-xs font-semibold">
+          <MessageCircle className="h-3.5 w-3.5" /> Live Chat
+        </span>
+        <div className="flex items-center gap-3">
+          {calling && (
+            <button
+              type="button"
+              onClick={callContact}
+              disabled={calling.status !== 'idle' || !contact}
+              aria-label="Call contact"
+              title="Call contact"
+              className="text-muted-foreground hover:text-foreground disabled:opacity-50"
+            >
+              <Phone className="h-3.5 w-3.5" />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={clearChat}
+            aria-label="Delete chat"
+            title="Delete chat"
+            className="text-muted-foreground hover:text-destructive"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+          <button type="button" onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground text-xs">
+            Close
+          </button>
+        </div>
+      </div>
+      <div className="bg-background/50 h-56 space-y-2 overflow-y-auto p-3">
+        {messages.length === 0 && (
+          <p className="text-muted-foreground mt-4 text-center text-xs">
+            No messages yet. Say hello to start.
+          </p>
+        )}
+        {messages.map((m) => {
+          const mine = m.sender_id === currentUserId;
+          return (
+            <div
+              key={m.id}
+              className={cn(
+                'max-w-[80%] rounded-xl px-3 py-1.5 text-sm',
+                mine ? 'ml-auto bg-violet-600 text-white' : 'bg-muted'
+              )}
+            >
+              {m.content}
+              <ChatAttachmentBubble message={m} mine={mine} />
+              {mine && (
+                <div
+                  className={cn(
+                    'mt-1 flex items-center justify-end gap-1 text-[10px]',
+                    m.read_at ? 'text-sky-200' : 'text-white/65'
+                  )}
+                >
+                  <CheckCheck className="h-3 w-3" />
+                  {m.read_at ? 'Seen' : 'Sent'}
+                </div>
+              )}
+            </div>
+          );
+        })}
+        <div ref={bottomRef} />
+      </div>
+      <div className="border-border flex gap-2 border-t p-2">
+        <EmojiPickerButton onSelect={(emoji) => setText((current) => current + emoji)} />
+        <ChatAttachmentButton onSelect={(file) => send(file)} disabled={sending} />
+        <Input
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && !sending && send()}
+          placeholder="Write a message..."
+          className="text-sm"
+        />
+        <Button size="icon" variant="gradient" onClick={() => send()} disabled={sending}>
+          <Send className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}

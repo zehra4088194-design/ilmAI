@@ -1,0 +1,114 @@
+/* theme-pink is loaded on demand; this file contains only its light/dark pair. */
+html.theme-pink-light {
+  --brand-primary: 334 72% 45%;
+  --brand-secondary: 351 72% 68%;
+  --brand-accent: 199 90% 50%;
+  --background: 350 45% 90%;
+  --foreground: 343 38% 15%;
+  --card: 350 48% 94%;
+  --card-foreground: 343 38% 15%;
+  --popover: 350 50% 95%;
+  --popover-foreground: 343 38% 15%;
+  --primary: 334 72% 45%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 350 45% 88%;
+  --secondary-foreground: 343 38% 18%;
+  --muted: 350 36% 88%;
+  --muted-foreground: 343 17% 42%;
+  --accent: 341 55% 88%;
+  --accent-foreground: 334 72% 25%;
+  --border: 350 28% 76%;
+  --input: 350 28% 76%;
+  --ring: 334 72% 45%;
+  --sidebar: 343 45% 16%;
+  --sidebar-foreground: 350 55% 96%;
+  --sidebar-accent: 343 42% 24%;
+  --sidebar-accent-foreground: 350 55% 96%;
+  --sidebar-border: 343 35% 24%;
+  --app-background-image:
+    linear-gradient(rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.18)), url('/background-pink.png');
+  --app-background-size: cover;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --chart-1: var(--primary);
+  --chart-2: var(--brand-secondary);
+  --chart-3: var(--brand-accent);
+  --chart-4: 38 92% 50%;
+  --chart-5: 0 84% 60%;
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-ring: var(--ring);
+}
+
+html.theme-pink-dark {
+  --brand-primary: 338 82% 68%;
+  --brand-secondary: 351 78% 72%;
+  --brand-accent: 193 92% 56%;
+  --background: 338 24% 10%;
+  --foreground: 348 36% 95%;
+  --card: 338 24% 14%;
+  --card-foreground: 348 36% 95%;
+  --popover: 338 26% 15%;
+  --popover-foreground: 348 36% 95%;
+  --primary: 338 82% 68%;
+  --primary-foreground: 338 24% 10%;
+  --secondary: 338 18% 18%;
+  --secondary-foreground: 348 36% 95%;
+  --muted: 338 16% 18%;
+  --muted-foreground: 348 14% 74%;
+  --accent: 338 18% 20%;
+  --accent-foreground: 348 36% 95%;
+  --border: 338 16% 24%;
+  --input: 338 16% 24%;
+  --ring: 338 82% 68%;
+  --sidebar: 338 28% 9%;
+  --sidebar-foreground: 348 36% 95%;
+  --sidebar-accent: 338 22% 17%;
+  --sidebar-accent-foreground: 348 36% 95%;
+  --sidebar-border: 338 18% 21%;
+  --app-background-image:
+    linear-gradient(135deg, rgba(42, 9, 22, 0.7), rgba(18, 7, 14, 0.58)),
+    radial-gradient(circle at 14% 8%, rgba(244, 114, 182, 0.18), transparent 34%), url('/background-pink.png');
+  --app-background-size: cover;
+  --destructive: 0 62% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --chart-1: var(--primary);
+  --chart-2: var(--brand-secondary);
+  --chart-3: var(--brand-accent);
+  --chart-4: 38 92% 60%;
+  --chart-5: 0 84% 70%;
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-ring: var(--ring);
+}
+
+html.theme-pink-light,
+html.theme-pink-dark {
+  --radius: 1rem;
+  --theme-glass-blur: 8px;
+  --theme-card-shadow: 0 16px 42px rgba(157, 23, 77, 0.16);
+  --theme-heading-tracking: -0.01em;
+  --theme-body-font: ui-rounded, 'Trebuchet MS', var(--font-inter), sans-serif;
+  --theme-heading-font: ui-rounded, 'Trebuchet MS', var(--font-inter), sans-serif;
+  --theme-heading-transform: none;
+  --theme-heading-weight: 800;
+  --theme-surface-radius: 1.35rem;
+  --theme-surface-angle: 155deg;
+  --theme-border-width: 1px;
+  --theme-border-style: solid;
+  --destructive: 0 62% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --chart-1: var(--primary);
+  --chart-2: var(--brand-secondary);
+  --chart-3: var(--brand-accent);
+  --chart-4: 38 92% 60%;
+  --chart-5: 0 84% 70%;
+  --sidebar: var(--card);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--secondary);
+  --sidebar-accent-foreground: var(--secondary-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+}

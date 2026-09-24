@@ -1,0 +1,115 @@
+/* theme-midnight is loaded on demand; this file contains only its light/dark pair. */
+html.theme-midnight-light {
+  --brand-primary: 217 36% 30%;
+  --brand-secondary: 38 92% 48%;
+  --brand-accent: 266 58% 54%;
+  --background: 36 18% 95%;
+  --foreground: 223 23% 16%;
+  --card: 0 0% 100%;
+  --card-foreground: 223 23% 16%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 223 23% 16%;
+  --primary: 217 36% 30%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 36 20% 89%;
+  --secondary-foreground: 223 23% 16%;
+  --muted: 36 16% 90%;
+  --muted-foreground: 223 12% 44%;
+  --accent: 36 28% 86%;
+  --accent-foreground: 223 23% 16%;
+  --border: 36 14% 80%;
+  --input: 36 14% 80%;
+  --ring: 217 36% 30%;
+  --sidebar: 223 18% 18%;
+  --sidebar-foreground: 45 30% 96%;
+  --sidebar-accent: 223 14% 24%;
+  --sidebar-accent-foreground: 45 30% 96%;
+  --sidebar-border: 223 12% 28%;
+  --app-background-image:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.64), rgba(247, 242, 234, 0.5)),
+    radial-gradient(circle at 80% 10%, rgba(245, 158, 11, 0.12), transparent 34%), url('/background-dark.png');
+  --app-background-size: cover;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --chart-1: var(--primary);
+  --chart-2: var(--brand-secondary);
+  --chart-3: var(--brand-accent);
+  --chart-4: 38 92% 50%;
+  --chart-5: 0 84% 60%;
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-ring: var(--ring);
+}
+
+html.theme-midnight-dark {
+  --brand-primary: 38 92% 58%;
+  --brand-secondary: 262 80% 68%;
+  --brand-accent: 190 95% 55%;
+  --background: 220 12% 7%;
+  --foreground: 45 30% 96%;
+  --card: 220 10% 11%;
+  --card-foreground: 45 30% 96%;
+  --popover: 220 10% 11%;
+  --popover-foreground: 45 30% 96%;
+  --primary: 38 92% 58%;
+  --primary-foreground: 0 0% 9%;
+  --secondary: 220 8% 15%;
+  --secondary-foreground: 45 30% 96%;
+  --muted: 220 8% 16%;
+  --muted-foreground: 45 12% 72%;
+  --accent: 220 8% 17%;
+  --accent-foreground: 45 30% 96%;
+  --border: 220 8% 24%;
+  --input: 220 8% 24%;
+  --ring: 38 92% 58%;
+  --sidebar: 0 0% 8%;
+  --sidebar-foreground: 45 30% 96%;
+  --sidebar-accent: 0 0% 16%;
+  --sidebar-accent-foreground: 45 30% 96%;
+  --sidebar-border: 0 0% 18%;
+  --app-background-image:
+    linear-gradient(135deg, rgba(0, 0, 0, 0.55), rgba(16, 12, 8, 0.42)),
+    radial-gradient(circle at 80% 10%, rgba(245, 158, 11, 0.12), transparent 34%), url('/background-dark.png');
+  --app-background-size: cover;
+  --destructive: 0 62% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --chart-1: var(--primary);
+  --chart-2: var(--brand-secondary);
+  --chart-3: var(--brand-accent);
+  --chart-4: 38 92% 60%;
+  --chart-5: 0 84% 70%;
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-ring: var(--ring);
+}
+
+html.theme-midnight-light,
+html.theme-midnight-dark {
+  --radius: 0.7rem;
+  --theme-glass-blur: 5px;
+  --theme-card-shadow: 0 20px 54px rgba(5, 8, 18, 0.28);
+  --theme-heading-tracking: 0.012em;
+  --theme-body-font: var(--font-inter), sans-serif;
+  --theme-heading-font: var(--font-geist-mono), monospace;
+  --theme-heading-transform: uppercase;
+  --theme-heading-weight: 620;
+  --theme-surface-radius: 0.42rem;
+  --theme-surface-angle: 110deg;
+  --theme-border-width: 1px;
+  --theme-border-style: solid;
+  --destructive: 0 62% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --chart-1: var(--primary);
+  --chart-2: var(--brand-secondary);
+  --chart-3: var(--brand-accent);
+  --chart-4: 38 92% 60%;
+  --chart-5: 0 84% 70%;
+  --sidebar: var(--card);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--secondary);
+  --sidebar-accent-foreground: var(--secondary-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+}

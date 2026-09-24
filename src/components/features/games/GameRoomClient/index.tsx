@@ -1,0 +1,1139 @@
+'use client';
+
+import { useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
+import { ArrowLeft, Brain, CheckCircle2, Copy, Crown, Dice5, Gamepad2, Loader2, RotateCcw, Send, Timer, Trophy, Users } from 'lucide-react';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { createClient } from '@/lib/supabase/client';
+import type { GameCardData } from '@/lib/games/defaultGames';
+import type { SubscriptionTier } from '@/types';
+import { LiveQuizGame } from '@/components/features/games/LiveQuizGame';
+
+type LudoToken = { position: number };
+
+type LudoPlayer = {
+  id: string;
+  name: string;
+  color: (typeof LUDO_COLORS)[number]['key'];
+  tokens: LudoToken[];
+};
+
+type LudoState = {
+  players: LudoPlayer[];
+  currentPlayer: number;
+  dice: number | null;
+  winnerIds: string[];
+};
+
+type GameEvent = {
+  id: string;
+  room_code: string;
+  user_id: string | null;
+  event_type: string;
+  payload: {
+    name?: string;
+    value?: number;
+    message?: string;
+    tokenIndex?: number;
+    roundId?: string;
+    questionId?: string;
+    text?: string;
+    options?: string[];
+    correctIndex?: number;
+    subjectName?: string;
+    chapterName?: string;
+    expectedPlayers?: string[];
+    answerIndex?: number;
+    [key: string]: unknown;
+  };
+  created_at: string;
+};
+
+function makeRoomCode() {
+  return Math.random().toString(36).slice(2, 8).toUpperCase();
+}
+
+function mmss(seconds: number) {
+  const safe = Math.max(0, seconds);
+  return `${Math.floor(safe / 60)}:${String(safe % 60).padStart(2, '0')}`;
+}
+
+const LUDO_COLORS = [
+  { key: 'red', name: 'Red', bg: 'bg-rose-500', soft: 'bg-rose-500/18', border: 'border-rose-400/70', hex: '#f43f5e', start: 0 },
+  { key: 'green', name: 'Green', bg: 'bg-emerald-500', soft: 'bg-emerald-500/18', border: 'border-emerald-400/70', hex: '#10b981', start: 13 },
+  { key: 'yellow', name: 'Yellow', bg: 'bg-amber-400', soft: 'bg-amber-400/22', border: 'border-amber-300/80', hex: '#fbbf24', start: 26 },
+  { key: 'blue', name: 'Blue', bg: 'bg-sky-500', soft: 'bg-sky-500/18', border: 'border-sky-400/70', hex: '#0ea5e9', start: 39 },
+] as const;
+
+const LUDO_PATH: Array<[number, number]> = [
+  [6, 1], [6, 2], [6, 3], [6, 4], [6, 5], [5, 6], [4, 6], [3, 6], [2, 6], [1, 6], [0, 6], [0, 7], [0, 8],
+  [1, 8], [2, 8], [3, 8], [4, 8], [5, 8], [6, 9], [6, 10], [6, 11], [6, 12], [6, 13], [6, 14], [7, 14], [8, 14],
+  [8, 13], [8, 12], [8, 11], [8, 10], [8, 9], [9, 8], [10, 8], [11, 8], [12, 8], [13, 8], [14, 8], [14, 7], [14, 6],
+  [13, 6], [12, 6], [11, 6], [10, 6], [9, 6], [8, 5], [8, 4], [8, 3], [8, 2], [8, 1], [8, 0], [7, 0], [6, 0],
+];
+
+const HOME_PATHS: Record<LudoPlayer['color'], Array<[number, number]>> = {
+  red: [[7, 1], [7, 2], [7, 3], [7, 4], [7, 5]],
+  green: [[1, 7], [2, 7], [3, 7], [4, 7], [5, 7]],
+  yellow: [[7, 13], [7, 12], [7, 11], [7, 10], [7, 9]],
+  blue: [[13, 7], [12, 7], [11, 7], [10, 7], [9, 7]],
+};
+
+const SAFE_SQUARES = new Set([0, 8, 13, 21, 26, 34, 39, 47]);
+
+function emptyLudoState(): LudoState {
+  return { players: [], currentPlayer: 0, dice: null, winnerIds: [] };
+}
+
+const DIE_DOTS: Record<number, number[]> = {
+  1: [4],
+  2: [0, 8],
+  3: [0, 4, 8],
+  4: [0, 2, 6, 8],
+  5: [0, 2, 4, 6, 8],
+  6: [0, 2, 3, 5, 6, 8],
+};
+
+function DiceFace({ value, rolling = false, compact = false }: { value: number; rolling?: boolean; compact?: boolean }) {
+  return (
+    <div
+      className={`${compact ? 'h-12 w-12 rounded-xl p-2' : 'h-20 w-20 rounded-2xl p-3'} grid grid-cols-3 grid-rows-3 border-2 border-white/70 bg-gradient-to-br from-white to-slate-200 shadow-[0_12px_30px_rgba(0,0,0,0.45)] ${rolling ? 'animate-[spin_0.18s_linear_infinite]' : ''}`}
+      aria-label={`Dice showing ${value}`}
+    >
+      {Array.from({ length: 9 }, (_, index) => (
+        <span
+          key={index}
+          className={`${DIE_DOTS[value]?.includes(index) ? 'scale-100 bg-slate-900' : 'scale-0 bg-transparent'} m-auto h-2.5 w-2.5 rounded-full transition-transform ${compact ? 'h-1.5 w-1.5' : ''}`}
+        />
+      ))}
+    </div>
+  );
+}
+
+function canMoveToken(token: LudoToken, dice: number) {
+  return token.position === -1 ? dice === 6 : token.position + dice <= 56;
+}
+
+function nextPlayer(state: LudoState) {
+  const eligible = state.players.map((player) => player.id).filter((id) => !state.winnerIds.includes(id));
+  if (eligible.length < 2) return 0;
+  for (let offset = 1; offset <= state.players.length; offset += 1) {
+    const index = (state.currentPlayer + offset) % state.players.length;
+    if (!state.winnerIds.includes(state.players[index]!.id)) return index;
+  }
+  return 0;
+}
+
+function ludoStateFromEvents(events: GameEvent[]): LudoState {
+  const state = emptyLudoState();
+  const joinedIds = new Set<string>();
+
+  for (const event of events) {
+    if (event.event_type === 'join' && event.user_id && !joinedIds.has(event.user_id) && state.players.length < 4) {
+      const color = LUDO_COLORS[state.players.length]!.key;
+      joinedIds.add(event.user_id);
+      state.players.push({ id: event.user_id, name: event.payload.name || `Player ${state.players.length + 1}`, color, tokens: Array.from({ length: 4 }, () => ({ position: -1 })) });
+      continue;
+    }
+    if (event.event_type !== 'ludo_roll' && event.event_type !== 'ludo_move') continue;
+    const active = state.players[state.currentPlayer];
+    if (!active || active.id !== event.user_id || state.winnerIds.includes(active.id)) continue;
+
+    if (event.event_type === 'ludo_roll' && state.dice === null) {
+      const value = Number(event.payload.value);
+      if (!Number.isInteger(value) || value < 1 || value > 6) continue;
+      state.dice = value;
+      if (!active.tokens.some((token) => canMoveToken(token, value))) {
+        state.dice = null;
+        state.currentPlayer = nextPlayer(state);
+      }
+      continue;
+    }
+
+    if (event.event_type === 'ludo_move' && state.dice !== null) {
+      const tokenIndex = Number(event.payload.tokenIndex);
+      const token = active.tokens[tokenIndex];
+      if (!Number.isInteger(tokenIndex) || !token || !canMoveToken(token, state.dice)) continue;
+      token.position = token.position === -1 ? 0 : token.position + state.dice;
+
+      if (token.position >= 0 && token.position < 52 && !SAFE_SQUARES.has((LUDO_COLORS.find((color) => color.key === active.color)!.start + token.position) % 52)) {
+        const globalPosition = (LUDO_COLORS.find((color) => color.key === active.color)!.start + token.position) % 52;
+        state.players.forEach((opponent) => {
+          if (opponent.id === active.id) return;
+          const opponentStart = LUDO_COLORS.find((color) => color.key === opponent.color)!.start;
+          opponent.tokens.forEach((opponentToken) => {
+            if (opponentToken.position >= 0 && opponentToken.position < 52 && (opponentStart + opponentToken.position) % 52 === globalPosition) opponentToken.position = -1;
+          });
+        });
+      }
+
+      if (active.tokens.every((item) => item.position === 56) && !state.winnerIds.includes(active.id)) state.winnerIds.push(active.id);
+      const rolledSix = state.dice === 6;
+      state.dice = null;
+      if (!rolledSix || state.winnerIds.includes(active.id)) state.currentPlayer = nextPlayer(state);
+    }
+  }
+  return state;
+}
+
+const MEMORY_PAIR_COUNT = 6;
+const MEMORY_SUBJECTS = ['Mixed', 'Physics', 'Biology', 'Chemistry', 'Math', 'English', 'Pak Studies'] as const;
+type MemorySubject = (typeof MEMORY_SUBJECTS)[number];
+
+const MEMORY_PAIRS = [
+  { id: 'force', prompt: 'Force', answer: 'Mass x acceleration', subject: 'Physics', tone: 'border-sky-400/50 bg-sky-500/12 text-sky-200' },
+  { id: 'speed', prompt: 'Speed', answer: 'Distance / time', subject: 'Physics', tone: 'border-sky-400/50 bg-sky-500/12 text-sky-200' },
+  { id: 'density', prompt: 'Density', answer: 'Mass / volume', subject: 'Physics', tone: 'border-sky-400/50 bg-sky-500/12 text-sky-200' },
+  { id: 'voltage', prompt: 'Voltage unit', answer: 'Volt', subject: 'Physics', tone: 'border-sky-400/50 bg-sky-500/12 text-sky-200' },
+  { id: 'cell', prompt: 'Basic unit of life', answer: 'Cell', subject: 'Biology', tone: 'border-emerald-400/50 bg-emerald-500/12 text-emerald-200' },
+  { id: 'mitochondria', prompt: 'Cell powerhouse', answer: 'Mitochondria', subject: 'Biology', tone: 'border-emerald-400/50 bg-emerald-500/12 text-emerald-200' },
+  { id: 'photosynthesis', prompt: 'Makes glucose in plants', answer: 'Photosynthesis', subject: 'Biology', tone: 'border-emerald-400/50 bg-emerald-500/12 text-emerald-200' },
+  { id: 'dna', prompt: 'Carries genetic information', answer: 'DNA', subject: 'Biology', tone: 'border-emerald-400/50 bg-emerald-500/12 text-emerald-200' },
+  { id: 'water', prompt: 'H2O', answer: 'Water', subject: 'Chemistry', tone: 'border-cyan-400/50 bg-cyan-500/12 text-cyan-200' },
+  { id: 'carbon-dioxide', prompt: 'CO2', answer: 'Carbon dioxide', subject: 'Chemistry', tone: 'border-cyan-400/50 bg-cyan-500/12 text-cyan-200' },
+  { id: 'acid', prompt: 'pH below 7', answer: 'Acid', subject: 'Chemistry', tone: 'border-cyan-400/50 bg-cyan-500/12 text-cyan-200' },
+  { id: 'atom', prompt: 'Smallest element particle', answer: 'Atom', subject: 'Chemistry', tone: 'border-cyan-400/50 bg-cyan-500/12 text-cyan-200' },
+  { id: 'triangle', prompt: 'Triangle angle sum', answer: '180 degrees', subject: 'Math', tone: 'border-violet-400/50 bg-violet-500/12 text-violet-200' },
+  { id: 'circle', prompt: 'Circle area', answer: 'pi x radius squared', subject: 'Math', tone: 'border-violet-400/50 bg-violet-500/12 text-violet-200' },
+  { id: 'pythagoras', prompt: 'Right triangle rule', answer: 'a2 + b2 = c2', subject: 'Math', tone: 'border-violet-400/50 bg-violet-500/12 text-violet-200' },
+  { id: 'prime', prompt: 'Only two factors', answer: 'Prime number', subject: 'Math', tone: 'border-violet-400/50 bg-violet-500/12 text-violet-200' },
+  { id: 'noun', prompt: 'Names a person or thing', answer: 'Noun', subject: 'English', tone: 'border-amber-400/50 bg-amber-500/12 text-amber-200' },
+  { id: 'verb', prompt: 'Shows an action', answer: 'Verb', subject: 'English', tone: 'border-amber-400/50 bg-amber-500/12 text-amber-200' },
+  { id: 'synonym', prompt: 'Word with similar meaning', answer: 'Synonym', subject: 'English', tone: 'border-amber-400/50 bg-amber-500/12 text-amber-200' },
+  { id: 'metaphor', prompt: 'Direct poetic comparison', answer: 'Metaphor', subject: 'English', tone: 'border-amber-400/50 bg-amber-500/12 text-amber-200' },
+  { id: 'pakistan', prompt: 'Pakistan independence', answer: '14 August 1947', subject: 'Pak Studies', tone: 'border-rose-400/50 bg-rose-500/12 text-rose-200' },
+  { id: 'capital', prompt: 'Capital of Pakistan', answer: 'Islamabad', subject: 'Pak Studies', tone: 'border-rose-400/50 bg-rose-500/12 text-rose-200' },
+  { id: 'indus', prompt: 'Pakistan longest river', answer: 'Indus', subject: 'Pak Studies', tone: 'border-rose-400/50 bg-rose-500/12 text-rose-200' },
+  { id: 'equator', prompt: 'Zero-degree latitude', answer: 'Equator', subject: 'Pak Studies', tone: 'border-rose-400/50 bg-rose-500/12 text-rose-200' },
+] as const;
+
+function shuffleItems<T>(items: T[]) {
+  const shuffled = [...items];
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex]!, shuffled[index]!];
+  }
+  return shuffled;
+}
+
+function createMemoryDeck(subject: MemorySubject, previousPairIds: Set<string> = new Set()) {
+  const scoped = subject === 'Mixed' ? MEMORY_PAIRS : MEMORY_PAIRS.filter((pair) => pair.subject === subject);
+  const pairCount = Math.min(MEMORY_PAIR_COUNT, scoped.length);
+  const freshPairs = scoped.filter((pair) => !previousPairIds.has(pair.id));
+  const availablePairs = freshPairs.length >= pairCount ? freshPairs : scoped;
+  const selectedPairs = shuffleItems([...availablePairs]).slice(0, pairCount);
+
+  return shuffleItems(
+    selectedPairs.flatMap((item) => [
+      { id: item.id, label: item.prompt, tone: item.tone, cardId: `${item.id}-prompt` },
+      { id: item.id, label: item.answer, tone: item.tone, cardId: `${item.id}-answer` },
+    ]),
+  );
+}
+
+const MEMORY_BEST_SCORE_KEY = 'ilm-ai-memory-match-best';
+
+function readBestScores(): Partial<Record<MemorySubject, number>> {
+  if (typeof window === 'undefined') return {};
+  try {
+    return JSON.parse(window.localStorage.getItem(MEMORY_BEST_SCORE_KEY) || '{}');
+  } catch {
+    return {};
+  }
+}
+
+function writeBestScore(subject: MemorySubject, moves: number) {
+  if (typeof window === 'undefined') return;
+  try {
+    const current = readBestScores();
+    if (current[subject] === undefined || moves < current[subject]!) {
+      window.localStorage.setItem(MEMORY_BEST_SCORE_KEY, JSON.stringify({ ...current, [subject]: moves }));
+    }
+  } catch {
+    // Best-effort — localStorage can be unavailable (private mode, quota). Not worth surfacing.
+  }
+}
+
+function pathIndexAt(row: number, col: number) {
+  return LUDO_PATH.findIndex(([pathRow, pathCol]) => pathRow === row && pathCol === col);
+}
+
+function ludoCellClass(row: number, col: number) {
+  if (row === 7 && col === 7) return 'border-white/60 bg-white';
+  if (row < 6 && col < 6) return row >= 1 && row <= 4 && col >= 1 && col <= 4 ? 'border-rose-200 bg-white' : 'border-rose-300 bg-rose-400/85';
+  if (row < 6 && col > 8) return row >= 1 && row <= 4 && col >= 10 && col <= 13 ? 'border-emerald-200 bg-white' : 'border-emerald-300 bg-emerald-400/85';
+  if (row > 8 && col > 8) return row >= 10 && row <= 13 && col >= 10 && col <= 13 ? 'border-amber-200 bg-white' : 'border-amber-300 bg-amber-300/90';
+  if (row > 8 && col < 6) return row >= 10 && row <= 13 && col >= 1 && col <= 4 ? 'border-sky-200 bg-white' : 'border-sky-300 bg-sky-400/85';
+
+  if (row === 7 && col >= 1 && col <= 6) return 'border-rose-300 bg-rose-300/85';
+  if (col === 7 && row >= 1 && row <= 6) return 'border-emerald-300 bg-emerald-300/85';
+  if (row === 7 && col >= 8 && col <= 13) return 'border-amber-300 bg-amber-300/85';
+  if (col === 7 && row >= 8 && row <= 13) return 'border-sky-300 bg-sky-300/85';
+
+  const pathIndex = pathIndexAt(row, col);
+  if (pathIndex !== -1) {
+    if (pathIndex === 0) return 'border-rose-500 bg-rose-500';
+    if (pathIndex === 13) return 'border-emerald-500 bg-emerald-500';
+    if (pathIndex === 26) return 'border-amber-400 bg-amber-400';
+    if (pathIndex === 39) return 'border-sky-500 bg-sky-500';
+    return 'border-slate-200 bg-white';
+  }
+  return 'border-transparent bg-transparent';
+}
+
+function LudoBoard({ state, currentUserId, onMove }: { state: LudoState; currentUserId: string | null; onMove: (tokenIndex: number) => void }) {
+  const activePlayer = state.players[state.currentPlayer];
+  const movable = activePlayer && state.dice ? activePlayer.tokens.map((token) => canMoveToken(token, state.dice!)) : [];
+  const basePositions: Record<LudoPlayer['color'], Array<[number, number]>> = {
+    red: [[1.5, 1.5], [1.5, 3.5], [3.5, 1.5], [3.5, 3.5]],
+    green: [[1.5, 10.5], [1.5, 12.5], [3.5, 10.5], [3.5, 12.5]],
+    yellow: [[10.5, 10.5], [10.5, 12.5], [12.5, 10.5], [12.5, 12.5]],
+    blue: [[10.5, 1.5], [10.5, 3.5], [12.5, 1.5], [12.5, 3.5]],
+  };
+
+  const baseStyles: Record<LudoPlayer['color'], React.CSSProperties> = {
+    red: { top: '6.67%', left: '6.67%' },
+    green: { top: '6.67%', right: '6.67%' },
+    yellow: { bottom: '6.67%', right: '6.67%' },
+    blue: { bottom: '6.67%', left: '6.67%' },
+  };
+
+  return (
+    <div className="relative mx-auto aspect-square w-full max-w-[660px] overflow-hidden rounded-xl border-4 border-slate-800 bg-slate-800 p-1 shadow-2xl">
+      <div className="grid h-full w-full grid-cols-[repeat(15,minmax(0,1fr))] grid-rows-[repeat(15,minmax(0,1fr))] gap-px bg-slate-200">
+        {Array.from({ length: 225 }).map((_, index) => {
+          const row = Math.floor(index / 15);
+          const col = index % 15;
+          const pathIndex = pathIndexAt(row, col);
+          return (
+            <span key={index} className={`relative flex items-center justify-center border ${ludoCellClass(row, col)}`}>
+              {SAFE_SQUARES.has(pathIndex) && pathIndex !== 0 && pathIndex !== 13 && pathIndex !== 26 && pathIndex !== 39 && (
+                <span className="text-[clamp(7px,1.2vw,12px)] leading-none text-slate-400">*</span>
+              )}
+            </span>
+          );
+        })}
+      </div>
+      <div className="pointer-events-none absolute inset-0">
+        {LUDO_COLORS.map((color) => (
+          <div
+            key={color.key}
+            style={baseStyles[color.key]}
+            className="absolute grid h-[26.67%] w-[26.67%] grid-cols-2 gap-[16%] rounded-[18%] border-[3px] border-white/80 bg-white/95 p-[14%] shadow-inner"
+          >
+            {[0, 1, 2, 3].map((token) => <span key={token} className="rounded-full border-[3px] border-white shadow-inner" style={{ backgroundColor: `${color.hex}55`, boxShadow: `inset 0 0 0 2px ${color.hex}` }} />)}
+          </div>
+        ))}
+        <div className="absolute left-1/2 top-1/2 h-[19.5%] w-[19.5%] -translate-x-1/2 -translate-y-1/2 border-2 border-white/80" style={{ background: 'conic-gradient(from 45deg, #10b981 0 25%, #fbbf24 0 50%, #0ea5e9 0 75%, #f43f5e 0)' }} />
+      </div>
+      {state.players.flatMap((player) => player.tokens.map((token, tokenIndex) => {
+        const color = LUDO_COLORS.find((item) => item.key === player.color)!;
+        const start = color.start;
+        const point = token.position === -1
+          ? basePositions[player.color][tokenIndex]!
+          : token.position < 52
+            ? LUDO_PATH[(start + token.position) % 52]!
+            : HOME_PATHS[player.color][token.position - 52]!;
+        const playable = player.id === currentUserId && activePlayer?.id === player.id && Boolean(movable[tokenIndex]);
+        return (
+          <button
+            key={`${player.id}-${tokenIndex}`}
+            type="button"
+            aria-label={`${player.name} token ${tokenIndex + 1}`}
+            onClick={() => playable && onMove(tokenIndex)}
+            disabled={!playable}
+            className={`absolute z-20 flex h-[5.8%] w-[5.8%] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white text-[9px] font-black text-white shadow-lg transition-[left,top,transform] duration-300 ease-out ${playable ? 'cursor-pointer animate-pulse ring-4 ring-slate-900/25 hover:scale-110' : 'cursor-default'}`}
+            style={{ left: `${((point[1] + 0.5) / 15) * 100}%`, top: `${((point[0] + 0.5) / 15) * 100}%`, background: `radial-gradient(circle at 30% 25%, #ffffffaa, ${color.hex} 45%, #111827 160%)` }}
+          >
+            {tokenIndex + 1}
+          </button>
+        );
+      }))}
+    </div>
+  );
+}
+
+function MemoryMatchGame() {
+  const [subject, setSubject] = useState<MemorySubject>('Mixed');
+  const [deck, setDeck] = useState(() => createMemoryDeck('Mixed'));
+  const [selected, setSelected] = useState<number[]>([]);
+  const [matched, setMatched] = useState<Set<string>>(() => new Set());
+  const [moves, setMoves] = useState(0);
+  const [bestScores, setBestScores] = useState<Partial<Record<MemorySubject, number>>>(() => readBestScores());
+  const pairCount = new Set(deck.map((card) => card.id)).size;
+  const completed = matched.size === pairCount;
+
+  useEffect(() => {
+    if (selected.length !== 2) return;
+    const [first, second] = selected;
+    if (first === undefined || second === undefined) return;
+    const firstCard = deck[first];
+    const secondCard = deck[second];
+    if (!firstCard || !secondCard) return;
+    const timeout = window.setTimeout(() => {
+      if (firstCard?.id === secondCard?.id) {
+        setMatched((current) => new Set([...current, firstCard.id]));
+      }
+      setSelected([]);
+    }, 550);
+    return () => window.clearTimeout(timeout);
+  }, [deck, selected]);
+
+  // Personal-best is tracked separately, so it only updates the moment a board is actually
+  // finished — not on every render — and never on a switched-mid-game subject.
+  useEffect(() => {
+    if (!completed || moves === 0) return;
+    writeBestScore(subject, moves);
+    setBestScores(readBestScores());
+  }, [completed, moves, subject]);
+
+  const startGame = (nextSubject: MemorySubject) => {
+    setSubject(nextSubject);
+    setDeck(createMemoryDeck(nextSubject));
+    setSelected([]);
+    setMatched(new Set());
+    setMoves(0);
+  };
+
+  const reset = () => {
+    setDeck((currentDeck) => createMemoryDeck(subject, new Set(currentDeck.map((card) => card.id))));
+    setSelected([]);
+    setMatched(new Set());
+    setMoves(0);
+  };
+
+  const chooseCard = (index: number) => {
+    if (selected.length === 2 || selected.includes(index) || matched.has(deck[index]!.id)) return;
+    setSelected((current) => [...current, index]);
+    if (selected.length === 1) setMoves((value) => value + 1);
+  };
+
+  const best = bestScores[subject];
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-1.5">
+        {MEMORY_SUBJECTS.map((option) => (
+          <button
+            key={option}
+            type="button"
+            onClick={() => startGame(option)}
+            className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+              subject === option
+                ? 'border-violet-400/60 bg-violet-500/15 text-violet-200'
+                : 'border-border/70 bg-muted/25 hover:border-violet-400/40 hover:bg-violet-500/10'
+            }`}
+          >
+            {option}
+          </button>
+        ))}
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/70 bg-muted/25 p-3">
+        <div>
+          <p className="text-sm font-semibold">Memory Matrix — {subject}</p>
+          <p className="text-xs text-muted-foreground">
+            Match all concept pairs with the fewest moves.{best !== undefined ? ` Best: ${best} moves.` : ''}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary">{matched.size}/{pairCount} pairs</Badge>
+          <Badge variant="outline">{moves} moves</Badge>
+          <Button size="icon" variant="outline" onClick={reset} aria-label="Restart memory game">
+            <RotateCcw className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+        {deck.map((card, index) => {
+          const visible = selected.includes(index) || matched.has(card.id);
+          return (
+            <button
+              key={card.cardId}
+              type="button"
+              onClick={() => chooseCard(index)}
+              className={`aspect-[1.15] overflow-hidden rounded-xl border p-2 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition-all duration-200 ${
+                visible
+                  ? `${card.tone} scale-[1.02] shadow-md`
+                  : 'border-border/70 bg-card hover:-translate-y-0.5 hover:border-violet-400/45 hover:bg-violet-500/10 hover:shadow-md'
+              }`}
+            >
+              <span className="line-clamp-4 flex h-full items-center justify-center overflow-hidden text-[11px] leading-tight font-bold break-words sm:text-xs md:text-sm">
+                {visible ? card.label : '?'}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      {completed && (
+        <div className="flex items-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-200">
+          <Trophy className="h-4 w-4" />
+          Completed in {moves} moves{moves === best ? ' — new personal best!' : ''}. Take a short break, then return
+          to study.
+        </div>
+      )}
+    </div>
+  );
+}
+
+// A handful of varied dice-arithmetic patterns instead of one fixed formula — every round picks
+// one at random, so the "logic" in Logic Dice is genuinely mixed practice, not a single
+// memorized shape.
+type DiceOperation = {
+  key: string;
+  label: string;
+  prompt: (left: number, right: number) => string;
+  compute: (left: number, right: number) => number;
+};
+const DICE_OPERATIONS: DiceOperation[] = [
+  { key: 'sum', label: 'Add the dice', prompt: (l, r) => `${l} + ${r}`, compute: (l, r) => l + r },
+  { key: 'product', label: 'Multiply the dice', prompt: (l, r) => `${l} × ${r}`, compute: (l, r) => l * r },
+  {
+    key: 'multiply-add',
+    label: 'Multiply, then add the first die',
+    prompt: (l, r) => `(${l} × ${r}) + ${l}`,
+    compute: (l, r) => l * r + l,
+  },
+  {
+    key: 'double-difference',
+    label: 'Double the first, add the difference',
+    prompt: (l, r) => `(${l} × 2) + |${l} − ${r}|`,
+    compute: (l, r) => l * 2 + Math.abs(l - r),
+  },
+  {
+    key: 'square-diff',
+    label: 'Square the first, subtract the second',
+    prompt: (l, r) => `${l}² − ${r}`,
+    compute: (l, r) => l * l - r,
+  },
+];
+
+type DiceRound = {
+  roundId: string;
+  left: number;
+  right: number;
+  operationKey: string;
+  answer: number;
+  options: number[];
+  expectedPlayers: string[];
+};
+
+function isDiceRound(payload: Record<string, unknown>): payload is Record<string, unknown> & DiceRound {
+  return (
+    typeof payload.roundId === 'string' &&
+    typeof payload.left === 'number' &&
+    typeof payload.right === 'number' &&
+    typeof payload.operationKey === 'string' &&
+    typeof payload.answer === 'number' &&
+    Array.isArray(payload.options) &&
+    Array.isArray(payload.expectedPlayers)
+  );
+}
+
+function buildDiceRound(expectedPlayers: string[]): DiceRound {
+  const left = Math.floor(Math.random() * 6) + 1;
+  const right = Math.floor(Math.random() * 6) + 1;
+  const operation = DICE_OPERATIONS[Math.floor(Math.random() * DICE_OPERATIONS.length)]!;
+  const answer = operation.compute(left, right);
+  // Distinct, plausible wrong answers close to the real one (never negative, never a repeat).
+  const wrongPool = shuffleItems([1, -1, 2, -2, 3, -3, 4].map((delta) => answer + delta).filter((value) => value >= 0 && value !== answer));
+  const options = shuffleItems([answer, ...new Set(wrongPool)].slice(0, 4));
+  return { roundId: crypto.randomUUID(), left, right, operationKey: operation.key, answer, options, expectedPlayers };
+}
+
+function LogicDiceGame({
+  events,
+  currentUserId,
+  currentUserName,
+  remainingSeconds,
+  sendEvent,
+}: {
+  events: GameEvent[];
+  currentUserId: string | null;
+  currentUserName: string;
+  remainingSeconds: number;
+  sendEvent: (eventType: string, payload: Record<string, unknown>) => Promise<void>;
+}) {
+  const [rolling, setRolling] = useState(false);
+  const players = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const event of events) {
+      if (event.event_type === 'join' && event.user_id && !seen.has(event.user_id)) {
+        seen.set(event.user_id, String(event.payload.name || 'Student').slice(0, 20));
+      }
+    }
+    return [...seen.entries()].map(([id, name]) => ({ id, name }));
+  }, [events]);
+  const hostId = players[0]?.id || null;
+  const isHost = currentUserId === hostId;
+
+  const roundEvents = useMemo(
+    () => events.filter((event) => event.event_type === 'dice_round' && isDiceRound(event.payload)),
+    [events],
+  );
+  const round = (roundEvents.at(-1)?.payload || null) as DiceRound | null;
+  const operation = DICE_OPERATIONS.find((item) => item.key === round?.operationKey) || DICE_OPERATIONS[0]!;
+
+  const answers = useMemo(() => {
+    const selected = new Map<string, { answerIndex: number; name: string }>();
+    if (!round) return selected;
+    for (const event of events) {
+      if (
+        event.event_type !== 'dice_answer' ||
+        !event.user_id ||
+        event.payload.roundId !== round.roundId ||
+        !round.expectedPlayers.includes(event.user_id)
+      ) {
+        continue;
+      }
+      const answerIndex = Number(event.payload.answerIndex);
+      if (!Number.isInteger(answerIndex) || answerIndex < 0 || answerIndex >= round.options.length) continue;
+      selected.set(event.user_id, { answerIndex, name: String(event.payload.name || 'Student').slice(0, 20) });
+    }
+    return selected;
+  }, [events, round]);
+
+  const myAnswerIndex = currentUserId ? answers.get(currentUserId)?.answerIndex : undefined;
+  const revealed = Boolean(round?.expectedPlayers.length && round.expectedPlayers.every((id) => answers.has(id)));
+
+  const scores = useMemo(() => {
+    const result = new Map<string, number>();
+    const rounds = new Map<string, DiceRound>();
+    const roundAnswers = new Map<string, Map<string, number>>();
+    for (const event of events) {
+      if (event.event_type === 'dice_round' && isDiceRound(event.payload)) {
+        rounds.set(event.payload.roundId, event.payload);
+        roundAnswers.set(event.payload.roundId, new Map());
+        continue;
+      }
+      if (event.event_type !== 'dice_answer' || !event.user_id) continue;
+      const roundId = String(event.payload.roundId || '');
+      const eventRound = rounds.get(roundId);
+      if (!eventRound || !eventRound.expectedPlayers.includes(event.user_id)) continue;
+      roundAnswers.get(roundId)?.set(event.user_id, Number(event.payload.answerIndex));
+    }
+    for (const [roundId, eventRound] of rounds) {
+      const selected = roundAnswers.get(roundId);
+      if (!selected || !eventRound.expectedPlayers.every((id) => selected.has(id))) continue;
+      const correctIndex = eventRound.options.indexOf(eventRound.answer);
+      for (const [playerId, answerIndex] of selected) {
+        if (answerIndex === correctIndex) result.set(playerId, (result.get(playerId) || 0) + 1);
+      }
+    }
+    return result;
+  }, [events]);
+
+  const rollDice = async () => {
+    if (!isHost || rolling || remainingSeconds <= 0) return;
+    setRolling(true);
+    try {
+      await sendEvent('dice_round', buildDiceRound(players.map((player) => player.id)));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'The dice could not be rolled.');
+    } finally {
+      setRolling(false);
+    }
+  };
+
+  const chooseAnswer = async (answerIndex: number) => {
+    if (!round || !currentUserId || myAnswerIndex !== undefined || revealed || remainingSeconds <= 0) return;
+    if (!round.expectedPlayers.includes(currentUserId)) {
+      toast.info('You joined during this round and can play from the next roll.');
+      return;
+    }
+    try {
+      await sendEvent('dice_answer', { roundId: round.roundId, answerIndex, name: currentUserName });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Your answer could not be submitted.');
+    }
+  };
+
+  if (!round) {
+    return (
+      <div className="flex min-h-72 flex-col items-center justify-center px-4 text-center">
+        <Dice5 className="h-10 w-10 text-violet-400" />
+        <h2 className="mt-4 text-lg font-bold">Ready to roll?</h2>
+        <p className="mt-1 max-w-md text-sm text-muted-foreground">
+          Two dice roll, everyone solves the same arithmetic pattern, and the fastest correct answers climb the
+          scoreboard.
+        </p>
+        {isHost ? (
+          <Button className="mt-5" variant="gradient" onClick={() => void rollDice()} disabled={rolling}>
+            <Dice5 className={`h-4 w-4 ${rolling ? 'animate-spin' : ''}`} />
+            Roll the dice
+          </Button>
+        ) : (
+          <p className="mt-5 text-sm text-muted-foreground">Waiting for {players[0]?.name || 'the room host'} to roll.</p>
+        )}
+      </div>
+    );
+  }
+
+  const correctIndex = round.options.indexOf(round.answer);
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-[220px,1fr]">
+        <div className="rounded-2xl border border-border/70 bg-muted/25 p-4 text-center">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Dice</p>
+          <div className="mt-4 flex justify-center gap-3">
+            <DiceFace value={round.left} />
+            <DiceFace value={round.right} />
+          </div>
+          <div className="mt-4 flex flex-wrap justify-center gap-1.5">
+            {players.map((player) => (
+              <Badge key={player.id} variant="outline" className="gap-1.5">
+                <Trophy className="h-3 w-3 text-amber-500" />
+                {player.name}: {scores.get(player.id) || 0}
+              </Badge>
+            ))}
+          </div>
+        </div>
+        <div className="rounded-2xl border border-border/70 bg-card p-4">
+          <div className="flex items-center gap-2 text-sm font-semibold text-violet-300">
+            <Brain className="h-4 w-4" />
+            {operation.label}
+          </div>
+          <p className="mt-3 text-2xl font-bold">{operation.prompt(round.left, round.right)}</p>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            {round.options.map((value, index) => {
+              const isCorrect = revealed && index === correctIndex;
+              const isMine = myAnswerIndex === index;
+              return (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => void chooseAnswer(index)}
+                  disabled={myAnswerIndex !== undefined || revealed || !round.expectedPlayers.includes(currentUserId || '')}
+                  className={`rounded-xl border px-3 py-3 text-sm font-bold transition-colors ${
+                    isCorrect
+                      ? 'border-emerald-400/60 bg-emerald-500/15 text-emerald-200'
+                      : isMine
+                        ? 'border-violet-400/60 bg-violet-500/15 text-violet-200'
+                        : 'border-border/70 bg-muted/25 hover:border-violet-400/45 hover:bg-violet-500/10'
+                  }`}
+                >
+                  {value}
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            {revealed
+              ? 'Everyone answered. The correct option is now green.'
+              : myAnswerIndex !== undefined
+                ? 'Waiting for the rest of the room...'
+                : 'Pick one option.'}
+          </p>
+          {revealed && isHost && (
+            <Button onClick={() => void rollDice()} variant="gradient" className="mt-3 w-full" disabled={rolling}>
+              <Dice5 className={`h-4 w-4 ${rolling ? 'animate-spin' : ''}`} />
+              Roll again
+            </Button>
+          )}
+        </div>
+      </div>
+      {revealed && myAnswerIndex === correctIndex && (
+        <div className="flex items-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-200">
+          <CheckCircle2 className="h-4 w-4" />
+          Correct. Keep the pace steady.
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function GameRoomClient({
+  game,
+  tier,
+  canPlay,
+  initialRemainingSeconds,
+}: {
+  game: GameCardData;
+  tier: SubscriptionTier;
+  canPlay: boolean;
+  initialRemainingSeconds: number;
+}) {
+  const [roomCode, setRoomCode] = useState('');
+  const [joinedRoom, setJoinedRoom] = useState('');
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [remaining, setRemaining] = useState(initialRemainingSeconds);
+  const [events, setEvents] = useState<GameEvent[]>([]);
+  const [message, setMessage] = useState('');
+  const [joining, setJoining] = useState(false);
+  const [isRolling, setIsRolling] = useState(false);
+  const [rollingFace, setRollingFace] = useState(1);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserName, setCurrentUserName] = useState('Student');
+  const autoMovedRollRef = useRef<string | null>(null);
+  const supabase = useMemo(() => createClient(), []);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      const user = data.user;
+      if (!user) return;
+      setCurrentUserId(user.id);
+      setCurrentUserName(String(user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Student').slice(0, 20));
+    });
+  }, [supabase]);
+
+  useEffect(() => {
+    if (!sessionId) return;
+    const timer = window.setInterval(() => {
+      setRemaining((current) => {
+        const next = Math.max(0, current - 1);
+        if (next === 300) toast.info('5 minutes left. Relax your mind, then return to study.');
+        if (next === 0) toast.warning('Game time is complete. Return to study mode.');
+        return next;
+      });
+      fetch('/api/games/session', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+      }).catch(() => {});
+    }, 1000);
+    return () => {
+      window.clearInterval(timer);
+      fetch('/api/games/session', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, end: true }),
+        keepalive: true,
+      }).catch(() => {});
+    };
+  }, [sessionId]);
+
+  useEffect(() => {
+    if (!joinedRoom) return;
+    const syncEvents = () => {
+      fetch(`/api/games/events?roomCode=${joinedRoom}`)
+        .then((res) => res.json())
+        .then((json) => setEvents(json.events || []))
+        .catch(() => {});
+    };
+    syncEvents();
+    const polling = window.setInterval(syncEvents, 2500);
+
+    const channel = supabase
+      .channel(`game_room:${joinedRoom}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'game_room_events', filter: `room_code=eq.${joinedRoom}` }, (payload) => {
+        const event = payload.new as GameEvent;
+        setEvents((items) => (items.some((item) => item.id === event.id) ? items : [...items, event]));
+      })
+      .subscribe();
+
+    return () => {
+      window.clearInterval(polling);
+      supabase.removeChannel(channel);
+    };
+  }, [joinedRoom, supabase]);
+
+  const joinRoom = async (nextRoom = roomCode || makeRoomCode()) => {
+    if (!canPlay) return;
+    const code = nextRoom.trim().toUpperCase().slice(0, 16);
+    setJoining(true);
+    try {
+      const res = await fetch('/api/games/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gameId: game.id.length > 20 ? game.id : null, roomCode: code }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Could not join the room');
+      setSessionId(json.session.id);
+      setJoinedRoom(code);
+      setRoomCode(code);
+      setRemaining(Math.min(remaining, Number(json.remainingSeconds || remaining)));
+      await sendEvent('join', { name: currentUserName, message: 'joined the room' }, code);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not join the room');
+    } finally {
+      setJoining(false);
+    }
+  };
+
+  const sendEvent = async (eventType: string, payload: Record<string, unknown>, targetRoom = joinedRoom) => {
+    if (!targetRoom) return;
+    const res = await fetch('/api/games/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ roomCode: targetRoom, gameId: game.id.length > 20 ? game.id : null, eventType, payload }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Could not send game event');
+  };
+
+  // Only reachable from the header "Roll" button, which only renders for live_ludo — Logic Dice
+  // rolls its own dice internally now (see LogicDiceGame's own rollDice, a shared 'dice_round'
+  // event carrying both dice values plus the round's math challenge, not a single 1-6 value).
+  const rollDice = async () => {
+    if (!joinedRoom || remaining <= 0 || isRolling) return;
+    setIsRolling(true);
+    const animation = window.setInterval(() => setRollingFace(Math.floor(Math.random() * 6) + 1), 70);
+    try {
+      await new Promise((resolve) => window.setTimeout(resolve, 560));
+      const value = Math.floor(Math.random() * 6) + 1;
+      setRollingFace(value);
+      await sendEvent('ludo_roll', { value });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'The dice could not be rolled.');
+    } finally {
+      window.clearInterval(animation);
+      setIsRolling(false);
+    }
+  };
+
+  const moveLudoToken = async (tokenIndex: number) => {
+    if (!joinedRoom || remaining <= 0) return;
+    await sendEvent('ludo_move', { tokenIndex });
+  };
+  const moveLudoTokenRef = useRef(moveLudoToken);
+  moveLudoTokenRef.current = moveLudoToken;
+
+  const sendChat = async () => {
+    if (!message.trim() || !joinedRoom || remaining <= 0) return;
+    await sendEvent('message', { message: message.trim().slice(0, 180) });
+    setMessage('');
+  };
+
+  const copyRoomCode = async () => {
+    if (!joinedRoom) return;
+    try {
+      await navigator.clipboard.writeText(joinedRoom);
+      toast.success('Room code copied.');
+    } catch {
+      toast.error('Room code could not be copied.');
+    }
+  };
+
+  const lastLudoDice = [...events].reverse().find((event) => event.event_type === 'ludo_roll')?.payload?.value;
+  const ludoState = useMemo(() => ludoStateFromEvents(events), [events]);
+  const activeLudoPlayer = ludoState.players[ludoState.currentPlayer];
+  const isMyLudoTurn = game.game_type === 'live_ludo' && activeLudoPlayer?.id === currentUserId && ludoState.dice === null;
+  const latestLudoTurnEvent = useMemo(
+    () => [...events].reverse().find((event) => event.event_type === 'ludo_roll' || event.event_type === 'ludo_move'),
+    [events],
+  );
+  const legalLudoMoves =
+    ludoState.dice && activeLudoPlayer
+      ? activeLudoPlayer.tokens.flatMap((token, index) => (canMoveToken(token, ludoState.dice!) ? [index] : []))
+      : [];
+  const automaticTokenIndex =
+    latestLudoTurnEvent?.event_type === 'ludo_roll' &&
+    latestLudoTurnEvent.user_id === currentUserId &&
+    activeLudoPlayer?.id === currentUserId &&
+    legalLudoMoves.length === 1
+      ? legalLudoMoves[0]!
+      : null;
+
+  useEffect(() => {
+    if (automaticTokenIndex === null || !latestLudoTurnEvent || remaining <= 0 || autoMovedRollRef.current === latestLudoTurnEvent.id) return;
+    const rollEventId = latestLudoTurnEvent.id;
+    const timeout = window.setTimeout(() => {
+      autoMovedRollRef.current = rollEventId;
+      void moveLudoTokenRef.current(automaticTokenIndex).catch((error) => {
+        autoMovedRollRef.current = null;
+        toast.error(error instanceof Error ? error.message : 'The automatic move could not be completed.');
+      });
+    }, 450);
+    return () => window.clearTimeout(timeout);
+  }, [automaticTokenIndex, latestLudoTurnEvent, remaining]);
+
+  if (!canPlay) {
+    return (
+      <div className="mx-auto max-w-3xl space-y-5">
+        <Button asChild variant="ghost"><Link href="/games"><ArrowLeft className="h-4 w-4" /> Back</Link></Button>
+        <Card className="border-violet-500/30 bg-violet-500/10">
+          <CardContent className="p-6 text-center">
+            <Crown className="mx-auto mb-3 h-10 w-10 text-violet-400" />
+            <h1 className="text-xl font-bold">Live games are a Pro/Elite feature</h1>
+            <p className="mt-2 text-sm text-muted-foreground">Games are designed as short cognitive breaks before returning to study.</p>
+            <Button asChild variant="gradient" className="mt-4"><Link href="/subscription">Upgrade Pro</Link></Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-6xl space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Button asChild variant="ghost"><Link href="/games"><ArrowLeft className="h-4 w-4" /> Games</Link></Button>
+        <div className="flex flex-wrap gap-2">
+          <Badge variant="secondary" className="gap-2"><Crown className="h-3.5 w-3.5" /> {tier}</Badge>
+          <Badge variant={remaining > 300 ? 'secondary' : 'warning'} className="gap-2"><Timer className="h-4 w-4" /> {mmss(remaining)} left today</Badge>
+        </div>
+      </div>
+
+      <Card className="dashboard-surface">
+        <CardContent className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">{game.title}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Take a short mental reset, then return to focused study when the daily limit ends.</p>
+          </div>
+          {!joinedRoom && (
+            <div className="flex w-full gap-2 md:w-auto">
+              <Input placeholder="Room code optional" value={roomCode} onChange={(e) => setRoomCode(e.target.value.toUpperCase())} />
+              <Button variant="gradient" onClick={() => joinRoom()} loading={joining}>{joining ? <Loader2 className="h-4 w-4 animate-spin" /> : <Gamepad2 className="h-4 w-4" />} Join</Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {joinedRoom ? (
+        <div className="grid gap-5 lg:grid-cols-[1fr,360px]">
+          <Card className={game.game_type === 'live_ludo' ? 'overflow-hidden border-slate-700 bg-[#111729] text-slate-100 shadow-2xl' : 'overflow-hidden'}>
+            <CardHeader className={game.game_type === 'live_ludo' ? 'border-b border-slate-700/80 bg-[#171f34] pb-4' : undefined}>
+              <CardTitle className="flex flex-wrap items-center justify-between gap-2">
+                <span className="flex min-w-0 items-center gap-2 truncate">
+                  {game.game_type === 'live_ludo' ? 'Ludo Arena' : `Live Room ${joinedRoom}`}
+                  {game.game_type === 'live_ludo' && (
+                    <button type="button" onClick={() => void copyRoomCode()} className="shrink-0 rounded-md border border-slate-600 bg-slate-800 p-1.5 text-slate-300 hover:bg-slate-700" aria-label="Copy room code" title="Copy room code">
+                      <Copy className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </span>
+                {game.game_type === 'live_ludo' && (
+                  <Button
+                    onClick={rollDice}
+                    disabled={isRolling || remaining <= 0 || !isMyLudoTurn}
+                    variant="gradient"
+                    className="min-w-28 shrink-0 shadow-lg shadow-violet-900/40"
+                  >
+                    <Dice5 className={`h-4 w-4 ${isRolling ? 'animate-spin' : ''}`} /> {isRolling ? 'Rolling...' : 'Roll'}
+                  </Button>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className={game.game_type === 'live_ludo' ? 'space-y-4 p-3 sm:p-5' : 'space-y-4'}>
+              {game.game_type === 'memory_match' ? (
+                <MemoryMatchGame />
+              ) : game.game_type === 'curriculum_quiz' ? (
+                <LiveQuizGame
+                  events={events}
+                  currentUserId={currentUserId}
+                  currentUserName={currentUserName}
+                  remainingSeconds={remaining}
+                  sendEvent={sendEvent}
+                />
+              ) : game.game_type === 'logic_dice' ? (
+                <LogicDiceGame
+                  events={events}
+                  currentUserId={currentUserId}
+                  currentUserName={currentUserName}
+                  remainingSeconds={remaining}
+                  sendEvent={sendEvent}
+                />
+              ) : (
+                <>
+                  <div className="rounded-2xl border border-slate-700 bg-[#0a1020] p-2 shadow-inner sm:p-4">
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2 px-1 text-xs">
+                      <span className="rounded-full border border-slate-600 bg-slate-800 px-3 py-1.5 font-mono font-semibold tracking-[0.16em] text-slate-200">ROOM {joinedRoom}</span>
+                      <span className="rounded-full bg-emerald-500/15 px-3 py-1.5 font-semibold text-emerald-300">{ludoState.players.length}/4 playing</span>
+                    </div>
+                    <div className="mb-4 flex flex-col items-center justify-center rounded-2xl border border-violet-400/25 bg-gradient-to-b from-violet-500/15 to-slate-950/20 p-4">
+                      <DiceFace
+                        value={isRolling ? rollingFace : Number(ludoState.dice || lastLudoDice || 1)}
+                        rolling={isRolling}
+                      />
+                      <p className="mt-3 text-xs font-bold uppercase tracking-[0.18em] text-violet-200">
+                        {isRolling
+                          ? 'Rolling'
+                          : ludoState.dice
+                            ? `${activeLudoPlayer?.name || 'Player'} rolled ${ludoState.dice}`
+                            : lastLudoDice
+                              ? `Last roll: ${lastLudoDice}`
+                              : 'Roll the dice'}
+                      </p>
+                    </div>
+                    <LudoBoard state={ludoState} currentUserId={currentUserId} onMove={moveLudoToken} />
+                  </div>
+                  {ludoState.winnerIds.length > 0 ? (
+                    <div className="flex items-center gap-3 rounded-xl border border-amber-400/40 bg-gradient-to-r from-amber-500/20 via-amber-400/10 to-transparent px-4 py-3 text-sm text-amber-100 shadow-inner">
+                      <Trophy className="h-6 w-6 shrink-0 text-amber-300" />
+                      <span className="min-w-0 break-words">
+                        <span className="font-bold">
+                          {ludoState.players.find((player) => player.id === ludoState.winnerIds[0])?.name || 'A player'}
+                        </span>{' '}
+                        finished first! Great match — head back to a focused study block.
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/70 px-4 py-3 text-sm text-slate-200">
+                      <span className="inline-flex h-2 w-2 shrink-0 rounded-full bg-emerald-400" />
+                      <span className="min-w-0 break-words">
+                        {ludoState.players.length < 2
+                          ? 'Share the room code to invite another student.'
+                          : ludoState.dice
+                            ? automaticTokenIndex !== null
+                              ? `${activeLudoPlayer?.name || 'Player'} has one legal move. Moving automatically...`
+                              : `${activeLudoPlayer?.name || 'Player'} rolled ${ludoState.dice}. Choose a glowing token.`
+                            : `${activeLudoPlayer?.name || 'Waiting for players'} is rolling now.`}
+                      </span>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    {LUDO_COLORS.map((color, index) => {
+                      const seatPlayer = ludoState.players[index];
+                      const isTurn = seatPlayer?.id === activeLudoPlayer?.id && ludoState.winnerIds.length === 0;
+                      return (
+                        <div key={color.name} className={`rounded-xl border p-2.5 transition-all duration-200 ${isTurn ? `${color.border} ${color.soft} ring-2 ring-white/40 shadow-lg` : 'border-slate-700 bg-slate-800/60'}`}>
+                          <div className="flex min-w-0 items-center gap-2">
+                            <span className={`relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${color.bg} text-xs font-black text-white ring-2 ring-white/30`}>
+                              {seatPlayer?.name?.slice(0, 1).toUpperCase() || '+'}
+                              {isTurn && <span className="absolute inset-0 animate-ping rounded-full bg-white/40" />}
+                            </span>
+                            <p className="truncate text-sm font-semibold text-white">{seatPlayer?.name || `${color.name} seat`}</p>
+                          </div>
+                          <p className="mt-2 truncate text-[11px] text-slate-400">
+                            {seatPlayer ? (ludoState.winnerIds.includes(seatPlayer.id) ? '🏆 Finished' : isTurn ? 'Playing now' : 'In room') : 'Open seat'}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader><CardTitle className="flex items-center gap-2"><Users className="h-4 w-4 text-violet-500" /> Room Activity</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              <div className="h-80 space-y-2 overflow-y-auto rounded-xl border border-border/70 bg-muted/25 p-3">
+                {events.length === 0 && <p className="text-sm text-muted-foreground">No activity yet.</p>}
+                {events.map((event) => (
+                  <div key={event.id} className="rounded-lg bg-card p-2 text-sm">
+                    <p className="font-medium break-words">
+                      {event.event_type === 'dice_roll'
+                        ? `Dice: ${event.payload?.value}`
+                        : event.event_type === 'quiz_answer'
+                          ? `${event.payload.name || 'Student'} selected ${String.fromCharCode(65 + Number(event.payload.answerIndex || 0))}`
+                          : event.event_type === 'quiz_round'
+                            ? 'New MCQ started'
+                            : event.event_type === 'dice_round'
+                              ? `New roll: ${event.payload?.left} & ${event.payload?.right}`
+                              : event.event_type === 'dice_answer'
+                                ? `${event.payload.name || 'Student'} locked in an answer`
+                                : event.payload?.message || event.event_type}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">{new Date(event.created_at).toLocaleTimeString()}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <Input value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Study-safe room message" onKeyDown={(e) => { if (e.key === 'Enter') sendChat(); }} />
+                <Button size="icon" onClick={sendChat}><Send className="h-4 w-4" /></Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        <Card><CardContent className="p-8 text-center text-sm text-muted-foreground">Create or join a room. Share the same room code with a friend.</CardContent></Card>
+      )}
+    </div>
+  );
+}

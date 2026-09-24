@@ -1,0 +1,16 @@
+export const KIDS_NAV = [
+  { key: 'home', href: '/kids', label: 'Home', emoji: '🏠' },
+  { key: 'mission', href: '/kids/mission', label: 'Mission', emoji: '🎯' },
+  { key: 'english', href: '/kids/english', label: 'English', emoji: '🔤' },
+  { key: 'maths', href: '/kids/maths', label: 'Maths', emoji: '🔢' },
+  { key: 'urdu', href: '/kids/urdu', label: 'Urdu', emoji: '🪄' },
+  { key: 'stories', href: '/kids/stories', label: 'Stories', emoji: '📖' },
+  { key: 'gk', href: '/kids/gk', label: 'GK', emoji: '🌍' },
+  { key: 'islamic', href: '/kids/islamic', label: 'Islamic', emoji: '🕌' },
+  { key: 'memory', href: '/kids/memory', label: 'Memory', emoji: '🧠' },
+  { key: 'quiz', href: '/kids/quiz', label: 'Quiz', emoji: '❓' },
+  { key: 'rewards', href: '/kids/rewards', label: 'Rewards', emoji: '🏆' },
+  { key: 'challenge', href: '/kids/challenge', label: 'Challenge', emoji: '⚡' },
+  { key: 'listen-repeat', href: '/kids/listen-repeat', label: 'Listen', emoji: '🔊' },
+  { key: 'quran', href: '/kids/quran', label: 'Quran', emoji: '📗' },
+] as const;

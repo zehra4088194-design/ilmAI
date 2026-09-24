@@ -1,0 +1,74 @@
+REUSABLE PROMPT FOR CLAUDE (web-Claude with Google Drive connected) — use
+this exact text for ANY class. Fill in CLASS at the top. This produces ONE
+JSON file mapping every resource in that class (across ALL subjects) to its
+Drive file IDs — hand that JSON to ChatGPT alongside the .txt/light files
+for that resource, so ChatGPT can push the correct Drive link straight into
+Supabase itself while it inserts questions.
+
+===========================================================================
+
+CLASS = <fill in, e.g. 9th / 10th / 11th / 12th>
+
+You have Google Drive connected. Find this class's root folder in Drive (it
+should contain one subfolder per subject — Chemistry, Biology, Physics,
+Mathematics, English, Urdu, Computer Science, Pakistan Studies, Tarjuma Tul
+Quran, Islamiat — whichever exist for this class), and recursively list
+EVERY file inside it. Don't sample or spot-check — walk every subject
+folder fully.
+
+For every file that is a resource PDF or .txt (dark PDF, light PDF, or the
+matching .txt), record:
+- its exact filename (as it appears in Drive)
+- its Drive file ID
+- which subject subfolder it's under
+- whether it's the dark PDF, light PDF, or .txt (infer from the filename —
+  "_Dark"/"_Light" suffix, or no suffix + .txt extension)
+
+Group entries by RESOURCE — a resource is the shared base filename tying
+together up to three files (its dark PDF, light PDF, and .txt), e.g.
+"Ch5_Energetics_MCQs_Dark.pdf" + "..._Light.pdf" + "Ch5_Energetics_MCQs.txt"
+are all ONE resource entry with three possible link fields. If a resource
+is missing one of the three (e.g. no .txt exists), leave that field null —
+don't skip the whole resource for a missing file, and don't invent an ID
+for a file that isn't actually there.
+
+Skip non-resource files (zips, folder-level overview docs, anything that
+isn't a per-resource dark/light/txt file) — note them in a separate
+"skipped" list with a one-line reason, don't silently drop them either.
+
+OUTPUT FORMAT — return exactly this JSON structure (nothing else, no prose
+before/after it):
+```json
+{
+  "class": "<CLASS>",
+  "resources": [
+    {
+      "subject": "<subject folder name>",
+      "base_filename": "<shared base name, e.g. 'Ch5_Energetics_MCQs'>",
+      "dark_drive_id": "<Drive file ID, or null>",
+      "dark_link": "https://drive.google.com/file/d/<id>/view",
+      "light_drive_id": "<Drive file ID, or null>",
+      "light_link": "https://drive.google.com/file/d/<id>/view",
+      "txt_drive_id": "<Drive file ID, or null>",
+      "txt_link": "https://drive.google.com/file/d/<id>/view"
+    }
+  ],
+  "skipped": [
+    { "filename": "...", "subject": "...", "reason": "..." }
+  ]
+}
+```
+Set `..._link` to null wherever the matching `..._drive_id` is null — never
+fabricate a link from a missing ID. If the class has hundreds of resources
+and one response can't hold them all, split by subject and say so — return
+one complete, valid JSON object per subject rather than truncating one big
+object partway through.
+
+===========================================================================
+
+WHAT TO DO WITH THE OUTPUT (for the person running this, not part of the
+prompt above): save this JSON, then attach it to your ChatGPT session
+alongside that resource's .txt and light PDF files — ChatGPT will read the
+matching entry (by base_filename) and push its dark_link/light_link/
+txt_link into Supabase itself as part of inserting that resource's
+questions.

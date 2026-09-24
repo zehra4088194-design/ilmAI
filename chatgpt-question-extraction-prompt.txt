@@ -1,0 +1,52 @@
+REUSABLE PROMPT for ChatGPT — use as-is for any subject/class. Attach that
+subject+class's .txt files in the same message (as many as fit; send in
+batches if there are too many).
+
+===========================================================================
+
+You will receive one or more attached .txt files. Each file is the full,
+already-extracted verbatim text of one study resource (MCQs, Short
+Questions, or Long Questions for one chapter/topic). Do not use any outside
+knowledge, do not invent or paraphrase content — everything you output must
+come word-for-word from the attached file it belongs to.
+
+For EACH attached file, output ONE JSON object with this exact shape:
+
+{
+  "filename": "<the exact original filename you were given, including extension>",
+  "questions": [ { "q": "...", "opts": ["...","...","...","..."], "correct": 0, "exp": "..." } ],
+  "short_questions": [ { "q": "...", "marks": 3, "keyPoints": ["...","..."], "modelAnswer": "..." } ],
+  "long_questions": [ { "q": "...", "marks": 8, "keyPoints": ["...","..."], "modelAnswer": "..." } ]
+}
+
+Rules:
+- Most files contain ONLY one of the three question types (filename usually
+  says which — MCQ/MCQs, Short/ShortQ, Long/LongQ) — fill ONLY that one
+  array, leave the other two as `[]`. But some files (e.g. ones named
+  "exercises" or "numericals") genuinely MIX types in one file — in that
+  case, read every question and put EACH one into whichever array actually
+  matches it (an MCQ with 4 options into "questions", a short-answer/
+  numerical-with-solution into "short_questions" or "long_questions"
+  depending on its own length/marks) — don't force-fit everything into one
+  array just because of the filename. Never invent content for a type that
+  genuinely isn't present in the file.
+- MCQs: exactly 4 options in "opts", "correct" is the 0-based index (0-3) of
+  the right answer. Only include an MCQ if the file's own answer key clearly
+  marks which option is correct — if there's no answer key for a question,
+  DROP it rather than guessing the answer. "exp" is the explanation if the
+  file gives one, else "".
+- Short/Long questions: "marks" only if the file states one (else use 3 for
+  short, 8 for long as a default). "keyPoints" and "modelAnswer" only from
+  what the file actually contains — if the file has no model answer, leave
+  "modelAnswer": "" and "keyPoints": [].
+- Re-check every question against the source file a second time before
+  finalizing — wording, option wording, and the correct answer must match
+  exactly. When in doubt about a specific question, drop that one question,
+  don't drop the whole file and don't guess.
+
+Output ONE valid JSON array containing all the per-file objects, and NOTHING
+else — no explanation text before or after, no markdown code fences, just
+the raw JSON array so it can be saved directly as a .json file. If you
+process files across multiple messages (because there were too many for one
+message), output a separate complete JSON array each time — don't try to
+remember earlier files across messages.

@@ -1,0 +1,434 @@
+[
+  {
+    "subject_slug": "biology",
+    "grade": "GRADE_9",
+    "title": "Biology — Pairing Scheme (Class 9)",
+    "book_title": "Class 9 Biology Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-9/biology-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-9/biology-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\9th\\pairing_scheme\\dark\\Biology_9th_Dark.pdf",
+      "light": "E:\\data\\9th\\pairing_scheme\\light\\Biology_9th_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "chemistry",
+    "grade": "GRADE_9",
+    "title": "Chemistry — Pairing Scheme (Class 9)",
+    "book_title": "Class 9 Chemistry Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-9/chemistry-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-9/chemistry-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\9th\\pairing_scheme\\dark\\Chemistry_9th_Dark.pdf",
+      "light": "E:\\data\\9th\\pairing_scheme\\light\\Chemistry_9th_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "grade": "GRADE_9",
+    "title": "Computer Science — Pairing Scheme (Class 9)",
+    "book_title": "Class 9 Computer Science Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-9/computer-science-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-9/computer-science-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\9th\\pairing_scheme\\dark\\Computer_Science_9th_Dark.pdf",
+      "light": "E:\\data\\9th\\pairing_scheme\\light\\Computer_Science_9th_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "english",
+    "grade": "GRADE_9",
+    "title": "English — Pairing Scheme (Class 9)",
+    "book_title": "Class 9 English Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-9/english-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-9/english-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\9th\\pairing_scheme\\dark\\English_9th_Dark.pdf",
+      "light": "E:\\data\\9th\\pairing_scheme\\light\\English_9th_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "islamiat",
+    "grade": "GRADE_9",
+    "title": "Islamiat — Pairing Scheme (Class 9)",
+    "book_title": "Class 9 Islamiat Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-9/islamiat-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-9/islamiat-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\9th\\pairing_scheme\\dark\\Islamiat_9th_Dark.pdf",
+      "light": "E:\\data\\9th\\pairing_scheme\\light\\Islamiat_9th_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "mathematics",
+    "grade": "GRADE_9",
+    "title": "Mathematics — Pairing Scheme (Class 9)",
+    "book_title": "Class 9 Mathematics Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-9/mathematics-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-9/mathematics-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\9th\\pairing_scheme\\dark\\Mathematics_9th_Dark.pdf",
+      "light": "E:\\data\\9th\\pairing_scheme\\light\\Mathematics_9th_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "pakistan-studies",
+    "grade": "GRADE_9",
+    "title": "Pakistan Studies — Pairing Scheme (Class 9)",
+    "book_title": "Class 9 Pakistan Studies Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-9/pakistan-studies-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-9/pakistan-studies-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\9th\\pairing_scheme\\dark\\Pakistan_Studies_9th_Dark.pdf",
+      "light": "E:\\data\\9th\\pairing_scheme\\light\\Pakistan_Studies_9th_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "physics",
+    "grade": "GRADE_9",
+    "title": "Physics — Pairing Scheme (Class 9)",
+    "book_title": "Class 9 Physics Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-9/physics-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-9/physics-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\9th\\pairing_scheme\\dark\\Physics_9th_Dark.pdf",
+      "light": "E:\\data\\9th\\pairing_scheme\\light\\Physics_9th_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "grade": "GRADE_9",
+    "title": "Urdu — Pairing Scheme (Class 9)",
+    "book_title": "Class 9 Urdu Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-9/urdu-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-9/urdu-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\9th\\pairing_scheme\\dark\\Urdu_9th_Dark.pdf",
+      "light": "E:\\data\\9th\\pairing_scheme\\light\\Urdu_9th_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "grade": "GRADE_10",
+    "title": "Biology — Pairing Scheme (Class 10)",
+    "book_title": "Class 10 Biology Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-10/biology-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-10/biology-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\10th\\pairing_scheme\\dark\\Biology - 10th Class Pairing Scheme 2026 (Dark).pdf",
+      "light": "E:\\data\\10th\\pairing_scheme\\light\\Biology - 10th Class Pairing Scheme 2026 (Light).pdf"
+    }
+  },
+  {
+    "subject_slug": "chemistry",
+    "grade": "GRADE_10",
+    "title": "Chemistry — Pairing Scheme (Class 10)",
+    "book_title": "Class 10 Chemistry Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-10/chemistry-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-10/chemistry-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\10th\\pairing_scheme\\dark\\Chemistry - 10th Class Pairing Scheme 2026 (Dark).pdf",
+      "light": "E:\\data\\10th\\pairing_scheme\\light\\Chemistry - 10th Class Pairing Scheme 2026 (Light).pdf"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "grade": "GRADE_10",
+    "title": "Computer Science — Pairing Scheme (Class 10)",
+    "book_title": "Class 10 Computer Science Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-10/computer-science-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-10/computer-science-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\10th\\pairing_scheme\\dark\\Computer Science - 10th Class Pairing Scheme 2026 (Dark).pdf",
+      "light": "E:\\data\\10th\\pairing_scheme\\light\\Computer Science - 10th Class Pairing Scheme 2026 (Light).pdf"
+    }
+  },
+  {
+    "subject_slug": "english",
+    "grade": "GRADE_10",
+    "title": "English — Pairing Scheme (Class 10)",
+    "book_title": "Class 10 English Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-10/english-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-10/english-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\10th\\pairing_scheme\\dark\\English - 10th Class Pairing Scheme 2026 (Dark).pdf",
+      "light": "E:\\data\\10th\\pairing_scheme\\light\\English - 10th Class Pairing Scheme 2026 (Light).pdf"
+    }
+  },
+  {
+    "subject_slug": "mathematics",
+    "grade": "GRADE_10",
+    "title": "Mathematics — Pairing Scheme (Class 10)",
+    "book_title": "Class 10 Mathematics Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-10/mathematics-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-10/mathematics-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\10th\\pairing_scheme\\dark\\Mathematics - 10th Class Pairing Scheme 2026 (Dark).pdf",
+      "light": "E:\\data\\10th\\pairing_scheme\\light\\Mathematics - 10th Class Pairing Scheme 2026 (Light).pdf"
+    }
+  },
+  {
+    "subject_slug": "pakistan-studies",
+    "grade": "GRADE_10",
+    "title": "Pakistan Studies — Pairing Scheme (Class 10)",
+    "book_title": "Class 10 Pakistan Studies Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-10/pakistan-studies-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-10/pakistan-studies-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\10th\\pairing_scheme\\dark\\Pak Studies - 10th Class Pairing Scheme 2026 (Dark).pdf",
+      "light": "E:\\data\\10th\\pairing_scheme\\light\\Pak Studies - 10th Class Pairing Scheme 2026 (Light).pdf"
+    }
+  },
+  {
+    "subject_slug": "physics",
+    "grade": "GRADE_10",
+    "title": "Physics — Pairing Scheme (Class 10)",
+    "book_title": "Class 10 Physics Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-10/physics-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-10/physics-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\10th\\pairing_scheme\\dark\\Physics - 10th Class Pairing Scheme 2026 (Dark).pdf",
+      "light": "E:\\data\\10th\\pairing_scheme\\light\\Physics - 10th Class Pairing Scheme 2026 (Light).pdf"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "grade": "GRADE_10",
+    "title": "Tarjuma Tul Quran — Pairing Scheme (Class 10)",
+    "book_title": "Class 10 Tarjuma Tul Quran Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-10/tarjuma-tul-quran-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-10/tarjuma-tul-quran-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\10th\\pairing_scheme\\dark\\Tarjuma-tul-Quran - 10th Class Pairing Scheme 2026 (Dark).pdf",
+      "light": "E:\\data\\10th\\pairing_scheme\\light\\Tarjuma-tul-Quran - 10th Class Pairing Scheme 2026 (Light).pdf"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "grade": "GRADE_10",
+    "title": "Urdu — Pairing Scheme (Class 10)",
+    "book_title": "Class 10 Urdu Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-10/urdu-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-10/urdu-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\10th\\pairing_scheme\\dark\\Urdu - 10th Class Pairing Scheme 2026 (Dark).pdf",
+      "light": "E:\\data\\10th\\pairing_scheme\\light\\Urdu - 10th Class Pairing Scheme 2026 (Light).pdf"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "grade": "GRADE_11",
+    "title": "Biology — Pairing Scheme (Class 11)",
+    "book_title": "Class 11 Biology Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-11/biology-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-11/biology-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\11th\\pairing_scheme\\dark\\Biology_Dark.pdf",
+      "light": "E:\\data\\11th\\pairing_scheme\\light\\Biology_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "chemistry",
+    "grade": "GRADE_11",
+    "title": "Chemistry — Pairing Scheme (Class 11)",
+    "book_title": "Class 11 Chemistry Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-11/chemistry-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-11/chemistry-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\11th\\pairing_scheme\\dark\\Chemistry_Dark.pdf",
+      "light": "E:\\data\\11th\\pairing_scheme\\light\\Chemistry_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "grade": "GRADE_11",
+    "title": "Computer Science — Pairing Scheme (Class 11)",
+    "book_title": "Class 11 Computer Science Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-11/computer-science-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-11/computer-science-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\11th\\pairing_scheme\\dark\\Computer_Science_Dark.pdf",
+      "light": "E:\\data\\11th\\pairing_scheme\\light\\Computer_Science_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "english",
+    "grade": "GRADE_11",
+    "title": "English — Pairing Scheme (Class 11)",
+    "book_title": "Class 11 English Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-11/english-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-11/english-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\11th\\pairing_scheme\\dark\\English_Dark.pdf",
+      "light": "E:\\data\\11th\\pairing_scheme\\light\\English_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "islamiat",
+    "grade": "GRADE_11",
+    "title": "Islamiat — Pairing Scheme (Class 11)",
+    "book_title": "Class 11 Islamiat Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-11/islamiat-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-11/islamiat-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\11th\\pairing_scheme\\dark\\Islamiat_Lazmi_Dark.pdf",
+      "light": "E:\\data\\11th\\pairing_scheme\\light\\Islamiat_Lazmi_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "mathematics",
+    "grade": "GRADE_11",
+    "title": "Mathematics — Pairing Scheme (Class 11)",
+    "book_title": "Class 11 Mathematics Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-11/mathematics-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-11/mathematics-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\11th\\pairing_scheme\\dark\\Mathematics_Dark.pdf",
+      "light": "E:\\data\\11th\\pairing_scheme\\light\\Mathematics_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "physics",
+    "grade": "GRADE_11",
+    "title": "Physics — Pairing Scheme (Class 11)",
+    "book_title": "Class 11 Physics Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-11/physics-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-11/physics-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\11th\\pairing_scheme\\dark\\Physics_Dark.pdf",
+      "light": "E:\\data\\11th\\pairing_scheme\\light\\Physics_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "grade": "GRADE_11",
+    "title": "Tarjuma Tul Quran — Pairing Scheme (Class 11)",
+    "book_title": "Class 11 Tarjuma Tul Quran Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-11/tarjuma-tul-quran-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-11/tarjuma-tul-quran-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\11th\\pairing_scheme\\dark\\Tarjuma_Tul_Quran_Dark.pdf",
+      "light": "E:\\data\\11th\\pairing_scheme\\light\\Tarjuma_Tul_Quran_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "grade": "GRADE_11",
+    "title": "Urdu — Pairing Scheme (Class 11)",
+    "book_title": "Class 11 Urdu Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-11/urdu-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-11/urdu-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\11th\\pairing_scheme\\dark\\Urdu_Dark.pdf",
+      "light": "E:\\data\\11th\\pairing_scheme\\light\\Urdu_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "biology",
+    "grade": "GRADE_12",
+    "title": "Biology — Pairing Scheme (Class 12)",
+    "book_title": "Class 12 Biology Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-12/biology-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-12/biology-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\12th\\pairing_scheme\\dark\\Biology_Dark.pdf",
+      "light": "E:\\data\\12th\\pairing_scheme\\light\\Biology_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "chemistry",
+    "grade": "GRADE_12",
+    "title": "Chemistry — Pairing Scheme (Class 12)",
+    "book_title": "Class 12 Chemistry Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-12/chemistry-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-12/chemistry-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\12th\\pairing_scheme\\dark\\Chemistry_Dark.pdf",
+      "light": "E:\\data\\12th\\pairing_scheme\\light\\Chemistry_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "computer-science",
+    "grade": "GRADE_12",
+    "title": "Computer Science — Pairing Scheme (Class 12)",
+    "book_title": "Class 12 Computer Science Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-12/computer-science-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-12/computer-science-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\12th\\pairing_scheme\\dark\\Computer_Science_Dark.pdf",
+      "light": "E:\\data\\12th\\pairing_scheme\\light\\Computer_Science_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "english",
+    "grade": "GRADE_12",
+    "title": "English — Pairing Scheme (Class 12)",
+    "book_title": "Class 12 English Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-12/english-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-12/english-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\12th\\pairing_scheme\\dark\\English_Dark.pdf",
+      "light": "E:\\data\\12th\\pairing_scheme\\light\\English_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "mathematics",
+    "grade": "GRADE_12",
+    "title": "Mathematics — Pairing Scheme (Class 12)",
+    "book_title": "Class 12 Mathematics Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-12/mathematics-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-12/mathematics-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\12th\\pairing_scheme\\dark\\Mathematics_Dark.pdf",
+      "light": "E:\\data\\12th\\pairing_scheme\\light\\Mathematics_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "pakistan-studies",
+    "grade": "GRADE_12",
+    "title": "Pakistan Studies — Pairing Scheme (Class 12)",
+    "book_title": "Class 12 Pakistan Studies Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-12/pakistan-studies-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-12/pakistan-studies-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\12th\\pairing_scheme\\dark\\Pak_Studies_Dark.pdf",
+      "light": "E:\\data\\12th\\pairing_scheme\\light\\Pak_Studies_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "physics",
+    "grade": "GRADE_12",
+    "title": "Physics — Pairing Scheme (Class 12)",
+    "book_title": "Class 12 Physics Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-12/physics-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-12/physics-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\12th\\pairing_scheme\\dark\\Physics_Dark.pdf",
+      "light": "E:\\data\\12th\\pairing_scheme\\light\\Physics_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "grade": "GRADE_12",
+    "title": "Tarjuma Tul Quran — Pairing Scheme (Class 12)",
+    "book_title": "Class 12 Tarjuma Tul Quran Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-12/tarjuma-tul-quran-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-12/tarjuma-tul-quran-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\12th\\pairing_scheme\\dark\\Tarjuma_Tul_Quran_Dark.pdf",
+      "light": "E:\\data\\12th\\pairing_scheme\\light\\Tarjuma_Tul_Quran_Light.pdf"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "grade": "GRADE_12",
+    "title": "Urdu — Pairing Scheme (Class 12)",
+    "book_title": "Class 12 Urdu Pairing Scheme",
+    "dark_key": "library/pairing-schemes/grade-12/urdu-pairing-scheme.dark.pdf",
+    "light_key": "library/pairing-schemes/grade-12/urdu-pairing-scheme.light.pdf",
+    "source": {
+      "dark": "E:\\data\\12th\\pairing_scheme\\dark\\Urdu_Dark.pdf",
+      "light": "E:\\data\\12th\\pairing_scheme\\light\\Urdu_Light.pdf"
+    }
+  }
+]

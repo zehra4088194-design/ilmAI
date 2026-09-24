@@ -1,0 +1,526 @@
+import {
+  AbortMultipartUploadCommand,
+  CompleteMultipartUploadCommand,
+  CreateMultipartUploadCommand,
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+  UploadPartCommand,
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+
+type R2Config = {
+  accountId?: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+  bucket: string;
+  endpoint: string;
+  region: string;
+  forcePathStyle: boolean;
+};
+
+const clients = new Map<string, S3Client>();
+export const R2_SIGNED_URL_TTL_SECONDS = 18_000; // 5 hours
+
+function getPrimaryConfig(): R2Config | null {
+  const accountId = process.env.R2_ACCOUNT_ID;
+  const endpoint =
+    process.env.OBJECT_STORAGE_ENDPOINT ||
+    process.env.S3_ENDPOINT ||
+    process.env.B2_ENDPOINT ||
+    (accountId ? `https://${accountId}.r2.cloudflarestorage.com` : '');
+  // OBJECT_STORAGE_* takes priority — it's the actively-configured provider
+  // (currently Backblaze B2). R2_*/S3_*/B2_* are only a fallback for stale
+  // leftover env vars from an earlier Cloudflare R2 setup; letting those win
+  // silently pointed the app at the wrong bucket/credentials.
+  const accessKeyId =
+    process.env.OBJECT_STORAGE_ACCESS_KEY_ID ||
+    process.env.R2_ACCESS_KEY_ID ||
+    process.env.S3_ACCESS_KEY_ID ||
+    process.env.B2_KEY_ID;
+  const secretAccessKey =
+    process.env.OBJECT_STORAGE_SECRET_ACCESS_KEY ||
+    process.env.R2_SECRET_ACCESS_KEY ||
+    process.env.S3_SECRET_ACCESS_KEY ||
+    process.env.B2_APPLICATION_KEY;
+  const bucket =
+    process.env.OBJECT_STORAGE_BUCKET || process.env.R2_BUCKET || process.env.S3_BUCKET || process.env.B2_BUCKET;
+  const region = process.env.OBJECT_STORAGE_REGION || process.env.S3_REGION || process.env.B2_REGION || 'auto';
+  const forcePathStyle = Boolean(
+    process.env.OBJECT_STORAGE_FORCE_PATH_STYLE || process.env.S3_FORCE_PATH_STYLE || process.env.B2_FORCE_PATH_STYLE
+  );
+  return endpoint && accessKeyId && secretAccessKey && bucket
+    ? { accountId, accessKeyId, secretAccessKey, bucket, endpoint, region, forcePathStyle }
+    : null;
+}
+
+// Second B2 account/bucket, used for 11th/12th grade library content — a
+// different account than the primary bucket, so it needs its own
+// credentials (a B2 application key only ever grants access to buckets in
+// its own account). Same read/write helpers below transparently pick the
+// right one based on which bucket a given r2:// URI names.
+function getSecondaryConfig(): R2Config | null {
+  const endpoint = process.env.SECONDARY_STORAGE_ENDPOINT || process.env.OBJECT_STORAGE_ENDPOINT || '';
+  const accessKeyId = process.env.SECONDARY_STORAGE_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.SECONDARY_STORAGE_SECRET_ACCESS_KEY;
+  const bucket = process.env.SECONDARY_STORAGE_BUCKET;
+  const region = process.env.SECONDARY_STORAGE_REGION || process.env.OBJECT_STORAGE_REGION || 'auto';
+  const forcePathStyle = Boolean(
+    process.env.SECONDARY_STORAGE_FORCE_PATH_STYLE || process.env.OBJECT_STORAGE_FORCE_PATH_STYLE
+  );
+  return endpoint && accessKeyId && secretAccessKey && bucket
+    ? { accessKeyId, secretAccessKey, bucket, endpoint, region, forcePathStyle }
+    : null;
+}
+
+// Third B2 account/bucket, dedicated to the Rest & Audio library (relaxing
+// playlists, spoken-word tracks, etc). Kept separate from the primary and
+// secondary buckets for the same reason as the secondary one — its own B2
+// account, its own application key — and so audio storage cost/usage stays
+// isolated and easy to reason about on its own bucket dashboard.
+function getAudioConfig(): R2Config | null {
+  const endpoint = process.env.AUDIO_STORAGE_ENDPOINT || process.env.OBJECT_STORAGE_ENDPOINT || '';
+  const accessKeyId = process.env.AUDIO_STORAGE_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.AUDIO_STORAGE_SECRET_ACCESS_KEY;
+  const bucket = process.env.AUDIO_STORAGE_BUCKET;
+  const region = process.env.AUDIO_STORAGE_REGION || process.env.OBJECT_STORAGE_REGION || 'auto';
+  const forcePathStyle = Boolean(
+    process.env.AUDIO_STORAGE_FORCE_PATH_STYLE || process.env.OBJECT_STORAGE_FORCE_PATH_STYLE
+  );
+  return endpoint && accessKeyId && secretAccessKey && bucket
+    ? { accessKeyId, secretAccessKey, bucket, endpoint, region, forcePathStyle }
+    : null;
+}
+
+// Name of the configured audio bucket, if any — for call sites (upload
+// routes) that need to pass an explicit `bucket` to putR2Object/getR2Uri
+// instead of falling through to the primary bucket.
+export function getAudioBucketName(): string | null {
+  return getAudioConfig()?.bucket || null;
+}
+
+export function isAudioStorageConfigured() {
+  return Boolean(getAudioConfig());
+}
+
+// Fourth B2 account/bucket, dedicated to University Hub notes (books, past
+// papers, topic-wise notes, practical guides, etc uploaded for degree
+// programs). Same isolation reasoning as secondary/audio above — its own B2
+// account, its own application key, its own usage/cost dashboard. Expected
+// bucket name: ilmai-uni-bucket (set via UNIVERSITY_STORAGE_BUCKET below).
+function getUniversityConfig(): R2Config | null {
+  const endpoint = process.env.UNIVERSITY_STORAGE_ENDPOINT || process.env.OBJECT_STORAGE_ENDPOINT || '';
+  const accessKeyId = process.env.UNIVERSITY_STORAGE_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.UNIVERSITY_STORAGE_SECRET_ACCESS_KEY;
+  const bucket = process.env.UNIVERSITY_STORAGE_BUCKET;
+  const region = process.env.UNIVERSITY_STORAGE_REGION || process.env.OBJECT_STORAGE_REGION || 'auto';
+  const forcePathStyle = Boolean(
+    process.env.UNIVERSITY_STORAGE_FORCE_PATH_STYLE || process.env.OBJECT_STORAGE_FORCE_PATH_STYLE
+  );
+  return endpoint && accessKeyId && secretAccessKey && bucket
+    ? { accessKeyId, secretAccessKey, bucket, endpoint, region, forcePathStyle }
+    : null;
+}
+
+// Name of the configured university bucket, if any — for call sites (upload
+// routes) that need to pass an explicit `bucket` to putR2Object/getR2Uri
+// instead of falling through to the primary bucket.
+export function getUniversityBucketName(): string | null {
+  return getUniversityConfig()?.bucket || null;
+}
+
+export function isUniversityStorageConfigured() {
+  return Boolean(getUniversityConfig());
+}
+
+// Fifth B2 account/bucket, dedicated to chat attachments (Study Buddies, parent<->student,
+// parent<->teacher/principal) — its own account/application key like audio and university above,
+// kept PRIVATE (never public) since chat attachments are personal, not published content. Every
+// read goes through a signed URL (getR2SignedUrl) or a server-side proxy route, never a public
+// bucket URL.
+function getChatConfig(): R2Config | null {
+  const endpoint = process.env.CHAT_STORAGE_ENDPOINT || process.env.OBJECT_STORAGE_ENDPOINT || '';
+  const accessKeyId = process.env.CHAT_STORAGE_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.CHAT_STORAGE_SECRET_ACCESS_KEY;
+  const bucket = process.env.CHAT_STORAGE_BUCKET;
+  const region = process.env.CHAT_STORAGE_REGION || process.env.OBJECT_STORAGE_REGION || 'auto';
+  const forcePathStyle = Boolean(
+    process.env.CHAT_STORAGE_FORCE_PATH_STYLE || process.env.OBJECT_STORAGE_FORCE_PATH_STYLE
+  );
+  return endpoint && accessKeyId && secretAccessKey && bucket
+    ? { accessKeyId, secretAccessKey, bucket, endpoint, region, forcePathStyle }
+    : null;
+}
+
+export function getChatBucketName(): string | null {
+  return getChatConfig()?.bucket || null;
+}
+
+export function isChatStorageConfigured() {
+  return Boolean(getChatConfig());
+}
+
+function allConfigs(): R2Config[] {
+  return [getPrimaryConfig(), getSecondaryConfig(), getAudioConfig(), getUniversityConfig(), getChatConfig()].filter(
+    (c): c is R2Config => c !== null
+  );
+}
+
+// Resolves which configured bucket to use: an explicit bucket name (from a
+// parsed r2:// URI) if given and known, otherwise the primary bucket —
+// preserving old behavior for every call site that still passes a bare key.
+//
+// Secondary bucket temporarily DISABLED (single-bucket setup): any call site
+// that still names the secondary bucket (env var SECONDARY_STORAGE_BUCKET, or
+// an old r2:// URI pointing at it) is transparently redirected to the primary
+// bucket here instead — one central switch instead of touching every script
+// and call site that used to route 11th/12th grade content to a second B2
+// account/bucket.
+function resolveConfig(bucket?: string): R2Config | null {
+  const configs = allConfigs();
+  const primary = getPrimaryConfig();
+  if (bucket) {
+    if (bucket === process.env.SECONDARY_STORAGE_BUCKET) return primary;
+    return configs.find((c) => c.bucket === bucket) || primary;
+  }
+  return configs[0] || null;
+}
+
+function getClient(config: R2Config) {
+  const cacheKey = `${config.endpoint}::${config.bucket}`;
+  let existing = clients.get(cacheKey);
+  if (!existing) {
+    existing = new S3Client({
+      region: config.region,
+      endpoint: config.endpoint,
+      credentials: { accessKeyId: config.accessKeyId, secretAccessKey: config.secretAccessKey },
+      forcePathStyle: config.forcePathStyle,
+      // AWS SDK v3 defaults to always attaching a request checksum (x-amz-sdk-checksum-algorithm /
+      // x-amz-checksum-*) since ~3.729. B2 (and other S3-compatible, non-AWS backends) doesn't
+      // handle that extra param/header on a presigned PUT — the browser's CORS preflight for it
+      // gets rejected outright ("No Access-Control-Allow-Origin header"), even with the bucket's
+      // CORS rules wide open, because the checksum breaks the preflight before CORS is even
+      // evaluated. 'WHEN_REQUIRED' restores the old behavior (no checksum unless the API demands
+      // one), which is what every presigned URL here (GET and PUT) needs against B2.
+      requestChecksumCalculation: 'WHEN_REQUIRED',
+      responseChecksumValidation: 'WHEN_REQUIRED',
+    });
+    clients.set(cacheKey, existing);
+  }
+  return existing;
+}
+
+export function isR2Configured() {
+  return Boolean(resolveConfig());
+}
+
+export function getR2Uri(key: string, bucket?: string) {
+  const config = resolveConfig(bucket);
+  if (!config) throw new Error('R2 is not configured.');
+  return `r2://${config.bucket}/${key}`;
+}
+
+// Returns {bucket, key} for any r2:// URI whose bucket matches a configured
+// bucket (primary or secondary) — not just the primary one.
+export function parseR2Uri(uri: string): { bucket: string; key: string } | null {
+  const match = uri.match(/^r2:\/\/([^/]+)\/(.+)$/);
+  if (!match) return null;
+  const [, bucket, key] = match;
+  if (!key || key.includes('..')) return null;
+  if (!resolveConfig(bucket)) return null;
+  return { bucket: bucket!, key };
+}
+
+// LOCAL_LIBRARY_STAGING_DIR (admin script escape hatch): when set, putR2Object
+// writes the file to <dir>/<key> on local disk instead of uploading to B2 —
+// used to build an exact-mirror local folder tree of everything that WOULD be
+// uploaded, for a human to bulk-upload themselves via a more reliable tool
+// (rclone/b2 CLI sync) than one-file-at-a-time Node uploads over a flaky link.
+async function writeLocalStagingFile(key: string, body: Uint8Array | Buffer | string) {
+  const { mkdir, writeFile } = await import('node:fs/promises');
+  const path = await import('node:path');
+  const dest = path.join(process.env.LOCAL_LIBRARY_STAGING_DIR!, key);
+  await mkdir(path.dirname(dest), { recursive: true });
+  await writeFile(dest, body as any);
+}
+
+export async function putR2Object(
+  key: string,
+  body: Uint8Array | Buffer | string,
+  options: { contentType: string; cacheControl?: string; contentEncoding?: string },
+  bucket?: string
+) {
+  if (process.env.LOCAL_LIBRARY_STAGING_DIR) return writeLocalStagingFile(key, body);
+  const config = resolveConfig(bucket);
+  if (!config) throw new Error('R2 is not configured.');
+  await getClient(config).send(
+    new PutObjectCommand({
+      Bucket: config.bucket,
+      Key: key,
+      Body: body,
+      ContentType: options.contentType,
+      CacheControl: options.cacheControl,
+      ContentEncoding: options.contentEncoding,
+    })
+  );
+}
+
+export async function putR2Stream(
+  key: string,
+  body: ReadableStream<Uint8Array>,
+  options: { contentType: string; contentLength?: number },
+  bucket?: string
+) {
+  const config = resolveConfig(bucket);
+  if (!config) throw new Error('R2 is not configured.');
+  await getClient(config).send(
+    new PutObjectCommand({
+      Bucket: config.bucket,
+      Key: key,
+      Body: body,
+      ContentType: options.contentType,
+      ContentLength: options.contentLength,
+    })
+  );
+}
+
+export async function createR2MultipartUpload(key: string, contentType: string, bucket?: string) {
+  const config = resolveConfig(bucket);
+  if (!config) throw new Error('R2 is not configured.');
+  const result = await getClient(config).send(
+    new CreateMultipartUploadCommand({ Bucket: config.bucket, Key: key, ContentType: contentType })
+  );
+  if (!result.UploadId) throw new Error('Storage did not return a multipart upload ID.');
+  return result.UploadId;
+}
+
+export async function uploadR2Part(key: string, uploadId: string, partNumber: number, body: Buffer, bucket?: string) {
+  const config = resolveConfig(bucket);
+  if (!config) throw new Error('R2 is not configured.');
+  const result = await getClient(config).send(
+    new UploadPartCommand({
+      Bucket: config.bucket,
+      Key: key,
+      UploadId: uploadId,
+      PartNumber: partNumber,
+      Body: body,
+      ContentLength: body.length,
+    })
+  );
+  if (!result.ETag) throw new Error(`Storage did not return an ETag for part ${partNumber}.`);
+  return result.ETag;
+}
+
+export async function completeR2MultipartUpload(
+  key: string,
+  uploadId: string,
+  parts: Array<{ partNumber: number; etag: string }>,
+  bucket?: string
+) {
+  const config = resolveConfig(bucket);
+  if (!config) throw new Error('R2 is not configured.');
+  await getClient(config).send(
+    new CompleteMultipartUploadCommand({
+      Bucket: config.bucket,
+      Key: key,
+      UploadId: uploadId,
+      MultipartUpload: {
+        Parts: parts.map((part) => ({ PartNumber: part.partNumber, ETag: part.etag })),
+      },
+    })
+  );
+}
+
+export async function abortR2MultipartUpload(key: string, uploadId: string, bucket?: string) {
+  const config = resolveConfig(bucket);
+  if (!config) return;
+  await getClient(config).send(
+    new AbortMultipartUploadCommand({ Bucket: config.bucket, Key: key, UploadId: uploadId })
+  );
+}
+
+export async function getR2Object(key: string, bucket?: string) {
+  const config = resolveConfig(bucket);
+  if (!config) return null;
+  try {
+    const signedUrl = await getR2SignedUrl(key, R2_SIGNED_URL_TTL_SECONDS, bucket);
+    const result = await fetchWithRetry(signedUrl, 90_000);
+    // B2 (our R2-compatible backend) returns 403, not 404, for a presigned URL pointing at a key
+    // that no longer exists — it doesn't reveal object existence to an unauthenticated signed
+    // request the way S3 does. Without this, every stale reference (a deleted/rotated ad banner,
+    // a since-removed upload) surfaced as an unhandled 500 instead of the "not found" it actually is.
+    if (result.status === 404 || result.status === 403) return null;
+    if (!result.ok) throw new Error(`Signed object fetch failed (${result.status}).`);
+    const bytes = await result.arrayBuffer();
+    return {
+      body: bytes,
+      contentType: result.headers.get('content-type') || 'application/octet-stream',
+      contentEncoding: result.headers.get('content-encoding'),
+    };
+  } catch (error: any) {
+    const status = error?.$metadata?.httpStatusCode;
+    if (status === 404 || error?.name === 'NoSuchKey') return null;
+    throw error;
+  }
+}
+
+// Streaming counterpart to getR2Object: hands back the live response instead of buffering the
+// whole object into memory first. getR2Object fully downloads the object server-side *before*
+// sending a single byte to the browser — for a large PDF that serializes "download from B2" and
+// "upload to the reader" one after another, roughly doubling the time-to-first-byte and eating
+// the full request into one long window that a single dropped B2 connection anywhere in it turns
+// into a hard failure. Streaming through means the browser starts receiving pages within a
+// second of the request landing, and only a network drop during the (short) initial read below
+// aborts the whole thing instead of one anywhere across the entire transfer.
+// B2/R2 occasionally drops or resets a connection with no server-side error at all — the signed
+// URL itself is still valid, a second attempt just works. Previously a single flaky connection
+// anywhere (cold connection, transient network blip) surfaced as a hard "Failed to load PDF file"
+// to the student with no automatic recovery, even though the file was never actually missing —
+// this is what was showing up across many otherwise-fine library/class-library PDFs. One retry
+// with a short backoff before giving up costs nothing on the common case (first attempt succeeds)
+// and turns most of those transient failures into an invisible extra second of load time instead.
+const R2_FETCH_RETRIES = 2;
+const R2_FETCH_RETRY_DELAY_MS = 400;
+
+async function fetchWithRetry(url: string, timeoutMs: number) {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= R2_FETCH_RETRIES; attempt++) {
+    try {
+      const result = await fetch(url, { method: 'GET', cache: 'no-store', signal: AbortSignal.timeout(timeoutMs) });
+      // A 404 (or a 403, which is what B2 returns for a presigned URL over a key that no longer
+      // exists — see getR2Object) is a real "the file isn't there" answer, not a transient
+      // failure — retrying it wastes time and can never succeed, so it's returned immediately.
+      if (result.status === 404 || result.status === 403 || result.ok) return result;
+      lastError = new Error(`Signed object fetch failed (${result.status}).`);
+    } catch (error) {
+      lastError = error;
+    }
+    if (attempt < R2_FETCH_RETRIES) {
+      await new Promise((resolve) => setTimeout(resolve, R2_FETCH_RETRY_DELAY_MS * (attempt + 1)));
+    }
+  }
+  throw lastError;
+}
+
+// `range` is a raw HTTP Range header value (e.g. "bytes=1048576-2097151"), forwarded verbatim to
+// the presigned URL fetch — B2/R2 (S3-compatible) honors Range on GetObject exactly like any other
+// HTTP file server, responding 206 Partial Content with Content-Range when it's satisfiable. This
+// is what lets pdf.js fetch just the bytes of the page(s) it needs (its xref/page-lookup fetches
+// first, then only the requested page's object bytes) instead of always pulling the whole file —
+// the on-demand, jump-to-any-page behavior this was built for. fetchWithRetry's blanket "retry
+// unless 404/403/ok" already treats 206 as ok (response.ok is true for any 2xx), so no change
+// needed there.
+async function fetchWithRetryRanged(url: string, timeoutMs: number, range?: string) {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= R2_FETCH_RETRIES; attempt++) {
+    try {
+      const result = await fetch(url, {
+        method: 'GET',
+        cache: 'no-store',
+        headers: range ? { Range: range } : undefined,
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+      if (result.status === 404 || result.status === 403 || result.ok) return result;
+      lastError = new Error(`Signed object fetch failed (${result.status}).`);
+    } catch (error) {
+      lastError = error;
+    }
+    if (attempt < R2_FETCH_RETRIES) {
+      await new Promise((resolve) => setTimeout(resolve, R2_FETCH_RETRY_DELAY_MS * (attempt + 1)));
+    }
+  }
+  throw lastError;
+}
+
+export async function getR2ObjectStream(key: string, timeoutMs = 90_000, bucket?: string, range?: string) {
+  const config = resolveConfig(bucket);
+  if (!config) return null;
+  try {
+    const signedUrl = await getR2SignedUrl(key, R2_SIGNED_URL_TTL_SECONDS, bucket);
+    const result = range
+      ? await fetchWithRetryRanged(signedUrl, timeoutMs, range)
+      : await fetchWithRetry(signedUrl, timeoutMs);
+    if (result.status === 404 || result.status === 403) return null;
+    if (!result.ok) throw new Error(`Signed object fetch failed (${result.status}).`);
+    if (!result.body) throw new Error('Signed object response had no body.');
+    return {
+      body: result.body,
+      contentType: result.headers.get('content-type') || 'application/octet-stream',
+      contentLength: Number(result.headers.get('content-length') || 0) || null,
+      // 206 only when B2 actually honored our Range header — a range request against a backend
+      // that ignores Range silently comes back 200 with the full body, and the caller needs to
+      // know that happened (it can't treat the body as "just the requested slice" in that case).
+      status: result.status,
+      contentRange: result.headers.get('content-range'),
+      acceptRanges: result.headers.get('accept-ranges'),
+    };
+  } catch (error: any) {
+    const status = error?.$metadata?.httpStatusCode;
+    if (status === 404 || error?.name === 'NoSuchKey') return null;
+    throw error;
+  }
+}
+
+export async function getR2Text(key: string, bucket?: string) {
+  const object = await getR2Object(key, bucket);
+  return object ? new TextDecoder().decode(object.body) : null;
+}
+
+// `downloadFilename`, when given, tells B2/R2 to answer with Content-Disposition: attachment on
+// this specific signed URL (an S3-compatible presigned-GET feature — the disposition rides in the
+// signed query string itself, no proxying required) so opening the link downloads the file with
+// that name instead of navigating the tab to it. Left undefined keeps the previous plain/inline
+// behavior for every other existing caller.
+export async function getR2SignedUrl(
+  key: string,
+  expiresIn = R2_SIGNED_URL_TTL_SECONDS,
+  bucket?: string,
+  downloadFilename?: string
+) {
+  const config = resolveConfig(bucket);
+  if (!config) throw new Error('R2 is not configured.');
+  if (!key || key.includes('..')) throw new Error('Invalid stored object key.');
+  return getSignedUrl(
+    getClient(config),
+    new GetObjectCommand({
+      Bucket: config.bucket,
+      Key: key,
+      ...(downloadFilename
+        ? { ResponseContentDisposition: `attachment; filename="${sanitizeDownloadFilename(downloadFilename)}"` }
+        : {}),
+    }),
+    { expiresIn }
+  );
+}
+
+// Strips characters that would break out of the quoted filename in a Content-Disposition header
+// (quotes, backslashes, CR/LF) — the name itself comes from a user's uploaded file, never trusted
+// verbatim into a header value.
+function sanitizeDownloadFilename(name: string) {
+  return name.replace(/["\\\r\n]/g, '').slice(0, 200) || 'download';
+}
+
+// A presigned PUT — the browser uploads the object bytes directly to B2/R2 over this URL, never
+// through our own app server. Used for large uploads (e.g. audio files) where routing hundreds of
+// MB through the Next.js container's memory/request lifetime risked timeouts and OOM crashes.
+// `contentType` must exactly match the Content-Type header the client sends on the PUT — the
+// signature covers it, so a mismatch fails with SignatureDoesNotMatch.
+export async function getR2SignedPutUrl(key: string, contentType: string, bucket?: string, expiresIn = 3600) {
+  const config = resolveConfig(bucket);
+  if (!config) throw new Error('R2 is not configured.');
+  if (!key || key.includes('..')) throw new Error('Invalid stored object key.');
+  return getSignedUrl(
+    getClient(config),
+    new PutObjectCommand({ Bucket: config.bucket, Key: key, ContentType: contentType }),
+    {
+      expiresIn,
+    }
+  );
+}
+
+export async function deleteR2Object(key: string, bucket?: string) {
+  const config = resolveConfig(bucket);
+  if (!config) return;
+  await getClient(config).send(new DeleteObjectCommand({ Bucket: config.bucket, Key: key }));
+}

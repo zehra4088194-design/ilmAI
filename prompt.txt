@@ -1,0 +1,911 @@
+    └── business-light-05-trend-line-65ec2390.png
+    └── business-light-06-pie-fragments-0bfd2f02.png
+    └── business-light-07-bar-chart-2d7d23b1.png
+    └── business-light-08-trend-line-6914fb66.png
+    └── business-light-09-pie-fragments-a56c6f38.png
+    └── business-light-10-bar-chart-911abbe1.png
+    └── chemistry-light-01-orbital-rings-140eba7b.png
+    └── chemistry-light-02-molecular-bonds-32e002a2.png
+    └── chemistry-light-03-hex-lattice-45c295e7.png
+    └── chemistry-light-04-orbital-rings-53464e01.png
+    └── chemistry-light-05-molecular-bonds-e7622d3a.png
+    └── chemistry-light-06-hex-lattice-bfd05269.png
+    └── chemistry-light-07-orbital-rings-219661cd.png
+    └── chemistry-light-08-molecular-bonds-a83fa07c.png
+    └── chemistry-light-09-hex-lattice-a1b0d41b.png
+    └── chemistry-light-10-orbital-rings-0aadcbbd.png
+    └── computer-science-light-01-circuit-traces-cdd31cda.png
+    └── computer-science-light-02-node-graph-be916622.png
+    └── computer-science-light-03-pixel-grid-707b5b4f.png
+    └── computer-science-light-04-circuit-traces-80efcb1d.png
+    └── computer-science-light-05-node-graph-77515a4f.png
+    └── computer-science-light-06-pixel-grid-199b388b.png
+    └── computer-science-light-07-circuit-traces-cb774a0a.png
+    └── computer-science-light-08-node-graph-db3bb362.png
+    └── computer-science-light-09-pixel-grid-dff6305b.png
+    └── computer-science-light-10-circuit-traces-814d4477.png
+    └── dark-biology-01-7e569195.png
+    └── dark-biology-01-microscopy-grid-029aeffe.png
+    └── dark-biology-02-3a7f1a50.png
+    └── dark-biology-02-dna-helix-dcc20e72.png
+    └── dark-biology-03-6b604acf.png
+    └── dark-biology-03-microscopy-grid-25d84aba.png
+    └── dark-biology-04-44d3e313.png
+    └── dark-biology-04-cell-membrane-12234353.png
+    └── dark-biology-05-bbd9f592.png
+    └── dark-biology-05-leaf-vein-e73bc569.png
+    └── dark-biology-06-5b116202.png
+    └── dark-biology-06-neuron-network-e9873cef.png
+    └── dark-biology-07-7db7e257.png
+    └── dark-biology-07-dna-helix-e6b358f5.png
+    └── dark-biology-08-3d345471.png
+    └── dark-biology-08-dna-helix-54ef51a2.png
+    └── dark-biology-09-6cbac915.png
+    └── dark-biology-09-microscopy-grid-5bf75402.png
+    └── dark-biology-10-d24ee1d8.png
+    └── dark-biology-10-microscopy-grid-62774447.png
+    └── dark-biology-11-9f4d8ad2.png
+    └── dark-biology-11-cell-membrane-20f74774.png
+    └── dark-biology-12-a8acaffb.png
+    └── dark-biology-12-leaf-vein-97141d0f.png
+    └── dark-biology-13-464eef58.png
+    └── dark-biology-13-leaf-vein-f069e495.png
+    └── dark-biology-14-0b9571a0.png
+    └── dark-biology-14-cell-membrane-9cf88f35.png
+    └── dark-biology-15-7ccb6bec.png
+    └── dark-biology-15-neuron-network-4670c566.png
+    └── dark-biology-16-8dbb489a.png
+    └── dark-biology-16-dna-helix-58804de9.png
+    └── dark-biology-17-5a0b7f9e.png
+    └── dark-biology-17-neuron-network-6e102e4f.png
+    └── dark-biology-18-590b23bc.png
+    └── dark-biology-18-cell-membrane-c1b3287f.png
+    └── dark-biology-19-a647eb7d.png
+    └── dark-biology-19-neuron-network-5c55c422.png
+    └── dark-biology-20-3658673d.png
+    └── dark-biology-20-leaf-vein-94bc4192.png
+    └── dark-business-01-1fe2aee6.png
+    └── dark-business-01-pie-fragments-ae579805.png
+    └── dark-business-02-f0de080e.png
+    └── dark-business-02-network-nodes-8942817a.png
+    └── dark-business-03-1323ec19.png
+    └── dark-business-03-pie-fragments-eae04f08.png
+    └── dark-business-04-fe3c9b5d.png
+    └── dark-business-04-trend-line-9feab159.png
+    └── dark-business-05-bd00bdca.png
+    └── dark-business-05-network-nodes-25772539.png
+    └── dark-business-06-6bf84e95.png
+    └── dark-business-06-ledger-grid-c66127fd.png
+    └── dark-business-07-6d91c427.png
+    └── dark-business-07-bar-chart-8833219e.png
+    └── dark-business-08-2f8462e7.png
+    └── dark-business-08-pie-fragments-f0966a36.png
+    └── dark-business-09-1c5408fd.png
+    └── dark-business-09-ledger-grid-2a20f8d8.png
+    └── dark-business-10-a8112d81.png
+    └── dark-business-10-trend-line-b989fa17.png
+    └── dark-business-11-e57dc088.png
+    └── dark-business-11-ledger-grid-19d6d225.png
+    └── dark-business-12-3da4f3e4.png
+    └── dark-business-12-network-nodes-575bc150.png
+    └── dark-business-13-e224fc14.png
+    └── dark-business-13-ledger-grid-9ee288e8.png
+    └── dark-business-14-bar-chart-2d2b25f5.png
+    └── dark-business-14-d73dec81.png
+    └── dark-business-15-7de252ca.png
+    └── dark-business-15-bar-chart-7faf54e7.png
+    └── dark-business-16-8a660e1c.png
+    └── dark-business-16-trend-line-b16a8dcc.png
+    └── dark-business-17-33e7ab54.png
+    └── dark-business-17-network-nodes-60d572be.png
+    └── dark-business-18-2298ec68.png
+    └── dark-business-18-trend-line-db835395.png
+    └── dark-business-19-9ac083f5.png
+    └── dark-business-19-pie-fragments-00fdea75.png
+    └── dark-business-20-9e0f7741.png
+    └── dark-business-20-bar-chart-37de9876.png
+    └── dark-chemistry-01-396aae47.png
+    └── dark-chemistry-01-orbital-rings-41270222.png
+    └── dark-chemistry-02-0d36817f.png
+    └── dark-chemistry-02-molecular-bonds-eac97bc7.png
+    └── dark-chemistry-03-2491dfaa.png
+    └── dark-chemistry-03-flask-silhouette-2bc789a0.png
+    └── dark-chemistry-04-35051d96.png
+    └── dark-chemistry-04-molecular-bonds-f68575bb.png
+    └── dark-chemistry-05-02c35641.png
+    └── dark-chemistry-05-periodic-grid-23fc610b.png
+    └── dark-chemistry-06-bca00dd6.png
+    └── dark-chemistry-06-orbital-rings-dcee48d4.png
+    └── dark-chemistry-07-b60014b1.png
+    └── dark-chemistry-07-orbital-rings-13b8fe1d.png
+    └── dark-chemistry-08-9ad3788d.png
+    └── dark-chemistry-08-molecular-bonds-8eea9765.png
+    └── dark-chemistry-09-8bed65e0.png
+    └── dark-chemistry-09-flask-silhouette-7974da65.png
+    └── dark-chemistry-10-9a27d73c.png
+    └── dark-chemistry-10-hexagon-lattice-b9d77932.png
+    └── dark-chemistry-11-016dcc60.png
+    └── dark-chemistry-11-periodic-grid-70edae00.png
+    └── dark-chemistry-12-c7f67816.png
+    └── dark-chemistry-12-periodic-grid-c5b0fb95.png
+    └── dark-chemistry-13-c67a2c43.png
+    └── dark-chemistry-13-hexagon-lattice-5212a7f9.png
+    └── dark-chemistry-14-aa22b317.png
+    └── dark-chemistry-14-flask-silhouette-8906d496.png
+    └── dark-chemistry-15-dfb1526f.png
+    └── dark-chemistry-15-flask-silhouette-d285958e.png
+    └── dark-chemistry-16-2da2b92c.png
+    └── dark-chemistry-16-hexagon-lattice-12a4100b.png
+    └── dark-chemistry-17-c7982c51.png
+    └── dark-chemistry-17-orbital-rings-ada596dd.png
+    └── dark-chemistry-18-7673a2d1.png
+    └── dark-chemistry-18-hexagon-lattice-72b07c95.png
+    └── dark-chemistry-19-1c0d20b3.png
+    └── dark-chemistry-19-periodic-grid-413ae90e.png
+    └── dark-chemistry-20-6b4faa00.png
+    └── dark-chemistry-20-molecular-bonds-99abfc2a.png
+    └── dark-computer-science-01-262e31a9.png
+    └── dark-computer-science-01-circuit-traces-c60bd2b9.png
+    └── dark-computer-science-02-964106e2.png
+    └── dark-computer-science-02-node-graph-3cccfee1.png
+    └── dark-computer-science-03-7ab1177f.png
+    └── dark-computer-science-03-pixel-grid-06311dae.png
+    └── dark-computer-science-04-6244f86b.png
+    └── dark-computer-science-04-pixel-grid-afb91554.png
+    └── dark-computer-science-05-2cd03dda.png
+    └── dark-computer-science-05-binary-grain-1d122f22.png
+    └── dark-computer-science-06-58dbf4fa.png
+    └── dark-computer-science-06-node-graph-819f1ac2.png
+    └── dark-computer-science-07-a5914756.png
+    └── dark-computer-science-07-binary-grain-3b09ce54.png
+    └── dark-computer-science-08-549a92f5.png
+    └── dark-computer-science-08-terminal-block-b96aa849.png
+    └── dark-computer-science-09-2d50963a.png
+    └── dark-computer-science-09-node-graph-c00a4f00.png
+    └── dark-computer-science-10-6f944124.png
+    └── dark-computer-science-10-binary-grain-52d4d8ea.png
+    └── dark-computer-science-11-0dd70765.png
+    └── dark-computer-science-11-circuit-traces-a76e4167.png
+    └── dark-computer-science-12-92947f4a.png
+    └── dark-computer-science-12-binary-grain-76a4d21c.png
+    └── dark-computer-science-13-4951d449.png
+    └── dark-computer-science-13-pixel-grid-95e9d887.png
+    └── dark-computer-science-14-3fc7e5b7.png
+    └── dark-computer-science-14-terminal-block-902e9314.png
+    └── dark-computer-science-15-circuit-traces-4570a7d9.png
+    └── dark-computer-science-15-f42a900b.png
+    └── dark-computer-science-16-0311649a.png
+    └── dark-computer-science-16-node-graph-f54a1dda.png
+    └── dark-computer-science-17-08a165e3.png
+    └── dark-computer-science-17-terminal-block-43ebcd46.png
+    └── dark-computer-science-18-f915b798.png
+    └── dark-computer-science-18-terminal-block-7df28d9d.png
+    └── dark-computer-science-19-293ad1f6.png
+    └── dark-computer-science-19-pixel-grid-b0b49db7.png
+    └── dark-computer-science-20-circuit-traces-a041e22a.png
+    └── dark-computer-science-20-f2c029cf.png
+    └── dark-physics-01-c65c66be.png
+    └── dark-physics-01-light-refraction-7912d1c4.png
+    └── dark-physics-02-6d50f23e.png
+    └── dark-physics-02-trajectory-arcs-8e53f615.png
+    └── dark-physics-03-b9208b48.png
+    └── dark-physics-03-sine-waves-ee9be72a.png
+    └── dark-physics-04-547b5788.png
+    └── dark-physics-04-pendulum-orbit-188ebb8b.png
+    └── dark-physics-05-bade602d.png
+    └── dark-physics-05-trajectory-arcs-4971f6fc.png
+    └── dark-physics-06-09f70896.png
+    └── dark-physics-06-trajectory-arcs-beeaa3d0.png
+    └── dark-physics-07-774fa72b.png
+    └── dark-physics-07-particle-collision-1b38fc81.png
+    └── dark-physics-08-ffbef94e.png
+    └── dark-physics-08-light-refraction-a858ebb3.png
+    └── dark-physics-09-d43fdace.png
+    └── dark-physics-09-sine-waves-ef4eff46.png
+    └── dark-physics-10-d3529147.png
+    └── dark-physics-10-sine-waves-5ea62f7e.png
+    └── dark-physics-11-38feee7e.png
+    └── dark-physics-11-particle-collision-43fbddda.png
+    └── dark-physics-12-3466954e.png
+    └── dark-physics-12-particle-collision-5c853aa2.png
+    └── dark-physics-13-c6d70588.png
+    └── dark-physics-13-sine-waves-0a04ed9d.png
+    └── dark-physics-14-cdf97220.png
+    └── dark-physics-14-pendulum-orbit-a5608a59.png
+    └── dark-physics-15-07d5dfcc.png
+    └── dark-physics-15-pendulum-orbit-ddce1874.png
+    └── dark-physics-16-69264e6d.png
+    └── dark-physics-16-pendulum-orbit-590e3dd4.png
+    └── dark-physics-17-2c34cf3e.png
+    └── dark-physics-17-trajectory-arcs-99fa1da7.png
+    └── dark-physics-18-c5a51d81.png
+    └── dark-physics-18-particle-collision-4bcf1337.png
+    └── dark-physics-19-0a435f1e.png
+    └── dark-physics-19-light-refraction-dac43b33.png
+    └── dark-physics-20-45b4b32d.png
+    └── dark-physics-20-light-refraction-d562a090.png
+    └── economics-dark-01-stack-coins-2ac2c086.png
+    └── economics-dark-02-supply-demand-ec58e88f.png
+    └── economics-dark-03-bank-columns-0b04bdb0.png
+    └── economics-dark-04-stack-coins-ce685847.png
+    └── economics-dark-05-supply-demand-ac45dbd8.png
+    └── economics-light-01-stack-coins-d67599a0.png
+    └── economics-light-02-supply-demand-aab6d9fc.png
+    └── economics-light-03-bank-columns-7b86c0ed.png
+    └── economics-light-04-stack-coins-ffb8adf3.png
+    └── economics-light-05-supply-demand-14ace38c.png
+    └── engineering-dark-01-gears-baf75729.png
+    └── engineering-dark-02-blueprint-grid-81b35b84.png
+    └── engineering-dark-03-truss-structure-c1f610db.png
+    └── engineering-dark-04-gears-c816f419.png
+    └── engineering-dark-05-blueprint-grid-d72a157d.png
+    └── engineering-light-01-gears-1c22d20d.png
+    └── engineering-light-02-blueprint-grid-bb5cf7df.png
+    └── engineering-light-03-truss-structure-cd26334f.png
+    └── engineering-light-04-gears-53dcfe22.png
+    └── engineering-light-05-blueprint-grid-0a567fb1.png
+    └── environmental-science-dark-01-earth-leaf-1915a16e.png
+    └── environmental-science-dark-02-water-cycle-89b16179.png
+    └── environmental-science-dark-03-tree-rings-38e7837e.png
+    └── environmental-science-dark-04-earth-leaf-5916f5eb.png
+    └── environmental-science-dark-05-water-cycle-ffd93ef8.png
+    └── environmental-science-light-01-earth-leaf-1589dce3.png
+    └── environmental-science-light-02-water-cycle-e299b101.png
+    └── environmental-science-light-03-tree-rings-871eaea6.png
+    └── environmental-science-light-04-earth-leaf-5b4c29c8.png
+    └── environmental-science-light-05-water-cycle-9583e440.png
+    └── geography-dark-01-compass-map-a25472f3.png
+    └── geography-dark-02-globe-grid-10cd9168.png
+    └── geography-dark-03-mountain-range-7f7feadf.png
+    └── geography-dark-04-compass-map-635f7bcf.png
+    └── geography-dark-05-globe-grid-5310688c.png
+    └── geography-light-01-compass-map-47c5aad4.png
+    └── geography-light-02-globe-grid-c0d0d338.png
+    └── geography-light-03-mountain-range-2c44400d.png
+    └── geography-light-04-compass-map-3f2153f5.png
+    └── geography-light-05-globe-grid-ad4197e8.png
+    └── history-dark-01-scroll-column-652ba510.png
+    └── history-dark-02-timeline-fe2c7ef5.png
+    └── history-dark-03-laurel-b4455e66.png
+    └── history-dark-04-scroll-column-878b40f2.png
+    └── history-dark-05-timeline-9d3a40dd.png
+    └── history-light-01-scroll-column-9fd336e1.png
+    └── history-light-02-timeline-84cda97e.png
+    └── history-light-03-laurel-ef178d2d.png
+    └── history-light-04-scroll-column-5fad6fa7.png
+    └── history-light-05-timeline-cc118822.png
+    └── law-dark-01-gavel-2b5f2c9c.png
+    └── law-dark-02-law-columns-da6bce08.png
+    └── law-dark-03-document-seal-eb46ff79.png
+    └── law-dark-04-gavel-83e9f836.png
+    └── law-dark-05-law-columns-38ae7145.png
+    └── law-light-01-gavel-bcb0de3d.png
+    └── law-light-02-law-columns-3bab9d3a.png
+    └── law-light-03-document-seal-3068568d.png
+    └── law-light-04-gavel-bb28b331.png
+    └── law-light-05-law-columns-db5f4162.png
+    └── literature-dark-01-quill-book-7657b0e3.png
+    └── literature-dark-02-typography-lines-fa59bb8f.png
+    └── literature-dark-03-open-pages-2f1c87cd.png
+    └── literature-dark-04-quill-book-f2f00dd6.png
+    └── literature-dark-05-typography-lines-ce5a0353.png
+    └── literature-light-01-quill-book-81e88141.png
+    └── literature-light-02-typography-lines-6139ddce.png
+    └── literature-light-03-open-pages-f54c45e7.png
+    └── literature-light-04-quill-book-b89424c1.png
+    └── literature-light-05-typography-lines-dc8b9636.png
+    └── mathematics-dark-01-equation-grid-7e1b9497.png
+    └── mathematics-dark-02-geometric-shapes-7e154640.png
+    └── mathematics-dark-03-infinity-flow-81c05057.png
+    └── mathematics-dark-04-equation-grid-8f153b12.png
+    └── mathematics-dark-05-geometric-shapes-71bd785f.png
+    └── mathematics-light-01-equation-grid-7abda9bb.png
+    └── mathematics-light-02-geometric-shapes-a0c64047.png
+    └── mathematics-light-03-infinity-flow-101c3ef6.png
+    └── mathematics-light-04-equation-grid-71074ec8.png
+    └── mathematics-light-05-geometric-shapes-f000d6a2.png
+    └── medicine-dark-01-medical-cross-faf70fc9.png
+    └── medicine-dark-02-dna-pulse-01b21024.png
+    └── medicine-dark-03-anatomy-rings-4621ae92.png
+    └── medicine-dark-04-medical-cross-9ac77280.png
+    └── medicine-dark-05-dna-pulse-54fecfb1.png
+    └── medicine-light-01-medical-cross-2ec2bbdd.png
+    └── medicine-light-02-dna-pulse-98064902.png
+    └── medicine-light-03-anatomy-rings-4cb27fb1.png
+    └── medicine-light-04-medical-cross-68de0490.png
+    └── medicine-light-05-dna-pulse-3978d6f3.png
+    └── philosophy-dark-01-classical-column-fa380f55.png
+    └── philosophy-dark-02-labyrinth-ebbaf0fc.png
+    └── philosophy-dark-03-socratic-dialogue-f48fe07c.png
+    └── philosophy-dark-04-classical-column-7f8dce90.png
+    └── philosophy-dark-05-labyrinth-d21e3285.png
+    └── philosophy-light-01-classical-column-182ea677.png
+    └── philosophy-light-02-labyrinth-ceb30802.png
+    └── philosophy-light-03-socratic-dialogue-3c7a5ec9.png
+    └── philosophy-light-04-classical-column-c55e29bd.png
+    └── philosophy-light-05-labyrinth-56919618.png
+    └── physics-dark-03-light-refraction-c2a5f528.png
+    └── physics-dark-06-light-refraction-977eb0e7.png
+    └── physics-dark-09-light-refraction-b98649fe.png
+    └── physics-light-01-sine-wave-1a1cb123.png
+    └── physics-light-02-trajectory-arc-b9ce1f67.png
+    └── physics-light-03-light-refraction-d78305a8.png
+    └── physics-light-04-sine-wave-c97be432.png
+    └── physics-light-05-trajectory-arc-e794ddda.png
+    └── physics-light-06-light-refraction-1235271e.png
+    └── physics-light-07-sine-wave-20d1583f.png
+    └── physics-light-08-trajectory-arc-9b589d28.png
+    └── physics-light-09-light-refraction-3f819435.png
+    └── physics-light-10-sine-wave-44c4e516.png
+    └── political-science-dark-01-scales-justice-eca78e7c.png
+    └── political-science-dark-02-capitol-dome-a7abe002.png
+    └── political-science-dark-03-ballot-check-08ac5408.png
+    └── political-science-dark-04-scales-justice-e2304472.png
+    └── political-science-dark-05-capitol-dome-3ae1df1a.png
+    └── political-science-light-01-scales-justice-0d3cd933.png
+    └── political-science-light-02-capitol-dome-647ddd36.png
+    └── political-science-light-03-ballot-check-c5ec7001.png
+    └── political-science-light-04-scales-justice-0a267ded.png
+    └── political-science-light-05-capitol-dome-142579d6.png
+    └── psychology-dark-01-brain-nodes-71f7c873.png
+    └── psychology-dark-02-speech-bubbles-fdedec0e.png
+    └── psychology-dark-03-concentric-mind-c90b531d.png
+    └── psychology-dark-04-brain-nodes-d852f34f.png
+    └── psychology-dark-05-speech-bubbles-436c9f1c.png
+    └── psychology-light-01-brain-nodes-31e79675.png
+    └── psychology-light-02-speech-bubbles-7714057d.png
+    └── psychology-light-03-concentric-mind-971b023d.png
+    └── psychology-light-04-brain-nodes-d4ec8d3f.png
+    └── psychology-light-05-speech-bubbles-b57403be.png
+    └── sociology-dark-01-society-web-6ab37d4c.png
+    └── sociology-dark-02-family-tree-aed7cd03.png
+    └── sociology-dark-03-population-bars-46a70c7c.png
+    └── sociology-dark-04-society-web-912aa320.png
+    └── sociology-dark-05-family-tree-13ca13f5.png
+    └── sociology-light-01-society-web-7ee5cf2b.png
+    └── sociology-light-02-family-tree-8acb97b9.png
+    └── sociology-light-03-population-bars-90e92b32.png
+    └── sociology-light-04-society-web-3c9d3987.png
+    └── sociology-light-05-family-tree-3aa544b3.png
+    └── statistics-dark-01-scatter-plot-343dafda.png
+    └── statistics-dark-02-histogram-b84a7416.png
+    └── statistics-dark-03-normal-curve-b9ba1459.png
+    └── statistics-dark-04-scatter-plot-9e290530.png
+    └── statistics-dark-05-histogram-1e5c800a.png
+    └── statistics-light-01-scatter-plot-42faa8af.png
+    └── statistics-light-02-histogram-da7c8c1e.png
+    └── statistics-light-03-normal-curve-9b78792b.png
+    └── statistics-light-04-scatter-plot-dace7ea7.png
+    └── statistics-light-05-histogram-774323c4.png
+
+Ahmad@Husnain MINGW64 /e/studyverse-ai - Copy (main)
+$ b2 sync "E:\library\library" b2://ilmai-storage-b2 --threads 10
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Ahmad\AppData\Local\Programs\Python\Python312\Scripts\b2.exe\__main__.py", line 4, 
+in <module>
+  File "C:\Users\Ahmad\AppData\Local\Programs\Python\Python312\Lib\site-packages\b2\_internal\b2v4\__main__.py", line 11, in <module>
+    from b2._internal.b2v4.registry import main
+  File "C:\Users\Ahmad\AppData\Local\Programs\Python\Python312\Lib\site-packages\b2\_internal\b2v4\registry.py", line 12, in <module>
+    from b2._internal.console_tool import *  # noqa
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Ahmad\AppData\Local\Programs\Python\Python312\Lib\site-packages\b2\_internal\console_tool.py", line 19, in <module>
+    from b2._internal._cli.autocomplete_cache import AUTOCOMPLETE  # noqa
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Ahmad\AppData\Local\Programs\Python\Python312\Lib\site-packages\b2\_internal\_cli\autocomplete_cache.py", line 21, in <module>
+    import platformdirs
+  File "C:\Users\Ahmad\AppData\Local\Programs\Python\Python312\Lib\site-packages\platformdirs\__init__.py", line 25, in <module>
+    from platformdirs.windows import Windows as _Result
+  File "C:\Users\Ahmad\AppData\Local\Programs\Python\Python312\Lib\site-packages\platformdirs\windows.py", line 404, in <module>
+    _resolve_win_folder = _pick_get_win_folder()
+                          ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Ahmad\AppData\Local\Programs\Python\Python312\Lib\site-packages\platformdirs\windows.py", line 391, in _pick_get_win_folder
+    import ctypes  # ruff:ignore[import-outside-top-level, unused-import]
+    ^^^^^^^^^^^^^
+  File "C:\Users\Ahmad\AppData\Local\Programs\Python\Python312\Lib\ctypes\__init__.py", line 556, in <module>
+    from ctypes._endian import BigEndianStructure, LittleEndianStructure
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap_external>", line 1085, in get_code
+  File "<frozen importlib._bootstrap_external>", line 1208, in path_stats
+  File "<frozen importlib._bootstrap_external>", line 147, in _path_stat
+KeyboardInterrupt
+
+
+Ahmad@Husnain MINGW64 /e/studyverse-ai - Copy (main)
+$ git status
+On branch main
+Your branch is ahead of 'origin/main' by 7 commits.
+  (use "git push" to publish your local commits)
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+        modified:   .gradle/8.11.1/executionHistory/executionHistory.bin
+        modified:   .gradle/8.11.1/executionHistory/executionHistory.lock
+        modified:   .gradle/8.11.1/fileHashes/fileHashes.bin
+        modified:   .gradle/8.11.1/fileHashes/fileHashes.lock
+        modified:   .gradle/buildOutputCleanup/buildOutputCleanup.lock
+        modified:   .gradle/file-system.probe
+        modified:   11th-library-manifest.json
+        modified:   11th-textbooks-manifest.json
+        modified:   12th-library-manifest.json
+        modified:   9th-library-manifest.json
+        modified:   9th-textbooks-manifest.json
+        modified:   app-release-bundle.aab
+        modified:   app-release-signed.apk
+        modified:   app-release-signed.apk.idsig
+        modified:   app-release-unsigned-aligned.apk
+        modified:   app/build.gradle
+        modified:   app/build/intermediates/bundle_manifest/release/processApplicationManifestReleaseForBundle/AndroidManifest.xml
+        modified:   app/build/intermediates/dex_metadata_directory/release/compileReleaseArtProfile/0/.dm
+        modified:   app/build/intermediates/dex_metadata_directory/release/compileReleaseArtProfile/1/.dm
+        modified:   app/build/intermediates/incremental/packageRelease/tmp/release/dex-renamer-state.txt
+        modified:   app/build/intermediates/incremental/packageRelease/tmp/release/zip-cache/androidResources
+        modified:   app/build/intermediates/incremental/release/mergeReleaseResources/compile-file-map.properties
+        modified:   app/build/intermediates/incremental/release/packageReleaseResources/compile-file-map.properties
+        modified:   app/build/intermediates/intermediary_bundle/release/packageReleaseBundle/intermediary-bundle.aab
+        modified:   app/build/intermediates/linked_resources_binary_format/release/processReleaseResources/linked-resources-binary-format-release.ap_
+        modified:   app/build/intermediates/linked_resources_binary_format/release/processReleaseResources/output-metadata.json
+        modified:   app/build/intermediates/linked_resources_for_bundle_proto_format/release/bundleReleaseResources/linked-resources-for-bundle-proto-format.ap_
+        modified:   app/build/intermediates/manifest_merge_blame_file/release/processReleaseMainManifest/manifest-merger-blame-release-report.txt
+        modified:   app/build/intermediates/merged_manifest/release/processReleaseMainManifest/AndroidManifest.xml
+        modified:   app/build/intermediates/merged_manifests/release/processReleaseManifest/AndroidManifest.xml
+        modified:   app/build/intermediates/merged_manifests/release/processReleaseManifest/output-metadata.json
+        modified:   app/build/intermediates/module_bundle/release/buildReleasePreBundle/base.zip    
+        modified:   app/build/intermediates/optimized_processed_res/release/optimizeReleaseResources/output-metadata.json
+        modified:   app/build/intermediates/optimized_processed_res/release/optimizeReleaseResources/resources-release-optimize.ap_
+        modified:   app/build/intermediates/packaged_manifests/release/processReleaseManifestForPackage/AndroidManifest.xml
+        modified:   app/build/intermediates/packaged_manifests/release/processReleaseManifestForPackage/output-metadata.json
+        modified:   app/build/intermediates/r8_metadata/release/minifyReleaseWithR8/r8-metadata.dat
+        modified:   app/build/intermediates/sdk_dependency_data/release/sdkReleaseDependencyData/sdkDependencyData.pb
+        modified:   app/build/intermediates/version_control_info_file/release/extractReleaseVersionControlInfo/version-control-info.textproto
+        modified:   app/build/outputs/apk/release/app-release-unsigned.apk
+        modified:   app/build/outputs/apk/release/baselineProfiles/0/app-release-unsigned.dm        
+        modified:   app/build/outputs/apk/release/baselineProfiles/1/app-release-unsigned.dm        
+        modified:   app/build/outputs/apk/release/output-metadata.json
+        modified:   app/build/outputs/bundle/release/app-release.aab
+        modified:   app/build/outputs/mapping/release/seeds.txt
+        modified:   manifest-checksum.txt
+        modified:   scripts/bulk-upload-9th-library-resources.ts
+        modified:   scripts/bulk-upload-9th-textbooks.ts
+        modified:   src/app/(dashboard)/study/[slug]/[chapterSlug]/page.tsx
+        modified:   src/components/features/settings/SettingsTabs/index.tsx
+        modified:   src/lib/storage/r2.ts
+        modified:   twa-manifest.json
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+        9th-library-manifest.dryrun.json
+        ACCOUNT_DELETION_CHANGES.md
+        ACCOUNT_DELETION_IMPLEMENTATION.md
+        ACCOUNT_DELETION_QUICK_REF.md
+        ACCOUNT_DELETION_TESTING.md
+        IMPLEMENTATION_COMPLETE.md
+        chatgpt-extraction-prompt.txt
+        claude-drive-ids-prompt.txt
+        gaps-manifest.json
+        hs_err_pid12404.log
+        scripts/bulk-upload-9th-biology-fast.ts
+        scripts/bulk-upload-gaps-fast.ts
+        src/app/(dashboard)/settings/delete-account/
+        src/app/api/auth/delete-account/
+        src/components/features/settings/DeleteAccountFlow/
+        supabase/migrations/20260820110000_account_deletion_requests.sql
+        web-claude-question-insertion-prompt.txt
+
+no changes added to commit (use "git add" and/or "git commit -a")
+
+Ahmad@Husnain MINGW64 /e/studyverse-ai - Copy (main)
+$ git add .
+warning: in the working copy of '11th-library-manifest.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '11th-textbooks-manifest.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '12th-library-manifest.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '9th-library-manifest.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '9th-textbooks-manifest.json', LF will be replaced by CRLF the next 
+time Git touches it
+warning: in the working copy of 'app/build.gradle', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/build/intermediates/bundle_manifest/release/processApplicationManifestReleaseForBundle/AndroidManifest.xml', LF will be replaced by CRLF the next time Git touches 
+it
+warning: in the working copy of 'app/build/intermediates/linked_resources_binary_format/release/processReleaseResources/output-metadata.json', LF will be replaced by CRLF the next time Git touches it 
+warning: in the working copy of 'app/build/intermediates/manifest_merge_blame_file/release/processReleaseMainManifest/manifest-merger-blame-release-report.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/build/intermediates/merged_manifest/release/processReleaseMainManifest/AndroidManifest.xml', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/build/intermediates/merged_manifests/release/processReleaseManifest/AndroidManifest.xml', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/build/intermediates/merged_manifests/release/processReleaseManifest/output-metadata.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/build/intermediates/optimized_processed_res/release/optimizeReleaseResources/output-metadata.json', LF will be replaced by CRLF the next time Git touches it       
+warning: in the working copy of 'app/build/intermediates/packaged_manifests/release/processReleaseManifestForPackage/AndroidManifest.xml', LF will be replaced by CRLF the next time Git touches it     
+warning: in the working copy of 'app/build/intermediates/packaged_manifests/release/processReleaseManifestForPackage/output-metadata.json', LF will be replaced by CRLF the next time Git touches it    
+warning: in the working copy of 'app/build/intermediates/version_control_info_file/release/extractReleaseVersionControlInfo/version-control-info.textproto', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/build/outputs/apk/release/output-metadata.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'scripts/bulk-upload-9th-library-resources.ts', LF will be replaced 
+by CRLF the next time Git touches it
+warning: in the working copy of 'scripts/bulk-upload-9th-textbooks.ts', LF will be replaced by CRLF 
+the next time Git touches it
+warning: in the working copy of 'src/lib/storage/r2.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'twa-manifest.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '9th-library-manifest.dryrun.json', LF will be replaced by CRLF the 
+next time Git touches it
+warning: in the working copy of 'ACCOUNT_DELETION_CHANGES.md', LF will be replaced by CRLF the next 
+time Git touches it
+warning: in the working copy of 'ACCOUNT_DELETION_IMPLEMENTATION.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ACCOUNT_DELETION_QUICK_REF.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ACCOUNT_DELETION_TESTING.md', LF will be replaced by CRLF the next 
+time Git touches it
+warning: in the working copy of 'IMPLEMENTATION_COMPLETE.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'chatgpt-extraction-prompt.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'claude-drive-ids-prompt.txt', LF will be replaced by CRLF the next 
+time Git touches it
+warning: in the working copy of 'gaps-manifest.json', LF will be replaced by CRLF the next time Git 
+touches it
+warning: in the working copy of 'scripts/bulk-upload-9th-biology-fast.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'scripts/bulk-upload-gaps-fast.ts', LF will be replaced by CRLF the 
+next time Git touches it
+warning: in the working copy of 'src/app/(dashboard)/settings/delete-account/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/api/auth/delete-account/confirm/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/api/auth/delete-account/request/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/features/settings/DeleteAccountFlow/index.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'supabase/migrations/20260820110000_account_deletion_requests.sql', 
+LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'web-claude-question-insertion-prompt.txt', LF will be replaced by CRLF the next time Git touches it
+
+Ahmad@Husnain MINGW64 /e/studyverse-ai - Copy (main)
+$ git commit -m "up"
+[main f1cad8d] up
+ 70 files changed, 19044 insertions(+), 1931 deletions(-)
+ create mode 100644 9th-library-manifest.dryrun.json
+ create mode 100644 ACCOUNT_DELETION_CHANGES.md
+ create mode 100644 ACCOUNT_DELETION_IMPLEMENTATION.md
+ create mode 100644 ACCOUNT_DELETION_QUICK_REF.md
+ create mode 100644 ACCOUNT_DELETION_TESTING.md
+ create mode 100644 IMPLEMENTATION_COMPLETE.md
+ create mode 100644 chatgpt-extraction-prompt.txt
+ create mode 100644 claude-drive-ids-prompt.txt
+ create mode 100644 gaps-manifest.json
+ create mode 100644 hs_err_pid12404.log
+ create mode 100644 scripts/bulk-upload-9th-biology-fast.ts
+ create mode 100644 scripts/bulk-upload-gaps-fast.ts
+ create mode 100644 src/app/(dashboard)/settings/delete-account/page.tsx
+ create mode 100644 src/app/api/auth/delete-account/confirm/route.ts
+ create mode 100644 src/app/api/auth/delete-account/request/route.ts
+ create mode 100644 src/components/features/settings/DeleteAccountFlow/index.tsx
+ create mode 100644 supabase/migrations/20260820110000_account_deletion_requests.sql
+ create mode 100644 web-claude-question-insertion-prompt.txt
+
+Ahmad@Husnain MINGW64 /e/studyverse-ai - Copy (main)
+$ git push origin main
+Enumerating objects: 1178, done.
+Counting objects: 100% (1178/1178), done.
+Delta compression using up to 4 threads
+Compressing objects: 100% (834/834), done.
+Writing objects: 100% (1123/1123), 18.84 MiB | 371.00 KiB/s, done.
+Total 1123 (delta 355), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (355/355), completed with 39 local objects.
+To https://github.com/zehra4088194-design/ilmAI.git
+   ef1e0c8..f1cad8d  main -> main
+
+Ahmad@Husnain MINGW64 /e/studyverse-ai - Copy (main)
+$ git status
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+        modified:   src/middleware.ts
+
+no changes added to commit (use "git add" and/or "git commit -a")
+
+Ahmad@Husnain MINGW64 /e/studyverse-ai - Copy (main)
+$ git add .
+warning: in the working copy of 'src/middleware.ts', LF will be replaced by CRLF the next time Git touches it
+
+Ahmad@Husnain MINGW64 /e/studyverse-ai - Copy (main)
+$ git commit -m "up"
+[main 698b0d9] up
+ 1 file changed, 9 insertions(+)
+
+Ahmad@Husnain MINGW64 /e/studyverse-ai - Copy (main)
+$ git push origin main
+Enumerating objects: 7, done.
+Counting objects: 100% (7/7), done.
+Delta compression using up to 4 threads
+Compressing objects: 100% (4/4), done.
+Writing objects: 100% (4/4), 683 bytes | 227.00 KiB/s, done.
+Total 4 (delta 3), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (3/3), completed with 3 local objects.
+To https://github.com/zehra4088194-design/ilmAI.git
+   f1cad8d..698b0d9  main -> main
+
+Ahmad@Husnain MINGW64 /e/studyverse-ai - Copy (main)
+$ git status
+On branch main
+Your branch is up to date with 'origin/main'.
+
+nothing to commit, working tree clean
+
+Ahmad@Husnain MINGW64 /e/studyverse-ai - Copy (main)
+$ CID=$(docker ps -a --filter "name=web-k362jkuntgz8lb0c61rbnbpy" --format "{{.ID}} {{.Names}} {{.S
+tatus}}")
+bash: docker: command not found
+
+Ahmad@Husnain MINGW64 /e/studyverse-ai - Copy (main)
+$ echo "Container: $CID"
+Container:
+
+Ahmad@Husnain MINGW64 /e/studyverse-ai - Copy (main)
+$ CID_ID=$(echo "$CID" | head -1 | awk '{print $1}')
+
+Ahmad@Husnain MINGW64 /e/studyverse-ai - Copy (main)
+$ echo "--- APP LOGS (last 80) ---"
+--- APP LOGS (last 80) ---
+
+Ahmad@Husnain MINGW64 /e/studyverse-ai - Copy (main)
+$ docker logs "$CID_ID" --tail 80
+bash: docker: command not found
+
+Ahmad@Husnain MINGW64 /e/studyverse-ai - Copy (main)
+$ echo "--- DOCKER HEALTHCHECK LOG ---"
+--- DOCKER HEALTHCHECK LOG ---
+
+Ahmad@Husnain MINGW64 /e/studyverse-ai - Copy (main)
+$ docker inspect --format='{{json .State.Health}}' "$CID_ID"
+bash: docker: command not found
+
+Ahmad@Husnain MINGW64 /e/studyverse-ai - Copy (main)
+$ echo "--- MANUAL FETCH FROM INSIDE CONTAINER ---"
+--- MANUAL FETCH FROM INSIDE CONTAINER ---
+
+Ahmad@Husnain MINGW64 /e/studyverse-ai - Copy (main)
+$ docker exec "$CID_ID" node -e "fetch('http://127.0.0.1:3000/api/health').then(r=>r.text()).then(t
+=>console.log('OK',t)).catch(e=>console.log('FAIL',e.message))"
+bash: docker: command not found
+
+Ahmad@Husnain MINGW64 /e/studyverse-ai - Copy (main)
+$ echo "--- MEMORY / OOM CHECK ---"
+--- MEMORY / OOM CHECK ---
+
+Ahmad@Husnain MINGW64 /e/studyverse-ai - Copy (main)
+$ docker inspect --format='{{.State.OOMKilled}} restarts={{.RestartCount}}' "$CID_ID"
+bash: docker: command not found
+
+Ahmad@Husnain MINGW64 /e/studyverse-ai - Copy (main)
+$ docker stats --no-stream "$CID_ID"
+bash: docker: command not found
+
+Ahmad@Husnain MINGW64 /e/studyverse-ai - Copy (main)
+$ which docker
+which: no docker in (/c/Users/Ahmad/bin:/mingw64/bin:/usr/local/bin:/usr/bin:/bin:/cmd:/c/Windows/system32:/c/Windows:/c/Windows/System32/Wbem:/c/Windows/System32/WindowsPowerShell/v1.0:/c/Windows/System32/OpenSSH:/d/C/Git/cmd:/c/Program Files/MongoDB/Server/8.0/bin/mongod.exe:/c/Program Files/dotnet:/c/Program Files/nodejs:/c/Users/Ahmad/AppData/Local/Programs/Python/Python312/Scripts:/c/Users/Ahmad/AppData/Local/Programs/Python/Python312:/c/Users/Ahmad/AppData/Local/Programs/Python/Python311/Scripts:/c/Users/Ahmad/AppData/Local/Programs/Python/Python311:/c/Users/Ahmad/AppData/Local/Microsoft/WindowsApps:/c/Users/Ahmad/AppData/Local/Programs/Microsoft VS Code/bin:/c/Users/Ahmad/AppData/Local/Programs/Hyper/resources/bin:/d/Program Files/heroku/bin:/d/C/Hyper/resources/bin:/c/Users/Ahmad/AppData/Local/Programs/mongosh:/c/Users/Ahmad/AppData/Roaming/npm:/c/Users/Ahmad/AppData/Local/GitHubDesktop/bin:/usr/bin/vendor_perl:/usr/bin/core_perl)
+
+Ahmad@Husnain MINGW64 /e/studyverse-ai - Copy (main)
+$ docker --version
+bash: docker: command not found
+
+Ahmad@Husnain MINGW64 /e/studyverse-ai - Copy (main)
+$ ls -la "/c/Program Files/Docker/Docker/resources/bin/docker.exe"
+ls: cannot access '/c/Program Files/Docker/Docker/resources/bin/docker.exe': No such file or directory
+
+Ahmad@Husnain MINGW64 /e/studyverse-ai - Copy (main)
+$ find "/c/Program Files" "/c/Program Files (x86)" "/c/Users/Ahmad/AppData/Local" -iname "docker.ex
+e" -type f 2>/dev/null | head -20
+
+Ahmad@Husnain MINGW64 /e/studyverse-ai - Copy (main)
+$ find "/e" -iname "docker.exe" -type f 2>/dev/null | head -20
+
+Ahmad@Husnain MINGW64 /e/studyverse-ai - Copy (main)
+$ docker --version
+bash: docker: command not found
+
+Ahmad@Husnain MINGW64 /e/studyverse-ai - Copy (main)
+$ history | grep -E 'ssh ' | tail -20
+   82  history | grep -E 'ssh ' | tail -20
+
+Ahmad@Husnain MINGW64 /e/studyverse-ai - Copy (main)
+$ ls -la ~/.ssh
+total 37
+drwxr-xr-x 1 Ahmad 197610   0 Jul 19 22:59 ./
+drwxr-xr-x 1 Ahmad 197610   0 Aug 21 15:48 ../
+-rw-r--r-- 1 Ahmad 197610 846 Jul 19 22:59 known_hosts
+-rw-r--r-- 1 Ahmad 197610  98 Jul 19 22:49 known_hosts.old
+
+Ahmad@Husnain MINGW64 /e/studyverse-ai - Copy (main)
+$ find /e /c/Users/Ahmad/Downloads /c/Users/Ahmad/Desktop -type f \( -name "*.pem" -o -name "*.key"
+ -o -name "id_rsa*" -o -name "id_ed25519*" \) 2>/dev/null
+/e/$Recycle.Bin/S-1-5-21-1347745707-3980868584-4036881158-1002/$I2XKFHV.key
+/e/$Recycle.Bin/S-1-5-21-1347745707-3980868584-4036881158-1002/$R2XKFHV.key
+/e/PlanetVPN/isrgx1.pem
+/e/studyverse-ai - Copy/oracle-keys/private-key.key
+/e/versions/studyverse-ai - Copy/oracle-keys/private-key.key
+
+
+Ahmad@Husnain MINGW64 /e/studyverse-ai - Copy (main)
+$ ssh -i "/e/studyverse-ai - Copy/oracle-keys/private-key.key" opc@217.142.188.213
+Please login as the user "ubuntu" rather than the user "opc".
+
+Connection to 217.142.188.213 closed.
+
+Ahmad@Husnain MINGW64 /e/studyverse-ai - Copy (main)
+$ ssh -i "/e/studyverse-ai - Copy/oracle-keys/private-key.key" ubuntu@217.142.188.213
+Welcome to Ubuntu 24.04.4 LTS (GNU/Linux 6.17.0-1019-oracle aarch64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+ System information as of Fri Aug 21 10:54:55 UTC 2026
+
+  System load:  0.11               Processes:               246
+  Usage of /:   64.7% of 44.07GB   Users logged in:         0
+  Memory usage: 24%                IPv4 address for enp0s6: 10.0.0.122
+  Swap usage:   2%
+
+ * Strictly confined Kubernetes makes edge and IoT secure. Learn how MicroK8s
+   just raised the bar for easy, resilient and secure K8s cluster deployment.
+
+   https://ubuntu.com/engage/secure-kubernetes-at-the-edge
+
+Expanded Security Maintenance for Applications is not enabled.
+
+21 updates can be applied immediately.
+6 of these updates are standard security updates.
+To see these additional updates run: apt list --upgradable
+
+Enable ESM Apps to receive additional future security updates.
+See https://ubuntu.com/esm or run: sudo pro status
+
+
+*** System restart required ***
+Last login: Mon Aug 10 02:27:17 2026 from 123.253.180.109
+ubuntu@ilm-ai-instance:~$ docker --version
+Docker version 29.6.2, build dfc4efb
+ubuntu@ilm-ai-instance:~$ docker ps -a | grep web-k362
+permission denied while trying to connect to the docker API at unix:///var/run/docker.sock
+ubuntu@ilm-ai-instance:~$ sudo docker ps -a | grep web-k362
+3a991c72d1fb   k362jkuntgz8lb0c61rbnbpy_web:091a003c39648da85d6e0a83e80a3affdd6cb6f4          "docker-entrypoint.s…"   4 hours ago   Up 4 hours (unhealthy)   3000/tcp
+
+                       web-k362jkuntgz8lb0c61rbnbpy-070444333824
+ubuntu@ilm-ai-instance:~$ sudo docker inspect --format='{{json .State.Health}}' 3a991c72d1fb
+{"Status":"unhealthy","FailingStreak":459,"Log":[{"Start":"2026-08-21T10:55:49.736372107Z","End":"2026-08-21T10:55:49.972865229Z","ExitCode":1,"Output":""},{"Start":"2026-08-21T10:56:19.975873655Z","End":"2026-08-21T10:56:20.200372127Z","ExitCode":1,"Output":""},{"Start":"2026-08-21T10:56:50.201319863Z","End":"2026-08-21T10:56:50.437902184Z","ExitCode":1,"Output":""},{"Start":"2026-08-21T10:57:20.439378047Z","End":"2026-08-21T10:57:20.667834134Z","ExitCode":1,"Output":""},{"Start":"2026-08-21T10:57:50.686991921Z","End":"2026-08-21T10:57:50.939028063Z","ExitCode":1,"Output":""}]}
+ubuntu@ilm-ai-instance:~$ sudo docker logs 3a991c72d1fb --tail 100
+   ▲ Next.js 15.5.20
+   - Local:        http://localhost:3000
+   - Network:      http://0.0.0.0:3000
+
+ ✓ Starting...
+ ✓ Ready in 118ms
+ubuntu@ilm-ai-instance:~$ sudo docker exec 3a991c72d1fb node -e "fetch('http://127.0.0.1:3000/api/h
+ealth',{signal:AbortSignal.timeout(5000)}).then(async r=>console.log('STATUS',r.status,'OK',r.ok,'B 
+ODY',await r.text())).catch(e=>console.log('FAIL',e.name,e.message))"
+STATUS 404 OK false BODY <!DOCTYPE html><html><head><meta charSet="utf-8" data-next-head=""/><meta name="viewport" content="width=device-width" data-next-head=""/><title data-next-head="">404: This page could not be found</title><noscript data-n-css=""></noscript><script defer="" noModule="" src="/_next/static/chunks/polyfills-42372ed130431b0a.js"></script><script src="/_next/static/chunks/webpack-27d948713111d4d8.js" defer=""></script><script src="/_next/static/chunks/framework-a61ee63ce7be682d.js" defer=""></script><script src="/_next/static/chunks/main-822d67dac6ff9dd3.js" defer=""></script><script src="/_next/static/chunks/pages/_app-7d307437aca18ad4.js" defer=""></script><script src="/_next/static/chunks/pages/_error-cb2a52f75f2162e2.js" defer=""></script><script src="/_next/static/dOit13rzcybeIB_FIIJp5/_buildManifest.js" defer=""></script><script src="/_next/static/dOit13rzcybeIB_FIIJp5/_ssgManifest.js" defer=""></script></head><body><div id="__next"><div style="font-family:system-ui,&quot;Segoe UI&quot;,Roboto,Helvetica,Arial,sans-serif,&quot;Apple Color Emoji&quot;,&quot;Segoe UI Emoji&quot;;height:100vh;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="line-height:48px"><style>body{color:#000;background:#fff;margin:0}.next-error-h1{border-right:1px solid rgba(0,0,0,.3)}@media (prefers-color-scheme:dark){body{color:#fff;background:#000}.next-error-h1{border-right:1px solid rgba(255,255,255,.3)}}</style><h1 class="next-error-h1" style="display:inline-block;margin:0 20px 0 0;padding-right:23px;font-size:24px;font-weight:500;vertical-align:top">404</h1><div style="display:inline-block"><h2 style="font-size:14px;font-weight:400;line-height:28px">This page could not be found<!-- -->.</h2></div></div></div></div><script id="__NEXT_DATA__" type="application/json">{"props":{"pageProps":{"statusCode":404}},"page":"/_error","query":{},"buildId":"dOit13rzcybeIB_FIIJp5","nextExport":true,"isFallback":false,"gip":true,"scriptLoader":[]}</script></body></html>
+ubuntu@ilm-ai-instance:~$ ^C
+ubuntu@ilm-ai-instance:~$ ^C
+ubuntu@ilm-ai-instance:~$ ^C
+ubuntu@ilm-ai-instance:~$ ^C
+ubuntu@ilm-ai-instance:~$ sudo docker inspect --format='{{json .Config.Healthcheck}}' 3a991c72d1fb
+{"Test":["CMD","node","-e","fetch('http://127.0.0.1:3000/api/health',{signal:AbortSignal.timeout(5000)}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"],"Interval":30000000000,"Timeout":8000000000,"StartPeriod":45000000000,"Retries":5}
+ubuntu@ilm-ai-instance:~$ sudo docker exec 3a991c72d1fb sh -lc 'echo "--- APP ROUTES ---"; find .ne
+xt/server/app -type f 2>/dev/null | head -100; echo "--- PAGES ROUTES ---"; find .next/server/pages
+ -type f 2>/dev/null | head -100'
+--- APP ROUTES ---
+--- PAGES ROUTES ---        
+.next/server/pages/_error.js
+.next/server/pages/500.html
+.next/server/pages/_app.js
+.next/server/pages/404.html
+.next/server/pages/_document.js.nft.json
+.next/server/pages/_app.js.nft.json
+.next/server/pages/_document.js
+.next/server/pages/_error.js.nft.json
+ubuntu@ilm-ai-instance:~$ sudo docker exec 3a991c72d1fb sh -lc 'echo "--- ROOT ---"; pwd; ls -la; e
+cho "--- NEXT ---"; ls -la .next 2>/dev/null; echo "--- PACKAGE ---"; cat package.json 2>/dev/null  
+| head -80'
+--- ROOT ---
+/app
+total 40
+drwxr-xr-x  1 root   root   4096 Aug 21 07:05 .
+drwxr-xr-x  1 root   root   4096 Aug 21 07:06 ..
+drwxr-xr-x  1 nextjs nodejs 4096 Aug 21 07:05 .next
+drwxr-xr-x  3 nextjs nodejs 4096 Aug 21 04:28 data
+drwxr-xr-x 51 nextjs nodejs 4096 Aug 21 07:05 node_modules
+-rw-r--r--  1 nextjs nodejs 5312 Aug 21 07:05 package.json
+drwxr-xr-x  7 nextjs nodejs 4096 Aug 21 07:05 public
+-rw-r--r--  1 nextjs nodejs 7256 Aug 21 07:05 server.js
+--- NEXT ---
+total 60
+drwxr-xr-x 1 nextjs nodejs  4096 Aug 21 07:05 .
+drwxr-xr-x 1 root   root    4096 Aug 21 07:05 ..
+-rw-r--r-- 1 nextjs nodejs    21 Aug 21 07:05 BUILD_ID
+-rw-r--r-- 1 nextjs nodejs    17 Aug 21 07:05 app-build-manifest.json
+-rw-r--r-- 1 nextjs nodejs     2 Aug 21 07:05 app-path-routes-manifest.json
+-rw-r--r-- 1 nextjs nodejs  1045 Aug 21 07:05 build-manifest.json
+-rw-r--r-- 1 nextjs nodejs    20 Aug 21 07:05 package.json
+-rw-r--r-- 1 nextjs nodejs   354 Aug 21 07:05 prerender-manifest.json
+-rw-r--r-- 1 nextjs nodejs     2 Aug 21 07:05 react-loadable-manifest.json
+-rw-r--r-- 1 nextjs nodejs 10353 Aug 21 07:05 required-server-files.json
+-rw-r--r-- 1 nextjs nodejs  2750 Aug 21 07:05 routes-manifest.json
+drwxr-xr-x 4 nextjs nodejs  4096 Aug 21 07:05 server
+drwxr-xr-x 4 nextjs nodejs  4096 Aug 21 07:05 static
+--- PACKAGE ---
+{
+  "name": "ilm-ai",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest",
+    "test:gateway": "node --test services/ai-gateway/handler.test.mjs",
+    "test:ui": "vitest --ui",
+    "test:e2e": "playwright test",
+    "test:coverage": "vitest --coverage",
+    "check-ai": "node scripts/check-ai-gateway.js",
+    "check:english-copy": "node scripts/check-english-copy.mjs",
+    "db:generate-types": "supabase gen types typescript --project-id $SUPABASE_PROJECT_ID > src/lib/supabase/types.ts",
+    "db:push": "supabase db push",
+    "db:reset": "supabase db reset",
+    "db:seed": "node scripts/seed-database.js",
+    "db:seed-library": "node scripts/seed-class9-drive-library.js",
+    "db:seed-diagnostic": "node scripts/seed-diagnostic-from-drive.js",
+    "db:seed-lectures": "node scripts/seed-class9-lectures.js",
+    "db:sync-library-chapters": "node scripts/sync-class9-drive-chapters.js",
+    "check-env": "node scripts/check-env.js",
+    "check:release": "node scripts/check-release.mjs",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1090.0",
+    "@aws-sdk/s3-request-presigner": "^3.1106.0",
+    "@ducanh2912/next-pwa": "^10.2.9",
+    "@hookform/resolvers": "^3.9.1",
+    "@livekit/components-react": "^2.9.24",
+    "@livekit/components-styles": "^1.2.0",
+    "@paddle/paddle-js": "^1.6.4",
+    "@radix-ui/react-accordion": "^1.2.3",
+    "@radix-ui/react-alert-dialog": "^1.1.6",
+    "@radix-ui/react-aspect-ratio": "^1.1.2",
+    "@radix-ui/react-avatar": "^1.1.3",
+    "@radix-ui/react-checkbox": "^1.1.4",
+    "@radix-ui/react-collapsible": "^1.1.3",
+    "@radix-ui/react-context-menu": "^2.2.6",
+    "@radix-ui/react-dialog": "^1.1.6",
+    "@radix-ui/react-dropdown-menu": "^2.1.6",
+    "@radix-ui/react-hover-card": "^1.1.6",
+    "@radix-ui/react-label": "^2.1.2",
+    "@radix-ui/react-menubar": "^1.1.6",
+    "@radix-ui/react-navigation-menu": "^1.2.5",
+    "@radix-ui/react-popover": "^1.1.6",
+    "@radix-ui/react-progress": "^1.1.2",
+    "@radix-ui/react-radio-group": "^1.2.3",
+    "@radix-ui/react-scroll-area": "^1.2.3",
+    "@radix-ui/react-select": "^2.1.6",
+    "@radix-ui/react-separator": "^1.1.2",
+    "@radix-ui/react-slider": "^1.2.3",
+    "@radix-ui/react-slot": "^1.2.3",
+    "@radix-ui/react-switch": "^1.1.3",
+    "@radix-ui/react-tabs": "^1.1.3",
+    "@radix-ui/react-toast": "^1.2.6",
+    "@radix-ui/react-toggle": "^1.1.2",
+    "@radix-ui/react-toggle-group": "^1.1.2",
+    "@radix-ui/react-tooltip": "^1.1.8",
+    "@sentry/nextjs": "^10.66.0",
+    "@supabase/ssr": "^0.12.0",
+    "@supabase/supabase-js": "^2.47.0",
+    "@tanstack/react-query": "^5.62.0",
+    "@tanstack/react-query-devtools": "^5.62.0",
+    "@types/dompurify": "^3.0.5",
+    "algoliasearch": "^5.56.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "cmdk": "^1.0.4",
+    "date-fns": "^4.1.0",
+    "docx": "^9.7.1",
+    "dompurify": "^3.2.3",
+ubuntu@ilm-ai-instance:~$ 

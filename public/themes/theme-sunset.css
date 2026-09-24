@@ -1,0 +1,115 @@
+/* theme-sunset is loaded on demand; this file contains only its light/dark pair. */
+html.theme-sunset-light {
+  --brand-primary: 13 72% 52%;
+  --brand-secondary: 31 86% 54%;
+  --brand-accent: 343 68% 54%;
+  --background: 30 62% 94%;
+  --foreground: 18 34% 16%;
+  --card: 32 72% 98%;
+  --card-foreground: 18 34% 16%;
+  --popover: 32 72% 98%;
+  --popover-foreground: 18 34% 16%;
+  --primary: 13 72% 52%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 30 48% 88%;
+  --secondary-foreground: 18 34% 16%;
+  --muted: 30 40% 89%;
+  --muted-foreground: 18 18% 43%;
+  --accent: 20 68% 87%;
+  --accent-foreground: 13 72% 26%;
+  --border: 28 34% 78%;
+  --input: 28 34% 78%;
+  --ring: 13 72% 52%;
+  --sidebar: 18 38% 19%;
+  --sidebar-foreground: 30 58% 97%;
+  --sidebar-accent: 18 34% 27%;
+  --sidebar-accent-foreground: 30 58% 97%;
+  --sidebar-border: 18 24% 31%;
+  --app-background-image:
+    radial-gradient(circle at 12% 4%, rgba(251, 146, 60, 0.18), transparent 35%),
+    radial-gradient(circle at 86% 18%, rgba(244, 63, 94, 0.12), transparent 35%);
+  --app-background-size: auto;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --chart-1: var(--primary);
+  --chart-2: var(--brand-secondary);
+  --chart-3: var(--brand-accent);
+  --chart-4: 38 92% 50%;
+  --chart-5: 0 84% 60%;
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-ring: var(--ring);
+}
+
+html.theme-sunset-dark {
+  --brand-primary: 14 88% 68%;
+  --brand-secondary: 35 94% 65%;
+  --brand-accent: 343 82% 72%;
+  --background: 18 28% 8%;
+  --foreground: 35 45% 96%;
+  --card: 18 25% 12%;
+  --card-foreground: 35 45% 96%;
+  --popover: 18 25% 13%;
+  --popover-foreground: 35 45% 96%;
+  --primary: 14 88% 68%;
+  --primary-foreground: 18 28% 8%;
+  --secondary: 18 18% 17%;
+  --secondary-foreground: 35 45% 96%;
+  --muted: 18 16% 18%;
+  --muted-foreground: 30 18% 74%;
+  --accent: 18 18% 20%;
+  --accent-foreground: 35 45% 96%;
+  --border: 18 16% 25%;
+  --input: 18 16% 25%;
+  --ring: 14 88% 68%;
+  --sidebar: 18 32% 7%;
+  --sidebar-foreground: 35 45% 96%;
+  --sidebar-accent: 18 24% 16%;
+  --sidebar-accent-foreground: 35 45% 96%;
+  --sidebar-border: 18 18% 21%;
+  --app-background-image:
+    radial-gradient(circle at 12% 4%, rgba(251, 146, 60, 0.18), transparent 36%),
+    radial-gradient(circle at 86% 18%, rgba(244, 63, 94, 0.16), transparent 36%);
+  --app-background-size: auto;
+  --destructive: 0 62% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --chart-1: var(--primary);
+  --chart-2: var(--brand-secondary);
+  --chart-3: var(--brand-accent);
+  --chart-4: 38 92% 60%;
+  --chart-5: 0 84% 70%;
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-ring: var(--ring);
+}
+
+html.theme-sunset-light,
+html.theme-sunset-dark {
+  --radius: 1.1rem;
+  --theme-glass-blur: 7px;
+  --theme-card-shadow: 0 18px 48px rgba(180, 83, 44, 0.17);
+  --theme-heading-tracking: -0.016em;
+  --theme-body-font: 'Trebuchet MS', var(--font-inter), sans-serif;
+  --theme-heading-font: 'Palatino Linotype', Georgia, serif;
+  --theme-heading-transform: none;
+  --theme-heading-weight: 760;
+  --theme-surface-radius: 1.4rem 0.55rem 1.4rem 0.55rem;
+  --theme-surface-angle: 125deg;
+  --theme-border-width: 1px;
+  --theme-border-style: solid;
+  --destructive: 0 62% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --chart-1: var(--primary);
+  --chart-2: var(--brand-secondary);
+  --chart-3: var(--brand-accent);
+  --chart-4: 38 92% 60%;
+  --chart-5: 0 84% 70%;
+  --sidebar: var(--card);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--secondary);
+  --sidebar-accent-foreground: var(--secondary-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+}

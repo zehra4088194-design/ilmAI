@@ -1,0 +1,32 @@
+# Schedules are UTC. This file is retained for local/container deployments;
+# the free hosted deployment uses GitHub Actions schedule triggers.
+*/5 * * * * curl -fsS --retry 2 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/resource-context"
+*/5 * * * * curl -fsS --retry 2 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/school-notifications"
+# ZKTeco biometric attendance sync (master prompt Part 8) — only useful on a deployment where this
+# container can actually reach each school's/college's device LAN IP (see the route's own deployment-
+# constraint comment); every device sync failure is visible in the Biometric Devices admin tab, not silent.
+*/2 * * * * curl -fsS --retry 1 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/biometric-attendance-sync"
+0 0 * * 1 curl -fsS --retry 3 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/weekly-snapshots"
+10 0 * * 1 curl -fsS --retry 3 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/weekly-league-rollover"
+0 1 * * * curl -fsS --retry 3 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/student-predictions"
+30 2 * * * curl -fsS --retry 3 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/daily-study-emails"
+0 3 * * * curl -fsS --retry 3 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/weak-subjects"
+0 4 * * * curl -fsS --retry 3 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/study-reminders"
+30 4 * * * curl -fsS --retry 3 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/storage-cleanup"
+# Was missing entirely from this file — /api/cron/usd-pkr-rate existed and worked fine (the admin
+# settings "Refresh rate now" button calls the same underlying logic), but nothing here ever
+# scheduled it, so it only ever ran when an admin clicked that button by hand. .github/workflows/
+# free-cron.yml (the free-hosted-deployment fallback this file's header comment mentions) already
+# calls this job — this self-hosted crontab just never matched it. 20:00 UTC = 1:00 AM Pakistan
+# time (UTC+5), as requested.
+0 20 * * * curl -fsS --retry 3 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/usd-pkr-rate"
+# Also missing from this file the same way — present in free-cron.yml but never scheduled here.
+30 20 * * * curl -fsS --retry 3 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/expire-institution-trials"
+# Rebuilds the Algolia public-catalog index (subjects/chapters/library resources/lectures/past
+# papers) from Supabase. Was never scheduled anywhere — the route worked fine but nothing ever
+# called it, so the index stayed empty and the Algolia app sat idle with zero requests. Content
+# here changes rarely, so once a day is enough; replaceAllObjects() is a full resync, safe to
+# re-run. No-ops with a 503 if ALGOLIA_ADMIN_API_KEY/ALGOLIA_APP_ID aren't set. This route only
+# accepts POST (unlike its GET-handler siblings in this file) — -X POST is required or curl's
+# default GET gets a silent 405.
+0 5 * * * curl -fsS --retry 3 -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/search-index"

@@ -1,0 +1,285 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { cookies } from 'next/headers';
+import { createClient } from '@/lib/supabase/server';
+import { isSchoolModuleEnabled, normalizeSchoolModules, type SchoolModuleKey } from './modules';
+import type { SchoolContext, SchoolPermission, SchoolRole } from './types';
+
+export const ACTIVE_SCHOOL_COOKIE = 'ilm_active_school';
+
+const ROLE_PERMISSIONS: Record<SchoolRole, SchoolPermission[]> = {
+  owner: [
+    'dashboard.read',
+    'organization.manage',
+    'people.read',
+    'people.manage',
+    'admissions.read',
+    'admissions.manage',
+    'attendance.read',
+    'attendance.manage',
+    'exams.read',
+    'exams.manage',
+    'fees.read',
+    'fees.manage',
+    'payroll.read',
+    'payroll.manage',
+    'academics.read',
+    'academics.manage',
+    'communication.read',
+    'communication.manage',
+    'ptm.read',
+    'ptm.manage',
+    'reports.read',
+    'audit.read',
+  ],
+  admin: [
+    'dashboard.read',
+    'organization.manage',
+    'people.read',
+    'people.manage',
+    'admissions.read',
+    'admissions.manage',
+    'attendance.read',
+    'attendance.manage',
+    'exams.read',
+    'exams.manage',
+    'fees.read',
+    'fees.manage',
+    'payroll.read',
+    'payroll.manage',
+    'academics.read',
+    'academics.manage',
+    'communication.read',
+    'communication.manage',
+    'ptm.read',
+    'ptm.manage',
+    'reports.read',
+    'audit.read',
+  ],
+  // A principal-appointed assistant role: helps run people/admissions/attendance/exams/academics/
+  // communication/PTM day to day, without organization-settings or financial (fees/payroll) access
+  // — those stay owner/admin-only. The owner's explicit "coordinators ya aise hi or bhi boht saare"
+  // ask.
+  coordinator: [
+    'dashboard.read',
+    'people.read',
+    'people.manage',
+    'admissions.read',
+    'admissions.manage',
+    'attendance.read',
+    'attendance.manage',
+    'exams.read',
+    'exams.manage',
+    'academics.read',
+    'academics.manage',
+    'communication.read',
+    'communication.manage',
+    'ptm.read',
+    'ptm.manage',
+    'reports.read',
+  ],
+  admissions: [
+    'dashboard.read',
+    'people.read',
+    'admissions.read',
+    'admissions.manage',
+    'reports.read',
+    'communication.read',
+  ],
+  teacher: [
+    'dashboard.read',
+    'people.read',
+    'attendance.read',
+    'attendance.manage',
+    'exams.read',
+    'exams.manage',
+    'academics.read',
+    'academics.manage',
+    'communication.read',
+    'communication.manage',
+    'ptm.read',
+    'ptm.manage',
+    'reports.read',
+  ],
+  staff: [
+    'dashboard.read',
+    'people.read',
+    'attendance.read',
+    'academics.read',
+    'communication.read',
+    'communication.manage',
+    'ptm.read',
+    'reports.read',
+  ],
+  accountant: [
+    'dashboard.read',
+    'people.read',
+    'fees.read',
+    'fees.manage',
+    'payroll.read',
+    'payroll.manage',
+    'communication.read',
+    'reports.read',
+  ],
+  parent: [
+    'dashboard.read',
+    'attendance.read',
+    'exams.read',
+    'fees.read',
+    'academics.read',
+    'communication.read',
+    'ptm.read',
+  ],
+  student: [
+    'dashboard.read',
+    'attendance.read',
+    'exams.read',
+    'fees.read',
+    'academics.read',
+    'communication.read',
+    'ptm.read',
+  ],
+};
+
+const ROLE_PRIORITY: SchoolRole[] = [
+  'owner',
+  'admin',
+  'coordinator',
+  'admissions',
+  'accountant',
+  'teacher',
+  'staff',
+  'parent',
+  'student',
+];
+
+function mergePermissions(role: SchoolRole, overrides: string[]) {
+  return Array.from(new Set([...ROLE_PERMISSIONS[role], ...overrides])) as SchoolPermission[];
+}
+
+export function hasSchoolPermission(context: SchoolContext, permission: SchoolPermission) {
+  return context.permissions.includes(permission);
+}
+
+export function hasSchoolModule(context: SchoolContext, module: SchoolModuleKey) {
+  return isSchoolModuleEnabled(context.enabledModules, module);
+}
+
+export async function getSchoolContext(
+  supabase: SupabaseClient,
+  userId: string,
+  organizationId?: string
+): Promise<SchoolContext | null> {
+  const db = supabase as any;
+  let query = db
+    .from('school_memberships')
+    .select(
+      // school_campuses is named explicitly by FK constraint (!school_memberships_campus_id_fkey)
+      // because a second FK (school_memberships_campus_tenant_fk, a tenant-isolation constraint on
+      // (campus_id, organization_id)) makes the embed ambiguous — PostgREST then refuses the whole
+      // query with a PGRST201 error instead of guessing, which getSchoolContext below swallows as
+      // "no membership" (`if (error || !data?.length) return null`). That's what was silently
+      // breaking EVERY school-portal redirect for EVERY role (owner/principal, teacher, staff, ...)
+      // — the membership data was always correct, this query just never returned it.
+      'id, organization_id, campus_id, profile_id, member_role, permissions, employee_code, designation, status, school_organizations(id, name, slug, organization_type, status, timezone, currency, email, phone, address, logo_url, principal_name, principal_signature_url), school_campuses!school_memberships_campus_id_fkey(id, name, code)'
+    )
+    .eq('profile_id', userId)
+    .eq('status', 'active');
+  if (organizationId) query = query.eq('organization_id', organizationId);
+  const { data, error } = await query;
+  if (error || !data?.length) return null;
+
+  const rows = [...data].sort(
+    (left: any, right: any) =>
+      ROLE_PRIORITY.indexOf(left.member_role as SchoolRole) - ROLE_PRIORITY.indexOf(right.member_role as SchoolRole)
+  );
+  const row = rows[0];
+  const organization = Array.isArray(row.school_organizations) ? row.school_organizations[0] : row.school_organizations;
+  const campus = Array.isArray(row.school_campuses) ? row.school_campuses[0] : row.school_campuses;
+  if (!organization || organization.status === 'suspended' || organization.status === 'archived') return null;
+  const role = row.member_role as SchoolRole;
+  // SECURITY DEFINER function: exposes only the module list to members, while
+  // the rest of the plan row (pricing, limits) stays owner/admin-only.
+  const { data: modules } = await db.rpc('school_enabled_modules', { p_organization_id: organization.id });
+
+  return {
+    userId,
+    organization,
+    membership: {
+      id: row.id,
+      organization_id: row.organization_id,
+      campus_id: row.campus_id,
+      profile_id: row.profile_id,
+      member_role: role,
+      permissions: row.permissions || [],
+      employee_code: row.employee_code,
+      designation: row.designation,
+      status: row.status,
+    },
+    campus: campus || null,
+    permissions: mergePermissions(role, row.permissions || []),
+    enabledModules: normalizeSchoolModules(modules),
+  };
+}
+
+export async function getActiveSchoolOrganizationId() {
+  const cookieStore = await cookies();
+  return cookieStore.get(ACTIVE_SCHOOL_COOKIE)?.value || undefined;
+}
+
+export async function getSchoolContexts(supabase: SupabaseClient, userId: string) {
+  const db = supabase as any;
+  const { data, error } = await db
+    .from('school_memberships')
+    .select('organization_id')
+    .eq('profile_id', userId)
+    .eq('status', 'active');
+  if (error || !data?.length) return [] as SchoolContext[];
+
+  const organizationIds: string[] = Array.from(new Set<string>(data.map((row: any) => String(row.organization_id))));
+  const contexts = await Promise.all(
+    organizationIds.map((organizationId) => getSchoolContext(supabase, userId, organizationId))
+  );
+  return contexts.filter((context): context is SchoolContext => Boolean(context));
+}
+
+export async function requireSchoolContext(permission?: SchoolPermission, module?: SchoolModuleKey) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { supabase, user: null, context: null };
+  const organizationId = await getActiveSchoolOrganizationId();
+  const context =
+    (organizationId ? await getSchoolContext(supabase, user.id, organizationId) : null) ||
+    (await getSchoolContext(supabase, user.id));
+  if (!context || (permission && !hasSchoolPermission(context, permission))) {
+    return { supabase, user, context: null };
+  }
+  // A module the institution's plan does not include is treated exactly like a
+  // missing permission, so every gated page redirects the same way.
+  if (module && !hasSchoolModule(context, module)) {
+    return { supabase, user, context: null };
+  }
+  return { supabase, user, context };
+}
+
+export function schoolAdminHomeForRole(role: SchoolRole) {
+  return role === 'student' || role === 'parent' ? '/school' : '/school-admin';
+}
+
+// Lightweight role lookup for src/middleware.ts (edge-safe: no next/headers cookies() call,
+// just the membership row). Deliberately a distinct named helper from college-erp's
+// resolveCollegeRole rather than one generic resolveInstitutionRole, per
+// CLAUDE_CODE_MASTER_PROMPT.md Phase 2 — data/portals stay separate even where the shape matches.
+export async function resolveSchoolRole(supabase: SupabaseClient, userId: string) {
+  const context = await getSchoolContext(supabase, userId);
+  if (!context) return null;
+  return { role: context.membership.member_role, organizationId: context.organization.id };
+}
+
+// Institutional records do not consume consumer plan quotas. AI-powered
+// analysis continues to use the existing FREE/PRO/ELITE credit gateway.
+export const SCHOOL_ERP_ACCESS_POLICY = {
+  requiresConsumerSubscription: false,
+  consumesAiCredits: false,
+} as const;

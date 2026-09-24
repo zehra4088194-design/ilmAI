@@ -1,0 +1,309 @@
+===================================================================
+ilm AI — Live Classes / Quran Class Module — Full Technical Setup
+===================================================================
+(Yeh file poore Quran Class / live-calling feature ka end-to-end kaam
+ explain karti hai: kya bana hai, kaise kaam karta hai, kaunsi files
+ involved hain, DB schema, aur kya setup/env vars chahiye.)
+
+-------------------------------------------------------------------
+1. YE FEATURE KYA HAI
+-------------------------------------------------------------------
+"Quran Class" — ek live audio/video calling module jahan ek teacher
+har roz (subha) apne assigned students ke saath ek group call me
+Quran parhata/sunta hai.
+
+- Teacher: apna camera + mic on kar sakta hai (WhatsApp-call-style
+  self-preview — teacher sirf apna khud ka camera dekhta hai).
+- Students: sirf VOICE se join hote hain — kabhi bhi camera track
+  student ke device se bahar nahi jaati. UI me student sirf ek
+  "voice wave" tile ke tor par dikhta hai (jab bolta hai to bar
+  visualizer highlight hota hai).
+- Teacher kisi bhi student ko server-side se mute/unmute kar sakta
+  hai (apni hi room ke andar).
+- Har join/leave ka simple attendance log bhi save hota hai (parents
+  ko dikhane ke liye "kya bacha attend hua aaj?").
+
+IMPORTANT ARCHITECTURAL DECISION (code comment se, verbatim wajah):
+Yeh module JAAN-BOOJH KAR school_erp / college_erp ke ANDAR NAHI hai.
+Owner ki explicit instruction thi: "teacher sirf main admin panel se
+add karoonga" — yani is module ke teachers kisi school principal se
+nahi, seedha PLATFORM ADMIN (aap) khud add karte hain. Isliye ye
+standalone/global module hai, bilkul waisa hi jaisa university_hub
+hai — kisi bhi specific school/college se linked nahi.
+
+-------------------------------------------------------------------
+2. TECHNOLOGY — LiveKit (WebRTC SFU)
+-------------------------------------------------------------------
+Real-time audio/video ke liye "LiveKit" use ho raha hai — ek
+open-source WebRTC infrastructure (livekit.io). Do packages use ho
+rahe hain:
+  - livekit-server-sdk   (server-side: token banana, room manage karna)
+  - livekit-client + @livekit/components-react +
+    @livekit/components-styles  (browser-side: actual call UI)
+
+LiveKit khud ek ALAG hosted service hai (ya to livekit.io ka free/paid
+cloud account, ya khud-hosted LiveKit server) — humare Oracle server
+pe iska koi container/service NAHI chal raha. Humara Next.js app sirf
+uss LiveKit server se connect hota hai via 3 env vars:
+
+    LIVEKIT_URL          -> e.g. wss://your-project.livekit.cloud
+    LIVEKIT_API_KEY       -> LiveKit dashboard se milti hai
+    LIVEKIT_API_SECRET    -> LiveKit dashboard se milti hai
+
+Ye teeno `docker-compose.oracle.yml` me already defined hain (lines
+~150-153, sab `:-` default-blank ke saath — matlab agar unset hon to
+feature bas "not configured yet" error dega, poora deployment nahi
+tootega). `.env.local.example` me bhi comment hai ke free account
+livekit.io se ban sakta hai.
+
+Agar ye 3 vars set NAHI hain, to:
+  isLiveKitConfigured() → false
+  har call jo createQuranRoomToken() ya getRoomServiceClient() ko
+  chahti hai, ek clear error throw karti hai:
+  "Live class calling is not configured yet. Ask the platform admin
+   to add the LiveKit API keys."
+  (Ye error seedha UI tak surface hota hai — silent fail nahi hota.)
+
+-------------------------------------------------------------------
+3. DATABASE SCHEMA
+-------------------------------------------------------------------
+Migration file:
+  supabase/migrations/20260817170000_quran_class_module.sql
+
+Chaar tables:
+
+  quran_teachers
+    - id, profile_id (unique — ek profile sirf ek hi teacher record
+      ban sakta hai), bio, status ('active'|'inactive'), created_by
+
+  quran_groups
+    - id, name, teacher_id (FK -> quran_teachers)
+    - session_time  (e.g. '06:30' — sirf time, roz ka fixed slot)
+    - days_of_week  (int array, 1=Mon..7=Sun, default = har din)
+    - livekit_room_name (UNIQUE — yehi actual LiveKit room ka naam
+      hai jo teacher aur uske sab students share karte hain)
+    - status ('active'|'paused'|'archived')
+    - max_students (default 15)
+
+  quran_group_members
+    - id, group_id (FK), student_id (FK -> profiles)
+    - status ('active'|'removed')
+    - unique(group_id, student_id) — ek student ek group me
+      sirf ek dafa add ho sakta hai
+
+  quran_attendance
+    - id, group_id, student_id, session_date (default today)
+    - joined_at, left_at
+    - unique(group_id, student_id, session_date) — din me ek hi
+      attendance row per student per group (upsert hoti hai)
+
+Row-Level Security (RLS) — har table pe on:
+  - Platform admin (profiles.role = 'admin') har cheez dekh/likh
+    sakta hai.
+  - Teacher sirf apne khud ke groups/members/attendance dekh sakta
+    hai (quran_is_group_teacher() function check karta hai).
+  - Student sirf apni khud ki membership/attendance dekh sakta hai,
+    aur sirf apne join/leave events khud insert kar sakta hai
+    (quran_is_group_member() check).
+  - Groups/teachers/members ka WRITE sirf platform-admin kar sakta
+    hai — teacher khud apna group ya student add/remove nahi kar
+    sakta (sab kuch admin panel se hota hai).
+
+-------------------------------------------------------------------
+4. ADMIN SIDE — Teacher/Group Setup
+-------------------------------------------------------------------
+Page: /admin/quran  (src/app/(admin)/admin/quran/page.tsx)
+Actions: src/lib/quran/admin-actions.ts  (sab requireAdminUser() se
+gated — sirf platform admin hi chala sakta hai)
+
+  addQuranTeacher(email, bio)
+    - inviteOrFindProfileId(email, {profileRole:'teacher'}) call
+      karta hai — agar email pehle se profile nahi rakhta to
+      INVITE EMAIL bhejta hai (password set karne ke liye), agar
+      rakhta hai to sirf role update.
+    - quran_teachers table me upsert karta hai (onConflict:
+      profile_id) — status:'active'.
+
+  setQuranTeacherStatus(teacherId, status)
+    - Teacher ko active/inactive kar sakte hain (bina delete kiye).
+
+  createQuranGroup(name, teacherId, sessionTime, maxStudents,
+                    daysOfWeek[])
+    - Validation: name >=2 chars, sessionTime format HH:MM.
+    - livekit_room_name AUTO-GENERATE hota hai:
+        `quran-${slugified-name}-${nanoid(6)}`
+      (e.g. "quran-fajr-batch-1-x7k2p9") — yeh hamesha unique hota
+      hai, admin ko room-naming ke baare me kuch sochna nahi padta.
+
+  setQuranGroupStatus(groupId, status)
+    - active / paused / archived kar sakte hain.
+
+  addStudentToQuranGroup(groupId, email)
+    - Pehle max_students capacity check karta hai (agar group full
+      hai to error).
+    - inviteOrFindProfileId(email, {profileRole:'student'}) — same
+      invite-or-find pattern jo teacher ke liye hai.
+    - quran_group_members me upsert (onConflict: group_id,student_id).
+
+  removeStudentFromQuranGroup(memberId)
+    - status ko 'removed' kar deta hai (row delete nahi hoti,
+      history rehti hai).
+
+-------------------------------------------------------------------
+5. STUDENT/TEACHER SIDE — Actual Call Flow (End-to-End)
+-------------------------------------------------------------------
+Page: /quran  (src/app/(dashboard)/quran/page.tsx)
+
+  1. User /quran pe aata hai. Server-side check hota hai:
+     - getQuranTeacherContext(supabase, userId) — agar yeh user
+       ek active quran_teacher hai, to uske sab groups (member-count
+       ke saath) fetch hoke <QuranTeacherView> render hota hai.
+     - Warna getQuranStudentGroups(supabase, userId) — jitne bhi
+       active groups iska membership hai, unki list <QuranStudentView>
+       me render hoti hai.
+
+  2. User apne group card pe "Join Call" click karta hai →
+     <QuranCallRoom groupId=... role=... /> mount hota hai.
+
+  3. QuranCallRoom.tsx (client component):
+     a. useEffect me POST /api/quran/token {groupId} call karta hai.
+
+  4. /api/quran/token/route.ts (server):
+     - Supabase session check (login required).
+     - profiles.full_name fetch karta hai (display name ke liye).
+     - Pehle check: kya user is groupId ka TEACHER hai
+       (getQuranTeacherContext se match)? Agar haan →
+       createQuranRoomToken({role:'teacher', ...})
+     - Warna check: kya user is groupId ka STUDENT member hai
+       (getQuranStudentGroups se match)? Agar haan →
+       createQuranRoomToken({role:'student', ...})
+     - Dono me se koi match na ho to 403 "You are not part of this
+       group."
+
+  5. createQuranRoomToken() (src/lib/quran/livekit.ts):
+     - LiveKit ka AccessToken (JWT) banata hai, 4-hour TTL.
+     - Grant permissions ROLE KE HISAAB SE ALAG hain:
+         TEACHER: canPublishSources = [CAMERA, MICROPHONE] +
+                  roomAdmin: true  (isse teacher ko room ke andar
+                  "admin" powers milte hain — jaise kisi ko mute
+                  karna, "teacher ka apna action" ban jaata hai)
+         STUDENT: canPublishSources = [MICROPHONE] ONLY
+                  (koi camera track kabhi bhejta hi nahi — yehi
+                  "bachon ki video kabhi kisi ke paas nahi jaati"
+                  wali privacy-by-design guarantee hai, code-level
+                  pe enforce ki gayi hai, sirf UI-level restriction
+                  nahi)
+     - Response: {token, url (LIVEKIT_URL), roomName, role}
+
+  6. Client ko token milte hi <LiveKitRoom> (LiveKit React SDK)
+     mount hota hai — audio hamesha on, video sirf agar role==
+     'teacher'. Connect hote hi <RoomAudioRenderer/> sab audio
+     tracks play karta hai.
+
+  7. Best-effort attendance log (call ki success/failure se
+     independent, kabhi bhi call ko block nahi karta):
+       - Connect hote hi: POST /api/quran/attendance {groupId,
+         event:'join'} → quran_attendance row upsert (session_date
+         = aaj, joined_at = abhi).
+       - Component unmount/leave pe: POST ... {event:'leave'} →
+         same row update, left_at = abhi.
+
+  8. UI ke andar (QuranCallInner):
+     - TEACHER VIEW: apna khud ka camera preview (WhatsApp-call
+       style, chota box), phir neeche grid me har remote student
+       ek "voice tile" — naam ka pehla letter, agar bol raha hai to
+       green highlight + bar-visualizer animate hota hai, aur ek
+       mute/unmute button.
+     - STUDENT VIEW: teacher ka live camera bada dikhta hai
+       (full-width), neeche sirf apna khud ka "Mic on/off" toggle
+       button hota hai — koi doosre student ka tile student ko
+       nahi dikhta.
+
+  9. Teacher ka MUTE button click → muteParticipant(identity, muted):
+     - Us student ka current microphone track-SID dhoondta hai
+       (LiveKit ke live track-list se).
+     - POST /api/quran/mute {roomName, participantIdentity,
+       trackSid, muted}
+
+  10. /api/quran/mute/route.ts (server):
+      - Login check.
+      - getGroupByRoomName(roomName) se pata karta hai ke iss room
+        ka asli teacher kaun hai (quran_groups -> quran_teachers ->
+        profile_id).
+      - AGAR request bhejne wala user hi uss room ka teacher NAHI
+        hai → 403 "Only this room's teacher can mute participants."
+        (Yani ek student ya doosre group ka teacher kisi aur ki
+        room me mute-power abuse nahi kar sakta — server-side
+        cross-check hai, sirf client-side UI restriction nahi.)
+      - getRoomServiceClient() (LiveKit ka server-to-server HTTP
+        client, wss:// ko https:// me convert karke) →
+        client.mutePublishedTrack(roomName, identity, trackSid,
+        muted) — yeh seedha LiveKit server ko command bhejta hai
+        ke us track ko mute/unmute kar de. Yeh REAL server-side
+        mute hai (participant apne aap unmute nahi kar sakta jab
+        tak teacher wapas allow na kare — LiveKit ki apni semantics
+        ke mutabiq).
+
+-------------------------------------------------------------------
+6. FILE MAP (sab involved files ek jagah)
+-------------------------------------------------------------------
+Database:
+  supabase/migrations/20260817170000_quran_class_module.sql
+
+Server logic (lib):
+  src/lib/quran/livekit.ts        -> token minting + room-service client
+  src/lib/quran/access.ts         -> teacher/student group lookups (RLS-aware queries)
+  src/lib/quran/admin-actions.ts  -> platform-admin CRUD (teacher/group/student)
+
+API routes:
+  src/app/api/quran/token/route.ts        -> POST: mints join token
+  src/app/api/quran/mute/route.ts         -> POST: teacher-only mute/unmute
+  src/app/api/quran/attendance/route.ts   -> POST: join/leave attendance log
+
+Pages:
+  src/app/(dashboard)/quran/page.tsx      -> student/teacher entry point
+  src/app/(admin)/admin/quran/page.tsx    -> platform-admin management console
+
+UI Components:
+  src/components/features/quran/QuranCallRoom.tsx    -> the actual live-call UI (LiveKitRoom wrapper + in-call UI)
+  src/components/features/quran/QuranStudentView.tsx -> student's group list (referenced, not read in this trace)
+  src/components/features/quran/QuranTeacherView.tsx -> teacher's group list (referenced, not read in this trace)
+
+Env vars (docker-compose.oracle.yml + .env.local.example):
+  LIVEKIT_URL
+  LIVEKIT_API_KEY
+  LIVEKIT_API_SECRET
+
+-------------------------------------------------------------------
+7. CURRENT STATUS / GOTCHAS
+-------------------------------------------------------------------
+- Ye feature CODE-COMPLETE hai (schema, RLS, admin panel, token
+  minting, call UI, mute, attendance — sab likha hua hai).
+- LEKIN production me kaam karne ke liye teeno LIVEKIT_* env vars
+  Coolify me set hone zaroori hain (previous conversation summary
+  ke mutabiq: "LiveKit (Quran Class live calling) — optional, not
+  set up yet" — matlab humne pehle inhe blank/unset chhoda tha).
+  Jab tak ye set nahi honge, `/quran` page load ho jayega (list
+  dikhega) lekin "Join Call" click karne pe error aayega: "Live
+  class calling is not configured yet."
+- Koi separate LiveKit server hamare Docker Compose stack (web/
+  ai-gateway/ocr/valkey/cron) me NAHI hai — ye ek external managed
+  service hai jise alag se livekit.io (ya self-hosted LiveKit
+  server) pe setup karna padta hai, phir uske URL/keys yahan daalni
+  padti hain.
+- Attendance log deliberately "best-effort" hai — agar attendance
+  API fail bhi ho jaye, call khud kabhi block/fail nahi hoti (code
+  comment: "failures here should never block the call itself").
+- Student ki camera KABHI publish hi nahi hoti (server-side
+  AccessToken grant hi restrict karta hai — client-side hack se
+  bhi bypass nahi ho sakta) — yeh ek deliberate privacy design hai.
+- Mute action server-side double-verified hai (sirf uss room ka
+  asli teacher hi kisi ko mute kar sakta hai) — koi doosra teacher
+  ya student abuse nahi kar sakta.
+- Is module ka koi cron job, koi push-notification reminder, ya
+  koi automated "session start ho gaya" alert abhi nahi bana —
+  poora flow purely on-demand hai (jab user khud "Join" click kare).
+
+===================================================================
+END OF FILE
+===================================================================

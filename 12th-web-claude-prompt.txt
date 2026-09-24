@@ -1,0 +1,228 @@
+You have the Supabase MCP tools connected. This is a single task for the
+"ilm AI" Supabase project — seeding the EXACT question bank for GRADE_12's
+library resources. The metadata rows are ALREADY inserted into
+public.library_resources (done separately) — you do NOT insert/modify that
+table or touch any storage bucket. You ONLY write to public.resource_mcq_sets.
+
+I am attaching .txt files in this chat — each one is the full, already-
+extracted verbatim text of one resource's content (same content as the PDF,
+just pre-extracted so you don't need OCR). The list below maps each resource's
+EXACT title (as already in library_resources) to which attached filename it
+corresponds to — match strictly by filename, don't guess if a file is ambiguous.
+
+For EACH attached .txt file:
+
+1. Find the resource row: `select id, title, subject_id, chapter_id, grade_level
+   from public.library_resources where title = '<exact title from the list below>'
+   and grade_level = 'GRADE_12'`. If no exact match, search more loosely
+   (ilike '%...%') and confirm with me before proceeding — don't guess which row
+   it belongs to.
+2. Read the attached .txt file fully and transcribe its questions **verbatim**
+   — this is not AI-generated content, every question must come word-for-word
+   from the file:
+   - MCQs: { q, opts: [4 options], correct: <0-3 index>, exp } — correct index
+     and exp (explanation) must come from what's actually answer-keyed in the
+     file. If no answer key exists for an MCQ, drop that MCQ rather than
+     guessing the answer.
+   - Short questions: { q, marks, keyPoints: [...], modelAnswer } — marks only
+     if stated in the file.
+   - Long questions: same shape as short, typically higher marks.
+   A file only contains ONE of these three types (matching its resource's
+   content_section) — don't invent the other two arrays, leave them empty.
+3. Upsert into public.resource_mcq_sets:
+   ```sql
+   insert into public.resource_mcq_sets
+     (resource_kind, resource_id, questions, short_questions, long_questions, status, generated_at, updated_at)
+   values
+     ('library', '<library_resources.id from step 1>', '<questions jsonb>'::jsonb, '<short jsonb>'::jsonb, '<long jsonb>'::jsonb, 'ready', now(), now())
+   on conflict (resource_kind, resource_id) do update set
+     questions = excluded.questions,
+     short_questions = excluded.short_questions,
+     long_questions = excluded.long_questions,
+     status = 'ready',
+     generated_at = now(),
+     updated_at = now();
+   ```
+   Do NOT touch resource_processing_jobs or library_resources.drive_url in this
+   task.
+4. Move to the next attached file. Repeat for all attached files in this chat
+   (I may send them across several messages if there are too many for one).
+
+After each batch of attachments, report: resource title + id you attached it
+to, MCQ/short/long counts, and anything you skipped (no answer key, unreadable
+file, couldn't find a matching resource row).
+
+Total files to seed: 169.
+
+TITLE <-> ATTACHED FILENAME MAP (attach the file matching each — filenames below
+are the ORIGINAL local names; keep the same filename when attaching):
+
+Chemistry — Chapter 1: Periodic Classification of Elements & Periodicity — MCQs  =>  E:\data\12th\notes\chem\Ch1_PeriodicClassification_MCQs.txt
+Chemistry — Chapter 1: Periodic Classification of Elements & Periodicity — Short Questions  =>  E:\data\12th\notes\chem\Ch1_PeriodicClassification_ShortQuestions.txt
+Chemistry — Chapter 2: s-Block Elements — MCQs  =>  E:\data\12th\notes\chem\Ch2_sBlockElements_MCQs.txt
+Chemistry — Chapter 2: s-Block Elements — Short Questions  =>  E:\data\12th\notes\chem\Ch2_sBlockElements_ShortQuestions.txt
+Chemistry — Chapter 3: Group III-A and Group IV-A Elements — MCQs  =>  E:\data\12th\notes\chem\Ch3_GroupIIIA_IVA_MCQs.txt
+Chemistry — Chapter 3: Group III-A and Group IV-A Elements — Short Questions  =>  E:\data\12th\notes\chem\Ch03_Group3A4A_Elements_ShortQs.txt
+Chemistry — Chapter 4: Group V-A and VI-A Elements — MCQs  =>  E:\data\12th\notes\chem\Ch4_GroupVA_VIA_MCQs.txt
+Chemistry — Chapter 4: Group V-A and VI-A Elements — Short Questions  =>  E:\data\12th\notes\chem\Ch04_Group5A6A_Elements_ShortQs.txt
+Chemistry — Chapter 5: The Halogen and the Noble Gases — MCQs  =>  E:\data\12th\notes\chem\Ch5_HalogensNobleGases_MCQs.txt
+Chemistry — Chapter 5: The Halogen and the Noble Gases — Short Questions  =>  E:\data\12th\notes\chem\Ch05_Halogens_NobleGases_ShortQs.txt
+Chemistry — Chapter 6: Transition Elements — MCQs  =>  E:\data\12th\notes\chem\Ch6_TransitionElements_MCQs.txt
+Chemistry — Chapter 6: Transition Elements — Short Questions  =>  E:\data\12th\notes\chem\Ch06_TransitionElements_ShortQuestions_content.txt
+Chemistry — Chapter 7: Fundamental Principles of Organic Chemistry — MCQs  =>  E:\data\12th\notes\chem\Ch7_OrganicChemFundamentals_MCQs.txt
+Chemistry — Chapter 7: Fundamental Principles of Organic Chemistry — Long Questions  =>  E:\data\12th\notes\chem\Ch07_FundamentalOrganicChemistry_ShortLong_content.txt
+Chemistry — Chapter 7: Fundamental Principles of Organic Chemistry — Short Questions  =>  E:\data\12th\notes\chem\Ch07_FundamentalOrganicChemistry_ShortLong_content.txt
+Chemistry — Chapter 8: Alphatic Hydrocarbons — MCQs  =>  E:\data\12th\notes\chem\Ch8_AliphaticHydrocarbons_MCQs.txt
+Chemistry — Chapter 8: Alphatic Hydrocarbons — Long Questions  =>  E:\data\12th\notes\chem\Ch08_AliphaticHydrocarbons_ShortLong_content.txt
+Chemistry — Chapter 8: Alphatic Hydrocarbons — Short Questions  =>  E:\data\12th\notes\chem\Ch08_AliphaticHydrocarbons_ShortLong_content.txt
+Chemistry — Chapter 9: Aromatic Hydrocarbons — MCQs  =>  E:\data\12th\notes\chem\Ch9_AromaticHydrocarbons_MCQs.txt
+Chemistry — Chapter 9: Aromatic Hydrocarbons — Long Questions  =>  E:\data\12th\notes\chem\Ch9_AromaticHydrocarbons.txt
+Chemistry — Chapter 9: Aromatic Hydrocarbons — Short Questions  =>  E:\data\12th\notes\chem\Ch9_AromaticHydrocarbons.txt
+Chemistry — Chapter 10: Alkyle Halides — MCQs  =>  E:\data\12th\notes\chem\Ch10_AlkylHalides_MCQs.txt
+Chemistry — Chapter 10: Alkyle Halides — Long Questions  =>  E:\data\12th\notes\chem\Ch10_AlkylHalides.txt
+Chemistry — Chapter 10: Alkyle Halides — Short Questions  =>  E:\data\12th\notes\chem\Ch10_AlkylHalides.txt
+Chemistry — Chapter 11: Alcohol, Phenols and Ethers — MCQs  =>  E:\data\12th\notes\chem\Ch11_Alcohols_Phenols_Ethers_MCQs.txt
+Chemistry — Chapter 11: Alcohol, Phenols and Ethers — Long Questions  =>  E:\data\12th\notes\chem\Ch11_AlcoholsPhenolsEthers.txt
+Chemistry — Chapter 11: Alcohol, Phenols and Ethers — Short Questions  =>  E:\data\12th\notes\chem\Ch11_AlcoholsPhenolsEthers.txt
+Chemistry — Chapter 12: Aldehydes and Ketones — MCQs  =>  E:\data\12th\notes\chem\Ch12_Aldehydes_Ketones_MCQs.txt
+Chemistry — Chapter 12: Aldehydes and Ketones — Long Questions  =>  E:\data\12th\notes\chem\Ch12_AldehydesKetones.txt
+Chemistry — Chapter 12: Aldehydes and Ketones — Short Questions  =>  E:\data\12th\notes\chem\Ch12_AldehydesKetones.txt
+Chemistry — Chapter 13: Carboxylic Acids — MCQs  =>  E:\data\12th\notes\chem\Ch13_Carboxylic_Acids_MCQs.txt
+Chemistry — Chapter 13: Carboxylic Acids — Short Questions  =>  E:\data\12th\notes\chem\Ch13_CarboxylicAcids_ShortQuestions.txt
+Chemistry — Chapter 14: Macromolecules — MCQs  =>  E:\data\12th\notes\chem\Ch14_Macromolecules_MCQs_content.txt
+Chemistry — Chapter 15: Common Chemical Industries — MCQs  =>  E:\data\12th\notes\chem\Ch15_ChemIndustriesPakistan_MCQs_content.txt
+Chemistry — Chapter 16: Environmental Chemistry — MCQs  =>  E:\data\12th\notes\chem\Ch16_EnvironmentalChemistry_MCQs_content.txt
+Chemistry — Chapter 16: Environmental Chemistry — Short Questions  =>  E:\data\12th\notes\chem\Ch16_EnvironmentalChemistry_ShortQuestions.txt
+Computer Science — Chapter 1: Data Basics — MCQs  =>  E:\data\12th\notes\com\Ch1_DataBasics_MCQs.txt
+Computer Science — Chapter 1: Data Basics — Long Questions  =>  E:\data\12th\notes\com\Ch1_DataBasics_LongQ.txt
+Computer Science — Chapter 1: Data Basics — Short Questions  =>  E:\data\12th\notes\com\Ch1_DataBasics_ShortQ.txt
+Computer Science — Chapter 2: Basic Concepts and Terminology of Databases — MCQs  =>  E:\data\12th\notes\com\Ch2_DatabaseConcepts_MCQs.txt
+Computer Science — Chapter 2: Basic Concepts and Terminology of Databases — Long Questions  =>  E:\data\12th\notes\com\Ch2_DatabaseConcepts_LongQ.txt
+Computer Science — Chapter 2: Basic Concepts and Terminology of Databases — Short Questions  =>  E:\data\12th\notes\com\Ch2_DatabaseConcepts_ShortQ.txt
+Computer Science — Chapter 3: Database Design Process — MCQs  =>  E:\data\12th\notes\com\Ch3_MCQs.txt
+Computer Science — Chapter 3: Database Design Process — Long Questions  =>  E:\data\12th\notes\com\Ch3_LongQ.txt
+Computer Science — Chapter 3: Database Design Process — Short Questions  =>  E:\data\12th\notes\com\Ch3_ShortQ.txt
+Computer Science — Chapter 4: Data Integrity and Normalization — MCQs  =>  E:\data\12th\notes\com\Ch4_MCQs.txt
+Computer Science — Chapter 4: Data Integrity and Normalization — Long Questions  =>  E:\data\12th\notes\com\Ch4_LongQ.txt
+Computer Science — Chapter 4: Data Integrity and Normalization — Short Questions  =>  E:\data\12th\notes\com\Ch4_ShortQ.txt
+Computer Science — Chapter 5: Introduction to Microsoft Access — MCQs  =>  E:\data\12th\notes\com\Ch5_MSAccess_MCQs.txt
+Computer Science — Chapter 5: Introduction to Microsoft Access — Long Questions  =>  E:\data\12th\notes\com\Ch5_MSAccess_LongQ.txt
+Computer Science — Chapter 5: Introduction to Microsoft Access — Short Questions  =>  E:\data\12th\notes\com\Ch5_MSAccess_ShortQ.txt
+Computer Science — Chapter 6: Table and Query — MCQs  =>  E:\data\12th\notes\com\Ch6_TableQuery_MCQs.txt
+Computer Science — Chapter 6: Table and Query — Long Questions  =>  E:\data\12th\notes\com\Ch6_TableQuery_LongQ.txt
+Computer Science — Chapter 6: Table and Query — Short Questions  =>  E:\data\12th\notes\com\Ch6_TableQuery_ShortQ.txt
+Computer Science — Chapter 7: Microsoft Access Forms and Reports — MCQs  =>  E:\data\12th\notes\com\Ch7_MSAccessFormsReports_MCQs.txt
+Computer Science — Chapter 7: Microsoft Access Forms and Reports — Long Questions  =>  E:\data\12th\notes\com\Ch7_MSAccessFormsReports_LongQ.txt
+Computer Science — Chapter 7: Microsoft Access Forms and Reports — Short Questions  =>  E:\data\12th\notes\com\Ch7_MSAccessFormsReports_ShortQ.txt
+Computer Science — Chapter 8: Getting Started with C — MCQs  =>  E:\data\12th\notes\com\Ch8_GettingStartedWithC_MCQs.txt
+Computer Science — Chapter 8: Getting Started with C — Long Questions  =>  E:\data\12th\notes\com\Ch8_GettingStartedWithC_LongQ.txt
+Computer Science — Chapter 8: Getting Started with C — Short Questions  =>  E:\data\12th\notes\com\Ch8_GettingStartedWithC_ShortQ.txt
+Computer Science — Chapter 10: Input/Output — MCQs  =>  E:\data\12th\notes\com\Ch10_InputOutput_MCQs.txt
+Computer Science — Chapter 10: Input/Output — Long Questions  =>  E:\data\12th\notes\com\Ch10_InputOutput_LongQ.txt
+Computer Science — Chapter 10: Input/Output — Short Questions  =>  E:\data\12th\notes\com\Ch10_InputOutput_ShortQ.txt
+Computer Science — Chapter 11: Decision Constructs — MCQs  =>  E:\data\12th\notes\com\Ch11_DecisionConstructs_MCQs.txt
+Computer Science — Chapter 11: Decision Constructs — Long Questions  =>  E:\data\12th\notes\com\Ch11_DecisionConstructs_LongQ.txt
+Computer Science — Chapter 11: Decision Constructs — Short Questions  =>  E:\data\12th\notes\com\Ch11_DecisionConstructs_ShortQ.txt
+Computer Science — Chapter 12: Loop Constructs — MCQs  =>  E:\data\12th\notes\com\Ch12_LoopConstructs_MCQs.txt
+Computer Science — Chapter 12: Loop Constructs — Long Questions  =>  E:\data\12th\notes\com\Ch12_LoopConstructs_LongQ.txt
+Computer Science — Chapter 12: Loop Constructs — Short Questions  =>  E:\data\12th\notes\com\Ch12_LoopConstructs_ShortQ.txt
+Computer Science — Chapter 13: Functions in C — MCQs  =>  E:\data\12th\notes\com\Ch13_Functions_MCQs.txt
+Computer Science — Chapter 13: Functions in C — Long Questions  =>  E:\data\12th\notes\com\Ch13_Functions_LongQuestions.txt
+Computer Science — Chapter 13: Functions in C — Short Questions  =>  E:\data\12th\notes\com\Ch13_Functions_ShortQuestions.txt
+Computer Science — Chapter 14: File Handling in C — MCQs  =>  E:\data\12th\notes\com\Ch14_FileHandling_MCQs.txt
+Computer Science — Chapter 14: File Handling in C — Long Questions  =>  E:\data\12th\notes\com\Ch14_FileHandling_LongQuestions.txt
+Computer Science — Chapter 14: File Handling in C — Short Questions  =>  E:\data\12th\notes\com\Ch14_FileHandling_ShortQuestions.txt
+Physics — Chapter 1: Electrostatics — MCQs  =>  E:\data\12th\notes\phy\mcques\txt\Ch12_Electrostatics_MCQs.txt
+Physics — Chapter 2: Current Electricity — MCQs  =>  E:\data\12th\notes\phy\mcques\txt\Ch13_CurrentElectricity_MCQs.txt
+Physics — Chapter 3: Electromagnetism — MCQs  =>  E:\data\12th\notes\phy\mcques\txt\Ch14_Electromagnetism_MCQs.txt
+Physics — Chapter 4: Electromagnetic Induction — MCQs  =>  E:\data\12th\notes\phy\mcques\txt\Ch15_ElectromagneticInduction_MCQs.txt
+Physics — Chapter 5: Alternating Current — MCQs  =>  E:\data\12th\notes\phy\mcques\txt\Ch16_AlternatingCurrent_MCQs.txt
+Physics — Chapter 6: Physics of Solids — MCQs  =>  E:\data\12th\notes\phy\mcques\txt\Ch17_PhysicsOfSolids_MCQs.txt
+Physics — Chapter 7: Electronics — MCQs  =>  E:\data\12th\notes\phy\mcques\txt\Ch18_Electronics_MCQs.txt
+Physics — Chapter 8: Dawn Of Modern Physics — MCQs  =>  E:\data\12th\notes\phy\mcques\txt\Ch19_ModernPhysics_MCQs.txt
+Physics — Chapter 9: Atomic Spectra — MCQs  =>  E:\data\12th\notes\phy\mcques\txt\Ch20_AtomicSpectra_MCQs.txt
+Physics — Chapter 10: Nuclear Physics — MCQs  =>  E:\data\12th\notes\phy\mcques\txt\Ch21_NuclearPhysics_MCQs.txt
+Mathematics — Chapter 1: Functions and Limits — Exercise 1.1 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 1 – Functions and Limits\cha-1_exer-1.1_mcqs.txt
+Mathematics — Chapter 1: Functions and Limits — Exercise 1.2 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 1 – Functions and Limits\cha-1_exer-1.2_mcqs.txt
+Mathematics — Chapter 1: Functions and Limits — Exercise 1.3 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 1 – Functions and Limits\cha-1_exer-1.3_mcqs.txt
+Mathematics — Chapter 1: Functions and Limits — Exercise 1.4 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 1 – Functions and Limits\cha-1_exer-1.4-mcqs.txt
+Mathematics — Chapter 1: Functions and Limits — Exercise 1.5 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 1 – Functions and Limits\cha-1_exer-1.5-mcqs.txt
+Mathematics — Chapter 1: Functions and Limits — MCQ Bank  =>  E:\data\12th\notes\math\txt\Unit 1 – Functions and Limits\cha-1_mcqs-bank.txt
+Mathematics — Chapter 2: Differentiation — Exercise 2.10 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 2 – Differentiation\cha-2_exer-2.10-mcqs.txt
+Mathematics — Chapter 2: Differentiation — Exercise 2.1 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 2 – Differentiation\cha-2_exer-2.1_mcqs.txt
+Mathematics — Chapter 2: Differentiation — Exercise 2.2 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 2 – Differentiation\cha-2_exer-2.2_mcqs.txt
+Mathematics — Chapter 2: Differentiation — Exercise 2.3 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 2 – Differentiation\cha-2_exer-2.3_mcqs.txt
+Mathematics — Chapter 2: Differentiation — Exercise 2.4 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 2 – Differentiation\cha-2_exer-2.4_mcqs.txt
+Mathematics — Chapter 2: Differentiation — Exercise 2.5 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 2 – Differentiation\cha-2_exer-2.5_mcqs.txt
+Mathematics — Chapter 2: Differentiation — Exercise 2.6 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 2 – Differentiation\cha-2_exer-2.6_mcqs.txt
+Mathematics — Chapter 2: Differentiation — Exercise 2.7 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 2 – Differentiation\cha-2_exer-2.7_mcqs.txt
+Mathematics — Chapter 2: Differentiation — Exercise 2.8 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 2 – Differentiation\cha-2_exer-2.8_mcqs.txt
+Mathematics — Chapter 2: Differentiation — Exercise 2.9 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 2 – Differentiation\cha-2_exer-2.9_mcqs.txt
+Mathematics — Chapter 2: Differentiation — Exercise other — MCQs  =>  E:\data\12th\notes\math\txt\Unit 2 – Differentiation\cha-2_mcqs.txt
+Mathematics — Chapter 3: Integration — Exercise 3.1 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 3 – Integration\cha-3_exer-3.1-mcqs.txt
+Mathematics — Chapter 3: Integration — Exercise 3.2 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 3 – Integration\cha-3_exer-3.2_mcqs.txt
+Mathematics — Chapter 3: Integration — Exercise 3.3 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 3 – Integration\cha-3_exer-3.3_mcqs.txt
+Mathematics — Chapter 3: Integration — Exercise 3.4 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 3 – Integration\cha-3_exer-3.4_mcqs.txt
+Mathematics — Chapter 3: Integration — Exercise 3.5 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 3 – Integration\cha-3_exer-3.5_mcq.txt
+Mathematics — Chapter 3: Integration — Exercise 3.6 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 3 – Integration\cha-3_exer-3.6_mcq.txt
+Mathematics — Chapter 3: Integration — Exercise 3.7 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 3 – Integration\cha-3_exer-3.7_mcq.txt
+Mathematics — Chapter 3: Integration — Exercise 3.8 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 3 – Integration\cha-3_exer-3.8_mcqs.txt
+Mathematics — Chapter 3: Integration — Exercise other — MCQs  =>  E:\data\12th\notes\math\txt\Unit 3 – Integration\cha-3_mcqs.txt
+Mathematics — Chapter 4: Introduction to Analytic Geometry — Exercise 4.1 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 4 – Introduction to Analytic Geometry\cha-4_exer-4.1_mcqs.txt
+Mathematics — Chapter 4: Introduction to Analytic Geometry — Exercise 4.2 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 4 – Introduction to Analytic Geometry\cha-4_exer-4.2_mcqs.txt
+Mathematics — Chapter 4: Introduction to Analytic Geometry — Exercise 4.3 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 4 – Introduction to Analytic Geometry\cha-4_exer-4.3_mcqs.txt
+Mathematics — Chapter 4: Introduction to Analytic Geometry — Exercise 4.4 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 4 – Introduction to Analytic Geometry\cha-4_exer-4.4_mcqs.txt
+Mathematics — Chapter 4: Introduction to Analytic Geometry — Exercise 4.5 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 4 – Introduction to Analytic Geometry\cha-4_exer-4.5_mcqs.txt
+Mathematics — Chapter 4: Introduction to Analytic Geometry — Exercise other — MCQs  =>  E:\data\12th\notes\math\txt\Unit 4 – Introduction to Analytic Geometry\cha-4_mcqs.txt
+Mathematics — Chapter 5: Linear Inequalities & Linear Programming — Exercise 5.1 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 5 – Linear Inequalities & Linear Programming\cha-5_exer-5.1_mcqs.txt
+Mathematics — Chapter 5: Linear Inequalities & Linear Programming — Exercise 5.2 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 5 – Linear Inequalities & Linear Programming\cha-5_exer-5.2_mcqs.txt
+Mathematics — Chapter 5: Linear Inequalities & Linear Programming — Exercise 5.3 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 5 – Linear Inequalities & Linear Programming\cha-5_exer-5.3_mcqs.txt
+Mathematics — Chapter 5: Linear Inequalities & Linear Programming — Exercise other — MCQs  =>  E:\data\12th\notes\math\txt\Unit 5 – Linear Inequalities & Linear Programming\cha-5_mcqs.txt
+Mathematics — Chapter 6: Conic Section — Exercise 6.1 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 6 – Conic Section\cha-6_exer-6.1_mcqs.txt
+Mathematics — Chapter 6: Conic Section — Exercise 6.2 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 6 – Conic Section\cha-6_exer-6.2_mcqs.txt
+Mathematics — Chapter 6: Conic Section — Exercise 6.3 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 6 – Conic Section\cha-6_exer-6.3_mcqs.txt
+Mathematics — Chapter 6: Conic Section — Exercise 6.4 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 6 – Conic Section\cha-6_exer-6.4_mcqs.txt
+Mathematics — Chapter 6: Conic Section — Exercise 6.5 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 6 – Conic Section\cha-6_exer-6.5_mcqs.txt
+Mathematics — Chapter 6: Conic Section — Exercise 6.6 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 6 – Conic Section\cha-6_exer-6.6_mcqs.txt
+Mathematics — Chapter 6: Conic Section — Exercise 6.7 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 6 – Conic Section\cha-6_exer-6.7_mcqs.txt
+Mathematics — Chapter 6: Conic Section — Exercise 6.8 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 6 – Conic Section\cha-6_exer-6.8_mcqs.txt
+Mathematics — Chapter 6: Conic Section — Exercise 6.9 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 6 – Conic Section\cha-6_exer-6.9_mcqs.txt
+Mathematics — Chapter 6: Conic Section — Exercise other — MCQs  =>  E:\data\12th\notes\math\txt\Unit 6 – Conic Section\cha-6_exer-mcq-practice_mcqs.txt
+Mathematics — Chapter 7: Vectors — Exercise 7.3 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 7 – Vectors\cha-7_exer-7.3_mcqs.txt
+Mathematics — Chapter 7: Vectors — Exercise 7.4 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 7 – Vectors\cha-7_exer-7.4_mcqs.txt
+Mathematics — Chapter 7: Vectors — Exercise 7.5 — MCQs  =>  E:\data\12th\notes\math\txt\Unit 7 – Vectors\cha-7_exer-7.5_mcqs.txt
+Mathematics — Chapter 7: Vectors — Exercise other — MCQs  =>  E:\data\12th\notes\math\txt\Unit 7 – Vectors\cha-7_mcqs-existing.txt
+Pakistan Studies — Chapter 1: Islam aur Pakistan — MCQs  =>  E:\data\12th\notes\Sst\Chapter 1 – Islam aur Pakistan\txt\ch1_mcques.txt
+Pakistan Studies — Chapter 1: Islam aur Pakistan — Short Questions  =>  E:\data\12th\notes\Sst\Chapter 1 – Islam aur Pakistan\txt\ch1_short.txt
+Pakistan Studies — Chapter 1: Islam aur Pakistan — Long Questions  =>  E:\data\12th\notes\Sst\Chapter 1 – Islam aur Pakistan\txt\ch1_long.txt
+Pakistan Studies — Chapter 2: Siyasi aur Aini Irtiqa — MCQs  =>  E:\data\12th\notes\Sst\Chapter 2 – Siyasi aur Aini Irtiqa\txt\ch2_mcques.txt
+Pakistan Studies — Chapter 2: Siyasi aur Aini Irtiqa — Short Questions  =>  E:\data\12th\notes\Sst\Chapter 2 – Siyasi aur Aini Irtiqa\txt\ch2_short.txt
+Pakistan Studies — Chapter 2: Siyasi aur Aini Irtiqa — Long Questions  =>  E:\data\12th\notes\Sst\Chapter 2 – Siyasi aur Aini Irtiqa\txt\ch2_long.txt
+Pakistan Studies — Chapter 3: Intezami Nizam — MCQs  =>  E:\data\12th\notes\Sst\Chapter 3 – Intezami Nizam\txt\ch3_mcques.txt
+Pakistan Studies — Chapter 3: Intezami Nizam — Short Questions  =>  E:\data\12th\notes\Sst\Chapter 3 – Intezami Nizam\txt\ch3_shorts.txt
+Pakistan Studies — Chapter 3: Intezami Nizam — Long Questions  =>  E:\data\12th\notes\Sst\Chapter 3 – Intezami Nizam\txt\ch3_longs.txt
+Pakistan Studies — Chapter 4: Insani Huqooq — MCQs  =>  E:\data\12th\notes\Sst\Chapter 4 – Insani Huqooq\txt\ch4_mcques.txt
+Pakistan Studies — Chapter 4: Insani Huqooq — Short Questions  =>  E:\data\12th\notes\Sst\Chapter 4 – Insani Huqooq\txt\ch4_shorts.txt
+Pakistan Studies — Chapter 4: Insani Huqooq — Long Questions  =>  E:\data\12th\notes\Sst\Chapter 4 – Insani Huqooq\txt\ch4_longs.txt
+Pakistan Studies — Chapter 5: Pakistan ka Nizam-e-Taleem — Short Questions  =>  E:\data\12th\notes\Sst\Chapter 5 – Pakistan ka Nizam-e-Taleem\txt\ch5_short.txt
+Pakistan Studies — Chapter 5: Pakistan ka Nizam-e-Taleem — Long Questions  =>  E:\data\12th\notes\Sst\Chapter 5 – Pakistan ka Nizam-e-Taleem\txt\ch5_long.txt
+Pakistan Studies — Chapter 6: Khail aur Sair-o-Siyahat — Short Questions  =>  E:\data\12th\notes\Sst\Chapter 6 – Khail aur Sair-o-Siyahat\txt\ch6_short.txt
+Pakistan Studies — Chapter 6: Khail aur Sair-o-Siyahat — Long Questions  =>  E:\data\12th\notes\Sst\Chapter 6 – Khail aur Sair-o-Siyahat\txt\ch6_long.txt
+Tarjuma Tul Quran — Surah An-Nisa — MCQs  =>  E:\data\12th\notes\T_Q\1_An-Nisa_MCQs50.txt
+Tarjuma Tul Quran — Surah Al-Ma'idah — MCQs  =>  E:\data\12th\notes\T_Q\2_Al-Maidah_MCQs50.txt
+Tarjuma Tul Quran — Surah An-Nur — MCQs  =>  E:\data\12th\notes\T_Q\3_An-Nur_MCQs50.txt
+Tarjuma Tul Quran — Surah Al-Hashr — MCQs  =>  E:\data\12th\notes\T_Q\AlHashr_MCQs50.txt
+Tarjuma Tul Quran — Surah Al-Mumtahanah — MCQs  =>  E:\data\12th\notes\T_Q\AlMumtahanah_MCQs50.txt
+Tarjuma Tul Quran — Surah As-Saf — MCQs  =>  E:\data\12th\notes\T_Q\AsSaff_MCQs50.txt
+Urdu — Manaqib Umar Bin Abdul Aziz — MCQs  =>  E:\data\12th\notes\urdu\chapter\01_MunaqibUmarBinAbdulAziz_MCQs50.txt
+Urdu — Tashkeel e Pakistan — MCQs  =>  E:\data\12th\notes\urdu\chapter\02_TashkeelPakistan_MCQs50.txt
+Urdu — Nawab Mohsin ul Malik — MCQs  =>  E:\data\12th\notes\urdu\chapter\03_Nawab_Mohsin-ul-Mulk_MCQs30.txt
+Urdu — Mehnat Pasand Khirad Mand — MCQs  =>  E:\data\12th\notes\urdu\chapter\04_Mehnat_Pasand_Khirad_Mand_MCQs30.txt
+Urdu — Akbari ki Hamaqatein — MCQs  =>  E:\data\12th\notes\urdu\chapter\05_Akbari_Ki_Hamaqaten_PracticeMCQs.txt
+Urdu — Pehli Fatah — MCQs  =>  E:\data\12th\notes\urdu\chapter\06_Pehli_Fatah_PracticeMCQs.txt
+Urdu — Dastak — MCQs  =>  E:\data\12th\notes\urdu\chapter\Dastak_MCQs50.txt
+Urdu — Hawai — MCQs  =>  E:\data\12th\notes\urdu\chapter\Hawaii_MCQs50.txt
+Urdu — Mawasalat — MCQs  =>  E:\data\12th\notes\urdu\chapter\11_MawasalatKeJadeedZarae_MCQs.txt
+Urdu — Molvi Nazeer Ahmad — MCQs  =>  E:\data\12th\notes\urdu\chapter\12_MolviNazeerAhmad_MCQs.txt
+Urdu — Ek Safarnama — MCQs  =>  E:\data\12th\notes\urdu\chapter\13_EkSafarnama_MCQs.txt
+Urdu — Ayub Abassi — MCQs  =>  E:\data\12th\notes\urdu\chapter\14_AyubAbbasi_MCQs.txt

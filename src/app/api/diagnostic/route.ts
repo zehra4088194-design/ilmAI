@@ -1,0 +1,302 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
+import { getCorrectOptionIndex, normalizeQuestionOptions } from '@/lib/diagnostic/questions';
+import { recordMistakeWithRevision, updateChapterMastery } from '@/lib/learning/mastery';
+
+export const runtime = 'nodejs';
+
+function shuffle<T>(items: T[]) {
+  return [...items].sort(() => Math.random() - 0.5);
+}
+
+const QUESTIONS_PER_SUBJECT = 5;
+
+export async function GET() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user)
+    return NextResponse.json(
+      { status: 'error', error: 'Please sign in to start the diagnostic test.' },
+      { status: 401 }
+    );
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('board, grade_level, education_level, science_group, optional_subject_ids')
+    .eq('id', user.id)
+    .single();
+  const db = createServiceClient() as any;
+  let subjectQuery = db.from('subjects').select('id, name, slug, stream, is_optional').eq('is_active', true);
+  if (profile?.board) subjectQuery = subjectQuery.contains('boards', [profile.board]);
+  if (profile?.grade_level) subjectQuery = subjectQuery.contains('grade_levels', [profile.grade_level]);
+  const { data: subjects } = await subjectQuery;
+  const scopedSubjects = profile?.science_group
+    ? (subjects || []).filter((subject: any) => {
+        if (!subject.is_optional || (profile.optional_subject_ids || []).includes(subject.id)) return true;
+        const identity = `${subject.name} ${subject.slug || ''} ${subject.stream || ''}`.toLowerCase();
+        return profile.science_group === 'biology'
+          ? identity.includes('biology') || identity.includes('pre-medical')
+          : identity.includes('computer');
+      })
+    : subjects || [];
+  const subjectIds = scopedSubjects.map((subject: { id: string }) => subject.id);
+  if (!subjectIds.length)
+    return NextResponse.json(
+      { status: 'error', error: 'Diagnostic questions are not ready for your selected grade and board yet.' },
+      { status: 404 }
+    );
+
+  // questions now live in the standalone question-bank project, which has its own
+  // subjects/chapters copies (same IDs) so this embedded join still works.
+  const questionBank = createServiceClient() as any;
+  const questionResults = await Promise.all(
+    subjectIds.map((subjectId: string) =>
+      questionBank
+        .from('questions')
+        .select('id, text, options, subject_id, chapter_id, is_verified, subjects(name), chapters(name)')
+        .eq('subject_id', subjectId)
+        .eq('type', 'MCQ')
+        .order('is_verified', { ascending: false })
+        .limit(100)
+    )
+  );
+  if (questionResults.every((result: any) => result.error))
+    return NextResponse.json({ status: 'error', error: 'Diagnostic questions could not be loaded.' }, { status: 500 });
+
+  // Also pull MCQs seeded against library resources (resource_mcq_sets) so
+  // admin-uploaded resource question banks feed the diagnostic pool too, not
+  // just manually-entered rows in `questions`.
+  const subjectNameById = new Map(scopedSubjects.map((s: any) => [s.id, s.name]));
+  const { data: mcqResources } = await db
+    .from('library_resources')
+    .select('id, subject_id, chapter_id')
+    .in('subject_id', subjectIds)
+    .eq('content_section', 'mcq');
+  const resourceById = new Map<string, any>((mcqResources || []).map((r: any) => [r.id, r]));
+  const chapterIds = [...new Set((mcqResources || []).map((r: any) => r.chapter_id).filter(Boolean))];
+  const { data: chapterRows } = chapterIds.length
+    ? await db.from('chapters').select('id, name').in('id', chapterIds)
+    : { data: [] };
+  const chapterNameById = new Map((chapterRows || []).map((c: any) => [c.id, c.name]));
+  const resourceIds = [...resourceById.keys()];
+  const { data: resourceBanks } = resourceIds.length
+    ? await questionBank
+        .from('resource_mcq_sets')
+        .select('resource_id, questions, status')
+        .eq('resource_kind', 'library')
+        .eq('status', 'ready')
+        .in('resource_id', resourceIds)
+    : { data: [] };
+  const resourceQuestions = (resourceBanks || []).flatMap((bank: any) => {
+    const resource = resourceById.get(bank.resource_id);
+    if (!resource) return [];
+    return (bank.questions || []).map((raw: any, index: number) => ({
+      id: `resource:${bank.resource_id}:${index}`,
+      text: String(raw?.q || ''),
+      options: Array.isArray(raw?.opts) ? raw.opts : [],
+      subject_id: resource.subject_id,
+      chapter_id: resource.chapter_id,
+      is_verified: false,
+      subjects: { name: subjectNameById.get(resource.subject_id) },
+      chapters: { name: chapterNameById.get(resource.chapter_id) },
+    }));
+  });
+  const resourceQuestionsBySubject = new Map<string, any[]>();
+  for (const q of resourceQuestions) {
+    const list = resourceQuestionsBySubject.get(q.subject_id) || [];
+    list.push(q);
+    resourceQuestionsBySubject.set(q.subject_id, list);
+  }
+
+  // Diagnostic questions come from the saved, curriculum-linked question bank
+  // (manually entered `questions` rows plus seeded resource MCQ sets).
+  // Each subject that has enough valid MCQs contributes five random questions.
+  const questions = subjectIds.flatMap((subjectId: string) => {
+    const result = questionResults[subjectIds.indexOf(subjectId)];
+    const fromQuestionsTable = (result?.data || []) as any[];
+    const fromResources = resourceQuestionsBySubject.get(subjectId) || [];
+    const validQuestions = [...fromQuestionsTable, ...fromResources].filter(
+      (row: any) => normalizeQuestionOptions(row.options).length >= 2
+    );
+    return shuffle(validQuestions).slice(0, QUESTIONS_PER_SUBJECT);
+  });
+  if (questions.length < 5)
+    return NextResponse.json(
+      { status: 'error', error: 'At least five saved MCQs are required before a diagnostic can start.' },
+      { status: 404 }
+    );
+  return NextResponse.json({
+    status: 'success',
+    data: {
+      questions: questions.map((row: any) => ({
+        id: row.id,
+        text: row.text,
+        options: normalizeQuestionOptions(row.options),
+        subjectId: row.subject_id,
+        subjectName: Array.isArray(row.subjects) ? row.subjects[0]?.name : row.subjects?.name,
+        chapterId: row.chapter_id,
+        chapterName: Array.isArray(row.chapters) ? row.chapters[0]?.name : row.chapters?.name,
+      })),
+      questionsPerSubject: QUESTIONS_PER_SUBJECT,
+    },
+  });
+}
+
+export async function POST(req: NextRequest) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user)
+    return NextResponse.json(
+      { status: 'error', error: 'Please sign in to submit the diagnostic test.' },
+      { status: 401 }
+    );
+  const body = await req.json().catch(() => ({}));
+  const answers = Array.isArray(body.answers) ? body.answers : [];
+  const questionIds = answers
+    .map((item: any) => String(item?.questionId || ''))
+    .filter(Boolean)
+    .slice(0, 30);
+  if (questionIds.length < 5)
+    return NextResponse.json(
+      { status: 'error', error: 'Answer at least five questions to complete the diagnostic test.' },
+      { status: 400 }
+    );
+
+  const db = createServiceClient() as any;
+  const questionBank = createServiceClient() as any;
+
+  // The GET handler above pools two question sources into one list: real rows from the
+  // `questions` table, and MCQs seeded against library resources (resource_mcq_sets), which it
+  // gives synthetic ids like `resource:<resourceId>:<index>` since they have no row of their own
+  // in `questions`. Looking every answered id up against `questions` alone — as this used to do —
+  // silently drops every resource-sourced question, and returns nothing (this exact "answer key
+  // could not be loaded" error) whenever a diagnostic run happened to include only those.
+  const realQuestionIds: string[] = [];
+  const resourceRefs: Array<{ id: string; resourceId: string; index: number }> = [];
+  for (const id of questionIds) {
+    const match = /^resource:([^:]+):(\d+)$/.exec(id);
+    if (match) {
+      resourceRefs.push({ id, resourceId: match[1]!, index: Number(match[2]) });
+    } else {
+      realQuestionIds.push(id);
+    }
+  }
+
+  const [questionsTableResult, resolvedResourceQuestions] = await Promise.all([
+    realQuestionIds.length
+      ? questionBank
+          .from('questions')
+          .select('id, text, subject_id, chapter_id, concept_id, options, correct_answer, explanation')
+          .in('id', realQuestionIds)
+      : { data: [], error: null },
+    (async () => {
+      if (!resourceRefs.length) return [];
+      const resourceIds = [...new Set(resourceRefs.map((ref) => ref.resourceId))];
+      const [{ data: sets }, { data: resourceMeta }] = await Promise.all([
+        questionBank
+          .from('resource_mcq_sets')
+          .select('resource_id, questions')
+          .eq('resource_kind', 'library')
+          .in('resource_id', resourceIds),
+        db.from('library_resources').select('id, subject_id, chapter_id').in('id', resourceIds),
+      ]);
+      const metaById = new Map<string, any>((resourceMeta || []).map((r: any) => [r.id, r]));
+      const questionsByResource = new Map<string, any[]>(
+        (sets || []).map((s: any) => [s.resource_id, s.questions || []]),
+      );
+      return resourceRefs
+        .map((ref) => {
+          const raw = questionsByResource.get(ref.resourceId)?.[ref.index];
+          const meta = metaById.get(ref.resourceId);
+          if (!raw) return null;
+          return {
+            id: ref.id,
+            text: String(raw.q || ''),
+            subject_id: meta?.subject_id ?? null,
+            chapter_id: meta?.chapter_id ?? null,
+            concept_id: null,
+            options: Array.isArray(raw.opts) ? raw.opts : [],
+            correct_answer: raw.correct,
+            explanation: raw.exp || '',
+          };
+        })
+        .filter((q): q is NonNullable<typeof q> => q !== null);
+    })(),
+  ]);
+  const questions = [...(questionsTableResult.data || []), ...resolvedResourceQuestions];
+  if (!questions.length)
+    return NextResponse.json(
+      { status: 'error', error: 'The diagnostic answer key could not be loaded.' },
+      { status: 500 }
+    );
+  const answerMap = new Map(answers.map((item: any) => [String(item.questionId), item.answer]));
+  const chapterScores = new Map<string, { correct: number; total: number }>();
+  const reviews: Array<Record<string, unknown>> = [];
+  let correct = 0;
+  for (const question of questions) {
+    const selected = answerMap.get(question.id);
+    const expected = getCorrectOptionIndex(question.options, question.correct_answer);
+    const isCorrect = expected !== null && Number(selected) === expected;
+    if (isCorrect) correct += 1;
+    reviews.push({
+      questionId: question.id,
+      text: question.text,
+      options: normalizeQuestionOptions(question.options),
+      selected: selected == null ? null : Number(selected),
+      correct: expected,
+      isCorrect,
+      explanation: question.explanation || '',
+    });
+    if (question.chapter_id) {
+      const current = chapterScores.get(question.chapter_id) || { correct: 0, total: 0 };
+      current.total += 1;
+      if (isCorrect) current.correct += 1;
+      chapterScores.set(question.chapter_id, current);
+    }
+    if (!isCorrect) {
+      await recordMistakeWithRevision(db, {
+        studentId: user.id,
+        questionId: question.id,
+        subjectId: question.subject_id,
+        chapterId: question.chapter_id,
+        conceptId: question.concept_id,
+        source: 'diagnostic',
+        questionText: question.text || 'Diagnostic question',
+        selectedAnswer: selected == null ? null : String(selected),
+        correctAnswer: expected == null ? String(question.correct_answer || '') : String(expected),
+        explanation: question.explanation || null,
+      });
+    }
+  }
+  const score = Math.round((correct / questions.length) * 100);
+  await db
+    .from('diagnostic_attempts')
+    .insert({ student_id: user.id, question_ids: questionIds, answers: Object.fromEntries(answerMap), score });
+  for (const [chapterId, result] of chapterScores) {
+    await updateChapterMastery(db, {
+      studentId: user.id,
+      chapterId,
+      correct: result.correct,
+      incorrect: result.total - result.correct,
+      source: 'diagnostic',
+    });
+  }
+  return NextResponse.json({
+    status: 'success',
+    data: {
+      score,
+      correct,
+      total: questions.length,
+      mastery: Array.from(chapterScores, ([chapterId, result]) => ({
+        chapterId,
+        mastery: Math.round((result.correct / result.total) * 100),
+      })),
+      reviews,
+    },
+  });
+}

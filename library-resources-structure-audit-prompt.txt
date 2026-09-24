@@ -1,0 +1,125 @@
+REUSABLE PROMPT — for a NEW Claude Code session (needs local filesystem access
+to E:\data AND the Supabase MCP tools, project "ilm AI" / bvbipddsowwivuynuuuu).
+Fill in GRADE_LEVEL (e.g. GRADE_9, GRADE_10, GRADE_11, GRADE_12) and SUBJECT
+(e.g. Urdu, Mathematics, Physics, Chemistry, Biology, English, Computer
+Science, Pakistan Studies, Tarjuma Tul Quran, Islamiat) before running.
+
+===========================================================================
+
+PROBLEM THIS FIXES: library_resources rows were created mechanically —
+some resources got mcq/short/long/numericals rows attached even though the
+actual local source file for that resource has no such content (e.g. a
+Hadees/poem/nazam text that has no "short questions" or "long questions" at
+all ended up with short/long rows anyway). This task is to make the DB rows
+match REALITY: one row should exist only if a real local file backs it, and
+its content_section must match what that specific file actually is.
+
+GRADE_LEVEL = <fill in, e.g. GRADE_11>
+SUBJECT = <fill in, e.g. Urdu>
+
+STEP 1 — Find the local source root for this grade+subject.
+Local data lives under `E:\data\<grade-folder>\notes\<subject-folder>\`
+(grade-folder like "9th","10th","11th","12th"; subject-folder varies —
+e.g. "urdu","math","phy","chem","bio","eng","cs","pak-study","tq","islamiat").
+List it recursively (folders + files) and actually look at the structure —
+don't assume. Subjects differ:
+  - Urdu/English: may split into chapters/ , nazam/ , ghazal/ subfolders —
+    each is its own book-unit, not interchangeable with "chapter".
+  - Math/Physics/Chemistry: often "exercises" per chapter (numericals), plus
+    separate notes — an exercise file is `numericals`, not `short`/`long`.
+  - Islamiat: often split into per-topic files under a chapter folder.
+  - Others: usually a flatter chapter-N folder per chapter.
+Figure out the ACTUAL unit structure for this specific subject from what's
+on disk before doing anything else. If unsure how a folder maps to a book
+unit, STOP and ask me rather than guessing.
+
+STEP 2 — Classify every real file you found.
+For each individual source file (per theme — dark/light PDF pair + its
+.txt if present, treated as ONE resource), determine content_section from
+its filename/folder, not by assumption:
+  - contains "mcq"                          -> mcq
+  - contains "short"                        -> short
+  - contains "long"                         -> long
+  - contains "numerical" / "exercise"       -> numericals
+  - plain notes/chapter text, poem, nazam,
+    ghazal, hadees, translation, etc. with
+    no question set                         -> reading
+Only assign a content_section that a real file actually supports. Do NOT
+invent short/long/mcq/numericals rows for a resource that is plain reading
+content with no such file behind it.
+
+STEP 3 — Wipe and rebuild, don't patch.
+Rather than trying to carefully patch individual rows, treat the existing
+rows for this GRADE_LEVEL + SUBJECT as throwaway scaffolding from the old
+mechanical system:
+```sql
+select id, title, chapter_id, content_section
+from public.library_resources
+where grade_level = '<GRADE_LEVEL>'
+  and subject_id = (select id from public.subjects where name = '<SUBJECT>')
+order by chapter_id, content_section;
+```
+Note this list (for your own reference/report only), then DELETE every one
+of these rows:
+```sql
+delete from public.library_resources
+where grade_level = '<GRADE_LEVEL>'
+  and subject_id = (select id from public.subjects where name = '<SUBJECT>');
+```
+Deleting a library_resources row does not touch the actual files sitting in
+B2 — the objects stay exactly where they are. We already know the B2 key
+for every file (same deterministic pattern the earlier upload scripts used:
+`library/<subject-slug>/<chapter-slug>/<content_section>/<title-slug>.dark.pdf`
+/ `.light.pdf` / `.context.txt`) — you're recreating the key from the local
+filename/folder you already classified in Step 1/2, not discovering it from
+scratch. So there's no need to hold back — go ahead and delete, then rebuild
+fresh rows exactly matching what you found on disk in Step 1/2.
+Also delete the question data tied to these old rows — it will be
+re-inserted fresh later (via the question-seeding prompt) against the new
+row ids, so don't bother preserving or re-pointing it:
+```sql
+delete from public.resource_mcq_sets
+where resource_kind = 'library'
+  and resource_id in (
+    select id from public.library_resources
+    where grade_level = '<GRADE_LEVEL>'
+      and subject_id = (select id from public.subjects where name = '<SUBJECT>')
+  );
+
+delete from public.questions
+where source_kind = 'library'
+  and source_id in (
+    select id from public.library_resources
+    where grade_level = '<GRADE_LEVEL>'
+      and subject_id = (select id from public.subjects where name = '<SUBJECT>')
+  );
+```
+Run these two deletes BEFORE deleting the library_resources rows themselves
+(so the `select ... in (...)` subqueries above still resolve), then delete
+library_resources as below.
+
+STEP 4 — Insert the correct rows.
+For every real local file you classified in Step 1/2, insert one row:
+```sql
+insert into public.library_resources
+  (subject_id, grade_level, chapter_id, content_section, title, dark_file_url, light_file_url, context_text_url, status)
+values
+  ((select id from public.subjects where name = '<SUBJECT>'), '<GRADE_LEVEL>',
+   '<chapter_id from chapters table, matched by title/order>', '<mcq|short|long|numericals|reading>',
+   '<title, following the naming convention used elsewhere for this subject>',
+   'r2://<bucket>/library/<subject-slug>/<chapter-slug>/<content_section>/<title-slug>.dark.pdf',
+   'r2://<bucket>/library/<subject-slug>/<chapter-slug>/<content_section>/<title-slug>.light.pdf',
+   'r2://<bucket>/library/<subject-slug>/<chapter-slug>/<content_section>/<title-slug>.context.txt',
+   'ready');
+```
+Use the SAME bucket this grade already uses (primary `ilmai-storage-b2` for
+9th/10th, secondary `11th-12th-files-bucket` for 11th/12th — check an
+existing/other row for this grade if unsure). Only create a row for a
+content_section that a real local file actually backs — never one row per
+content_section "just in case". If a resource has only reading text and no
+question file, it gets exactly one `reading` row and nothing else.
+
+STEP 5 — Report back: per chapter/book-unit, final list of content_section
+rows and whether each is backed by mcq/short/long/numericals/reading source
+content that genuinely exists locally. Call out anything ambiguous instead
+of guessing. Do NOT touch any grade/subject outside GRADE_LEVEL + SUBJECT.

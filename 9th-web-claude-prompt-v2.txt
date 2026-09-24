@@ -1,0 +1,210 @@
+You have the Supabase MCP tools connected. This is a single task for the
+"ilm AI" Supabase project — seeding the EXACT question bank for GRADE_9's
+library resources. The metadata rows are ALREADY inserted into
+public.library_resources (done separately) — you do NOT insert/modify that
+table or touch any storage bucket. You ONLY write to public.resource_mcq_sets.
+
+I am attaching .txt files in this chat — each one is the full, already-
+extracted verbatim text of one resource's content (same content as the PDF,
+just pre-extracted so you don't need OCR). The list below maps each resource's
+EXACT title (as already in library_resources) to which attached filename it
+corresponds to — match strictly by filename, don't guess if a file is ambiguous.
+
+For EACH attached .txt file:
+
+1. Find the resource row: `select id, title, subject_id, chapter_id, grade_level
+   from public.library_resources where title = '<exact title from the list below>'
+   and grade_level = 'GRADE_9'`. If no exact match, search more loosely
+   (ilike '%...%') and confirm with me before proceeding — don't guess which row
+   it belongs to.
+2. Read the attached .txt file fully and transcribe its questions **verbatim**
+   — this is not AI-generated content, every question must come word-for-word
+   from the file:
+   - MCQs: { q, opts: [4 options], correct: <0-3 index>, exp } — correct index
+     and exp (explanation) must come from what's actually answer-keyed in the
+     file. If no answer key exists for an MCQ, drop that MCQ rather than
+     guessing the answer.
+   - Short questions: { q, marks, keyPoints: [...], modelAnswer } — marks only
+     if stated in the file.
+   - Long questions: same shape as short, typically higher marks.
+   A file only contains ONE of these three types (matching its resource's
+   content_section) — don't invent the other two arrays, leave them empty.
+3. Upsert into public.resource_mcq_sets:
+   ```sql
+   insert into public.resource_mcq_sets
+     (resource_kind, resource_id, questions, short_questions, long_questions, status, generated_at, updated_at)
+   values
+     ('library', '<library_resources.id from step 1>', '<questions jsonb>'::jsonb, '<short jsonb>'::jsonb, '<long jsonb>'::jsonb, 'ready', now(), now())
+   on conflict (resource_kind, resource_id) do update set
+     questions = excluded.questions,
+     short_questions = excluded.short_questions,
+     long_questions = excluded.long_questions,
+     status = 'ready',
+     generated_at = now(),
+     updated_at = now();
+   ```
+   Do NOT touch resource_processing_jobs or library_resources.drive_url in this
+   task.
+4. Move to the next attached file. Repeat for all attached files in this chat
+   (I may send them across several messages if there are too many for one).
+
+After each batch of attachments, report: resource title + id you attached it
+to, MCQ/short/long counts, and anything you skipped (no answer key, unreadable
+file, couldn't find a matching resource row).
+
+Total files to seed: 149.
+(18 MCQ/short/long resources have no local .txt source and
+are NOT included below — skip those, don't guess their content.)
+
+TITLE <-> ATTACHED FILENAME MAP (attach the file matching each — filenames below
+are the ORIGINAL local names; keep the same filename when attaching):
+
+Chemistry — Chapter 1: States of Matter And Phase Changes — MCQs  =>  E:\data\9th\notes\chemistry\1.States of Matter and Phase Changes\txt\Ch1_StatesOfMatter_MCQs_Dark.txt
+Chemistry — Chapter 1: States of Matter And Phase Changes — Short Questions  =>  E:\data\9th\notes\chemistry\1.States of Matter and Phase Changes\txt\Ch1_StatesOfMatter_ShortQ_Dark.txt
+Chemistry — Chapter 1: States of Matter And Phase Changes — Long Questions  =>  E:\data\9th\notes\chemistry\1.States of Matter and Phase Changes\txt\Ch1_StatesOfMatter_LongQ_Dark.txt
+Chemistry — Chapter 2: Atomic Structure — MCQs  =>  E:\data\9th\notes\chemistry\2.Atomic Structure\txt\Ch2_AtomicStructure_MCQs_Dark.txt
+Chemistry — Chapter 2: Atomic Structure — Short Questions  =>  E:\data\9th\notes\chemistry\2.Atomic Structure\txt\Ch2_AtomicStructure_ShortQ_Dark.txt
+Chemistry — Chapter 2: Atomic Structure — Long Questions  =>  E:\data\9th\notes\chemistry\2.Atomic Structure\txt\Ch2_AtomicStructure_LongQ_Dark.txt
+Chemistry — Chapter 3: Chemical Bonding — MCQs  =>  E:\data\9th\notes\chemistry\3.Chemical Bonding\txt\Ch3_ChemicalBonding_MCQs_Dark.txt
+Chemistry — Chapter 3: Chemical Bonding — Short Questions  =>  E:\data\9th\notes\chemistry\3.Chemical Bonding\txt\Ch3_ChemicalBonding_ShortQ_Dark.txt
+Chemistry — Chapter 3: Chemical Bonding — Long Questions  =>  E:\data\9th\notes\chemistry\3.Chemical Bonding\txt\Ch3_ChemicalBonding_LongQ_Dark.txt
+Chemistry — Chapter 4: Stoichiometry — MCQs  =>  E:\data\9th\notes\chemistry\4.Stoichiometry\txt\Ch4_Stoichiometry_MCQs_Dark.txt
+Chemistry — Chapter 4: Stoichiometry — Short Questions  =>  E:\data\9th\notes\chemistry\4.Stoichiometry\txt\Ch4_Stoichiometry_ShortQ_Dark.txt
+Chemistry — Chapter 4: Stoichiometry — Long Questions  =>  E:\data\9th\notes\chemistry\4.Stoichiometry\txt\Ch4_Stoichiometry_LongQ_Dark.txt
+Chemistry — Chapter 5: Energetics — MCQs  =>  E:\data\9th\notes\chemistry\5.Energetics\txt\Ch5_Energetics_MCQs_Dark.txt
+Chemistry — Chapter 5: Energetics — Short Questions  =>  E:\data\9th\notes\chemistry\5.Energetics\txt\Ch5_Energetics_ShortQ_Dark.txt
+Chemistry — Chapter 5: Energetics — Long Questions  =>  E:\data\9th\notes\chemistry\5.Energetics\txt\Ch5_Energetics_LongQ_Dark.txt
+Chemistry — Chapter 6: Equilibria — MCQs  =>  E:\data\9th\notes\chemistry\6.Equilibria\txt\Ch6_Equilibria_MCQs_Dark.txt
+Chemistry — Chapter 6: Equilibria — Short Questions  =>  E:\data\9th\notes\chemistry\6.Equilibria\txt\Ch6_Equilibria_ShortQ_Dark.txt
+Chemistry — Chapter 6: Equilibria — Long Questions  =>  E:\data\9th\notes\chemistry\6.Equilibria\txt\Ch6_Equilibria_LongQ_Dark.txt
+Chemistry — Chapter 7: Acid Base Chemistry — MCQs  =>  E:\data\9th\notes\chemistry\7.Acid Base Chemistry\txt\Ch7_AcidBaseChemistry_MCQs_Dark.txt
+Chemistry — Chapter 7: Acid Base Chemistry — Short Questions  =>  E:\data\9th\notes\chemistry\7.Acid Base Chemistry\txt\Ch7_AcidBaseChemistry_ShortQ_Dark.txt
+Chemistry — Chapter 7: Acid Base Chemistry — Long Questions  =>  E:\data\9th\notes\chemistry\7.Acid Base Chemistry\txt\Ch7_AcidBaseChemistry_LongQ_Dark.txt
+Chemistry — Chapter 8: Periodic Table & Periodicity — MCQs  =>  E:\data\9th\notes\chemistry\8.Periodic Table & Periodicity\txt\Ch8_PeriodicTable_MCQs_Dark.txt
+Chemistry — Chapter 8: Periodic Table & Periodicity — Short Questions  =>  E:\data\9th\notes\chemistry\8.Periodic Table & Periodicity\txt\Ch8_PeriodicTable_ShortQ_Dark.txt
+Chemistry — Chapter 8: Periodic Table & Periodicity — Long Questions  =>  E:\data\9th\notes\chemistry\8.Periodic Table & Periodicity\txt\Ch8_PeriodicTable_LongQ_Dark.txt
+Chemistry — Chapter 9: Group Properties & Elements — MCQs  =>  E:\data\9th\notes\chemistry\9.Group Properties & Elements\txt\Ch9_GroupProperties_MCQs_Dark.txt
+Chemistry — Chapter 9: Group Properties & Elements — Short Questions  =>  E:\data\9th\notes\chemistry\9.Group Properties & Elements\txt\Ch9_GroupProperties_ShortQ_Dark.txt
+Chemistry — Chapter 9: Group Properties & Elements — Long Questions  =>  E:\data\9th\notes\chemistry\9.Group Properties & Elements\txt\Ch9_GroupProperties_LongQ_Dark.txt
+Chemistry — Chapter 10: Environmental Chemistry — MCQs  =>  E:\data\9th\notes\chemistry\10. Environmental Chemistry\txt\Ch10_EnvironmentalChemistry_MCQs_Dark.txt
+Chemistry — Chapter 10: Environmental Chemistry — Short Questions  =>  E:\data\9th\notes\chemistry\10. Environmental Chemistry\txt\Ch10_EnvironmentalChemistry_ShortQ_Dark.txt
+Chemistry — Chapter 10: Environmental Chemistry — Long Questions  =>  E:\data\9th\notes\chemistry\10. Environmental Chemistry\txt\Ch10_EnvironmentalChemistry_LongQ_Dark.txt
+Chemistry — Chapter 11: Hydrocarbons — MCQs  =>  E:\data\9th\notes\chemistry\11.Hydrocarbons\txt\Ch11_Hydrocarbons_MCQs_Dark.txt
+Chemistry — Chapter 11: Hydrocarbons — Short Questions  =>  E:\data\9th\notes\chemistry\11.Hydrocarbons\txt\Ch11_Hydrocarbons_ShortQ_Dark.txt
+Chemistry — Chapter 11: Hydrocarbons — Long Questions  =>  E:\data\9th\notes\chemistry\11.Hydrocarbons\txt\Ch11_Hydrocarbons_LongQ_Dark.txt
+Chemistry — Chapter 12: Empirical Data Collection And Analysis — MCQs  =>  E:\data\9th\notes\chemistry\12.Empirical Data Collection and Analysis\txt\Ch12_EmpiricalData_MCQs_Dark.txt
+Chemistry — Chapter 12: Empirical Data Collection And Analysis — Short Questions  =>  E:\data\9th\notes\chemistry\12.Empirical Data Collection and Analysis\txt\Ch12_EmpiricalData_ShortQ_Dark.txt
+Chemistry — Chapter 12: Empirical Data Collection And Analysis — Long Questions  =>  E:\data\9th\notes\chemistry\12.Empirical Data Collection and Analysis\txt\Ch12_EmpiricalData_LongQ_Dark.txt
+Chemistry — Chapter 13: Laboratory And Practical Skills — MCQs  =>  E:\data\9th\notes\chemistry\13.Laboratory and Practical Skills\txt\Ch13_LabSkills_MCQs_Dark.txt
+Chemistry — Chapter 13: Laboratory And Practical Skills — Short Questions  =>  E:\data\9th\notes\chemistry\13.Laboratory and Practical Skills\txt\Ch13_LabSkills_ShortQ_Dark.txt
+Chemistry — Chapter 13: Laboratory And Practical Skills — Long Questions  =>  E:\data\9th\notes\chemistry\13.Laboratory and Practical Skills\txt\Ch13_LabSkills_LongQ_Dark.txt
+Computer Science — Chapter 1: Introduction to Systems — MCQs  =>  E:\data\9th\notes\com\Chapter 1 – Introduction to Systems\txt\Ch1_IntroductionToSystems_MCQs_Dark.txt
+Computer Science — Chapter 1: Introduction to Systems — Short Questions  =>  E:\data\9th\notes\com\Chapter 1 – Introduction to Systems\txt\Ch1_IntroductionToSystems_ShortQuestions_Dark.txt
+Computer Science — Chapter 1: Introduction to Systems — Long Questions  =>  E:\data\9th\notes\com\Chapter 1 – Introduction to Systems\txt\Ch1_IntroductionToSystems_LongQuestions_Dark.txt
+Computer Science — Chapter 2: Number Systems — MCQs  =>  E:\data\9th\notes\com\Chapter 2 – Number Systems\txt\Ch2_NumberSystems_MCQs_Dark.txt
+Computer Science — Chapter 2: Number Systems — Short Questions  =>  E:\data\9th\notes\com\Chapter 2 – Number Systems\txt\Ch2_NumberSystems_ShortQuestions_Dark.txt
+Computer Science — Chapter 2: Number Systems — Long Questions  =>  E:\data\9th\notes\com\Chapter 2 – Number Systems\txt\Ch2_NumberSystems_LongQuestions_Dark.txt
+Computer Science — Chapter 3: Digital Systems And Logic Design — MCQs  =>  E:\data\9th\notes\com\Chapter 3 – Digital Systems and Logic Design\txt\Ch3_DigitalSystems_MCQs_Dark.txt
+Computer Science — Chapter 3: Digital Systems And Logic Design — Short Questions  =>  E:\data\9th\notes\com\Chapter 3 – Digital Systems and Logic Design\txt\Ch3_DigitalSystems_ShortQuestions_Dark.txt
+Computer Science — Chapter 3: Digital Systems And Logic Design — Long Questions  =>  E:\data\9th\notes\com\Chapter 3 – Digital Systems and Logic Design\txt\Ch3_DigitalSystems_LongQuestions_Dark.txt
+Computer Science — Chapter 4: Systems Troubleshooting — MCQs  =>  E:\data\9th\notes\com\Chapter 4 – Systems Troubleshooting\txt\Ch4_MCQs_Dark.txt
+Computer Science — Chapter 4: Systems Troubleshooting — Short Questions  =>  E:\data\9th\notes\com\Chapter 4 – Systems Troubleshooting\txt\Ch4_ShortQuestions_Dark.txt
+Computer Science — Chapter 4: Systems Troubleshooting — Long Questions  =>  E:\data\9th\notes\com\Chapter 4 – Systems Troubleshooting\txt\Ch4_LongQuestions_Dark.txt
+Computer Science — Chapter 5: Software Systems — MCQs  =>  E:\data\9th\notes\com\Chapter 5 – Software Systems\txt\Ch5_SoftwareSystems_MCQs_Dark.txt
+Computer Science — Chapter 5: Software Systems — Short Questions  =>  E:\data\9th\notes\com\Chapter 5 – Software Systems\txt\Ch5_SoftwareSystems_ShortQuestions_Dark.txt
+Computer Science — Chapter 5: Software Systems — Long Questions  =>  E:\data\9th\notes\com\Chapter 5 – Software Systems\txt\Ch5_SoftwareSystems_LongQuestions_Dark.txt
+Computer Science — Chapter 6: Introduction to Computer Networks — MCQs  =>  E:\data\9th\notes\com\Chapter 6 – Introduction to Computer Networks\txt\Ch6_ComputerNetworks_MCQs_Dark.txt
+Computer Science — Chapter 6: Introduction to Computer Networks — Short Questions  =>  E:\data\9th\notes\com\Chapter 6 – Introduction to Computer Networks\txt\Ch6_ComputerNetworks_ShortQ_Dark.txt
+Computer Science — Chapter 6: Introduction to Computer Networks — Long Questions  =>  E:\data\9th\notes\com\Chapter 6 – Introduction to Computer Networks\txt\Ch6_ComputerNetworks_LongQ_Dark.txt
+Computer Science — Chapter 7: Computational Thinking — MCQs  =>  E:\data\9th\notes\com\Chapter 7 - Computational Thinking\txt\Ch7_ComputationalThinking_MCQs_Dark.txt
+Computer Science — Chapter 7: Computational Thinking — Short Questions  =>  E:\data\9th\notes\com\Chapter 7 - Computational Thinking\txt\Ch7_ComputationalThinking_ShortQ_Dark.txt
+Computer Science — Chapter 7: Computational Thinking — Long Questions  =>  E:\data\9th\notes\com\Chapter 7 - Computational Thinking\txt\Ch7_ComputationalThinking_LongQ_Dark.txt
+Computer Science — Chapter 8: Web Development With HTML, CSS And Java-Script — MCQs  =>  E:\data\9th\notes\com\Chapter 8 - Web Development with HTML, CSS and Java-Script\txt\Ch8_WebDev_MCQs_Dark.txt
+Computer Science — Chapter 8: Web Development With HTML, CSS And Java-Script — Short Questions  =>  E:\data\9th\notes\com\Chapter 8 - Web Development with HTML, CSS and Java-Script\txt\Ch8_WebDev_ShortQ_Dark.txt
+Computer Science — Chapter 8: Web Development With HTML, CSS And Java-Script — Long Questions  =>  E:\data\9th\notes\com\Chapter 8 - Web Development with HTML, CSS and Java-Script\txt\Ch8_WebDev_LongQ_Dark.txt
+Computer Science — Chapter 9: Data Science And Data Gathering — MCQs  =>  E:\data\9th\notes\com\Chapter 9 - Data Science and Data Gathering\txt\Ch9_DataScience_MCQs_Dark.txt
+Computer Science — Chapter 9: Data Science And Data Gathering — Short Questions  =>  E:\data\9th\notes\com\Chapter 9 - Data Science and Data Gathering\txt\Ch9_DataScience_ShortQuestions_Dark.txt
+Computer Science — Chapter 9: Data Science And Data Gathering — Long Questions  =>  E:\data\9th\notes\com\Chapter 9 - Data Science and Data Gathering\txt\Ch9_DataScience_LongQuestions_Dark.txt
+Computer Science — Chapter 10: Emerging Technologies in Computer Science — MCQs  =>  E:\data\9th\notes\com\Chapter 10 - Emerging Techonologies in Computer Science\txt\Ch10_EmergingTech_MCQs_Dark.txt
+Computer Science — Chapter 10: Emerging Technologies in Computer Science — Short Questions  =>  E:\data\9th\notes\com\Chapter 10 - Emerging Techonologies in Computer Science\txt\Ch10_EmergingTech_ShortQ_Dark.txt
+Computer Science — Chapter 10: Emerging Technologies in Computer Science — Long Questions  =>  E:\data\9th\notes\com\Chapter 10 - Emerging Techonologies in Computer Science\txt\Ch10_EmergingTech_LongQ_Dark.txt
+Computer Science — Chapter 11: Ethical, Social And Legal Concerns in Computer Usage — MCQs  =>  E:\data\9th\notes\com\Chapter 11 - Ethical, Social and Legal Concerns in Computer Usage\txt\Ch11_EthicalSocialLegalConcerns_MCQs_Dark.txt
+Computer Science — Chapter 11: Ethical, Social And Legal Concerns in Computer Usage — Short Questions  =>  E:\data\9th\notes\com\Chapter 11 - Ethical, Social and Legal Concerns in Computer Usage\txt\Ch11_EthicalSocialLegalConcerns_ShortQuestions_Dark.txt
+Computer Science — Chapter 11: Ethical, Social And Legal Concerns in Computer Usage — Long Questions  =>  E:\data\9th\notes\com\Chapter 11 - Ethical, Social and Legal Concerns in Computer Usage\txt\Ch11_EthicalSocialLegalConcerns_LongQuestions_Dark.txt
+Computer Science — Chapter 12: Entrepreneurship in Digital Age — MCQs  =>  E:\data\9th\notes\com\Chapter 12 - Entrepreneurship in Digital Age\txt\Unit12_MCQs_Dark.txt
+Computer Science — Chapter 12: Entrepreneurship in Digital Age — Short Questions  =>  E:\data\9th\notes\com\Chapter 12 - Entrepreneurship in Digital Age\txt\Unit12_ShortQuestions_Dark.txt
+Computer Science — Chapter 12: Entrepreneurship in Digital Age — Long Questions  =>  E:\data\9th\notes\com\Chapter 12 - Entrepreneurship in Digital Age\txt\Unit12_LongQuestions_Dark.txt
+Urdu — Chapter 1: Nazam Hamad — MCQs  =>  E:\data\9th\notes\urdu\mcques\txt\Ch2_Hamd_MCQs50.txt
+Urdu — Chapter 2: Nazam Naat — MCQs  =>  E:\data\9th\notes\urdu\mcques\txt\Ch1_Naat_MCQs50.txt
+Urdu — Chapter 3: Akhlaq e Hasna — MCQs  =>  E:\data\9th\notes\urdu\mcques\txt\Ch3_AkhlaqEHasana_MCQs50.txt
+Urdu — Chapter 4: Apni Madad Aap — MCQs  =>  E:\data\9th\notes\urdu\mcques\txt\Ch4_ApniMadadAap_MCQs50.txt
+Urdu — Chapter 5: Kaleem aur Mirza Zahir Dar Baig — MCQs  =>  E:\data\9th\notes\urdu\mcques\txt\Ch5_KaleemAurMirzaZahirDarbeg_MCQs50.txt
+Urdu — Chapter 6: Naam Dev Maali — MCQs  =>  E:\data\9th\notes\urdu\mcques\txt\Ch6_NaamDeoMali_MCQs50.txt
+Urdu — Chapter 7: Araam o Sukoon — MCQs  =>  E:\data\9th\notes\urdu\mcques\txt\Ch7_AramOSukoon_MCQs50.txt
+Urdu — Chapter 8: Katba — MCQs  =>  E:\data\9th\notes\urdu\mcques\txt\Ch8_Kutba_MCQs50.txt
+Urdu — Chapter 9: Ibtidai Hisab — MCQs  =>  E:\data\9th\notes\urdu\mcques\txt\Ch9_IbtidaiHisab_MCQs50.txt
+Urdu — Chapter 10: Lari Main Paroye Huvay Manazr — MCQs  =>  E:\data\9th\notes\urdu\mcques\txt\Ch10_LariMeinParoyeHuyeManzar_MCQs50.txt
+Urdu — Chapter 11: Bhairiya — MCQs  =>  E:\data\9th\notes\urdu\mcques\txt\Ch11_Bhairya_MCQs50.txt
+Urdu — Chapter 12: Nazam Mehnat Ki Barkaat — MCQs  =>  E:\data\9th\notes\urdu\mcques\txt\Nzm12_MehnatKiBarkat_MCQs50.txt
+Urdu — Chapter 13: Nazam Javed Ke Naam — MCQs  =>  E:\data\9th\notes\urdu\mcques\txt\Ch13_JavedKeNaam_MCQs50.txt
+Urdu — Chapter 14: Nazam Payam e Latif — MCQs  =>  E:\data\9th\notes\urdu\mcques\txt\Ch14_PayamELateef_MCQs50.txt
+Urdu — Chapter 15: Nazam Cricket Aur Mushaira — MCQs  =>  E:\data\9th\notes\urdu\mcques\txt\Nzm15_KricketAurMushaira_MCQs50.txt
+Urdu — Chapter 16: Ghazal Faqirana Aae Sada Kar Chale — MCQs  =>  E:\data\9th\notes\urdu\mcques\txt\Gzl16_MirTaqiMir_MCQs50.txt
+Urdu — Chapter 17: Ghazal Sun To Sahi Jahaan Mein Hai Tera Fasana — MCQs  =>  E:\data\9th\notes\urdu\mcques\txt\Ch2_SunTohSahi_MCQs50.txt
+Urdu — Chapter 18: Ghazal Gham Hai Ya Khushi Hai Tu — MCQs  =>  E:\data\9th\notes\urdu\mcques\txt\Ch3_GhamHaiYaKhushi_MCQs50.txt
+Urdu — Chapter 19: Ghazal Kash Taufaan Mein Safeene Ko Utara Hota — MCQs  =>  E:\data\9th\notes\urdu\mcques\txt\Ch3_KaashTofaanGhazal_MCQs50.txt
+Urdu — Chapter 20: Hosla Na Haro Aage Barho — MCQs  =>  E:\data\9th\notes\urdu\mcques\txt\Ch20_HoslaNaHaro_MCQs50.txt
+Urdu — Chapter 21: Shuhdaye Pishawar Ke Liye Ek Nazam — MCQs  =>  E:\data\9th\notes\urdu\mcques\txt\Ch21_ShuhdaEPeshawar_MCQs50.txt
+Mathematics — Chapter 1: Real Numbers — Exercise 1.1 — MCQs  =>  E:\data\9th\notes\math\txt\Unit 1 – Complex Numbers\txt\mcques\Exercise_1.1_MCQs_30.txt
+Mathematics — Chapter 1: Real Numbers — Exercise 1.2 — MCQs  =>  E:\data\9th\notes\math\txt\Unit 1 – Complex Numbers\txt\mcques\Exercise_1.2_MCQs_30.txt
+Mathematics — Chapter 1: Real Numbers — Exercise 1.3 — MCQs  =>  E:\data\9th\notes\math\txt\Unit 1 – Complex Numbers\txt\mcques\Exercise_1.3_30MCQs_Content.txt
+Mathematics — Chapter 1: Real Numbers — Review Exercise — MCQs  =>  E:\data\9th\notes\math\txt\Unit 1 – Complex Numbers\txt\mcques\Review_Exercise_1_30MCQs_Content.txt
+Mathematics — Chapter 2: Logarithms — Exercise 2.4 — MCQs  =>  E:\data\9th\notes\math\txt\Unit 2 – Quadratic Equations and Inequalities\txt\mcques\Ex2.4_MCQs30_Content.txt
+Mathematics — Chapter 2: Logarithms — Exercise 2.1 — MCQs  =>  E:\data\9th\notes\math\txt\Unit 2 – Quadratic Equations and Inequalities\txt\mcques\MCQs_Exercise_2.1.txt
+Mathematics — Chapter 2: Logarithms — Exercise 2.2 — MCQs  =>  E:\data\9th\notes\math\txt\Unit 2 – Quadratic Equations and Inequalities\txt\mcques\MCQs_Exercise_2.2.txt
+Mathematics — Chapter 2: Logarithms — Exercise 2.3 — MCQs  =>  E:\data\9th\notes\math\txt\Unit 2 – Quadratic Equations and Inequalities\txt\mcques\MCQs_Exercise_2.3.txt
+Mathematics — Chapter 2: Logarithms — Review Exercise — MCQs  =>  E:\data\9th\notes\math\txt\Unit 2 – Quadratic Equations and Inequalities\txt\mcques\Review_Ex2_MCQs30_Content.txt
+Mathematics — Chapter 3: Set and Functions — Exercise 3.1 — MCQs  =>  E:\data\9th\notes\math\txt\Unit 3 - Matrices and Determinants\txt\mcques\Ex3.1_MCQs30_Content.txt
+Mathematics — Chapter 3: Set and Functions — Exercise 3.2 — MCQs  =>  E:\data\9th\notes\math\txt\Unit 3 - Matrices and Determinants\txt\mcques\Exercise_3.2_MCQs.txt
+Mathematics — Chapter 3: Set and Functions — Exercise 3.3 — MCQs  =>  E:\data\9th\notes\math\txt\Unit 3 - Matrices and Determinants\txt\mcques\Exercise_3.3_MCQs.txt
+Mathematics — Chapter 3: Set and Functions — Review Exercise — MCQs  =>  E:\data\9th\notes\math\txt\Unit 3 - Matrices and Determinants\txt\mcques\Review_Exercise_3_MCQs_Set2.txt
+Mathematics — Chapter 4: Factorization and Algebraic Manipulation — Exercise 4.4 — MCQs  =>  E:\data\9th\notes\math\txt\Unit 4 - Functions and Graphs\txt\mcques\Ex4.4_MCQs30.txt
+Mathematics — Chapter 4: Factorization and Algebraic Manipulation — Review Exercise — MCQs  =>  E:\data\9th\notes\math\txt\Unit 4 - Functions and Graphs\txt\mcques\ReviewEx4_MCQs30.txt
+Mathematics — Chapter 5: Linear Equations and Inequalities — Exercise 5.2 — MCQs  =>  E:\data\9th\notes\math\txt\Unit 5 - Algebraic Fractions\txt\mcques\Ch5_Ex5.2_MCQs30.txt
+Mathematics — Chapter 5: Linear Equations and Inequalities — Review Exercise — MCQs  =>  E:\data\9th\notes\math\txt\Unit 5 - Algebraic Fractions\txt\mcques\Ch5_ReviewEx5_MCQs30.txt
+Mathematics — Chapter 5: Linear Equations and Inequalities — Exercise 5.1 — MCQs  =>  E:\data\9th\notes\math\txt\Unit 5 - Algebraic Fractions\txt\mcques\Ex5.1_MCQs30.txt
+Mathematics — Chapter 6: Trigonometry — Exercise 6.1 — MCQs  =>  E:\data\9th\notes\math\txt\Unit 6 - Vectors in Plane\txt\mcques\Ch6_Ex6.1_MCQs30.txt
+Mathematics — Chapter 6: Trigonometry — Exercise 6.2 — MCQs  =>  E:\data\9th\notes\math\txt\Unit 6 - Vectors in Plane\txt\mcques\Ch6_Ex6.2_MCQs30.txt
+Mathematics — Chapter 6: Trigonometry — Exercise 6.3 — MCQs  =>  E:\data\9th\notes\math\txt\Unit 6 - Vectors in Plane\txt\mcques\Ch6_Ex6.3_MCQs30.txt
+Mathematics — Chapter 6: Trigonometry — Exercise 6.4 — MCQs  =>  E:\data\9th\notes\math\txt\Unit 6 - Vectors in Plane\txt\mcques\Ex6.4_MCQs.txt
+Mathematics — Chapter 6: Trigonometry — Exercise 6.5 — MCQs  =>  E:\data\9th\notes\math\txt\Unit 6 - Vectors in Plane\txt\mcques\Ex6.5_MCQs.txt
+Mathematics — Chapter 6: Trigonometry — Exercise 6.6 — MCQs  =>  E:\data\9th\notes\math\txt\Unit 6 - Vectors in Plane\txt\mcques\Ex6.6_MCQs.txt
+Mathematics — Chapter 6: Trigonometry — Review Exercise — MCQs  =>  E:\data\9th\notes\math\txt\Unit 6 - Vectors in Plane\txt\mcques\ReviewEx6_MCQs.txt
+Mathematics — Chapter 7: Coordinate Geometry — Exercise 7.1 — MCQs  =>  E:\data\9th\notes\math\txt\Unit 7 - Coordinate Geometry\txt\mcques\Ch7_Ex7.1_MCQs.txt
+Mathematics — Chapter 7: Coordinate Geometry — Exercise 7.2 — MCQs  =>  E:\data\9th\notes\math\txt\Unit 7 - Coordinate Geometry\txt\mcques\Ch7_Ex7.2_MCQs.txt
+Mathematics — Chapter 7: Coordinate Geometry — Exercise 7.3 — MCQs  =>  E:\data\9th\notes\math\txt\Unit 7 - Coordinate Geometry\txt\mcques\Ch7_Ex7.3_MCQs.txt
+Mathematics — Chapter 7: Coordinate Geometry — Review Exercise — MCQs  =>  E:\data\9th\notes\math\txt\Unit 7 - Coordinate Geometry\txt\mcques\Ch7_ReviewExercise_MCQs.txt
+Mathematics — Chapter 8: Logic — Review Exercise — MCQs  =>  E:\data\9th\notes\math\txt\Unit 8 - Logic\txt\mcques\Ch8_ReviewExercise_MCQs.txt
+Mathematics — Chapter 9: Similar Figures — Exercise 9.1 — MCQs  =>  E:\data\9th\notes\math\txt\Unit 9 - Similar Figures\txt\mcques\Exercise_9.1_MCQs_30.txt
+Mathematics — Chapter 9: Similar Figures — Exercise 9.2 — MCQs  =>  E:\data\9th\notes\math\txt\Unit 9 - Similar Figures\txt\mcques\Exercise_9.2_MCQs_30.txt
+Mathematics — Chapter 9: Similar Figures — Exercise 9.3 — MCQs  =>  E:\data\9th\notes\math\txt\Unit 9 - Similar Figures\txt\mcques\Exercise_9.3_MCQs_30.txt
+Mathematics — Chapter 9: Similar Figures — Exercise 9.4 — MCQs  =>  E:\data\9th\notes\math\txt\Unit 9 - Similar Figures\txt\mcques\Exercise_9.4_MCQs_30.txt
+Mathematics — Chapter 9: Similar Figures — Review Exercise — MCQs  =>  E:\data\9th\notes\math\txt\Unit 9 - Similar Figures\txt\mcques\Review_Exercise_9_MCQs_30.txt
+Mathematics — Chapter 10: Graphs of Functions — Exercise 10.1 — MCQs  =>  E:\data\9th\notes\math\txt\Unit 10 - Graphs of Functions\txt\mcques\Exercise_10.1_MCQs.txt
+Mathematics — Chapter 10: Graphs of Functions — Exercise 10.2 — MCQs  =>  E:\data\9th\notes\math\txt\Unit 10 - Graphs of Functions\txt\mcques\Exercise_10.2_MCQs.txt
+Mathematics — Chapter 10: Graphs of Functions — Review Exercise — MCQs  =>  E:\data\9th\notes\math\txt\Unit 10 - Graphs of Functions\txt\mcques\Review_Exercise_10_MCQs.txt
+Mathematics — Chapter 13: Probability — Exercise 13.1 — MCQs  =>  E:\data\9th\notes\math\txt\Unit 13 - Probability\txt\mcques\Ex13.1_MCQs30.txt
+Mathematics — Chapter 13: Probability — Exercise 13.2 — MCQs  =>  E:\data\9th\notes\math\txt\Unit 13 - Probability\txt\mcques\Ex13.2_MCQs30.txt
+Mathematics — Chapter 13: Probability — Review Exercise — MCQs  =>  E:\data\9th\notes\math\txt\Unit 13 - Probability\txt\mcques\ReviewEx13_MCQs30.txt
+Tarjuma Tul Quran — Surah Maryam — MCQs  =>  E:\data\9th\notes\T_Q\mcques\txt\1_SurahMaryam_MCQs50.txt
+Tarjuma Tul Quran — Surah Taha — MCQs  =>  E:\data\9th\notes\T_Q\mcques\txt\2_SurahTaha_MCQs50.txt
+Tarjuma Tul Quran — Surah Al Anbiya — MCQs  =>  E:\data\9th\notes\T_Q\mcques\txt\3_SurahAlAnbiya_MCQs50.txt
+Tarjuma Tul Quran — Surah Al Hajj — MCQs  =>  E:\data\9th\notes\T_Q\mcques\txt\4_Surah_Al_Hajj_MCQs50.txt
+Tarjuma Tul Quran — Surah Al Furqan — MCQs  =>  E:\data\9th\notes\T_Q\mcques\txt\5_Surah_Al_Furqan_MCQs50.txt
+Tarjuma Tul Quran — Surah Al Shuara — MCQs  =>  E:\data\9th\notes\T_Q\mcques\txt\6_Surah_Al_Shuara_MCQs50.txt
+Tarjuma Tul Quran — Surah An Naml — MCQs  =>  E:\data\9th\notes\T_Q\mcques\txt\7_Surah_An_Naml_MCQs50.txt
+Tarjuma Tul Quran — Surah Al Qasas — MCQs  =>  E:\data\9th\notes\T_Q\mcques\txt\8_Surah_Al_Qasas_MCQs50.txt
+Tarjuma Tul Quran — Surah Ankabut — MCQs  =>  E:\data\9th\notes\T_Q\mcques\txt\9_Surah_Ankabut_MCQs50.txt
+Tarjuma Tul Quran — Surah Rum — MCQs  =>  E:\data\9th\notes\T_Q\mcques\txt\Surah_Rum_MCQs50.txt
+Tarjuma Tul Quran — Surah Luqman — MCQs  =>  E:\data\9th\notes\T_Q\mcques\txt\Surah_Luqman_MCQs50.txt
+Tarjuma Tul Quran — Surah Sajdah — MCQs  =>  E:\data\9th\notes\T_Q\mcques\txt\Surah_Sajdah_MCQs50.txt

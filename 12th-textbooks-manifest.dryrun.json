@@ -1,0 +1,65 @@
+[
+  {
+    "subject_slug": "biology",
+    "title": "Biology — Class 12 Full Textbook (Punjab)",
+    "book_title": "Class 12 Biology Textbook (Punjab)",
+    "key": "library/text-books/grade-12/biology-full-textbook.pdf",
+    "source": "E:\\data\\12th\\text_books\\12 Biology Full Book Punjab EM.pdf"
+  },
+  {
+    "subject_slug": "chemistry",
+    "title": "Chemistry — Class 12 Full Textbook (Punjab)",
+    "book_title": "Class 12 Chemistry Textbook (Punjab)",
+    "key": "library/text-books/grade-12/chemistry-full-textbook.pdf",
+    "source": "E:\\data\\12th\\text_books\\12 Chemistry Full Book Punjab EM.pdf"
+  },
+  {
+    "subject_slug": "computer-science",
+    "title": "Computer Science — Class 12 Full Textbook (Punjab)",
+    "book_title": "Class 12 Computer Science Textbook (Punjab)",
+    "key": "library/text-books/grade-12/computer-science-full-textbook.pdf",
+    "source": "E:\\data\\12th\\text_books\\12 Computer Full Book Punjab EM.pdf"
+  },
+  {
+    "subject_slug": "mathematics",
+    "title": "Mathematics — Class 12 Full Textbook (Punjab)",
+    "book_title": "Class 12 Mathematics Textbook (Punjab)",
+    "key": "library/text-books/grade-12/mathematics-full-textbook.pdf",
+    "source": "E:\\data\\12th\\text_books\\12 Maths Full Book Punjab EM.pdf"
+  },
+  {
+    "subject_slug": "pakistan-studies",
+    "title": "Pakistan Studies — Class 12 Full Textbook (Punjab)",
+    "book_title": "Class 12 Pakistan Studies Textbook (Punjab)",
+    "key": "library/text-books/grade-12/pakistan-studies-full-textbook.pdf",
+    "source": "E:\\data\\12th\\text_books\\12 Pak Study Full Book Punjab EM.pdf"
+  },
+  {
+    "subject_slug": "physics",
+    "title": "Physics — Class 12 Full Textbook (Punjab)",
+    "book_title": "Class 12 Physics Textbook (Punjab)",
+    "key": "library/text-books/grade-12/physics-full-textbook.pdf",
+    "source": "E:\\data\\12th\\text_books\\12 Physics Full Book Punjab EM.pdf"
+  },
+  {
+    "subject_slug": "tarjuma-tul-quran",
+    "title": "Tarjuma Tul Quran — Class 12 Full Textbook (Punjab)",
+    "book_title": "Class 12 Tarjuma Tul Quran Textbook (Punjab)",
+    "key": "library/text-books/grade-12/tarjuma-tul-quran-full-textbook.pdf",
+    "source": "E:\\data\\12th\\text_books\\2343-12th-class-tarjuma-tul-quran-latest-textbook-pdf-(taleem360.com)-VD1Cs.pdf"
+  },
+  {
+    "subject_slug": "english",
+    "title": "English — Class 12 Full Textbook (Punjab)",
+    "book_title": "Class 12 English Textbook (Punjab)",
+    "key": "library/text-books/grade-12/english-full-textbook.pdf",
+    "source": "E:\\data\\12th\\text_books\\New 12 English Full Book Punjab 2026.pdf"
+  },
+  {
+    "subject_slug": "urdu",
+    "title": "Urdu — Class 12 Full Textbook (Punjab)",
+    "book_title": "Class 12 Urdu Textbook (Punjab)",
+    "key": "library/text-books/grade-12/urdu-full-textbook.pdf",
+    "source": "E:\\data\\12th\\text_books\\New 12 Urdu Full Book Punjab 2026.pdf"
+  }
+]

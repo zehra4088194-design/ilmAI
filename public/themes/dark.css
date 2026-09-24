@@ -1,0 +1,115 @@
+/* dark is loaded on demand; this file contains only its light/dark pair. */
+html.dark-light {
+  --brand-primary: 262 78% 48%;
+  --brand-secondary: 210 92% 54%;
+  --brand-accent: 171 88% 40%;
+  --background: 246 30% 94%;
+  --foreground: 248 34% 14%;
+  --card: 0 0% 100%;
+  --card-foreground: 248 34% 14%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 248 34% 14%;
+  --primary: 262 78% 48%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 246 28% 90%;
+  --secondary-foreground: 248 34% 14%;
+  --muted: 246 20% 91%;
+  --muted-foreground: 248 15% 42%;
+  --accent: 260 65% 92%;
+  --accent-foreground: 262 78% 24%;
+  --border: 246 20% 82%;
+  --input: 246 20% 82%;
+  --ring: 262 78% 48%;
+  --sidebar: 251 36% 18%;
+  --sidebar-foreground: 210 40% 98%;
+  --sidebar-accent: 251 28% 24%;
+  --sidebar-accent-foreground: 210 40% 98%;
+  --sidebar-border: 251 22% 28%;
+  --app-background-image:
+    radial-gradient(circle at 10% 0%, hsl(var(--brand-primary) / 0.12), transparent 36%),
+    radial-gradient(circle at 84% 16%, hsl(var(--brand-secondary) / 0.1), transparent 38%);
+  --app-background-size: auto;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --chart-1: var(--primary);
+  --chart-2: var(--brand-secondary);
+  --chart-3: var(--brand-accent);
+  --chart-4: 38 92% 50%;
+  --chart-5: 0 84% 60%;
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-ring: var(--ring);
+}
+
+html.dark-dark {
+  --brand-primary: 269 82% 70%;
+  --brand-secondary: 199 94% 60%;
+  --brand-accent: 171 100% 45%;
+  --background: 252 42% 6%;
+  --foreground: 210 40% 98%;
+  --card: 252 32% 10%;
+  --card-foreground: 210 40% 98%;
+  --popover: 252 32% 10%;
+  --popover-foreground: 210 40% 98%;
+  --primary: 269 82% 70%;
+  --primary-foreground: 252 42% 8%;
+  --secondary: 252 26% 15%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 252 24% 15%;
+  --muted-foreground: 215 20% 70%;
+  --accent: 252 26% 17%;
+  --accent-foreground: 210 40% 98%;
+  --border: 252 24% 20%;
+  --input: 252 24% 20%;
+  --ring: 269 82% 70%;
+  --sidebar: 252 40% 8%;
+  --sidebar-foreground: 210 40% 98%;
+  --sidebar-accent: 252 30% 16%;
+  --sidebar-accent-foreground: 210 40% 98%;
+  --sidebar-border: 252 24% 18%;
+  --app-background-image:
+    radial-gradient(circle at 10% 0%, hsl(var(--brand-primary) / 0.22), transparent 38%),
+    radial-gradient(circle at 85% 18%, hsl(var(--brand-secondary) / 0.18), transparent 38%);
+  --app-background-size: auto;
+  --destructive: 0 62% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --chart-1: var(--primary);
+  --chart-2: var(--brand-secondary);
+  --chart-3: var(--brand-accent);
+  --chart-4: 38 92% 60%;
+  --chart-5: 0 84% 70%;
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-ring: var(--ring);
+}
+
+html.dark-light,
+html.dark-dark {
+  --radius: 0.65rem;
+  --theme-glass-blur: 5px;
+  --theme-card-shadow: 0 16px 44px rgba(30, 12, 64, 0.2);
+  --theme-heading-tracking: -0.018em;
+  --theme-body-font: var(--font-inter), sans-serif;
+  --theme-heading-font: var(--font-geist-mono), monospace;
+  --theme-heading-transform: none;
+  --theme-heading-weight: 680;
+  --theme-surface-radius: 0.55rem;
+  --theme-surface-angle: 118deg;
+  --theme-border-width: 1px;
+  --theme-border-style: solid;
+  --destructive: 0 62% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --chart-1: var(--primary);
+  --chart-2: var(--brand-secondary);
+  --chart-3: var(--brand-accent);
+  --chart-4: 38 92% 60%;
+  --chart-5: 0 84% 70%;
+  --sidebar: var(--card);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--secondary);
+  --sidebar-accent-foreground: var(--secondary-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+}

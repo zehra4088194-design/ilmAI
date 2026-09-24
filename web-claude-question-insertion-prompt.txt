@@ -1,0 +1,152 @@
+REUSABLE PROMPT — use this exact text for ANY grade + ANY subject. Fill in
+GRADE_LEVEL (e.g. GRADE_9, GRADE_10, GRADE_11, GRADE_12) and SUBJECT (e.g.
+Chemistry, Biology, Physics, Mathematics, English, Urdu, Computer Science,
+Pakistan Studies, Tarjuma Tul Quran, Islamiat) at the top before sending, and
+attach that grade+subject's files in the same message — send 10-15 resources
+per session (not the whole subject at once, to keep accuracy high). For each
+resource, attach its .txt file AND its light-theme PDF (send both — the .txt
+is the primary source, the light PDF is only a fallback for when the .txt
+has OCR garbling you can't confidently read).
+
+===========================================================================
+
+You have the Supabase MCP tools connected, project "ilm AI"
+(bvbipddsowwivuynuuuu), AND Google Drive MCP tools connected, with this
+grade+subject's dark/light/.txt files uploaded to Drive. This task is
+scoped to ONE grade and ONE subject only — do not touch any other grade or
+subject's rows.
+
+GRADE_LEVEL = <fill in>
+SUBJECT = <fill in>
+
+I am attaching files in this chat — for each resource, a .txt file (the
+already-extracted text of that resource's MCQ/Short/Long/Numericals
+content) and a light-theme PDF of the same resource. The .txt is your
+primary source. Only open the matching light PDF for a specific question
+when the .txt is garbled/unclear there (bad OCR spacing, missing
+characters, broken option list, etc.) — read that one question from the PDF
+instead of guessing from the broken text. Never invent, paraphrase, or pull
+in outside content either way — everything must come verbatim from one of
+these two files.
+
+STEP 1 — Find the matching resource rows.
+```sql
+select id, title, subject_id, chapter_id, content_section
+from public.library_resources
+where grade_level = '<GRADE_LEVEL>'
+  and subject_id = (select id from public.subjects where name = '<SUBJECT>')
+  and content_section in ('mcq','short','long','numericals');
+```
+Match each attached .txt/PDF pair to exactly one row by title (the
+filename/title should make the chapter + section obvious — titles follow
+the pattern "Subject — Chapter Name — Topic — Section", e.g. "Chemistry —
+Energetics — Ch5 Energetics MCQs — Mcq"). If a file doesn't clearly match
+exactly one row, STOP and ask me instead of guessing.
+
+STEP 1.5 — Look up each matched resource's real Drive file IDs.
+For each row matched in Step 1, search Drive for that resource's dark PDF,
+light PDF, and .txt file (same base filename as what I attached, e.g.
+"Ch5_Energetics_MCQs_Dark.pdf", "..._Light.pdf", "Ch5_Energetics_MCQs.txt")
+within this grade+subject's Drive folder. Get each file's Drive file ID and
+build individual-file view links: "https://drive.google.com/file/d/<FILE
+ID>/view". If a file genuinely isn't found in Drive, leave that one link
+null rather than guessing an ID or reusing another file's link — never
+point two different resources at the same Drive file ID.
+
+STEP 2 — Extract questions verbatim, then verify.
+For each resource:
+- Read its .txt file fully. Transcribe every question **word-for-word**.
+  Nothing paraphrased, nothing invented, nothing filled in from general
+  knowledge.
+- If any single question's text is unreadable/garbled in the .txt, open
+  that resource's light-theme PDF and re-read just that question from
+  there instead — still verbatim, still from the source material, never
+  reconstructed from memory or guesswork.
+- Most files contain ONLY one type (MCQ/Short/Long/Numerical) — but some
+  (e.g. "exercises" or "numericals" files) genuinely mix types; in that
+  case classify each question individually into the right bucket instead
+  of forcing the whole file into one type.
+- MCQs need exactly 4 options and a correct answer. Only keep an MCQ if the
+  source's own answer key clearly marks the correct option — if there's no
+  answer key for a question, DROP it rather than guessing the answer.
+- Short/Long/Numerical questions: keep the question text, and a model
+  answer/worked solution ONLY if the source actually provides one.
+- Re-check every question against the source a second time before
+  finalizing (wording, options, and the correct answer must match exactly).
+  When in doubt about a specific question, drop that one question — don't
+  drop the whole file and don't guess.
+
+STEP 3 — Push into public.resource_mcq_sets (per-resource question bank).
+```sql
+insert into public.resource_mcq_sets
+  (resource_kind, resource_id, questions, short_questions, long_questions, status, generated_at, updated_at)
+values
+  ('library', '<library_resources.id from Step 1>',
+   '<mcq array as [{"q":"...","opts":["...","...","...","..."],"correct":<0-3>,"exp":"..."}]>'::jsonb,
+   '<short/numerical array as [{"q":"...","marks":<n>,"keyPoints":["..."],"modelAnswer":"..."}]>'::jsonb,
+   '<long array, same shape as short>'::jsonb,
+   'ready', now(), now())
+on conflict (resource_kind, resource_id) do update set
+  questions = excluded.questions,
+  short_questions = excluded.short_questions,
+  long_questions = excluded.long_questions,
+  status = 'ready',
+  generated_at = now(),
+  updated_at = now();
+```
+A resource's content_section tells you which ONE of the three arrays to
+fill — leave the other two as `[]`. "numericals" resources go in
+short_questions (if brief) or long_questions (if a full worked solution) —
+whichever fits the actual content length.
+
+STEP 3.5 — Update the resource's Drive link too, using the ID from Step 1.5.
+```sql
+update public.library_resources
+set drive_url = '<dark file's Drive view link from Step 1.5, or the light
+                  link if dark wasn't found — never leave both null if
+                  either exists>'
+where id = '<library_resources.id from Step 1>';
+```
+Skip this update for a resource whose Drive files genuinely weren't found —
+don't overwrite an existing drive_url with a null/guessed one.
+
+STEP 4 — ALSO push the same verified MCQs into the public.questions table
+(the main/public question bank — used by the diagnostic test and other
+question-bank features, independent of resource_mcq_sets). For every MCQ
+you kept in Step 2/3:
+```sql
+insert into public.questions
+  (chapter_id, subject_id, type, difficulty, text, options, correct_answer, explanation, marks, is_verified, is_demo_eligible, source_kind, source_id, tags, metadata)
+values
+  ('<chapter_id from Step 1>', '<subject_id from Step 1>', 'MCQ', 'MEDIUM',
+   '<question text>', '["opt A","opt B","opt C","opt D"]'::jsonb, '<correct index 0-3>'::jsonb,
+   '<explanation or null>', 1, true, false, 'library', '<library_resources.id>', '{}', '{}');
+```
+For Short/Long questions, same insert but `type` = 'SHORT' or 'LONG',
+`options` = null, `correct_answer` = the model answer text as a jsonb
+string, `marks` = the actual marks stated in the source (default 3 for
+short, 8 for long if not stated). Only set `is_verified: true` when you
+actually completed the Step 2 re-check for that specific question — this
+flag is trusted elsewhere in the app. If a resource's chapter_id is NULL
+(a chapter-less "general" resource, e.g. writing-skill drills), pass NULL
+for chapter_id here too — do not guess a chapter to attach it to.
+
+STEP 5 — Report back: resource title + id for each attached pair, whether
+its Drive link was found and updated (Step 3.5) or left as-is, and how many
+MCQ/short/long/numerical questions were kept vs dropped and why (no answer
+key, ambiguous match, unreadable even in the PDF, etc.). Move to the next
+resource. Do NOT touch resource_processing_jobs or any row outside
+GRADE_LEVEL + SUBJECT in this task — library_resources.drive_url is the ONE
+field on that table you do update, only via Step 3.5's exact match.
+
+===========================================================================
+
+USAGE NOTES (for the person running this, not part of the prompt itself):
+- Repeat this same prompt for every (grade, subject) pair — 4 grades x
+  ~10 subjects = up to ~40 sessions total, each covering 10-15 resources.
+- library_resources rows are already fully seeded (title, chapter_id,
+  content_section, B2 file paths) for all 4 grades as of this session —
+  Step 1's query will find them immediately, no need to re-verify paths.
+- A resource with chapter_id = NULL is intentional ("general" content not
+  tied to one textbook chapter, e.g. English writing-skill drills or a
+  supplementary novel study) — Step 4 passes NULL through, never guesses.

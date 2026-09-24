@@ -1,0 +1,630 @@
+[
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-hamd",
+    "chapter_id": "49439f37-5674-4e67-a944-7f1697d3d250",
+    "content_section": "mcq",
+    "title": "Urdu — Hamd — MCQs",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-hamd/mcq/hamd-mcqs.light.pdf",
+    "dark_key": "library/urdu/g11-hamd/mcq/hamd-mcqs.dark.pdf",
+    "context_key": "library/urdu/g11-hamd/mcq/hamd-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\1_Hamd_MCQs50_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\1_Hamd_MCQs50_light.pdf",
+      "txt": "E:\\remaining-data\\11th-urdu\\chapters\\1_Hamd_MCQs50.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-hamd",
+    "chapter_id": "49439f37-5674-4e67-a944-7f1697d3d250",
+    "content_section": "reading",
+    "title": "Urdu — Hamd — Notes",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-hamd/reading/hamd-notes.light.pdf",
+    "dark_key": "library/urdu/g11-hamd/reading/hamd-notes.dark.pdf",
+    "context_key": "library/urdu/g11-hamd/reading/hamd-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\1_Hamd_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\1_Hamd_Notes_light.pdf",
+      "txt": "E:\\remaining-data\\11th-urdu\\chapters\\1_Hamd_Notes.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-naat",
+    "chapter_id": "3bd47830-5de8-4195-bd9d-1f0f48c0a227",
+    "content_section": "mcq",
+    "title": "Urdu — Naat — MCQs",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-naat/mcq/naat-mcqs.light.pdf",
+    "dark_key": "library/urdu/g11-naat/mcq/naat-mcqs.dark.pdf",
+    "context_key": "library/urdu/g11-naat/mcq/naat-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\2_Naat_MCQs50_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\2_Naat_MCQs50_light.pdf",
+      "txt": "E:\\remaining-data\\11th-urdu\\chapters\\2_Naat_MCQs50.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-naat",
+    "chapter_id": "3bd47830-5de8-4195-bd9d-1f0f48c0a227",
+    "content_section": "reading",
+    "title": "Urdu — Naat — Notes",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-naat/reading/naat-notes.light.pdf",
+    "dark_key": "library/urdu/g11-naat/reading/naat-notes.dark.pdf",
+    "context_key": "library/urdu/g11-naat/reading/naat-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\2_Naat_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\2_Naat_Notes_light.pdf",
+      "txt": "E:\\remaining-data\\11th-urdu\\chapters\\2_Naat_Notes.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-akhlaq-e-nabvi-saw",
+    "chapter_id": "f36a0832-b87b-4dba-bfa2-56db28418349",
+    "content_section": "mcq",
+    "title": "Urdu — Akhlaq-e-Nabvi SAW — MCQs",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-akhlaq-e-nabvi-saw/mcq/akhlaq-e-nabvi-saw-mcqs.light.pdf",
+    "dark_key": "library/urdu/g11-akhlaq-e-nabvi-saw/mcq/akhlaq-e-nabvi-saw-mcqs.dark.pdf",
+    "context_key": "library/urdu/g11-akhlaq-e-nabvi-saw/mcq/akhlaq-e-nabvi-saw-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\3_AkhlaqNabviKhatamunNabiyeen_MCQs50_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\3_AkhlaqNabviKhatamunNabiyeen_MCQs50_light.pdf",
+      "txt": "E:\\remaining-data\\11th-urdu\\chapters\\3_AkhlaqNabviKhatamunNabiyeen_MCQs50.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-akhlaq-e-nabvi-saw",
+    "chapter_id": "f36a0832-b87b-4dba-bfa2-56db28418349",
+    "content_section": "reading",
+    "title": "Urdu — Akhlaq-e-Nabvi SAW — Notes",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-akhlaq-e-nabvi-saw/reading/akhlaq-e-nabvi-saw-notes.light.pdf",
+    "dark_key": "library/urdu/g11-akhlaq-e-nabvi-saw/reading/akhlaq-e-nabvi-saw-notes.dark.pdf",
+    "context_key": "library/urdu/g11-akhlaq-e-nabvi-saw/reading/akhlaq-e-nabvi-saw-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\3_AkhlaqNabviKhatamunNabiyeen_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\3_AkhlaqNabviKhatamunNabiyeen_Notes_light.pdf",
+      "txt": "E:\\remaining-data\\11th-urdu\\chapters\\3_AkhlaqNabviKhatamunNabiyeen_Notes.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-faqa-ma-roza",
+    "chapter_id": "54988f57-23eb-4f63-b85f-3cf3c44f2aee",
+    "content_section": "mcq",
+    "title": "Urdu — Faqa ma Roza — MCQs",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-faqa-ma-roza/mcq/faqa-ma-roza-mcqs.light.pdf",
+    "dark_key": "library/urdu/g11-faqa-ma-roza/mcq/faqa-ma-roza-mcqs.dark.pdf",
+    "context_key": "library/urdu/g11-faqa-ma-roza/mcq/faqa-ma-roza-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\4_FaqaMainRoza_MCQs50_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\4_FaqaMainRoza_MCQs50_light.pdf",
+      "txt": "E:\\remaining-data\\11th-urdu\\chapters\\4_FaqaMainRoza_MCQs50.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-faqa-ma-roza",
+    "chapter_id": "54988f57-23eb-4f63-b85f-3cf3c44f2aee",
+    "content_section": "reading",
+    "title": "Urdu — Faqa ma Roza — Notes",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-faqa-ma-roza/reading/faqa-ma-roza-notes.light.pdf",
+    "dark_key": "library/urdu/g11-faqa-ma-roza/reading/faqa-ma-roza-notes.dark.pdf",
+    "context_key": "library/urdu/g11-faqa-ma-roza/reading/faqa-ma-roza-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\4_FaqaMainRoza_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\4_FaqaMainRoza_Notes_light.pdf",
+      "txt": "E:\\remaining-data\\11th-urdu\\chapters\\4_FaqaMainRoza_Notes.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-makateeb-e-ghalib",
+    "chapter_id": "5c81fa1e-4b5f-4e1c-b811-cb9a7db9ea76",
+    "content_section": "mcq",
+    "title": "Urdu — Makateeb e Ghalib — MCQs",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-makateeb-e-ghalib/mcq/makateeb-e-ghalib-mcqs.light.pdf",
+    "dark_key": "library/urdu/g11-makateeb-e-ghalib/mcq/makateeb-e-ghalib-mcqs.dark.pdf",
+    "context_key": "library/urdu/g11-makateeb-e-ghalib/mcq/makateeb-e-ghalib-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\5_MakateebGhalib_MCQs50_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\5_MakateebGhalib_MCQs50_light.pdf",
+      "txt": "E:\\remaining-data\\11th-urdu\\chapters\\5_MakateebGhalib_MCQs50.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-makateeb-e-ghalib",
+    "chapter_id": "5c81fa1e-4b5f-4e1c-b811-cb9a7db9ea76",
+    "content_section": "reading",
+    "title": "Urdu — Makateeb e Ghalib — Notes",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-makateeb-e-ghalib/reading/makateeb-e-ghalib-notes.light.pdf",
+    "dark_key": "library/urdu/g11-makateeb-e-ghalib/reading/makateeb-e-ghalib-notes.dark.pdf",
+    "context_key": "library/urdu/g11-makateeb-e-ghalib/reading/makateeb-e-ghalib-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\5_MakateebGhalib_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\5_MakateebGhalib_Notes_light.pdf",
+      "txt": "E:\\remaining-data\\11th-urdu\\chapters\\5_MakateebGhalib_Notes.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-aik-ustad-adalat-mein",
+    "chapter_id": "59a73ef7-5076-470d-a3a0-65e15f93e845",
+    "content_section": "mcq",
+    "title": "Urdu — Aik Ustad Adalat Mein — MCQs",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-aik-ustad-adalat-mein/mcq/aik-ustad-adalat-mein-mcqs.light.pdf",
+    "dark_key": "library/urdu/g11-aik-ustad-adalat-mein/mcq/aik-ustad-adalat-mein-mcqs.dark.pdf",
+    "context_key": "library/urdu/g11-aik-ustad-adalat-mein/mcq/aik-ustad-adalat-mein-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\6_UstadAdalat_MCQs50_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\6_UstadAdalat_MCQs50_light.pdf",
+      "txt": "E:\\remaining-data\\11th-urdu\\chapters\\6_UstadAdalat_MCQs50.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-aik-ustad-adalat-mein",
+    "chapter_id": "59a73ef7-5076-470d-a3a0-65e15f93e845",
+    "content_section": "reading",
+    "title": "Urdu — Aik Ustad Adalat Mein — Notes",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-aik-ustad-adalat-mein/reading/aik-ustad-adalat-mein-notes.light.pdf",
+    "dark_key": "library/urdu/g11-aik-ustad-adalat-mein/reading/aik-ustad-adalat-mein-notes.dark.pdf",
+    "context_key": "library/urdu/g11-aik-ustad-adalat-mein/reading/aik-ustad-adalat-mein-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\6_UstadAdalat_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\6_UstadAdalat_Notes_light.pdf",
+      "txt": "E:\\remaining-data\\11th-urdu\\chapters\\6_UstadAdalat_Notes.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-charpai",
+    "chapter_id": "8a71f2ef-e11c-4baf-8141-f01c1f528bc4",
+    "content_section": "mcq",
+    "title": "Urdu — Charpai — MCQs",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-charpai/mcq/charpai-mcqs.light.pdf",
+    "dark_key": "library/urdu/g11-charpai/mcq/charpai-mcqs.dark.pdf",
+    "context_key": "library/urdu/g11-charpai/mcq/charpai-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\7_ChaarPai_MCQs30_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\7_ChaarPai_MCQs30_light.pdf",
+      "txt": "E:\\remaining-data\\11th-urdu\\chapters\\7_ChaarPai_MCQs30.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-charpai",
+    "chapter_id": "8a71f2ef-e11c-4baf-8141-f01c1f528bc4",
+    "content_section": "reading",
+    "title": "Urdu — Charpai — Notes",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-charpai/reading/charpai-notes.light.pdf",
+    "dark_key": "library/urdu/g11-charpai/reading/charpai-notes.dark.pdf",
+    "context_key": "library/urdu/g11-charpai/reading/charpai-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\7_ChaarPai_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\7_ChaarPai_Notes_light.pdf",
+      "txt": "E:\\remaining-data\\11th-urdu\\chapters\\7_ChaarPai_Notes.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-aur-pakistan-bn-gya",
+    "chapter_id": "2bf43e7f-c117-4e97-b490-6b30345e4a2d",
+    "content_section": "mcq",
+    "title": "Urdu — Aur Pakistan bn Gya — MCQs",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-aur-pakistan-bn-gya/mcq/aur-pakistan-bn-gya-mcqs.light.pdf",
+    "dark_key": "library/urdu/g11-aur-pakistan-bn-gya/mcq/aur-pakistan-bn-gya-mcqs.dark.pdf",
+    "context_key": "library/urdu/g11-aur-pakistan-bn-gya/mcq/aur-pakistan-bn-gya-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\8_AurPakistanBanGaya_MCQs30_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\8_AurPakistanBanGaya_MCQs30_light.pdf",
+      "txt": "E:\\remaining-data\\11th-urdu\\chapters\\8_AurPakistanBanGaya_MCQs30.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-aur-pakistan-bn-gya",
+    "chapter_id": "2bf43e7f-c117-4e97-b490-6b30345e4a2d",
+    "content_section": "reading",
+    "title": "Urdu — Aur Pakistan bn Gya — Notes",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-aur-pakistan-bn-gya/reading/aur-pakistan-bn-gya-notes.light.pdf",
+    "dark_key": "library/urdu/g11-aur-pakistan-bn-gya/reading/aur-pakistan-bn-gya-notes.dark.pdf",
+    "context_key": "library/urdu/g11-aur-pakistan-bn-gya/reading/aur-pakistan-bn-gya-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\8_AurPakistanBanGaya_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\8_AurPakistanBanGaya_Notes_light.pdf",
+      "txt": "E:\\remaining-data\\11th-urdu\\chapters\\8_AurPakistanBanGaya_Notes.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-naya-qanoon",
+    "chapter_id": "79ed6d4b-1dd0-4c7a-9184-9a3f045e3cef",
+    "content_section": "mcq",
+    "title": "Urdu — Naya Qanoon — MCQs",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-naya-qanoon/mcq/naya-qanoon-mcqs.light.pdf",
+    "dark_key": "library/urdu/g11-naya-qanoon/mcq/naya-qanoon-mcqs.dark.pdf",
+    "context_key": "library/urdu/g11-naya-qanoon/mcq/naya-qanoon-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\9_NayaQanoon_MCQs50_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\9_NayaQanoon_MCQs50_light.pdf",
+      "txt": "E:\\remaining-data\\11th-urdu\\chapters\\9_NayaQanoon_MCQs50.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-naya-qanoon",
+    "chapter_id": "79ed6d4b-1dd0-4c7a-9184-9a3f045e3cef",
+    "content_section": "reading",
+    "title": "Urdu — Naya Qanoon — Notes",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-naya-qanoon/reading/naya-qanoon-notes.light.pdf",
+    "dark_key": "library/urdu/g11-naya-qanoon/reading/naya-qanoon-notes.dark.pdf",
+    "context_key": "library/urdu/g11-naya-qanoon/reading/naya-qanoon-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\9_NayaQanoon_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\9_NayaQanoon_Notes_light.pdf",
+      "txt": "E:\\remaining-data\\11th-urdu\\chapters\\9_NayaQanoon_Notes.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-dehleez",
+    "chapter_id": "0f1cd333-2d77-476f-ae31-3cdd2f4601b0",
+    "content_section": "mcq",
+    "title": "Urdu — Dehleez — MCQs",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-dehleez/mcq/dehleez-mcqs.light.pdf",
+    "dark_key": "library/urdu/g11-dehleez/mcq/dehleez-mcqs.dark.pdf",
+    "context_key": "library/urdu/g11-dehleez/mcq/dehleez-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\10_Dahleez_MCQs50_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\10_Dahleez_MCQs50_light.pdf",
+      "txt": "E:\\remaining-data\\11th-urdu\\chapters\\10_Dahleez_MCQs50.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-dehleez",
+    "chapter_id": "0f1cd333-2d77-476f-ae31-3cdd2f4601b0",
+    "content_section": "reading",
+    "title": "Urdu — Dehleez — Notes",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-dehleez/reading/dehleez-notes.light.pdf",
+    "dark_key": "library/urdu/g11-dehleez/reading/dehleez-notes.dark.pdf",
+    "context_key": "library/urdu/g11-dehleez/reading/dehleez-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\10_Dahleez_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\10_Dahleez_Notes_light.pdf",
+      "txt": "E:\\remaining-data\\11th-urdu\\chapters\\10_Dahleez_Notes.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-tareekh-ka-kafan",
+    "chapter_id": "ba300f30-9d6e-40aa-8a00-409078f5695e",
+    "content_section": "mcq",
+    "title": "Urdu — Tareekh ka Kafan — MCQs",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-tareekh-ka-kafan/mcq/tareekh-ka-kafan-mcqs.light.pdf",
+    "dark_key": "library/urdu/g11-tareekh-ka-kafan/mcq/tareekh-ka-kafan-mcqs.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\11_TareekhKaKafan_MCQs30_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\11_TareekhKaKafan_MCQs30_light.pdf"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-tareekh-ka-kafan",
+    "chapter_id": "ba300f30-9d6e-40aa-8a00-409078f5695e",
+    "content_section": "reading",
+    "title": "Urdu — Tareekh ka Kafan — Notes",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-tareekh-ka-kafan/reading/tareekh-ka-kafan-notes.light.pdf",
+    "dark_key": "library/urdu/g11-tareekh-ka-kafan/reading/tareekh-ka-kafan-notes.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\11_TareekhKaKafan_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\11_TareekhKaKafan_Notes_light.pdf"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-pakistani-zubane-aur-un-ka-bahmi-rishta",
+    "chapter_id": "8ffc879c-0216-4746-b35a-04011451003d",
+    "content_section": "mcq",
+    "title": "Urdu — Pakistani Zubane aur un ka bahmi rishta — MCQs",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-pakistani-zubane-aur-un-ka-bahmi-rishta/mcq/pakistani-zubane-aur-un-ka-bahmi-rishta-mcqs.light.pdf",
+    "dark_key": "library/urdu/g11-pakistani-zubane-aur-un-ka-bahmi-rishta/mcq/pakistani-zubane-aur-un-ka-bahmi-rishta-mcqs.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\12_PakistaniZabanein_MCQs30_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\12_PakistaniZabanein_MCQs30_light.pdf"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-pakistani-zubane-aur-un-ka-bahmi-rishta",
+    "chapter_id": "8ffc879c-0216-4746-b35a-04011451003d",
+    "content_section": "reading",
+    "title": "Urdu — Pakistani Zubane aur un ka bahmi rishta — Notes",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-pakistani-zubane-aur-un-ka-bahmi-rishta/reading/pakistani-zubane-aur-un-ka-bahmi-rishta-notes.light.pdf",
+    "dark_key": "library/urdu/g11-pakistani-zubane-aur-un-ka-bahmi-rishta/reading/pakistani-zubane-aur-un-ka-bahmi-rishta-notes.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\12_PakistaniZabanein_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\12_PakistaniZabanein_Notes_light.pdf"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-ay-wadi-e-lolaab",
+    "chapter_id": "caac54ec-9a8e-4921-b80f-f593c44bbd80",
+    "content_section": "mcq",
+    "title": "Urdu — Ay Wadi e Lolaab — MCQs",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-ay-wadi-e-lolaab/mcq/ay-wadi-e-lolaab-mcqs.light.pdf",
+    "dark_key": "library/urdu/g11-ay-wadi-e-lolaab/mcq/ay-wadi-e-lolaab-mcqs.dark.pdf",
+    "context_key": "library/urdu/g11-ay-wadi-e-lolaab/mcq/ay-wadi-e-lolaab-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\13_wadi_lolab_mcqs_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\13_wadi_lolab_mcqs_light.pdf",
+      "txt": "E:\\remaining-data\\11th-urdu\\chapters\\13_wadi_lolab_mcqs.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-ay-wadi-e-lolaab",
+    "chapter_id": "caac54ec-9a8e-4921-b80f-f593c44bbd80",
+    "content_section": "reading",
+    "title": "Urdu — Ay Wadi e Lolaab — Notes",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-ay-wadi-e-lolaab/reading/ay-wadi-e-lolaab-notes.light.pdf",
+    "dark_key": "library/urdu/g11-ay-wadi-e-lolaab/reading/ay-wadi-e-lolaab-notes.dark.pdf",
+    "context_key": "library/urdu/g11-ay-wadi-e-lolaab/reading/ay-wadi-e-lolaab-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\13_wadi_lolab_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\13_wadi_lolab_light.pdf",
+      "txt": "E:\\remaining-data\\11th-urdu\\chapters\\13_wadi_lolab.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-o-des-se-aane-wale-bata",
+    "chapter_id": "0753cdfe-6410-4063-9fe4-317d6ccb0943",
+    "content_section": "mcq",
+    "title": "Urdu — O Des Se Aane Wale Bata — MCQs",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-o-des-se-aane-wale-bata/mcq/o-des-se-aane-wale-bata-mcqs.light.pdf",
+    "dark_key": "library/urdu/g11-o-des-se-aane-wale-bata/mcq/o-des-se-aane-wale-bata-mcqs.dark.pdf",
+    "context_key": "library/urdu/g11-o-des-se-aane-wale-bata/mcq/o-des-se-aane-wale-bata-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\14_AudeisSeAaneWaleBata_MCQs30_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\14_AudeisSeAaneWaleBata_MCQs30_light.pdf",
+      "txt": "E:\\remaining-data\\11th-urdu\\chapters\\14_AudeisSeAaneWaleBata_MCQs30.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-o-des-se-aane-wale-bata",
+    "chapter_id": "0753cdfe-6410-4063-9fe4-317d6ccb0943",
+    "content_section": "reading",
+    "title": "Urdu — O Des Se Aane Wale Bata — Notes",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-o-des-se-aane-wale-bata/reading/o-des-se-aane-wale-bata-notes.light.pdf",
+    "dark_key": "library/urdu/g11-o-des-se-aane-wale-bata/reading/o-des-se-aane-wale-bata-notes.dark.pdf",
+    "context_key": "library/urdu/g11-o-des-se-aane-wale-bata/reading/o-des-se-aane-wale-bata-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\14_AudeisSeAaneWaleBata_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\14_AudeisSeAaneWaleBata_Notes_light.pdf",
+      "txt": "E:\\remaining-data\\11th-urdu\\chapters\\14_AudeisSeAaneWaleBata_Notes.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-azadi",
+    "chapter_id": "a4d1d1c5-713c-4fd1-b402-87bd4b70d593",
+    "content_section": "mcq",
+    "title": "Urdu — Azadi — MCQs",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-azadi/mcq/azadi-mcqs.light.pdf",
+    "dark_key": "library/urdu/g11-azadi/mcq/azadi-mcqs.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\15_Azadi_MCQs50_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\15_Azadi_MCQs50_light.pdf"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-azadi",
+    "chapter_id": "a4d1d1c5-713c-4fd1-b402-87bd4b70d593",
+    "content_section": "reading",
+    "title": "Urdu — Azadi — Notes",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-azadi/reading/azadi-notes.light.pdf",
+    "dark_key": "library/urdu/g11-azadi/reading/azadi-notes.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\15_Azadi_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\15_Azadi_Notes_light.pdf"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-ikhlas",
+    "chapter_id": "f0176d13-659e-4905-8db8-9d3b1b032607",
+    "content_section": "mcq",
+    "title": "Urdu — Ikhlas — MCQs",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-ikhlas/mcq/ikhlas-mcqs.light.pdf",
+    "dark_key": "library/urdu/g11-ikhlas/mcq/ikhlas-mcqs.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\16_Ikhlas_MCQs50_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\16_Ikhlas_MCQs50_light.pdf"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-ikhlas",
+    "chapter_id": "f0176d13-659e-4905-8db8-9d3b1b032607",
+    "content_section": "reading",
+    "title": "Urdu — Ikhlas — Notes",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-ikhlas/reading/ikhlas-notes.light.pdf",
+    "dark_key": "library/urdu/g11-ikhlas/reading/ikhlas-notes.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\16_Ikhlas_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\16_Ikhlas_Notes_light.pdf"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-khara-dinner",
+    "chapter_id": "a8d9b8b9-f4a4-4578-ad5f-635b0d58c85e",
+    "content_section": "mcq",
+    "title": "Urdu — Khara Dinner — MCQs",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-khara-dinner/mcq/khara-dinner-mcqs.light.pdf",
+    "dark_key": "library/urdu/g11-khara-dinner/mcq/khara-dinner-mcqs.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\17_KharayDinerz_MCQs50_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\17_KharayDinerz_MCQs50_light.pdf"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-khara-dinner",
+    "chapter_id": "a8d9b8b9-f4a4-4578-ad5f-635b0d58c85e",
+    "content_section": "reading",
+    "title": "Urdu — Khara Dinner — Notes",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-khara-dinner/reading/khara-dinner-notes.light.pdf",
+    "dark_key": "library/urdu/g11-khara-dinner/reading/khara-dinner-notes.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\17_KharayDinerz_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\17_KharayDinerz_Notes_light.pdf"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-patta-patta-buta-buta-hal-hamara-jaane-hai",
+    "chapter_id": "7caa8b82-7a35-47dd-aeb2-6c195c937a01",
+    "content_section": "mcq",
+    "title": "Urdu — Patta Patta Buta Buta Hal Hamara Jaane Hai — MCQs",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-patta-patta-buta-buta-hal-hamara-jaane-hai/mcq/patta-patta-buta-buta-hal-hamara-jaane-hai-mcqs.light.pdf",
+    "dark_key": "library/urdu/g11-patta-patta-buta-buta-hal-hamara-jaane-hai/mcq/patta-patta-buta-buta-hal-hamara-jaane-hai-mcqs.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\18_Ghazal-MeerTaqiMeer_MCQs50_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\18_Ghazal-MeerTaqiMeer_MCQs50_light.pdf"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-patta-patta-buta-buta-hal-hamara-jaane-hai",
+    "chapter_id": "7caa8b82-7a35-47dd-aeb2-6c195c937a01",
+    "content_section": "reading",
+    "title": "Urdu — Patta Patta Buta Buta Hal Hamara Jaane Hai — Notes",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-patta-patta-buta-buta-hal-hamara-jaane-hai/reading/patta-patta-buta-buta-hal-hamara-jaane-hai-notes.light.pdf",
+    "dark_key": "library/urdu/g11-patta-patta-buta-buta-hal-hamara-jaane-hai/reading/patta-patta-buta-buta-hal-hamara-jaane-hai-notes.dark.pdf",
+    "context_key": null,
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\18_Ghazal-MeerTaqiMeer_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\18_Ghazal-MeerTaqiMeer_Notes_light.pdf"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-silsaly-tor-gaya-wo-sabhi-jataty-jataty",
+    "chapter_id": "6baddff7-b549-492e-bc59-91529c777e39",
+    "content_section": "mcq",
+    "title": "Urdu — Silsaly tor Gaya wo Sabhi jataty jataty — MCQs",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-silsaly-tor-gaya-wo-sabhi-jataty-jataty/mcq/silsaly-tor-gaya-wo-sabhi-jataty-jataty-mcqs.light.pdf",
+    "dark_key": "library/urdu/g11-silsaly-tor-gaya-wo-sabhi-jataty-jataty/mcq/silsaly-tor-gaya-wo-sabhi-jataty-jataty-mcqs.dark.pdf",
+    "context_key": "library/urdu/g11-silsaly-tor-gaya-wo-sabhi-jataty-jataty/mcq/silsaly-tor-gaya-wo-sabhi-jataty-jataty-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\21_Ahmad-Faraz-Ghazal_MCQs30_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\21_Ahmad-Faraz-Ghazal_MCQs30_light.pdf",
+      "txt": "E:\\remaining-data\\11th-urdu\\chapters\\21_Ahmad-Faraz-Ghazal_MCQs30.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-silsaly-tor-gaya-wo-sabhi-jataty-jataty",
+    "chapter_id": "6baddff7-b549-492e-bc59-91529c777e39",
+    "content_section": "reading",
+    "title": "Urdu — Silsaly tor Gaya wo Sabhi jataty jataty — Notes",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-silsaly-tor-gaya-wo-sabhi-jataty-jataty/reading/silsaly-tor-gaya-wo-sabhi-jataty-jataty-notes.light.pdf",
+    "dark_key": "library/urdu/g11-silsaly-tor-gaya-wo-sabhi-jataty-jataty/reading/silsaly-tor-gaya-wo-sabhi-jataty-jataty-notes.dark.pdf",
+    "context_key": "library/urdu/g11-silsaly-tor-gaya-wo-sabhi-jataty-jataty/reading/silsaly-tor-gaya-wo-sabhi-jataty-jataty-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\21_Ahmad-Faraz-Ghazal_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\21_Ahmad-Faraz-Ghazal_Notes_light.pdf",
+      "txt": "E:\\remaining-data\\11th-urdu\\chapters\\21_Ahmad-Faraz-Ghazal_Notes.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-badban-khulne-se-pehle-ka-ishara",
+    "chapter_id": "dcc69c9f-6be1-4153-a22e-db1cee28f3e6",
+    "content_section": "mcq",
+    "title": "Urdu — Badban Khulne Se Pehle ka Ishara — MCQs",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-badban-khulne-se-pehle-ka-ishara/mcq/badban-khulne-se-pehle-ka-ishara-mcqs.light.pdf",
+    "dark_key": "library/urdu/g11-badban-khulne-se-pehle-ka-ishara/mcq/badban-khulne-se-pehle-ka-ishara-mcqs.dark.pdf",
+    "context_key": "library/urdu/g11-badban-khulne-se-pehle-ka-ishara/mcq/badban-khulne-se-pehle-ka-ishara-mcqs.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\22_Parveen-Shakir-Ghazal_MCQs30_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\22_Parveen-Shakir-Ghazal_MCQs30_light.pdf",
+      "txt": "E:\\remaining-data\\11th-urdu\\chapters\\22_Parveen-Shakir-Ghazal_MCQs30.txt"
+    }
+  },
+  {
+    "subject_slug": "urdu",
+    "chapter_slug": "g11-badban-khulne-se-pehle-ka-ishara",
+    "chapter_id": "dcc69c9f-6be1-4153-a22e-db1cee28f3e6",
+    "content_section": "reading",
+    "title": "Urdu — Badban Khulne Se Pehle ka Ishara — Notes",
+    "book_title": "Class 11 Urdu Notes (Punjab)",
+    "light_key": "library/urdu/g11-badban-khulne-se-pehle-ka-ishara/reading/badban-khulne-se-pehle-ka-ishara-notes.light.pdf",
+    "dark_key": "library/urdu/g11-badban-khulne-se-pehle-ka-ishara/reading/badban-khulne-se-pehle-ka-ishara-notes.dark.pdf",
+    "context_key": "library/urdu/g11-badban-khulne-se-pehle-ka-ishara/reading/badban-khulne-se-pehle-ka-ishara-notes.context.txt",
+    "source": {
+      "dark": "E:\\remaining-data\\11th-urdu\\chapters\\22_Parveen-Shakir-Ghazal_Notes_Dark.pdf",
+      "light": "E:\\remaining-data\\11th-urdu\\chapters\\22_Parveen-Shakir-Ghazal_Notes_light.pdf",
+      "txt": "E:\\remaining-data\\11th-urdu\\chapters\\22_Parveen-Shakir-Ghazal_Notes.txt"
+    }
+  }
+]

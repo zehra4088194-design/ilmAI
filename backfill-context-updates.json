@@ -1,0 +1,702 @@
+[
+  {
+    "grade": "GRADE_9",
+    "dark_key": "library/physics/g9-physical-quantities-measurement/reading/physical-quantities-and-measurement-exercises.dark.pdf",
+    "context_key": "library/physics/g9-physical-quantities-measurement/reading/physical-quantities-and-measurement-exercises.context.txt"
+  },
+  {
+    "grade": "GRADE_9",
+    "dark_key": "library/physics/g9-kinematics/reading/kinematics-exercises.dark.pdf",
+    "context_key": "library/physics/g9-kinematics/reading/kinematics-exercises.context.txt"
+  },
+  {
+    "grade": "GRADE_9",
+    "dark_key": "library/physics/g9-dynamics/reading/dynamics-exercises.dark.pdf",
+    "context_key": "library/physics/g9-dynamics/reading/dynamics-exercises.context.txt"
+  },
+  {
+    "grade": "GRADE_9",
+    "dark_key": "library/physics/g9-turning-effect-of-force/reading/turning-effect-of-force-exercises.dark.pdf",
+    "context_key": "library/physics/g9-turning-effect-of-force/reading/turning-effect-of-force-exercises.context.txt"
+  },
+  {
+    "grade": "GRADE_9",
+    "dark_key": "library/physics/g9-work-energy-and-power/reading/work-energy-and-power-exercises.dark.pdf",
+    "context_key": "library/physics/g9-work-energy-and-power/reading/work-energy-and-power-exercises.context.txt"
+  },
+  {
+    "grade": "GRADE_9",
+    "dark_key": "library/physics/g9-mechanical-properties-of-matter/reading/mechanical-properties-of-matter-exercises.dark.pdf",
+    "context_key": "library/physics/g9-mechanical-properties-of-matter/reading/mechanical-properties-of-matter-exercises.context.txt"
+  },
+  {
+    "grade": "GRADE_9",
+    "dark_key": "library/physics/g9-thermal-properties-of-matter/reading/thermal-properties-of-matter-exercises.dark.pdf",
+    "context_key": "library/physics/g9-thermal-properties-of-matter/reading/thermal-properties-of-matter-exercises.context.txt"
+  },
+  {
+    "grade": "GRADE_9",
+    "dark_key": "library/physics/g9-magnetism/reading/magnetism-exercises.dark.pdf",
+    "context_key": "library/physics/g9-magnetism/reading/magnetism-exercises.context.txt"
+  },
+  {
+    "grade": "GRADE_9",
+    "dark_key": "library/physics/g9-nature-of-science/reading/nature-of-science-exercises.dark.pdf",
+    "context_key": "library/physics/g9-nature-of-science/reading/nature-of-science-exercises.context.txt"
+  },
+  {
+    "grade": "GRADE_9",
+    "dark_key": "library/physics/g9-physical-quantities-measurement/reading/physical-quantities-and-measurement-numericals.dark.pdf",
+    "context_key": "library/physics/g9-physical-quantities-measurement/reading/physical-quantities-and-measurement-numericals.context.txt"
+  },
+  {
+    "grade": "GRADE_9",
+    "dark_key": "library/physics/g9-kinematics/reading/kinematics-numericals.dark.pdf",
+    "context_key": "library/physics/g9-kinematics/reading/kinematics-numericals.context.txt"
+  },
+  {
+    "grade": "GRADE_9",
+    "dark_key": "library/physics/g9-dynamics/reading/dynamics-numericals.dark.pdf",
+    "context_key": "library/physics/g9-dynamics/reading/dynamics-numericals.context.txt"
+  },
+  {
+    "grade": "GRADE_9",
+    "dark_key": "library/physics/g9-turning-effect-of-force/reading/turning-effect-of-force-numericals.dark.pdf",
+    "context_key": "library/physics/g9-turning-effect-of-force/reading/turning-effect-of-force-numericals.context.txt"
+  },
+  {
+    "grade": "GRADE_9",
+    "dark_key": "library/physics/g9-work-energy-and-power/reading/work-energy-and-power-numericals.dark.pdf",
+    "context_key": "library/physics/g9-work-energy-and-power/reading/work-energy-and-power-numericals.context.txt"
+  },
+  {
+    "grade": "GRADE_9",
+    "dark_key": "library/physics/g9-mechanical-properties-of-matter/reading/mechanical-properties-of-matter-numericals.dark.pdf",
+    "context_key": "library/physics/g9-mechanical-properties-of-matter/reading/mechanical-properties-of-matter-numericals.context.txt"
+  },
+  {
+    "grade": "GRADE_9",
+    "dark_key": "library/physics/g9-thermal-properties-of-matter/reading/thermal-properties-of-matter-numericals.dark.pdf",
+    "context_key": "library/physics/g9-thermal-properties-of-matter/reading/thermal-properties-of-matter-numericals.context.txt"
+  },
+  {
+    "grade": "GRADE_9",
+    "dark_key": "library/physics/g9-physical-quantities-measurement/mcq/physical-quantities-and-measurement-short-mcqs.dark.pdf",
+    "context_key": "library/physics/g9-physical-quantities-measurement/mcq/physical-quantities-and-measurement-short-mcqs.context.txt"
+  },
+  {
+    "grade": "GRADE_9",
+    "dark_key": "library/physics/g9-kinematics/mcq/kinematics-short-mcqs.dark.pdf",
+    "context_key": "library/physics/g9-kinematics/mcq/kinematics-short-mcqs.context.txt"
+  },
+  {
+    "grade": "GRADE_9",
+    "dark_key": "library/physics/g9-dynamics/mcq/dynamics-short-mcqs.dark.pdf",
+    "context_key": "library/physics/g9-dynamics/mcq/dynamics-short-mcqs.context.txt"
+  },
+  {
+    "grade": "GRADE_9",
+    "dark_key": "library/physics/g9-turning-effect-of-force/mcq/turning-effect-of-force-short-mcqs.dark.pdf",
+    "context_key": "library/physics/g9-turning-effect-of-force/mcq/turning-effect-of-force-short-mcqs.context.txt"
+  },
+  {
+    "grade": "GRADE_9",
+    "dark_key": "library/physics/g9-work-energy-and-power/mcq/work-energy-and-power-short-mcqs.dark.pdf",
+    "context_key": "library/physics/g9-work-energy-and-power/mcq/work-energy-and-power-short-mcqs.context.txt"
+  },
+  {
+    "grade": "GRADE_9",
+    "dark_key": "library/physics/g9-mechanical-properties-of-matter/mcq/mechanical-properties-of-matter-short-mcqs.dark.pdf",
+    "context_key": "library/physics/g9-mechanical-properties-of-matter/mcq/mechanical-properties-of-matter-short-mcqs.context.txt"
+  },
+  {
+    "grade": "GRADE_9",
+    "dark_key": "library/physics/g9-thermal-properties-of-matter/mcq/thermal-properties-of-matter-short-mcqs.dark.pdf",
+    "context_key": "library/physics/g9-thermal-properties-of-matter/mcq/thermal-properties-of-matter-short-mcqs.context.txt"
+  },
+  {
+    "grade": "GRADE_9",
+    "dark_key": "library/physics/g9-magnetism/mcq/magnetism-short-mcqs.dark.pdf",
+    "context_key": "library/physics/g9-magnetism/mcq/magnetism-short-mcqs.context.txt"
+  },
+  {
+    "grade": "GRADE_9",
+    "dark_key": "library/physics/g9-nature-of-science/mcq/nature-of-science-short-mcqs.dark.pdf",
+    "context_key": "library/physics/g9-nature-of-science/mcq/nature-of-science-short-mcqs.context.txt"
+  },
+  {
+    "grade": "GRADE_9",
+    "dark_key": "library/physics/g9-physical-quantities-measurement/long/physical-quantities-and-measurement-long-questions.dark.pdf",
+    "context_key": "library/physics/g9-physical-quantities-measurement/long/physical-quantities-and-measurement-long-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_9",
+    "dark_key": "library/physics/g9-kinematics/long/kinematics-long-questions.dark.pdf",
+    "context_key": "library/physics/g9-kinematics/long/kinematics-long-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_9",
+    "dark_key": "library/physics/g9-dynamics/long/dynamics-long-questions.dark.pdf",
+    "context_key": "library/physics/g9-dynamics/long/dynamics-long-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_9",
+    "dark_key": "library/physics/g9-turning-effect-of-force/long/turning-effect-of-force-long-questions.dark.pdf",
+    "context_key": "library/physics/g9-turning-effect-of-force/long/turning-effect-of-force-long-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_9",
+    "dark_key": "library/physics/g9-work-energy-and-power/long/work-energy-and-power-long-questions.dark.pdf",
+    "context_key": "library/physics/g9-work-energy-and-power/long/work-energy-and-power-long-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_9",
+    "dark_key": "library/physics/g9-mechanical-properties-of-matter/long/mechanical-properties-of-matter-long-questions.dark.pdf",
+    "context_key": "library/physics/g9-mechanical-properties-of-matter/long/mechanical-properties-of-matter-long-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_9",
+    "dark_key": "library/physics/g9-thermal-properties-of-matter/long/thermal-properties-of-matter-long-questions.dark.pdf",
+    "context_key": "library/physics/g9-thermal-properties-of-matter/long/thermal-properties-of-matter-long-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_9",
+    "dark_key": "library/physics/g9-nature-of-science/long/nature-of-science-long-questions.dark.pdf",
+    "context_key": "library/physics/g9-nature-of-science/long/nature-of-science-long-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_9",
+    "dark_key": "library/urdu/general/reading/jumlo-ki-durusti-notes.dark.pdf",
+    "context_key": "library/urdu/general/reading/jumlo-ki-durusti-notes.context.txt"
+  },
+  {
+    "grade": "GRADE_9",
+    "dark_key": "library/urdu/general/mcq/jumlo-ki-durusti-mcqs.dark.pdf",
+    "context_key": "library/urdu/general/mcq/jumlo-ki-durusti-mcqs.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/biology/g10-gaseous-exchange/mcq/gaseous-exchange-mcqs.dark.pdf",
+    "context_key": "library/biology/g10-gaseous-exchange/mcq/gaseous-exchange-mcqs.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/biology/g10-gaseous-exchange/short/gaseous-exchange-short-questions.dark.pdf",
+    "context_key": "library/biology/g10-gaseous-exchange/short/gaseous-exchange-short-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/biology/g10-gaseous-exchange/long/gaseous-exchange-long-questions.dark.pdf",
+    "context_key": "library/biology/g10-gaseous-exchange/long/gaseous-exchange-long-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/biology/g10-homeostasis/mcq/homeostasis-mcqs.dark.pdf",
+    "context_key": "library/biology/g10-homeostasis/mcq/homeostasis-mcqs.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/biology/g10-homeostasis/short/homeostasis-short-questions.dark.pdf",
+    "context_key": "library/biology/g10-homeostasis/short/homeostasis-short-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/biology/g10-homeostasis/long/homeostasis-long-questions.dark.pdf",
+    "context_key": "library/biology/g10-homeostasis/long/homeostasis-long-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/biology/g10-coordination-and-control/mcq/coordination-and-control-mcqs.dark.pdf",
+    "context_key": "library/biology/g10-coordination-and-control/mcq/coordination-and-control-mcqs.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/biology/g10-coordination-and-control/short/coordination-and-control-short-questions.dark.pdf",
+    "context_key": "library/biology/g10-coordination-and-control/short/coordination-and-control-short-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/biology/g10-coordination-and-control/long/coordination-and-control-long-questions.dark.pdf",
+    "context_key": "library/biology/g10-coordination-and-control/long/coordination-and-control-long-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/biology/g10-support-and-movement/mcq/support-and-movement-mcqs.dark.pdf",
+    "context_key": "library/biology/g10-support-and-movement/mcq/support-and-movement-mcqs.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/biology/g10-support-and-movement/short/support-and-movement-short-questions.dark.pdf",
+    "context_key": "library/biology/g10-support-and-movement/short/support-and-movement-short-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/biology/g10-support-and-movement/long/support-and-movement-long-questions.dark.pdf",
+    "context_key": "library/biology/g10-support-and-movement/long/support-and-movement-long-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/biology/g10-reproduction/mcq/reproduction-mcqs.dark.pdf",
+    "context_key": "library/biology/g10-reproduction/mcq/reproduction-mcqs.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/biology/g10-reproduction/short/reproduction-short-questions.dark.pdf",
+    "context_key": "library/biology/g10-reproduction/short/reproduction-short-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/biology/g10-reproduction/long/reproduction-long-questions.dark.pdf",
+    "context_key": "library/biology/g10-reproduction/long/reproduction-long-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/biology/g10-inheritance/mcq/inheritance-mcqs.dark.pdf",
+    "context_key": "library/biology/g10-inheritance/mcq/inheritance-mcqs.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/biology/g10-inheritance/short/inheritance-short-questions.dark.pdf",
+    "context_key": "library/biology/g10-inheritance/short/inheritance-short-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/biology/g10-inheritance/long/inheritance-long-questions.dark.pdf",
+    "context_key": "library/biology/g10-inheritance/long/inheritance-long-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/biology/g10-man-and-his-environment/mcq/man-and-his-environment-mcqs.dark.pdf",
+    "context_key": "library/biology/g10-man-and-his-environment/mcq/man-and-his-environment-mcqs.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/biology/g10-man-and-his-environment/short/man-and-his-environment-short-questions.dark.pdf",
+    "context_key": "library/biology/g10-man-and-his-environment/short/man-and-his-environment-short-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/biology/g10-man-and-his-environment/long/man-and-his-environment-long-questions.dark.pdf",
+    "context_key": "library/biology/g10-man-and-his-environment/long/man-and-his-environment-long-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/biology/g10-biotechnology/mcq/biotechnology-mcqs.dark.pdf",
+    "context_key": "library/biology/g10-biotechnology/mcq/biotechnology-mcqs.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/biology/g10-biotechnology/short/biotechnology-short-questions.dark.pdf",
+    "context_key": "library/biology/g10-biotechnology/short/biotechnology-short-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/biology/g10-biotechnology/long/biotechnology-long-questions.dark.pdf",
+    "context_key": "library/biology/g10-biotechnology/long/biotechnology-long-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/biology/g10-pharmacology/mcq/pharmacology-mcqs.dark.pdf",
+    "context_key": "library/biology/g10-pharmacology/mcq/pharmacology-mcqs.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/biology/g10-pharmacology/short/pharmacology-short-questions.dark.pdf",
+    "context_key": "library/biology/g10-pharmacology/short/pharmacology-short-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/biology/g10-pharmacology/long/pharmacology-long-questions.dark.pdf",
+    "context_key": "library/biology/g10-pharmacology/long/pharmacology-long-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/chemistry/g10-states-of-matter-and-phase-changes/mcq/states-of-matter-and-phase-changes-mcqs.dark.pdf",
+    "context_key": "library/chemistry/g10-states-of-matter-and-phase-changes/mcq/states-of-matter-and-phase-changes-mcqs.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/chemistry/g10-states-of-matter-and-phase-changes/short/states-of-matter-and-phase-changes-short-questions.dark.pdf",
+    "context_key": "library/chemistry/g10-states-of-matter-and-phase-changes/short/states-of-matter-and-phase-changes-short-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/chemistry/g10-states-of-matter-and-phase-changes/long/states-of-matter-and-phase-changes-long-questions.dark.pdf",
+    "context_key": "library/chemistry/g10-states-of-matter-and-phase-changes/long/states-of-matter-and-phase-changes-long-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/chemistry/g10-stoichiometry/mcq/stoichiometry-mcqs.dark.pdf",
+    "context_key": "library/chemistry/g10-stoichiometry/mcq/stoichiometry-mcqs.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/chemistry/g10-stoichiometry/short/stoichiometry-short-questions.dark.pdf",
+    "context_key": "library/chemistry/g10-stoichiometry/short/stoichiometry-short-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/chemistry/g10-stoichiometry/long/stoichiometry-long-questions.dark.pdf",
+    "context_key": "library/chemistry/g10-stoichiometry/long/stoichiometry-long-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/chemistry/g10-electrochemistry/mcq/electrochemistry-mcqs.dark.pdf",
+    "context_key": "library/chemistry/g10-electrochemistry/mcq/electrochemistry-mcqs.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/chemistry/g10-electrochemistry/short/electrochemistry-short-questions.dark.pdf",
+    "context_key": "library/chemistry/g10-electrochemistry/short/electrochemistry-short-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/chemistry/g10-electrochemistry/long/electrochemistry-long-questions.dark.pdf",
+    "context_key": "library/chemistry/g10-electrochemistry/long/electrochemistry-long-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/chemistry/g10-reaction-kinetics/mcq/reaction-kinetics-mcqs.dark.pdf",
+    "context_key": "library/chemistry/g10-reaction-kinetics/mcq/reaction-kinetics-mcqs.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/chemistry/g10-reaction-kinetics/short/reaction-kinetics-short-questions.dark.pdf",
+    "context_key": "library/chemistry/g10-reaction-kinetics/short/reaction-kinetics-short-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/chemistry/g10-reaction-kinetics/long/reaction-kinetics-long-questions.dark.pdf",
+    "context_key": "library/chemistry/g10-reaction-kinetics/long/reaction-kinetics-long-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/chemistry/g10-salts/mcq/salts-mcqs.dark.pdf",
+    "context_key": "library/chemistry/g10-salts/mcq/salts-mcqs.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/chemistry/g10-salts/short/salts-short-questions.dark.pdf",
+    "context_key": "library/chemistry/g10-salts/short/salts-short-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/chemistry/g10-salts/long/salts-long-questions.dark.pdf",
+    "context_key": "library/chemistry/g10-salts/long/salts-long-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/chemistry/g10-nitrogen-and-sulphur/mcq/nitrogen-and-sulphur-mcqs.dark.pdf",
+    "context_key": "library/chemistry/g10-nitrogen-and-sulphur/mcq/nitrogen-and-sulphur-mcqs.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/chemistry/g10-nitrogen-and-sulphur/short/nitrogen-and-sulphur-short-questions.dark.pdf",
+    "context_key": "library/chemistry/g10-nitrogen-and-sulphur/short/nitrogen-and-sulphur-short-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/chemistry/g10-nitrogen-and-sulphur/long/nitrogen-and-sulphur-long-questions.dark.pdf",
+    "context_key": "library/chemistry/g10-nitrogen-and-sulphur/long/nitrogen-and-sulphur-long-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/chemistry/g10-water/mcq/water-mcqs.dark.pdf",
+    "context_key": "library/chemistry/g10-water/mcq/water-mcqs.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/chemistry/g10-water/short/water-short-questions.dark.pdf",
+    "context_key": "library/chemistry/g10-water/short/water-short-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/chemistry/g10-water/long/water-long-questions.dark.pdf",
+    "context_key": "library/chemistry/g10-water/long/water-long-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/computer-science/g10-operating-systems-structure-and-services/mcq/operating-systems-structure-and-services-mcqs.dark.pdf",
+    "context_key": "library/computer-science/g10-operating-systems-structure-and-services/mcq/operating-systems-structure-and-services-mcqs.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/computer-science/g10-operating-systems-structure-and-services/short/operating-systems-structure-and-services-short-questions.dark.pdf",
+    "context_key": "library/computer-science/g10-operating-systems-structure-and-services/short/operating-systems-structure-and-services-short-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/computer-science/g10-operating-systems-structure-and-services/long/operating-systems-structure-and-services-long-questions.dark.pdf",
+    "context_key": "library/computer-science/g10-operating-systems-structure-and-services/long/operating-systems-structure-and-services-long-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/computer-science/g10-system-recovery-and-advanced-maintenance/mcq/system-recovery-and-advanced-maintenance-mcqs.dark.pdf",
+    "context_key": "library/computer-science/g10-system-recovery-and-advanced-maintenance/mcq/system-recovery-and-advanced-maintenance-mcqs.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/computer-science/g10-system-recovery-and-advanced-maintenance/long/system-recovery-and-advanced-maintenance-long-questions.dark.pdf",
+    "context_key": "library/computer-science/g10-system-recovery-and-advanced-maintenance/long/system-recovery-and-advanced-maintenance-long-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/computer-science/g10-system-recovery-and-advanced-maintenance/reading/system-recovery-and-advanced-maintenance-exercise.dark.pdf",
+    "context_key": "library/computer-science/g10-system-recovery-and-advanced-maintenance/reading/system-recovery-and-advanced-maintenance-exercise.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/computer-science/g10-introduction-to-python-programming/mcq/introduction-to-python-programming-mcqs.dark.pdf",
+    "context_key": "library/computer-science/g10-introduction-to-python-programming/mcq/introduction-to-python-programming-mcqs.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/computer-science/g10-introduction-to-python-programming/short/introduction-to-python-programming-short-questions.dark.pdf",
+    "context_key": "library/computer-science/g10-introduction-to-python-programming/short/introduction-to-python-programming-short-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/computer-science/g10-introduction-to-python-programming/long/introduction-to-python-programming-long-questions.dark.pdf",
+    "context_key": "library/computer-science/g10-introduction-to-python-programming/long/introduction-to-python-programming-long-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/computer-science/g10-introduction-to-python-programming/reading/introduction-to-python-programming-exercise.dark.pdf",
+    "context_key": "library/computer-science/g10-introduction-to-python-programming/reading/introduction-to-python-programming-exercise.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/computer-science/g10-control-structures-in-python/mcq/control-structures-in-python-mcqs.dark.pdf",
+    "context_key": "library/computer-science/g10-control-structures-in-python/mcq/control-structures-in-python-mcqs.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/computer-science/g10-control-structures-in-python/short/control-structures-in-python-short-questions.dark.pdf",
+    "context_key": "library/computer-science/g10-control-structures-in-python/short/control-structures-in-python-short-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/computer-science/g10-control-structures-in-python/long/control-structures-in-python-long-questions.dark.pdf",
+    "context_key": "library/computer-science/g10-control-structures-in-python/long/control-structures-in-python-long-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/computer-science/g10-control-structures-in-python/reading/control-structures-in-python-exercise.dark.pdf",
+    "context_key": "library/computer-science/g10-control-structures-in-python/reading/control-structures-in-python-exercise.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/physics/g10-thermal-physics/short/thermal-physics-short-questions.dark.pdf",
+    "context_key": "library/physics/g10-thermal-physics/short/thermal-physics-short-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/physics/g10-transfer-of-thermal-energy/short/transfer-of-thermal-energy-short-questions.dark.pdf",
+    "context_key": "library/physics/g10-transfer-of-thermal-energy/short/transfer-of-thermal-energy-short-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/physics/g10-waves/short/waves-short-questions.dark.pdf",
+    "context_key": "library/physics/g10-waves/short/waves-short-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/physics/g10-sound/short/sound-short-questions.dark.pdf",
+    "context_key": "library/physics/g10-sound/short/sound-short-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/physics/g10-light/short/light-short-questions.dark.pdf",
+    "context_key": "library/physics/g10-light/short/light-short-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/physics/g10-electrostatics/short/electrostatics-short-questions.dark.pdf",
+    "context_key": "library/physics/g10-electrostatics/short/electrostatics-short-questions.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/mathematics/g10-matrices-and-determinants/reading/3.1-ex.dark.pdf",
+    "context_key": "library/mathematics/g10-matrices-and-determinants/reading/3.1-ex.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/mathematics/g10-matrices-and-determinants/mcq/3.1-mcq.dark.pdf",
+    "context_key": "library/mathematics/g10-matrices-and-determinants/mcq/3.1-mcq.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/mathematics/g10-matrices-and-determinants/reading/3.2-ex.dark.pdf",
+    "context_key": "library/mathematics/g10-matrices-and-determinants/reading/3.2-ex.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/mathematics/g10-matrices-and-determinants/mcq/3.2-mcq.dark.pdf",
+    "context_key": "library/mathematics/g10-matrices-and-determinants/mcq/3.2-mcq.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/mathematics/g10-matrices-and-determinants/reading/3.3-ex.dark.pdf",
+    "context_key": "library/mathematics/g10-matrices-and-determinants/reading/3.3-ex.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/mathematics/g10-matrices-and-determinants/mcq/3.3-mcq.dark.pdf",
+    "context_key": "library/mathematics/g10-matrices-and-determinants/mcq/3.3-mcq.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/mathematics/g10-matrices-and-determinants/reading/3.4-ex.dark.pdf",
+    "context_key": "library/mathematics/g10-matrices-and-determinants/reading/3.4-ex.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/mathematics/g10-matrices-and-determinants/mcq/3.4-mcq.dark.pdf",
+    "context_key": "library/mathematics/g10-matrices-and-determinants/mcq/3.4-mcq.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/mathematics/g10-matrices-and-determinants/reading/3.5-ex.dark.pdf",
+    "context_key": "library/mathematics/g10-matrices-and-determinants/reading/3.5-ex.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/mathematics/g10-matrices-and-determinants/mcq/3.5-mcq.dark.pdf",
+    "context_key": "library/mathematics/g10-matrices-and-determinants/mcq/3.5-mcq.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/mathematics/g10-matrices-and-determinants/reading/3.6-ex.dark.pdf",
+    "context_key": "library/mathematics/g10-matrices-and-determinants/reading/3.6-ex.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/mathematics/g10-matrices-and-determinants/mcq/3.6-mcq.dark.pdf",
+    "context_key": "library/mathematics/g10-matrices-and-determinants/mcq/3.6-mcq.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/mathematics/g10-matrices-and-determinants/mcq/extra-mcq.dark.pdf",
+    "context_key": "library/mathematics/g10-matrices-and-determinants/mcq/extra-mcq.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/mathematics/g10-matrices-and-determinants/mcq/review-mcq.dark.pdf",
+    "context_key": "library/mathematics/g10-matrices-and-determinants/mcq/review-mcq.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/mathematics/g10-matrices-and-determinants/reading/review-ex.dark.pdf",
+    "context_key": "library/mathematics/g10-matrices-and-determinants/reading/review-ex.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/english/g10-hazrat-muhammads-pbuh-social-reforms-for-the-rights-of-women-orphans-and-slaves/reading/hazrat-muhammad-s-pbuh-social-reforms-for-the-rights-of-women-orphans-and-slaves-notes.dark.pdf",
+    "context_key": "library/english/g10-hazrat-muhammads-pbuh-social-reforms-for-the-rights-of-women-orphans-and-slaves/reading/hazrat-muhammad-s-pbuh-social-reforms-for-the-rights-of-women-orphans-and-slaves-notes.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/english/g10-my-beloved-pakistan/reading/my-beloved-pakistan-notes.dark.pdf",
+    "context_key": "library/english/g10-my-beloved-pakistan/reading/my-beloved-pakistan-notes.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/english/g10-digital-globalisation-transforming-the-english-language/reading/digital-globalisation-transforming-the-english-language-notes.dark.pdf",
+    "context_key": "library/english/g10-digital-globalisation-transforming-the-english-language/reading/digital-globalisation-transforming-the-english-language-notes.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/english/g10-the-earth-act-now-for-tomorrow/reading/the-earth-act-now-for-tomorrow-notes.dark.pdf",
+    "context_key": "library/english/g10-the-earth-act-now-for-tomorrow/reading/the-earth-act-now-for-tomorrow-notes.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/english/g10-the-happy-prince/reading/the-happy-prince-notes.dark.pdf",
+    "context_key": "library/english/g10-the-happy-prince/reading/the-happy-prince-notes.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/english/g10-drug-abuse/reading/drug-abuse-notes.dark.pdf",
+    "context_key": "library/english/g10-drug-abuse/reading/drug-abuse-notes.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/english/g10-time/reading/time-notes.dark.pdf",
+    "context_key": "library/english/g10-time/reading/time-notes.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/english/g10-pollution-free-pakistan-with-greenery-all-around/reading/pollution-free-pakistan-with-greenery-all-around-notes.dark.pdf",
+    "context_key": "library/english/g10-pollution-free-pakistan-with-greenery-all-around/reading/pollution-free-pakistan-with-greenery-all-around-notes.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/english/g10-the-road-not-taken/reading/the-road-not-taken-notes.dark.pdf",
+    "context_key": "library/english/g10-the-road-not-taken/reading/the-road-not-taken-notes.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/english/g10-the-three-questions/reading/the-three-questions-notes.dark.pdf",
+    "context_key": "library/english/g10-the-three-questions/reading/the-three-questions-notes.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/english/g10-review-1/reading/review-1-notes.dark.pdf",
+    "context_key": "library/english/g10-review-1/reading/review-1-notes.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/english/g10-review-2/reading/review-2-notes.dark.pdf",
+    "context_key": "library/english/g10-review-2/reading/review-2-notes.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/urdu/general/mcq/ch1-9-urdu-essays-mcq.dark.pdf",
+    "context_key": "library/urdu/general/mcq/ch1-9-urdu-essays-mcq.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/urdu/general/reading/ch1-9-urdu-essays-reading.dark.pdf",
+    "context_key": "library/urdu/general/reading/ch1-9-urdu-essays-reading.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/urdu/general/mcq/ch10-18-urdu-essays-mcq.dark.pdf",
+    "context_key": "library/urdu/general/mcq/ch10-18-urdu-essays-mcq.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/urdu/general/reading/ch10-18-urdu-essays-reading.dark.pdf",
+    "context_key": "library/urdu/general/reading/ch10-18-urdu-essays-reading.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/urdu/general/mcq/ch19-27-urdu-essays-mcq.dark.pdf",
+    "context_key": "library/urdu/general/mcq/ch19-27-urdu-essays-mcq.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/urdu/general/reading/ch19-27-urdu-essays-reading.dark.pdf",
+    "context_key": "library/urdu/general/reading/ch19-27-urdu-essays-reading.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/urdu/general/mcq/ch28-36-urdu-essays-mcq.dark.pdf",
+    "context_key": "library/urdu/general/mcq/ch28-36-urdu-essays-mcq.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/urdu/general/reading/ch28-36-urdu-essays-reading.dark.pdf",
+    "context_key": "library/urdu/general/reading/ch28-36-urdu-essays-reading.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/urdu/general/mcq/tafheem-ebaraat-mcq.dark.pdf",
+    "context_key": "library/urdu/general/mcq/tafheem-ebaraat-mcq.context.txt"
+  },
+  {
+    "grade": "GRADE_10",
+    "dark_key": "library/urdu/general/reading/tafheem-ebaraat-reading.dark.pdf",
+    "context_key": "library/urdu/general/reading/tafheem-ebaraat-reading.context.txt"
+  }
+]

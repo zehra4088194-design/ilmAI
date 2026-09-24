@@ -1,0 +1,23 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "incremental": false,
+    "plugins": []
+  },
+  "include": [
+    "next-env.d.ts",
+    "src/app/(dashboard)/insights/page.tsx",
+    "src/app/api/insights/roadmap/route.ts",
+    "src/app/api/ocr/route.ts",
+    "src/app/api/pdf-extract/route.ts",
+    "src/app/api/vision/scan/route.ts",
+    "src/components/features/subscription/SubscriptionPlans/index.tsx",
+    "src/components/insights/RoadmapPanel.tsx",
+    "src/lib/constants/index.ts",
+    "src/lib/insights/metrics.ts",
+    "src/lib/platform-settings/shared.ts",
+    "src/lib/rate-limit/index.ts",
+    "tests/unit/insights-metrics.test.ts"
+  ],
+  "exclude": ["node_modules", ".next"]
+}

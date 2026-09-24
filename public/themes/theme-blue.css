@@ -1,0 +1,115 @@
+/* theme-blue is loaded on demand; this file contains only its light/dark pair. */
+html.theme-blue-light {
+  --brand-primary: 209 92% 52%;
+  --brand-secondary: 191 95% 42%;
+  --brand-accent: 160 84% 38%;
+  --background: 206 42% 95%;
+  --foreground: 214 52% 14%;
+  --card: 0 0% 100%;
+  --card-foreground: 214 52% 14%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 214 52% 14%;
+  --primary: 209 92% 52%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 206 36% 90%;
+  --secondary-foreground: 214 52% 14%;
+  --muted: 206 26% 91%;
+  --muted-foreground: 214 18% 42%;
+  --accent: 209 74% 92%;
+  --accent-foreground: 209 92% 24%;
+  --border: 206 24% 82%;
+  --input: 206 24% 82%;
+  --ring: 209 92% 52%;
+  --sidebar: 211 46% 18%;
+  --sidebar-foreground: 210 40% 98%;
+  --sidebar-accent: 211 36% 24%;
+  --sidebar-accent-foreground: 210 40% 98%;
+  --sidebar-border: 211 24% 30%;
+  --app-background-image:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.62), rgba(230, 244, 255, 0.44)),
+    radial-gradient(circle at 18% 0%, rgba(96, 165, 250, 0.14), transparent 34%), url('/background-blue.png');
+  --app-background-size: cover;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --chart-1: var(--primary);
+  --chart-2: var(--brand-secondary);
+  --chart-3: var(--brand-accent);
+  --chart-4: 38 92% 50%;
+  --chart-5: 0 84% 60%;
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-ring: var(--ring);
+}
+
+html.theme-blue-dark {
+  --brand-primary: 213 92% 62%;
+  --brand-secondary: 199 95% 67%;
+  --brand-accent: 160 84% 46%;
+  --background: 214 48% 11%;
+  --foreground: 210 40% 96%;
+  --card: 214 42% 15%;
+  --card-foreground: 210 40% 96%;
+  --popover: 212 40% 18%;
+  --popover-foreground: 210 40% 96%;
+  --primary: 213 92% 66%;
+  --primary-foreground: 212 50% 10%;
+  --secondary: 214 36% 19%;
+  --secondary-foreground: 210 40% 96%;
+  --muted: 214 30% 20%;
+  --muted-foreground: 210 20% 74%;
+  --accent: 214 36% 22%;
+  --accent-foreground: 210 40% 96%;
+  --border: 214 28% 27%;
+  --input: 214 28% 27%;
+  --ring: 213 92% 66%;
+  --sidebar: 212 48% 12%;
+  --sidebar-foreground: 210 40% 96%;
+  --sidebar-accent: 212 42% 20%;
+  --sidebar-accent-foreground: 210 40% 96%;
+  --sidebar-border: 212 36% 22%;
+  --app-background-image:
+    linear-gradient(135deg, rgba(3, 10, 25, 0.52), rgba(7, 25, 50, 0.42)),
+    radial-gradient(circle at 12% 0%, rgba(96, 165, 250, 0.18), transparent 34%), url('/background-blue.png');
+  --app-background-size: cover;
+  --destructive: 0 62% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --chart-1: var(--primary);
+  --chart-2: var(--brand-secondary);
+  --chart-3: var(--brand-accent);
+  --chart-4: 38 92% 60%;
+  --chart-5: 0 84% 70%;
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-ring: var(--ring);
+}
+
+html.theme-blue-light,
+html.theme-blue-dark {
+  --radius: 0.9rem;
+  --theme-glass-blur: 10px;
+  --theme-card-shadow: 0 18px 46px rgba(14, 91, 153, 0.16);
+  --theme-heading-tracking: -0.014em;
+  --theme-body-font: 'Trebuchet MS', var(--font-inter), sans-serif;
+  --theme-heading-font: var(--font-inter), sans-serif;
+  --theme-heading-transform: none;
+  --theme-heading-weight: 760;
+  --theme-surface-radius: 1rem 1rem 0.35rem 1rem;
+  --theme-surface-angle: 165deg;
+  --theme-border-width: 1px;
+  --theme-border-style: solid;
+  --destructive: 0 62% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --chart-1: var(--primary);
+  --chart-2: var(--brand-secondary);
+  --chart-3: var(--brand-accent);
+  --chart-4: 38 92% 60%;
+  --chart-5: 0 84% 70%;
+  --sidebar: var(--card);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--secondary);
+  --sidebar-accent-foreground: var(--secondary-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+}

@@ -1,0 +1,132 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { gatewayChat, MARKDOWN_ANSWER_FORMAT_INSTRUCTION } from '@/lib/ai/gateway';
+import { checkAiMessageLimit, checkFileSummaryLimit, consumeAiCredits } from '@/lib/rate-limit';
+import { fetchResourceContext, getProtectedResource, type ProtectedResourceKind } from '@/lib/resources/server';
+import { buildResourceEvidence, verifiedSourceInstruction } from '@/lib/resources/evidence';
+import { buildResourceSourceSummary } from '@/lib/resources/source-fallback';
+import type { SubscriptionTier } from '@/types';
+import { buildRepresentativeTextContext } from '@/lib/resources/context-window';
+import { createArtifactKey, readAiArtifact, writeAiArtifact } from '@/lib/ai/artifact-cache';
+import { buildHybridResourceContext } from '@/lib/resources/semantic-context';
+import { getPlatformSettings } from '@/lib/platform-settings/server';
+import { getAdminAiProvider } from '@/lib/platform-settings/shared';
+import type { AiProviderId } from '@/lib/ai/gateway';
+
+export const runtime = 'nodejs';
+export const maxDuration = 180;
+
+export async function POST(req: NextRequest) {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ status: 'error', error: 'Authentication is required.' }, { status: 401 });
+
+    const { kind, id } = await req.json();
+    if ((kind !== 'library' && kind !== 'past-paper' && kind !== 'college-resource') || typeof id !== 'string') {
+      return NextResponse.json({ status: 'error', error: 'Invalid resource.' }, { status: 400 });
+    }
+    const resource = await getProtectedResource(user.id, kind as ProtectedResourceKind, id, 'light');
+    if (!resource) return NextResponse.json({ status: 'error', error: 'The resource was not found.' }, { status: 404 });
+    if (resource.tier === 'FREE') {
+      return NextResponse.json(
+        { status: 'error', error: 'AI Summary is available on Pro and Elite.' },
+        { status: 403 }
+      );
+    }
+    const context = await fetchResourceContext(resource);
+    const artifactKey = createArtifactKey('resource-summary', {
+      prompt: 3,
+      kind,
+      id,
+      title: resource.title,
+      context,
+    });
+    const cached = await readAiArtifact<{ summary: string; provider: string; model: string; fallbackUsed: boolean }>(
+      artifactKey
+    );
+    if (cached) {
+      return NextResponse.json({
+        status: 'success',
+        data: {
+          ...cached,
+          cached: true,
+          source: buildResourceEvidence(resource.title, context, cached.fallbackUsed ? 100 : 88),
+        },
+      });
+    }
+    const featureLimit = await checkFileSummaryLimit(user.id, resource.tier as SubscriptionTier);
+    if (!featureLimit.success) {
+      return NextResponse.json(
+        { status: 'error', error: 'The monthly file-summary limit has been reached.' },
+        { status: 429 }
+      );
+    }
+    const limit = await checkAiMessageLimit(user.id, resource.tier as SubscriptionTier, 'resource_summary');
+    if (!limit.success) {
+      return NextResponse.json({ status: 'error', error: "Today's AI limit has been reached." }, { status: 429 });
+    }
+    const modelContext = await buildHybridResourceContext({
+      resourceKey: `${kind}:${id}`,
+      source: context,
+      query: 'main concepts definitions formulas important facts exam points and revision topics',
+    }).catch(() => buildRepresentativeTextContext(context));
+
+    let summary: string;
+    let provider = 'source-fallback';
+    let model = 'deterministic-source-parser';
+    let fallbackUsed = false;
+    try {
+      const platformSettings = await getPlatformSettings();
+      const adminProvider = getAdminAiProvider(platformSettings, 'resourceSummary');
+      const providerToUse: AiProviderId = adminProvider === 'local' ? 'groq' : adminProvider;
+      const result = await gatewayChat({
+        provider: providerToUse,
+        tier: 'mini',
+        maxTokens: 1800,
+        temperature: 0.25,
+        strictProvider: true,
+        routingPolicy: 'text',
+        messages: [
+          {
+            role: 'system',
+            content: `${verifiedSourceInstruction()} ${MARKDOWN_ANSWER_FORMAT_INSTRUCTION}`,
+          },
+          {
+            role: 'user',
+            content: `Resource: ${resource.title}\n\nCreate a student-friendly summary from this companion text file. Include:\n1. What this file covers\n2. Key concepts/formulas\n3. Important exam points\n4. A compact revision checklist\n\nSOURCE TEXT (representative sections from the attached TXT):\n${modelContext}`,
+          },
+        ],
+      });
+      summary = result.text;
+      provider = result.providerUsed;
+      model = result.modelUsed;
+    } catch (gatewayError) {
+      fallbackUsed = true;
+      console.warn('Admin-selected summary model unavailable; using source fallback:', gatewayError);
+      summary = buildResourceSourceSummary(resource.title, context);
+    }
+
+    await writeAiArtifact(artifactKey, { summary, provider, model, fallbackUsed });
+    await consumeAiCredits(user.id, resource.tier as SubscriptionTier, 'resource_summary');
+    return NextResponse.json({
+      status: 'success',
+      data: {
+        summary,
+        provider,
+        model,
+        fallbackUsed,
+        cached: false,
+        source: buildResourceEvidence(resource.title, context, fallbackUsed ? 100 : 88),
+      },
+    });
+  } catch (error) {
+    console.error('Resource summary failed:', error);
+    return NextResponse.json(
+      { status: 'error', error: error instanceof Error ? error.message : 'The summary could not be generated.' },
+      { status: 500 }
+    );
+  }
+}
