@@ -24,6 +24,8 @@ import {
   Camera,
   ArrowLeftRight,
   Mic,
+  Gift,
+  FileText,
 } from 'lucide-react';
 import {
   getVoiceTypingMode,
@@ -54,6 +56,7 @@ import {
 import { ThemePicker } from '@/components/common/ThemePicker';
 import { useAuthStore } from '@/store/auth.store';
 import { DownloadsClient } from '@/components/features/offline/DownloadsClient';
+import { ReferralCard } from '@/components/features/dashboard/ReferralCard';
 import { disablePushNotifications, enablePushNotifications } from '@/lib/push/client';
 
 const DEFAULT_NOTIFICATION_PREFERENCES = {
@@ -105,6 +108,7 @@ export function SettingsTabs({
   // user find and click "Enable 2FA" themselves right after creating their account.
   autoStartMfa?: boolean;
   continueAfterMfaHref?: string | null;
+  hasInstitutionConnection?: boolean;
 }) {
   const [localProfile, setLocalProfile] = useState(profile);
   const [activeTab, setActiveTab] = useState(initialTab || 'profile');
@@ -183,10 +187,15 @@ export function SettingsTabs({
   const isTeacherRole = localProfile?.role === 'teacher';
   // Switch Profile is deliberately unavailable to principal accounts — see SwitchProfileCard.
   const canSwitchProfile = localProfile?.role !== 'principal';
+  const isStudentRole = localProfile?.role === 'student';
   const TABS = [
     { id: 'profile', label: t('settings.tabs.profile'), icon: User },
     ...(isTeacherRole ? [] : [{ id: 'university', label: 'University Mode', icon: GraduationCap }]),
-    ...(isTeacherRole ? [] : [{ id: 'parent-link', label: t('settings.tabs.parentLink'), icon: Users }]),
+    ...(isTeacherRole ? [] : [{ id: 'parent-link', label: 'Parent & Sharing', icon: Users }]),
+    ...(isStudentRole && hasInstitutionConnection === false
+      ? [{ id: 'student-applications', label: 'Applications', icon: FileText }]
+      : []),
+    { id: 'referral', label: 'Invite & Share', icon: Gift },
     ...(canSwitchProfile ? [{ id: 'switch-profile', label: 'Switch Profile', icon: ArrowLeftRight }] : []),
     { id: 'notifications', label: t('settings.tabs.notifications'), icon: Bell },
     { id: 'security', label: t('settings.tabs.security'), icon: Shield },
@@ -828,7 +837,8 @@ export function SettingsTabs({
             </div>
           )}
           {activeTab === 'parent-link' && (
-            <div className="space-y-4">
+            <div className="space-y-5">
+              <ReferralCard />
               <div>
                 <h3 className="mb-1 flex items-center gap-2 font-semibold">
                   <Users className="h-4 w-4 text-violet-400" />
@@ -877,6 +887,39 @@ export function SettingsTabs({
                   </p>
                 </>
               )}
+            </div>
+          )}
+          {activeTab === 'student-applications' && isStudentRole && hasInstitutionConnection === false && (
+            <div className="space-y-4">
+              <div>
+                <h3 className="mb-1 flex items-center gap-2 font-semibold">
+                  <FileText className="h-4 w-4 text-violet-400" />
+                  Student Applications
+                </h3>
+                <p className="text-muted-foreground text-sm">
+                  Submit applications to your school or college once your student account is connected to an institution.
+                </p>
+              </div>
+              <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-4">
+                <p className="text-sm font-medium">No institution connection found.</p>
+                <p className="text-muted-foreground mt-1 text-xs leading-5">
+                  Applications become available in the top navbar after your active school or college connection is set up.
+                </p>
+              </div>
+            </div>
+          )}
+          {activeTab === 'referral' && (
+            <div className="space-y-5">
+              <div>
+                <h3 className="mb-1 flex items-center gap-2 font-semibold">
+                  <Gift className="h-4 w-4 text-violet-400" />
+                  Invite & Share ilm AI
+                </h3>
+                <p className="text-muted-foreground text-sm">
+                  Share your personal referral link with friends and earn referral rewards when eligible.
+                </p>
+              </div>
+              <ReferralCard />
             </div>
           )}
           {activeTab === 'switch-profile' && canSwitchProfile && <SwitchProfileCard />}
