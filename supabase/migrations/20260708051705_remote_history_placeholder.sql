@@ -1,2 +1,0 @@
--- Placeholder to align local Supabase migration history with the already-applied
--- remote project migration version 20260708051705.
