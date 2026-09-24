@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { SettingsTabs } from '@/components/features/settings/SettingsTabs';
 import { getUserGradeLevel } from '@/lib/supabase/getUserGradeLevel';
 import { CurriculumFeatureToggle } from '@/components/features/curriculum/CurriculumFeatureToggle';
+import { getStudentApplicationContext } from '@/lib/student-applications/server';
 export const metadata: Metadata = { title: 'Settings' };
 
 export default async function SettingsPage({
@@ -16,6 +17,7 @@ export default async function SettingsPage({
   } = await supabase.auth.getUser();
   const { data: profile } = await supabase.from('profiles').select('*').eq('id', user!.id).single();
   const { gradeLevel } = await getUserGradeLevel(supabase, user!.id);
+  const institutions = profile?.role === 'student' ? await getStudentApplicationContext(user!.id) : [];
   const params = await searchParams;
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -32,6 +34,7 @@ export default async function SettingsPage({
         initialParentView={params?.view === 'files' ? 'files' : params?.view === 'chat' ? 'chat' : undefined}
         autoStartMfa={params?.mfa === 'start'}
         continueAfterMfaHref={params?.next && params.next.startsWith('/') && !params.next.startsWith('//') ? params.next : null}
+        hasInstitutionConnection={profile?.role === 'student' ? institutions.length > 0 : true}
       />
     </div>
   );
