@@ -18,7 +18,6 @@ import { Button } from '@/components/ui/button';
 import { ParentConnectPrompt } from '@/components/features/parent/ParentConnectPrompt';
 import { InstallAppButton } from '@/components/features/dashboard/InstallAppButton';
 import { StudyBuddyCard } from '@/components/features/dashboard/StudyBuddyCard';
-import { ReferralCard } from '@/components/features/dashboard/ReferralCard';
 import { HouseAdBanner } from '@/components/features/ads/HouseAdBanner';
 import { InstitutionQuickAccess } from '@/components/features/institution/InstitutionQuickAccess';
 
@@ -43,11 +42,11 @@ export default async function DashboardPage() {
   if (profile?.education_level === 'university') {
     return (
       <div className="space-y-6">
+        <UniversityDashboard profile={profile} />
         <InstallAppButton />
         <HouseAdBanner slot="store_products" />
         {!approvedParentLink && <ParentConnectPrompt />}
         <InstitutionQuickAccess />
-        <UniversityDashboard profile={profile} />
       </div>
     );
   }
@@ -173,7 +172,6 @@ export default async function DashboardPage() {
       <InstitutionQuickAccess />
       {!approvedParentLink && <ParentConnectPrompt />}
       <StudyBuddyCard myStreak={profile?.streak || 0} />
-      <ReferralCard />
       <StatsGrid
         xp={profile?.xp || 0}
         level={profile?.level || 1}
