@@ -4,7 +4,7 @@ import { extractGoogleDriveFileId } from '@/lib/utils/filePreview';
 import type { SubscriptionTier } from '@/types';
 import { getR2ObjectStream, getR2Text, parseR2Uri } from '@/lib/storage/r2';
 
-export type ProtectedResourceKind = 'library' | 'past-paper' | 'college-resource' | 'class-library';
+export type ProtectedResourceKind = 'library' | 'past-paper' | 'college-resource' | 'class-library' | 'university-resource';
 export type ResourceMode = 'light' | 'dark';
 
 type ProfileScope = {
@@ -147,12 +147,71 @@ function getGoogleDriveConfirmationUrl(response: Response, html: string) {
   return null;
 }
 
+function universityResourceStem(title: string) {
+  return title
+    .replace(/_(?:Dark|Light)\\.pdf$/i, '')
+    .replace(/_content\\.txt$/i, '')
+    .replace(/\\.(?:pdf|txt)$/i, '')
+    .trim()
+    .toLowerCase();
+}
+
+async function getUniversityProtectedResource(
+  resourceId: string,
+  mode: ResourceMode,
+  profile: ProfileScope,
+): Promise<ProtectedResource | null> {
+  const admin = createServiceClient() as any;
+  const { data: seed } = await admin
+    .from('university_subject_resources')
+    .select('id, subject_id, resource_type, title, url')
+    .eq('id', resourceId)
+    .maybeSingle();
+  if (!seed?.url || !seed.subject_id) return null;
+
+  const { data: siblings } = await admin
+    .from('university_subject_resources')
+    .select('id, subject_id, resource_type, title, url, sort_order')
+    .eq('subject_id', seed.subject_id)
+    .eq('resource_type', seed.resource_type);
+
+  const stem = universityResourceStem(seed.title);
+  const family = (siblings || []).filter((row: any) => universityResourceStem(row.title) === stem);
+  const pdfRows = family.filter((row: any) => /\\.pdf$/i.test(row.title) && typeof row.url === 'string' && row.url.length > 0);
+  if (!pdfRows.length) return null;
+
+  const light = pdfRows.find((row: any) => /_Light\\.pdf$/i.test(row.title)) || pdfRows.find((row: any) => !/_Dark\\.pdf$/i.test(row.title));
+  const dark = pdfRows.find((row: any) => /_Dark\\.pdf$/i.test(row.title)) || light;
+  const textRow = family.find((row: any) => /_content\\.txt$/i.test(row.title) || /\\.txt$/i.test(row.title));
+  const sourceUrl = mode === 'dark' ? (dark?.url || light?.url) : (light?.url || dark?.url);
+  if (!sourceUrl) return null;
+
+  const displayTitle = (light?.title || dark?.title || seed.title)
+    .replace(/_(?:Light|Dark)\\.pdf$/i, '')
+    .replace(/\\.(?:pdf|txt)$/i, '')
+    .replace(/_/g, ' ')
+    .replace(/\\s+/g, ' ')
+    .trim();
+
+  return {
+    id: seed.id,
+    kind: 'university-resource',
+    title: displayTitle,
+    fileType: 'pdf',
+    sourceUrl,
+    contextTextUrl: textRow?.url || null,
+    tier: (profile.subscription_tier as SubscriptionTier) || 'FREE',
+  };
+}
+
 export async function getProtectedResource(
   userId: string,
   kind: ProtectedResourceKind,
   resourceId: string,
   mode: ResourceMode
 ): Promise<ProtectedResource | null> {
+  if (kind === 'university-resource') return getUniversityProtectedResource(resourceId, mode, profile);
+
   // Class Library is open, platform-wide content — no board/grade/subscription scoping and no
   // profile lookup needed at all (its RLS already "grants SELECT to everyone"), unlike every
   // other kind below. Handled first so it never depends on the signed-in user having a profile row.
@@ -534,6 +593,18 @@ export async function getResourceForProcessing(
   // at all) — this function exists for the other three kinds' AI tools queue only.
   if (kind === 'class-library') return null;
   const pdfAdmin = createServiceClient() as any;
+  if (kind === 'university-resource') {
+    const profile = {
+      subscription_tier: 'PRO' as SubscriptionTier,
+      board: null,
+      grade_level: null,
+      college_id: null,
+      university_stream: null,
+      university_degree: null,
+      university_semester: null,
+    } satisfies ProfileScope;
+    return getUniversityProtectedResource(resourceId, 'light', profile);
+  }
   if (kind === 'library') {
     const { data } = await pdfAdmin
       .from('library_resources')
