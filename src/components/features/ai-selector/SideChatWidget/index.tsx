@@ -61,7 +61,7 @@ async function getDynamicSearchLinks(message: string, gradeLevel?: string) {
 
   const responses = await Promise.allSettled(
     terms.map(async (term) => {
-      const gradeQuery = gradeLevel ? `&gradeLevel=${encodeURIComponent(gradeLevel)}` : '';
+      const gradeQuery = gradeLevel ? `&gradeLevel=${encodeURIComponent(gradeLevel)}&strictGradeLevel=1` : '';
       const response = await fetch(`/api/search?q=${encodeURIComponent(term)}${gradeQuery}`);
       if (!response.ok) return [];
       const json = await response.json();
