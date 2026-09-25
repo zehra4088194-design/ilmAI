@@ -57,7 +57,11 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     }
 
     const settings = await getPlatformSettings();
-    const priceRs = computeNotesOrderPriceRs(settings, pageCount);
+    // Textbooks are sold at one fixed printed-copy price regardless of page count.
+    // All other printed resources retain the existing admin-configured page-based pricing.
+    const priceRs = resource.resource_type === 'text_book'
+      ? 599
+      : computeNotesOrderPriceRs(settings, pageCount);
     const priceMinor = Math.round(priceRs * 100);
 
     const subjectRow = Array.isArray(resource.subjects) ? resource.subjects[0] : resource.subjects;
