@@ -25,6 +25,21 @@ interface SideChatMessage {
 
 type SearchLinkResult = { name?: string; subtitle?: string; href?: string };
 
+function filterLinksForGrade(
+  links: Array<{ label: string; href: string }> | undefined,
+  gradeLevel?: string | null,
+) {
+  if (!links?.length || !gradeLevel) return links || [];
+  const match = String(gradeLevel).match(/(9|10|11|12)/);
+  if (!match) return links;
+  const currentClass = match[1];
+  const classPattern = /(?:grade|class)[\\s_-]*(9|10|11|12)/i;
+  return links.filter((link) => {
+    const explicitClass = `${link.label} ${link.href}`.match(classPattern);
+    return !explicitClass || explicitClass[1] === currentClass;
+  });
+}
+
 const SEARCH_STOP_WORDS = new Set([
   'about',
   'answer',
@@ -165,7 +180,13 @@ export function SideChatWidget() {
       const id = data?.id || null;
       conversationIdRef.current = id;
       setConversationId(id);
-      setMessages(Array.isArray(data?.messages) ? (data.messages as unknown as SideChatMessage[]) : []);
+      const loadedMessages = Array.isArray(data?.messages) ? (data.messages as unknown as SideChatMessage[]) : [];
+      setMessages(
+        loadedMessages.map((message) => ({
+          ...message,
+          links: filterLinksForGrade(message.links, user.gradeLevel),
+        }))
+      );
       setChatLoaded(true);
     })();
     return () => {
@@ -236,7 +257,10 @@ export function SideChatWidget() {
       id: nanoid(),
       role: 'assistant',
       content: '',
-      links: isTeacher ? getTeacherLinks(pathname) : getDestinationSuggestions(text),
+      links: filterLinksForGrade(
+        isTeacher ? getTeacherLinks(pathname) : getDestinationSuggestions(text),
+        user.gradeLevel,
+      ),
     };
     const baseMessages = [...messages, userMsg, assistantMsg];
     setMessages(baseMessages);
@@ -252,7 +276,10 @@ export function SideChatWidget() {
             const merged = [...(message.links || []), ...dynamicLinks];
             return {
               ...message,
-              links: Array.from(new Map(merged.map((link) => [link.href, link])).values()).slice(0, 8),
+              links: filterLinksForGrade(
+                Array.from(new Map(merged.map((link) => [link.href, link])).values()).slice(0, 8),
+                user.gradeLevel,
+              ),
             };
           })
         );
