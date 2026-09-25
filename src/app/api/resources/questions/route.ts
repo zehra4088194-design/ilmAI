@@ -6,7 +6,7 @@ import type { ProtectedResourceKind } from '@/lib/resources/server';
 import { filterHighQualitySourceMcqs, shuffleSourceQuestions } from '@/lib/resources/source-fallback';
 import { queueResourceContextProcessing } from '@/lib/resources/processing';
 
-const KINDS = new Set<ProtectedResourceKind>(['library', 'past-paper', 'college-resource']);
+const KINDS = new Set<ProtectedResourceKind>(['library', 'past-paper', 'college-resource', 'university-resource']);
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient();
