@@ -15,10 +15,10 @@ async function searchPublicTopicContent(query: string) {
   return Array.isArray(data) ? data : [];
 }
 
-function mapPublicTopicContent(rows: any[], gradeLevel: string) {
+function mapPublicTopicContent(rows: any[], gradeLevel: string, strictGradeLevel = false) {
   const seen = new Set<string>();
   return rows
-    .filter((row) => !gradeLevel || !row.grade_level || row.grade_level === gradeLevel)
+    .filter((row) => !gradeLevel || (strictGradeLevel ? row.grade_level === gradeLevel : !row.grade_level || row.grade_level === gradeLevel))
     .map((row) => {
       const href = row.subject_slug && row.chapter_slug
         ? `/topics/${row.subject_slug}/${row.chapter_slug}`
@@ -43,6 +43,7 @@ function mapPublicTopicContent(rows: any[], gradeLevel: string) {
 export async function GET(req: NextRequest) {
   const query = req.nextUrl.searchParams.get('q')?.trim() || '';
   const gradeLevel = req.nextUrl.searchParams.get('gradeLevel')?.trim() || '';
+  const strictGradeLevel = req.nextUrl.searchParams.get('strictGradeLevel') === '1';
   if (query.length < 2) return NextResponse.json({ results: [] });
 
   const supabase = await createClient();
@@ -63,7 +64,7 @@ export async function GET(req: NextRequest) {
   const publicTopicContentPromise = searchPublicTopicContent(query);
   const algoliaResults = gradeLevel ? null : await searchAlgoliaCatalog(query);
   if (algoliaResults) {
-    const publicTopicResults = mapPublicTopicContent(await publicTopicContentPromise, gradeLevel);
+    const publicTopicResults = mapPublicTopicContent(await publicTopicContentPromise, gradeLevel, strictGradeLevel);
     const [{ data: notes }, { data: collegeLectures }, { data: collegeResources }] = await Promise.all([
       user
         ? supabase
