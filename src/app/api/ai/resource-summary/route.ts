@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     if (!user) return NextResponse.json({ status: 'error', error: 'Authentication is required.' }, { status: 401 });
 
     const { kind, id } = await req.json();
-    if ((kind !== 'library' && kind !== 'past-paper' && kind !== 'college-resource') || typeof id !== 'string') {
+    if ((kind !== 'library' && kind !== 'past-paper' && kind !== 'college-resource' && kind !== 'university-resource') || typeof id !== 'string') {
       return NextResponse.json({ status: 'error', error: 'Invalid resource.' }, { status: 400 });
     }
     const resource = await getProtectedResource(user.id, kind as ProtectedResourceKind, id, 'light');
