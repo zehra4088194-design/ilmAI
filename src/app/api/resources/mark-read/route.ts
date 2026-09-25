@@ -4,7 +4,7 @@ import { createServiceClient } from '@/lib/supabase/service';
 import { createNotificationIfEnabled } from '@/lib/notifications/preferences';
 import type { ProtectedResourceKind } from '@/lib/resources/server';
 
-const KINDS = new Set<ProtectedResourceKind>(['library', 'past-paper', 'college-resource']);
+const KINDS = new Set<ProtectedResourceKind>(['library', 'past-paper', 'college-resource', 'university-resource']);
 
 // Class Library intentionally has no entry here — it has no resource_reads tracking or
 // "want to test yourself?" prompt wired up (its table has no subject_id/chapter_id to scope a
@@ -13,6 +13,7 @@ const RESOURCE_TABLES: Partial<Record<ProtectedResourceKind, string>> = {
   library: 'library_resources',
   'past-paper': 'past_papers',
   'college-resource': 'college_resources',
+  'university-resource': 'university_subject_resources',
 };
 
 export async function POST(req: NextRequest) {
@@ -41,13 +42,15 @@ export async function POST(req: NextRequest) {
       ? 'id, subject_id, chapter_id, subjects(name)'
       : kind === 'college-resource'
         ? 'id, title'
-        : 'id, title, subject_id, chapter_id';
+        : kind === 'university-resource'
+          ? 'id, title, subject_id'
+          : 'id, title, subject_id, chapter_id';
   const { data: resource } = await admin.from(table).select(selectColumns).eq('id', resourceId).maybeSingle();
   if (!resource) return NextResponse.json({ status: 'error', error: 'The resource was not found.' }, { status: 404 });
 
   const title = kind === 'past-paper' ? resource.subjects?.name || 'Past paper' : resource.title || 'this file';
   const subjectId = kind === 'college-resource' ? null : resource.subject_id || null;
-  const chapterId = kind === 'college-resource' ? null : resource.chapter_id || null;
+  const chapterId = kind === 'college-resource' || kind === 'university-resource' ? null : resource.chapter_id || null;
 
   const { data: existing } = await admin
     .from('resource_reads')
