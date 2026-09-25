@@ -42,7 +42,7 @@ function mapPublicTopicContent(rows: any[], gradeLevel: string, strictGradeLevel
 
 export async function GET(req: NextRequest) {
   const query = req.nextUrl.searchParams.get('q')?.trim() || '';
-  const gradeLevel = req.nextUrl.searchParams.get('gradeLevel')?.trim() || '';
+  const requestedGradeLevel = req.nextUrl.searchParams.get('gradeLevel')?.trim() || '';
   const strictGradeLevel = req.nextUrl.searchParams.get('strictGradeLevel') === '1';
   if (query.length < 2) return NextResponse.json({ results: [] });
 
@@ -50,6 +50,21 @@ export async function GET(req: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // For strict side-chat searches, the server owns the class scope. Do not
+  // trust a client-provided grade because stale/partial auth state can be
+  // undefined or out of date.
+  let gradeLevel = requestedGradeLevel;
+  if (strictGradeLevel) {
+    if (!user?.id) return NextResponse.json({ results: [] });
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('grade_level')
+      .eq('id', user.id)
+      .maybeSingle();
+    gradeLevel = typeof profile?.grade_level === 'string' ? profile.grade_level.trim() : '';
+    if (!gradeLevel) return NextResponse.json({ results: [] });
+  }
   // Algolia's public index is not guaranteed to contain grade facets. Use the
   // relational catalog whenever a class is selected so other classes cannot
   // leak into navbar/side-chat results.
