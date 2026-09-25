@@ -1,14 +1,14 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, ExternalLink, FileText } from 'lucide-react';
+import { ArrowLeft, FileText } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { HouseAdBanner } from '@/components/features/ads/HouseAdBanner';
 import { UNIVERSITY_RESOURCE_TYPES, type UniversityResourceType } from '@/lib/university-hub/types';
+import { UniversityResourceRow } from '@/components/features/university-hub/UniversityResourceRow';
 import {
   getUniversitySubjectById,
   getUniversitySubjectResources,
-  resolveUniversityResourceUrl,
 } from '@/lib/university-hub/queries';
 
 export default async function UniversityResourceListPage({
@@ -25,12 +25,45 @@ export default async function UniversityResourceListPage({
   const matchingResources = (await getUniversitySubjectResources(subjectId)).filter(
     (resource: any) => resource.resource_type === (resourceType as UniversityResourceType)
   );
-  // Uploaded notes are stored as an r2://<bucket>/<key> URI (ilmai-uni-bucket for University
-  // Hub) — resolved to a short-lived signed HTTPS URL here so the "Open" link below always gets
-  // something a browser can actually fetch. External links (Drive, YouTube, a direct PDF URL)
-  // pass through unchanged.
-  const resources = await Promise.all(
-    matchingResources.map(async (resource: any) => ({ ...resource, openUrl: await resolveUniversityResourceUrl(resource.url) }))
+
+  // One logical note may have Light PDF, Dark PDF, and a companion TXT. Keep
+  // those together as one item; the TXT remains available to the protected
+  // reader/AI layer and is never shown as a separate openable file.
+  const stem = (title: string) =>
+    title
+      .replace(/_(?:Dark|Light)\\.pdf$/i, '')
+      .replace(/_content\\.txt$/i, '')
+      .replace(/\\.(?:pdf|txt)$/i, '')
+      .trim()
+      .toLowerCase();
+
+  const displayTitle = (title: string) =>
+    title
+      .replace(/_(?:Dark|Light)\\.pdf$/i, '')
+      .replace(/_content\\.txt$/i, '')
+      .replace(/\\.(?:pdf|txt)$/i, '')
+      .replace(/_/g, ' ')
+      .replace(/\\s+/g, ' ')
+      .trim();
+
+  const grouped = new Map<string, { id: string; title: string; sort_order: number }>();
+  for (const resource of matchingResources) {
+    if (!resource.url || !/\\.pdf$/i.test(resource.title)) continue;
+    const key = stem(resource.title);
+    if (!key) continue;
+    const existing = grouped.get(key);
+    const isLight = /_Light\\.pdf$/i.test(resource.title);
+    if (!existing || (isLight && !/_Light\\.pdf$/i.test(existing.title))) {
+      grouped.set(key, {
+        id: resource.id,
+        title: displayTitle(resource.title),
+        sort_order: resource.sort_order ?? 0,
+      });
+    }
+  }
+
+  const resources = [...grouped.values()].sort(
+    (a, b) => a.sort_order - b.sort_order || a.title.localeCompare(b.title)
   );
 
   return (
@@ -57,22 +90,12 @@ export default async function UniversityResourceListPage({
         />
       ) : (
         <div className="space-y-2">
-          {resources.map((resource: any) => (
-            <Card key={resource.id}>
-              <CardContent className="flex items-center justify-between gap-3 p-4">
-                <span className="truncate text-sm font-medium">{resource.title}</span>
-                {resource.openUrl && (
-                  <a
-                    href={resource.openUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-primary inline-flex shrink-0 items-center gap-1 text-xs font-semibold hover:underline"
-                  >
-                    Open <ExternalLink className="h-3.5 w-3.5" />
-                  </a>
-                )}
-              </CardContent>
-            </Card>
+          {resources.map((resource) => (
+            <UniversityResourceRow
+              key={resource.id}
+              id={resource.id}
+              title={resource.title}
+            />
           ))}
         </div>
       )}
