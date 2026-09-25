@@ -49,7 +49,7 @@ async function respondWithResource(
   const mode: ResourceMode = modeRaw === 'dark' ? 'dark' : 'light';
   const purpose = purposeRaw === 'offline' ? 'offline' : 'reader';
   if (
-    (kind !== 'library' && kind !== 'past-paper' && kind !== 'college-resource' && kind !== 'class-library') ||
+    (kind !== 'library' && kind !== 'past-paper' && kind !== 'college-resource' && kind !== 'class-library' && kind !== 'university-resource') ||
     typeof idRaw !== 'string'
   ) {
     return NextResponse.json({ error: 'Invalid resource request.' }, { status: 400 });
