@@ -210,8 +210,6 @@ export async function getProtectedResource(
   resourceId: string,
   mode: ResourceMode
 ): Promise<ProtectedResource | null> {
-  if (kind === 'university-resource') return getUniversityProtectedResource(resourceId, mode, profile);
-
   // Class Library is open, platform-wide content — no board/grade/subscription scoping and no
   // profile lookup needed at all (its RLS already "grants SELECT to everyone"), unlike every
   // other kind below. Handled first so it never depends on the signed-in user having a profile row.
@@ -227,6 +225,8 @@ export async function getProtectedResource(
     .eq('id', userId)
     .maybeSingle();
   if (!profile) return null;
+
+  if (kind === 'university-resource') return getUniversityProtectedResource(resourceId, mode, profile);
 
   if (kind === 'library') {
     const { data: resource } = await pdfAdmin
