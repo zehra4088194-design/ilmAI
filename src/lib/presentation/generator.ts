@@ -4,6 +4,7 @@ import { parseAiJson } from '@/lib/utils/json-extract';
 import {
   PRESENTATION_SLIDE_TYPES,
   PRESENTATION_THEMES,
+  type PresentationChartPoint,
   type PresentationDeck,
   type PresentationGenerateInput,
   type PresentationSlide,
@@ -65,7 +66,8 @@ Strict rules:
     {"type":"closing","title":"string","subtitle":"string","speakerNotes":"string"},
     {"type":"timeline","title":"string","bullets":["Year: Event description"],"speakerNotes":"string"},
     {"type":"image-caption","title":"string","bullets":["Image description"],"subtitle":"Caption text","speakerNotes":"string"},
-    {"type":"callout","title":"string","bullets":["Key highlight"],"subtitle":"Emphasized takeaway","speakerNotes":"string"}
+    {"type":"callout","title":"string","bullets":["Key highlight"],"subtitle":"Emphasized takeaway","speakerNotes":"string"},
+    {"type":"chart","title":"Insightful chart title","chartType":"pie | bar | line","chartData":[{"label":"Category","value":25}],"chartNote":"Data source or clearly state when values are illustrative","speakerNotes":"string"}
   ]
 }
 3. Mix slide types. Do not repeat bullets only. Include at least one timeline, callout, or image-caption slide for variety.
@@ -78,7 +80,8 @@ Strict rules:
 10. Slide titles must communicate an insight, not generic labels such as "Overview" or "Introduction".
 11. The theme is fixed by the user's choice — never output a different value than the one given below.
 12. Match the requested language. Use Roman Urdu/Urdu-English only when requested.
-13. Do not add fake citations. If references are needed, mention reference placeholders only.`;
+13. Include exactly one chart slide with 3-6 relevant categories and non-negative numeric values. Use a pie chart for a meaningful whole, otherwise a bar or line chart. Never invent empirical statistics: use established, verifiable figures with a source note, or clearly label conceptual values as illustrative in chartNote and speakerNotes.
+14. Do not add fake citations. If references are needed, mention reference placeholders only.`;
 }
 
 function validDeckResponse(text: string) {
@@ -105,6 +108,23 @@ Color theme: ${requestedTheme(input)}
 Create a polished, colorful, university-grade presentation deck that feels like a complete PowerPoint presentation, not short notes.
 Use the requested color theme. Do not choose a different theme.
 Bulk output must stay compact enough to return reliably in one response while still teaching one clear idea per slide.`;
+}
+
+function normalizeChartData(raw: unknown, fallbackLabels: string[]): PresentationChartPoint[] {
+  const points = Array.isArray(raw)
+    ? raw
+        .map((item) => {
+          const point = item && typeof item === 'object' ? (item as Record<string, unknown>) : {};
+          const value = Number(point.value);
+          if (!Number.isFinite(value)) return null;
+          return { label: cleanString(point.label, '', 80), value };
+        })
+        .filter((point): point is PresentationChartPoint => Boolean(point?.label))
+        .slice(0, 8)
+    : [];
+
+  if (points.length >= 2) return points;
+  return fallbackLabels.slice(0, 8).map((label) => ({ label, value: 1 }));
 }
 
 function normalizeSlide(raw: Record<string, unknown>, index: number, total: number): PresentationSlide {
@@ -181,11 +201,58 @@ function normalizeSlide(raw: Record<string, unknown>, index: number, total: numb
     };
   }
 
+  if (type === 'chart') {
+    const fallbackLabels = stringArray(raw.bullets, []).slice(0, 8);
+    const chartData = normalizeChartData(raw.chartData, fallbackLabels.length >= 2 ? fallbackLabels : ['Core concept', 'Applications']);
+    const requestedChartType = raw.chartType === 'pie' || raw.chartType === 'line' ? raw.chartType : 'bar';
+    const chartType = requestedChartType === 'pie' && chartData.some((point) => point.value < 0) ? 'bar' : requestedChartType;
+    return {
+      type,
+      title,
+      chartType,
+      chartData,
+      chartNote: cleanString(raw.chartNote, 'Illustrative concept map; equal values are placeholders, not measured data.', 180),
+      speakerNotes,
+    };
+  }
+
   return {
     type: 'bullets',
     title,
     bullets: stringArray(raw.bullets, stringArray(raw.keyPoints, ['Core concept', 'Important example', 'Exam point'])),
     speakerNotes,
+  };
+}
+
+function ensureChartSlide(deck: PresentationDeck): PresentationDeck {
+  if (deck.slides.some((slide) => slide.type === 'chart') || deck.slides.length < 3) return deck;
+
+  const chartIndex = Math.min(Math.max(Math.floor(deck.slides.length / 2), 1), deck.slides.length - 2);
+  const original = deck.slides[chartIndex];
+  const labels = [
+    ...(original.bullets || []),
+    ...(original.left?.bullets || []),
+    ...(original.right?.bullets || []),
+  ]
+    .map((label) => cleanString(label, '', 80))
+    .filter(Boolean)
+    .slice(0, 6);
+
+  return {
+    ...deck,
+    slides: deck.slides.map((slide, index) =>
+      index === chartIndex
+        ? {
+            type: 'chart',
+            title: original.title || 'A conceptual view of the topic',
+            chartType: 'bar',
+            chartData: normalizeChartData(undefined, labels.length >= 2 ? labels : ['Core concept', 'Applications']),
+            chartNote: 'Illustrative concept map; equal values are placeholders, not measured data.',
+            speakerNotes: original.speakerNotes,
+            backgroundImageUrl: original.backgroundImageUrl,
+          }
+        : slide
+    ),
   };
 }
 
@@ -226,7 +293,7 @@ async function askForDeck(input: PresentationGenerateInput, tier: ModelTier, pro
     routingPolicy: 'text',
     validateResponse: validDeckResponse,
   });
-  return applyRequestedTheme(normalizePresentationDeck(parseAiJson(result.text, {}), input.topic), input);
+  return ensureChartSlide(applyRequestedTheme(normalizePresentationDeck(parseAiJson(result.text, {}), input.topic), input));
 }
 
 type OutlineSlide = {
@@ -254,7 +321,7 @@ Color theme: ${requestedTheme(input)}
 
 Return JSON:
 {"topic":"...","theme":"dark | light","slides":[{"type":"title","title":"...","focus":"..."},{"type":"bullets","title":"...","focus":"..."}]}
-Use exactly ${slideCount} slides. Use the requested color theme. First type title, last type closing, include mixed slide types and a logical PowerPoint-style story arc.`,
+Use exactly ${slideCount} slides. Use the requested color theme. First type title, last type closing, include exactly one chart slide in the middle with 3-6 meaningful labeled values, and include mixed slide types with a logical PowerPoint-style story arc.`,
       },
     ],
     maxTokens: 2400,
@@ -265,11 +332,8 @@ Use exactly ${slideCount} slides. Use the requested color theme. First type titl
   });
   const parsed = parseAiJson<Record<string, unknown>>(result.text, {});
   const rawSlides = Array.isArray(parsed.slides) ? parsed.slides : [];
-  return {
-    topic: cleanString(parsed.topic, input.topic, 140),
-    theme: requestedTheme(input),
-    slides: rawSlides
-      .map((slide, index) => {
+  const slides = rawSlides
+    .map((slide, index) => {
         const item = slide && typeof slide === 'object' ? (slide as Record<string, unknown>) : {};
         return {
           type: index === 0 ? 'title' : index === rawSlides.length - 1 ? 'closing' : asSlideType(item.type),
@@ -277,7 +341,19 @@ Use exactly ${slideCount} slides. Use the requested color theme. First type titl
           focus: cleanString(item.focus, cleanString(item.title, `Slide ${index + 1}`, 160), 180),
         };
       })
-      .slice(0, slideCount),
+    .slice(0, slideCount);
+  const chartIndex = Math.min(Math.max(Math.floor(slideCount / 2), 1), slideCount - 2);
+  if (slides.length >= 3 && !slides.some((slide) => slide.type === 'chart')) {
+    slides[chartIndex] = {
+      ...slides[chartIndex],
+      type: 'chart',
+      focus: `Visualize key categories or relationships in ${cleanString(input.topic, 'the topic')}; label conceptual data as illustrative.`,
+    };
+  }
+  return {
+    topic: cleanString(parsed.topic, input.topic, 140),
+    theme: requestedTheme(input),
+    slides,
   };
 }
 
@@ -310,7 +386,7 @@ Subject/course: ${cleanString(params.input.subject, 'General')}
 Language: ${cleanString(params.input.language, 'English')}
 Tone: ${cleanString(params.input.tone, 'Professional')}
 
-Return exactly one slide JSON object matching the schema for this slide type.
+Return exactly one slide JSON object matching the schema for this slide type. For a chart slide, include chartType, 3-6 chartData entries with label/value, and a chartNote that identifies sources or explicitly labels illustrative values.
 Make this slide substantial: presentation-ready bullets, useful speaker notes, and no filler.`,
       },
     ],
@@ -387,6 +463,14 @@ async function askForDeckPerSlide(input: PresentationGenerateInput, tier: ModelT
       }
     );
   }
+  if (outlineSlides.length >= 3 && !outlineSlides.some((slide) => slide.type === 'chart')) {
+    const chartIndex = Math.min(Math.max(Math.floor(slideCount / 2), 1), slideCount - 2);
+    outlineSlides[chartIndex] = {
+      ...outlineSlides[chartIndex],
+      type: 'chart',
+      focus: `Visualize key ideas from ${fallback.topic}. Use sourced values or clearly mark the values as illustrative.`,
+    };
+  }
 
   // Keep each slide as its own Gemini request, but limit concurrency so the
   // gateway does not rate-limit a larger deck.
@@ -417,13 +501,13 @@ async function askForDeckPerSlide(input: PresentationGenerateInput, tier: ModelT
     }
   });
 
-  return applyRequestedTheme(
+  return ensureChartSlide(applyRequestedTheme(
     normalizePresentationDeck(
       { topic: outline.topic || fallback.topic, theme: requestedTheme(input), slides: rawSlides },
       input.topic
     ),
     input
-  );
+  ));
 }
 
 export async function generatePresentationDeck(

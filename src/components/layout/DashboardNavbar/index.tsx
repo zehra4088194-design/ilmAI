@@ -120,16 +120,18 @@ export function DashboardNavbar({
 
   const shareLink = referralUrl || (typeof window !== 'undefined' ? window.location.origin : 'https://ilmai.study');
   const shareMessage = 'Join ilm AI — study smarter with AI-powered learning tools.';
+  const shareMessageWithReward = `${shareMessage} Use my referral link and you’ll both unlock 10 free AI credits. ${shareLink}`;
 
   const openShareTarget = (target: 'whatsapp' | 'instagram' | 'facebook' | 'x') => {
-    const fullMessage = shareMessage + ' ' + shareLink;
+    const fullMessage = shareMessageWithReward;
+    const whatsappText = 'Use my referral link and you’ll both unlock 10 free AI credits. ' + shareLink;
     let url = '';
     if (target === 'whatsapp') {
-      url = 'https://wa.me/?text=' + encodeURIComponent(fullMessage);
+      url = 'https://wa.me/?text=' + encodeURIComponent(whatsappText);
     } else if (target === 'facebook') {
       url = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(shareLink);
     } else if (target === 'x') {
-      url = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(shareMessage) + '&url=' + encodeURIComponent(shareLink);
+      url = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(shareMessageWithReward) + '&url=' + encodeURIComponent(shareLink);
     } else {
       void navigator.clipboard?.writeText(shareLink);
       url = 'https://www.instagram.com/';

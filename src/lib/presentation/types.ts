@@ -13,7 +13,8 @@ export type PresentationSlideType =
   | 'closing'
   | 'timeline'
   | 'image-caption'
-  | 'callout';
+  | 'callout'
+  | 'chart';
 
 export type PresentationColumn = {
   heading: string;
@@ -23,6 +24,13 @@ export type PresentationColumn = {
 export type PresentationStat = {
   value: string;
   label: string;
+};
+
+export type PresentationChartType = 'pie' | 'bar' | 'line';
+
+export type PresentationChartPoint = {
+  label: string;
+  value: number;
 };
 
 export type PresentationSlide = {
@@ -35,6 +43,9 @@ export type PresentationSlide = {
   quote?: string;
   author?: string;
   stats?: PresentationStat[];
+  chartType?: PresentationChartType;
+  chartData?: PresentationChartPoint[];
+  chartNote?: string;
   speakerNotes?: string;
   backgroundImageUrl?: string;
 };

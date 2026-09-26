@@ -28,6 +28,57 @@ type QuotaResult = {
 
 type MemoryEntry = { count: number; resetAt: number };
 const memoryStore = new Map<string, MemoryEntry>();
+const REFERRAL_BONUS_CREDIT_KEY_PREFIX = 'ratelimit:referral_bonus_ai_credit';
+
+async function getStoredNumericValue(key: string): Promise<number> {
+  const redis = await getRedisClient();
+  if (redis) {
+    const value = await redis.get(key);
+    return Number(value ?? 0) || 0;
+  }
+  const current = memoryStore.get(key);
+  return current ? current.count : 0;
+}
+
+async function setStoredNumericValue(key: string, value: number): Promise<void> {
+  const safeValue = Math.max(0, Number(value) || 0);
+  const redis = await getRedisClient();
+  if (redis) {
+    await redis.set(key, String(safeValue));
+    return;
+  }
+  memoryStore.set(key, { count: safeValue, resetAt: 0 });
+}
+
+async function adjustStoredNumericValue(key: string, delta: number) {
+  const next = Math.max(0, (await getStoredNumericValue(key)) + Number(delta || 0));
+  await setStoredNumericValue(key, next);
+  return next;
+}
+
+function bonusCreditKey(userId: string) {
+  return `ilm-ai:${REFERRAL_BONUS_CREDIT_KEY_PREFIX}:${userId}`;
+}
+
+export async function getReferralBonusCredits(userId: string) {
+  return getStoredNumericValue(bonusCreditKey(userId));
+}
+
+export async function awardReferralBonusCredits(userId: string, amount = 10) {
+  if (!userId || Number(amount) <= 0) return 0;
+  return adjustStoredNumericValue(bonusCreditKey(userId), Number(amount));
+}
+
+export async function consumeReferralBonusCredits(userId: string, amount: number) {
+  const required = Math.max(0, Number(amount) || 0);
+  if (required <= 0) return { used: 0, remaining: await getReferralBonusCredits(userId) };
+
+  const current = await getReferralBonusCredits(userId);
+  const used = Math.min(current, required);
+  const remaining = Math.max(0, current - used);
+  await setStoredNumericValue(bonusCreditKey(userId), remaining);
+  return { used, remaining };
+}
 
 function dayWindow() {
   const now = new Date();

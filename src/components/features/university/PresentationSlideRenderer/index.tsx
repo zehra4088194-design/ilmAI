@@ -2,6 +2,21 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, Circle } from 'lucide-react';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import type { PresentationDeck, PresentationHeadingFont, PresentationSlide } from '@/lib/presentation/types';
 import { cn } from '@/lib/utils/cn';
 
@@ -182,6 +197,51 @@ function StatsSlide({ slide, theme }: { slide: PresentationSlide; theme: Theme }
   );
 }
 
+const CHART_COLORS = ['#7c3aed', '#0ea5e9', '#f59e0b', '#10b981', '#ef4444', '#ec4899', '#14b8a6', '#a855f7'];
+
+function ChartSlide({ slide, theme }: { slide: PresentationSlide; theme: Theme }) {
+  const data = slide.chartData || [];
+  return (
+    <div className="flex h-full flex-col justify-center px-6 py-6 sm:px-12">
+      <h2 className="mb-2 text-center text-[clamp(1.15rem,2.8vw,2.1rem)] font-bold" style={{ color: theme.text }}>
+        {slide.title}
+      </h2>
+      <div className="min-h-0 flex-1">
+        <ResponsiveContainer width="100%" height="100%">
+          {slide.chartType === 'pie' ? (
+            <PieChart>
+              <Pie data={data} dataKey="value" nameKey="label" outerRadius="72%" label>
+                {data.map((point, index) => <Cell key={`${point.label}-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />)}
+              </Pie>
+              <Tooltip contentStyle={{ background: theme.bg, borderColor: theme.accent, color: theme.text }} />
+              <Legend wrapperStyle={{ color: theme.text, fontSize: 12 }} />
+            </PieChart>
+          ) : slide.chartType === 'line' ? (
+            <LineChart data={data} margin={{ top: 12, right: 20, left: 0, bottom: 16 }}>
+              <CartesianGrid stroke={`${theme.subtext}44`} strokeDasharray="3 3" />
+              <XAxis dataKey="label" tick={{ fill: theme.subtext, fontSize: 11 }} />
+              <YAxis tick={{ fill: theme.subtext, fontSize: 11 }} />
+              <Tooltip contentStyle={{ background: theme.bg, borderColor: theme.accent, color: theme.text }} />
+              <Line type="monotone" dataKey="value" stroke={theme.accent} strokeWidth={3} dot={{ fill: theme.accent, r: 4 }} />
+            </LineChart>
+          ) : (
+            <BarChart data={data} margin={{ top: 12, right: 20, left: 0, bottom: 16 }}>
+              <CartesianGrid stroke={`${theme.subtext}44`} strokeDasharray="3 3" />
+              <XAxis dataKey="label" tick={{ fill: theme.subtext, fontSize: 11 }} />
+              <YAxis tick={{ fill: theme.subtext, fontSize: 11 }} />
+              <Tooltip contentStyle={{ background: theme.bg, borderColor: theme.accent, color: theme.text }} />
+              <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                {data.map((point, index) => <Cell key={`${point.label}-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />)}
+              </Bar>
+            </BarChart>
+          )}
+        </ResponsiveContainer>
+      </div>
+      {slide.chartNote && <p className="mt-2 text-center text-xs" style={{ color: theme.subtext }}>{slide.chartNote}</p>}
+    </div>
+  );
+}
+
 function SectionBreakSlide({ slide, theme }: { slide: PresentationSlide; theme: Theme }) {
   return (
     <div className="flex h-full flex-col items-center justify-center px-8 text-center">
@@ -251,6 +311,7 @@ function SlideCanvas({ slide, theme }: { slide: PresentationSlide; theme: Theme 
   if (slide.type === 'two-column') return <TwoColumnSlide slide={slide} theme={theme} />;
   if (slide.type === 'quote') return <QuoteSlide slide={slide} theme={theme} />;
   if (slide.type === 'stats') return <StatsSlide slide={slide} theme={theme} />;
+  if (slide.type === 'chart') return <ChartSlide slide={slide} theme={theme} />;
   if (slide.type === 'section-break') return <SectionBreakSlide slide={slide} theme={theme} />;
   if (slide.type === 'closing') return <ClosingSlide slide={slide} theme={theme} />;
   if (slide.type === 'timeline') return <TimelineSlide slide={slide} theme={theme} />;
@@ -324,6 +385,14 @@ function PrintableSlide({ slide, theme, index, total }: { slide: PresentationSli
           </div>
         )}
 
+        {slide.type === 'chart' && (
+          <div style={{ marginTop: 24 }}>
+            <div style={{ width: '100%', height: 330 }}>
+              <ChartSlide slide={slide} theme={theme} />
+            </div>
+          </div>
+        )}
+
         {slide.type === 'quote' && (
           <blockquote style={{ margin: '36px 0 0', maxWidth: 820, color: theme.text, fontFamily: theme.display, fontSize: 34, lineHeight: 1.25 }}>
             &ldquo;{slide.quote}&rdquo;
@@ -347,7 +416,7 @@ function PrintableSlide({ slide, theme, index, total }: { slide: PresentationSli
           </ul>
         )}
 
-        {slide.type !== 'title' && slide.type !== 'two-column' && slide.type !== 'stats' && slide.type !== 'quote' && slide.type !== 'callout' && slide.type !== 'timeline' && bullets.length > 0 && (
+        {slide.type !== 'title' && slide.type !== 'two-column' && slide.type !== 'stats' && slide.type !== 'chart' && slide.type !== 'quote' && slide.type !== 'callout' && slide.type !== 'timeline' && bullets.length > 0 && (
           <ul style={{ margin: '34px 0 0', paddingLeft: 28, maxWidth: 860, color: theme.text, fontSize: 24, lineHeight: 1.55 }}>
             {bullets.slice(0, 6).map((bullet, bulletIndex) => <li key={bulletIndex}>{bullet}</li>)}
           </ul>

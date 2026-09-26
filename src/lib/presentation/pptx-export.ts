@@ -86,6 +86,42 @@ export async function exportPresentationToPptx(input: unknown): Promise<ArrayBuf
         });
         break;
       }
+      case 'chart': {
+        slide.addText(item.title || 'Key concepts', { x: 0.7, y: 0.7, w: width - 1.4, h: 0.65, fontFace: 'Aptos Display', fontSize: 25, bold: true, color: theme.text, fit: 'shrink' });
+        const chartType = item.chartType === 'pie' ? pres.ChartType.pie : item.chartType === 'line' ? pres.ChartType.line : pres.ChartType.bar;
+        const chartData = item.chartData || [];
+        slide.addChart(
+          chartType,
+          [{ name: item.title || 'Value', labels: chartData.map((point) => point.label), values: chartData.map((point) => point.value) }],
+          {
+            x: 1.1,
+            y: 1.5,
+            w: width - 2.2,
+            h: 4.9,
+            showLegend: item.chartType === 'pie',
+            showValue: true,
+            showPercent: item.chartType === 'pie',
+            showTitle: false,
+            chartColors: ['7C3AED', '0EA5E9', 'F59E0B', '10B981', 'EF4444', 'EC4899'],
+            catAxisLabelColor: theme.subtext,
+            valAxisLabelColor: theme.subtext,
+            showCatName: item.chartType === 'pie',
+            showValAxisTitle: false,
+            showCatAxisTitle: false,
+            showValAxis: item.chartType !== 'pie',
+            showCatAxis: item.chartType !== 'pie',
+            showMarker: item.chartType === 'line',
+            showLine: item.chartType === 'line',
+            showLabel: item.chartType === 'pie',
+            dataLabelColor: theme.text,
+            dataLabelPosition: item.chartType === 'pie' ? 'bestFit' : 'outEnd',
+            showLeaderLines: item.chartType === 'pie',
+            altText: item.chartNote || item.title || 'Presentation chart',
+          }
+        );
+        if (item.chartNote) slide.addText(item.chartNote, { x: 1, y: 6.55, w: width - 2, h: 0.35, fontSize: 10, color: theme.subtext, align: 'center', fit: 'shrink' });
+        break;
+      }
       case 'section-break':
         slide.addShape(pres.ShapeType.roundRect, { x: width / 2 - 0.95, y: 2.4, w: 1.9, h: 0.42, fill: { color: theme.accent }, line: { color: theme.accent } });
         slide.addText('SECTION', { x: width / 2 - 0.95, y: 2.47, w: 1.9, h: 0.18, fontSize: 10, bold: true, color: '101010', align: 'center', charSpacing: 2 });

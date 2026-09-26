@@ -57,6 +57,12 @@ function slideParagraphs(slide: PresentationSlide, index: number) {
     children.push(...slide.stats.map((stat) => bulletParagraph(`${stat.value}: ${stat.label}`)));
   }
 
+  if (slide.chartData?.length) {
+    children.push(new Paragraph({ text: `${slide.chartType || 'bar'} chart data`, heading: HeadingLevel.HEADING_3, spacing: { after: 80 } }));
+    children.push(...slide.chartData.map((point) => bulletParagraph(`${point.label}: ${point.value}`)));
+    if (slide.chartNote) children.push(new Paragraph({ text: slide.chartNote, spacing: { after: 160 } }));
+  }
+
   if (slide.quote) {
     children.push(new Paragraph({ text: `"${slide.quote}"${slide.author ? ` - ${slide.author}` : ''}`, spacing: { after: 160 } }));
   }
