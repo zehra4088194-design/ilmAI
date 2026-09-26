@@ -203,15 +203,30 @@ function normalizeSlide(raw: Record<string, unknown>, index: number, total: numb
 
   if (type === 'chart') {
     const fallbackLabels = stringArray(raw.bullets, []).slice(0, 8);
-    const chartData = normalizeChartData(raw.chartData, fallbackLabels.length >= 2 ? fallbackLabels : ['Core concept', 'Applications']);
+    const chartData = normalizeChartData(
+      raw.chartData,
+      fallbackLabels.length >= 2 ? fallbackLabels : ['Core concept', 'Applications']
+    );
     const requestedChartType = raw.chartType === 'pie' || raw.chartType === 'line' ? raw.chartType : 'bar';
-    const chartType = requestedChartType === 'pie' && chartData.some((point) => point.value < 0) ? 'bar' : requestedChartType;
+    const chartType =
+      requestedChartType === 'pie' &&
+      (chartData.some((point) => point.value < 0) || chartData.every((point) => point.value === 0))
+        ? 'bar'
+        : requestedChartType;
+    const hasValidChartData =
+      Array.isArray(raw.chartData) &&
+      raw.chartData.filter((item) => {
+        const point = item && typeof item === 'object' ? (item as Record<string, unknown>) : {};
+        return Boolean(cleanString(point.label, '', 80)) && Number.isFinite(Number(point.value));
+      }).length >= 2;
     return {
       type,
       title,
       chartType,
       chartData,
-      chartNote: cleanString(raw.chartNote, 'Illustrative concept map; equal values are placeholders, not measured data.', 180),
+      chartNote: hasValidChartData
+        ? cleanString(raw.chartNote, 'Illustrative concept map; equal values are placeholders, not measured data.', 180)
+        : 'Illustrative concept map; equal values are placeholders, not measured data.',
       speakerNotes,
     };
   }
@@ -224,16 +239,29 @@ function normalizeSlide(raw: Record<string, unknown>, index: number, total: numb
   };
 }
 
-function ensureChartSlide(deck: PresentationDeck): PresentationDeck {
-  if (deck.slides.some((slide) => slide.type === 'chart') || deck.slides.length < 3) return deck;
+export function ensurePresentationChartSlide(deck: PresentationDeck): PresentationDeck {
+  const firstChartIndex = deck.slides.findIndex((slide) => slide.type === 'chart');
+  if (firstChartIndex >= 0) {
+    return {
+      ...deck,
+      slides: deck.slides.map((slide, index) =>
+        slide.type === 'chart' && index !== firstChartIndex
+          ? {
+              type: 'bullets',
+              title: slide.title || 'Additional chart insights',
+              bullets: (slide.chartData || []).map((point) => `${point.label}: ${point.value}`),
+              speakerNotes: slide.speakerNotes,
+              backgroundImageUrl: slide.backgroundImageUrl,
+            }
+          : slide
+      ),
+    };
+  }
+  if (deck.slides.length < 3) return deck;
 
   const chartIndex = Math.min(Math.max(Math.floor(deck.slides.length / 2), 1), deck.slides.length - 2);
   const original = deck.slides[chartIndex];
-  const labels = [
-    ...(original.bullets || []),
-    ...(original.left?.bullets || []),
-    ...(original.right?.bullets || []),
-  ]
+  const labels = [...(original.bullets || []), ...(original.left?.bullets || []), ...(original.right?.bullets || [])]
     .map((label) => cleanString(label, '', 80))
     .filter(Boolean)
     .slice(0, 6);
@@ -293,7 +321,9 @@ async function askForDeck(input: PresentationGenerateInput, tier: ModelTier, pro
     routingPolicy: 'text',
     validateResponse: validDeckResponse,
   });
-  return ensureChartSlide(applyRequestedTheme(normalizePresentationDeck(parseAiJson(result.text, {}), input.topic), input));
+  return ensurePresentationChartSlide(
+    applyRequestedTheme(normalizePresentationDeck(parseAiJson(result.text, {}), input.topic), input)
+  );
 }
 
 type OutlineSlide = {
@@ -334,22 +364,14 @@ Use exactly ${slideCount} slides. Use the requested color theme. First type titl
   const rawSlides = Array.isArray(parsed.slides) ? parsed.slides : [];
   const slides = rawSlides
     .map((slide, index) => {
-        const item = slide && typeof slide === 'object' ? (slide as Record<string, unknown>) : {};
-        return {
-          type: index === 0 ? 'title' : index === rawSlides.length - 1 ? 'closing' : asSlideType(item.type),
-          title: cleanString(item.title, `Slide ${index + 1}`, 120),
-          focus: cleanString(item.focus, cleanString(item.title, `Slide ${index + 1}`, 160), 180),
-        };
-      })
+      const item = slide && typeof slide === 'object' ? (slide as Record<string, unknown>) : {};
+      return {
+        type: index === 0 ? 'title' : index === rawSlides.length - 1 ? 'closing' : asSlideType(item.type),
+        title: cleanString(item.title, `Slide ${index + 1}`, 120),
+        focus: cleanString(item.focus, cleanString(item.title, `Slide ${index + 1}`, 160), 180),
+      };
+    })
     .slice(0, slideCount);
-  const chartIndex = Math.min(Math.max(Math.floor(slideCount / 2), 1), slideCount - 2);
-  if (slides.length >= 3 && !slides.some((slide) => slide.type === 'chart')) {
-    slides[chartIndex] = {
-      ...slides[chartIndex],
-      type: 'chart',
-      focus: `Visualize key categories or relationships in ${cleanString(input.topic, 'the topic')}; label conceptual data as illustrative.`,
-    };
-  }
   return {
     topic: cleanString(parsed.topic, input.topic, 140),
     theme: requestedTheme(input),
@@ -501,13 +523,15 @@ async function askForDeckPerSlide(input: PresentationGenerateInput, tier: ModelT
     }
   });
 
-  return ensureChartSlide(applyRequestedTheme(
-    normalizePresentationDeck(
-      { topic: outline.topic || fallback.topic, theme: requestedTheme(input), slides: rawSlides },
-      input.topic
-    ),
-    input
-  ));
+  return ensurePresentationChartSlide(
+    applyRequestedTheme(
+      normalizePresentationDeck(
+        { topic: outline.topic || fallback.topic, theme: requestedTheme(input), slides: rawSlides },
+        input.topic
+      ),
+      input
+    )
+  );
 }
 
 export async function generatePresentationDeck(
@@ -527,7 +551,9 @@ export async function generatePresentationDeck(
   // Background photos are already mode-matched (dark/light) upstream in
   // selectPresentationBackgrounds, and the renderer applies a matching-tone
   // scrim + text color — so both themes can safely use photos here.
-  const backgrounds = (input.backgroundImageUrls || []).filter((url) => /^\/api\/presentation\/backgrounds\//.test(url));
+  const backgrounds = (input.backgroundImageUrls || []).filter((url) =>
+    /^\/api\/presentation\/backgrounds\//.test(url)
+  );
   const withBackgrounds = backgrounds.length
     ? {
         ...deck,

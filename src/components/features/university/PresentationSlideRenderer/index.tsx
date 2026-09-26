@@ -126,10 +126,17 @@ function TitleSlide({ slide, theme }: { slide: PresentationSlide; theme: Theme }
   return (
     <div className="flex h-full flex-col items-center justify-center px-8 text-center sm:px-16">
       <div className="mb-5 h-1 w-16 rounded-full sm:mb-8" style={{ background: theme.accent }} />
-      <h1 className="text-[clamp(1.65rem,4vw,3.5rem)] font-bold leading-tight" style={{ fontFamily: theme.display, color: theme.text }}>
+      <h1
+        className="text-[clamp(1.65rem,4vw,3.5rem)] leading-tight font-bold"
+        style={{ fontFamily: theme.display, color: theme.text }}
+      >
         {slide.title}
       </h1>
-      {slide.subtitle && <p className="mt-4 text-[clamp(0.95rem,2vw,1.45rem)]" style={{ fontFamily: theme.body, color: theme.subtext }}>{slide.subtitle}</p>}
+      {slide.subtitle && (
+        <p className="mt-4 text-[clamp(0.95rem,2vw,1.45rem)]" style={{ fontFamily: theme.body, color: theme.subtext }}>
+          {slide.subtitle}
+        </p>
+      )}
     </div>
   );
 }
@@ -137,12 +144,22 @@ function TitleSlide({ slide, theme }: { slide: PresentationSlide; theme: Theme }
 function BulletsSlide({ slide, theme }: { slide: PresentationSlide; theme: Theme }) {
   return (
     <div className="flex h-full flex-col justify-center px-7 py-8 sm:px-14 lg:px-20">
-      <h2 className="mb-5 text-[clamp(1.25rem,3vw,2.35rem)] font-bold leading-tight sm:mb-8" style={{ fontFamily: theme.display, color: theme.text }}>{slide.title}</h2>
+      <h2
+        className="mb-5 text-[clamp(1.25rem,3vw,2.35rem)] leading-tight font-bold sm:mb-8"
+        style={{ fontFamily: theme.display, color: theme.text }}
+      >
+        {slide.title}
+      </h2>
       <ul className="space-y-3 sm:space-y-5">
         {(slide.bullets || []).slice(0, 6).map((bullet, index) => (
           <li key={index} className="flex items-start gap-3">
             <span className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: theme.accent }} />
-            <span className="text-[clamp(0.88rem,1.9vw,1.35rem)] leading-relaxed" style={{ fontFamily: theme.body, color: theme.text }}>{bullet}</span>
+            <span
+              className="text-[clamp(0.88rem,1.9vw,1.35rem)] leading-relaxed"
+              style={{ fontFamily: theme.body, color: theme.text }}
+            >
+              {bullet}
+            </span>
           </li>
         ))}
       </ul>
@@ -154,14 +171,27 @@ function TwoColumnSlide({ slide, theme }: { slide: PresentationSlide; theme: The
   const columns = [slide.left, slide.right];
   return (
     <div className="flex h-full flex-col justify-center px-6 py-7 sm:px-12">
-      <h2 className="mb-4 text-[clamp(1.15rem,2.6vw,2.1rem)] font-bold" style={{ fontFamily: theme.display, color: theme.text }}>{slide.title}</h2>
+      <h2
+        className="mb-4 text-[clamp(1.15rem,2.6vw,2.1rem)] font-bold"
+        style={{ fontFamily: theme.display, color: theme.text }}
+      >
+        {slide.title}
+      </h2>
       <div className="grid gap-4 sm:grid-cols-2">
         {columns.map((col, index) => (
           <div key={index} className="rounded-2xl p-4 sm:p-6" style={{ background: theme.cardBg }}>
-            <h3 className="mb-3 text-[clamp(0.95rem,1.8vw,1.3rem)] font-semibold" style={{ color: theme.accent }}>{col?.heading}</h3>
+            <h3 className="mb-3 text-[clamp(0.95rem,1.8vw,1.3rem)] font-semibold" style={{ color: theme.accent }}>
+              {col?.heading}
+            </h3>
             <ul className="space-y-2">
               {(col?.bullets || []).slice(0, 5).map((bullet, bulletIndex) => (
-                <li key={bulletIndex} className="text-[clamp(0.78rem,1.45vw,1rem)] leading-relaxed" style={{ color: theme.text }}>- {bullet}</li>
+                <li
+                  key={bulletIndex}
+                  className="text-[clamp(0.78rem,1.45vw,1rem)] leading-relaxed"
+                  style={{ color: theme.text }}
+                >
+                  - {bullet}
+                </li>
               ))}
             </ul>
           </div>
@@ -174,9 +204,20 @@ function TwoColumnSlide({ slide, theme }: { slide: PresentationSlide; theme: The
 function QuoteSlide({ slide, theme }: { slide: PresentationSlide; theme: Theme }) {
   return (
     <div className="flex h-full flex-col items-center justify-center px-8 text-center sm:px-20">
-      <span className="text-6xl leading-none" style={{ color: theme.accent }}>&ldquo;</span>
-      <p className="mt-1 text-[clamp(1.25rem,3vw,2rem)] italic leading-snug" style={{ fontFamily: theme.display, color: theme.text }}>{slide.quote}</p>
-      {slide.author && <p className="mt-5 text-sm sm:text-base" style={{ color: theme.subtext }}>- {slide.author}</p>}
+      <span className="text-6xl leading-none" style={{ color: theme.accent }}>
+        &ldquo;
+      </span>
+      <p
+        className="mt-1 text-[clamp(1.25rem,3vw,2rem)] leading-snug italic"
+        style={{ fontFamily: theme.display, color: theme.text }}
+      >
+        {slide.quote}
+      </p>
+      {slide.author && (
+        <p className="mt-5 text-sm sm:text-base" style={{ color: theme.subtext }}>
+          - {slide.author}
+        </p>
+      )}
     </div>
   );
 }
@@ -184,12 +225,22 @@ function QuoteSlide({ slide, theme }: { slide: PresentationSlide; theme: Theme }
 function StatsSlide({ slide, theme }: { slide: PresentationSlide; theme: Theme }) {
   return (
     <div className="flex h-full flex-col justify-center px-6 py-7 sm:px-12">
-      <h2 className="mb-6 text-center text-[clamp(1.2rem,2.8vw,2.1rem)] font-bold" style={{ color: theme.text }}>{slide.title}</h2>
+      <h2 className="mb-6 text-center text-[clamp(1.2rem,2.8vw,2.1rem)] font-bold" style={{ color: theme.text }}>
+        {slide.title}
+      </h2>
       <div className="grid grid-cols-2 gap-3 sm:flex sm:justify-center sm:gap-5">
         {(slide.stats || []).slice(0, 4).map((stat, index) => (
-          <div key={index} className="rounded-2xl px-4 py-4 text-center sm:min-w-[150px] sm:px-6" style={{ background: theme.cardBg }}>
-            <div className="text-[clamp(1.35rem,3vw,2.3rem)] font-bold" style={{ color: theme.accent }}>{stat.value}</div>
-            <div className="mt-2 text-xs sm:text-sm" style={{ color: theme.subtext }}>{stat.label}</div>
+          <div
+            key={index}
+            className="rounded-2xl px-4 py-4 text-center sm:min-w-[150px] sm:px-6"
+            style={{ background: theme.cardBg }}
+          >
+            <div className="text-[clamp(1.35rem,3vw,2.3rem)] font-bold" style={{ color: theme.accent }}>
+              {stat.value}
+            </div>
+            <div className="mt-2 text-xs sm:text-sm" style={{ color: theme.subtext }}>
+              {stat.label}
+            </div>
           </div>
         ))}
       </div>
@@ -199,19 +250,31 @@ function StatsSlide({ slide, theme }: { slide: PresentationSlide; theme: Theme }
 
 const CHART_COLORS = ['#7c3aed', '#0ea5e9', '#f59e0b', '#10b981', '#ef4444', '#ec4899', '#14b8a6', '#a855f7'];
 
-function ChartSlide({ slide, theme }: { slide: PresentationSlide; theme: Theme }) {
+function ChartSlide({
+  slide,
+  theme,
+  showTitle = true,
+}: {
+  slide: PresentationSlide;
+  theme: Theme;
+  showTitle?: boolean;
+}) {
   const data = slide.chartData || [];
   return (
     <div className="flex h-full flex-col justify-center px-6 py-6 sm:px-12">
-      <h2 className="mb-2 text-center text-[clamp(1.15rem,2.8vw,2.1rem)] font-bold" style={{ color: theme.text }}>
-        {slide.title}
-      </h2>
+      {showTitle && (
+        <h2 className="mb-2 text-center text-[clamp(1.15rem,2.8vw,2.1rem)] font-bold" style={{ color: theme.text }}>
+          {slide.title}
+        </h2>
+      )}
       <div className="min-h-0 flex-1">
         <ResponsiveContainer width="100%" height="100%">
           {slide.chartType === 'pie' ? (
             <PieChart>
               <Pie data={data} dataKey="value" nameKey="label" outerRadius="72%" label>
-                {data.map((point, index) => <Cell key={`${point.label}-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />)}
+                {data.map((point, index) => (
+                  <Cell key={`${point.label}-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                ))}
               </Pie>
               <Tooltip contentStyle={{ background: theme.bg, borderColor: theme.accent, color: theme.text }} />
               <Legend wrapperStyle={{ color: theme.text, fontSize: 12 }} />
@@ -222,7 +285,13 @@ function ChartSlide({ slide, theme }: { slide: PresentationSlide; theme: Theme }
               <XAxis dataKey="label" tick={{ fill: theme.subtext, fontSize: 11 }} />
               <YAxis tick={{ fill: theme.subtext, fontSize: 11 }} />
               <Tooltip contentStyle={{ background: theme.bg, borderColor: theme.accent, color: theme.text }} />
-              <Line type="monotone" dataKey="value" stroke={theme.accent} strokeWidth={3} dot={{ fill: theme.accent, r: 4 }} />
+              <Line
+                type="monotone"
+                dataKey="value"
+                stroke={theme.accent}
+                strokeWidth={3}
+                dot={{ fill: theme.accent, r: 4 }}
+              />
             </LineChart>
           ) : (
             <BarChart data={data} margin={{ top: 12, right: 20, left: 0, bottom: 16 }}>
@@ -231,13 +300,19 @@ function ChartSlide({ slide, theme }: { slide: PresentationSlide; theme: Theme }
               <YAxis tick={{ fill: theme.subtext, fontSize: 11 }} />
               <Tooltip contentStyle={{ background: theme.bg, borderColor: theme.accent, color: theme.text }} />
               <Bar dataKey="value" radius={[6, 6, 0, 0]}>
-                {data.map((point, index) => <Cell key={`${point.label}-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />)}
+                {data.map((point, index) => (
+                  <Cell key={`${point.label}-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                ))}
               </Bar>
             </BarChart>
           )}
         </ResponsiveContainer>
       </div>
-      {slide.chartNote && <p className="mt-2 text-center text-xs" style={{ color: theme.subtext }}>{slide.chartNote}</p>}
+      {slide.chartNote && (
+        <p className="mt-2 text-center text-xs" style={{ color: theme.subtext }}>
+          {slide.chartNote}
+        </p>
+      )}
     </div>
   );
 }
@@ -245,8 +320,15 @@ function ChartSlide({ slide, theme }: { slide: PresentationSlide; theme: Theme }
 function SectionBreakSlide({ slide, theme }: { slide: PresentationSlide; theme: Theme }) {
   return (
     <div className="flex h-full flex-col items-center justify-center px-8 text-center">
-      <div className="mb-5 rounded-full px-5 py-2 text-xs font-bold uppercase tracking-[0.24em]" style={{ background: theme.accent, color: '#101010' }}>Section</div>
-      <h2 className="text-[clamp(1.55rem,3.6vw,2.8rem)] font-bold leading-tight" style={{ color: theme.text }}>{slide.title}</h2>
+      <div
+        className="mb-5 rounded-full px-5 py-2 text-xs font-bold tracking-[0.24em] uppercase"
+        style={{ background: theme.accent, color: '#101010' }}
+      >
+        Section
+      </div>
+      <h2 className="text-[clamp(1.55rem,3.6vw,2.8rem)] leading-tight font-bold" style={{ color: theme.text }}>
+        {slide.title}
+      </h2>
     </div>
   );
 }
@@ -254,8 +336,14 @@ function SectionBreakSlide({ slide, theme }: { slide: PresentationSlide; theme: 
 function ClosingSlide({ slide, theme }: { slide: PresentationSlide; theme: Theme }) {
   return (
     <div className="flex h-full flex-col items-center justify-center px-8 text-center">
-      <h1 className="text-[clamp(1.8rem,4vw,3.2rem)] font-bold" style={{ color: theme.text }}>{slide.title}</h1>
-      {slide.subtitle && <p className="mt-4 text-[clamp(0.95rem,2vw,1.25rem)]" style={{ color: theme.subtext }}>{slide.subtitle}</p>}
+      <h1 className="text-[clamp(1.8rem,4vw,3.2rem)] font-bold" style={{ color: theme.text }}>
+        {slide.title}
+      </h1>
+      {slide.subtitle && (
+        <p className="mt-4 text-[clamp(0.95rem,2vw,1.25rem)]" style={{ color: theme.subtext }}>
+          {slide.subtitle}
+        </p>
+      )}
     </div>
   );
 }
@@ -263,12 +351,16 @@ function ClosingSlide({ slide, theme }: { slide: PresentationSlide; theme: Theme
 function TimelineSlide({ slide, theme }: { slide: PresentationSlide; theme: Theme }) {
   return (
     <div className="flex h-full flex-col justify-center px-6 py-7 sm:px-12">
-      <h2 className="mb-6 text-center text-[clamp(1.2rem,2.8vw,2.1rem)] font-bold" style={{ color: theme.text }}>{slide.title}</h2>
+      <h2 className="mb-6 text-center text-[clamp(1.2rem,2.8vw,2.1rem)] font-bold" style={{ color: theme.text }}>
+        {slide.title}
+      </h2>
       <div className="space-y-3 sm:space-y-4">
         {(slide.bullets || []).slice(0, 8).map((bullet, index) => (
           <div key={index} className="flex items-start gap-3">
             <span className="mt-1.5 h-3 w-3 shrink-0 rounded-full" style={{ background: theme.accent }} />
-            <span className="text-[clamp(0.85rem,1.6vw,1.15rem)] leading-relaxed" style={{ color: theme.text }}>{bullet}</span>
+            <span className="text-[clamp(0.85rem,1.6vw,1.15rem)] leading-relaxed" style={{ color: theme.text }}>
+              {bullet}
+            </span>
           </div>
         ))}
       </div>
@@ -279,13 +371,30 @@ function TimelineSlide({ slide, theme }: { slide: PresentationSlide; theme: Them
 function ImageCaptionSlide({ slide, theme }: { slide: PresentationSlide; theme: Theme }) {
   return (
     <div className="flex h-full flex-col items-center justify-center px-6 py-7 sm:px-12">
-      <div className="mb-4 flex h-36 w-36 items-center justify-center rounded-full" style={{ background: theme.cardBg, border: `3px solid ${theme.accent}` }}>
-        <span className="text-4xl" style={{ color: theme.accent }}>📷</span>
+      <div
+        className="mb-4 flex h-36 w-36 items-center justify-center rounded-full"
+        style={{ background: theme.cardBg, border: `3px solid ${theme.accent}` }}
+      >
+        <span className="text-4xl" style={{ color: theme.accent }}>
+          📷
+        </span>
       </div>
-      <h2 className="mb-3 text-center text-[clamp(1.2rem,2.8vw,2rem)] font-bold" style={{ color: theme.text }}>{slide.title}</h2>
-      {slide.subtitle && <p className="mb-4 text-center text-[clamp(0.9rem,1.8vw,1.2rem)] italic" style={{ color: theme.accent }}>{slide.subtitle}</p>}
+      <h2 className="mb-3 text-center text-[clamp(1.2rem,2.8vw,2rem)] font-bold" style={{ color: theme.text }}>
+        {slide.title}
+      </h2>
+      {slide.subtitle && (
+        <p className="mb-4 text-center text-[clamp(0.9rem,1.8vw,1.2rem)] italic" style={{ color: theme.accent }}>
+          {slide.subtitle}
+        </p>
+      )}
       {(slide.bullets || []).slice(0, 4).map((bullet, index) => (
-        <p key={index} className="text-center text-[clamp(0.85rem,1.5vw,1.1rem)] leading-relaxed" style={{ color: theme.subtext }}>{bullet}</p>
+        <p
+          key={index}
+          className="text-center text-[clamp(0.85rem,1.5vw,1.1rem)] leading-relaxed"
+          style={{ color: theme.subtext }}
+        >
+          {bullet}
+        </p>
       ))}
     </div>
   );
@@ -294,12 +403,25 @@ function ImageCaptionSlide({ slide, theme }: { slide: PresentationSlide; theme: 
 function CalloutSlide({ slide, theme }: { slide: PresentationSlide; theme: Theme }) {
   return (
     <div className="flex h-full flex-col items-center justify-center px-8 py-10">
-      <div className="w-full max-w-2xl rounded-3xl border-2 p-8 text-center" style={{ background: theme.cardBg, borderColor: theme.accent }}>
-        <div className="mb-3 text-5xl" style={{ color: theme.accent }}>⭐</div>
-        <h2 className="mb-4 text-[clamp(1.3rem,3vw,2.2rem)] font-bold" style={{ color: theme.text }}>{slide.title}</h2>
-        {slide.subtitle && <p className="mb-5 text-[clamp(1rem,2vw,1.4rem)] font-semibold" style={{ color: theme.accent }}>{slide.subtitle}</p>}
+      <div
+        className="w-full max-w-2xl rounded-3xl border-2 p-8 text-center"
+        style={{ background: theme.cardBg, borderColor: theme.accent }}
+      >
+        <div className="mb-3 text-5xl" style={{ color: theme.accent }}>
+          ⭐
+        </div>
+        <h2 className="mb-4 text-[clamp(1.3rem,3vw,2.2rem)] font-bold" style={{ color: theme.text }}>
+          {slide.title}
+        </h2>
+        {slide.subtitle && (
+          <p className="mb-5 text-[clamp(1rem,2vw,1.4rem)] font-semibold" style={{ color: theme.accent }}>
+            {slide.subtitle}
+          </p>
+        )}
         {(slide.bullets || []).slice(0, 4).map((bullet, index) => (
-          <p key={index} className="text-[clamp(0.9rem,1.7vw,1.15rem)] leading-relaxed" style={{ color: theme.text }}>{bullet}</p>
+          <p key={index} className="text-[clamp(0.9rem,1.7vw,1.15rem)] leading-relaxed" style={{ color: theme.text }}>
+            {bullet}
+          </p>
         ))}
       </div>
     </div>
@@ -320,7 +442,17 @@ function SlideCanvas({ slide, theme }: { slide: PresentationSlide; theme: Theme 
   return <BulletsSlide slide={slide} theme={theme} />;
 }
 
-function PrintableSlide({ slide, theme, index, total }: { slide: PresentationSlide; theme: Theme; index: number; total: number }) {
+function PrintableSlide({
+  slide,
+  theme,
+  index,
+  total,
+}: {
+  slide: PresentationSlide;
+  theme: Theme;
+  index: number;
+  total: number;
+}) {
   const title = slide.title || slide.quote || `Slide ${index + 1}`;
   const bullets = slide.bullets || slide.left?.bullets || [];
 
@@ -349,25 +481,79 @@ function PrintableSlide({ slide, theme, index, total }: { slide: PresentationSli
         printColorAdjust: 'exact',
       }}
     >
-      <div style={{ position: 'absolute', right: '-80px', top: '-90px', width: 260, height: 260, borderRadius: 999, background: theme.accent, opacity: 0.18 }} />
-      <div style={{ position: 'absolute', left: '-70px', bottom: '-90px', width: 220, height: 220, borderRadius: 999, background: theme.accent2, opacity: 0.14 }} />
+      <div
+        style={{
+          position: 'absolute',
+          right: '-80px',
+          top: '-90px',
+          width: 260,
+          height: 260,
+          borderRadius: 999,
+          background: theme.accent,
+          opacity: 0.18,
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          left: '-70px',
+          bottom: '-90px',
+          width: 220,
+          height: 220,
+          borderRadius: 999,
+          background: theme.accent2,
+          opacity: 0.14,
+        }}
+      />
       <div style={{ position: 'relative', zIndex: 1 }}>
         <div style={{ width: 82, height: 6, borderRadius: 999, background: theme.accent, marginBottom: 30 }} />
-        <p style={{ margin: '0 0 12px', color: theme.subtext, fontSize: 15, fontWeight: 700, letterSpacing: 1.4, textTransform: 'uppercase' }}>
+        <p
+          style={{
+            margin: '0 0 12px',
+            color: theme.subtext,
+            fontSize: 15,
+            fontWeight: 700,
+            letterSpacing: 1.4,
+            textTransform: 'uppercase',
+          }}
+        >
           Slide {index + 1} / {total}
         </p>
-        <h1 style={{ margin: 0, maxWidth: 900, color: theme.text, fontFamily: theme.display, fontSize: slide.type === 'title' ? 56 : 42, lineHeight: 1.08 }}>
+        <h1
+          style={{
+            margin: 0,
+            maxWidth: 900,
+            color: theme.text,
+            fontFamily: theme.display,
+            fontSize: slide.type === 'title' ? 56 : 42,
+            lineHeight: 1.08,
+          }}
+        >
           {title}
         </h1>
-        {slide.subtitle && <p style={{ maxWidth: 760, marginTop: 22, color: theme.subtext, fontSize: 24, lineHeight: 1.45 }}>{slide.subtitle}</p>}
+        {slide.subtitle && (
+          <p style={{ maxWidth: 760, marginTop: 22, color: theme.subtext, fontSize: 24, lineHeight: 1.45 }}>
+            {slide.subtitle}
+          </p>
+        )}
 
         {slide.type === 'two-column' && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginTop: 34 }}>
             {[slide.left, slide.right].map((col, colIndex) => (
-              <div key={colIndex} style={{ background: theme.cardBg, border: '1px solid rgba(255,255,255,.14)', borderRadius: 20, padding: 24 }}>
+              <div
+                key={colIndex}
+                style={{
+                  background: theme.cardBg,
+                  border: '1px solid rgba(255,255,255,.14)',
+                  borderRadius: 20,
+                  padding: 24,
+                }}
+              >
                 <h2 style={{ margin: '0 0 16px', color: theme.accent, fontSize: 24 }}>{col?.heading}</h2>
                 <ul style={{ margin: 0, paddingLeft: 22, color: theme.text, fontSize: 20, lineHeight: 1.55 }}>
-                  {(col?.bullets || []).slice(0, 5).map((bullet, bulletIndex) => <li key={bulletIndex}>{bullet}</li>)}
+                  {(col?.bullets || []).slice(0, 5).map((bullet, bulletIndex) => (
+                    <li key={bulletIndex}>{bullet}</li>
+                  ))}
                 </ul>
               </div>
             ))}
@@ -377,7 +563,10 @@ function PrintableSlide({ slide, theme, index, total }: { slide: PresentationSli
         {slide.type === 'stats' && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 18, marginTop: 38 }}>
             {(slide.stats || []).slice(0, 4).map((stat, statIndex) => (
-              <div key={statIndex} style={{ background: theme.cardBg, borderRadius: 18, padding: 22, textAlign: 'center' }}>
+              <div
+                key={statIndex}
+                style={{ background: theme.cardBg, borderRadius: 18, padding: 22, textAlign: 'center' }}
+              >
                 <div style={{ color: theme.accent, fontSize: 38, fontWeight: 800 }}>{stat.value}</div>
                 <div style={{ marginTop: 8, color: theme.subtext, fontSize: 16 }}>{stat.label}</div>
               </div>
@@ -388,39 +577,96 @@ function PrintableSlide({ slide, theme, index, total }: { slide: PresentationSli
         {slide.type === 'chart' && (
           <div style={{ marginTop: 24 }}>
             <div style={{ width: '100%', height: 330 }}>
-              <ChartSlide slide={slide} theme={theme} />
+              <ChartSlide slide={slide} theme={theme} showTitle={false} />
             </div>
           </div>
         )}
 
         {slide.type === 'quote' && (
-          <blockquote style={{ margin: '36px 0 0', maxWidth: 820, color: theme.text, fontFamily: theme.display, fontSize: 34, lineHeight: 1.25 }}>
+          <blockquote
+            style={{
+              margin: '36px 0 0',
+              maxWidth: 820,
+              color: theme.text,
+              fontFamily: theme.display,
+              fontSize: 34,
+              lineHeight: 1.25,
+            }}
+          >
             &ldquo;{slide.quote}&rdquo;
-            {slide.author && <footer style={{ marginTop: 18, color: theme.subtext, fontFamily: theme.body, fontSize: 18 }}>- {slide.author}</footer>}
+            {slide.author && (
+              <footer style={{ marginTop: 18, color: theme.subtext, fontFamily: theme.body, fontSize: 18 }}>
+                - {slide.author}
+              </footer>
+            )}
           </blockquote>
         )}
 
         {slide.type === 'callout' && (
-          <div style={{ margin: '36px 0 0', maxWidth: 860, background: theme.cardBg, border: `3px solid ${theme.accent}`, borderRadius: 24, padding: '28px 32px' }}>
+          <div
+            style={{
+              margin: '36px 0 0',
+              maxWidth: 860,
+              background: theme.cardBg,
+              border: `3px solid ${theme.accent}`,
+              borderRadius: 24,
+              padding: '28px 32px',
+            }}
+          >
             <div style={{ color: theme.accent, fontSize: 40 }}>⭐</div>
-            {slide.subtitle && <p style={{ margin: '10px 0 0', color: theme.accent, fontSize: 26, fontWeight: 700 }}>{slide.subtitle}</p>}
+            {slide.subtitle && (
+              <p style={{ margin: '10px 0 0', color: theme.accent, fontSize: 26, fontWeight: 700 }}>{slide.subtitle}</p>
+            )}
             <ul style={{ margin: '18px 0 0', paddingLeft: 24, color: theme.text, fontSize: 22, lineHeight: 1.5 }}>
-              {bullets.slice(0, 5).map((bullet, bulletIndex) => <li key={bulletIndex}>{bullet}</li>)}
+              {bullets.slice(0, 5).map((bullet, bulletIndex) => (
+                <li key={bulletIndex}>{bullet}</li>
+              ))}
             </ul>
           </div>
         )}
 
         {slide.type === 'timeline' && (
-          <ul style={{ margin: '34px 0 0', paddingLeft: 28, maxWidth: 860, color: theme.text, fontSize: 23, lineHeight: 1.6 }}>
-            {bullets.slice(0, 8).map((bullet, bulletIndex) => <li key={bulletIndex} style={{ marginBottom: 10 }}>{bullet}</li>)}
+          <ul
+            style={{
+              margin: '34px 0 0',
+              paddingLeft: 28,
+              maxWidth: 860,
+              color: theme.text,
+              fontSize: 23,
+              lineHeight: 1.6,
+            }}
+          >
+            {bullets.slice(0, 8).map((bullet, bulletIndex) => (
+              <li key={bulletIndex} style={{ marginBottom: 10 }}>
+                {bullet}
+              </li>
+            ))}
           </ul>
         )}
 
-        {slide.type !== 'title' && slide.type !== 'two-column' && slide.type !== 'stats' && slide.type !== 'chart' && slide.type !== 'quote' && slide.type !== 'callout' && slide.type !== 'timeline' && bullets.length > 0 && (
-          <ul style={{ margin: '34px 0 0', paddingLeft: 28, maxWidth: 860, color: theme.text, fontSize: 24, lineHeight: 1.55 }}>
-            {bullets.slice(0, 6).map((bullet, bulletIndex) => <li key={bulletIndex}>{bullet}</li>)}
-          </ul>
-        )}
+        {slide.type !== 'title' &&
+          slide.type !== 'two-column' &&
+          slide.type !== 'stats' &&
+          slide.type !== 'chart' &&
+          slide.type !== 'quote' &&
+          slide.type !== 'callout' &&
+          slide.type !== 'timeline' &&
+          bullets.length > 0 && (
+            <ul
+              style={{
+                margin: '34px 0 0',
+                paddingLeft: 28,
+                maxWidth: 860,
+                color: theme.text,
+                fontSize: 24,
+                lineHeight: 1.55,
+              }}
+            >
+              {bullets.slice(0, 6).map((bullet, bulletIndex) => (
+                <li key={bulletIndex}>{bullet}</li>
+              ))}
+            </ul>
+          )}
       </div>
     </section>
   );
@@ -456,7 +702,11 @@ export function PresentationSlideRenderer({
   }, [goNext, goPrev]);
 
   if (!slide) {
-    return <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">Presentation data is unavailable.</div>;
+    return (
+      <div className="text-muted-foreground rounded-xl border border-dashed p-8 text-center text-sm">
+        Presentation data is unavailable.
+      </div>
+    );
   }
 
   return (
@@ -472,34 +722,60 @@ export function PresentationSlideRenderer({
           }}
         >
           {slide.backgroundImageUrl && <div className={cn('absolute inset-0', theme.scrimClass)} />}
-          <div key={current} className="relative h-full w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div key={current} className="animate-in fade-in slide-in-from-bottom-2 relative h-full w-full duration-300">
             <SlideCanvas slide={slide} theme={theme} />
           </div>
-          <div className="absolute right-4 top-4 rounded-full px-3 py-1 text-xs font-semibold backdrop-blur" style={{ color: theme.subtext, background: theme.cardBg }}>
+          <div
+            className="absolute top-4 right-4 rounded-full px-3 py-1 text-xs font-semibold backdrop-blur"
+            style={{ color: theme.subtext, background: theme.cardBg }}
+          >
             {current + 1} / {total}
           </div>
         </div>
       </div>
 
       <div className="flex flex-wrap items-center justify-center gap-3">
-        <button type="button" onClick={goPrev} disabled={current === 0} className="rounded-full bg-foreground px-3 py-3 text-background transition hover:opacity-90 disabled:opacity-30" aria-label="Previous slide">
+        <button
+          type="button"
+          onClick={goPrev}
+          disabled={current === 0}
+          className="bg-foreground text-background rounded-full px-3 py-3 transition hover:opacity-90 disabled:opacity-30"
+          aria-label="Previous slide"
+        >
           <ChevronLeft className="h-4 w-4" />
         </button>
         <div className="flex max-w-full flex-wrap justify-center gap-2">
           {deck.slides.map((_, index) => (
-            <button key={index} type="button" onClick={() => setCurrent(index)} className="p-1" aria-label={`Go to slide ${index + 1}`}>
-              <Circle className={cn('h-2.5 w-2.5', index === current ? 'fill-violet-400 text-violet-400' : 'text-muted-foreground')} />
+            <button
+              key={index}
+              type="button"
+              onClick={() => setCurrent(index)}
+              className="p-1"
+              aria-label={`Go to slide ${index + 1}`}
+            >
+              <Circle
+                className={cn(
+                  'h-2.5 w-2.5',
+                  index === current ? 'fill-violet-400 text-violet-400' : 'text-muted-foreground'
+                )}
+              />
             </button>
           ))}
         </div>
-        <button type="button" onClick={goNext} disabled={current === total - 1} className="rounded-full bg-foreground px-3 py-3 text-background transition hover:opacity-90 disabled:opacity-30" aria-label="Next slide">
+        <button
+          type="button"
+          onClick={goNext}
+          disabled={current === total - 1}
+          className="bg-foreground text-background rounded-full px-3 py-3 transition hover:opacity-90 disabled:opacity-30"
+          aria-label="Next slide"
+        >
           <ChevronRight className="h-4 w-4" />
         </button>
       </div>
 
       {slide.speakerNotes && (
-        <div className="rounded-xl border bg-card/80 p-4 text-sm leading-6 text-muted-foreground shadow-sm">
-          <span className="font-semibold text-foreground">Speaker notes: </span>
+        <div className="bg-card/80 text-muted-foreground rounded-xl border p-4 text-sm leading-6 shadow-sm">
+          <span className="text-foreground font-semibold">Speaker notes: </span>
           {slide.speakerNotes}
         </div>
       )}

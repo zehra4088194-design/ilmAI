@@ -12,10 +12,11 @@ import {
 import {
   consumeRedisWeightedWindows,
   consumeRedisWindows,
+  getRedisClient,
+  getRedisCounter,
   type RedisQuotaWindow,
   type WeightedRedisQuotaWindow,
 } from '@/lib/redis/client';
-import { getRedisCounter } from '@/lib/redis/client';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const WEEK_MS = 7 * DAY_MS;

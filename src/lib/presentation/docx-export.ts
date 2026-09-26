@@ -1,11 +1,4 @@
-import {
-  AlignmentType,
-  Document,
-  HeadingLevel,
-  Packer,
-  Paragraph,
-  TextRun,
-} from 'docx';
+import { AlignmentType, Document, HeadingLevel, Packer, Paragraph, TextRun } from 'docx';
 import { normalizePresentationDeck } from './generator';
 import type { PresentationDeck, PresentationSlide } from './types';
 
@@ -47,28 +40,46 @@ function slideParagraphs(slide: PresentationSlide, index: number) {
 
   if (slide.left || slide.right) {
     [slide.left, slide.right].filter(Boolean).forEach((column) => {
-      children.push(new Paragraph({ text: safeText(column?.heading, 'Column'), heading: HeadingLevel.HEADING_3, spacing: { after: 80 } }));
+      children.push(
+        new Paragraph({
+          text: safeText(column?.heading, 'Column'),
+          heading: HeadingLevel.HEADING_3,
+          spacing: { after: 80 },
+        })
+      );
       children.push(...(column?.bullets || []).map(bulletParagraph));
     });
   }
 
   if (slide.stats?.length) {
-    children.push(new Paragraph({ text: 'Stats / highlights', heading: HeadingLevel.HEADING_3, spacing: { after: 80 } }));
+    children.push(
+      new Paragraph({ text: 'Stats / highlights', heading: HeadingLevel.HEADING_3, spacing: { after: 80 } })
+    );
     children.push(...slide.stats.map((stat) => bulletParagraph(`${stat.value}: ${stat.label}`)));
   }
 
   if (slide.chartData?.length) {
-    children.push(new Paragraph({ text: `${slide.chartType || 'bar'} chart data`, heading: HeadingLevel.HEADING_3, spacing: { after: 80 } }));
+    children.push(
+      new Paragraph({
+        text: `${slide.chartType || 'bar'} chart data`,
+        heading: HeadingLevel.HEADING_3,
+        spacing: { after: 80 },
+      })
+    );
     children.push(...slide.chartData.map((point) => bulletParagraph(`${point.label}: ${point.value}`)));
     if (slide.chartNote) children.push(new Paragraph({ text: slide.chartNote, spacing: { after: 160 } }));
   }
 
   if (slide.quote) {
-    children.push(new Paragraph({ text: `"${slide.quote}"${slide.author ? ` - ${slide.author}` : ''}`, spacing: { after: 160 } }));
+    children.push(
+      new Paragraph({ text: `"${slide.quote}"${slide.author ? ` - ${slide.author}` : ''}`, spacing: { after: 160 } })
+    );
   }
 
   if (slide.speakerNotes) {
-    children.push(new Paragraph({ text: 'Speaker notes', heading: HeadingLevel.HEADING_3, spacing: { before: 120, after: 80 } }));
+    children.push(
+      new Paragraph({ text: 'Speaker notes', heading: HeadingLevel.HEADING_3, spacing: { before: 120, after: 80 } })
+    );
     children.push(new Paragraph({ text: slide.speakerNotes, spacing: { after: 160 } }));
   }
 

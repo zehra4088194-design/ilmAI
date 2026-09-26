@@ -1,7 +1,23 @@
 'use client';
 
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { Clock, Download, FileText, Loader2, Moon, PenLine, Presentation, Sparkles, Sun, Type, Undo2, Redo2, Edit3, Save, Trash2 } from 'lucide-react';
+import {
+  Clock,
+  Download,
+  FileText,
+  Loader2,
+  Moon,
+  PenLine,
+  Presentation,
+  Sparkles,
+  Sun,
+  Type,
+  Undo2,
+  Redo2,
+  Edit3,
+  Save,
+  Trash2,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,7 +26,12 @@ import { BrandLoader } from '@/components/ui/BrandLoader';
 import { PresentationSlideRenderer, THEMES } from '@/components/features/university/PresentationSlideRenderer';
 import { exportPresentationDeckToPdf } from '@/lib/utils/exportPresentationPdf';
 import { cn } from '@/lib/utils/cn';
-import type { PresentationDeck, PresentationGenerateMode, PresentationHeadingFont, PresentationTheme } from '@/lib/presentation/types';
+import type {
+  PresentationDeck,
+  PresentationGenerateMode,
+  PresentationHeadingFont,
+  PresentationTheme,
+} from '@/lib/presentation/types';
 import { fetchWithOfflineCache } from '@/lib/offline/read-cache';
 import { useAuth } from '@/hooks/auth/useAuth';
 
@@ -86,18 +107,21 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
     const interval = setInterval(() => {
       if (topic.trim()) {
         try {
-          localStorage.setItem('ilm-ai-presentation-draft', JSON.stringify({
-            topic,
-            subject,
-            slideCount,
-            tone,
-            audienceLevel,
-            language,
-            outputStyle,
-            theme,
-            headingFont,
-            mode,
-          }));
+          localStorage.setItem(
+            'ilm-ai-presentation-draft',
+            JSON.stringify({
+              topic,
+              subject,
+              slideCount,
+              tone,
+              audienceLevel,
+              language,
+              outputStyle,
+              theme,
+              headingFont,
+              mode,
+            })
+          );
         } catch {}
       }
     }, 30000);
@@ -252,41 +276,47 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
 
   // Slide editing functions
   const pushSlideHistory = useCallback((newDeck: PresentationDeck) => {
-    setSlideHistory(prev => [...prev.slice(-19), newDeck]); // Keep last 20 states
+    setSlideHistory((prev) => [...prev.slice(-19), newDeck]); // Keep last 20 states
     setSlideRedoStack([]);
   }, []);
 
-  const updateSlide = useCallback((slideIndex: number, updatedSlide: any) => {
-    if (!deck) return;
-    const newDeck = {
-      ...deck,
-      slides: deck.slides.map((slide, index) => index === slideIndex ? updatedSlide : slide),
-    };
-    pushSlideHistory(newDeck);
-    setDeck(newDeck);
-    toast.success('Slide updated!');
-  }, [deck, pushSlideHistory]);
+  const updateSlide = useCallback(
+    (slideIndex: number, updatedSlide: any) => {
+      if (!deck) return;
+      const newDeck = {
+        ...deck,
+        slides: deck.slides.map((slide, index) => (index === slideIndex ? updatedSlide : slide)),
+      };
+      pushSlideHistory(newDeck);
+      setDeck(newDeck);
+      toast.success('Slide updated!');
+    },
+    [deck, pushSlideHistory]
+  );
 
-  const deleteSlide = useCallback((slideIndex: number) => {
-    if (!deck) return;
-    if (deck.slides.length <= 1) {
-      toast.error('At least one slide is required.');
-      return;
-    }
-    const newDeck = {
-      ...deck,
-      slides: deck.slides.filter((_, index) => index !== slideIndex),
-    };
-    pushSlideHistory(newDeck);
-    setDeck(newDeck);
-    toast.success('Slide deleted!');
-  }, [deck, pushSlideHistory]);
+  const deleteSlide = useCallback(
+    (slideIndex: number) => {
+      if (!deck) return;
+      if (deck.slides.length <= 1) {
+        toast.error('At least one slide is required.');
+        return;
+      }
+      const newDeck = {
+        ...deck,
+        slides: deck.slides.filter((_, index) => index !== slideIndex),
+      };
+      pushSlideHistory(newDeck);
+      setDeck(newDeck);
+      toast.success('Slide deleted!');
+    },
+    [deck, pushSlideHistory]
+  );
 
   const undo = useCallback(() => {
     if (slideHistory.length === 0) return;
     const previous = slideHistory[slideHistory.length - 1];
-    setSlideRedoStack(prev => [...prev, deck!]);
-    setSlideHistory(prev => prev.slice(0, -1));
+    setSlideRedoStack((prev) => [...prev, deck!]);
+    setSlideHistory((prev) => prev.slice(0, -1));
     setDeck(previous);
     toast.info('Undo successful');
   }, [slideHistory, deck]);
@@ -294,44 +324,45 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
   const redo = useCallback(() => {
     if (slideRedoStack.length === 0) return;
     const next = slideRedoStack[slideRedoStack.length - 1];
-    setSlideHistory(prev => [...prev, deck!]);
-    setSlideRedoStack(prev => prev.slice(0, -1));
+    setSlideHistory((prev) => [...prev, deck!]);
+    setSlideRedoStack((prev) => prev.slice(0, -1));
     setDeck(next);
     toast.info('Redo successful');
   }, [slideRedoStack, deck]);
 
-  const regenerateSlide = useCallback(async (slideIndex: number) => {
-    if (!deck || !user) return;
-    setLoading(true);
-    try {
-      const res = await fetch('/api/presentation/regenerate-slide', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          topic: deck.topic,
-          subject,
-          slideIndex,
-          currentSlide: deck.slides[slideIndex],
-        }),
-      });
-      const json = await res.json();
-      if (json.status === 'error') throw new Error(json.error);
-      
-      const newDeck = {
-        ...deck,
-        slides: deck.slides.map((slide, index) => 
-          index === slideIndex ? json.slide : slide
-        ),
-      };
-      pushSlideHistory(newDeck);
-      setDeck(newDeck);
-      toast.success('Slide regenerated with AI!');
-    } catch {
-      toast.error('Failed to regenerate slide.');
-    } finally {
-      setLoading(false);
-    }
-  }, [deck, user, subject, pushSlideHistory]);
+  const regenerateSlide = useCallback(
+    async (slideIndex: number) => {
+      if (!deck || !user) return;
+      setLoading(true);
+      try {
+        const res = await fetch('/api/presentation/regenerate-slide', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            topic: deck.topic,
+            subject,
+            slideIndex,
+            currentSlide: deck.slides[slideIndex],
+          }),
+        });
+        const json = await res.json();
+        if (json.status === 'error') throw new Error(json.error);
+
+        const newDeck = {
+          ...deck,
+          slides: deck.slides.map((slide, index) => (index === slideIndex ? json.slide : slide)),
+        };
+        pushSlideHistory(newDeck);
+        setDeck(newDeck);
+        toast.success('Slide regenerated with AI!');
+      } catch {
+        toast.error('Failed to regenerate slide.');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [deck, user, subject, pushSlideHistory]
+  );
 
   async function downloadPdf() {
     if (!deck) return;
@@ -420,122 +451,123 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
 
       <div className="grid gap-6 xl:grid-cols-[390px_1fr]">
         <div className="space-y-4">
-        <Card className="h-fit">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Presentation className="h-4 w-4 text-violet-400" />
-              Presentation Details
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Field
-              label="Topic / prompt"
-              value={topic}
-              onChange={setTopic}
-              placeholder="Photosynthesis for university biology students"
-            />
-            {!topic && (
-              <div className="space-y-2">
-                <p className="text-muted-foreground text-xs font-medium">Quick suggestions:</p>
-                <div className="flex flex-wrap gap-2">
-                  {TOPIC_SUGGESTIONS.map((suggestion) => (
-                    <button
-                      key={suggestion}
-                      type="button"
-                      onClick={() => setTopic(suggestion)}
-                      className="rounded-full border bg-card px-3 py-1 text-xs transition hover:border-violet-400 hover:bg-violet-50"
-                    >
-                      {suggestion.length > 35 ? suggestion.slice(0, 35) + '...' : suggestion}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-            <Field
-              label="Subject / course"
-              value={subject}
-              onChange={setSubject}
-              placeholder="Biology, Computer Science, Economics..."
-            />
-            <div className="grid grid-cols-2 gap-3">
-              <NumberField label="Slides" value={slideCount} onChange={setSlideCount} min={4} max={24} />
-              <SelectField
-                label="Tone"
-                value={tone}
-                onChange={setTone}
-                options={['Professional', 'Academic', 'Simple', 'Persuasive']}
-              />
-            </div>
-            <Field
-              label="Audience level"
-              value={audienceLevel}
-              onChange={setAudienceLevel}
-              placeholder="University students"
-            />
-            <div className="grid grid-cols-2 gap-3">
-              <SelectField
-                label="Language"
-                value={language}
-                onChange={setLanguage}
-                options={['English', 'Urdu', 'Roman Urdu']}
-              />
-              <SelectField
-                label="Style"
-                value={outputStyle}
-                onChange={setOutputStyle}
-                options={['simple', 'academic', 'professional', 'detailed']}
-              />
-            </div>
-            <ThemeModePicker value={theme} onChange={setTheme} />
-            <HeadingFontPicker value={headingFont} onChange={setHeadingFont} />
-            <SelectField
-              label="Generation mode"
-              value={mode}
-              onChange={(value) => setMode(value as PresentationGenerateMode)}
-              options={['bulk', 'per-slide']}
-            />
-            <div className="bg-muted/25 text-muted-foreground rounded-xl border p-3 text-xs leading-5">
-              Per-slide mode gives each slide individual attention. Bulk mode creates a compact draft more quickly.
-            </div>
-            <Button variant="gradient" className="w-full" disabled={!formReady || loading} onClick={generate}>
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-              Generate Presentation
-              <span className="ml-2 text-xs opacity-70">Ctrl+Enter</span>
-            </Button>
-          </CardContent>
-        </Card>
-
-        {history.length > 0 && (
           <Card className="h-fit">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
-                <Clock className="h-4 w-4 text-violet-400" />
-                Saved Presentations
+                <Presentation className="h-4 w-4 text-violet-400" />
+                Presentation Details
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-1.5">
-              {history.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  disabled={historyLoading}
-                  onClick={() => void openSaved(item.id)}
-                  className={cn(
-                    'flex w-full flex-col rounded-lg border px-3 py-2 text-left text-sm transition disabled:opacity-50',
-                    activeHistoryId === item.id
-                      ? 'border-violet-400 bg-violet-500/10'
-                      : 'border-transparent hover:bg-muted/50'
-                  )}
-                >
-                  <span className="truncate font-medium">{item.title}</span>
-                  <span className="text-muted-foreground text-xs">
-                    {new Date(item.created_at).toLocaleDateString()}
-                  </span>
-                </button>
-              ))}
+            <CardContent className="space-y-4">
+              <Field
+                label="Topic / prompt"
+                value={topic}
+                onChange={setTopic}
+                placeholder="Photosynthesis for university biology students"
+              />
+              {!topic && (
+                <div className="space-y-2">
+                  <p className="text-muted-foreground text-xs font-medium">Quick suggestions:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {TOPIC_SUGGESTIONS.map((suggestion) => (
+                      <button
+                        key={suggestion}
+                        type="button"
+                        onClick={() => setTopic(suggestion)}
+                        className="bg-card rounded-full border px-3 py-1 text-xs transition hover:border-violet-400 hover:bg-violet-50"
+                      >
+                        {suggestion.length > 35 ? suggestion.slice(0, 35) + '...' : suggestion}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <Field
+                label="Subject / course"
+                value={subject}
+                onChange={setSubject}
+                placeholder="Biology, Computer Science, Economics..."
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <NumberField label="Slides" value={slideCount} onChange={setSlideCount} min={4} max={24} />
+                <SelectField
+                  label="Tone"
+                  value={tone}
+                  onChange={setTone}
+                  options={['Professional', 'Academic', 'Simple', 'Persuasive']}
+                />
+              </div>
+              <Field
+                label="Audience level"
+                value={audienceLevel}
+                onChange={setAudienceLevel}
+                placeholder="University students"
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <SelectField
+                  label="Language"
+                  value={language}
+                  onChange={setLanguage}
+                  options={['English', 'Urdu', 'Roman Urdu']}
+                />
+                <SelectField
+                  label="Style"
+                  value={outputStyle}
+                  onChange={setOutputStyle}
+                  options={['simple', 'academic', 'professional', 'detailed']}
+                />
+              </div>
+              <ThemeModePicker value={theme} onChange={setTheme} />
+              <HeadingFontPicker value={headingFont} onChange={setHeadingFont} />
+              <SelectField
+                label="Generation mode"
+                value={mode}
+                onChange={(value) => setMode(value as PresentationGenerateMode)}
+                options={['bulk', 'per-slide']}
+              />
+              <div className="bg-muted/25 text-muted-foreground rounded-xl border p-3 text-xs leading-5">
+                Per-slide mode gives each slide individual attention. Bulk mode creates a compact draft more quickly.
+                One chart (pie, bar, or line) is included automatically in every deck.
+              </div>
+              <Button variant="gradient" className="w-full" disabled={!formReady || loading} onClick={generate}>
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                Generate Presentation
+                <span className="ml-2 text-xs opacity-70">Ctrl+Enter</span>
+              </Button>
             </CardContent>
           </Card>
-        )}
+
+          {history.length > 0 && (
+            <Card className="h-fit">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Clock className="h-4 w-4 text-violet-400" />
+                  Saved Presentations
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-1.5">
+                {history.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    disabled={historyLoading}
+                    onClick={() => void openSaved(item.id)}
+                    className={cn(
+                      'flex w-full flex-col rounded-lg border px-3 py-2 text-left text-sm transition disabled:opacity-50',
+                      activeHistoryId === item.id
+                        ? 'border-violet-400 bg-violet-500/10'
+                        : 'hover:bg-muted/50 border-transparent'
+                    )}
+                  >
+                    <span className="truncate font-medium">{item.title}</span>
+                    <span className="text-muted-foreground text-xs">
+                      {new Date(item.created_at).toLocaleDateString()}
+                    </span>
+                  </button>
+                ))}
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         <div className="space-y-4">
@@ -611,17 +643,17 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
                           Slide {index + 1} - {slide.type}
                         </p>
                         <div className="flex gap-1">
-                          <Button 
-                            size="sm" 
-                            variant="ghost" 
+                          <Button
+                            size="sm"
+                            variant="ghost"
                             className="h-6 w-6 p-0"
                             onClick={() => setEditingSlide(index)}
                           >
                             <Edit3 className="h-3.5 w-3.5" />
                           </Button>
-                          <Button 
-                            size="sm" 
-                            variant="ghost" 
+                          <Button
+                            size="sm"
+                            variant="ghost"
                             className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
                             onClick={() => deleteSlide(index)}
                           >
@@ -640,22 +672,19 @@ export function PresentationBuilderClient({ defaultSubject = '', defaultStyle = 
                             value={slide.title || ''}
                             onChange={(e) => updateSlide(index, { ...slide, title: e.target.value })}
                             placeholder="Slide title"
-                            className="w-full rounded-md border bg-background px-2 py-1 text-sm"
+                            className="bg-background w-full rounded-md border px-2 py-1 text-sm"
                           />
                           <textarea
                             value={slide.bullets?.join('\n') || ''}
-                            onChange={(e) => updateSlide(index, { ...slide, bullets: e.target.value.split('\n').filter(Boolean) })}
+                            onChange={(e) =>
+                              updateSlide(index, { ...slide, bullets: e.target.value.split('\n').filter(Boolean) })
+                            }
                             placeholder="Bullets (one per line)"
-                            className="w-full rounded-md border bg-background px-2 py-1 text-sm"
+                            className="bg-background w-full rounded-md border px-2 py-1 text-sm"
                             rows={3}
                           />
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="w-full"
-                            onClick={() => regenerateSlide(index)}
-                          >
-                            <Sparkles className="h-3.5 w-3.5 mr-1" />
+                          <Button size="sm" variant="outline" className="w-full" onClick={() => regenerateSlide(index)}>
+                            <Sparkles className="mr-1 h-3.5 w-3.5" />
                             Regenerate with AI
                           </Button>
                         </div>
@@ -768,11 +797,11 @@ function ThemeModePicker({
               </span>
               <span className="text-muted-foreground mt-0.5 block text-[11px] leading-tight">{description}</span>
               {active && (
-                <span className="absolute right-2 top-2 rounded-full bg-violet-500 px-1.5 py-0.5 text-[9px] font-bold text-white">
+                <span className="absolute top-2 right-2 rounded-full bg-violet-500 px-1.5 py-0.5 text-[9px] font-bold text-white">
                   Selected
                 </span>
               )}
-              </button>
+            </button>
           );
         })}
       </div>
@@ -780,10 +809,11 @@ function ThemeModePicker({
   );
 }
 
-const HEADING_FONT_OPTIONS: { key: PresentationHeadingFont; label: string; description: string; icon: typeof Type }[] = [
-  { key: 'default', label: 'Default', description: 'Clean, standard headings', icon: Type },
-  { key: 'handwritten', label: 'Handwritten', description: 'A handwriting font for titles only', icon: PenLine },
-];
+const HEADING_FONT_OPTIONS: { key: PresentationHeadingFont; label: string; description: string; icon: typeof Type }[] =
+  [
+    { key: 'default', label: 'Default', description: 'Clean, standard headings', icon: Type },
+    { key: 'handwritten', label: 'Handwritten', description: 'A handwriting font for titles only', icon: PenLine },
+  ];
 
 // Optional — layered on top of the dark/light theme above, not a third theme itself. Only the
 // slide titles/section headings switch font; body text and bullets are never affected, so this
@@ -798,7 +828,7 @@ function HeadingFontPicker({
   return (
     <div>
       <label className="text-muted-foreground mb-1.5 block text-xs font-bold tracking-wide uppercase">
-        Heading font <span className="normal-case font-normal">(optional)</span>
+        Heading font <span className="font-normal normal-case">(optional)</span>
       </label>
       <div className="grid grid-cols-2 gap-3">
         {HEADING_FONT_OPTIONS.map(({ key, label, description, icon: Icon }) => {
@@ -821,7 +851,7 @@ function HeadingFontPicker({
               </span>
               <span className="text-muted-foreground mt-0.5 block text-[11px] leading-tight">{description}</span>
               {active && (
-                <span className="absolute right-2 top-2 rounded-full bg-violet-500 px-1.5 py-0.5 text-[9px] font-bold text-white">
+                <span className="absolute top-2 right-2 rounded-full bg-violet-500 px-1.5 py-0.5 text-[9px] font-bold text-white">
                   Selected
                 </span>
               )}

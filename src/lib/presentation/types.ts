@@ -115,7 +115,15 @@ export const PRESENTATION_BACKGROUND_CATEGORIES = [
 
 export const DEFAULT_PRESENTATION_BACKGROUND_CATEGORY = 'uncategorized';
 
-export const PRESENTATION_THEMES: PresentationTheme[] = ['default', 'dark', 'light', 'solar', 'ocean', 'sunset', 'forest'];
+export const PRESENTATION_THEMES: PresentationTheme[] = [
+  'default',
+  'dark',
+  'light',
+  'solar',
+  'ocean',
+  'sunset',
+  'forest',
+];
 
 export const PRESENTATION_SLIDE_TYPES: PresentationSlideType[] = [
   'title',
@@ -128,4 +136,5 @@ export const PRESENTATION_SLIDE_TYPES: PresentationSlideType[] = [
   'timeline',
   'image-caption',
   'callout',
+  'chart',
 ];

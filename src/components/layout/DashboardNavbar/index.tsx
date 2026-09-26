@@ -229,9 +229,10 @@ export function DashboardNavbar({
             </Button>
             {shareOpen && (
               <div className="border-border bg-popover text-popover-foreground absolute top-12 right-0 z-[120] w-52 overflow-hidden rounded-xl border p-1.5 shadow-xl">
-                <p className="text-muted-foreground px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider">
-                  Share ilm AI
-                </p>
+                <div className="border-b border-border/60 px-2.5 py-2">
+                  <p className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider">Share ilm AI</p>
+                  <p className="mt-1 text-xs text-violet-500">Both of you get 10 free AI credits.</p>
+                </div>
                 {([
                   ['whatsapp', 'WhatsApp'],
                   ['instagram', 'Instagram'],
