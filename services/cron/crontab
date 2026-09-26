@@ -22,6 +22,10 @@
 0 20 * * * curl -fsS --retry 3 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/usd-pkr-rate"
 # Also missing from this file the same way — present in free-cron.yml but never scheduled here.
 30 20 * * * curl -fsS --retry 3 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/expire-institution-trials"
+# Personal/manual subscriptions use profiles.subscription_tier as a cached compatibility field.
+# Sweep every 5 minutes so an expired Pro/Elite grant is revoked promptly instead of remaining
+# active until an admin opens the Users page.
+*/5 * * * * curl -fsS --retry 2 -H "Authorization: Bearer $CRON_SECRET" "$APP_INTERNAL_URL/api/cron/expire-user-subscriptions"
 # Rebuilds the Algolia public-catalog index (subjects/chapters/library resources/lectures/past
 # papers) from Supabase. Was never scheduled anywhere — the route worked fine but nothing ever
 # called it, so the index stayed empty and the Algolia app sat idle with zero requests. Content
