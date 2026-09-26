@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdminUser } from '@/lib/admin/auth';
+import { selectEffectiveSubscription, type SubscriptionAccessCandidate } from '@/lib/payments/subscription-access';
 
 // GET /api/admin/users?q=search-email-name-or-username
 export async function GET(req: NextRequest) {
@@ -9,6 +10,7 @@ export async function GET(req: NextRequest) {
 
   const q = req.nextUrl.searchParams.get('q')?.trim() || '';
   const safeQuery = q.replace(/[,%()]/g, ' ');
+
   let adminClient;
   try {
     adminClient = await createAdminClient();
@@ -25,7 +27,7 @@ export async function GET(req: NextRequest) {
       'id, full_name, email, username, role, sponsored_institution_name, sponsored_institution_type, subscription_tier, subscription_expires_at, xp, created_at'
     )
     .order('created_at', { ascending: false })
-    .limit(50);
+    .limit(200);
 
   if (safeQuery) {
     query = query.or(
@@ -42,7 +44,16 @@ export async function GET(req: NextRequest) {
   const userIds = users.map((user) => user.id);
   const db = adminClient as any;
 
-  const [schoolMemberships, collegeMemberships, schoolEnrollments, collegeEnrollments, schoolGuardians, collegeGuardians, parentStudentLinks] = await Promise.all([
+  const [
+    schoolMemberships,
+    collegeMemberships,
+    schoolEnrollments,
+    collegeEnrollments,
+    schoolGuardians,
+    collegeGuardians,
+    parentStudentLinks,
+    subscriptionRows,
+  ] = await Promise.all([
     userIds.length
       ? db
           .from('school_memberships')
@@ -86,6 +97,12 @@ export async function GET(req: NextRequest) {
     userIds.length
       ? db.from('parent_student_links').select('parent_id, student_id, status').in('parent_id', userIds).eq('status', 'approved')
       : Promise.resolve({ data: [] }),
+    userIds.length
+      ? db
+          .from('subscriptions')
+          .select('user_id, tier, status, provider, current_period_start, current_period_end, cancel_at_period_end, created_at, updated_at, provider_subscription_id')
+          .in('user_id', userIds)
+      : Promise.resolve({ data: [] }),
   ]);
 
   const schoolRows = (schoolMemberships.data || []) as any[];
@@ -95,6 +112,7 @@ export async function GET(req: NextRequest) {
   const schoolGuardianRows = (schoolGuardians.data || []) as any[];
   const collegeGuardianRows = (collegeGuardians.data || []) as any[];
   const parentStudentLinkRows = (parentStudentLinks.data || []) as any[];
+  const allSubscriptions = (subscriptionRows.data || []) as any[];
 
   const addInstitution = (map: Map<string, string[]>, userId: string, name: unknown) => {
     const normalized = typeof name === 'string' ? name.trim() : '';
@@ -112,8 +130,6 @@ export async function GET(req: NextRequest) {
   for (const row of schoolGuardianRows) addInstitution(institutionByUser, row.guardian_id, row.school_organizations?.name);
   for (const row of collegeGuardianRows) addInstitution(institutionByUser, row.guardian_id, row.college_organizations?.name);
 
-  // A consumer parent may be connected through parent_student_links without a guardian row.
-  // In that case, inherit the institution name from the linked child's active enrollment.
   const schoolEnrollmentByStudent = new Map<string, string[]>();
   const collegeEnrollmentByStudent = new Map<string, string[]>();
   for (const row of schoolEnrollmentRows) {
@@ -137,14 +153,94 @@ export async function GET(req: NextRequest) {
     for (const name of collegeEnrollmentByStudent.get(row.student_id) || []) addInstitution(institutionByUser, row.parent_id, name);
   }
 
-  const enrichedUsers = users.map((user) => ({
-    ...user,
-    institution_names: institutionByUser.get(user.id) || [],
-    institution_display:
-      (institutionByUser.get(user.id) || []).length > 0
-        ? (institutionByUser.get(user.id) || []).join(' · ')
-        : 'Independent (no institution)',
-  }));
+  const subscriptionsByUser = new Map<string, any[]>();
+  for (const row of allSubscriptions) {
+    const list = subscriptionsByUser.get(row.user_id) || [];
+    list.push(row);
+    subscriptionsByUser.set(row.user_id, list);
+  }
+
+  const toCandidate = (row: any): SubscriptionAccessCandidate => ({
+    tier: row.tier,
+    status: row.status,
+    current_period_end: row.current_period_end,
+  });
+
+  const sortSubscriptions = (rows: any[]) =>
+    [...rows].sort((a, b) => {
+      const aTime = new Date(a.created_at || a.current_period_start || 0).getTime();
+      const bTime = new Date(b.created_at || b.current_period_start || 0).getTime();
+      return bTime - aTime;
+    });
+
+  const enrichedUsers = users.map((user) => {
+    const userSubscriptions = sortSubscriptions(subscriptionsByUser.get(user.id) || []);
+    const latestSubscription = userSubscriptions[0] || null;
+    const effectiveFromSubscriptions = userSubscriptions.length
+      ? selectEffectiveSubscription(userSubscriptions.map(toCandidate))
+      : null;
+
+    // Parent-role plans historically use profiles.subscription_tier without a row in
+    // subscriptions. Keep that legacy path as a fallback only when there is no subscription
+    // record at all; any real subscription row is evaluated by its actual period/status.
+    const fallbackTier =
+      user.subscription_tier === 'PRO' || user.subscription_tier === 'ELITE' ? user.subscription_tier : 'FREE';
+    const effectiveTier = effectiveFromSubscriptions?.tier || fallbackTier;
+    const effectiveExpiry = effectiveFromSubscriptions?.expiresAt || (effectiveFromSubscriptions ? null : user.subscription_expires_at);
+    const effectiveCandidate =
+      effectiveFromSubscriptions && effectiveFromSubscriptions.tier !== 'FREE'
+        ? userSubscriptions.find(
+            (row) =>
+              row.tier === effectiveFromSubscriptions.tier &&
+              row.current_period_end === effectiveFromSubscriptions.expiresAt &&
+              ['active', 'trialing', 'past_due'].includes(row.status)
+          )
+        : null;
+
+    const subscriptionStatus = effectiveFromSubscriptions
+      ? effectiveFromSubscriptions.tier === 'FREE'
+        ? latestSubscription?.current_period_end && new Date(latestSubscription.current_period_end).getTime() <= Date.now()
+          ? 'expired'
+          : 'free'
+        : effectiveCandidate?.status || 'active'
+      : fallbackTier === 'FREE'
+        ? 'free'
+        : user.subscription_expires_at && new Date(user.subscription_expires_at).getTime() <= Date.now()
+          ? 'expired'
+          : 'active';
+
+    return {
+      id: user.id,
+      full_name: user.full_name,
+      email: user.email,
+      username: user.username,
+      role: user.role,
+      institution_names: institutionByUser.get(user.id) || [],
+      institution_display:
+        (institutionByUser.get(user.id) || []).length > 0
+          ? (institutionByUser.get(user.id) || []).join(' · ')
+          : 'Independent (no institution)',
+      sponsored_institution_name: user.sponsored_institution_name,
+      sponsored_institution_type: user.sponsored_institution_type,
+      subscription_tier: effectiveTier,
+      subscription_expires_at: effectiveExpiry,
+      subscription_started_at: effectiveCandidate?.current_period_start || null,
+      subscription_status: subscriptionStatus,
+      latest_subscription: latestSubscription
+        ? {
+            tier: latestSubscription.tier,
+            status: latestSubscription.status,
+            provider: latestSubscription.provider,
+            current_period_start: latestSubscription.current_period_start,
+            current_period_end: latestSubscription.current_period_end,
+            cancel_at_period_end: latestSubscription.cancel_at_period_end,
+            provider_subscription_id: latestSubscription.provider_subscription_id,
+          }
+        : null,
+      xp: user.xp,
+      created_at: user.created_at,
+    };
+  });
 
   return NextResponse.json({ users: enrichedUsers });
 }
