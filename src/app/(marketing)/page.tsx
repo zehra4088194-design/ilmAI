@@ -33,7 +33,8 @@ export default async function HomePage() {
   const structuredData = {
     '@context': 'https://schema.org',
     '@graph': [
-      { '@type': 'WebSite', '@id': `${siteUrl}/#website`, name: 'ilm AI', url: siteUrl, description: metadata.description },
+      { '@type': 'WebSite', '@id': `${siteUrl}/#website`, name: 'ilm AI', url: siteUrl, description: metadata.description, publisher: { '@id': `${siteUrl}/#organization` } },
+      { '@type': 'Organization', '@id': `${siteUrl}/#organization`, name: 'ilm AI', url: siteUrl, sameAs: ['https://ilmai.store'] },
       { '@type': 'ItemList', name: 'ilm AI Study Tools', itemListElement: PRIMARY_SITE_LINKS.map((link, index) => ({ '@type': 'SiteNavigationElement', position: index + 1, name: link.name, url: `${siteUrl}${link.url}` })) },
     ],
   };
