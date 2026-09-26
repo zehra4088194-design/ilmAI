@@ -17,9 +17,10 @@ export async function generateMetadata({ params }: { params: Promise<{ subjectSl
   const subjectName = paper.subjects?.name || subjectSlug;
   const chapterName = paper.chapters?.name || 'Full Syllabus';
   const title = `${subjectName} ${paper.year} ${paper.paper_type} Past Paper | ilm AI`;
+  const verificationLabel = paper.is_verified ? 'Verified ' : '';
   return {
     title,
-    description: `Verified ${subjectName} ${paper.year} ${paper.paper_type} past paper for ${chapterName}.`,
+    description: `${verificationLabel}${subjectName} ${paper.year} ${paper.paper_type} past paper for ${chapterName}.`,
     alternates: { canonical: `/past-papers/${subjectSlug}/${chapterSlug}/${paperId}` },
     openGraph: { type: 'article', title, description: `Verified ${subjectName} ${paper.year} ${paper.paper_type} past paper for ${chapterName}.` },
   };
@@ -63,7 +64,7 @@ export default async function PastPaperFilePage({
         '@type': 'LearningResource',
         '@id': `${canonicalUrl}#learning-resource`,
         name: `${paper.subjects?.name || 'Past Paper'} ${paper.year} ${paper.paper_type} Past Paper`,
-        description: `Verified ${paper.subjects?.name || 'subject'} ${paper.year} ${paper.paper_type} past paper for ${paper.chapters?.name || 'Full Syllabus'}.`,
+        description: `${paper.is_verified ? 'Verified ' : ''}${paper.subjects?.name || 'subject'} ${paper.year} ${paper.paper_type} past paper for ${paper.chapters?.name || 'Full Syllabus'}.`,
         url: canonicalUrl,
         isPartOf: { '@type': 'WebSite', name: 'ilm AI', url: baseUrl },
         educationalLevel: 'School and college study',
