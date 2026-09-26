@@ -54,6 +54,32 @@ export default async function PastPaperFilePage({
   if ((paper.subjects?.slug || 'general') !== subjectSlug || (paper.chapters?.slug || 'full-syllabus') !== chapterSlug)
     notFound();
   const title = `${paper.subjects?.name || 'Past Paper'} - ${paper.year} ${paper.paper_type}`;
+  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://ilmai.study').replace(/\/$/, '');
+  const canonicalUrl = `${baseUrl}/past-papers/${subjectSlug}/${chapterSlug}/${paper.id}`;
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'LearningResource',
+        '@id': `${canonicalUrl}#learning-resource`,
+        name: `${paper.subjects?.name || 'Past Paper'} ${paper.year} ${paper.paper_type} Past Paper`,
+        description: `Verified ${paper.subjects?.name || 'subject'} ${paper.year} ${paper.paper_type} past paper for ${paper.chapters?.name || 'Full Syllabus'}.`,
+        url: canonicalUrl,
+        isPartOf: { '@type': 'WebSite', name: 'ilm AI', url: baseUrl },
+        educationalLevel: 'School and college study',
+        learningResourceType: 'Past paper',
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'ilm AI', item: baseUrl },
+          { '@type': 'ListItem', position: 2, name: 'Past Papers', item: `${baseUrl}/past-papers` },
+          { '@type': 'ListItem', position: 3, name: paper.subjects?.name || 'Subject', item: `${baseUrl}/past-papers/${subjectSlug}` },
+          { '@type': 'ListItem', position: 4, name: title, item: canonicalUrl },
+        ],
+      },
+    ],
+  };
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
@@ -77,6 +103,10 @@ export default async function PastPaperFilePage({
         </p>
       </div>
       <PastPaperDetailClient paper={{ id: paper.id, title, isVerified: paper.is_verified, fileUrl: paper.file_url }} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
+      />
     </div>
   );
 }
