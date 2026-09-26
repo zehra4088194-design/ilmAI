@@ -55,6 +55,7 @@ jobs:
           call_job /api/cron/college-notifications
           call_job /api/cron/usd-pkr-rate
           call_job /api/cron/expire-institution-trials
+          call_job /api/cron/expire-user-subscriptions
           # Full resync of the Algolia public-catalog index — never scheduled anywhere before,
           # so the index stayed empty. Content changes rarely; safe (and idempotent, via
           # replaceAllObjects) to just run on every invocation of this workflow rather than
