@@ -43,7 +43,7 @@ const TOUR_COPY: Record<string, TourStep[]> = {
   student: [
     {
       id: 'progress',
-      selector: 'a[href="/progress"]',
+      selector: '[data-tour-target="progress"]',
       title: 'Track your progress',
       description: 'Yahan tum apni study progress, streak, performance aur improvement ko ek jagah dekh sakte ho.',
       icon: BarChart3,
@@ -87,9 +87,10 @@ const TOUR_COPY: Record<string, TourStep[]> = {
     },
     {
       id: 'tutor',
-      selector: 'a[href="/ai-tutor"]',
+      selector: '[data-tour-target="tutor"]',
       title: 'AI Tutor',
-      description: 'Concept samajhne, follow-up questions poochne aur topics ko step-by-step study karne ke liye use karo.',
+      description:
+        'Concept samajhne, follow-up questions poochne aur topics ko step-by-step study karne ke liye use karo.',
       icon: Brain,
     },
     {
@@ -108,9 +109,10 @@ const TOUR_COPY: Record<string, TourStep[]> = {
     },
     {
       id: 'progress',
-      selector: 'a[href="/progress"]',
+      selector: '[data-tour-target="progress"]',
       title: 'See your progress',
-      description: 'Apni study activity, streaks aur performance ko track karte raho taake pata rahe kahan improvement chahiye.',
+      description:
+        'Apni study activity, streaks aur performance ko track karte raho taake pata rahe kahan improvement chahiye.',
       icon: BarChart3,
     },
   ],
@@ -119,7 +121,8 @@ const TOUR_COPY: Record<string, TourStep[]> = {
       id: 'tests',
       selector: 'a[href="/teacher/tests"]',
       title: 'Test Paper Studio',
-      description: 'Students ke liye tests aur question papers prepare, manage aur share karne ke tools yahan milte hain.',
+      description:
+        'Students ke liye tests aur question papers prepare, manage aur share karne ke tools yahan milte hain.',
       icon: FileQuestion,
     },
     {
@@ -430,7 +433,10 @@ export function FeatureTour({
 
   return (
     <div className="fixed inset-0 z-[220]" aria-label="ilm AI feature tour">
-      <div className="absolute inset-x-0 top-0 bg-black/55 backdrop-blur-[1px]" style={{ height: targetRect ? targetRect.top : '100%' }} />
+      <div
+        className="absolute inset-x-0 top-0 bg-black/55 backdrop-blur-[1px]"
+        style={{ height: targetRect ? targetRect.top : '100%' }}
+      />
 
       {targetRect && (
         <>
@@ -466,13 +472,13 @@ export function FeatureTour({
         role="dialog"
         aria-modal="true"
         aria-labelledby="ilm-ai-tour-title"
-        className="absolute rounded-2xl border border-white/15 bg-background/95 p-5 text-foreground shadow-2xl shadow-black/40 backdrop-blur-xl"
+        className="bg-background/95 text-foreground absolute rounded-2xl border border-white/15 p-5 shadow-2xl shadow-black/40 backdrop-blur-xl"
         style={cardStyle}
       >
         <button
           type="button"
           onClick={closeTour}
-          className="absolute right-3 top-3 rounded-full p-1.5 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+          className="text-muted-foreground hover:bg-muted hover:text-foreground absolute top-3 right-3 rounded-full p-1.5 transition"
           aria-label="Skip tour"
           title="Skip tour"
         >
@@ -484,10 +490,10 @@ export function FeatureTour({
             <Icon className="h-5 w-5" />
           </div>
           <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-violet-400">
+            <p className="text-[10px] font-bold tracking-[0.18em] text-violet-400 uppercase">
               Welcome to ilm AI · {stepIndex + 1} of {steps.length}
             </p>
-            <h2 id="ilm-ai-tour-title" className="mt-1 text-lg font-bold leading-tight">
+            <h2 id="ilm-ai-tour-title" className="mt-1 text-lg leading-tight font-bold">
               {step.title}
             </h2>
           </div>
@@ -501,7 +507,7 @@ export function FeatureTour({
               key={item.id}
               className={
                 'h-1.5 rounded-full transition-all ' +
-                (index === stepIndex ? 'w-8 bg-violet-500' : index < stepIndex ? 'w-4 bg-violet-300' : 'w-4 bg-muted')
+                (index === stepIndex ? 'w-8 bg-violet-500' : index < stepIndex ? 'w-4 bg-violet-300' : 'bg-muted w-4')
               }
             />
           ))}
@@ -511,7 +517,7 @@ export function FeatureTour({
           <button
             type="button"
             onClick={closeTour}
-            className="text-muted-foreground rounded-lg px-2 py-2 text-sm font-medium transition hover:bg-muted hover:text-foreground"
+            className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-lg px-2 py-2 text-sm font-medium transition"
           >
             Skip
           </button>
@@ -521,7 +527,7 @@ export function FeatureTour({
               <button
                 type="button"
                 onClick={() => setStepIndex((index) => Math.max(index - 1, 0))}
-                className="border-border rounded-lg border px-3 py-2 text-sm font-medium transition hover:bg-muted"
+                className="border-border hover:bg-muted rounded-lg border px-3 py-2 text-sm font-medium transition"
               >
                 <span className="flex items-center gap-1.5">
                   <ArrowLeft className="h-4 w-4" /> Back

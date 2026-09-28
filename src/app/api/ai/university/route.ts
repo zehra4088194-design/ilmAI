@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { gatewayChat } from '@/lib/ai/gateway';
 import { resolveAiRoutingProvider } from '@/lib/platform-settings/server';
 import {
@@ -30,6 +31,24 @@ function cleanNumber(value: unknown, fallback: number, min: number, max: number)
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return fallback;
   return Math.min(Math.max(Math.floor(parsed), min), max);
+}
+
+async function saveUniversityWork(
+  userId: string,
+  tool: string,
+  title: string,
+  input: Record<string, unknown>,
+  result: Record<string, unknown>
+) {
+  const admin = createServiceClient() as any;
+  const { error } = await admin.from('university_work_history').insert({
+    user_id: userId,
+    tool,
+    title,
+    input_json: input,
+    result_json: result,
+  });
+  if (error) throw error;
 }
 
 function buildPrompt(tool: string, input: Record<string, unknown>, profile: Record<string, unknown>) {
@@ -190,7 +209,28 @@ export async function POST(req: NextRequest) {
     }
 
     await consumeUniversityFeatureCredits(user.id, tier, `university_${tool}`);
-    return NextResponse.json({ status: 'success', data: { tool, label: TOOL_LABELS[tool], result: data } });
+    let saved = true;
+    const title = cleanString(body.topic, TOOL_LABELS[tool]).split('\nInstruction:')[0].slice(0, 180);
+    const savedInput = {
+      topic: title,
+      subject: cleanString(body.subject, ''),
+      wordCount: cleanNumber(body.wordCount, 900, 200, 3000),
+      difficulty: cleanString(body.difficulty, 'Intermediate'),
+      language: cleanString(body.language, 'English'),
+      slideCount: cleanNumber(body.slideCount, 8, 4, 18),
+      tone: cleanString(body.tone, 'Professional'),
+      audienceLevel: cleanString(body.audienceLevel, 'University students'),
+      weakAreas: cleanString(body.weakAreas, ''),
+      availableTime: cleanString(body.availableTime, '1-2 hours/day'),
+      outputStyle: cleanString(body.outputStyle, 'simple'),
+    };
+    try {
+      await saveUniversityWork(user.id, tool, title, savedInput, data);
+    } catch (error) {
+      saved = false;
+      console.error('University work history could not be saved:', error);
+    }
+    return NextResponse.json({ status: 'success', data: { tool, label: TOOL_LABELS[tool], result: data, saved } });
   } catch (error) {
     console.error('University AI route error:', error);
     return NextResponse.json(

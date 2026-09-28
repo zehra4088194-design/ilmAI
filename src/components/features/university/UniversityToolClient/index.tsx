@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   AlertTriangle,
@@ -8,6 +8,7 @@ import {
   ChevronDown,
   ChevronUp,
   Circle,
+  Clock,
   Download,
   Eye,
   FileText,
@@ -81,12 +82,61 @@ export function UniversityToolClient({
   const [outputStyle, setOutputStyle] = useState(defaultStyle);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<Record<string, any> | null>(null);
+  const [savedWork, setSavedWork] = useState<{ id: string; title: string; created_at: string }[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState('');
 
   const isPresentation = tool === 'presentation';
   const isPlanner = tool === 'planner';
   const isEssayLike = tool === 'essay' || tool === 'assignment';
 
   const formReady = topic.trim().length > 2 || isPlanner;
+
+  const loadHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    setHistoryError('');
+    try {
+      const response = await fetch(`/api/ai/university/history?tool=${encodeURIComponent(tool)}`);
+      const json = await response.json();
+      if (!response.ok || json.status !== 'success') throw new Error(json.error || 'Saved work could not be loaded.');
+      setSavedWork(json.data.works || []);
+    } catch (error) {
+      setHistoryError(error instanceof Error ? error.message : 'Saved work could not be loaded.');
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [tool]);
+
+  useEffect(() => {
+    void loadHistory();
+  }, [loadHistory]);
+
+  async function openSavedWork(id: string) {
+    setHistoryLoading(true);
+    try {
+      const response = await fetch(`/api/ai/university/history?id=${encodeURIComponent(id)}`);
+      const json = await response.json();
+      if (!response.ok || json.status !== 'success') throw new Error(json.error || 'Saved work could not be opened.');
+      const input = json.data.input || {};
+      setTopic(input.topic || json.data.title || '');
+      setSubject(input.subject || defaultSubject);
+      if (Number.isFinite(input.wordCount)) setWordCount(input.wordCount);
+      if (input.difficulty) setDifficulty(input.difficulty);
+      if (input.language) setLanguage(input.language);
+      if (Number.isFinite(input.slideCount)) setSlideCount(input.slideCount);
+      if (input.tone) setTone(input.tone);
+      if (input.audienceLevel) setAudienceLevel(input.audienceLevel);
+      if (input.weakAreas) setWeakAreas(input.weakAreas);
+      if (input.availableTime) setAvailableTime(input.availableTime);
+      if (input.outputStyle) setOutputStyle(input.outputStyle);
+      setResult(json.data.result);
+      toast.success('Saved work opened.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Saved work could not be opened.');
+    } finally {
+      setHistoryLoading(false);
+    }
+  }
 
   async function generate(modifier?: string) {
     if (!formReady) {
@@ -119,6 +169,11 @@ export function UniversityToolClient({
         return;
       }
       setResult(json.data.result);
+      if (json.data.saved === false) {
+        toast.warning('Draft generated, but could not be saved. You can still use it here.');
+      } else {
+        void loadHistory();
+      }
       window.dispatchEvent(new Event('ilm-ai-credits-changed'));
     } catch {
       toast.error('The assistant response could not be generated.');
@@ -146,84 +201,120 @@ export function UniversityToolClient({
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
-        <Card className="h-fit">
-          <CardHeader>
-            <CardTitle className="text-base">Input</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Field label={copy.topicLabel} value={topic} onChange={setTopic} placeholder={copy.topicPlaceholder} />
-            <Field label="Subject / Course" value={subject} onChange={setSubject} placeholder="Course name" />
+        <div className="space-y-4">
+          <Card className="h-fit">
+            <CardHeader>
+              <CardTitle className="text-base">Input</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Field label={copy.topicLabel} value={topic} onChange={setTopic} placeholder={copy.topicPlaceholder} />
+              <Field label="Subject / Course" value={subject} onChange={setSubject} placeholder="Course name" />
 
-            {isEssayLike && (
-              <div className="grid grid-cols-2 gap-3">
-                <NumberField label="Words" value={wordCount} onChange={setWordCount} min={200} max={3000} />
-                <SelectField
-                  label="Difficulty"
-                  value={difficulty}
-                  onChange={setDifficulty}
-                  options={['Basic', 'Intermediate', 'Advanced']}
-                />
-              </div>
-            )}
-
-            {isPresentation && (
-              <div className="grid grid-cols-2 gap-3">
-                <NumberField label="Slides" value={slideCount} onChange={setSlideCount} min={4} max={18} />
-                <SelectField
-                  label="Tone"
-                  value={tone}
-                  onChange={setTone}
-                  options={['Professional', 'Academic', 'Simple', 'Persuasive']}
-                />
-                <div className="col-span-2">
-                  <Field
-                    label="Audience level"
-                    value={audienceLevel}
-                    onChange={setAudienceLevel}
-                    placeholder="University students"
+              {isEssayLike && (
+                <div className="grid grid-cols-2 gap-3">
+                  <NumberField label="Words" value={wordCount} onChange={setWordCount} min={200} max={3000} />
+                  <SelectField
+                    label="Difficulty"
+                    value={difficulty}
+                    onChange={setDifficulty}
+                    options={['Basic', 'Intermediate', 'Advanced']}
                   />
                 </div>
-              </div>
-            )}
+              )}
 
-            {isPlanner && (
-              <div className="space-y-3">
-                <Field
-                  label="Weak areas"
-                  value={weakAreas}
-                  onChange={setWeakAreas}
-                  placeholder="Algorithms, derivations, case studies"
+              {isPresentation && (
+                <div className="grid grid-cols-2 gap-3">
+                  <NumberField label="Slides" value={slideCount} onChange={setSlideCount} min={4} max={18} />
+                  <SelectField
+                    label="Tone"
+                    value={tone}
+                    onChange={setTone}
+                    options={['Professional', 'Academic', 'Simple', 'Persuasive']}
+                  />
+                  <div className="col-span-2">
+                    <Field
+                      label="Audience level"
+                      value={audienceLevel}
+                      onChange={setAudienceLevel}
+                      placeholder="University students"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {isPlanner && (
+                <div className="space-y-3">
+                  <Field
+                    label="Weak areas"
+                    value={weakAreas}
+                    onChange={setWeakAreas}
+                    placeholder="Algorithms, derivations, case studies"
+                  />
+                  <Field
+                    label="Available time"
+                    value={availableTime}
+                    onChange={setAvailableTime}
+                    placeholder="1-2 hours/day"
+                  />
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3">
+                <SelectField
+                  label="Language"
+                  value={language}
+                  onChange={setLanguage}
+                  options={['English', 'Urdu', 'Roman Urdu']}
                 />
-                <Field
-                  label="Available time"
-                  value={availableTime}
-                  onChange={setAvailableTime}
-                  placeholder="1-2 hours/day"
+                <SelectField
+                  label="Style"
+                  value={outputStyle}
+                  onChange={setOutputStyle}
+                  options={['simple', 'academic', 'professional', 'detailed']}
                 />
               </div>
-            )}
 
-            <div className="grid grid-cols-2 gap-3">
-              <SelectField
-                label="Language"
-                value={language}
-                onChange={setLanguage}
-                options={['English', 'Urdu', 'Roman Urdu']}
-              />
-              <SelectField
-                label="Style"
-                value={outputStyle}
-                onChange={setOutputStyle}
-                options={['simple', 'academic', 'professional', 'detailed']}
-              />
-            </div>
+              <Button variant="gradient" className="w-full" onClick={() => generate()} disabled={loading || !formReady}>
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                {copy.cta}
+              </Button>
+            </CardContent>
+          </Card>
 
-            <Button variant="gradient" className="w-full" onClick={() => generate()} disabled={loading || !formReady}>
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-              {copy.cta}
-            </Button>
-          </CardContent>
-        </Card>
+          <Card className="h-fit">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Clock className="h-4 w-4 text-violet-400" />
+                Saved {tool === 'assignment' ? 'Assignments' : 'Drafts'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {historyLoading && savedWork.length === 0 ? (
+                <p className="text-muted-foreground text-sm">Loading saved work...</p>
+              ) : savedWork.length > 0 ? (
+                savedWork.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    disabled={historyLoading}
+                    onClick={() => void openSavedWork(item.id)}
+                    className="hover:bg-muted/50 flex w-full flex-col rounded-lg border border-transparent px-3 py-2 text-left text-sm transition disabled:opacity-50"
+                  >
+                    <span className="w-full truncate font-medium">{item.title}</span>
+                    <span className="text-muted-foreground text-xs">
+                      {new Date(item.created_at).toLocaleDateString()}
+                    </span>
+                  </button>
+                ))
+              ) : (
+                <p className="text-muted-foreground text-sm">
+                  {historyError ||
+                    (historyLoading ? 'Loading saved work...' : 'Generated work will be saved here automatically.')}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
         <div className="space-y-4">
           {!result && !loading && (
@@ -709,7 +800,15 @@ function PlannerResult({ result }: { result: Record<string, any> }) {
           <CardContent className="flex items-center gap-4 p-4">
             <div className="relative h-14 w-14 shrink-0">
               <svg viewBox="0 0 36 36" className="h-14 w-14 -rotate-90">
-                <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" strokeWidth="3" className="text-muted" />
+                <circle
+                  cx="18"
+                  cy="18"
+                  r="16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  className="text-muted"
+                />
                 <circle
                   cx="18"
                   cy="18"

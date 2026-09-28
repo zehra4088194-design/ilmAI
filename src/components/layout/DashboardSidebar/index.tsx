@@ -2,11 +2,53 @@
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import {
-  LayoutDashboard, BookOpen, Brain, FileText, TrendingUp, Trophy, Settings, Phone,
-  Zap, StickyNote, Bookmark, Star, CreditCard, ChevronRight, X, Menu,
-  Library, CalendarClock, HelpCircle, Target, LogOut, Users, PenLine, Cake,
-  GraduationCap, Presentation, Mic2, FlaskConical, Quote, BriefcaseBusiness, Network, Video,
-  Camera, MessageCircle, Sparkles, WandSparkles, Gamepad2, Music2, Pill, HardDriveDownload, School, FileQuestion, BookOpenText, ShoppingBag, Medal, ArrowLeftRight, HandHeart
+  LayoutDashboard,
+  BookOpen,
+  Brain,
+  FileText,
+  TrendingUp,
+  Trophy,
+  Settings,
+  Phone,
+  Zap,
+  StickyNote,
+  Bookmark,
+  Star,
+  CreditCard,
+  ChevronRight,
+  X,
+  Menu,
+  Library,
+  CalendarClock,
+  HelpCircle,
+  Target,
+  LogOut,
+  Users,
+  PenLine,
+  Cake,
+  GraduationCap,
+  Presentation,
+  Mic2,
+  FlaskConical,
+  Quote,
+  BriefcaseBusiness,
+  Network,
+  Video,
+  Camera,
+  MessageCircle,
+  Sparkles,
+  WandSparkles,
+  Gamepad2,
+  Music2,
+  Pill,
+  HardDriveDownload,
+  School,
+  FileQuestion,
+  BookOpenText,
+  ShoppingBag,
+  Medal,
+  ArrowLeftRight,
+  HandHeart,
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useAuth } from '@/hooks/auth/useAuth';
@@ -16,7 +58,7 @@ import type { InstitutionBranding } from '@/lib/branding/resolveInstitutionBrand
 import { SupportDonateWidget } from '@/components/features/support/SupportDonateWidget';
 
 const NAV_GROUPS = [
-  { 
+  {
     label: 'Study',
     items: [
       { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
@@ -177,7 +219,14 @@ type DashboardSidebarProps = {
   branding?: InstitutionBranding | null;
 };
 
-export function DashboardSidebar({ mobileOpen: controlledMobileOpen, onMobileOpenChange, desktopOpen = true, onDesktopOpenChange, onDesktopHoverChange, branding }: DashboardSidebarProps = {}) {
+export function DashboardSidebar({
+  mobileOpen: controlledMobileOpen,
+  onMobileOpenChange,
+  desktopOpen = true,
+  onDesktopOpenChange,
+  onDesktopHoverChange,
+  branding,
+}: DashboardSidebarProps = {}) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { user, signOut } = useAuth();
@@ -227,170 +276,522 @@ export function DashboardSidebar({ mobileOpen: controlledMobileOpen, onMobileOpe
   }, [pathname, mobileOpen]);
 
   const SidebarContent = () => (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full flex-col">
       {/* Logo */}
-      <div className="flex items-center justify-between border-b border-sidebar-border p-5">
-        <Link href="/" className="flex min-w-0 items-center gap-2.5 hover:opacity-80 transition-opacity">
+      <div className="border-sidebar-border flex items-center justify-between border-b p-5">
+        <Link href="/" className="flex min-w-0 items-center gap-2.5 transition-opacity hover:opacity-80">
           {branding ? (
             <>
               {branding.logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element -- institution-supplied logo, arbitrary remote host
-                <img
-                  src={branding.logoUrl}
-                  alt={branding.name}
-                  className="h-8 w-8 shrink-0 rounded-lg object-cover"
-                />
+                <img src={branding.logoUrl} alt={branding.name} className="h-8 w-8 shrink-0 rounded-lg object-cover" />
               ) : (
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shrink-0">
-                  <BookOpen className="w-4 h-4 text-white" />
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600">
+                  <BookOpen className="h-4 w-4 text-white" />
                 </div>
               )}
-              <span className="min-w-0 truncate text-sm font-bold text-sidebar-foreground" title={`${branding.name} · Ilm AI`}>
-                {branding.name} <span className="text-sidebar-foreground/40">· ilm <span className="text-violet-400">AI</span></span>
+              <span
+                className="text-sidebar-foreground min-w-0 truncate text-sm font-bold"
+                title={`${branding.name} · Ilm AI`}
+              >
+                {branding.name}{' '}
+                <span className="text-sidebar-foreground/40">
+                  · ilm <span className="text-violet-400">AI</span>
+                </span>
               </span>
             </>
           ) : (
             <>
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shrink-0">
-                <BookOpen className="w-4 h-4 text-white" />
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600">
+                <BookOpen className="h-4 w-4 text-white" />
               </div>
-              <span className="font-bold text-sidebar-foreground">ilm <span className="text-violet-400">AI</span></span>
+              <span className="text-sidebar-foreground font-bold">
+                ilm <span className="text-violet-400">AI</span>
+              </span>
             </>
           )}
         </Link>
         {onDesktopOpenChange && (
-          <button type="button" onClick={() => onDesktopOpenChange(false)} className="hidden rounded-lg p-1.5 text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground lg:inline-flex" aria-label="Close sidebar" title="Close sidebar">
+          <button
+            type="button"
+            onClick={() => onDesktopOpenChange(false)}
+            className="text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground hidden rounded-lg p-1.5 lg:inline-flex"
+            aria-label="Close sidebar"
+            title="Close sidebar"
+          >
             <X className="h-4 w-4" />
           </button>
         )}
-        <button type="button" onClick={() => setMobileOpen(false)} className="rounded-lg p-1.5 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground lg:hidden" aria-label="Close menu" title="Close menu">
+        <button
+          type="button"
+          onClick={() => setMobileOpen(false)}
+          className="text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground rounded-lg p-1.5 lg:hidden"
+          aria-label="Close menu"
+          title="Close menu"
+        >
           <X className="h-5 w-5" />
         </button>
       </div>
 
       {/* Nav groups */}
-      <nav ref={navRef} className="flex-1 p-3 overflow-y-auto space-y-4">
+      <nav ref={navRef} className="flex-1 space-y-4 overflow-y-auto p-3">
         {user?.role === 'parent' && (
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/30 px-2 mb-1.5">Parent Portal</p>              <Link href="/messages" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }} className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group', isActive('/messages') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}><MessageCircle className="w-4 h-4 shrink-0 text-sidebar-foreground/40" /><span className="flex-1">Messages</span></Link>
-              <Link href="/calls" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }} className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group', isActive('/calls') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}><Phone className="w-4 h-4 shrink-0 text-sidebar-foreground/40" /><span className="flex-1">Calls</span></Link>
-
+            <p className="text-sidebar-foreground/30 mb-1.5 px-2 text-[10px] font-bold tracking-widest uppercase">
+              Parent Portal
+            </p>{' '}
+            <Link
+              href="/messages"
+              onClick={() => {
+                rememberSidebarScroll();
+                setMobileOpen(false);
+              }}
+              className={cn(
+                'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                isActive('/messages')
+                  ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                  : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+              )}
+            >
+              <MessageCircle className="text-sidebar-foreground/40 h-4 w-4 shrink-0" />
+              <span className="flex-1">Messages</span>
+            </Link>
+            <Link
+              href="/calls"
+              onClick={() => {
+                rememberSidebarScroll();
+                setMobileOpen(false);
+              }}
+              className={cn(
+                'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                isActive('/calls')
+                  ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                  : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+              )}
+            >
+              <Phone className="text-sidebar-foreground/40 h-4 w-4 shrink-0" />
+              <span className="flex-1">Calls</span>
+            </Link>
             <div className="space-y-0.5">
-              <Link href="/parent" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
-                className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
-                  isActive('/parent') && !isActive('/parent/analytics') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}>
-                <Users className={cn('w-4 h-4 shrink-0', isActive('/parent') && !isActive('/parent/analytics') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
+              <Link
+                href="/parent"
+                onClick={() => {
+                  rememberSidebarScroll();
+                  setMobileOpen(false);
+                }}
+                className={cn(
+                  'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                  isActive('/parent') && !isActive('/parent/analytics')
+                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                    : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+                )}
+              >
+                <Users
+                  className={cn(
+                    'h-4 w-4 shrink-0',
+                    isActive('/parent') && !isActive('/parent/analytics')
+                      ? 'text-violet-400'
+                      : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70'
+                  )}
+                />
                 <span className="flex-1">My Children</span>
-                {isActive('/parent') && !isActive('/parent/analytics') && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
+                {isActive('/parent') && !isActive('/parent/analytics') && (
+                  <ChevronRight className="h-3 w-3 shrink-0 text-violet-400" />
+                )}
               </Link>
-              <Link href="/parent/analytics" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
-                className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
-                  isActive('/parent/analytics') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}>
-                <TrendingUp className={cn('w-4 h-4 shrink-0', isActive('/parent/analytics') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
+              <Link
+                href="/parent/analytics"
+                onClick={() => {
+                  rememberSidebarScroll();
+                  setMobileOpen(false);
+                }}
+                className={cn(
+                  'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                  isActive('/parent/analytics')
+                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                    : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+                )}
+              >
+                <TrendingUp
+                  className={cn(
+                    'h-4 w-4 shrink-0',
+                    isActive('/parent/analytics')
+                      ? 'text-violet-400'
+                      : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70'
+                  )}
+                />
                 <span className="flex-1">Performance & Reports</span>
-                {isActive('/parent/analytics') && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
+                {isActive('/parent/analytics') && <ChevronRight className="h-3 w-3 shrink-0 text-violet-400" />}
               </Link>
             </div>
           </div>
         )}
         {user?.role === 'teacher' && (
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/30 px-2 mb-1.5">Teacher Portal</p>              <Link href="/messages" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }} className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group', isActive('/messages') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}><MessageCircle className="w-4 h-4 shrink-0 text-sidebar-foreground/40" /><span className="flex-1">Messages</span></Link>
-              <Link href="/calls" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }} className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group', isActive('/calls') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}><Phone className="w-4 h-4 shrink-0 text-sidebar-foreground/40" /><span className="flex-1">Calls</span></Link>
-
+            <p className="text-sidebar-foreground/30 mb-1.5 px-2 text-[10px] font-bold tracking-widest uppercase">
+              Teacher Portal
+            </p>{' '}
+            <Link
+              href="/messages"
+              onClick={() => {
+                rememberSidebarScroll();
+                setMobileOpen(false);
+              }}
+              className={cn(
+                'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                isActive('/messages')
+                  ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                  : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+              )}
+            >
+              <MessageCircle className="text-sidebar-foreground/40 h-4 w-4 shrink-0" />
+              <span className="flex-1">Messages</span>
+            </Link>
+            <Link
+              href="/calls"
+              onClick={() => {
+                rememberSidebarScroll();
+                setMobileOpen(false);
+              }}
+              className={cn(
+                'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                isActive('/calls')
+                  ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                  : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+              )}
+            >
+              <Phone className="text-sidebar-foreground/40 h-4 w-4 shrink-0" />
+              <span className="flex-1">Calls</span>
+            </Link>
             <div className="space-y-0.5">
-              <Link href="/teacher/tests" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
-                className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
-                  isActive('/teacher/tests') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}>
-                <FileQuestion className={cn('w-4 h-4 shrink-0', isActive('/teacher/tests') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
+              <Link
+                href="/teacher/tests"
+                onClick={() => {
+                  rememberSidebarScroll();
+                  setMobileOpen(false);
+                }}
+                className={cn(
+                  'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                  isActive('/teacher/tests')
+                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                    : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+                )}
+              >
+                <FileQuestion
+                  className={cn(
+                    'h-4 w-4 shrink-0',
+                    isActive('/teacher/tests')
+                      ? 'text-violet-400'
+                      : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70'
+                  )}
+                />
                 <span className="flex-1">Test Paper Studio</span>
-                {isActive('/teacher/tests') && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
+                {isActive('/teacher/tests') && <ChevronRight className="h-3 w-3 shrink-0 text-violet-400" />}
               </Link>
-              <Link href="/library" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
-                className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
-                  isActive('/library') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}>
-                <Library className={cn('w-4 h-4 shrink-0', isActive('/library') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
+              <Link
+                href="/library"
+                onClick={() => {
+                  rememberSidebarScroll();
+                  setMobileOpen(false);
+                }}
+                className={cn(
+                  'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                  isActive('/library')
+                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                    : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+                )}
+              >
+                <Library
+                  className={cn(
+                    'h-4 w-4 shrink-0',
+                    isActive('/library')
+                      ? 'text-violet-400'
+                      : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70'
+                  )}
+                />
                 <span className="flex-1">Resource Library</span>
-                {isActive('/library') && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
+                {isActive('/library') && <ChevronRight className="h-3 w-3 shrink-0 text-violet-400" />}
               </Link>
-              <Link href="/quran" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
-                className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
-                  isActive('/quran') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}>
-                <BookOpenText className={cn('w-4 h-4 shrink-0', isActive('/quran') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
+              <Link
+                href="/quran"
+                onClick={() => {
+                  rememberSidebarScroll();
+                  setMobileOpen(false);
+                }}
+                className={cn(
+                  'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                  isActive('/quran')
+                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                    : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+                )}
+              >
+                <BookOpenText
+                  className={cn(
+                    'h-4 w-4 shrink-0',
+                    isActive('/quran')
+                      ? 'text-violet-400'
+                      : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70'
+                  )}
+                />
                 <span className="flex-1">Quran Class</span>
-                {isActive('/quran') && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
+                {isActive('/quran') && <ChevronRight className="h-3 w-3 shrink-0 text-violet-400" />}
               </Link>
-              <Link href="/subscription" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
-                className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
-                  isActive('/subscription') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}>
-                <CreditCard className={cn('w-4 h-4 shrink-0', isActive('/subscription') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
+              <Link
+                href="/subscription"
+                onClick={() => {
+                  rememberSidebarScroll();
+                  setMobileOpen(false);
+                }}
+                className={cn(
+                  'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                  isActive('/subscription')
+                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                    : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+                )}
+              >
+                <CreditCard
+                  className={cn(
+                    'h-4 w-4 shrink-0',
+                    isActive('/subscription')
+                      ? 'text-violet-400'
+                      : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70'
+                  )}
+                />
                 <span className="flex-1">Subscription</span>
-                {isActive('/subscription') && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
+                {isActive('/subscription') && <ChevronRight className="h-3 w-3 shrink-0 text-violet-400" />}
               </Link>
-              <Link href="/settings" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
-                className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
-                  isActive('/settings') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}>
-                <Settings className={cn('w-4 h-4 shrink-0', isActive('/settings') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
+              <Link
+                href="/settings"
+                onClick={() => {
+                  rememberSidebarScroll();
+                  setMobileOpen(false);
+                }}
+                className={cn(
+                  'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                  isActive('/settings')
+                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                    : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+                )}
+              >
+                <Settings
+                  className={cn(
+                    'h-4 w-4 shrink-0',
+                    isActive('/settings')
+                      ? 'text-violet-400'
+                      : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70'
+                  )}
+                />
                 <span className="flex-1">Settings</span>
-                {isActive('/settings') && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
+                {isActive('/settings') && <ChevronRight className="h-3 w-3 shrink-0 text-violet-400" />}
               </Link>
             </div>
           </div>
         )}
         {user?.role === 'principal' && (
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/30 px-2 mb-1.5">Principal Portal</p>              <Link href="/messages" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }} className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group', isActive('/messages') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}><MessageCircle className="w-4 h-4 shrink-0 text-sidebar-foreground/40" /><span className="flex-1">Messages</span></Link>
-              <Link href="/calls" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }} className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group', isActive('/calls') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}><Phone className="w-4 h-4 shrink-0 text-sidebar-foreground/40" /><span className="flex-1">Calls</span></Link>
-
+            <p className="text-sidebar-foreground/30 mb-1.5 px-2 text-[10px] font-bold tracking-widest uppercase">
+              Principal Portal
+            </p>{' '}
+            <Link
+              href="/messages"
+              onClick={() => {
+                rememberSidebarScroll();
+                setMobileOpen(false);
+              }}
+              className={cn(
+                'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                isActive('/messages')
+                  ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                  : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+              )}
+            >
+              <MessageCircle className="text-sidebar-foreground/40 h-4 w-4 shrink-0" />
+              <span className="flex-1">Messages</span>
+            </Link>
+            <Link
+              href="/calls"
+              onClick={() => {
+                rememberSidebarScroll();
+                setMobileOpen(false);
+              }}
+              className={cn(
+                'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                isActive('/calls')
+                  ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                  : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+              )}
+            >
+              <Phone className="text-sidebar-foreground/40 h-4 w-4 shrink-0" />
+              <span className="flex-1">Calls</span>
+            </Link>
             <div className="space-y-0.5">
-              <Link href="/school-admin" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
-                className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
-                  isActive('/school-admin') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}>
-                <LayoutDashboard className={cn('w-4 h-4 shrink-0', isActive('/school-admin') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
+              <Link
+                href="/school-admin"
+                onClick={() => {
+                  rememberSidebarScroll();
+                  setMobileOpen(false);
+                }}
+                className={cn(
+                  'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                  isActive('/school-admin')
+                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                    : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+                )}
+              >
+                <LayoutDashboard
+                  className={cn(
+                    'h-4 w-4 shrink-0',
+                    isActive('/school-admin')
+                      ? 'text-violet-400'
+                      : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70'
+                  )}
+                />
                 <span className="flex-1">Dashboard</span>
-                {isActive('/school-admin') && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
+                {isActive('/school-admin') && <ChevronRight className="h-3 w-3 shrink-0 text-violet-400" />}
               </Link>
-              <Link href="/school-admin/teachers" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
-                className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
-                  isActive('/school-admin/teachers') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}>
-                <Presentation className={cn('w-4 h-4 shrink-0', isActive('/school-admin/teachers') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
+              <Link
+                href="/school-admin/teachers"
+                onClick={() => {
+                  rememberSidebarScroll();
+                  setMobileOpen(false);
+                }}
+                className={cn(
+                  'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                  isActive('/school-admin/teachers')
+                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                    : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+                )}
+              >
+                <Presentation
+                  className={cn(
+                    'h-4 w-4 shrink-0',
+                    isActive('/school-admin/teachers')
+                      ? 'text-violet-400'
+                      : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70'
+                  )}
+                />
                 <span className="flex-1">Teachers</span>
-                {isActive('/school-admin/teachers') && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
+                {isActive('/school-admin/teachers') && <ChevronRight className="h-3 w-3 shrink-0 text-violet-400" />}
               </Link>
-              <Link href="/school-admin/classes" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
-                className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
-                  isActive('/school-admin/classes') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}>
-                <School className={cn('w-4 h-4 shrink-0', isActive('/school-admin/classes') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
+              <Link
+                href="/school-admin/classes"
+                onClick={() => {
+                  rememberSidebarScroll();
+                  setMobileOpen(false);
+                }}
+                className={cn(
+                  'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                  isActive('/school-admin/classes')
+                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                    : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+                )}
+              >
+                <School
+                  className={cn(
+                    'h-4 w-4 shrink-0',
+                    isActive('/school-admin/classes')
+                      ? 'text-violet-400'
+                      : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70'
+                  )}
+                />
                 <span className="flex-1">Classes</span>
-                {isActive('/school-admin/classes') && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
+                {isActive('/school-admin/classes') && <ChevronRight className="h-3 w-3 shrink-0 text-violet-400" />}
               </Link>
-              <Link href="/school-admin/students" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
-                className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
-                  isActive('/school-admin/students') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}>
-                <Users className={cn('w-4 h-4 shrink-0', isActive('/school-admin/students') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
+              <Link
+                href="/school-admin/students"
+                onClick={() => {
+                  rememberSidebarScroll();
+                  setMobileOpen(false);
+                }}
+                className={cn(
+                  'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                  isActive('/school-admin/students')
+                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                    : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+                )}
+              >
+                <Users
+                  className={cn(
+                    'h-4 w-4 shrink-0',
+                    isActive('/school-admin/students')
+                      ? 'text-violet-400'
+                      : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70'
+                  )}
+                />
                 <span className="flex-1">Students</span>
-                {isActive('/school-admin/students') && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
+                {isActive('/school-admin/students') && <ChevronRight className="h-3 w-3 shrink-0 text-violet-400" />}
               </Link>
-              <Link href="/school-admin/invoices" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
-                className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
-                  isActive('/school-admin/invoices') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}>
-                <FileText className={cn('w-4 h-4 shrink-0', isActive('/school-admin/invoices') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
+              <Link
+                href="/school-admin/invoices"
+                onClick={() => {
+                  rememberSidebarScroll();
+                  setMobileOpen(false);
+                }}
+                className={cn(
+                  'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                  isActive('/school-admin/invoices')
+                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                    : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+                )}
+              >
+                <FileText
+                  className={cn(
+                    'h-4 w-4 shrink-0',
+                    isActive('/school-admin/invoices')
+                      ? 'text-violet-400'
+                      : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70'
+                  )}
+                />
                 <span className="flex-1">Invoices & Fees</span>
-                {isActive('/school-admin/invoices') && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
+                {isActive('/school-admin/invoices') && <ChevronRight className="h-3 w-3 shrink-0 text-violet-400" />}
               </Link>
-              <Link href="/school-admin/payroll" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
-                className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
-                  isActive('/school-admin/payroll') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}>
-                <CreditCard className={cn('w-4 h-4 shrink-0', isActive('/school-admin/payroll') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
+              <Link
+                href="/school-admin/payroll"
+                onClick={() => {
+                  rememberSidebarScroll();
+                  setMobileOpen(false);
+                }}
+                className={cn(
+                  'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                  isActive('/school-admin/payroll')
+                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                    : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+                )}
+              >
+                <CreditCard
+                  className={cn(
+                    'h-4 w-4 shrink-0',
+                    isActive('/school-admin/payroll')
+                      ? 'text-violet-400'
+                      : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70'
+                  )}
+                />
                 <span className="flex-1">Payroll</span>
-                {isActive('/school-admin/payroll') && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
+                {isActive('/school-admin/payroll') && <ChevronRight className="h-3 w-3 shrink-0 text-violet-400" />}
               </Link>
-              <Link href="/school-admin/settings" onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
-                className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
-                  isActive('/school-admin/settings') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}>
-                <Settings className={cn('w-4 h-4 shrink-0', isActive('/school-admin/settings') ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
+              <Link
+                href="/school-admin/settings"
+                onClick={() => {
+                  rememberSidebarScroll();
+                  setMobileOpen(false);
+                }}
+                className={cn(
+                  'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                  isActive('/school-admin/settings')
+                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                    : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+                )}
+              >
+                <Settings
+                  className={cn(
+                    'h-4 w-4 shrink-0',
+                    isActive('/school-admin/settings')
+                      ? 'text-violet-400'
+                      : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70'
+                  )}
+                />
                 <span className="flex-1">School Settings</span>
-                {isActive('/school-admin/settings') && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
+                {isActive('/school-admin/settings') && <ChevronRight className="h-3 w-3 shrink-0 text-violet-400" />}
               </Link>
             </div>
           </div>
@@ -408,39 +809,64 @@ export function DashboardSidebar({ mobileOpen: controlledMobileOpen, onMobileOpe
           user?.role !== 'teacher' &&
           user?.role !== 'principal' &&
           (user?.educationLevel === 'university' ? UNIVERSITY_NAV_GROUPS : NAV_GROUPS).map((group) => (
-          <div key={group.label}>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/30 px-2 mb-1.5">{group.label}</p>
-            <div className="space-y-0.5">
-              {group.items.map(item => {
-                const active = isActive(item.href);
-                return (
-                  <Link key={item.href} href={item.href} onClick={() => { rememberSidebarScroll(); setMobileOpen(false); }}
-                    className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
-                      active ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground')}>
-                    <item.icon className={cn('w-4 h-4 shrink-0', active ? 'text-violet-400' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70')} />
-                    <span className="flex-1">{item.label}</span>
-                    {'badge' in item && item.badge && (
-                      <Badge className="text-[10px] bg-violet-600 text-white px-1.5 py-0 shrink-0">{item.badge}</Badge>
-                    )}
-                    {active && <ChevronRight className="w-3 h-3 text-violet-400 shrink-0" />}
-                  </Link>
-                );
-              })}
+            <div key={group.label}>
+              <p className="text-sidebar-foreground/30 mb-1.5 px-2 text-[10px] font-bold tracking-widest uppercase">
+                {group.label}
+              </p>
+              <div className="space-y-0.5">
+                {group.items.map((item) => {
+                  const active = isActive(item.href);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      data-tour-target={
+                        item.href === '/progress' ? 'progress' : item.href === '/ai-tutor' ? 'tutor' : undefined
+                      }
+                      onClick={() => {
+                        rememberSidebarScroll();
+                        setMobileOpen(false);
+                      }}
+                      className={cn(
+                        'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                        active
+                          ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                          : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+                      )}
+                    >
+                      <item.icon
+                        className={cn(
+                          'h-4 w-4 shrink-0',
+                          active
+                            ? 'text-violet-400'
+                            : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70'
+                        )}
+                      />
+                      <span className="flex-1">{item.label}</span>
+                      {'badge' in item && item.badge && (
+                        <Badge className="shrink-0 bg-violet-600 px-1.5 py-0 text-[10px] text-white">
+                          {item.badge}
+                        </Badge>
+                      )}
+                      {active && <ChevronRight className="h-3 w-3 shrink-0 text-violet-400" />}
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
       </nav>
 
       {/* Support us */}
-      <div className="px-3 pt-2 shrink-0">
+      <div className="shrink-0 px-3 pt-2">
         <SupportDonateWidget
           trigger={(open) => (
             <button
               type="button"
               onClick={open}
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/60 transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+              className="text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
             >
-              <HandHeart className="w-4 h-4 shrink-0 text-rose-400" />
+              <HandHeart className="h-4 w-4 shrink-0 text-rose-400" />
               Support us
             </button>
           )}
@@ -449,14 +875,16 @@ export function DashboardSidebar({ mobileOpen: controlledMobileOpen, onMobileOpe
 
       {/* User footer */}
       {user && (
-        <div className="p-3 border-t border-sidebar-border shrink-0">
-          <div className="flex items-center gap-3 p-2.5 rounded-lg bg-sidebar-accent/20 hover:bg-sidebar-accent/40 transition-colors">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+        <div className="border-sidebar-border shrink-0 border-t p-3">
+          <div className="bg-sidebar-accent/20 hover:bg-sidebar-accent/40 flex items-center gap-3 rounded-lg p-2.5 transition-colors">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 text-xs font-bold text-white">
               {user.fullName?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'S'}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-sidebar-foreground truncate">{user.fullName || 'Student'}</p>
-              <p className="text-[10px] text-sidebar-foreground/40 truncate">{user.subscriptionTier} · ⚡{user.xp} XP</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-sidebar-foreground truncate text-xs font-semibold">{user.fullName || 'Student'}</p>
+              <p className="text-sidebar-foreground/40 truncate text-[10px]">
+                {user.subscriptionTier} · ⚡{user.xp} XP
+              </p>
             </div>
             {user.role !== 'principal' && (
               <Link
@@ -464,17 +892,20 @@ export function DashboardSidebar({ mobileOpen: controlledMobileOpen, onMobileOpe
                 className="text-sidebar-foreground/30 hover:text-sidebar-foreground transition-colors"
                 title="Switch Profile"
               >
-                <ArrowLeftRight className="w-4 h-4" />
+                <ArrowLeftRight className="h-4 w-4" />
               </Link>
             )}
-            <button onClick={signOut} className="text-sidebar-foreground/30 hover:text-destructive transition-colors" title="Logout">
-              <LogOut className="w-4 h-4" />
+            <button
+              onClick={signOut}
+              className="text-sidebar-foreground/30 hover:text-destructive transition-colors"
+              title="Logout"
+            >
+              <LogOut className="h-4 w-4" />
             </button>
           </div>
         </div>
       )}
     </div>
-    
   );
 
   return (
@@ -491,11 +922,11 @@ export function DashboardSidebar({ mobileOpen: controlledMobileOpen, onMobileOpe
       {/* Mobile fallback toggle when Sidebar is used without DashboardShell */}
       {controlledMobileOpen === undefined && (
         <button
-          className="lg:hidden fixed bottom-20 right-4 z-50 w-12 h-12 rounded-full bg-violet-600 flex items-center justify-center shadow-lg shadow-violet-500/30"
+          className="fixed right-4 bottom-20 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-violet-600 shadow-lg shadow-violet-500/30 lg:hidden"
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label="Toggle menu"
         >
-          {mobileOpen ? <X className="w-5 h-5 text-white" /> : <Menu className="w-5 h-5 text-white" />}
+          {mobileOpen ? <X className="h-5 w-5 text-white" /> : <Menu className="h-5 w-5 text-white" />}
         </button>
       )}
 

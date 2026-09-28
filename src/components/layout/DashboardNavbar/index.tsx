@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Search, Menu, X, Zap, FileText, Share2 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { ThemeToggle } from '@/components/common/ThemeToggle';
 import { NotificationBell } from '@/components/ui/NotificationBell';
 import { CreditBalancePill } from '@/components/features/ai-selector/CreditBalancePill';
 import { usePathname } from 'next/navigation';
+import { toast } from 'sonner';
 
 type DashboardNavbarProps = {
   mobileMenuOpen?: boolean;
@@ -40,6 +41,7 @@ export function DashboardNavbar({
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const shareMenuRef = useRef<HTMLDivElement>(null);
   const [hasInstitutionConnection, setHasInstitutionConnection] = useState(false);
   const [referralUrl, setReferralUrl] = useState<string | null>(null);
   const mobileMenuOpen = controlledMobileMenuOpen ?? uncontrolledMobileMenuOpen;
@@ -93,9 +95,11 @@ export function DashboardNavbar({
 
   useEffect(() => {
     if (!shareOpen) return;
-    const close = () => setShareOpen(false);
-    document.addEventListener('pointerdown', close);
-    return () => document.removeEventListener('pointerdown', close);
+    const closeOutside = (event: PointerEvent) => {
+      if (!shareMenuRef.current?.contains(event.target as Node)) setShareOpen(false);
+    };
+    document.addEventListener('pointerdown', closeOutside);
+    return () => document.removeEventListener('pointerdown', closeOutside);
   }, [shareOpen]);
 
   useEffect(() => {
@@ -120,25 +124,35 @@ export function DashboardNavbar({
 
   const shareLink = referralUrl || (typeof window !== 'undefined' ? window.location.origin : 'https://ilmai.study');
   const shareMessage = 'Join ilm AI — study smarter with AI-powered learning tools.';
-  const shareMessageWithReward = `${shareMessage} Use my referral link and you’ll both unlock 10 free AI credits. ${shareLink}`;
+  const shareText = `${shareMessage} Use my referral link and you’ll both unlock 10 free AI credits.`;
+  const shareMessageWithReward = `${shareText} ${shareLink}`;
 
-  const openShareTarget = (target: 'whatsapp' | 'instagram' | 'facebook' | 'x') => {
-    const fullMessage = shareMessageWithReward;
-    const whatsappText = 'Use my referral link and you’ll both unlock 10 free AI credits. ' + shareLink;
-    let url = '';
-    if (target === 'whatsapp') {
-      url = 'https://wa.me/?text=' + encodeURIComponent(whatsappText);
-    } else if (target === 'facebook') {
-      url = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(shareLink);
-    } else if (target === 'x') {
-      url = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(shareMessageWithReward) + '&url=' + encodeURIComponent(shareLink);
-    } else {
-      void navigator.clipboard?.writeText(shareLink);
-      url = 'https://www.instagram.com/';
-    }
-    window.open(url, '_blank', 'noopener,noreferrer');
-    setShareOpen(false);
+  const shareUrls = {
+    whatsapp: `https://wa.me/?text=${encodeURIComponent(shareMessageWithReward)}`,
+    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareLink)}`,
+    x: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareMessageWithReward)}`,
   };
+
+  async function shareToInstagram() {
+    setShareOpen(false);
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'ilm AI', text: shareText, url: shareLink });
+        return;
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      console.error('Instagram share sheet could not be opened:', error);
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareMessageWithReward);
+      toast.success('Share text copied. Paste it into your Instagram story or message.');
+    } catch (error) {
+      console.error('Instagram share text could not be copied:', error);
+      toast.error('Could not copy the share text. Please copy your referral link from the address bar.');
+    }
+  }
 
   const toggleMobileMenu = () => {
     if (onToggleMobileMenu) {
@@ -213,7 +227,7 @@ export function DashboardNavbar({
         {!isParentPortal && <CreditBalancePill />}
 
         {user && (
-          <div className="relative" onPointerDown={(event) => event.stopPropagation()}>
+          <div ref={shareMenuRef} className="relative">
             <Button
               type="button"
               variant="outline"
@@ -229,26 +243,39 @@ export function DashboardNavbar({
             </Button>
             {shareOpen && (
               <div className="border-border bg-popover text-popover-foreground absolute top-12 right-0 z-[120] w-52 overflow-hidden rounded-xl border p-1.5 shadow-xl">
-                <div className="border-b border-border/60 px-2.5 py-2">
-                  <p className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider">Share ilm AI</p>
+                <div className="border-border/60 border-b px-2.5 py-2">
+                  <p className="text-muted-foreground text-[10px] font-semibold tracking-wider uppercase">
+                    Share ilm AI
+                  </p>
                   <p className="mt-1 text-xs text-violet-500">Both of you get 10 free AI credits.</p>
                 </div>
-                {([
-                  ['whatsapp', 'WhatsApp'],
-                  ['instagram', 'Instagram'],
-                  ['facebook', 'Facebook'],
-                  ['x', 'X'],
-                ] as const).map(([target, label]) => (
-                  <button
+                {(
+                  [
+                    ['whatsapp', 'WhatsApp'],
+                    ['facebook', 'Facebook'],
+                    ['x', 'X'],
+                  ] as const
+                ).map(([target, label]) => (
+                  <a
                     key={target}
-                    type="button"
                     role="menuitem"
-                    onClick={() => openShareTarget(target)}
+                    href={shareUrls[target]}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setShareOpen(false)}
                     className="hover:bg-muted flex w-full items-center rounded-lg px-2.5 py-2 text-left text-sm font-medium transition-colors"
                   >
                     {label}
-                  </button>
+                  </a>
                 ))}
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => void shareToInstagram()}
+                  className="hover:bg-muted flex w-full items-center rounded-lg px-2.5 py-2 text-left text-sm font-medium transition-colors"
+                >
+                  Instagram
+                </button>
               </div>
             )}
           </div>
