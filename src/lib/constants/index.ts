@@ -41,9 +41,13 @@ export const MANUAL_PAYMENT_OPTIONS = [
   { label: 'Easypaisa', number: '03001088194', accountName: 'MUHAMMAD AHMED NOOR', hasQr: false },
 ] as const;
 
-// Flat per-transaction processing fee added on top of every plan price shown across every
-// pricing page (consumer, institutional, parent) — in every currency shown.
-export const TRANSACTION_FEE_USD = 0.5;
+export const TRANSACTION_FEE_RATE = 0.05;
+
+export function calculateTransactionFee(amount: number, currency: Currency): number {
+  if (!Number.isFinite(amount) || amount <= 0) return 0;
+  const precision = currency === 'USD' ? 100 : 1;
+  return Math.round(amount * TRANSACTION_FEE_RATE * precision) / precision;
+}
 
 /** Direct Google Drive download link for a resource's own drive_file_id column. */
 export function getGoogleDriveDownloadUrl(driveFileId: string) {

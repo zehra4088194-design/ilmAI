@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { getPlatformSettings } from '@/lib/platform-settings/server';
 import { convertUsdToPkr } from '@/lib/platform-settings/shared';
-import { TRANSACTION_FEE_USD } from '@/lib/constants';
+import { calculateTransactionFee } from '@/lib/constants';
 
 export const metadata = { title: 'University Pricing | ilm AI' };
 
@@ -16,9 +16,12 @@ export const metadata = { title: 'University Pricing | ilm AI' };
 export default async function UniversityPricingPage() {
   const settings = await getPlatformSettings();
   const { universityPlans } = settings;
-  const feePkr = convertUsdToPkr(TRANSACTION_FEE_USD, settings);
   const paidPkr = convertUsdToPkr(universityPlans.paid.priceUsdMonthly, settings);
   const elitePkr = convertUsdToPkr(universityPlans.elite.priceUsdMonthly, settings);
+  const paidFeeUsd = calculateTransactionFee(universityPlans.paid.priceUsdMonthly, 'USD');
+  const eliteFeeUsd = calculateTransactionFee(universityPlans.elite.priceUsdMonthly, 'USD');
+  const paidFeePkr = calculateTransactionFee(paidPkr, 'PKR');
+  const eliteFeePkr = calculateTransactionFee(elitePkr, 'PKR');
 
   return (
     <div className="mx-auto max-w-5xl space-y-8">
@@ -72,7 +75,7 @@ export default async function UniversityPricingPage() {
               </p>
               <p className="text-muted-foreground text-sm">≈ Rs. {paidPkr.toLocaleString()}/mo</p>
               <p className="text-muted-foreground text-xs">
-                +${TRANSACTION_FEE_USD.toFixed(2)} transaction fee (≈ Rs. {feePkr.toLocaleString()})
+                +${paidFeeUsd.toFixed(2)} 5% transaction fee (≈ Rs. {paidFeePkr.toLocaleString()})
               </p>
             </div>
             <ul className="space-y-2 text-sm">
@@ -116,7 +119,7 @@ export default async function UniversityPricingPage() {
               </p>
               <p className="text-muted-foreground text-sm">≈ Rs. {elitePkr.toLocaleString()}/mo</p>
               <p className="text-muted-foreground text-xs">
-                +${TRANSACTION_FEE_USD.toFixed(2)} transaction fee (≈ Rs. {feePkr.toLocaleString()})
+                +${eliteFeeUsd.toFixed(2)} 5% transaction fee (≈ Rs. {eliteFeePkr.toLocaleString()})
               </p>
             </div>
             <ul className="space-y-2 text-sm">
@@ -149,7 +152,7 @@ export default async function UniversityPricingPage() {
       </div>
 
       <div className="rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 p-6 dark:from-blue-950/20 dark:to-indigo-950/20">
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           All plans include access to university-specific resources, study materials, and the complete University Hub.
           Upgrade or downgrade your plan anytime.
         </p>

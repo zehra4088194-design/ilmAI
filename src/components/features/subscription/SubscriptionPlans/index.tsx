@@ -6,10 +6,10 @@ import { Check, Crown, Rocket, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CURRENCY_SYMBOLS, TRANSACTION_FEE_USD, type Currency } from '@/lib/constants';
+import { calculateTransactionFee, CURRENCY_SYMBOLS, type Currency } from '@/lib/constants';
 import { cn } from '@/lib/utils/cn';
 import { toast } from 'sonner';
-import { DEFAULT_PLATFORM_SETTINGS, convertUsdToPkr, type PlatformSettings } from '@/lib/platform-settings/shared';
+import { DEFAULT_PLATFORM_SETTINGS, type PlatformSettings } from '@/lib/platform-settings/shared';
 import type { PaymentAvailability } from '@/lib/payments';
 
 type BillingCycle = 'monthly' | 'annual';
@@ -19,7 +19,7 @@ const PLAN_KEYS: TierKey[] = ['FREE', 'PRO', 'ELITE'];
 export function SubscriptionPlans({
   currentTier,
   paymentAvailability,
-  currency,
+  currency: _currency,
   settings = DEFAULT_PLATFORM_SETTINGS,
 }: {
   currentTier: string;
@@ -29,13 +29,11 @@ export function SubscriptionPlans({
 }) {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
   const searchParams = useSearchParams();
-  const symbol = CURRENCY_SYMBOLS[currency];
   const usdSymbol = CURRENCY_SYMBOLS.USD;
   const pkrSymbol = CURRENCY_SYMBOLS.PKR;
   const free = settings.subscriptionPlans.FREE;
   const pro = settings.subscriptionPlans.PRO;
   const elite = settings.subscriptionPlans.ELITE;
-  const feePkr = convertUsdToPkr(TRANSACTION_FEE_USD, settings);
 
   useEffect(() => {
     if (searchParams.get('success') === 'true') {
@@ -172,8 +170,8 @@ export function SubscriptionPlans({
                   {!isFree && (
                     <p className="text-muted-foreground mt-1 text-xs">
                       +{usdSymbol}
-                      {TRANSACTION_FEE_USD.toFixed(2)} transaction fee ({pkrSymbol}
-                      {formatPrice(feePkr, 'PKR')})
+                      {formatPrice(calculateTransactionFee(displayPrice, 'USD'), 'USD')} 5% transaction fee ({pkrSymbol}
+                      {formatPrice(calculateTransactionFee(pkrDisplayPrice, 'PKR'), 'PKR')})
                     </p>
                   )}
                   {monthlyEquivalent !== null && (

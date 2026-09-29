@@ -6,20 +6,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils/cn';
 import { toast } from 'sonner';
+import { calculateTransactionFee } from '@/lib/constants';
 
-export function ParentPaddleCheckout({
-  tier,
-  monthlyPriceUsd,
-}: {
-  tier: 'paid' | 'elite';
-  monthlyPriceUsd: number;
-}) {
+export function ParentPaddleCheckout({ tier, monthlyPriceUsd }: { tier: 'paid' | 'elite'; monthlyPriceUsd: number }) {
   const [cycle, setCycle] = useState<'monthly' | 'annual' | 'one_time'>('monthly');
   const [loading, setLoading] = useState(false);
 
   const label = tier === 'elite' ? 'Elite' : 'Paid';
   const annualPrice = useMemo(() => Math.round(monthlyPriceUsd * 12 * 0.8 * 100) / 100, [monthlyPriceUsd]);
   const amount = cycle === 'annual' ? annualPrice : monthlyPriceUsd;
+  const fee = calculateTransactionFee(amount, 'USD');
 
   const startCheckout = async () => {
     setLoading(true);
@@ -55,12 +51,14 @@ export function ParentPaddleCheckout({
         <p className="text-muted-foreground text-sm">
           {label} Parent Plan — choose recurring monthly, annual, or a one-time 30-day pass.
         </p>
-        <div className="grid grid-cols-3 gap-2 rounded-xl border bg-background/40 p-1">
-          {([
-            ['monthly', 'Monthly'],
-            ['annual', 'Annual'],
-            ['one_time', 'One-time'],
-          ] as const).map(([value, text]) => (
+        <div className="bg-background/40 grid grid-cols-3 gap-2 rounded-xl border p-1">
+          {(
+            [
+              ['monthly', 'Monthly'],
+              ['annual', 'Annual'],
+              ['one_time', 'One-time'],
+            ] as const
+          ).map(([value, text]) => (
             <button
               key={value}
               type="button"
@@ -77,18 +75,23 @@ export function ParentPaddleCheckout({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-2xl font-bold">${amount.toFixed(2)}</p>
+            <p className="text-muted-foreground text-xs">+${fee.toFixed(2)} 5% transaction fee</p>
             <p className="text-muted-foreground text-xs">
-              {cycle === 'monthly' ? 'billed every month' : cycle === 'annual' ? 'billed once per year' : 'one payment, 30-day access'}
+              {cycle === 'monthly'
+                ? 'billed every month'
+                : cycle === 'annual'
+                  ? 'billed once per year'
+                  : 'one payment, 30-day access'}
             </p>
           </div>
           <Button type="button" variant="gradient" onClick={startCheckout} disabled={loading} className="sm:min-w-48">
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
-            {loading ? 'Opening checkout…' : 'Continue with Card'}
+            {loading ? 'Opening checkout…' : `Pay $${(amount + fee).toFixed(2)} with Card`}
           </Button>
         </div>
         <p className="text-muted-foreground text-[11px]">
-          Your plan is activated automatically after Paddle confirms the payment. Subscription and one-time access
-          are handled by the existing Paddle webhook.
+          Your plan is activated automatically after Paddle confirms the payment. Subscription and one-time access are
+          handled by the existing Paddle webhook.
         </p>
       </CardContent>
     </Card>

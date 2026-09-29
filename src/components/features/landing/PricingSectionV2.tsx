@@ -1,108 +1,516 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Building2, Check, Crown, MessageCircle, Percent, Rocket, School, Sparkles, Zap } from 'lucide-react';
-import { toast } from 'sonner';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils/cn';
+import { Check, Loader2, Sparkles } from 'lucide-react';
+import { useAuth } from '@/hooks/auth/useAuth';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
-import { convertUsdToPkr } from '@/lib/platform-settings/shared';
-import { TRANSACTION_FEE_USD } from '@/lib/constants';
-import { formatPkr } from '@/lib/pricing/display';
+import { resolveInstitutionPricing, resolvePlanAmountUsd } from '@/lib/platform-settings/shared';
+import { calculateTransactionFee } from '@/lib/constants';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
-type Audience = 'students' | 'institutions';
+type Audience = 'student' | 'parent' | 'teacher' | 'university' | 'institution';
+type BillingCycle = 'monthly' | 'annual';
 type InstitutionType = 'school' | 'college';
-type Billing = 'monthly' | 'annual';
-const PLAN_KEYS = ['FREE', 'PRO', 'ELITE'] as const;
+
+type PlanOption = {
+  name: string;
+  priceUsd: number;
+  features: string[];
+  href: string;
+  featured?: boolean;
+};
+
+const audiences: { id: Audience; label: string }[] = [
+  { id: 'student', label: 'Student' },
+  { id: 'parent', label: 'Parent' },
+  { id: 'teacher', label: 'Teacher' },
+  { id: 'university', label: 'University' },
+  { id: 'institution', label: 'School / College' },
+];
+
+function formatUsd(amount: number) {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(
+    amount
+  );
+}
+
+function formatPkr(amount: number) {
+  return new Intl.NumberFormat('en-PK', { style: 'currency', currency: 'PKR', maximumFractionDigits: 0 }).format(
+    amount
+  );
+}
 
 export function PricingSectionV2() {
-  const settings = usePlatformSettings();
   const router = useRouter();
-  const [audience, setAudience] = useState<Audience>('students');
-  const [billing, setBilling] = useState<Billing>('monthly');
+  const { user } = useAuth();
+  const settings = usePlatformSettings();
+  const [audience, setAudience] = useState<Audience>('student');
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
   const [institutionType, setInstitutionType] = useState<InstitutionType>('school');
-  const [institutionPlan, setInstitutionPlan] = useState<'PRO' | 'ELITE'>('PRO');
-  const [studentCount, setStudentCount] = useState('50');
   const [institutionName, setInstitutionName] = useState('');
+  const [studentCount, setStudentCount] = useState('');
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
-  const [message, setMessage] = useState('');
-  const [isSendingInquiry, setIsSendingInquiry] = useState(false);
-  const institutionCount = Math.min(100000, Math.max(1, Math.floor(Number(studentCount) || 1)));
+  const [contactPhone, setContactPhone] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const count = Math.max(0, Number.parseInt(studentCount, 10) || 0);
 
-  const submitInstitutionInquiry = async () => {
-    if (!institutionName.trim()) return toast.error('Enter the institution name.');
-    if (contactEmail && !/^\S+@\S+\.\S+$/.test(contactEmail)) return toast.error('Valid contact email likhein.');
-    const draft = { institutionName: institutionName.trim(), institutionType, studentCount: institutionCount, planTier: institutionPlan, billingCycle: billing, contactName: contactName.trim(), contactEmail: contactEmail.trim(), message: message.trim() };
-    setIsSendingInquiry(true);
+  useEffect(() => {
+    const savedDraft = sessionStorage.getItem('institutionInquiryDraft');
+    if (!savedDraft) return;
+
+    let draft: unknown;
     try {
-      const response = await fetch('/api/institution-plan-inquiry', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(draft) });
-      const json = await response.json().catch(() => ({}));
-      if (response.status === 401) {
-        window.sessionStorage.setItem('ilm-ai-institution-inquiry-draft', JSON.stringify(draft));
-        router.push(`/login?redirect=${encodeURIComponent('/pricing#pricing')}`);
-        return;
-      }
-      if (!response.ok) throw new Error(json.error || 'The inquiry could not be sent.');
-      toast.success('Request sent to the admin team.');
-      setMessage('');
-    } catch (error) { toast.error(error instanceof Error ? error.message : 'The inquiry could not be sent.'); }
-    finally { setIsSendingInquiry(false); }
-  };
+      draft = JSON.parse(savedDraft);
+    } catch {
+      sessionStorage.removeItem('institutionInquiryDraft');
+      return;
+    }
+
+    if (typeof draft !== 'object' || draft === null) return;
+    const values = draft as Record<string, unknown>;
+    if (
+      (values.institutionType !== 'school' && values.institutionType !== 'college') ||
+      typeof values.institutionName !== 'string' ||
+      typeof values.studentCount !== 'number' ||
+      typeof values.contactName !== 'string' ||
+      typeof values.contactEmail !== 'string'
+    ) {
+      sessionStorage.removeItem('institutionInquiryDraft');
+      return;
+    }
+
+    setInstitutionType(values.institutionType);
+    setInstitutionName(values.institutionName);
+    setStudentCount(String(values.studentCount));
+    setContactName(values.contactName);
+    setContactEmail(values.contactEmail);
+    setContactPhone(typeof values.contactPhone === 'string' ? values.contactPhone : '');
+    if (values.billingCycle === 'monthly' || values.billingCycle === 'annual') {
+      setBillingCycle(values.billingCycle);
+    }
+    setAudience('institution');
+    sessionStorage.removeItem('institutionInquiryDraft');
+  }, []);
+
+  const plans = useMemo<PlanOption[]>(() => {
+    const billing = billingCycle;
+    const checkout = (tier: string, family?: string) => {
+      const params = new URLSearchParams({ billing });
+      if (family) params.set('family', family);
+      return `/subscription/${tier.toLowerCase()}?${params.toString()}`;
+    };
+
+    if (audience === 'student') {
+      return (['FREE', 'PRO', 'ELITE'] as const)
+        .filter((tier) => settings.subscriptionPlans[tier].enabled)
+        .map((tier) => {
+          const plan = settings.subscriptionPlans[tier];
+          const priceUsd = billing === 'annual' ? plan.price.USD.annual : plan.price.USD.monthly;
+          return {
+            name: tier === 'FREE' ? 'Free' : tier === 'PRO' ? 'Pro' : 'Elite',
+            priceUsd,
+            features: [
+              `${plan.limits.aiCreditsMonthly.toLocaleString()} AI credits each month`,
+              ...plan.features.slice(0, 4),
+            ],
+            href: tier === 'FREE' ? '/register' : checkout(tier),
+            featured: tier === 'PRO',
+          };
+        });
+    }
+
+    if (audience === 'parent') {
+      const parentPlans = settings.parentPlans;
+      return [
+        {
+          name: 'Free',
+          priceUsd: 0,
+          features: [
+            `Link ${parentPlans.freeChildrenMax} ${parentPlans.freeChildrenMax === 1 ? 'child' : 'children'}`,
+            'Parent dashboard',
+          ],
+          href: '/register',
+        },
+        ...(['paid', 'elite'] as const).map((tier) => {
+          const plan = parentPlans[tier];
+          return {
+            name: tier === 'paid' ? 'Pro' : 'Elite',
+            priceUsd:
+              tier === 'paid'
+                ? resolvePlanAmountUsd(settings, {
+                    tier: 'PRO',
+                    billingCycle: billing,
+                    planFamily: 'parent',
+                  })
+                : resolvePlanAmountUsd(settings, {
+                    tier: 'ELITE',
+                    billingCycle: billing,
+                    planFamily: 'parent',
+                  }),
+            features: [
+              `${plan.childrenMax === null ? 'Unlimited' : plan.childrenMax} linked children`,
+              'Parent dashboard and progress insights',
+              ...(tier === 'elite' ? ['Advanced parent analytics'] : []),
+            ],
+            href: checkout(tier === 'paid' ? 'pro' : 'elite', 'parent'),
+            featured: tier === 'paid',
+          };
+        }),
+      ];
+    }
+
+    if (audience === 'teacher') {
+      const teacherPlans = settings.teacherPlans;
+      return (['free', 'paid', 'elite'] as const).map((tier) => {
+        const plan = teacherPlans[tier];
+        return {
+          name: tier === 'free' ? 'Free' : tier === 'paid' ? 'Pro' : 'Elite',
+          priceUsd:
+            tier === 'free'
+              ? 0
+              : resolvePlanAmountUsd(settings, {
+                  tier: tier === 'paid' ? 'PRO' : 'ELITE',
+                  billingCycle: billing,
+                  planFamily: 'teacher',
+                }),
+          features: [
+            `${plan.classroomsMax === null ? 'Unlimited' : plan.classroomsMax} classrooms`,
+            'Teacher workspace',
+            ...(tier === 'elite' ? ['Advanced classroom tools'] : []),
+          ],
+          href: tier === 'free' ? '/register' : checkout(tier === 'paid' ? 'pro' : 'elite', 'teacher'),
+          featured: tier === 'paid',
+        };
+      });
+    }
+
+    const universityPlans = settings.universityPlans;
+    return (['free', 'paid', 'elite'] as const).map((tier) => {
+      const plan = universityPlans[tier];
+      return {
+        name: tier === 'free' ? 'Free' : tier === 'paid' ? 'Pro' : 'Elite',
+        priceUsd:
+          tier === 'free'
+            ? 0
+            : resolvePlanAmountUsd(settings, {
+                tier: tier === 'paid' ? 'PRO' : 'ELITE',
+                billingCycle: billing,
+                planFamily: 'university',
+              }),
+        features: [
+          `${plan.aiCreditsMonthly.toLocaleString()} AI credits each month`,
+          'University study tools',
+          ...(tier === 'elite' ? ['Expanded AI usage'] : []),
+        ],
+        href: tier === 'free' ? '/register' : checkout(tier === 'paid' ? 'pro' : 'elite', 'university'),
+        featured: tier === 'paid',
+      };
+    });
+  }, [audience, billingCycle, settings]);
+
+  const institutionQuote = resolveInstitutionPricing(settings, institutionType, billingCycle, count);
+  const institutionFeePkr = calculateTransactionFee(institutionQuote.pkr, 'PKR');
+  const institutionFeeUsd = calculateTransactionFee(institutionQuote.usd, 'USD');
+  const annualInstitutionMonthlyPkr =
+    count > 0 ? resolveInstitutionPricing(settings, institutionType, 'monthly', count).pkr : 0;
+
+  async function handleInquiry(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError('');
+
+    if (!institutionName.trim() || !contactName.trim() || !contactEmail.trim() || count < 1) {
+      setError('Please complete the required fields and enter at least one student.');
+      return;
+    }
+
+    if (!user) {
+      sessionStorage.setItem(
+        'institutionInquiryDraft',
+        JSON.stringify({
+          institutionType,
+          institutionName,
+          studentCount: count,
+          contactName,
+          contactEmail,
+          contactPhone,
+          billingCycle,
+        })
+      );
+      router.push(`/login?redirect=${encodeURIComponent('/pricing#pricing')}`);
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const response = await fetch('/api/institution-plan-inquiry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          institutionType,
+          institutionName,
+          studentCount: count,
+          contactName,
+          contactEmail,
+          contactPhone,
+          billingCycle,
+          message: contactPhone.trim() ? `Phone: ${contactPhone.trim()}` : '',
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Could not submit inquiry.');
+      setInstitutionName('');
+      setStudentCount('');
+      setContactName('');
+      setContactEmail('');
+      setContactPhone('');
+      router.push('/subscription?inquiry=submitted');
+    } catch (submissionError) {
+      setError(submissionError instanceof Error ? submissionError.message : 'Could not submit inquiry.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
-    <section id="pricing" className="py-24">
-      <div className="container mx-auto px-4">
-        <div className="mb-12 text-center">
-          <h2 className="mb-4 text-3xl font-bold md:text-4xl">Simple <span className="gradient-text">pricing</span> for ilm AI</h2>
-          <p className="text-muted-foreground mb-8">USD is the primary price. The smaller amount below is the live PKR equivalent.</p>
-          <div className="glass mb-4 inline-grid grid-cols-2 gap-1 rounded-full p-1.5">
-            {(['students', 'institutions'] as Audience[]).map((item) => <button key={item} type="button" onClick={() => setAudience(item)} className={cn('rounded-full px-5 py-2 text-sm font-semibold', audience === item ? 'bg-primary text-primary-foreground' : 'text-muted-foreground')}>{item === 'students' ? <><Sparkles className="mr-2 inline h-4 w-4" />Students</> : <><Building2 className="mr-2 inline h-4 w-4" />Schools & Colleges</>}</button>)}
+    <section id="pricing" className="py-20 sm:py-28">
+      <div className="container mx-auto max-w-7xl px-4">
+        <div className="mx-auto max-w-3xl text-center">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm">
+            <Sparkles className="text-primary h-4 w-4" />
+            Plans for every kind of learner
           </div>
-          <div className="glass inline-flex gap-1 rounded-full p-1.5">
-            <button type="button" onClick={() => setBilling('monthly')} className={cn('rounded-full px-4 py-2 text-sm font-medium', billing === 'monthly' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground')}>Monthly</button>
-            <button type="button" onClick={() => setBilling('annual')} className={cn('rounded-full px-4 py-2 text-sm font-medium', billing === 'annual' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground')}>Yearly <Badge variant="success" className="ml-1 text-[10px]">20% Off</Badge></button>
-          </div>
+          <h2 className="text-4xl font-bold tracking-tight sm:text-5xl">Choose the right plan</h2>
+          <p className="text-muted-foreground mt-4 text-lg">
+            Explore plans for students, families, educators, universities, and institutions.
+          </p>
         </div>
 
-        {audience === 'students' ? <div className="mx-auto grid max-w-5xl gap-6 md:grid-cols-3">
-          {PLAN_KEYS.map((key) => {
-            const plan = settings.subscriptionPlans[key];
-            if (!plan.enabled) return null;
-            const isFree = key === 'FREE';
-            const usd = billing === 'annual' && !isFree ? plan.price.USD.annual : plan.price.USD.monthly;
-            const pkr = convertUsdToPkr(usd, settings);
-            const suffix = isFree ? '' : billing === 'annual' ? '/year' : '/mo';
-            const Icon = key === 'FREE' ? Sparkles : key === 'PRO' ? Rocket : Crown;
-            return <div key={key} className={cn('glass rounded-2xl border p-6', key === 'PRO' && 'scale-[1.02] border-violet-500/50 shadow-lg')}>
-              <div className={`mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${key === 'ELITE' ? 'from-amber-500 to-orange-600' : key === 'PRO' ? 'from-violet-500 to-indigo-600' : 'from-slate-500 to-gray-600'}`}><Icon className="h-5 w-5 text-white" /></div>
-              <h3 className="mb-1 text-xl font-bold">{plan.name}</h3>
-              <p className="text-4xl font-black">${usd.toFixed(2)}<span className="text-muted-foreground text-sm font-normal">{suffix}</span></p>
-              <p className="text-muted-foreground mt-1 text-sm">= Rs {formatPkr(pkr)}{suffix}</p>
-              {!isFree && <p className="text-muted-foreground mt-1 text-xs">+${TRANSACTION_FEE_USD.toFixed(2)} transaction fee</p>}
-              <ul className="my-6 space-y-3">{plan.features.map((feature) => <li key={feature} className="flex gap-2 text-sm"><Check className="h-4 w-4 shrink-0 text-green-500" />{feature}</li>)}</ul>
-              <Button asChild className="w-full" variant={isFree ? 'outline' : 'gradient'}><Link href={isFree ? '/register' : `/register?redirect=${encodeURIComponent(`/subscription/${key.toLowerCase()}?billing=${billing}`)}`}><Zap className="h-4 w-4" />{isFree ? 'Get started' : `Choose ${plan.name}`}</Link></Button>
-            </div>;
-          })}
-        </div> : <div className="glass mx-auto grid max-w-6xl overflow-hidden border lg:grid-cols-[0.8fr_1.2fr]">
-          <div className="border-border bg-gradient-to-br from-primary/20 via-primary/5 to-transparent border-b p-7 lg:border-r lg:border-b-0 lg:p-10">
-            <div className="bg-primary/10 text-primary mb-6 flex h-14 w-14 items-center justify-center rounded-2xl">{institutionType === 'school' ? <School className="h-7 w-7" /> : <Building2 className="h-7 w-7" />}</div>
-            <Badge className="mb-4 bg-emerald-500 text-white"><Percent className="mr-1 h-3.5 w-3.5" />50% Institutional Discount</Badge>
-            <h3 className="text-3xl font-bold">One plan for your whole campus</h3>
-            <p className="text-muted-foreground mt-4 leading-7">Choose the institution type, plan, and number of students. The total is always displayed in USD first with PKR underneath.</p>
+        <div className="bg-muted mx-auto mt-10 grid max-w-4xl grid-cols-2 gap-2 rounded-xl p-2 sm:grid-cols-5">
+          {audiences.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => setAudience(option.id)}
+              aria-pressed={audience === option.id}
+              className={`rounded-lg px-3 py-3 text-sm font-medium transition-colors ${
+                audience === option.id
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+
+        {audience !== 'institution' && (
+          <>
+            <div className="mt-8 flex justify-center">
+              <div className="inline-flex rounded-full border p-1">
+                {(['monthly', 'annual'] as const).map((cycle) => (
+                  <button
+                    key={cycle}
+                    type="button"
+                    onClick={() => setBillingCycle(cycle)}
+                    aria-pressed={billingCycle === cycle}
+                    className={`rounded-full px-5 py-2 text-sm font-medium capitalize ${
+                      billingCycle === cycle ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
+                    }`}
+                  >
+                    {cycle}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="mt-8 grid gap-5 md:grid-cols-3">
+              {plans.map((plan) => (
+                <Card key={plan.name} className={`flex flex-col ${plan.featured ? 'border-primary shadow-lg' : ''}`}>
+                  <CardHeader>
+                    <CardTitle>{plan.name}</CardTitle>
+                    <CardDescription>
+                      {plan.name === 'Free' ? 'Get started at no cost' : 'Billed ' + billingCycle}
+                    </CardDescription>
+                    <div className="pt-3">
+                      <span className="text-4xl font-bold">{formatUsd(plan.priceUsd)}</span>
+                      <span className="text-muted-foreground ml-2 text-sm">
+                        /{billingCycle === 'annual' ? 'year' : 'month'}
+                      </span>
+                      {plan.priceUsd > 0 && settings.exchangeRate.usdToPkr > 0 && (
+                        <>
+                          <div className="text-muted-foreground mt-1 text-sm">
+                            {formatPkr(plan.priceUsd * settings.exchangeRate.usdToPkr)}
+                          </div>
+                          <p className="text-muted-foreground mt-1 text-xs">
+                            + {formatUsd(calculateTransactionFee(plan.priceUsd, 'USD'))} 5% transaction fee (about{' '}
+                            {formatPkr(calculateTransactionFee(plan.priceUsd * settings.exchangeRate.usdToPkr, 'PKR'))})
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="flex flex-1 flex-col">
+                    <ul className="mb-6 flex-1 space-y-3">
+                      {plan.features.map((feature) => (
+                        <li key={feature} className="flex items-start gap-2 text-sm">
+                          <Check className="text-primary mt-0.5 h-4 w-4 shrink-0" />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <Button asChild className="w-full" variant={plan.featured ? 'default' : 'outline'}>
+                      <Link href={plan.href}>{plan.name === 'Free' ? 'Get started' : 'Choose plan'}</Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            <p className="text-muted-foreground mt-5 text-center text-xs">
+              {audience === 'student'
+                ? 'Student prices follow the configured monthly and annual rates.'
+                : 'Family plans are shown in USD. Annual billing is 20% less than paying month by month.'}
+            </p>
+          </>
+        )}
+
+        {audience === 'institution' && (
+          <div className="mx-auto mt-8 grid max-w-5xl gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+            <Card>
+              <CardHeader>
+                <CardTitle>Institution plans</CardTitle>
+                <CardDescription>
+                  Pricing scales with active student enrollment and uses the current configured discounts.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Label htmlFor="institution-type">Institution type</Label>
+                <select
+                  id="institution-type"
+                  value={institutionType}
+                  onChange={(event) => setInstitutionType(event.target.value as InstitutionType)}
+                  className="bg-background mt-2 h-10 w-full rounded-md border px-3 text-sm"
+                >
+                  <option value="school">School</option>
+                  <option value="college">College</option>
+                </select>
+                <Label htmlFor="billing-cycle" className="mt-5 block">
+                  Billing cycle
+                </Label>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {(['monthly', 'annual'] as const).map((cycle) => (
+                    <Button
+                      key={cycle}
+                      type="button"
+                      variant={billingCycle === cycle ? 'default' : 'outline'}
+                      onClick={() => setBillingCycle(cycle)}
+                      className="capitalize"
+                    >
+                      {cycle}
+                    </Button>
+                  ))}
+                </div>
+                <div className="bg-muted mt-6 rounded-lg p-4">
+                  <p className="text-muted-foreground text-sm">Estimated {billingCycle} total</p>
+                  <p className="mt-1 text-3xl font-bold">{formatPkr(institutionQuote.pkr)}</p>
+                  {institutionQuote.pkr > 0 && (
+                    <p className="text-muted-foreground mt-1 text-xs">
+                      + {formatPkr(institutionFeePkr)} / {formatUsd(institutionFeeUsd)} 5% transaction fee
+                    </p>
+                  )}
+                  <p className="text-muted-foreground mt-1 text-sm">Approximately {formatUsd(institutionQuote.usd)}</p>
+                  {count > 0 && billingCycle === 'annual' && (
+                    <p className="text-muted-foreground mt-3 text-xs">
+                      Monthly rate: {formatPkr(annualInstitutionMonthlyPkr)}. Final quote is confirmed by our team.
+                    </p>
+                  )}
+                  {institutionQuote.volumeDiscountApplied && (
+                    <p className="text-muted-foreground mt-2 text-xs">Configured volume discount included.</p>
+                  )}
+                </div>
+                <p className="text-muted-foreground mt-4 text-xs">
+                  Estimates use the platform&apos;s configured per-student rate, exchange rate, and applicable
+                  discounts.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Request an institution quote</CardTitle>
+                <CardDescription>
+                  Share your enrollment details and our team will follow up with a confirmed plan.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleInquiry} className="space-y-4">
+                  <div>
+                    <Label htmlFor="institution-name">Institution name</Label>
+                    <Input
+                      id="institution-name"
+                      required
+                      value={institutionName}
+                      onChange={(event) => setInstitutionName(event.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="student-count">Number of students</Label>
+                    <Input
+                      id="student-count"
+                      type="number"
+                      min="1"
+                      required
+                      value={studentCount}
+                      onChange={(event) => setStudentCount(event.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="contact-name">Contact name</Label>
+                    <Input
+                      id="contact-name"
+                      required
+                      value={contactName}
+                      onChange={(event) => setContactName(event.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="contact-email">Contact email</Label>
+                    <Input
+                      id="contact-email"
+                      type="email"
+                      required
+                      value={contactEmail}
+                      onChange={(event) => setContactEmail(event.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="contact-phone">Phone (optional)</Label>
+                    <Input
+                      id="contact-phone"
+                      type="tel"
+                      value={contactPhone}
+                      onChange={(event) => setContactPhone(event.target.value)}
+                    />
+                  </div>
+                  {error && (
+                    <p role="alert" className="text-destructive text-sm">
+                      {error}
+                    </p>
+                  )}
+                  <Button type="submit" disabled={submitting} className="w-full">
+                    {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {user ? 'Request quote' : 'Log in to request a quote'}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
           </div>
-          <div className="p-7 lg:p-10">
-            <div className="grid gap-4 sm:grid-cols-2"><label className="text-sm font-medium">Institution type<select value={institutionType} onChange={(e) => setInstitutionType(e.target.value as InstitutionType)} className="border-input bg-background mt-2 h-10 w-full rounded-lg border px-3 text-sm"><option value="school">School</option><option value="college">College</option></select></label><label className="text-sm font-medium">Plan<select value={institutionPlan} onChange={(e) => setInstitutionPlan(e.target.value as 'PRO' | 'ELITE')} className="border-input bg-background mt-2 h-10 w-full rounded-lg border px-3 text-sm"><option value="PRO">Pro</option><option value="ELITE">Elite</option></select></label></div>
-            <label className="mt-5 block text-sm font-medium">Number of students<Input className="mt-2" type="number" min={1} max={100000} value={studentCount} onChange={(e) => setStudentCount(e.target.value)} /></label>
-            <div className="border-primary/25 bg-primary/10 mt-5 rounded-2xl border p-5">{(() => { const usdPerStudent = settings.subscriptionPlans[institutionPlan].price.USD[billing]; const totalUsd = usdPerStudent * institutionCount * 0.5; return <><p className="text-muted-foreground text-xs font-semibold uppercase">50% discounted total</p><p className="mt-1 text-3xl font-black">${totalUsd.toFixed(2)}<span className="text-muted-foreground text-sm font-normal">/{billing === 'annual' ? 'year' : 'month'}</span></p><p className="text-muted-foreground mt-1 text-sm">= Rs {formatPkr(convertUsdToPkr(totalUsd, settings))}/{billing === 'annual' ? 'year' : 'month'}</p></>; })()}</div>
-            <div className="mt-5 grid gap-4 sm:grid-cols-2"><Input value={institutionName} onChange={(e) => setInstitutionName(e.target.value)} placeholder="School / college name" /><Input value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder="Contact person" /><Input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="Contact email" /><Input value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Message or preferred contact time" /></div>
-            <Button type="button" className="mt-5 w-full" variant="gradient" loading={isSendingInquiry} onClick={submitInstitutionInquiry}><MessageCircle className="h-4 w-4" />Send request to admin</Button>
-          </div>
-        </div>}
+        )}
       </div>
     </section>
   );

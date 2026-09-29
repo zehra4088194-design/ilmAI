@@ -5,7 +5,7 @@ import { PricingSectionV2 } from '@/components/features/landing/PricingSectionV2
 import { FaqSection } from '@/components/features/landing/FaqSection';
 export const metadata: Metadata = {
   title: 'Pricing - ilm AI',
-  description: 'Compare ilm AI Free, Pro, and Elite study plans for school, college, and university learners.',
+  description: 'Compare ilm AI plans for students, parents, teachers, universities, and schools or colleges.',
   alternates: { canonical: '/pricing' },
 };
 export default function PricingPage() {

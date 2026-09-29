@@ -14,7 +14,7 @@
  */
 
 import { convertUsdToPkr, resolvePlanAmountUsd, type PlatformSettings } from '@/lib/platform-settings/shared';
-import { TRANSACTION_FEE_USD } from '@/lib/constants';
+import { calculateTransactionFee } from '@/lib/constants';
 
 export type PlanFamily = 'student' | 'parent' | 'teacher' | 'university';
 export type PlanTier = 'PRO' | 'ELITE';
@@ -40,7 +40,11 @@ const ABBREVIATION_TO_FAMILY: Record<string, PlanFamily> = {
 };
 
 /** { planFamily: 'student', tier: 'PRO', billingCycle: 'monthly' } -> 'STU-PRO-M' */
-export function jazzcashPlanCode(params: { planFamily?: PlanFamily; tier: PlanTier; billingCycle: BillingCycle }): string {
+export function jazzcashPlanCode(params: {
+  planFamily?: PlanFamily;
+  tier: PlanTier;
+  billingCycle: BillingCycle;
+}): string {
   const family = params.planFamily || 'student';
   const cycle = params.billingCycle === 'annual' ? 'Y' : 'M';
   return `${FAMILY_ABBREVIATION[family]}-${params.tier}-${cycle}`;
@@ -64,14 +68,17 @@ export function parseJazzcashPlanCode(raw: string): ParsedIndividualPlanCode | n
 /**
  * The exact PKR total a payer was told to send for this plan code — recomputed live from
  * whatever the admin panel currently has saved (resolvePlanAmountUsd is already the single
- * source of truth every checkout screen reads from), plus the same flat transaction fee every
+ * source of truth every checkout screen reads from), plus the 5% transaction fee every
  * manual-wallet screen adds on top. Never cached/hardcoded, so a same-day price change in the
  * admin panel is reflected immediately, exactly like the checkout page itself.
  */
 export function expectedIndividualPlanPkr(settings: PlatformSettings, parsed: ParsedIndividualPlanCode): number {
   const planUsd = resolvePlanAmountUsd(settings, parsed);
-  const planPkr = convertUsdToPkr(planUsd, settings);
-  const feePkr = convertUsdToPkr(TRANSACTION_FEE_USD, settings);
+  const planPkr =
+    parsed.planFamily === 'student'
+      ? settings.subscriptionPlans[parsed.tier].price.PKR[parsed.billingCycle]
+      : convertUsdToPkr(planUsd, settings);
+  const feePkr = calculateTransactionFee(planPkr, 'PKR');
   return planPkr + feePkr;
 }
 

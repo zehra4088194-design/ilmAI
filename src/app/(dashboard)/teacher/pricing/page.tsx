@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { getPlatformSettings } from '@/lib/platform-settings/server';
 import { convertUsdToPkr } from '@/lib/platform-settings/shared';
-import { TRANSACTION_FEE_USD } from '@/lib/constants';
+import { calculateTransactionFee } from '@/lib/constants';
 
 export const metadata = { title: 'Teacher Plans | ilm AI' };
 
@@ -16,9 +16,12 @@ export const metadata = { title: 'Teacher Plans | ilm AI' };
 export default async function TeacherPricingPage() {
   const settings = await getPlatformSettings();
   const { teacherPlans } = settings;
-  const feePkr = convertUsdToPkr(TRANSACTION_FEE_USD, settings);
   const paidPkr = convertUsdToPkr(teacherPlans.paid.priceUsdMonthly, settings);
   const elitePkr = convertUsdToPkr(teacherPlans.elite.priceUsdMonthly, settings);
+  const paidFeeUsd = calculateTransactionFee(teacherPlans.paid.priceUsdMonthly, 'USD');
+  const eliteFeeUsd = calculateTransactionFee(teacherPlans.elite.priceUsdMonthly, 'USD');
+  const paidFeePkr = calculateTransactionFee(paidPkr, 'PKR');
+  const eliteFeePkr = calculateTransactionFee(elitePkr, 'PKR');
 
   return (
     <div className="mx-auto max-w-5xl space-y-8">
@@ -76,7 +79,7 @@ export default async function TeacherPricingPage() {
               </p>
               <p className="text-muted-foreground text-sm">≈ Rs. {paidPkr.toLocaleString()}/mo</p>
               <p className="text-muted-foreground text-xs">
-                +${TRANSACTION_FEE_USD.toFixed(2)} transaction fee (≈ Rs. {feePkr.toLocaleString()})
+                +${paidFeeUsd.toFixed(2)} 5% transaction fee (≈ Rs. {paidFeePkr.toLocaleString()})
               </p>
             </div>
             <ul className="space-y-2 text-sm">
@@ -120,7 +123,7 @@ export default async function TeacherPricingPage() {
               </p>
               <p className="text-muted-foreground text-sm">≈ Rs. {elitePkr.toLocaleString()}/mo</p>
               <p className="text-muted-foreground text-xs">
-                +${TRANSACTION_FEE_USD.toFixed(2)} transaction fee (≈ Rs. {feePkr.toLocaleString()})
+                +${eliteFeeUsd.toFixed(2)} 5% transaction fee (≈ Rs. {eliteFeePkr.toLocaleString()})
               </p>
             </div>
             <ul className="space-y-2 text-sm">
@@ -153,9 +156,9 @@ export default async function TeacherPricingPage() {
       </div>
 
       <div className="rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 p-6 dark:from-green-950/20 dark:to-emerald-950/20">
-        <p className="text-sm text-muted-foreground">
-          All plans include access to the complete Teacher Portal with student management, assessment tools,
-          and resource library. Upgrade or downgrade your plan anytime.
+        <p className="text-muted-foreground text-sm">
+          All plans include access to the complete Teacher Portal with student management, assessment tools, and
+          resource library. Upgrade or downgrade your plan anytime.
         </p>
       </div>
     </div>

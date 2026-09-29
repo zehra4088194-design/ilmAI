@@ -10,6 +10,7 @@ import { syncOrganizationSchoolGrants } from '@/lib/school-erp/subscription-casc
 import { syncOrganizationCollegeGrants } from '@/lib/college-erp/subscription-cascade';
 import { getPlatformSettings } from '@/lib/platform-settings/server';
 import { resolveInstitutionPricing } from '@/lib/platform-settings/shared';
+import { calculateTransactionFee } from '@/lib/constants';
 import type { BillingCycle, InstitutionPaymentVerification, InstitutionType, PaymentMethod } from './types';
 
 /** 'A1B2C3D4' — short enough to type on WhatsApp, long enough (16^8) that guessing one is not a
@@ -103,12 +104,15 @@ export async function submitInstitutionPaymentVerification(
   // decide whether real money actually changed hands — recompute it the exact
   // same way the checkout UI displayed it (same global pricing + the org's own
   // active-enrollment count), server-side, right before it's stored.
-  const settingsTable = institutionType === 'school' ? 'school_organization_plan_settings' : 'college_organization_plan_settings';
+  const settingsTable =
+    institutionType === 'school' ? 'school_organization_plan_settings' : 'college_organization_plan_settings';
   const [platformSettings, studentCount] = await Promise.all([
     getPlatformSettings(),
     getActiveStudentCount(institutionType, organizationId),
   ]);
-  const { usd: amountUsd, pkr: amountPkr } = resolveInstitutionPricing(platformSettings, institutionType, billingCycle, studentCount);
+  const pricing = resolveInstitutionPricing(platformSettings, institutionType, billingCycle, studentCount);
+  const amountUsd = pricing.usd + calculateTransactionFee(pricing.usd, 'USD');
+  const amountPkr = pricing.pkr + calculateTransactionFee(pricing.pkr, 'PKR');
 
   // Retry once on the (extremely unlikely) chance a freshly generated code collides with an
   // existing one — the unique index (see the jazzcash_auto_verify migration) is the real guard.
@@ -147,12 +151,18 @@ export async function submitInstitutionPaymentVerification(
   // Surface the pending claim on the plan-settings row immediately (informational
   // only — does not grant access) so the org sees "we got it" without waiting on
   // the admin, mirroring the schema's existing 'manual_review' billing_status.
-  const { data: existing } = await db.from(settingsTable).select('billing_status').eq('organization_id', organizationId).maybeSingle();
+  const { data: existing } = await db
+    .from(settingsTable)
+    .select('billing_status')
+    .eq('organization_id', organizationId)
+    .maybeSingle();
   if (!existing || existing.billing_status === 'trial') {
-    await db.from(settingsTable).upsert(
-      { organization_id: organizationId, billing_status: 'manual_review', updated_at: new Date().toISOString() },
-      { onConflict: 'organization_id' }
-    );
+    await db
+      .from(settingsTable)
+      .upsert(
+        { organization_id: organizationId, billing_status: 'manual_review', updated_at: new Date().toISOString() },
+        { onConflict: 'organization_id' }
+      );
   }
 
   revalidatePath(institutionType === 'school' ? '/school-admin/settings' : '/college-admin/settings');
@@ -197,7 +207,11 @@ export async function activateInstitutionPaymentClaim(
   options: { reviewedBy: string | null; reviewNotes?: string | null }
 ): Promise<ActivationOutcome> {
   const db = (await createAdminClient()) as any;
-  const { data: claim } = await db.from('institution_payment_verifications').select('*').eq('id', claimId).maybeSingle();
+  const { data: claim } = await db
+    .from('institution_payment_verifications')
+    .select('*')
+    .eq('id', claimId)
+    .maybeSingle();
   if (!claim) return { success: false, message: 'Payment claim not found.' };
   if (claim.status !== 'pending_review') return { success: false, message: 'This claim was already reviewed.' };
 

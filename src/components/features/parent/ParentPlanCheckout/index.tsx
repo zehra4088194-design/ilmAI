@@ -5,7 +5,7 @@ import { ArrowLeft, Copy, Crown, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { MANUAL_PAYMENT_OPTIONS, TRANSACTION_FEE_USD } from '@/lib/constants';
+import { calculateTransactionFee, MANUAL_PAYMENT_OPTIONS } from '@/lib/constants';
 import { PaymentProofForm } from '@/components/features/payments/PaymentProofForm';
 
 /**
@@ -60,7 +60,7 @@ export function ParentPlanCheckout({
               <p className="mt-1 text-white/85">
                 ${priceUsd.toFixed(2)}/mo
                 <span className="ml-2 text-sm text-white/70">
-                  +${TRANSACTION_FEE_USD.toFixed(2)} transaction fee
+                  +${calculateTransactionFee(priceUsd, 'USD').toFixed(2)} 5% transaction fee
                 </span>
               </p>
               <p className="mt-1 text-sm text-white/85">
@@ -75,8 +75,8 @@ export function ParentPlanCheckout({
             <h2 className="text-lg font-bold">JazzCash / Easypaisa</h2>
             <p className="text-muted-foreground mt-2 text-sm leading-6">
               Send exactly Rs. {totalPkr.toLocaleString()} (Rs. {pkrPrice.toLocaleString()} plan price + Rs.{' '}
-              {feePkr.toLocaleString()} transaction fee), then send the transaction screenshot and your account email
-              to support. Your parent plan is activated by an admin after verification.
+              {feePkr.toLocaleString()} transaction fee), then send the transaction screenshot and your account email to
+              support. Your parent plan is activated by an admin after verification.
             </p>
             <div className="mt-4 space-y-3">
               {MANUAL_PAYMENT_OPTIONS.map((option) => (
@@ -97,7 +97,7 @@ export function ParentPlanCheckout({
                     </div>
                   )}
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-amber-600">{option.label}</p>
+                    <p className="text-xs font-semibold tracking-wide text-amber-600 uppercase">{option.label}</p>
                     <p className="text-lg font-bold">Rs. {totalPkr.toLocaleString()}</p>
                     <p className="text-muted-foreground text-sm">{option.accountName}</p>
                     <button

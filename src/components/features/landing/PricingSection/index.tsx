@@ -11,9 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils/cn';
 import { useTranslations, useMessages } from '@/providers/I18nProvider';
-import { CURRENCY_SYMBOLS, TRANSACTION_FEE_USD, type Currency } from '@/lib/constants';
+import { calculateTransactionFee, CURRENCY_SYMBOLS, type Currency } from '@/lib/constants';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
-import { convertUsdToPkr } from '@/lib/platform-settings/shared';
 
 const PLAN_IDS = ['free', 'pro', 'elite'] as const;
 const PLAN_KEYS = { free: 'FREE', pro: 'PRO', elite: 'ELITE' } as const;
@@ -52,7 +51,6 @@ export function PricingSection({ currency }: { currency: Currency }) {
   const institutionPerStudent = settings.subscriptionPlans[institutionPlan].price[currency][billingCycle];
   const institutionListPrice = institutionPerStudent * institutionCount;
   const institutionDiscountedPrice = institutionListPrice * 0.5;
-  const feeInCurrency = currency === 'USD' ? TRANSACTION_FEE_USD : convertUsdToPkr(TRANSACTION_FEE_USD, settings);
 
   const submitInstitutionInquiry = async () => {
     if (!institutionName.trim() || institutionCount < 1) {
@@ -238,7 +236,7 @@ export function PricingSection({ currency }: { currency: Currency }) {
                       {monthly > 0 && (
                         <p className="text-muted-foreground mt-1 text-xs">
                           +{symbol}
-                          {formatPrice(feeInCurrency, currency)} transaction fee
+                          {formatPrice(calculateTransactionFee(displayPrice, currency), currency)} 5% transaction fee
                         </p>
                       )}
                     </div>
@@ -289,8 +287,8 @@ export function PricingSection({ currency }: { currency: Currency }) {
               </Badge>
               <h3 className="text-3xl font-bold">One plan for your whole campus</h3>
               <p className="text-muted-foreground mt-4 leading-7">
-                Select the number of students, see the discounted total instantly, and send the request directly to the ilm AI
-                admin team.
+                Select the number of students, see the discounted total instantly, and send the request directly to the
+                ilm AI admin team.
               </p>
               <div className="mt-8 space-y-4 text-sm">
                 <p className="flex items-start gap-3">
@@ -301,7 +299,8 @@ export function PricingSection({ currency }: { currency: Currency }) {
                   <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" /> Dedicated institution usage reporting
                 </p>
                 <p className="flex items-start gap-3">
-                  <MessageCircle className="text-primary mt-0.5 h-4 w-4 shrink-0" /> Direct admin follow-up after your request
+                  <MessageCircle className="text-primary mt-0.5 h-4 w-4 shrink-0" /> Direct admin follow-up after your
+                  request
                 </p>
               </div>
             </div>
@@ -401,7 +400,8 @@ export function PricingSection({ currency }: { currency: Currency }) {
                 </p>
                 <p className="text-muted-foreground mt-1 text-xs">
                   +{symbol}
-                  {formatPrice(feeInCurrency, currency)} transaction fee
+                  {formatPrice(calculateTransactionFee(institutionDiscountedPrice, currency), currency)} 5% transaction
+                  fee
                 </p>
               </div>
 
