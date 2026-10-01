@@ -988,6 +988,26 @@ export function RegisterForm() {
             </div>
           )}
 
+          {currentStep.id === 'phone' && (
+            <div>
+              <label htmlFor="signup-phone" className="mb-2 block text-sm font-medium">
+                Mobile phone number
+              </label>
+              <Input
+                {...register('phone')}
+                id="signup-phone"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                placeholder="+92 300 1234567"
+                error={errors.phone?.message}
+              />
+              <p className="text-muted-foreground mt-2 text-xs">
+                Required to complete your account and appear correctly in the contact directory. Include your country code.
+              </p>
+            </div>
+          )}
+
           {currentStep.id === 'password' && (
             <div className="space-y-4">
               <input
