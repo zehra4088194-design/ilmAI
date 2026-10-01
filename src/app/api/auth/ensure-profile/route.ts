@@ -81,6 +81,7 @@ export async function POST() {
   const username = typeof metadata.username === 'string' ? metadata.username.trim().toLowerCase() : null;
   const gender = metadata.gender === 'girl' || metadata.gender === 'boy' ? metadata.gender : null;
   const preferredLanguage = metadata.preferred_language === 'roman-ur' ? 'roman-ur' : 'en';
+  const phone = typeof metadata.phone === 'string' ? metadata.phone.trim().replace(/\s+/g, ' ') : null;
   const educationLevel = EDUCATION_LEVELS.some((level) => level.value === metadata.education_level)
     ? metadata.education_level
     : 'school';
@@ -100,7 +101,7 @@ export async function POST() {
   const admin = (await createAdminClient()) as any;
   const { data: existing } = await admin
     .from('profiles')
-    .select('id, username, gender, grade_level, board, date_of_birth')
+    .select('id, username, gender, grade_level, board, date_of_birth, phone')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -109,6 +110,7 @@ export async function POST() {
       id: user.id,
       email: user.email || '',
       full_name: metadata.full_name || user.email?.split('@')[0] || 'Student',
+      phone,
       username,
       gender,
       gender_changed_at: gender ? new Date().toISOString() : null,
@@ -144,6 +146,7 @@ export async function POST() {
   } else {
     const updates: Record<string, unknown> = {};
     updates.preferred_language = preferredLanguage;
+    if (phone && !existing.phone) updates.phone = phone;
     if (username && !existing.username) updates.username = username;
     if (gender && !existing.gender) {
       updates.gender = gender;
