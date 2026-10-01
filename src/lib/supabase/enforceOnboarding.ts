@@ -38,13 +38,20 @@ export async function enforceOnboarding(
 
   const { data: profile, error } = await supabase
     .from('profiles')
-    .select('role, gender, board, grade_level, education_level, university_program, university_semester, onboarding_completed')
+    .select('role, phone, gender, board, grade_level, education_level, university_program, university_semester, onboarding_completed')
     .eq('id', user.id)
     .single();
 
   if (error || !profile) {
     console.error('[enforceOnboarding] Profile lookup failed:', error);
     return null;
+  }
+
+  if (!profile.phone || !profile.phone.trim()) {
+    const next = `${pathname}${request.nextUrl.search}`;
+    return NextResponse.redirect(
+      `${getRequestSiteUrl(request)}/onboarding/phone?next=${encodeURIComponent(next)}`
+    );
   }
 
   // Institution membership is authoritative for portal accounts. A person can be
