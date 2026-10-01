@@ -12,7 +12,6 @@ import {
   Phone,
   Zap,
   StickyNote,
-  Bookmark,
   Star,
   CreditCard,
   ChevronRight,
@@ -89,7 +88,6 @@ const NAV_GROUPS = [
       { icon: HardDriveDownload, label: 'Downloads', href: '/downloads', badge: 'Pro' },
       { icon: Star, label: 'Flashcards', href: '/flashcards' },
       { icon: StickyNote, label: 'Notes', href: '/notes' },
-      { icon: Bookmark, label: 'Bookmarks', href: '/bookmarks' },
     ],
   },
   {
@@ -179,7 +177,6 @@ const UNIVERSITY_NAV_GROUPS = [
       { icon: HardDriveDownload, label: 'Downloads', href: '/downloads', badge: 'Pro' },
       { icon: Star, label: 'Flashcards', href: '/flashcards' },
       { icon: StickyNote, label: 'Notes', href: '/notes' },
-      { icon: Bookmark, label: 'Bookmarks', href: '/bookmarks' },
     ],
   },
   {
