@@ -47,6 +47,15 @@ function resolveDateOfBirth(value: unknown): string | null {
   return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
 }
 
+function resolvePhone(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const phone = value.trim().replace(/\s+/g, ' ');
+  const digits = phone.replace(/\D/g, '');
+  return phone.length >= 7 && phone.length <= 24 && digits.length >= 7 && digits.length <= 15 && /^[+()0-9\s-]+$/.test(phone)
+    ? phone
+    : null;
+}
+
 function isMissingAcademicInstitutionColumn(error: { code?: string; message?: string } | null) {
   return (
     error?.code === '42703' || error?.code === 'PGRST204' || Boolean(error?.message?.includes('academic_institution_'))
@@ -114,7 +123,7 @@ export async function GET(request: NextRequest) {
       const { data: existingProfile } = await (supabase
         .from('profiles')
         .select(
-          'id, role, username, gender, board, grade_level, education_level, university_program, university_semester, onboarding_completed, is_profile_complete, preferred_language, date_of_birth'
+          'id, role, username, gender, board, grade_level, education_level, university_program, university_semester, onboarding_completed, is_profile_complete, preferred_language, date_of_birth, phone'
         )
         .eq('id', data.user.id)
         .maybeSingle() as any);
@@ -144,6 +153,7 @@ export async function GET(request: NextRequest) {
           ? userMetadata.preferred_language
           : null;
       const metadataDateOfBirth = resolveDateOfBirth(userMetadata?.date_of_birth);
+      const metadataPhone = resolvePhone(userMetadata?.phone);
       const signupInstitutionId =
         typeof userMetadata?.signup_institution_id === 'string' ? userMetadata.signup_institution_id : null;
       const signupRoleRequested =
@@ -183,6 +193,7 @@ export async function GET(request: NextRequest) {
           id: data.user.id,
           email: data.user.email!,
           full_name: data.user.user_metadata?.full_name || data.user.email!.split('@')[0],
+          phone: metadataPhone,
           username: metadataUsername,
           gender: metadataGender,
           gender_changed_at: metadataGender ? new Date().toISOString() : null,
@@ -259,6 +270,9 @@ export async function GET(request: NextRequest) {
 
         if (metadataDateOfBirth && !existingProfile.date_of_birth) {
           (updates as any).date_of_birth = metadataDateOfBirth;
+        }
+        if (metadataPhone && !existingProfile.phone) {
+          (updates as any).phone = metadataPhone;
         }
 
         if (metadataOnboardingCompleted && existingProfile.onboarding_completed === false) {
