@@ -45,6 +45,7 @@ import { verifyAuthRecaptcha } from '@/lib/security/recaptcha-client';
 const formSchema = z.object({
   fullName: z.string().trim().min(2, 'Min 2 characters'),
   email: z.string().trim().email('Valid email required'),
+  phone: z.string().trim().min(7, 'Valid phone number required').max(24, 'Phone number is too long'),
   password: z.string().min(8, 'Min 8 characters'),
   confirmPassword: z.string(),
   username: z
@@ -75,6 +76,7 @@ type SignupStepId =
   | 'language'
   | 'name'
   | 'email'
+  | 'phone'
   | 'password'
   | 'username'
   | 'birthdate'
@@ -120,6 +122,7 @@ const CORE_STEPS: SignupStep[] = [
   { id: 'language', title: 'Choose your language', description: 'Choose English or Roman Urdu for the interface.' },
   { id: 'name', title: 'Your name', description: 'Enter the name that will appear in the app.' },
   { id: 'email', title: 'Email address', description: 'Used for login and account recovery.' },
+  { id: 'phone', title: 'Phone number', description: 'Required for your contact directory and device dialing.' },
   {
     id: 'password',
     title: 'Secure password',
@@ -300,6 +303,7 @@ export function RegisterForm() {
     defaultValues: {
       fullName: '',
       email: '',
+      phone: '',
       password: '',
       confirmPassword: '',
       username: '',
@@ -359,6 +363,7 @@ export function RegisterForm() {
     const fieldByStep: Partial<Record<SignupStepId, keyof FormData>> = {
       name: 'fullName',
       email: 'email',
+      phone: 'phone',
       password: 'password',
       username: 'username',
       institution: 'institutionName',
@@ -439,6 +444,19 @@ export function RegisterForm() {
         return validateField('fullName');
       case 'email':
         return validateField('email');
+      case 'phone': {
+        const value = getValues('phone').trim();
+        if (!value) {
+          toast.error('Please enter your phone number.');
+          return false;
+        }
+        const digits = value.replace(/\D/g, '');
+        if (value.length > 24 || digits.length < 7 || digits.length > 15 || !/^[+()0-9\s-]+$/.test(value)) {
+          toast.error('Enter a valid phone number.');
+          return false;
+        }
+        return true;
+      }
       case 'password': {
         if (!validateField('password')) return false;
         if (getValues('password') !== getValues('confirmPassword')) {
@@ -592,6 +610,7 @@ export function RegisterForm() {
           gender: effectiveRole === 'student' ? gender : undefined,
           date_of_birth: effectiveRole === 'student' && !isInstitutional ? data.birthDate || undefined : undefined,
           preferred_language: preferredLanguage,
+          phone: data.phone.trim(),
           signup_institution_id: isInstitutional ? selectedSchool?.id : undefined,
           signup_role_requested: isInstitutional ? institutionalRole : undefined,
           // Read back by /api/auth/callback for the email-confirmation-required path (no session
