@@ -72,61 +72,11 @@ export default async function CallsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {institutionType === 'consumer' ? (
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {directory.length ? (
-                directory.map((person) => (
-                  <div key={person.profile_id} className="flex items-center gap-3 rounded-xl border p-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted">
-                      {person.avatar_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={person.avatar_url}
-                          alt={person.full_name || 'User'}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-sm font-semibold">
-                          {(person.full_name || 'U').slice(0, 1).toUpperCase()}
-                        </span>
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold">
-                        {person.full_name || 'ilm AI user'}
-                      </p>
-                      <p className="text-muted-foreground text-xs capitalize">
-                        {person.member_role}
-                      </p>
-                      <p className="text-muted-foreground mt-0.5 truncate text-xs">
-                        {person.phone || 'No phone number'}
-                      </p>
-                    </div>
-                    <CallButton
-                      institutionType="consumer"
-                      organizationId="consumer"
-                      target={{
-                        userId: person.profile_id,
-                        name: person.full_name || 'ilm AI user',
-                        avatarUrl: person.avatar_url,
-                        phone: person.phone,
-                      }}
-                    />
-                  </div>
-                ))
-              ) : (
-                <p className="text-muted-foreground py-6 text-center text-sm">
-                  No contacts are available.
-                </p>
-              )}
-            </div>
-          ) : (
-            <CallDirectoryList
-              institutionType={institutionType}
-              organizationId={organizationId}
-              entries={directory}
-            />
-          )}
+          <CallDirectoryList
+            institutionType={institutionType}
+            organizationId={organizationId}
+            entries={directory}
+          />
         </CardContent>
       </Card>
     </main>
