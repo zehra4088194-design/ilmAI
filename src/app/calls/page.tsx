@@ -5,7 +5,6 @@ import { requireSchoolContext } from '@/lib/school-erp/access';
 import { requireCollegeContext } from '@/lib/college-erp/access';
 import { getCallDirectory } from '@/lib/calling/queries';
 import { CallDirectoryList } from '@/components/features/calling/CallDirectoryList';
-import { CallButton } from '@/components/features/calling/CallButton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { createAdminClient } from '@/lib/supabase/server';
 
@@ -30,8 +29,16 @@ export default async function CallsPage() {
 
   const organizationId =
     schoolContext?.organization.id || collegeContext?.organization.id || 'consumer';
+  const { data: profileRole } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .maybeSingle();
   const currentRole =
-    schoolContext?.membership.member_role || collegeContext?.membership.member_role || 'student';
+    schoolContext?.membership.member_role ||
+    collegeContext?.membership.member_role ||
+    profileRole?.role ||
+    'student';
 
   let directory = await getCallDirectory(
     supabase,
