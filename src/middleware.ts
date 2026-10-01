@@ -99,6 +99,30 @@ export async function middleware(request: NextRequest) {
   else forwardedHeaders.delete(PLAY_CONSUMPTION_ONLY_HEADER);
   const { user, response, supabase } = await updateSession(request, forwardedHeaders);
 
+  // Phone number is required for every authenticated app role, including teachers,
+  // parents and institution administrators. Keep public/auth/API and the phone form accessible.
+  const isProtectedAppPath =
+    PROTECTED_PREFIXES.some((p) => matchesRoutePrefix(pathname, p)) ||
+    ADMIN_PREFIXES.some((p) => matchesRoutePrefix(pathname, p)) ||
+    COLLEGE_ADMIN_PREFIXES.some((p) => matchesRoutePrefix(pathname, p)) ||
+    SCHOOL_ADMIN_PREFIXES.some((p) => matchesRoutePrefix(pathname, p)) ||
+    matchesRoutePrefix(pathname, '/teacher') ||
+    pathname === '/school' ||
+    pathname === '/college' ||
+    pathname === '/calls';
+  if (user && isProtectedAppPath && pathname !== '/onboarding/phone') {
+    const { data: phoneProfile } = await supabase
+      .from('profiles')
+      .select('phone')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (!phoneProfile?.phone?.trim()) {
+      return secure(NextResponse.redirect(
+        `${origin}/onboarding/phone?next=${encodeURIComponent(requestedPath)}`
+      ));
+    }
+  }
+
   if (ADMIN_PREFIXES.some((p) => matchesRoutePrefix(pathname, p))) {
     if (!user) return secure(NextResponse.redirect(`${origin}/login?redirect=${encodeURIComponent(requestedPath)}`));
     return secure(response);
