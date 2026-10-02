@@ -232,8 +232,8 @@ export async function GET(request: NextRequest) {
           board: metadataBoard,
           grade_level: metadataGradeLevel,
           education_level: metadataEducationLevel || 'school',
-          university_program: null,
-          university_semester: null,
+          university_program: metadataUniversityProgram,
+          university_semester: metadataUniversitySemester,
           onboarding_completed: metadataOnboardingCompleted,
         };
       } else {
