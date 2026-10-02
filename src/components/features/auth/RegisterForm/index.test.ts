@@ -2,79 +2,52 @@ import { describe, expect, it } from 'vitest';
 import { getSignupSteps } from './index';
 
 describe('signup step order', () => {
-  it('asks school and college students one focused step at a time in the required order', () => {
+  it('keeps school/college student signup to identity, account, and class only', () => {
     expect(getSignupSteps('school-college').map((step) => step.id)).toEqual([
       'identity',
-      'birthdate',
-      'language',
-      'name',
-      'email',
-      'phone',
-      'password',
-      'username',
-      'gender',
-      'education',
-      'institution',
-      'grade',
-      'board',
+      'account',
+      'study',
     ]);
   });
 
-  it('skips grade and board for university students', () => {
+  it('keeps university signup separate from school/college and limited to essential study setup', () => {
     expect(getSignupSteps('university').map((step) => step.id)).toEqual([
       'identity',
-      'birthdate',
-      'language',
-      'name',
-      'email',
-      'phone',
-      'password',
-      'username',
-      'gender',
-      'institution',
+      'account',
+      'study',
     ]);
   });
 
-  it('keeps parent signup limited to identity and login credentials', () => {
+  it('keeps parent signup limited to identity and account creation', () => {
     expect(getSignupSteps('parent').map((step) => step.id)).toEqual([
       'identity',
-      'language',
-      'name',
-      'email',
-      'phone',
-      'password',
-      'username',
+      'account',
     ]);
   });
 
-  it('routes institutional students through role, a school search, and class/board', () => {
+  it('routes institutional students through role, institution, and class without board/gender', () => {
     expect(getSignupSteps('institutional', 'student').map((step) => step.id)).toEqual([
       'identity',
       'role',
-      'language',
-      'name',
-      'email',
-      'phone',
-      'password',
-      'username',
-      'gender',
+      'account',
       'school',
-      'grade',
-      'board',
+      'study',
     ]);
   });
 
-  it('skips gender, grade, and board for institutional teachers', () => {
+  it('keeps institutional teacher signup focused on account and institution join', () => {
     expect(getSignupSteps('institutional', 'teacher').map((step) => step.id)).toEqual([
       'identity',
       'role',
-      'language',
-      'name',
-      'email',
-      'phone',
-      'password',
-      'username',
+      'account',
       'school',
+    ]);
+  });
+
+  it('keeps the kid path compact and age-aware without regular student fields', () => {
+    expect(getSignupSteps('kid').map((step) => step.id)).toEqual([
+      'identity',
+      'account',
     ]);
   });
 });
