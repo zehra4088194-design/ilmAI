@@ -2,15 +2,15 @@ import type { Database } from '@/lib/supabase/database.types';
 
 type Profile = Pick<
   Database['public']['Tables']['profiles']['Row'],
-  'role' | 'gender' | 'board' | 'grade_level' | 'education_level' | 'university_program' | 'university_semester'
+  'role' | 'grade_level' | 'education_level' | 'university_program' | 'university_semester'
 >;
 
 export function needsProfileCompletion(profile: Profile | null): boolean {
-  if (!profile) return false;
-  if (profile.role !== 'student') return false;
-  if (profile.gender !== 'girl' && profile.gender !== 'boy') return true;
+  if (!profile || profile.role !== 'student') return false;
+
   if (profile.education_level === 'university') {
-    return !profile.university_program || !profile.university_semester;
+    return !profile.university_program?.trim() || !profile.university_semester?.trim();
   }
-  return profile.board === null || profile.grade_level === null;
+
+  return profile.grade_level === null;
 }
