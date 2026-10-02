@@ -109,8 +109,8 @@ export function GoogleDriveResourceCard({
     }
   };
 
-  // Opens the matching printed-copy product on ilmai.store (creating/pricing it there first if
-  // this is the first time anyone has ordered this exact resource — see the route's own comment).
+  // Open the dedicated Store Study Notes detail route. The Store handoff endpoint preserves the
+  // deep link while signing a logged-in ilmAI user into the separate Store Supabase account.
   const orderPrintedNotes = async () => {
     if (!user) {
       toast.error('Sign in to order printed notes.');
@@ -118,12 +118,10 @@ export function GoogleDriveResourceCard({
     }
     setOrdering(true);
     try {
-      const response = await fetch(`/api/library/resources/${resource.id}/order-notes`, { method: 'POST' });
-      const json = await response.json();
-      if (!response.ok) throw new Error(json.error || 'Could not start this order.');
-      window.open(json.url, '_blank', 'noopener,noreferrer');
+      const destination = `/store/ilm-ai-notes/resource/${resource.id}`;
+      window.open(`/api/store-handoff?next=${encodeURIComponent(destination)}`, '_blank', 'noopener,noreferrer');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Could not start this order.');
+      toast.error(error instanceof Error ? error.message : 'Could not open the Store.');
     } finally {
       setOrdering(false);
     }

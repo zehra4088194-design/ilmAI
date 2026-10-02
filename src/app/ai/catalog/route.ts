@@ -109,28 +109,36 @@ export async function GET() {
     };
   });
 
-  const yearIds = [...new Set((universityLinks || []).map((row: any) => row.program_year_id))];
-  const subjectIds = [...new Set((universityLinks || []).map((row: any) => row.subject_id))];
+  const universityLinkRows = (universityLinks || []) as Array<{ program_year_id: string; subject_id: string }>;
+  const yearIds = [...new Set(universityLinkRows.map((row) => row.program_year_id))];
+  const subjectIds = [...new Set(universityLinkRows.map((row) => row.subject_id))];
 
   let universityPages: Array<{ type: string; title: string; url: string }> = [];
   if (yearIds.length && subjectIds.length) {
+    type UniversityYear = { id: string; label: string; program_id: string };
+    type UniversitySubject = { id: string; name: string };
+    type UniversityProgram = { id: string; slug: string; name: string };
+
     const [{ data: years }, { data: subjects }] = await Promise.all([
       (db.from('university_program_years') as any).select('id,label,program_id').in('id', yearIds),
       (db.from('university_subjects') as any).select('id,name').in('id', subjectIds).eq('is_active', true),
     ]);
-    const programIds = [...new Set((years || []).map((row: any) => row.program_id))];
+    const yearRows = (years || []) as UniversityYear[];
+    const subjectRows = (subjects || []) as UniversitySubject[];
+    const programIds = [...new Set(yearRows.map((row) => row.program_id))];
     const { data: programs } = programIds.length
       ? await (db.from('university_degree_programs') as any)
           .select('id,slug,name')
           .in('id', programIds)
           .eq('is_active', true)
-      : { data: [] };
+      : { data: [] as UniversityProgram[] };
+    const programRows = (programs || []) as UniversityProgram[];
 
-    const yearById = new Map((years || []).map((row: any) => [row.id, row]));
-    const subjectById = new Map((subjects || []).map((row: any) => [row.id, row]));
-    const programById = new Map((programs || []).map((row: any) => [row.id, row]));
+    const yearById = new Map(yearRows.map((row) => [row.id, row]));
+    const subjectById = new Map(subjectRows.map((row) => [row.id, row]));
+    const programById = new Map(programRows.map((row) => [row.id, row]));
 
-    universityPages = (universityLinks || []).flatMap((link: any) => {
+    universityPages = universityLinkRows.flatMap((link) => {
       const year = yearById.get(link.program_year_id);
       const subject = subjectById.get(link.subject_id);
       const program = year ? programById.get(year.program_id) : null;

@@ -20,7 +20,11 @@ export async function GET(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const destination = new URL('/', storeUrl);
-  if (next && next.startsWith('/') && !next.startsWith('//')) destination.pathname = next;
+  if (next && next.startsWith('/') && !next.startsWith('//')) {
+    const requested = new URL(next, storeUrl);
+    destination.pathname = requested.pathname;
+    destination.search = requested.search;
+  }
 
   if (!user || !user.email) {
     return NextResponse.redirect(destination.toString());
@@ -47,6 +51,8 @@ export async function GET(request: NextRequest) {
 
   const handoffUrl = new URL('/auth/handoff', storeUrl);
   handoffUrl.searchParams.set('token', token);
-  if (destination.pathname !== '/') handoffUrl.searchParams.set('next', destination.pathname);
+  if (destination.pathname !== '/' || destination.search) {
+    handoffUrl.searchParams.set('next', destination.pathname + destination.search);
+  }
   return NextResponse.redirect(handoffUrl.toString());
 }
