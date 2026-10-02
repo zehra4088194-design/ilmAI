@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { getUserGradeLevel } from '@/lib/supabase/getUserGradeLevel';
+import { needsProfileCompletion } from '@/lib/utils/checkProfileComplete';
 import { ClassSelectStep } from '@/components/features/onboarding/ClassSelectStep';
 
 export default async function OnboardingClassPage() {
@@ -15,7 +15,7 @@ export default async function OnboardingClassPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, education_level')
+    .select('role, education_level, grade_level, university_program, university_semester')
     .eq('id', user.id)
     .single();
 
@@ -23,9 +23,7 @@ export default async function OnboardingClassPage() {
     redirect('/dashboard');
   }
 
-  const { onboardingCompleted } = await getUserGradeLevel(supabase, user.id);
-
-  if (onboardingCompleted) {
+  if (!needsProfileCompletion(profile as any)) {
     redirect('/dashboard');
   }
 
