@@ -86,6 +86,10 @@ export async function POST() {
     ? metadata.education_level
     : 'school';
   const gradeLevel = GRADE_LEVELS.some((grade) => grade.value === metadata.grade_level) ? metadata.grade_level : null;
+  const universityProgram =
+    typeof metadata.university_program === 'string' ? metadata.university_program.trim() || null : null;
+  const universitySemester =
+    typeof metadata.university_semester === 'string' ? metadata.university_semester.trim() || null : null;
   const board = BOARDS.some((item) => item.value === metadata.board) ? metadata.board : null;
   const academicInstitutionName =
     typeof metadata.academic_institution_name === 'string' ? metadata.academic_institution_name.trim() || null : null;
@@ -93,7 +97,8 @@ export async function POST() {
     ? metadata.academic_institution_type
     : educationLevel;
   const onboardingCompleted =
-    role !== 'student' || (educationLevel !== 'university' && Boolean(gender && gradeLevel && board));
+    role !== 'student' ||
+    (educationLevel === 'university' ? Boolean(universityProgram && universitySemester) : Boolean(gradeLevel));
   const dateOfBirth =
     typeof metadata.date_of_birth === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(metadata.date_of_birth)
       ? metadata.date_of_birth
@@ -119,6 +124,8 @@ export async function POST() {
       education_level: educationLevel,
       grade_level: gradeLevel,
       board,
+      university_program: universityProgram,
+      university_semester: universitySemester,
       academic_institution_name: academicInstitutionName,
       academic_institution_type: academicInstitutionType,
       subscription_tier: 'FREE',
@@ -156,6 +163,8 @@ export async function POST() {
     if (board && !existing.board) updates.board = board;
     if (dateOfBirth && !existing.date_of_birth) updates.date_of_birth = dateOfBirth;
     updates.education_level = educationLevel;
+    if (universityProgram) updates.university_program = universityProgram;
+    if (universitySemester) updates.university_semester = universitySemester;
     if (onboardingCompleted) {
       updates.onboarding_completed = true;
       updates.is_profile_complete = true;
