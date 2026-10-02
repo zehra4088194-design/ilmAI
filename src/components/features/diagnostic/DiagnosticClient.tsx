@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { AiAnswerRenderer } from '@/components/features/ai/AiAnswerRenderer';
+import { normalizeChemicalFormulas } from '@/lib/diagnostic/questions';
 
 type Question = {
   id: string;
@@ -119,7 +120,7 @@ export function DiagnosticClient() {
             <Card key={review.questionId}>
               <CardContent className="space-y-3 p-4 sm:p-5">
                 <div className="text-sm font-semibold">
-                  {reviewIndex + 1}. <AiAnswerRenderer content={review.text} card={false} className="inline" />
+                  {reviewIndex + 1}. <AiAnswerRenderer content={normalizeChemicalFormulas(review.text)} card={false} className="inline" />
                 </div>
                 <div className={review.isCorrect ? 'text-sm text-emerald-500' : 'text-sm text-red-500'}>
                   Your answer:{' '}
@@ -128,7 +129,7 @@ export function DiagnosticClient() {
                   ) : (
                     <>
                       {String.fromCharCode(65 + review.selected)}.{' '}
-                      <AiAnswerRenderer content={review.options[review.selected] || ''} card={false} className="inline" />
+                      <AiAnswerRenderer content={normalizeChemicalFormulas(review.options[review.selected] || '')} card={false} className="inline" />
                     </>
                   )}
                 </div>
@@ -139,19 +140,21 @@ export function DiagnosticClient() {
                   ) : (
                     <>
                       {String.fromCharCode(65 + review.correct)}.{' '}
-                      <AiAnswerRenderer content={review.options[review.correct] || ''} card={false} className="inline" />
+                      <AiAnswerRenderer content={normalizeChemicalFormulas(review.options[review.correct] || '')} card={false} className="inline" />
                     </>
                   )}
                 </div>
-                <div className="bg-muted/30 rounded-lg p-3">
-                  <p className="text-xs font-semibold">Explanation</p>
-                  <div className="text-muted-foreground mt-1 text-sm leading-6">
-                    <AiAnswerRenderer
-                      content={review.explanation || 'The saved answer key identifies the correct option shown above.'}
-                      card={false}
-                    />
+                {review.explanation?.trim() && (
+                  <div className="bg-muted/30 rounded-lg p-3">
+                    <p className="text-xs font-semibold">Explanation</p>
+                    <div className="text-muted-foreground mt-1 text-sm leading-6">
+                      <AiAnswerRenderer
+                        content={normalizeChemicalFormulas(review.explanation)}
+                        card={false}
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -195,7 +198,7 @@ export function DiagnosticClient() {
             </span>
           </div>
           <div className="text-base leading-7 font-semibold break-words sm:text-lg">
-            <AiAnswerRenderer content={question.text} card={false} />
+            <AiAnswerRenderer content={normalizeChemicalFormulas(question.text)} card={false} />
           </div>
           <div className="grid gap-2">
             {question.options.map((option, optionIndex) => {
@@ -213,7 +216,7 @@ export function DiagnosticClient() {
                     {selected ? <Check className="h-3.5 w-3.5" /> : String.fromCharCode(65 + optionIndex)}
                   </span>
                   <span className="min-w-0 flex-1 break-words">
-                    <AiAnswerRenderer content={option} card={false} />
+                    <AiAnswerRenderer content={normalizeChemicalFormulas(option)} card={false} />
                   </span>
                 </button>
               );
