@@ -6,7 +6,15 @@ import { createClient } from '@/lib/supabase/client';
 import { getBrowserSiteUrl } from '@/lib/utils/siteUrl';
 import { toast } from 'sonner';
 
-export function OAuthButtons({ action = 'Login', role }: { action?: string; role?: 'student' | 'parent' }) {
+export function OAuthButtons({
+  action = 'Login',
+  role,
+  educationLevel,
+}: {
+  action?: string;
+  role?: 'student' | 'parent';
+  educationLevel?: 'school' | 'university';
+}) {
   const [loading, setLoading] = useState(false);
   const searchParams = useSearchParams();
   const supabase = createClient();
@@ -16,6 +24,7 @@ export function OAuthButtons({ action = 'Login', role }: { action?: string; role
     const redirect = searchParams.get('redirect');
     if (redirect) callbackUrl.searchParams.set('redirect', redirect);
     if (role) callbackUrl.searchParams.set('role', role);
+    if (educationLevel) callbackUrl.searchParams.set('education_level', educationLevel);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: callbackUrl.toString() },
