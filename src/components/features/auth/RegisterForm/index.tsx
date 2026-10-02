@@ -350,10 +350,7 @@ export function RegisterForm() {
       full_name: data.fullName.trim(),
       role: effectiveRole,
       preferred_language: preferredLanguage,
-      phone: undefined,
-      username: undefined,
-      gender: undefined,
-      board: undefined,
+      board: null,
       grade_level:
         effectiveRole === 'student' && identity !== 'university' && identity !== 'kid'
           ? data.gradeLevel
