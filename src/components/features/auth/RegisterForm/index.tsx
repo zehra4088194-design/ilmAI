@@ -183,7 +183,7 @@ export function RegisterForm() {
   );
   const currentStep = steps[Math.min(stepIndex, steps.length - 1)]!;
   const isFirstStep = stepIndex === 0;
-  const isLastStep = stepIndex === steps.length - 1;
+  const isLastStep = Boolean(identity) && stepIndex === steps.length - 1;
 
   useEffect(() => {
     const fieldByStep: Partial<Record<SignupStepId, keyof FormData>> = {
