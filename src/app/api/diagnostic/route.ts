@@ -249,7 +249,10 @@ export async function POST(req: NextRequest) {
       selected: selected == null ? null : Number(selected),
       correct: expected,
       isCorrect,
-      explanation: question.explanation || '',
+      explanation:
+        question.explanation?.trim() === 'The saved answer key identifies the correct option shown above.'
+          ? ''
+          : question.explanation || '',
     });
     if (question.chapter_id) {
       const current = chapterScores.get(question.chapter_id) || { correct: 0, total: 0 };
