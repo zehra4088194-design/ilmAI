@@ -15,7 +15,7 @@ export default async function OnboardingClassPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, education_level')
     .eq('id', user.id)
     .single();
 
@@ -29,5 +29,34 @@ export default async function OnboardingClassPage() {
     redirect('/dashboard');
   }
 
-  return <ClassSelectStep />;
+  // Institution staff accounts are governed by their active membership, not the
+  // generic student onboarding flag. This prevents legacy staff profiles whose role
+  // still says "student" from being sent to the class screen.
+  const [{ data: schoolMemberships }, { data: collegeMemberships }] = await Promise.all([
+    (supabase as any)
+      .from('school_memberships')
+      .select('member_role')
+      .eq('profile_id', user.id)
+      .eq('status', 'active'),
+    (supabase as any)
+      .from('college_memberships')
+      .select('member_role')
+      .eq('profile_id', user.id)
+      .eq('status', 'active'),
+  ]);
+  const hasInstitutionNonStudentMembership =
+    (schoolMemberships || []).some((row: any) => row.member_role !== 'student') ||
+    (collegeMemberships || []).some((row: any) => row.member_role !== 'student');
+
+  if (hasInstitutionNonStudentMembership) {
+    redirect('/dashboard');
+  }
+
+  return (
+    <ClassSelectStep
+      educationLevel={
+        profile?.education_level === 'university' ? 'university' : 'school'
+      }
+    />
+  );
 }
