@@ -44,6 +44,9 @@ All of these products have usage-limited free tiers. R2 and some production Algo
 
 ## Deployment
 
+**Deployment source of truth: Oracle Always Free VM + Coolify.**  
+This repository is designed to run in Coolify on the Oracle VM using `docker-compose.oracle.yml`. Do not treat Vercel as the production hosting platform or deployment target for this project.
+
 1. In Coolify, create a Docker Compose resource from this repository's `main` branch.
 2. Set the base directory to `/` and the compose file to `docker-compose.oracle.yml`.
 3. Copy `.env.oracle.example` into Coolify and replace every required placeholder.
