@@ -31,9 +31,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { createClient } from '@/lib/supabase/client';
 import { OAuthButtons } from '@/components/features/auth/OAuthButtons';
-import { BOARDS, COUNTRY_BOARD_DEFAULTS, GRADE_LEVELS } from '@/lib/constants';
+import { GRADE_LEVELS } from '@/lib/constants';
 import { EDUCATION_LEVELS, type EducationLevel } from '@/lib/constants/university';
-import { PAKISTAN_SCHOOLS, PAKISTAN_COLLEGES, PAKISTAN_UNIVERSITIES, suggestInstitutions } from '@/lib/constants/institutions';
 import { calculateAge, KIDS_DASHBOARD_AGE_CUTOFF } from '@/lib/kids/eligibility';
 import { cn } from '@/lib/utils/cn';
 import { toast } from 'sonner';
@@ -45,18 +44,9 @@ import { verifyAuthRecaptcha } from '@/lib/security/recaptcha-client';
 const formSchema = z.object({
   fullName: z.string().trim().min(2, 'Min 2 characters'),
   email: z.string().trim().email('Valid email required'),
-  phone: z.string().trim().min(7, 'Valid phone number required').max(24, 'Phone number is too long'),
   password: z.string().min(8, 'Min 8 characters'),
   confirmPassword: z.string(),
-  username: z
-    .string()
-    .trim()
-    .min(3, 'Min 3 characters')
-    .max(30, 'Max 30 characters')
-    .regex(/^[a-z0-9._]+$/i, 'Letters, numbers, dot and underscore only'),
-  institutionName: z.string().trim().optional(),
   gradeLevel: z.string().optional(),
-  board: z.string().optional(),
   birthDate: z.string().optional(),
 });
 
@@ -66,27 +56,9 @@ const schema = formSchema.refine((data) => data.password === data.confirmPasswor
 });
 
 type FormData = z.infer<typeof schema>;
-type AccountType = 'student' | 'parent';
-type MembershipMode = 'individual' | 'institutional';
 type InstitutionalRole = 'student' | 'teacher' | 'principal';
-type Gender = 'girl' | 'boy';
 type SignupIdentity = 'parent' | 'university' | 'school-college' | 'institutional' | 'kid';
-type SignupStepId =
-  | 'identity'
-  | 'language'
-  | 'name'
-  | 'email'
-  | 'phone'
-  | 'password'
-  | 'username'
-  | 'birthdate'
-  | 'gender'
-  | 'education'
-  | 'institution'
-  | 'school'
-  | 'grade'
-  | 'board'
-  | 'role';
+type SignupStepId = 'identity' | 'role' | 'account' | 'study' | 'school';
 
 type SignupStep = {
   id: SignupStepId;
@@ -97,72 +69,26 @@ type SignupStep = {
 const IDENTITY_STEP: SignupStep = {
   id: 'identity',
   title: 'Who are you?',
-  description: 'Tell us about yourself so we can personalize your experience.',
+  description: 'Choose the kind of account you need.',
 };
 
-const INSTITUTIONAL_ROLE_STEP: SignupStep = {
+const ROLE_STEP: SignupStep = {
   id: 'role',
   title: 'What is your role?',
   description: 'Choose your role at your school or college.',
 };
 
-// Asked right at the start (before name/email) for individual student signups
-// so the rest of the wizard — and the whole app afterwards — can adapt
-// immediately for a young child, rather than discovering it later. Age drives
-// the Kids Dashboard eligibility check (src/lib/kids/eligibility.ts) directly
-// from date_of_birth, so this single question also replaces the class/grade
-// question for anyone too young to pick from the normal grade list.
-const BIRTHDATE_STEP: SignupStep = {
-  id: 'birthdate',
-  title: "When's your birthday?",
-  description: 'This helps us set up the right experience for your age.',
+const ACCOUNT_STEP: SignupStep = {
+  id: 'account',
+  title: 'Create your account',
+  description: 'Just the essentials. You can complete the rest later in Settings.',
 };
 
-const CORE_STEPS: SignupStep[] = [
-  { id: 'language', title: 'Choose your language', description: 'Choose English or Roman Urdu for the interface.' },
-  { id: 'name', title: 'Your name', description: 'Enter the name that will appear in the app.' },
-  { id: 'email', title: 'Email address', description: 'Used for login and account recovery.' },
-  { id: 'phone', title: 'Phone number', description: 'Required for your contact directory and device dialing.' },
-  {
-    id: 'password',
-    title: 'Secure password',
-    description: 'You can also use the strong password suggested by your browser.',
-  },
-  {
-    id: 'username',
-    title: 'Unique username',
-    description: 'People can find you by this @username in search and Study Buddies.',
-  },
-];
-
-const GENDER_STEP: SignupStep = {
-  id: 'gender',
-  title: 'Gender',
-  description: 'Used for Study Buddies privacy and your default theme.',
+const STUDY_STEP: SignupStep = {
+  id: 'study',
+  title: 'Set up your studies',
+  description: 'We only need the information required to show the right learning content.',
 };
-
-const STUDENT_STEPS: SignupStep[] = [
-  GENDER_STEP,
-  {
-    id: 'education',
-    title: 'Where do you study?',
-    description: 'Select your school, college, or university level.',
-  },
-  {
-    id: 'institution',
-    title: 'Institution name',
-    description: 'Enter the name of your school, college, or university.',
-  },
-];
-
-const SCHOOL_STEPS: SignupStep[] = [
-  { id: 'grade', title: 'Your class', description: 'Lectures, notes, and papers for this class will be shown.' },
-  {
-    id: 'board',
-    title: 'Your board',
-    description: 'The final step. Board-specific content will be filtered using this choice.',
-  },
-];
 
 const SCHOOL_SEARCH_STEP: SignupStep = {
   id: 'school',
@@ -170,87 +96,29 @@ const SCHOOL_SEARCH_STEP: SignupStep = {
   description: 'Search for your school on ilm AI. Its admin approves your request before you get access.',
 };
 
-// Generates signup steps based on the user's chosen identity. Each path is a self-contained flow.
-// `institutional` skips the free `institution`/`education` text fields in
-// favour of SCHOOL_SEARCH_STEP, which looks up a real school_organizations
-// row and (post-signup) files a school_join_requests approval request
-// instead of just storing a label on the profile — see
-// src/lib/school-erp/join-requests.ts.
+function educationLevelFromGrade(gradeLevel: string | undefined): 'school' | 'college' {
+  return gradeLevel === 'GRADE_11' || gradeLevel === 'GRADE_12' || gradeLevel === 'A_LEVEL' ? 'college' : 'school';
+}
+
+// Keep each persona on its own path. University is only selected when the user explicitly chose
+// the University Student identity; a School/College Student never sees a university choice.
 export function getSignupSteps(
   identity: SignupIdentity,
-  institutionalRole?: InstitutionalRole,
-  isYoungChild: boolean = false
+  institutionalRole?: InstitutionalRole
 ): SignupStep[] {
-  // Parent pathway: no education/institution questions
-  if (identity === 'parent') {
-    return [IDENTITY_STEP, ...CORE_STEPS];
-  }
+  if (identity === 'parent') return [IDENTITY_STEP, ACCOUNT_STEP];
+  if (identity === 'kid') return [IDENTITY_STEP, ACCOUNT_STEP];
+  if (identity === 'university') return [IDENTITY_STEP, ACCOUNT_STEP, STUDY_STEP];
+  if (identity === 'school-college') return [IDENTITY_STEP, ACCOUNT_STEP, STUDY_STEP];
 
-  // Kid pathway: explicit "I'm a Kid" identity, always the short under-8 flow — no
-  // gender/education/institution/grade/board questions, same shape the age-based isYoungChild
-  // shortcut already produces for the other identities below, just reachable directly instead of
-  // requiring someone to guess "School/College Student" and enter a real birthdate to unlock it.
-  if (identity === 'kid') {
-    return [IDENTITY_STEP, BIRTHDATE_STEP, ...CORE_STEPS];
-  }
-
-  // University student pathway: no grade/board/education picker (pre-selected as 'university')
-  if (identity === 'university') {
-    if (isYoungChild) return [IDENTITY_STEP, BIRTHDATE_STEP, ...CORE_STEPS];
-    return [
-      IDENTITY_STEP,
-      BIRTHDATE_STEP,
-      ...CORE_STEPS,
-      GENDER_STEP,
-      {
-        id: 'institution',
-        title: 'University name',
-        description: 'Enter the name of your university.',
-      },
-    ];
-  }
-
-  // School/College student pathway: education/institution/grade/board questions
-  if (identity === 'school-college') {
-    if (isYoungChild) return [IDENTITY_STEP, BIRTHDATE_STEP, ...CORE_STEPS];
-    return [
-      IDENTITY_STEP,
-      BIRTHDATE_STEP,
-      ...CORE_STEPS,
-      GENDER_STEP,
-      {
-        id: 'education',
-        title: 'Where do you study?',
-        description: 'Select your school or college level.',
-      },
-      {
-        id: 'institution',
-        title: 'Institution name',
-        description: 'Enter the name of your school or college.',
-      },
-      { id: 'grade', title: 'Your class', description: 'Lectures, notes, and papers for this class will be shown.' },
-      {
-        id: 'board',
-        title: 'Your board',
-        description: 'The final step. Board-specific content will be filtered using this choice.',
-      },
-    ];
-  }
-
-  // Institutional (school/college invite) pathway: role picker → institution search → role-specific steps
-  // institutionalRole must be 'student', 'teacher', or 'principal'
   if (identity === 'institutional') {
-    if (institutionalRole === 'teacher') {
-      return [IDENTITY_STEP, INSTITUTIONAL_ROLE_STEP, ...CORE_STEPS, SCHOOL_SEARCH_STEP];
+    if (institutionalRole === 'teacher' || institutionalRole === 'principal') {
+      return [IDENTITY_STEP, ROLE_STEP, ACCOUNT_STEP, SCHOOL_SEARCH_STEP];
     }
-    if (institutionalRole === 'principal') {
-      return [IDENTITY_STEP, INSTITUTIONAL_ROLE_STEP, ...CORE_STEPS, SCHOOL_SEARCH_STEP];
-    }
-    // Student in institutional context
-    return [IDENTITY_STEP, INSTITUTIONAL_ROLE_STEP, ...CORE_STEPS, GENDER_STEP, SCHOOL_SEARCH_STEP, ...SCHOOL_STEPS];
+    return [IDENTITY_STEP, ROLE_STEP, ACCOUNT_STEP, SCHOOL_SEARCH_STEP, STUDY_STEP];
   }
 
-  return [IDENTITY_STEP, ...CORE_STEPS];
+  return [IDENTITY_STEP, ACCOUNT_STEP];
 }
 
 type SchoolSearchResult = { id: string; name: string; organization_type: string };
@@ -258,44 +126,38 @@ type SchoolSearchResult = { id: string; name: string; organization_type: string 
 export function RegisterForm() {
   const [showPass, setShowPass] = useState(false);
   const [identity, setIdentity] = useState<SignupIdentity | null>(null);
-  // These are derived from identity but kept for backward compatibility with existing logic
-  const [membershipMode, setMembershipMode] = useState<MembershipMode>('individual');
-  const [accountType, setAccountType] = useState<AccountType>('student');
   const [institutionalRole, setInstitutionalRole] = useState<InstitutionalRole>('student');
-  const [educationLevel, setEducationLevel] = useState<EducationLevel>('school');
-  const [gender, setGender] = useState<Gender | null>(null);
+  const [preferredLanguage, setPreferredLanguage] = useState<Locale>('en');
   const [schoolQuery, setSchoolQuery] = useState('');
   const [schoolResults, setSchoolResults] = useState<SchoolSearchResult[]>([]);
   const [searchingSchools, setSearchingSchools] = useState(false);
   const [selectedSchool, setSelectedSchool] = useState<{ id: string; name: string } | null>(null);
-  const [institutionSuggestionsOpen, setInstitutionSuggestionsOpen] = useState(false);
-  const { locale, setLocale } = useLocale();
-  const [preferredLanguage, setPreferredLanguage] = useState<Locale>(locale);
   const [stepIndex, setStepIndex] = useState(0);
-  const [checkingUsername, setCheckingUsername] = useState(false);
-  const [detectedCountry, setDetectedCountry] = useState<string | null>(null);
-  // Offered on the password step rather than a separate wizard screen — MFA enrollment itself
-  // (QR code, verify a 6-digit code) needs an authenticated session, which doesn't exist until
-  // signUp() succeeds below. Checking this reuses the existing Settings MFA flow via a post-signup
-  // redirect instead of building a parallel enrollment UI inside the wizard.
-  const [wantsMfa, setWantsMfa] = useState(true);
+  const [universityProgram, setUniversityProgram] = useState('');
+  const [universitySemester, setUniversitySemester] = useState('');
+
+  const { setLocale } = useLocale();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect') || '/dashboard';
   const supabase = createClient();
   const t = useTranslations();
-  // The account's identity (drives profiles.role): derived from the identity choice
-  const effectiveRole: InstitutionalRole | 'parent' = identity === 'parent' ? 'parent' : identity === 'institutional' ? institutionalRole : 'student';
+
+  const effectiveRole: InstitutionalRole | 'parent' =
+    identity === 'parent'
+      ? 'parent'
+      : identity === 'institutional'
+        ? institutionalRole
+        : 'student';
 
   const {
     register,
     handleSubmit,
     getValues,
-    watch,
-    setValue,
     setFocus,
     setError,
     clearErrors,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -303,76 +165,41 @@ export function RegisterForm() {
     defaultValues: {
       fullName: '',
       email: '',
-      phone: '',
       password: '',
       confirmPassword: '',
-      username: '',
-      institutionName: '',
       gradeLevel: '',
-      board: '',
       birthDate: '',
     },
   });
+
   const selectedGrade = watch('gradeLevel');
-  const institutionNameValue = watch('institutionName') || '';
-  const institutionSuggestionList =
-    identity === 'university' ? PAKISTAN_UNIVERSITIES :
-    identity === 'school-college' ? (educationLevel === 'university' ? PAKISTAN_UNIVERSITIES : educationLevel === 'college' ? PAKISTAN_COLLEGES : PAKISTAN_SCHOOLS) :
-    educationLevel === 'university' ? PAKISTAN_UNIVERSITIES :
-    educationLevel === 'college' ? PAKISTAN_COLLEGES :
-    PAKISTAN_SCHOOLS;
-  const institutionSuggestions = institutionSuggestionsOpen
-    ? suggestInstitutions(institutionSuggestionList, institutionNameValue)
-    : [];
-  // "School/College Student" is already the user's persona. At the next step
-  // they only need to distinguish School vs College; University must not appear
-  // because the separate "University Student" identity already exists.
-  const signupEducationLevels =
-    identity === 'school-college'
-      ? EDUCATION_LEVELS.filter((level) => level.value === 'school' || level.value === 'college')
-      : EDUCATION_LEVELS;
   const birthDateValue = watch('birthDate');
   const isYoungChild = Boolean(
-    identity && ['parent', 'university', 'school-college', 'kid'].includes(identity) &&
-    calculateAge(birthDateValue) !== null &&
-    (calculateAge(birthDateValue) as number) < KIDS_DASHBOARD_AGE_CUTOFF
+    identity === 'kid' &&
+      typeof birthDateValue === 'string' &&
+      birthDateValue &&
+      calculateAge(birthDateValue) !== null &&
+      (calculateAge(birthDateValue) as number) < KIDS_DASHBOARD_AGE_CUTOFF
   );
 
-  const steps = useMemo(() => {
-    if (!identity) return [IDENTITY_STEP];
-    return getSignupSteps(identity, institutionalRole, isYoungChild);
-  }, [identity, institutionalRole, isYoungChild]);
+  const steps = useMemo(
+    () => (identity ? getSignupSteps(identity, institutionalRole) : [IDENTITY_STEP]),
+    [identity, institutionalRole]
+  );
   const currentStep = steps[Math.min(stepIndex, steps.length - 1)]!;
   const isFirstStep = stepIndex === 0;
-  const isLastStep = Boolean(identity) && stepIndex === steps.length - 1;
-
-  useEffect(() => {
-    fetch('/api/geo')
-      .then((response) => response.json())
-      .then((json) => {
-        const country = json?.country as string | undefined;
-        if (country && COUNTRY_BOARD_DEFAULTS[country]) {
-          setDetectedCountry(country);
-          setValue('board', COUNTRY_BOARD_DEFAULTS[country]);
-        }
-      })
-      .catch(() => {});
-  }, [setValue]);
+  const isLastStep = stepIndex === steps.length - 1;
 
   useEffect(() => {
     const fieldByStep: Partial<Record<SignupStepId, keyof FormData>> = {
-      name: 'fullName',
-      email: 'email',
-      phone: 'phone',
-      password: 'password',
-      username: 'username',
-      institution: 'institutionName',
       grade: 'gradeLevel',
-      board: 'board',
-      birthdate: 'birthDate',
     };
     const field = fieldByStep[currentStep.id];
-    if (!field) return;
+    if (!field) {
+      if (currentStep.id !== 'account') return;
+      const timer = window.setTimeout(() => setFocus('fullName'), 80);
+      return () => window.clearTimeout(timer);
+    }
     const timer = window.setTimeout(() => setFocus(field), 80);
     return () => window.clearTimeout(timer);
   }, [currentStep.id, setFocus]);
@@ -385,6 +212,7 @@ export function RegisterForm() {
       setSearchingSchools(false);
       return;
     }
+
     setSearchingSchools(true);
     const timer = window.setTimeout(() => {
       fetch(`/api/schools/search?q=${encodeURIComponent(term)}`)
@@ -392,29 +220,10 @@ export function RegisterForm() {
         .then((json) => setSchoolResults(json.schools || []))
         .catch(() => setSchoolResults([]))
         .finally(() => setSearchingSchools(false));
-    }, 350);
+    }, 300);
+
     return () => window.clearTimeout(timer);
   }, [schoolQuery, currentStep.id]);
-
-  const checkUsername = async () => {
-    const username = getValues('username').trim().toLowerCase();
-    setCheckingUsername(true);
-    try {
-      const response = await fetch(`/api/auth/check-username?username=${encodeURIComponent(username)}`);
-      const json = await response.json().catch(() => ({ available: false }));
-      if (!response.ok || json.available !== true) {
-        toast.error(json.error || 'This username is already taken.');
-        return false;
-      }
-      setValue('username', username, { shouldValidate: true });
-      return true;
-    } catch {
-      toast.error('We could not check the username. Please try again.');
-      return false;
-    } finally {
-      setCheckingUsername(false);
-    }
-  };
 
   const validateCurrentStep = async () => {
     const validateField = <Field extends keyof typeof formSchema.shape>(field: Field) => {
@@ -430,82 +239,49 @@ export function RegisterForm() {
     switch (currentStep.id) {
       case 'identity':
         if (!identity) {
-          toast.error('Please select your role.');
+          toast.error('Please choose an account type.');
           return false;
         }
         return true;
+
       case 'role':
-        if (!institutionalRole) {
-          toast.error('Please select your role.');
-          return false;
-        }
-        return true;
-      case 'name':
-        return validateField('fullName');
-      case 'email':
-        return validateField('email');
-      case 'phone': {
-        const value = getValues('phone').trim();
-        if (!value) {
-          toast.error('Please enter your phone number.');
-          return false;
-        }
-        const digits = value.replace(/\D/g, '');
-        if (value.length > 24 || digits.length < 7 || digits.length > 15 || !/^[+()0-9\s-]+$/.test(value)) {
-          toast.error('Enter a valid phone number.');
-          return false;
-        }
-        return true;
-      }
-      case 'password': {
-        if (!validateField('password')) return false;
+        return Boolean(institutionalRole);
+
+      case 'account': {
+        const nameOk = validateField('fullName');
+        const emailOk = validateField('email');
+        const passwordOk = validateField('password');
+        if (!passwordOk) return false;
         if (getValues('password') !== getValues('confirmPassword')) {
           setError('confirmPassword', { type: 'manual', message: 'Passwords do not match' });
           return false;
         }
         clearErrors('confirmPassword');
-        return true;
+        if (identity === 'kid' && !validateField('birthDate')) return false;
+        return nameOk && emailOk;
       }
-      case 'username': {
-        if (!validateField('username')) return false;
-        return checkUsername();
-      }
-      case 'birthdate':
-        if (!getValues('birthDate')) {
-          toast.error('Please select a date of birth.');
+
+      case 'study':
+        if (identity === 'university') {
+          if (!universityProgram.trim() || !universitySemester.trim()) {
+            toast.error('Enter your degree/program and semester.');
+            return false;
+          }
+          return true;
+        }
+        if (!getValues('gradeLevel')) {
+          toast.error('Please select your class.');
           return false;
         }
         return true;
-      case 'gender':
-        if (!gender) {
-          toast.error('Please select your gender.');
-          return false;
-        }
-        return true;
-      case 'institution':
-        if ((getValues('institutionName') || '').trim().length < 2) {
-          toast.error('Enter a valid institution name.');
-          return false;
-        }
-        return true;
+
       case 'school':
         if (!selectedSchool) {
           toast.error('Search and select your institution first.');
           return false;
         }
         return true;
-      case 'grade':
-        if (!getValues('gradeLevel')) {
-          toast.error('Please select your class.');
-          return false;
-        }
-        return true;
-      case 'board':
-        if (!getValues('board')) {
-          toast.error('Please select your board.');
-          return false;
-        }
-        return true;
+
       default:
         return true;
     }
@@ -516,51 +292,34 @@ export function RegisterForm() {
     setStepIndex((current) => Math.min(current + 1, steps.length - 1));
   };
 
-  const changeAccountType = (nextType: AccountType) => {
-    setAccountType(nextType);
-    if (nextType === 'parent') setGender(null);
-  };
-
-  const changeMembershipMode = (mode: MembershipMode) => {
-    setMembershipMode(mode);
-    setSelectedSchool(null);
-    setSchoolQuery('');
-    setSchoolResults([]);
-  };
-
   const onSubmit = async (data: FormData) => {
-    const isInstitutional = membershipMode === 'institutional';
+    const isInstitutional = identity === 'institutional';
+    const studentEducation =
+      identity === 'university'
+        ? 'university'
+        : effectiveRole === 'student'
+          ? educationLevelFromGrade(data.gradeLevel)
+          : undefined;
 
-    // The 'kid' identity's step list never includes gender/institution/grade/board (see
-    // getSignupSteps above) — unlike the university/school-college isYoungChild shortcut, it
-    // stays short even if the entered birthdate turns out not to compute under the kids-dashboard
-    // age cutoff, so this final check must not demand fields that flow never asked for.
-    if (effectiveRole === 'student' && !isYoungChild && identity !== 'kid') {
-      if (!gender) {
-        toast.error('Please select your gender.');
-        return;
-      }
-      if (isInstitutional) {
-        if (!selectedSchool) {
-          toast.error('Search and select your institution first.');
-          return;
-        }
-      } else if (!data.institutionName?.trim()) {
-        toast.error('Enter your institution name.');
-        return;
-      }
-      if (educationLevel !== 'university' && (!data.gradeLevel || !data.board)) {
-        toast.error('Select your class and board.');
-        return;
-      }
+    if (effectiveRole === 'student' && identity !== 'kid' && !data.gradeLevel && identity !== 'university') {
+      toast.error('Please select your class.');
+      return;
     }
 
-    if ((effectiveRole === 'teacher' || effectiveRole === 'principal') && !selectedSchool) {
+    if (effectiveRole === 'student' && identity === 'university' && (!universityProgram.trim() || !universitySemester.trim())) {
+      toast.error('Enter your degree/program and semester.');
+      return;
+    }
+
+    if (isInstitutional && !selectedSchool) {
       toast.error('Search and select your institution first.');
       return;
     }
 
-    if (!(await checkUsername())) return;
+    if (isInstitutional && institutionalRole === 'student' && !data.gradeLevel) {
+      toast.error('Please select your class.');
+      return;
+    }
 
     const normalizedEmail = data.email.trim().toLowerCase();
     try {
@@ -579,8 +338,7 @@ export function RegisterForm() {
         return;
       }
     } catch {
-      // If the check itself fails, fall through to signUp() — Supabase's own
-      // "already registered" handling is the fallback safety net.
+      // Supabase signUp remains the final duplicate-email safeguard.
     }
 
     try {
@@ -593,34 +351,39 @@ export function RegisterForm() {
     const callbackUrl = new URL('/api/auth/callback', window.location.origin);
     callbackUrl.searchParams.set('redirect', redirect);
 
+    const metadata: Record<string, unknown> = {
+      full_name: data.fullName.trim(),
+      role: effectiveRole,
+      preferred_language: preferredLanguage,
+      phone: undefined,
+      username: undefined,
+      gender: undefined,
+      board: undefined,
+      grade_level:
+        effectiveRole === 'student' && identity !== 'university' && identity !== 'kid'
+          ? data.gradeLevel
+          : isInstitutional && institutionalRole === 'student'
+            ? data.gradeLevel
+            : undefined,
+      education_level: studentEducation,
+      university_program: identity === 'university' ? universityProgram.trim() : undefined,
+      university_semester: identity === 'university' ? universitySemester.trim() : undefined,
+      academic_institution_name: undefined,
+      academic_institution_type: undefined,
+      date_of_birth: effectiveRole === 'student' && identity === 'kid' ? data.birthDate || undefined : undefined,
+      signup_institution_id: isInstitutional ? selectedSchool?.id : undefined,
+      signup_role_requested: isInstitutional ? institutionalRole : undefined,
+    };
+
     const { data: signUpData, error } = await supabase.auth.signUp({
-      email: data.email.trim().toLowerCase(),
+      email: normalizedEmail,
       password: data.password,
       options: {
-        data: {
-          full_name: data.fullName.trim(),
-          username: data.username.trim().toLowerCase(),
-          role: effectiveRole,
-          board: effectiveRole === 'student' && educationLevel !== 'university' ? data.board : undefined,
-          grade_level: effectiveRole === 'student' && educationLevel !== 'university' ? data.gradeLevel : undefined,
-          education_level: effectiveRole === 'student' ? educationLevel : undefined,
-          academic_institution_name:
-            effectiveRole === 'student' && !isInstitutional ? data.institutionName?.trim() || undefined : undefined,
-          academic_institution_type: effectiveRole === 'student' && !isInstitutional ? educationLevel : undefined,
-          gender: effectiveRole === 'student' ? gender : undefined,
-          date_of_birth: effectiveRole === 'student' && !isInstitutional ? data.birthDate || undefined : undefined,
-          preferred_language: preferredLanguage,
-          phone: data.phone.trim(),
-          signup_institution_id: isInstitutional ? selectedSchool?.id : undefined,
-          signup_role_requested: isInstitutional ? institutionalRole : undefined,
-          // Read back by /api/auth/callback for the email-confirmation-required path (no session
-          // exists yet here to redirect through directly) and used below for the immediate-session
-          // path. Kept as plain signUp metadata, not a DB column, since it's a one-time signal.
-          enable_2fa: wantsMfa || undefined,
-        },
+        data: metadata,
         emailRedirectTo: callbackUrl.toString(),
       },
     });
+
     if (error) {
       toast.error(error.message);
       return;
@@ -632,13 +395,13 @@ export function RegisterForm() {
         toast.error('Profile setup failed. Please log in again and try.');
         return;
       }
+
       toast.success(
         isInstitutional && selectedSchool
           ? `Account created. Your request to join ${selectedSchool.name} has been sent for approval.`
           : 'Account created successfully.'
       );
-      // Phase 7b — best-effort, never blocks signup: if this page was reached via
-      // /register?ref=CODE, record the referral now that the profile definitely exists.
+
       const referralCode = searchParams.get('ref');
       if (referralCode) {
         fetch('/api/referral/redeem', {
@@ -647,78 +410,35 @@ export function RegisterForm() {
           body: JSON.stringify({ code: referralCode }),
         }).catch(() => {});
       }
-      if (effectiveRole === 'student' && gender) {
-        const genderTheme = gender === 'girl' ? 'theme-pink-light' : 'theme-midnight-dark';
-        window.localStorage.setItem('theme', genderTheme);
-        document.cookie = `${THEME_COOKIE_NAME}=${genderTheme}; Path=/; Max-Age=31536000; SameSite=Lax`;
-        window.localStorage.setItem('ilm-ai-gender-theme-user', signUpData.user?.id || data.email);
-      }
-      let normalDestination =
+
+      const normalDestination =
         effectiveRole === 'parent'
           ? '/parent'
           : isYoungChild
             ? '/kids'
-            : !isInstitutional && educationLevel === 'university'
-              ? '/onboarding/complete-profile'
-              : redirect;
-      // A school/college member (principal/owner, teacher, staff, ...) can already have an active
-      // school_memberships/college_memberships row at signup time — e.g. an admin pre-added their
-      // email as a school owner before they ever signed up themselves. Without this check, that
-      // person's own /register wizard would send them straight to `redirect` (usually /dashboard)
-      // and generic student onboarding, completely bypassing their institution portal — the exact
-      // membership check LoginForm's finishLogin() already does via post-login-destination.
-      if (!isYoungChild && effectiveRole !== 'parent') {
-        try {
-          const destinationResponse = await fetch(
-            `/api/auth/post-login-destination?redirect=${encodeURIComponent(normalDestination)}`
-          );
-          const destinationData = await destinationResponse.json();
-          if (typeof destinationData.destination === 'string') normalDestination = destinationData.destination;
-        } catch {
-          // Keep the computed fallback destination if the lookup fails.
-        }
-      }
-      // Kids accounts skip the offer entirely — a young child isn't the one setting up their own
-      // authenticator app; a parent/guardian can enable it later from Settings if they want to.
-      router.push(
-        wantsMfa && !isYoungChild
-          ? `/settings?tab=security&mfa=start&next=${encodeURIComponent(normalDestination)}`
-          : normalDestination
-      );
+            : '/dashboard';
+
+      router.push(normalDestination);
       router.refresh();
       return;
     }
 
     toast.success('Account created. Check your email.');
-    window.sessionStorage.setItem('ilm-ai-pending-verification-email', data.email.trim().toLowerCase());
+    window.sessionStorage.setItem('ilm-ai-pending-verification-email', normalizedEmail);
     router.push('/verify-email');
   };
 
-  const availableGrades = GRADE_LEVELS.filter((grade) => {
-    if (educationLevel === 'school') return ['GRADE_9', 'GRADE_10', 'O_LEVEL'].includes(grade.value);
-    return ['GRADE_11', 'GRADE_12', 'A_LEVEL'].includes(grade.value);
-  });
+  const availableGrades = GRADE_LEVELS;
 
   return (
-    <div className={cn(isYoungChild && 'rounded-3xl bg-gradient-to-b from-sky-50 via-violet-50 to-amber-50 p-4 dark:from-sky-950/40 dark:via-violet-950/40 dark:to-amber-950/40')}>
+    <div className="w-full">
       <div className="mb-5">
         <div className="mb-2 flex items-center justify-between gap-4">
-          {/* min-w-0 lets this block shrink/wrap instead of forcing its own width (a flex item's
-              default min-width is auto) — without it, a long step description pushed the step-count
-              badge on the right past the edge of narrow screens instead of wrapping under it. */}
           <div className="min-w-0">
-            <h1 className={cn('text-2xl font-bold', isYoungChild && 'text-violet-700 dark:text-violet-200')}>
-              {isYoungChild ? '🎈 ' : ''}
-              {t('auth.register.title')}
-            </h1>
+            <h1 className="text-2xl font-bold">{t('auth.register.title')}</h1>
             <p className="text-muted-foreground mt-1 text-sm">{currentStep.description}</p>
           </div>
-          <span
-            className={cn(
-              'shrink-0 rounded-full px-3 py-1 text-xs font-semibold',
-              isYoungChild ? 'bg-violet-500/15 text-violet-600 dark:text-violet-300' : 'bg-primary/10 text-primary'
-            )}
-          >
+          <span className="bg-primary/10 text-primary shrink-0 rounded-full px-3 py-1 text-xs font-semibold">
             {stepIndex + 1}/{steps.length}
           </span>
         </div>
@@ -728,21 +448,21 @@ export function RegisterForm() {
               key={step.id}
               className={cn(
                 'h-1.5 flex-1 rounded-full transition-colors',
-                index <= stepIndex ? (isYoungChild ? 'bg-violet-500' : 'bg-primary') : 'bg-muted'
+                index <= stepIndex ? 'bg-primary' : 'bg-muted'
               )}
             />
           ))}
         </div>
-        <p className="text-muted-foreground mt-3 text-[11px] leading-4">
-          Privacy: recent chats stay live for 2 days, then move to secure archive storage. Temporary scans are deleted
-          after 2 days.
-        </p>
       </div>
 
-      {currentStep.id === 'name' && membershipMode === 'individual' && (
-        <>
-          <OAuthButtons action="Register" role={accountType} />
-          <div className="relative my-5">
+      {currentStep.id === 'account' && identity !== 'institutional' && identity !== 'kid' && (
+        <div className="mb-5">
+          <OAuthButtons
+            action="Register"
+            role={identity === 'parent' ? 'parent' : 'student'}
+            educationLevel={identity === 'university' ? 'university' : 'school'}
+          />
+          <div className="relative my-4">
             <div className="absolute inset-0 flex items-center">
               <span className="border-border w-full border-t" />
             </div>
@@ -750,7 +470,7 @@ export function RegisterForm() {
               <span className="bg-background text-muted-foreground px-2">{t('auth.register.orEmail')}</span>
             </div>
           </div>
-        </>
+        </div>
       )}
 
       <form
@@ -761,104 +481,41 @@ export function RegisterForm() {
         }}
         className="space-y-5"
       >
-        <div className="min-h-36">
-          <h2 className="mb-4 text-xl font-bold">{currentStep.title}</h2>
+        <div className="space-y-5">
+          <h2 className="text-xl font-bold">{currentStep.title}</h2>
 
           {currentStep.id === 'identity' && (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setIdentity('parent');
-                  setMembershipMode('individual');
-                  setAccountType('parent');
-                }}
-                aria-pressed={identity === 'parent'}
-                className={cn(
-                  'flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border-2 p-3 text-center text-sm font-semibold transition-all',
-                  identity === 'parent'
-                    ? 'border-primary bg-primary/15 text-primary'
-                    : 'border-border bg-card/80 text-muted-foreground hover:border-primary/40'
-                )}
-              >
-                <Users className="h-6 w-6" /> Parent
-                <span className="text-muted-foreground text-xs font-normal">Manage your children's learning</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setIdentity('university');
-                  setMembershipMode('individual');
-                  setAccountType('student');
-                  setEducationLevel('university');
-                }}
-                aria-pressed={identity === 'university'}
-                className={cn(
-                  'flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border-2 p-3 text-center text-sm font-semibold transition-all',
-                  identity === 'university'
-                    ? 'border-primary bg-primary/15 text-primary'
-                    : 'border-border bg-card/80 text-muted-foreground hover:border-primary/40'
-                )}
-              >
-                <GraduationCap className="h-6 w-6" /> University Student
-                <span className="text-muted-foreground text-xs font-normal">Higher education tools and resources</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setIdentity('school-college');
-                  setMembershipMode('individual');
-                  setAccountType('student');
-                  setEducationLevel('school');
-                }}
-                aria-pressed={identity === 'school-college'}
-                className={cn(
-                  'flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border-2 p-3 text-center text-sm font-semibold transition-all',
-                  identity === 'school-college'
-                    ? 'border-primary bg-primary/15 text-primary'
-                    : 'border-border bg-card/80 text-muted-foreground hover:border-primary/40'
-                )}
-              >
-                <School className="h-6 w-6" /> School/College Student
-                <span className="text-muted-foreground text-xs font-normal">Classes, boards and grades setup</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setIdentity('kid');
-                  setMembershipMode('individual');
-                  setAccountType('student');
-                  setEducationLevel('school');
-                }}
-                aria-pressed={identity === 'kid'}
-                className={cn(
-                  'flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border-2 p-3 text-center text-sm font-semibold transition-all',
-                  identity === 'kid'
-                    ? 'border-primary bg-primary/15 text-primary'
-                    : 'border-border bg-card/80 text-muted-foreground hover:border-primary/40'
-                )}
-              >
-                <Baby className="h-6 w-6" /> I&apos;m a Kid 🎈
-                <span className="text-muted-foreground text-xs font-normal">For learners under 8 — no boring forms</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setIdentity('institutional');
-                  setMembershipMode('institutional');
-                  setInstitutionalRole('student');
-                }}
-                aria-pressed={identity === 'institutional'}
-                className={cn(
-                  'flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border-2 p-3 text-center text-sm font-semibold transition-all',
-                  identity === 'institutional'
-                    ? 'border-primary bg-primary/15 text-primary'
-                    : 'border-border bg-card/80 text-muted-foreground hover:border-primary/40'
-                )}
-              >
-                <Building2 className="h-6 w-6" /> Institutional
-                <span className="text-muted-foreground text-xs font-normal">Join your school or college</span>
-              </button>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {[
+                ['school-college', 'School/College Student', 'Start with your class-based learning tools.'],
+                ['university', 'University Student', 'Start with University Hub and university resources.'],
+                ['parent', 'Parent', 'Track a child’s learning.'],
+                ['kid', 'I’m a Kid 🎈', 'A simple flow for young learners.'],
+                ['institutional', 'Join an Institution', 'Join a school or college already on ilm AI.'],
+              ].map(([value, label, description]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => {
+                    const next = value as SignupIdentity;
+                    setIdentity(next);
+                    setStepIndex(0);
+                    setSelectedSchool(null);
+                    setSchoolQuery('');
+                    if (next === 'institutional') setInstitutionalRole('student');
+                  }}
+                  aria-pressed={identity === value}
+                  className={cn(
+                    'rounded-xl border-2 p-4 text-left transition-all',
+                    identity === value
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-border bg-card/70 text-muted-foreground hover:border-primary/40'
+                  )}
+                >
+                  <span className="block text-sm font-bold">{label}</span>
+                  <span className="mt-1 block text-xs leading-5">{description}</span>
+                </button>
+              ))}
             </div>
           )}
 
@@ -870,159 +527,79 @@ export function RegisterForm() {
                   onClick={() => setInstitutionalRole('student')}
                   aria-pressed={institutionalRole === 'student'}
                   className={cn(
-                    'flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border-2 p-4 text-center text-sm font-semibold transition-all',
+                    'rounded-xl border-2 p-5 text-center transition-all',
                     institutionalRole === 'student'
-                      ? 'border-primary bg-primary/15 text-primary'
-                      : 'border-border bg-card/80 text-muted-foreground hover:border-primary/40'
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-border bg-card/70 text-muted-foreground'
                   )}
                 >
-                  <GraduationCap className="h-6 w-6" /> Student
-                  <span className="text-muted-foreground text-xs font-normal">Attend classes and take exams</span>
+                  <GraduationCap className="mx-auto mb-2 h-7 w-7" />
+                  <span className="block font-semibold">Student</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setInstitutionalRole('teacher')}
                   aria-pressed={institutionalRole === 'teacher'}
                   className={cn(
-                    'flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border-2 p-4 text-center text-sm font-semibold transition-all',
+                    'rounded-xl border-2 p-5 text-center transition-all',
                     institutionalRole === 'teacher'
-                      ? 'border-primary bg-primary/15 text-primary'
-                      : 'border-border bg-card/80 text-muted-foreground hover:border-primary/40'
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-border bg-card/70 text-muted-foreground'
                   )}
                 >
-                  <Presentation className="h-6 w-6" /> Teacher
-                  <span className="text-muted-foreground text-xs font-normal">Manage classes and exams</span>
+                  <Presentation className="mx-auto mb-2 h-7 w-7" />
+                  <span className="block font-semibold">Teacher</span>
                 </button>
               </div>
-              {/* No self-service "Principal" option on purpose — a new school/principal account is
-                  always platform-admin-provisioned via /admin/schools (see
-                  lib/school-erp/join-request-signup.ts: SchoolJoinRole is only 'student' | 'teacher'
-                  — a join request can never be filed as principal). This used to offer a "Principal"
-                  button that searched for and requested to join an existing school, but that request
-                  was silently dropped (auth/callback's role resolver doesn't accept 'principal'
-                  either), leaving the person's account created with role defaulted all the way down
-                  to 'student' — no join request sent, no admin notified, and they'd then be asked
-                  student-only grade/board questions despite having said "I run this school." */}
               <p className="text-muted-foreground rounded-xl border border-dashed p-3 text-center text-xs">
-                Setting up a brand-new school or college, or already run one? Contact ilm AI&apos;s admin team to get
-                it set up — this page is only for joining a school already on ilm AI.
+                A new school or college is created through ilm AI’s admin setup. This flow is only for joining an existing institution.
               </p>
             </div>
           )}
 
-          {currentStep.id === 'language' && (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {[
-                { value: 'en' as const, label: 'English', description: 'Load the interface in English.' },
-                {
-                  value: 'roman-ur' as const,
-                  label: 'Roman Urdu',
-                  description: 'Read Urdu using English letters.',
-                },
-              ].map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  aria-pressed={preferredLanguage === option.value}
-                  onClick={() => {
-                    setPreferredLanguage(option.value);
-                    setLocale(option.value);
-                  }}
-                  className={cn(
-                    'relative rounded-2xl border-2 p-5 text-left transition-all',
-                    preferredLanguage === option.value
-                      ? 'border-primary bg-primary/15 shadow-primary/15 shadow-lg'
-                      : 'border-border bg-card/70 hover:border-primary/40'
-                  )}
-                >
-                  <Languages className="text-primary mb-4 h-6 w-6" />
-                  <span className="block font-bold">{option.label}</span>
-                  <span className="text-muted-foreground mt-1 block text-xs leading-5">{option.description}</span>
-                  {preferredLanguage === option.value && (
-                    <Check className="text-primary absolute top-4 right-4 h-4 w-4" />
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {currentStep.id === 'name' && (
-            <div>
-              <label htmlFor="signup-full-name" className="mb-2 block text-sm font-medium">
-                Full name
-              </label>
-              <div className="relative">
-                <User className="text-muted-foreground pointer-events-none absolute top-5 left-3 z-10 h-4 w-4 -translate-y-1/2" />
-                <Input
-                  {...register('fullName')}
-                  id="signup-full-name"
-                  autoComplete="name"
-                  placeholder={t('auth.register.fullNamePlaceholder')}
-                  className="pl-10"
-                  error={errors.fullName?.message}
-                />
-              </div>
-            </div>
-          )}
-
-          {currentStep.id === 'email' && (
-            <div>
-              <label htmlFor="signup-email" className="mb-2 block text-sm font-medium">
-                Email
-              </label>
-              <div className="relative">
-                <Mail className="text-muted-foreground pointer-events-none absolute top-5 left-3 z-10 h-4 w-4 -translate-y-1/2" />
-                <Input
-                  {...register('email')}
-                  id="signup-email"
-                  type="email"
-                  inputMode="email"
-                  autoComplete="email"
-                  autoCapitalize="none"
-                  spellCheck={false}
-                  placeholder={t('auth.register.emailPlaceholder')}
-                  className="pl-10"
-                  error={errors.email?.message}
-                />
-              </div>
-            </div>
-          )}
-
-          {currentStep.id === 'phone' && (
-            <div>
-              <label htmlFor="signup-phone" className="mb-2 block text-sm font-medium">
-                Mobile phone number
-              </label>
-              <Input
-                {...register('phone')}
-                id="signup-phone"
-                type="tel"
-                inputMode="tel"
-                autoComplete="tel"
-                placeholder="+92 300 1234567"
-                error={errors.phone?.message}
-              />
-              <p className="text-muted-foreground mt-2 text-xs">
-                Required to complete your account and appear correctly in the contact directory. Include your country code.
-              </p>
-            </div>
-          )}
-
-          {currentStep.id === 'password' && (
+          {currentStep.id === 'account' && (
             <div className="space-y-4">
-              <input
-                type="email"
-                name="signup-email-for-password-manager"
-                value={getValues('email')}
-                autoComplete="username"
-                readOnly
-                tabIndex={-1}
-                aria-hidden="true"
-                className="sr-only"
-              />
+              <div>
+                <label htmlFor="signup-full-name" className="mb-2 block text-sm font-medium">
+                  Full name
+                </label>
+                <div className="relative">
+                  <User className="text-muted-foreground pointer-events-none absolute top-5 left-3 z-10 h-4 w-4 -translate-y-1/2" />
+                  <Input
+                    {...register('fullName')}
+                    id="signup-full-name"
+                    autoComplete="name"
+                    placeholder={t('auth.register.fullNamePlaceholder')}
+                    className="pl-10"
+                    error={errors.fullName?.message}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="signup-email" className="mb-2 block text-sm font-medium">
+                  Email
+                </label>
+                <div className="relative">
+                  <Mail className="text-muted-foreground pointer-events-none absolute top-5 left-3 z-10 h-4 w-4 -translate-y-1/2" />
+                  <Input
+                    {...register('email')}
+                    id="signup-email"
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    placeholder={t('auth.register.emailPlaceholder')}
+                    className="pl-10"
+                    error={errors.email?.message}
+                  />
+                </div>
+              </div>
+
               <div>
                 <label htmlFor="signup-password" className="mb-2 block text-sm font-medium">
-                  New password
+                  Password
                 </label>
                 <div className="relative">
                   <Lock className="text-muted-foreground pointer-events-none absolute top-5 left-3 z-10 h-4 w-4 -translate-y-1/2" />
@@ -1038,14 +615,15 @@ export function RegisterForm() {
                   />
                   <button
                     type="button"
-                    onClick={() => setShowPass((current) => !current)}
+                    onClick={() => setShowPass((value) => !value)}
                     aria-label={showPass ? 'Hide password' : 'Show password'}
-                    className="text-muted-foreground hover:text-foreground absolute top-5 right-3 z-10 -translate-y-1/2"
+                    className="text-muted-foreground absolute top-5 right-3"
                   >
                     {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
+
               <div>
                 <label htmlFor="signup-confirm-password" className="mb-2 block text-sm font-medium">
                   Confirm password
@@ -1060,190 +638,53 @@ export function RegisterForm() {
                   error={errors.confirmPassword?.message}
                 />
               </div>
-              <p className="text-muted-foreground flex items-center gap-2 text-xs">
-                <ShieldCheck className="text-primary h-4 w-4" /> Chrome password suggestions are supported.
-              </p>
-              <label className="border-border bg-card/70 hover:border-primary/40 flex cursor-pointer items-start gap-3 rounded-xl border-2 p-3.5 text-sm">
-                <input
-                  type="checkbox"
-                  checked={wantsMfa}
-                  onChange={(event) => setWantsMfa(event.target.checked)}
-                  className="accent-primary mt-0.5 h-4 w-4 shrink-0"
-                />
-                <span>
-                  <span className="flex items-center gap-1.5 font-semibold">
-                    Enable 2-step verification after signup
-                    <span className="bg-primary/15 text-primary rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide">
-                      Recommended
-                    </span>
-                  </span>
-                  <span className="text-muted-foreground mt-0.5 block text-xs">
-                    You&apos;ll be taken straight to setting it up with your authenticator app right after your
-                    account is created.
-                  </span>
-                </span>
-              </label>
-            </div>
-          )}
 
-          {currentStep.id === 'username' && (
-            <div>
-              <label htmlFor="signup-username" className="mb-2 block text-sm font-medium">
-                Username
-              </label>
-              <div className="relative">
-                <AtSign className="text-muted-foreground pointer-events-none absolute top-5 left-3 z-10 h-4 w-4 -translate-y-1/2" />
-                <Input
-                  {...register('username')}
-                  id="signup-username"
-                  autoComplete="username"
-                  autoCapitalize="none"
-                  spellCheck={false}
-                  placeholder="your.name"
-                  className="pl-10"
-                  error={errors.username?.message}
-                />
-              </div>
-              <p className="text-muted-foreground mt-2 text-xs">
-                Use letters, numbers, dots, and underscores. Every username must be unique.
-              </p>
-            </div>
-          )}
-
-          {currentStep.id === 'birthdate' && (
-            <div>
-              <label htmlFor="signup-birthdate" className="mb-2 block text-sm font-medium">
-                Date of birth
-              </label>
-              <Input
-                {...register('birthDate')}
-                id="signup-birthdate"
-                type="date"
-                max={new Date().toISOString().slice(0, 10)}
-                error={errors.birthDate?.message}
-              />
-              {isYoungChild && (
-                <div className="border-primary bg-primary/10 mt-3 flex items-center gap-2 rounded-xl border-2 p-3 text-sm font-semibold">
-                  <span className="text-2xl">🎈</span>
-                  <span>
-                    Yay! We&apos;ll set up a special, fun dashboard just for you — no boring grades or boards to pick.
-                  </span>
+              {identity === 'kid' && (
+                <div>
+                  <label htmlFor="signup-birthdate" className="mb-2 block text-sm font-medium">
+                    Date of birth
+                  </label>
+                  <Input
+                    {...register('birthDate')}
+                    id="signup-birthdate"
+                    type="date"
+                    max={new Date().toISOString().slice(0, 10)}
+                    error={errors.birthDate?.message}
+                  />
                 </div>
               )}
-            </div>
-          )}
 
-          {currentStep.id === 'gender' && (
-            <div className="grid grid-cols-2 gap-3">
-              {(['girl', 'boy'] as const).map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  aria-pressed={gender === value}
-                  onClick={() => setGender(value)}
-                  className={cn(
-                    'relative rounded-2xl border-2 px-4 py-6 text-center font-bold capitalize transition-all',
-                    gender === value
-                      ? value === 'girl'
-                        ? 'border-pink-500 bg-pink-500/15 text-pink-500 shadow-lg shadow-pink-500/10'
-                        : 'border-emerald-500 bg-emerald-500/15 text-emerald-500 shadow-lg shadow-emerald-500/10'
-                      : 'border-border bg-card/70 text-muted-foreground hover:border-primary/40'
-                  )}
-                >
-                  {gender === value && <Check className="absolute top-3 right-3 h-4 w-4" />}
-                  {value}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {currentStep.id === 'education' && (
-            <div className="grid gap-3">
-              {signupEducationLevels.map((level) => {
-                const Icon = level.value === 'school' ? School : level.value === 'college' ? Building2 : GraduationCap;
-                return (
-                  <button
-                    key={level.value}
-                    type="button"
-                    aria-pressed={educationLevel === level.value}
-                    onClick={() => {
-                      setEducationLevel(level.value);
-                      setValue('gradeLevel', '');
-                      setValue('board', detectedCountry ? COUNTRY_BOARD_DEFAULTS[detectedCountry] || '' : '');
-                    }}
-                    className={cn(
-                      'flex items-center gap-3 rounded-xl border-2 p-4 text-left transition-all',
-                      educationLevel === level.value
-                        ? 'border-primary bg-primary/15 shadow-primary/15 shadow-sm'
-                        : 'border-border bg-card/70 hover:border-primary/40'
-                    )}
-                  >
-                    <span className="bg-primary/10 text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-xl">
-                      <Icon className="h-5 w-5" />
-                    </span>
-                    <span>
-                      <span className="block text-sm font-bold">{level.label}</span>
-                      <span className="text-muted-foreground text-xs">{level.description}</span>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {currentStep.id === 'institution' && (
-            <div>
-              <label htmlFor="signup-institution" className="mb-2 block text-sm font-medium">
-                {educationLevel === 'university'
-                  ? 'University name'
-                  : educationLevel === 'college'
-                    ? 'College name'
-                    : 'School name'}
-              </label>
-              <div className="relative">
-                <Building2 className="text-muted-foreground pointer-events-none absolute top-5 left-3 z-10 h-4 w-4 -translate-y-1/2" />
-                <Input
-                  {...register('institutionName')}
-                  id="signup-institution"
-                  autoComplete="off"
-                  placeholder={`Enter your ${educationLevel} name`}
-                  className="pl-10"
-                  error={errors.institutionName?.message}
-                  onFocus={() => setInstitutionSuggestionsOpen(true)}
-                  onChange={(event) => {
-                    register('institutionName').onChange(event);
-                    setInstitutionSuggestionsOpen(true);
-                  }}
-                  onBlur={(event) => {
-                    register('institutionName').onBlur(event);
-                    // Delay so a suggestion click (which blurs the input first) still
-                    // registers before the list unmounts.
-                    window.setTimeout(() => setInstitutionSuggestionsOpen(false), 150);
-                  }}
-                />
-              </div>
-              {institutionSuggestions.length > 0 && (
-                <div className="border-border bg-card/70 mt-2 max-h-56 divide-y overflow-y-auto rounded-xl border">
-                  {institutionSuggestions.map((name) => (
+              <div className="border-border bg-card/60 rounded-xl border p-3">
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <span className="text-sm font-semibold">Language</span>
+                  <span className="text-muted-foreground text-xs">Change later in Settings</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { value: 'en' as Locale, label: 'English' },
+                    { value: 'roman-ur' as Locale, label: 'Roman Urdu' },
+                  ].map((option) => (
                     <button
-                      key={name}
+                      key={option.value}
                       type="button"
-                      onMouseDown={(event) => event.preventDefault()}
                       onClick={() => {
-                        setValue('institutionName', name, { shouldValidate: true });
-                        setInstitutionSuggestionsOpen(false);
+                        setPreferredLanguage(option.value);
+                        setLocale(option.value);
                       }}
-                      className="hover:bg-muted/60 flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm"
+                      aria-pressed={preferredLanguage === option.value}
+                      className={cn(
+                        'rounded-lg border px-3 py-2 text-sm font-medium transition-colors',
+                        preferredLanguage === option.value
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-border text-muted-foreground'
+                      )}
                     >
-                      <Building2 className="text-muted-foreground h-4 w-4 shrink-0" />
-                      <span className="truncate">{name}</span>
+                      <Languages className="mr-1.5 inline h-4 w-4" />
+                      {option.label}
                     </button>
                   ))}
                 </div>
-              )}
-              <p className="text-muted-foreground mt-2 text-xs">
-                Not listed? Just type your {educationLevel}'s name — any name is accepted.
-              </p>
+              </div>
             </div>
           )}
 
@@ -1253,7 +694,7 @@ export function RegisterForm() {
                 Institution name
               </label>
               <div className="relative">
-                <Search className="text-muted-foreground pointer-events-none absolute top-5 left-3 z-10 h-4 w-4 -translate-y-1/2" />
+                <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                 <Input
                   id="signup-school-search"
                   value={schoolQuery}
@@ -1262,14 +703,15 @@ export function RegisterForm() {
                     setSelectedSchool(null);
                   }}
                   autoComplete="off"
-                  placeholder="Start typing your institution's name"
-                  className="pl-10"
+                  placeholder="Start typing your institution’s name"
+                  className="pl-9"
                 />
               </div>
               {selectedSchool ? (
                 <div className="border-primary bg-primary/10 text-primary mt-3 flex items-center justify-between gap-2 rounded-xl border-2 p-3 text-sm font-semibold">
                   <span className="flex items-center gap-2">
-                    <Check className="h-4 w-4 shrink-0" /> {selectedSchool.name}
+                    <Check className="h-4 w-4 shrink-0" />
+                    {selectedSchool.name}
                   </span>
                   <button
                     type="button"
@@ -1305,66 +747,63 @@ export function RegisterForm() {
                   )}
                   {!searchingSchools && schoolQuery.trim().length > 1 && schoolResults.length === 0 && (
                     <p className="text-muted-foreground mt-2 text-xs leading-5">
-                      No institution found by that name. Ask your school to set up its account at{' '}
-                      <Link href="/schools/start" className="text-primary underline">
-                        ilmai.study/schools/start
-                      </Link>
-                      , then search again.
+                      No institution found by that name. Ask your school to set up its account first.
                     </p>
                   )}
                 </>
               )}
+              <p className="text-muted-foreground mt-2 text-xs">
+                Your request is sent to the institution admin for approval.
+              </p>
             </div>
           )}
 
-          {currentStep.id === 'grade' && (
-            <div className="grid gap-2 sm:grid-cols-2">
-              {availableGrades.map((grade) => (
-                <button
-                  key={grade.value}
-                  type="button"
-                  aria-pressed={selectedGrade === grade.value}
-                  onClick={() => setValue('gradeLevel', grade.value, { shouldValidate: true })}
-                  className={cn(
-                    'rounded-xl border-2 px-4 py-3 text-left transition-all',
-                    selectedGrade === grade.value
-                      ? 'border-primary bg-primary/15 text-primary'
-                      : 'border-border bg-card/70 hover:border-primary/40'
-                  )}
-                >
-                  <span className="block text-sm font-bold">{grade.label}</span>
-                  <span className="text-muted-foreground text-xs">{grade.level}</span>
-                </button>
-              ))}
+          {currentStep.id === 'study' && identity === 'university' && (
+            <div className="space-y-4">
+              <div>
+                <label className="mb-2 block text-sm font-medium">Degree / Program</label>
+                <Input
+                  value={universityProgram}
+                  onChange={(event) => setUniversityProgram(event.target.value)}
+                  placeholder="e.g. BS Computer Science"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium">Semester</label>
+                <Input
+                  value={universitySemester}
+                  onChange={(event) => setUniversitySemester(event.target.value)}
+                  placeholder="e.g. Semester 3"
+                />
+              </div>
+              <p className="text-muted-foreground text-xs">
+                Courses, exam targets, and other personalization can be added later in Settings.
+              </p>
             </div>
           )}
 
-          {currentStep.id === 'board' && (
-            <div>
-              <label htmlFor="signup-board" className="mb-2 block text-sm font-medium">
-                Board
-              </label>
-              <select
-                {...register('board')}
-                id="signup-board"
-                className="border-input bg-background focus:ring-ring h-11 w-full rounded-xl border px-3 text-sm focus:ring-2 focus:outline-none"
-              >
-                <option value="" disabled>
-                  {t('auth.register.boardPlaceholder')}
-                </option>
-                {BOARDS.map((board) => (
-                  <option key={board.value} value={board.value}>
-                    {board.label}
-                  </option>
-                ))}
-              </select>
-              {detectedCountry && (
-                <p className="text-muted-foreground mt-2 text-xs">
-                  {detectedCountry === 'IN'
-                    ? 'India detected; CBSE was selected by default.'
-                    : 'Pakistan detected; FBISE was selected by default.'}
-                </p>
-              )}
+          {currentStep.id === 'study' && identity !== 'university' && (
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {availableGrades.map((grade) => {
+                const isSelected = selectedGrade === grade.value;
+                return (
+                  <button
+                    key={grade.value}
+                    type="button"
+                    aria-pressed={isSelected}
+                    onClick={() => setValue('gradeLevel', grade.value, { shouldValidate: true })}
+                    className={cn(
+                      'rounded-xl border-2 px-4 py-4 text-left transition-all',
+                      isSelected
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border bg-card/70 hover:border-primary/40'
+                    )}
+                  >
+                    <span className="block text-sm font-bold">{grade.label}</span>
+                    <span className="text-muted-foreground text-xs">{grade.level}</span>
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
@@ -1376,10 +815,11 @@ export function RegisterForm() {
               variant="outline"
               size="lg"
               onClick={() => setStepIndex((current) => Math.max(0, current - 1))}
-              disabled={isSubmitting || checkingUsername}
+              disabled={isSubmitting}
               className="shrink-0"
             >
-              <ArrowLeft className="h-4 w-4" /> Back
+              <ArrowLeft className="h-4 w-4" />
+              Back
             </Button>
           )}
           <Button
@@ -1387,7 +827,7 @@ export function RegisterForm() {
             variant="gradient"
             className="flex-1"
             size="lg"
-            loading={isSubmitting || checkingUsername}
+            loading={isSubmitting}
             onClick={isLastStep ? undefined : () => void goNext()}
           >
             {isLastStep ? (
@@ -1401,22 +841,13 @@ export function RegisterForm() {
               </>
             ) : (
               <>
-                Continue <ArrowRight className="h-4 w-4" />
+                Continue
+                <ArrowRight className="h-4 w-4" />
               </>
             )}
           </Button>
         </div>
       </form>
-
-      <p className="text-muted-foreground mt-6 text-center text-sm">
-        {t('auth.register.haveAccount')}{' '}
-        <Link
-          href={`/login?redirect=${encodeURIComponent(redirect)}`}
-          className="text-primary font-medium hover:underline"
-        >
-          {t('auth.register.loginLink')}
-        </Link>
-      </p>
     </div>
   );
 }
