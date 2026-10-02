@@ -48,7 +48,7 @@ function mapCatalogRow(resource: Raw): StudyNoteCatalogResource | null {
     subjectId: resource.subject_id ?? null,
     subjectName: subject.name,
     subjectSlug: subject.slug,
-    bookTitle: resource.book_title || \`\${subject.name} Notes\`,
+    bookTitle: resource.book_title || `${subject.name} Notes`,
     chapterId: resource.chapter_id ?? null,
     chapterNumber: chapter?.order_index ?? null,
     chapterName: chapter?.name ?? null,

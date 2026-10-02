@@ -6,7 +6,7 @@ export const maxDuration = 30;
 
 function authorized(request: NextRequest) {
   const secret = process.env.NOTES_PRODUCT_SYNC_SECRET;
-  return Boolean(secret && request.headers.get("authorization") === \`Bearer \${secret}\`);
+  return Boolean(secret && request.headers.get("authorization") === `Bearer ${secret}`);
 }
 
 export async function GET(request: NextRequest) {
