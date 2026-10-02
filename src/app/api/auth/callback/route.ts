@@ -97,6 +97,7 @@ export async function GET(request: NextRequest) {
     requestedRedirect.startsWith('/') && !requestedRedirect.startsWith('//') ? requestedRedirect : '/dashboard';
   const isParentLinkRedirect = redirectTo.startsWith('/parent-link');
   const redirectRole = resolveRole(searchParams.get('role'));
+  const redirectEducationLevel = resolveEducationLevel(searchParams.get('education_level'));
 
   if (code) {
     const supabase = await createClient();
@@ -138,7 +139,8 @@ export async function GET(request: NextRequest) {
       const metadataRole = resolveRole(userMetadata?.role) ?? (existingProfile ? null : redirectRole);
       const metadataBoard = resolveBoard(userMetadata?.board);
       const metadataGradeLevel = resolveGradeLevel(userMetadata?.grade_level);
-      const metadataEducationLevel = resolveEducationLevel(userMetadata?.education_level);
+      const metadataEducationLevel =
+        resolveEducationLevel(userMetadata?.education_level) ?? (existingProfile ? null : redirectEducationLevel);
       const metadataGender = resolveGender(userMetadata?.gender);
       const metadataAcademicInstitutionName =
         typeof userMetadata?.academic_institution_name === 'string'
@@ -154,6 +156,10 @@ export async function GET(request: NextRequest) {
           : null;
       const metadataDateOfBirth = resolveDateOfBirth(userMetadata?.date_of_birth);
       const metadataPhone = resolvePhone(userMetadata?.phone);
+      const metadataUniversityProgram =
+        typeof userMetadata?.university_program === 'string' ? userMetadata.university_program.trim() || null : null;
+      const metadataUniversitySemester =
+        typeof userMetadata?.university_semester === 'string' ? userMetadata.university_semester.trim() || null : null;
       const signupInstitutionId =
         typeof userMetadata?.signup_institution_id === 'string' ? userMetadata.signup_institution_id : null;
       const signupRoleRequested =
@@ -175,7 +181,9 @@ export async function GET(request: NextRequest) {
         resolvedRole === 'student' && isYoungLearnerByAge(metadataDateOfBirth ?? existingProfile?.date_of_birth ?? null);
       const metadataOnboardingCompleted =
         resolvedRole !== 'student' ||
-        (metadataEducationLevel !== 'university' && Boolean(metadataGender && metadataBoard && metadataGradeLevel));
+        (metadataEducationLevel === 'university'
+          ? Boolean(metadataUniversityProgram && metadataUniversitySemester)
+          : Boolean(metadataGradeLevel));
       let profileForRedirect: {
         role: Database['public']['Enums']['user_role'];
         username: string | null;
@@ -202,6 +210,8 @@ export async function GET(request: NextRequest) {
           board: metadataBoard,
           grade_level: metadataGradeLevel,
           education_level: metadataEducationLevel || 'school',
+          university_program: metadataUniversityProgram,
+          university_semester: metadataUniversitySemester,
           academic_institution_name: metadataAcademicInstitutionName,
           academic_institution_type: metadataAcademicInstitutionType,
           role: resolvedRole,
@@ -271,6 +281,12 @@ export async function GET(request: NextRequest) {
         if (metadataDateOfBirth && !existingProfile.date_of_birth) {
           (updates as any).date_of_birth = metadataDateOfBirth;
         }
+        if (metadataUniversityProgram && !(existingProfile.university_program || '').trim()) {
+          updates.university_program = metadataUniversityProgram;
+        }
+        if (metadataUniversitySemester && !(existingProfile.university_semester || '').trim()) {
+          updates.university_semester = metadataUniversitySemester;
+        }
         if (metadataPhone && !existingProfile.phone) {
           (updates as any).phone = metadataPhone;
         }
@@ -307,8 +323,8 @@ export async function GET(request: NextRequest) {
             (updates.education_level as EducationLevel | undefined) ??
             (existingProfile.education_level as EducationLevel | null) ??
             'school',
-          university_program: existingProfile.university_program,
-          university_semester: existingProfile.university_semester,
+          university_program: updates.university_program ?? existingProfile.university_program,
+          university_semester: updates.university_semester ?? existingProfile.university_semester,
           onboarding_completed: updates.onboarding_completed ?? existingProfile.onboarding_completed,
         };
       }
@@ -350,15 +366,11 @@ export async function GET(request: NextRequest) {
           ? membershipRedirect.destination
           : isYoungChild
             ? '/kids'
-            : !profileForRedirect.username && !needsProfileCompletion(profileForRedirect)
-              ? `/onboarding/username?next=${encodeURIComponent(resolvedRole === 'parent' ? '/parent' : redirectTo)}`
-              : (isSocialOAuthSignIn || metadataEducationLevel === 'university') && needsProfileCompletion(profileForRedirect)
-                ? '/onboarding/complete-profile'
-                : resolvedRole === 'student' && !profileForRedirect.onboarding_completed
-                  ? '/onboarding/class'
-                  : resolvedRole === 'parent'
-                    ? '/parent'
-                    : redirectTo;
+            : resolvedRole === 'student' && !profileForRedirect.onboarding_completed
+              ? '/onboarding/class'
+              : resolvedRole === 'parent'
+                ? '/parent'
+                : redirectTo;
 
       // The "Enable 2-step verification after signup" checkbox on RegisterForm can't enroll MFA
       // directly — that needs an authenticated session, which doesn't exist during the wizard
