@@ -122,7 +122,8 @@ export function RegisterForm() {
   const [showPass, setShowPass] = useState(false);
   const [identity, setIdentity] = useState<SignupIdentity | null>(null);
   const [institutionalRole, setInstitutionalRole] = useState<InstitutionalRole>('student');
-  const [preferredLanguage, setPreferredLanguage] = useState<Locale>('en');
+  const { locale, setLocale } = useLocale();
+  const [preferredLanguage, setPreferredLanguage] = useState<Locale>(locale);
   const [schoolQuery, setSchoolQuery] = useState('');
   const [schoolResults, setSchoolResults] = useState<SchoolSearchResult[]>([]);
   const [searchingSchools, setSearchingSchools] = useState(false);
@@ -131,7 +132,6 @@ export function RegisterForm() {
   const [universityProgram, setUniversityProgram] = useState('');
   const [universitySemester, setUniversitySemester] = useState('');
 
-  const { setLocale } = useLocale();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect') || '/dashboard';
@@ -452,7 +452,7 @@ export function RegisterForm() {
           <OAuthButtons
             action="Register"
             role={identity === 'parent' ? 'parent' : 'student'}
-            educationLevel={identity === 'university' ? 'university' : 'school'}
+            educationLevel={identity === 'university' ? 'university' : identity === 'school-college' ? 'school' : undefined}
           />
           <div className="relative my-4">
             <div className="absolute inset-0 flex items-center">
