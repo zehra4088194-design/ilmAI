@@ -35,17 +35,6 @@ function toAcademicLevel(gradeLevel: string | null): "school" | "college" {
   return gradeLevel === "GRADE_9" || gradeLevel === "GRADE_10" ? "school" : "college";
 }
 
-export function isStorePurchasableStudyResource(resource: Raw): boolean {
-  const subject = Array.isArray(resource.subjects) ? resource.subjects[0] : resource.subjects;
-  return Boolean(
-    resource.resource_type === "notes"
-    && resource.title
-    && subject?.name
-    && subject?.slug
-    && (resource.light_file_url || resource.dark_file_url || resource.drive_url),
-  );
-}
-
 function mapCatalogRow(resource: Raw): StudyNoteCatalogResource | null {
   const subject = Array.isArray(resource.subjects) ? resource.subjects[0] : resource.subjects;
   const chapter = Array.isArray(resource.chapters) ? resource.chapters[0] : resource.chapters;
