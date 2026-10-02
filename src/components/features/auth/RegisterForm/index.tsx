@@ -9,8 +9,6 @@ import { z } from 'zod';
 import {
   ArrowLeft,
   ArrowRight,
-  AtSign,
-  Baby,
   Building2,
   Check,
   Eye,
@@ -22,7 +20,6 @@ import {
   Presentation,
   School,
   Search,
-  ShieldCheck,
   User,
   Users,
   Zap,
@@ -32,12 +29,10 @@ import { Input } from '@/components/ui/input';
 import { createClient } from '@/lib/supabase/client';
 import { OAuthButtons } from '@/components/features/auth/OAuthButtons';
 import { GRADE_LEVELS } from '@/lib/constants';
-import { EDUCATION_LEVELS, type EducationLevel } from '@/lib/constants/university';
 import { calculateAge, KIDS_DASHBOARD_AGE_CUTOFF } from '@/lib/kids/eligibility';
 import { cn } from '@/lib/utils/cn';
 import { toast } from 'sonner';
 import { useLocale, useTranslations } from '@/providers/I18nProvider';
-import { THEME_COOKIE_NAME } from '@/lib/constants/themes';
 import type { Locale } from '@/lib/i18n/config';
 import { verifyAuthRecaptcha } from '@/lib/security/recaptcha-client';
 
@@ -192,7 +187,7 @@ export function RegisterForm() {
 
   useEffect(() => {
     const fieldByStep: Partial<Record<SignupStepId, keyof FormData>> = {
-      grade: 'gradeLevel',
+      study: 'gradeLevel',
     };
     const field = fieldByStep[currentStep.id];
     if (!field) {
