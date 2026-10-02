@@ -6,6 +6,7 @@ import { createServiceClient } from '@/lib/supabase/service';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { GoogleDriveResourceCard } from '@/components/features/library/GoogleDriveResourceCard';
+import { isStorePurchasableStudyResource } from '@/lib/library/storeStudyNoteEligibility';
 import { HouseAdBanner } from '@/components/features/ads/HouseAdBanner';
 import {
   buildCatalogSearch,
@@ -139,6 +140,7 @@ export default async function LibrarySectionPage({
                 driveFileId: resource.drive_file_id,
                 lightFileUrl: resource.light_file_url,
                 darkFileUrl: resource.dark_file_url,
+                storePurchasable: isStorePurchasableStudyResource(resource),
               }}
               // A few sibling files from the same section (e.g. a Physics MCQ file also showing
               // Physics Shorts / other notes nearby) — capped at 4, not the full section list.

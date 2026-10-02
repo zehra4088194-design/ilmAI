@@ -5,6 +5,7 @@ import { countPdfPages } from "@/lib/library/pdfPageCount";
 import { getPlatformSettings } from "@/lib/platform-settings/server";
 import { computeNotesOrderPriceRs } from "@/lib/platform-settings/shared";
 import { generateStudyCoverSvg, resolveContentType } from "@/lib/library/studyCoverSvg";
+import { isStorePurchasableStudyResource } from "@/lib/library/storeStudyNoteEligibility";
 
 type Raw = Record<string, any>;
 

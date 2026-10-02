@@ -30,6 +30,7 @@ import { isDarkThemeId } from '@/lib/constants/themes';
 import { resolvePdfThemeMode } from '@/lib/platform-settings/shared';
 import { getGoogleDriveDownloadUrl } from '@/lib/constants';
 import { ResourceMistakeReportForm } from '@/components/features/resources/ResourceMistakeReportForm';
+import { getStoreStudyNotePath } from '@/lib/library/storeStudyNoteEligibility';
 
 export interface DriveResourceData {
   id: string;
@@ -50,6 +51,7 @@ export interface DriveResourceData {
   driveFileId?: string | null;
   lightFileUrl?: string | null;
   darkFileUrl?: string | null;
+  storePurchasable?: boolean;
 }
 
 export function GoogleDriveResourceCard({
@@ -118,7 +120,7 @@ export function GoogleDriveResourceCard({
     }
     setOrdering(true);
     try {
-      const destination = `/store/ilm-ai-notes/resource/${resource.id}`;
+      const destination = getStoreStudyNotePath(resource.id);
       window.open(`/api/store-handoff?next=${encodeURIComponent(destination)}`, '_blank', 'noopener,noreferrer');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Could not open the Store.');
@@ -228,7 +230,7 @@ export function GoogleDriveResourceCard({
             </a>
           </Button>
         )}
-        {resource.resourceType === 'notes' && readerSourceUrl && (
+        {resource.storePurchasable === true && readerSourceUrl && (
           <Button
             variant="outline"
             size="sm"
