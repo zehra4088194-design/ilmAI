@@ -6,7 +6,7 @@ import {
   CLASS_SELECTION_GRADE_LEVELS,
   type GradeLevel,
 } from '@/lib/supabase/getUserGradeLevel';
-import { EDUCATION_LEVELS, OUTPUT_STYLES, type EducationLevel, type PreferredOutputStyle } from '@/lib/constants/university';
+import { OUTPUT_STYLES, type EducationLevel, type PreferredOutputStyle } from '@/lib/constants/university';
 
 export interface ActionResult {
   success: boolean;
@@ -24,10 +24,6 @@ function isValidGradeLevel(value: unknown): value is (typeof CLASS_SELECTION_GRA
       value as (typeof CLASS_SELECTION_GRADE_LEVELS)[number]
     )
   );
-}
-
-function isValidEducationLevel(value: unknown): value is EducationLevel {
-  return typeof value === 'string' && EDUCATION_LEVELS.some((level) => level.value === value);
 }
 
 async function requireStudentProfile() {
