@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import type { Database } from '@/lib/supabase/database.types';
 import { BOARDS, GRADE_LEVELS } from '@/lib/constants';
-import { needsProfileCompletion } from '@/lib/utils/checkProfileComplete';
 import { nanoid } from 'nanoid';
 import { LOCALE_COOKIE_NAME } from '@/lib/i18n/config';
 import { getRequestSiteUrl } from '@/lib/utils/siteUrl';
@@ -107,18 +106,6 @@ export async function GET(request: NextRequest) {
       await enforceSessionLimit(data.user.id, currentSessionId);
 
       const userMetadata = data.user.user_metadata;
-      const providers = data.user.app_metadata?.providers;
-      // Google is a "one-click" OAuth signup that skips the full RegisterForm wizard entirely — it
-      // never hands us board/grade_level/education_level, so it needs the same
-      // needsProfileCompletion() catch-all below (see isSocialOAuthSignIn's usage). Facebook is no
-      // longer offered as a sign-in option (OAuthButtons/useAuth only expose Google now), but the
-      // 'facebook' check stays here so the handful of accounts that already linked it keep being
-      // classified correctly on login instead of silently falling through a different branch.
-      const isSocialOAuthSignIn =
-        data.user.app_metadata?.provider === 'google' ||
-        data.user.app_metadata?.provider === 'facebook' ||
-        (Array.isArray(providers) && (providers.includes('google') || providers.includes('facebook')));
-
       // Fetched early so metadataRole (below) can tell "brand-new OAuth sign-up" apart from
       // "existing account signing in again" — see that computation for why this ordering matters.
       const { data: existingProfile } = await (supabase
