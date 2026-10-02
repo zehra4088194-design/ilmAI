@@ -7,7 +7,6 @@ import {
   type GradeLevel,
 } from '@/lib/supabase/getUserGradeLevel';
 import { EDUCATION_LEVELS, OUTPUT_STYLES, type EducationLevel, type PreferredOutputStyle } from '@/lib/constants/university';
-import type { ScienceGroup } from '@/types';
 
 export interface ActionResult {
   success: boolean;
@@ -29,14 +28,6 @@ function isValidGradeLevel(value: unknown): value is (typeof CLASS_SELECTION_GRA
 
 function isValidEducationLevel(value: unknown): value is EducationLevel {
   return typeof value === 'string' && EDUCATION_LEVELS.some((level) => level.value === value);
-}
-
-function isValidScienceGroup(value: unknown): value is ScienceGroup {
-  return value === 'biology' || value === 'computer';
-}
-
-function isValidOutputStyle(value: unknown): value is PreferredOutputStyle {
-  return typeof value === 'string' && OUTPUT_STYLES.some((style) => style.value === value);
 }
 
 async function requireStudentProfile() {
@@ -68,19 +59,9 @@ async function requireStudentProfile() {
   return { supabase, user, error: null };
 }
 
-export async function completeOnboarding(
-  gradeLevel: GradeLevel,
-  educationLevel: EducationLevel = 'school',
-  scienceGroup?: ScienceGroup,
-): Promise<ActionResult> {
+export async function completeOnboarding(gradeLevel: GradeLevel): Promise<ActionResult> {
   if (!isValidGradeLevel(gradeLevel)) {
     return { success: false, error: 'Invalid grade level provided.' };
-  }
-  if (!isValidEducationLevel(educationLevel) || educationLevel === 'university') {
-    return { success: false, error: 'Invalid education level provided.' };
-  }
-  if (!isValidScienceGroup(scienceGroup)) {
-    return { success: false, error: 'Select Biology or Computer Science.' };
   }
 
   const { supabase, user, error } = await requireStudentProfile();
@@ -88,12 +69,17 @@ export async function completeOnboarding(
     return { success: false, error: error ?? 'Could not save your class. Please try again.' };
   }
 
+  const educationLevel: EducationLevel =
+    gradeLevel === 'GRADE_11' || gradeLevel === 'GRADE_12' || gradeLevel === 'A_LEVEL'
+      ? 'college'
+      : 'school';
+
   const { error: updateError } = await supabase
     .from('profiles')
     .update({
       grade_level: gradeLevel,
       education_level: educationLevel,
-      science_group: scienceGroup,
+      board: null,
       onboarding_completed: true,
       is_profile_complete: true,
     })
@@ -105,7 +91,6 @@ export async function completeOnboarding(
   }
 
   revalidatePath('/', 'layout');
-
   return { success: true };
 }
 
