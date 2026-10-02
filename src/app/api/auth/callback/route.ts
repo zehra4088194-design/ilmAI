@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import type { Database } from '@/lib/supabase/database.types';
+import { needsProfileCompletion } from '@/lib/utils/checkProfileComplete';
 import { BOARDS, GRADE_LEVELS } from '@/lib/constants';
 import { nanoid } from 'nanoid';
 import { LOCALE_COOKIE_NAME } from '@/lib/i18n/config';
@@ -353,7 +354,7 @@ export async function GET(request: NextRequest) {
           ? membershipRedirect.destination
           : isYoungChild
             ? '/kids'
-            : resolvedRole === 'student' && !profileForRedirect.onboarding_completed
+            : resolvedRole === 'student' && needsProfileCompletion(profileForRedirect)
               ? '/onboarding/class'
               : resolvedRole === 'parent'
                 ? '/parent'
