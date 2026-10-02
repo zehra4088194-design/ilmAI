@@ -159,8 +159,7 @@ export async function POST(req: NextRequest) {
   const answers = Array.isArray(body.answers) ? body.answers : [];
   const questionIds = answers
     .map((item: any) => String(item?.questionId || ''))
-    .filter(Boolean)
-    .slice(0, 30);
+    .filter(Boolean);
   if (questionIds.length < 5)
     return NextResponse.json(
       { status: 'error', error: 'Answer at least five questions to complete the diagnostic test.' },
