@@ -37,7 +37,7 @@ export async function enforceOnboarding(
 
   const { data: profile, error } = await supabase
     .from('profiles')
-    .select('role, grade_level, education_level, university_program, university_semester, onboarding_completed')
+    .select('role, grade_level, education_level, university_program, university_semester')
     .eq('id', user.id)
     .single();
 
@@ -70,7 +70,7 @@ export async function enforceOnboarding(
     return null;
   }
 
-  if (needsProfileCompletion(profile) || profile.onboarding_completed === false) {
+  if (needsProfileCompletion(profile)) {
     return NextResponse.redirect(`${getRequestSiteUrl(request)}${ONBOARDING_PATH}`);
   }
 
