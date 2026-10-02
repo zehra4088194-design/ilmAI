@@ -4,6 +4,19 @@ export function normalizeQuestionOptions(options: unknown): string[] {
   return Object.values(options as Record<string, unknown>).map((option) => String(option));
 }
 
+export function normalizeChemicalFormulas(source: string): string {
+  return source.replace(/(?<![\\w$])(?:[A-Z][a-z]?\\d*)+(?=\\b)/g, (formula) => {
+    if (!/\\d/.test(formula)) return formula;
+    const latexFormula = formula.replace(/\\d+/g, (digits) => `_{${digits}}`);
+    return `${latexFormula}export function normalizeQuestionOptions(options: unknown): string[] {
+  if (Array.isArray(options)) return options.map((option) => String(option));
+  if (!options || typeof options !== 'object') return [];
+  return Object.values(options as Record<string, unknown>).map((option) => String(option));
+}
+;
+  });
+}
+
 function unwrapAnswer(answer: unknown): unknown {
   if (!answer || typeof answer !== 'object' || Array.isArray(answer)) return answer;
   const value = answer as Record<string, unknown>;
