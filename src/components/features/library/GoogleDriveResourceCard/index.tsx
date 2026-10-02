@@ -228,7 +228,7 @@ export function GoogleDriveResourceCard({
             </a>
           </Button>
         )}
-        {readerSourceUrl && (
+        {resource.resourceType === 'notes' && readerSourceUrl && (
           <Button
             variant="outline"
             size="sm"
