@@ -34,7 +34,9 @@ const A4_ASPECT = 210 / 297;
 const DEFAULT_ZOOM = 1;
 const MIN_ZOOM = 0.7;
 const MAX_ZOOM = 2.25;
-const BASE_WIDTH_SCALE = 0.7;
+const DESKTOP_BASE_WIDTH_SCALE = 0.7;
+const MOBILE_BASE_WIDTH_SCALE = 0.95;
+const MOBILE_WIDTH_BREAKPOINT = 768;
 
 const MODE_BACKGROUND: Record<'dark' | 'light', string> = {
   dark: '/background-blue.png',
@@ -215,6 +217,7 @@ export function ProtectedPdfViewer({
     let startDistance = 0;
     let startZoom = DEFAULT_ZOOM;
     let liveZoom = DEFAULT_ZOOM;
+    let iosGestureActive = false;
 
     const distance = (touches: TouchList) => {
       const a = touches.item(0);
@@ -269,20 +272,69 @@ export function ProtectedPdfViewer({
     const onTouchEnd = (event: TouchEvent) => finish(event);
     const onTouchCancel = () => finish();
 
+    // iOS Safari exposes pinch gestures through these legacy events. Keep the touch handlers
+    // above for Android/other browsers, and use gesture events as an additional reliable path on
+    // iPhone/iPad where Safari can otherwise consume the two-finger pinch before touchmove.
+    const onGestureStart = (event: Event) => {
+      const gesture = event as Event & { scale?: number };
+      event.preventDefault();
+      iosGestureActive = true;
+      active = true;
+      startDistance = 1;
+      startZoom = zoomRef.current;
+      liveZoom = startZoom;
+      const scale = Number.isFinite(gesture.scale) ? Number(gesture.scale) : 1;
+      liveZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, startZoom * scale));
+      pinchTarget.style.transformOrigin = 'center center';
+      pinchTarget.style.transition = 'none';
+      pinchTarget.style.willChange = 'transform';
+    };
+
+    const onGestureChange = (event: Event) => {
+      if (!iosGestureActive) return;
+      const gesture = event as Event & { scale?: number };
+      event.preventDefault();
+      const scale = Number.isFinite(gesture.scale) ? Number(gesture.scale) : 1;
+      liveZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, startZoom * scale));
+      pinchTarget.style.transform = `scale(${liveZoom / startZoom})`;
+    };
+
+    const onGestureEnd = (event: Event) => {
+      if (!iosGestureActive) return;
+      event.preventDefault();
+      iosGestureActive = false;
+      active = false;
+      startDistance = 0;
+      setZoom(Number(liveZoom.toFixed(2)));
+      requestAnimationFrame(() => {
+        pinchTarget.style.transform = 'none';
+        pinchTarget.style.willChange = 'auto';
+      });
+    };
+
     viewport.addEventListener('touchstart', onTouchStart, { passive: false });
     viewport.addEventListener('touchmove', onTouchMove, { passive: false });
     viewport.addEventListener('touchend', onTouchEnd, { passive: false });
     viewport.addEventListener('touchcancel', onTouchCancel, { passive: false });
+    viewport.addEventListener('gesturestart', onGestureStart, { passive: false } as AddEventListenerOptions);
+    viewport.addEventListener('gesturechange', onGestureChange, { passive: false } as AddEventListenerOptions);
+    viewport.addEventListener('gestureend', onGestureEnd, { passive: false } as AddEventListenerOptions);
 
     return () => {
       viewport.removeEventListener('touchstart', onTouchStart);
       viewport.removeEventListener('touchmove', onTouchMove);
       viewport.removeEventListener('touchend', onTouchEnd);
       viewport.removeEventListener('touchcancel', onTouchCancel);
+      viewport.removeEventListener('gesturestart', onGestureStart);
+      viewport.removeEventListener('gesturechange', onGestureChange);
+      viewport.removeEventListener('gestureend', onGestureEnd);
     };
   }, []);
 
-  const fittedWidth = Math.max(240, Math.min(containerWidth - 32, 1100)) * BASE_WIDTH_SCALE;
+  const baseWidthScale = containerWidth > 0 && containerWidth < MOBILE_WIDTH_BREAKPOINT
+    ? MOBILE_BASE_WIDTH_SCALE
+    : DESKTOP_BASE_WIDTH_SCALE;
+  const fittedWidth = Math.max(240, Math.min(containerWidth - 32, 1100)) * baseWidthScale;
   const renderedWidth = Math.round(fittedWidth * zoom);
   const rotated90 = rotation === 90 || rotation === 270;
   const documentAspect = pageAspects[1] ?? A4_ASPECT;
@@ -496,7 +548,8 @@ export function ProtectedPdfViewer({
 
         <div
           ref={viewportRef}
-          className="min-h-0 flex-1 touch-pan-x touch-pan-y overflow-auto overscroll-contain scroll-smooth p-3 [scrollbar-gutter:stable] sm:p-6"
+          className="min-h-0 flex-1 overflow-auto overscroll-contain scroll-smooth p-3 [scrollbar-gutter:stable] sm:p-6"
+          style={{ touchAction: 'pan-x pan-y pinch-zoom' }}
         >
           {error ? (
             <div className="mx-auto flex min-h-64 max-w-md flex-col items-center justify-center rounded-2xl bg-white p-6 text-center shadow-sm">
