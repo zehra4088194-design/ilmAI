@@ -55,14 +55,6 @@ export function ResourceAiTools({ kind, resourceId }: { kind: ProtectedResourceK
   if (!isPaid) {
     return (
       <div className="space-y-3">
-        <Button asChild variant="outline" size="sm" className="w-full justify-between">
-          <Link href={quizHref}>
-            <span className="flex items-center gap-2">
-              <FileQuestion className="h-3.5 w-3.5 text-amber-500" />
-              30 Chapter MCQs
-            </span>
-          </Link>
-        </Button>
         <div className="grid gap-2">
           <Button asChild variant="outline" size="sm">
             <Link href="/subscription">
@@ -87,7 +79,7 @@ export function ResourceAiTools({ kind, resourceId }: { kind: ProtectedResourceK
         <Link href={quizHref}>
           <span className="flex items-center gap-2">
             <FileQuestion className="h-3.5 w-3.5 text-amber-500" />
-            30 Chapter MCQs
+            30 Chapter MCQs <Badge className="ml-1 text-[10px]">Pro</Badge>
           </span>
         </Link>
       </Button>
