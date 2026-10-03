@@ -5,6 +5,7 @@ import { getResourceForProcessing } from '@/lib/resources/server';
 import type { ProtectedResourceKind } from '@/lib/resources/server';
 import { filterHighQualitySourceMcqs, shuffleSourceQuestions } from '@/lib/resources/source-fallback';
 import { queueResourceContextProcessing } from '@/lib/resources/processing';
+import { selectEffectiveSubscription } from '@/lib/payments/subscription-access';
 
 const KINDS = new Set<ProtectedResourceKind>(['library', 'past-paper', 'college-resource', 'university-resource']);
 
@@ -14,6 +15,39 @@ export async function GET(req: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ status: 'error', error: 'Authentication is required' }, { status: 401 });
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('subscription_tier, subscription_expires_at')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  const { data: subscriptionRows } = await (supabase.from('subscriptions') as any)
+    .select('tier, status, current_period_end')
+    .eq('user_id', user.id)
+    .in('status', ['active', 'trialing', 'past_due'])
+    .gt('current_period_end', new Date().toISOString())
+    .limit(10);
+
+  const effective = selectEffectiveSubscription([
+    ...((subscriptionRows || []) as any[]),
+    {
+      tier: profile?.subscription_tier || 'FREE',
+      status:
+        profile?.subscription_tier && profile.subscription_tier !== 'FREE' ? 'active' : 'canceled',
+      current_period_end:
+        profile?.subscription_tier && profile.subscription_tier !== 'FREE'
+          ? profile.subscription_expires_at || '2099-12-31T23:59:59.000Z'
+          : null,
+    },
+  ]);
+
+  if (effective.tier === 'FREE') {
+    return NextResponse.json(
+      { status: 'error', error: 'Chapter MCQs are available on PRO and ELITE plans.' },
+      { status: 403 }
+    );
+  }
 
   const kind = req.nextUrl.searchParams.get('kind') as ProtectedResourceKind;
   const id = req.nextUrl.searchParams.get('id');
@@ -38,7 +72,7 @@ export async function GET(req: NextRequest) {
       { status: 202 }
     );
   }
-  const questions = shuffleSourceQuestions(filterHighQualitySourceMcqs(data.questions));
+  const questions = shuffleSourceQuestions(filterHighQualitySourceMcqs(data.questions)).slice(0, 30);
   const hasWrittenQuestions =
     (Array.isArray(data.short_questions) && data.short_questions.length > 0) ||
     (Array.isArray(data.long_questions) && data.long_questions.length > 0);
