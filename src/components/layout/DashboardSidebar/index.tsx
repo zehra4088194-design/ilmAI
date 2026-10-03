@@ -228,6 +228,7 @@ export function DashboardSidebar({
   const searchParams = useSearchParams();
   const { user, signOut } = useAuth();
   const [uncontrolledMobileOpen, setUncontrolledMobileOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
   const navRef = useRef<HTMLElement | null>(null);
   const sidebarScrollKey = 'ilm-ai-dashboard-sidebar-scroll';
   const mobileOpen = controlledMobileOpen ?? uncontrolledMobileOpen;
@@ -856,18 +857,14 @@ export function DashboardSidebar({
 
       {/* Support us */}
       <div className="shrink-0 px-3 pt-2">
-        <SupportDonateWidget
-          trigger={(open) => (
-            <button
-              type="button"
-              onClick={open}
-              className="text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
-            >
-              <HandHeart className="h-4 w-4 shrink-0 text-rose-400" />
-              Support us
-            </button>
-          )}
-        />
+        <button
+          type="button"
+          onClick={() => setSupportOpen(true)}
+          className="text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
+        >
+          <HandHeart className="h-4 w-4 shrink-0 text-rose-400" />
+          Support us
+        </button>
       </div>
 
       {/* User footer */}
@@ -915,6 +912,8 @@ export function DashboardSidebar({
       >
         <SidebarContent />
       </aside>
+
+      <SupportDonateWidget open={supportOpen} onOpenChange={setSupportOpen} />
 
       {/* Mobile fallback toggle when Sidebar is used without DashboardShell */}
       {controlledMobileOpen === undefined && (
