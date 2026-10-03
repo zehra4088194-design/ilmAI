@@ -114,10 +114,6 @@ export function GoogleDriveResourceCard({
   // Open the dedicated Store Study Notes detail route. The Store handoff endpoint preserves the
   // deep link while signing a logged-in ilmAI user into the separate Store Supabase account.
   const orderPrintedNotes = async () => {
-    if (!user) {
-      toast.error('Sign in to order printed notes.');
-      return;
-    }
     setOrdering(true);
     try {
       const destination = getStoreStudyNotePath(resource.id);
