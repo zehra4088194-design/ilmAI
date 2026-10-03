@@ -55,9 +55,17 @@ export async function POST(req: NextRequest) {
   }
 
   const institutionName = typeof sponsoredInstitutionName === 'string' ? sponsoredInstitutionName.trim() : '';
-  if (tier !== 'FREE' && (!institutionName || !['school', 'college'].includes(sponsoredInstitutionType || ''))) {
+  const institutionType =
+    sponsoredInstitutionType && ['school', 'college'].includes(sponsoredInstitutionType)
+      ? sponsoredInstitutionType
+      : null;
+
+  // Paid access does not require an institution. An admin may optionally attach
+  // a school/college as the sponsor, but independent students can receive PRO/ELITE
+  // without providing any institution.
+  if (institutionName && !institutionType) {
     return NextResponse.json(
-      { error: 'Select the institution type and name for a paid plan.' },
+      { error: 'Select School or College when providing a sponsor name.' },
       { status: 400 }
     );
   }
@@ -79,8 +87,8 @@ export async function POST(req: NextRequest) {
     .update({
       subscription_tier: tier,
       subscription_expires_at: expiresAt,
-      sponsored_institution_name: tier === 'FREE' ? null : institutionName,
-      sponsored_institution_type: tier === 'FREE' ? null : sponsoredInstitutionType,
+      sponsored_institution_name: tier === 'FREE' || !institutionName ? null : institutionName,
+      sponsored_institution_type: tier === 'FREE' || !institutionName ? null : institutionType,
     })
     .eq('id', userId)
     .select(
