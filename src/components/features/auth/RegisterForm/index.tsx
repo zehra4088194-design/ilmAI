@@ -149,6 +149,7 @@ export function RegisterForm() {
     register,
     handleSubmit,
     getValues,
+    setValue,
     setFocus,
     setError,
     clearErrors,
