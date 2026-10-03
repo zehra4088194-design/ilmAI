@@ -79,13 +79,17 @@ export function SupportDonateWidget({
 
   function openDialog() {
     setOpen(true);
+  }
+
+  useEffect(() => {
+    if (!open) return;
     fetch('/api/support/rate')
       .then((response) => (response.ok ? response.json() : null))
       .then((json) => {
         if (json?.usdToPkr) setRate(json.usdToPkr);
       })
       .catch(() => {});
-  }
+  }, [open]);
 
   async function sendSuggestion() {
     if (!suggestion.trim()) {
