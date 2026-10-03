@@ -47,8 +47,21 @@ const JAZZCASH_NUMBER = MANUAL_PAYMENT_OPTIONS[0]?.number || '';
  * The suggestion box posts to /api/suggestions, which sends it server-side via Brevo
  * — the destination inbox is a server-only env var and never reaches the client bundle.
  */
-export function SupportDonateWidget({ trigger }: { trigger: (open: () => void) => React.ReactNode }) {
-  const [open, setOpen] = useState(false);
+export function SupportDonateWidget({
+  trigger,
+  open: controlledOpen,
+  onOpenChange,
+}: {
+  trigger?: (open: () => void) => React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}) {
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const open = controlledOpen ?? uncontrolledOpen;
+  const setOpen = (next: boolean) => {
+    onOpenChange?.(next);
+    if (controlledOpen === undefined) setUncontrolledOpen(next);
+  };
   const [currency, setCurrency] = useState<'USD' | 'PKR'>('USD');
   const [amountUsd, setAmountUsd] = useState(5);
   const [customValue, setCustomValue] = useState('');
@@ -149,7 +162,7 @@ export function SupportDonateWidget({ trigger }: { trigger: (open: () => void) =
 
   return (
     <>
-      {trigger(openDialog)}
+      {trigger?.(openDialog)}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
