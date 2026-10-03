@@ -42,7 +42,7 @@ type InstitutionType = 'school' | 'college';
 type GrantSelection = {
   tier: SubscriptionTier;
   duration: ManualSubscriptionDuration;
-  institutionType: InstitutionType;
+  institutionType: InstitutionType | null;
   institutionName: string;
 };
 
@@ -123,8 +123,8 @@ export function UserManagementTable() {
   }, []);
 
   const grant = async (user: AdminUser, selection: GrantSelection) => {
-    if (selection.tier !== 'FREE' && !selection.institutionName.trim()) {
-      toast.error('A school or college name is required for a paid plan.');
+    if (selection.tier !== 'FREE' && selection.institutionName.trim() && !selection.institutionType) {
+      toast.error('Select School or College when providing a sponsor name.');
       return;
     }
 
@@ -139,8 +139,8 @@ export function UserManagementTable() {
           userId: user.id,
           tier: selection.tier,
           duration: selection.duration,
-          sponsoredInstitutionName: selection.institutionName,
-          sponsoredInstitutionType: selection.institutionType,
+          sponsoredInstitutionName: selection.institutionName.trim() || undefined,
+          sponsoredInstitutionType: selection.institutionName.trim() ? selection.institutionType || undefined : undefined,
         }),
       });
       const json = await res.json();
@@ -165,7 +165,7 @@ export function UserManagementTable() {
     grantSelections[user.id] || {
       tier: user.subscription_tier === 'FREE' ? 'PRO' : user.subscription_tier,
       duration: user.subscription_tier !== 'FREE' && user.subscription_expires_at === null ? 'lifetime' : 'monthly',
-      institutionType: user.sponsored_institution_type || 'college',
+      institutionType: user.sponsored_institution_type,
       institutionName: user.sponsored_institution_name || '',
     };
 
@@ -174,7 +174,7 @@ export function UserManagementTable() {
       const existing = current[userId] || {
         tier: 'PRO' as SubscriptionTier,
         duration: 'monthly' as ManualSubscriptionDuration,
-        institutionType: 'college' as InstitutionType,
+        institutionType: null,
         institutionName: '',
       };
       const merged = { ...existing, ...next };
@@ -386,7 +386,9 @@ export function UserManagementTable() {
                         </div>
 
                         {selection.tier !== 'FREE' && (
-                          <div className="grid gap-3 sm:grid-cols-2">
+                          <div>
+                            <p className="mb-2 text-xs text-muted-foreground">Sponsor (optional) — leave empty for an independent student.</p>
+                            <div className="grid gap-3 sm:grid-cols-2">
                             <Select
                               value={selection.institutionType}
                               onValueChange={(value) => updateSelection(selectedUser.id, { institutionType: value as InstitutionType })}
@@ -402,9 +404,10 @@ export function UserManagementTable() {
                             <Input
                               value={selection.institutionName}
                               onChange={(event) => updateSelection(selectedUser.id, { institutionName: event.target.value })}
-                              placeholder="Sponsor school / college"
-                              aria-label="Sponsor school or college"
+                              placeholder="Sponsor school / college (optional)"
+                              aria-label="Sponsor school or college (optional)"
                             />
+                            </div>
                           </div>
                         )}
 
