@@ -20,8 +20,8 @@
     "path": "E:\\studyverse-ai - Copy\\android.keystore",
     "alias": "android"
   },
-  "appVersionName": "1.0.1",
-  "appVersionCode": 3,
+  "appVersionName": "1.0.2",
+  "appVersionCode": 4,
   "shortcuts": [
     {
       "name": "AI Tutor",
@@ -53,7 +53,7 @@
   "isChromeOSOnly": false,
   "isMetaQuest": false,
   "fullScopeUrl": "https://ilmai.study/",
-  "minSdkVersion": 21,
+  "minSdkVersion": 24,
   "orientation": "any",
   "fingerprints": [],
   "additionalTrustedOrigins": [],
@@ -66,5 +66,5 @@
     "standalone",
     "minimal-ui"
   ],
-  "appVersion": "1.0.1"
+  "appVersion": "1.0.2"
 }

@@ -55,10 +55,10 @@ android {
     namespace "study.ilmai.twa"
     defaultConfig {
         applicationId "study.ilmai.twa"
-        minSdkVersion 21
+        minSdkVersion 24
         targetSdkVersion 36
-        versionCode 3
-        versionName "1.0.1"
+        versionCode 4
+        versionName "1.0.2"
 
         // The name for the application
         resValue "string", "appName", twaManifest.name
