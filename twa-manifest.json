@@ -16,12 +16,12 @@
   "iconUrl": "https://ilmai.study/icons/icon-512.png",
   "maskableIconUrl": "https://ilmai.study/icons/icon-maskable-512.png",
   "splashScreenFadeOutDuration": 300,
-  "signingKey": {
-    "path": "E:\\studyverse-ai - Copy\\android.keystore",
-    "alias": "android"
-  },
-  "appVersionName": "1.0.2",
-  "appVersionCode": 4,
+"signingKey": {
+  "path": "E:\\keys\\ilm-upload-new.keystore",
+  "alias": "android"
+},
+  "appVersionName": "1.0.4",
+  "appVersionCode": 5,
   "shortcuts": [
     {
       "name": "AI Tutor",
@@ -66,5 +66,5 @@
     "standalone",
     "minimal-ui"
   ],
-  "appVersion": "1.0.2"
+  "appVersion": "1.0.4"
 }

@@ -23,11 +23,11 @@
 23-->
 24<manifest xmlns:android="http://schemas.android.com/apk/res/android"
 25    package="study.ilmai.twa"
-26    android:versionCode="3"
-27    android:versionName="1.0.1" >
+26    android:versionCode="5"
+27    android:versionName="1.0.4" >
 28
 29    <uses-sdk
-30        android:minSdkVersion="21"
+30        android:minSdkVersion="24"
 31        android:targetSdkVersion="36" />
 32
 33    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -71,7 +71,7 @@
 53-->E:\studyverse-ai - Copy\app\src\main\AndroidManifest.xml:37:9-35
 54        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
 54-->[androidx.core:core:1.13.0] C:\Users\Ahmad\.gradle\caches\8.11.1\transforms\a5429f7b20c607b890f08b5283ad4ec0\transformed\core-1.13.0\AndroidManifest.xml:28:18-86
-55        android:extractNativeLibs="true"
+55        android:extractNativeLibs="false"
 56        android:icon="@mipmap/ic_launcher"
 56-->E:\studyverse-ai - Copy\app\src\main\AndroidManifest.xml:38:9-43
 57        android:label="@string/appName"
