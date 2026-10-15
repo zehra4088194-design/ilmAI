@@ -6,6 +6,15 @@ import type { Board, GradeLevel } from '@/types';
 
 export const metadata: Metadata = { title: 'Adaptive Practice' };
 
+type SourceFile = {
+  id: string;
+  title: string;
+  chapter_id: string | null;
+  subject_id: string | null;
+  board: string | null;
+  grade_level: string | null;
+};
+
 export default async function PracticePage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -54,16 +63,24 @@ export default async function PracticePage() {
     chaptersBySubject[c.subject_id]!.push({ id: c.id, name: c.name });
   });
 
-  const { data: sourceFiles } = await createServiceClient()
-    .from('library_resources')
-    .select('id, title, chapter_id, subject_id, board, grade_level')
-    .eq('resource_type', 'notes')
-    .in('subject_id', Array.from(visibleSubjectIds))
-    .not('chapter_id', 'is', null)
-    .order('title');
+  let sourceFiles: SourceFile[] = [];
+  if (visibleSubjectIds.size > 0) {
+    try {
+      const { data } = await createServiceClient()
+        .from('library_resources')
+        .select('id, title, chapter_id, subject_id, board, grade_level')
+        .eq('resource_type', 'notes')
+        .in('subject_id', Array.from(visibleSubjectIds))
+        .not('chapter_id', 'is', null)
+        .order('title');
+      sourceFiles = (data || []) as SourceFile[];
+    } catch {
+      sourceFiles = [];
+    }
+  }
 
   const resourcesByChapter: Record<string, { id: string; title: string }[]> = {};
-  (sourceFiles || []).forEach((resource) => {
+  sourceFiles.forEach((resource) => {
     if (!resource.chapter_id || !resource.subject_id || !visibleSubjectIds.has(resource.subject_id)) return;
     if (resource.board && resource.board !== board) return;
     if (resource.grade_level && resource.grade_level !== grade) return;
@@ -74,7 +91,7 @@ export default async function PracticePage() {
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Chapter Testing</h1>
+        <h1 className="text-2xl font-bold">Adaptive Practice</h1>
         <p className="text-muted-foreground">Choose a chapter and question type. Every attempt is rebuilt in a fresh random order from all of its uploaded source text.</p>
       </div>
       <AiPracticeHub subjects={(subjects as any) || []} chaptersBySubject={chaptersBySubject} resourcesByChapter={resourcesByChapter} />
