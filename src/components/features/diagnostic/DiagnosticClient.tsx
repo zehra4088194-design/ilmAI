@@ -9,6 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { AiAnswerRenderer } from '@/components/features/ai/AiAnswerRenderer';
 import { normalizeChemicalFormulas } from '@/lib/diagnostic/questions';
+import { useAuth } from '@/hooks/auth/useAuth';
 
 type Question = {
   id: string;
@@ -37,6 +38,7 @@ type Result = {
 };
 
 export function DiagnosticClient() {
+  const { user } = useAuth();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [index, setIndex] = useState(0);
@@ -55,6 +57,12 @@ export function DiagnosticClient() {
       .catch((error) => toast.error(error instanceof Error ? error.message : 'Diagnostic could not be loaded.'))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (!result || !user?.id || typeof window === 'undefined') return;
+    window.localStorage.setItem(`ilm-ai-diagnostic-done:v1:${user.id}`, '1');
+    window.localStorage.setItem(`ilm-ai-practice-nudge:v1:${user.id}`, 'done');
+  }, [result, user?.id]);
 
   const submit = async (nextAnswers = answers) => {
     setSubmitting(true);
@@ -107,11 +115,16 @@ export function DiagnosticClient() {
             <h1 className="text-2xl font-bold">Diagnostic complete</h1>
             <p className="text-primary text-4xl font-black">{result.score}%</p>
             <p className="text-muted-foreground">
-              {result.correct} correct out of {result.total}. Your chapter mastery is now updated.
+              {result.correct} correct out of {result.total}. Ab Adaptive Practice tumhare weak chapters se shuru ho sakti hai.
             </p>
-            <Button asChild variant="gradient">
-              <Link href="/insights">Open Mastery Map</Link>
-            </Button>
+            <div className="flex flex-col items-center justify-center gap-2 sm:flex-row">
+              <Button asChild variant="gradient">
+                <Link href="/practice">Start Adaptive Practice</Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/insights">Open Mastery Map</Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -169,6 +182,10 @@ export function DiagnosticClient() {
       <Card className="mx-auto max-w-2xl">
         <CardContent className="p-6 text-center">
           <p className="font-semibold">Diagnostic questions are not available yet.</p>
+          <p className="text-muted-foreground mt-2 text-sm">Jab tak questions ready na hon, Adaptive Practice se chapter choose kar sakte ho.</p>
+          <Button asChild variant="gradient" className="mt-4">
+            <Link href="/practice">Open Adaptive Practice</Link>
+          </Button>
         </CardContent>
       </Card>
     );

@@ -6,6 +6,7 @@ import { DashboardSidebar } from '@/components/layout/DashboardSidebar';
 import { DashboardFooter } from '@/components/layout/DashboardFooter';
 import { SideChatWidget } from '@/components/features/ai-selector/SideChatWidget';
 import { FeatureTour } from '@/components/features/onboarding/FeatureTour';
+import { PracticeStartNudge } from '@/components/features/onboarding/PracticeStartNudge';
 import type { InstitutionBranding } from '@/lib/branding/resolveInstitutionBranding';
 
 export function DashboardShell({ children, branding }: { children: ReactNode; branding?: InstitutionBranding | null }) {
@@ -59,6 +60,7 @@ export function DashboardShell({ children, branding }: { children: ReactNode; br
         onMobileMenuChange={setMobileMenuOpen}
         onTourOpenChange={setFeatureTourOpen}
       />
+      <PracticeStartNudge featureTourOpen={featureTourOpen} />
     </div>
   );
 }

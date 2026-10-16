@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils/cn';
+import { InlineMath } from '@/components/features/ai/InlineMath';
 
 interface Flashcard {
   id: string;
@@ -42,6 +43,14 @@ function nextSchedule(card: Flashcard, rating: (typeof RATINGS)[number]) {
   nextReviewAt.setDate(nextReviewAt.getDate() + Math.max(1, interval));
 
   return { interval: Math.max(1, interval), ease_factor: ease, repetitions: reps, next_review_at: nextReviewAt.toISOString() };
+}
+
+function CardCopy({ text, className }: { text: string; className?: string }) {
+  return (
+    <div className={cn('text-lg font-semibold leading-relaxed text-white [&_.katex]:text-inherit', className)}>
+      <InlineMath text={text} />
+    </div>
+  );
 }
 
 export function FlashcardStudyMode({ deckId, deckName, cards }: { deckId: string; deckName: string; cards: Flashcard[] }) {
@@ -134,13 +143,18 @@ export function FlashcardStudyMode({ deckId, deckName, cards }: { deckId: string
         >
           <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 flex flex-col items-center justify-center p-8 text-center [backface-visibility:hidden]">
             <span className="text-[10px] uppercase tracking-wide text-white/60 mb-3">Question</span>
-            <p className="text-lg font-semibold text-white">{activeCard.front}</p>
-            {activeCard.hint && <p className="text-xs text-white/60 mt-4">Hint: {activeCard.hint}</p>}
+            <CardCopy text={activeCard.front} />
+            {activeCard.hint && (
+              <div className="mt-4 text-xs text-white/70">
+                <span>Hint: </span>
+                <CardCopy text={activeCard.hint} className="inline text-xs font-medium text-white/80" />
+              </div>
+            )}
             <span className="absolute bottom-4 text-[10px] text-white/50">Tap to flip</span>
           </div>
           <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-fuchsia-600 to-pink-600 flex flex-col items-center justify-center p-8 text-center [backface-visibility:hidden] [transform:rotateY(180deg)]">
             <span className="text-[10px] uppercase tracking-wide text-white/60 mb-3">Answer</span>
-            <p className="text-lg font-semibold text-white">{activeCard.back}</p>
+            <CardCopy text={activeCard.back} />
             <span className="absolute bottom-4 text-[10px] text-white/50">Tap again for next card</span>
           </div>
         </div>
