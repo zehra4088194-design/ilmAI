@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils/cn';
+import { buildBookPath } from '@/lib/resources/catalog';
 
 export type LibraryCatalogResource = {
   id: string;
@@ -165,7 +166,7 @@ export function LibraryGrid({ resources }: { resources: LibraryCatalogResource[]
           {books.map((book) => {
             const chapters = [...new Set(book.resources.map((resource) => resource.chapters?.name).filter(Boolean))];
             const contextFiles = book.resources.filter((resource) => resource.has_context_text).length;
-            const href = `/library/${book.subjectSlug}?type=${tab}&book=${encodeURIComponent(book.title)}`;
+            const href = buildBookPath(book.subjectSlug, book.title, tab);
             return (
               <Link key={book.key} href={href} className="group block min-w-0">
                 <Card className="border-border/70 bg-card/85 hover:border-primary/40 h-full overflow-hidden transition-all duration-200 group-hover:-translate-y-1 group-hover:shadow-xl">

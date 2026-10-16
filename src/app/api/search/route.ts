@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { searchAlgoliaCatalog } from '@/lib/search/algolia';
 import { isCurriculumEnabled } from '@/lib/features/curriculum';
+import { buildBookPath, parseLibraryResourceType } from '@/lib/resources/catalog';
 
 
 async function searchPublicTopicContent(query: string) {
@@ -236,9 +237,17 @@ export async function GET(req: NextRequest) {
     href: chapter.subjects?.slug ? `/study/${chapter.subjects.slug}/${chapter.slug}` : '/study',
   }));
   const resourceResults = (resources || []).filter(matchesGrade).map((resource: any) => {
-    const resourceType = resource.resource_type === 'notes' ? 'notes' : 'text_book';
-    const params = new URLSearchParams({ type: resourceType, resource: resource.id });
-    if (resource.book_title) params.set('book', resource.book_title);
+    const resourceType = parseLibraryResourceType(resource.resource_type);
+    const subjectSlug = resource.subjects?.slug || 'general';
+    let href: string;
+    if (resource.subjects?.slug && resource.chapters?.slug) {
+      href = `/topics/${resource.subjects.slug}/${resource.chapters.slug}`;
+    } else if (resource.book_title) {
+      href = buildBookPath(subjectSlug, resource.book_title, resourceType);
+    } else {
+      const params = new URLSearchParams({ type: resourceType, resource: resource.id });
+      href = `/library/${subjectSlug}?${params}`;
+    }
     return {
       id: resource.id,
       type: 'resource' as const,
@@ -248,9 +257,7 @@ export async function GET(req: NextRequest) {
         : resource.resource_type || 'Library resource',
       // Search should land on the book/chapter catalog first so the visitor
       // can choose reading, MCQs, short, or long files intentionally.
-      href: resource.subjects?.slug && resource.chapters?.slug
-        ? `/topics/${resource.subjects.slug}/${resource.chapters.slug}`
-        : `/library/${resource.subjects?.slug || 'general'}?${params}`,
+      href,
     };
   });
   const lectureResults = (lectures || []).filter(matchesGrade).map((lecture: any) => ({

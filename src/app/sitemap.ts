@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { BLOG_POSTS } from '@/content/blog-posts';
 import { getSiteUrl } from '@/lib/utils/siteUrl';
+import { slugifyBookTitle } from '@/lib/resources/catalog';
 import { createServiceClient } from '@/lib/supabase/service';
 
 const STATIC_ROUTES = [
@@ -34,6 +35,41 @@ const STATIC_ROUTES = [
 // `/library` URL was in the sitemap; Google Search Console had nothing to actually index for a
 // student's real search ("class 9 biology chapter 3 mcqs") because the per-subject and
 // per-chapter pages that content lives on were never listed anywhere for a crawler to discover.
+
+async function fetchAllRows<T>(
+  queryFactory: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: any }>
+): Promise<T[]> {
+  const PAGE_SIZE = 1000;
+  const rows: T[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await queryFactory(from, from + PAGE_SIZE - 1);
+    if (error) throw error;
+    const page = data || [];
+    rows.push(...page);
+    if (page.length < PAGE_SIZE) break;
+  }
+  return rows;
+}
+
+async function fetchAllLibraryResourceRows(supabase: ReturnType<typeof createServiceClient>) {
+  // PostgREST defaults to a 1000-row cap. Without explicit pagination the sitemap silently
+  // omitted later resources (and their chapters/books) once the catalog grew past that limit.
+  return fetchAllRows<{
+    subject_id: string | null;
+    chapter_id: string | null;
+    book_title: string | null;
+    resource_type: string | null;
+    subjects?: { slug: string } | null;
+    chapters?: { slug: string } | null;
+  }>((from, to) =>
+    (supabase.from('library_resources') as any)
+      .select('subject_id, chapter_id, book_title, resource_type, subjects(slug), chapters(slug)')
+      .not('subject_id', 'is', null)
+      .order('created_at', { ascending: true })
+      .range(from, to)
+  );
+}
+
 async function getAcademicEntries(baseUrl: string): Promise<MetadataRoute.Sitemap> {
   const supabase = createServiceClient();
   const [{ data: topicRows }, { data: publicResources }, { data: questions }, { data: papers }, { data: universityLinks }] = await Promise.all([
@@ -132,12 +168,9 @@ async function getAcademicEntries(baseUrl: string): Promise<MetadataRoute.Sitema
 
 async function getLibraryEntries(baseUrl: string): Promise<MetadataRoute.Sitemap> {
   const supabase = createServiceClient();
-  const [{ data: subjects }, { data: resources }] = await Promise.all([
+  const [{ data: subjects }, resources] = await Promise.all([
     supabase.from('subjects').select('slug').not('slug', 'is', null),
-    (supabase.from('library_resources') as any)
-      .select('subject_id, chapter_id, subjects(slug), chapters(slug)')
-      .not('subject_id', 'is', null)
-      .not('chapter_id', 'is', null),
+    fetchAllLibraryResourceRows(supabase),
   ]);
 
   const subjectEntries: MetadataRoute.Sitemap = (subjects || []).map((subject: { slug: string }) => ({
@@ -146,26 +179,46 @@ async function getLibraryEntries(baseUrl: string): Promise<MetadataRoute.Sitemap
     priority: 0.7,
   }));
 
-  // Resources are seeded MANY-per-chapter (one row per MCQ set, short questions, long questions,
-  // reading, etc.) — dedupe down to one sitemap entry per subject+chapter combination, which is
-  // the actual page URL (query params like ?type=mcqs pick a view within it, not a separate page).
+  // Resources are seeded MANY-per-chapter — dedupe to one entry per subject+chapter.
+  // Rows with null chapter_id still contribute book landing pages below.
   const seenChapters = new Set<string>();
   const chapterEntries: MetadataRoute.Sitemap = [];
-  for (const resource of resources || []) {
+  const seenBooks = new Set<string>();
+  const bookEntries: MetadataRoute.Sitemap = [];
+
+  for (const resource of resources) {
     const subjectSlug = resource.subjects?.slug;
+    if (!subjectSlug) continue;
+
     const chapterSlug = resource.chapters?.slug;
-    if (!subjectSlug || !chapterSlug) continue;
-    const key = `${subjectSlug}/${chapterSlug}`;
-    if (seenChapters.has(key)) continue;
-    seenChapters.add(key);
-    chapterEntries.push({
-      url: `${baseUrl}/library/${subjectSlug}/${chapterSlug}`,
-      changeFrequency: 'monthly' as const,
-      priority: 0.6,
-    });
+    if (chapterSlug) {
+      const chapterKey = `${subjectSlug}/${chapterSlug}`;
+      if (!seenChapters.has(chapterKey)) {
+        seenChapters.add(chapterKey);
+        chapterEntries.push({
+          url: `${baseUrl}/library/${subjectSlug}/${chapterSlug}`,
+          changeFrequency: 'monthly' as const,
+          priority: 0.6,
+        });
+      }
+    }
+
+    const bookTitle = resource.book_title?.trim();
+    if (bookTitle) {
+      const bookSlug = slugifyBookTitle(bookTitle);
+      const bookKey = `${subjectSlug}/books/${bookSlug}`;
+      if (!seenBooks.has(bookKey)) {
+        seenBooks.add(bookKey);
+        bookEntries.push({
+          url: `${baseUrl}/library/${subjectSlug}/books/${bookSlug}`,
+          changeFrequency: 'weekly' as const,
+          priority: 0.65,
+        });
+      }
+    }
   }
 
-  return [...subjectEntries, ...chapterEntries];
+  return [...subjectEntries, ...bookEntries, ...chapterEntries];
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

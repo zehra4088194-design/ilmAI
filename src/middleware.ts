@@ -74,7 +74,19 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const requestedPath = `${pathname}${request.nextUrl.search}`;
   const origin = getRequestSiteUrl(request);
-  const playConsumptionOnly = isPlayConsumptionOnlyHost(getRequestHost(request.headers));
+  const requestHost = getRequestHost(request.headers);
+  // Canonical host is apex ilmai.study. www served 200 alongside apex and produced
+  // "Duplicate without user-selected canonical" in Search Console.
+  // Normalize: x-forwarded-host can be comma-separated and/or include a port.
+  const normalizedHost = (requestHost || '').split(',')[0]?.trim().split(':')[0]?.toLowerCase() || '';
+  if (normalizedHost === 'www.ilmai.study') {
+    const target = request.nextUrl.clone();
+    target.hostname = 'ilmai.study';
+    target.protocol = 'https:';
+    target.port = '';
+    return NextResponse.redirect(target, 308);
+  }
+  const playConsumptionOnly = isPlayConsumptionOnlyHost(requestHost);
 
   if (pathname === '/api/health' || pathname.startsWith('/api/health/')) return NextResponse.next();
 

@@ -90,3 +90,41 @@ export function normalizeLegacyCatalogResource(resource: any) {
     context_text_url: undefined,
   };
 }
+
+
+/** Stable, URL-safe slug from a book title. Deterministic; no DB column required. */
+export function slugifyBookTitle(title: string): string {
+  return title
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 120) || 'book';
+}
+
+/** Path for a book landing page (no query params for default type). */
+export function buildBookPath(subjectSlug: string, bookTitle: string, type?: LibraryResourceType) {
+  const path = `/library/${subjectSlug}/books/${slugifyBookTitle(bookTitle)}`;
+  if (type && type !== 'text_book') return `${path}?type=${type}`;
+  return path;
+}
+
+/**
+ * Match a requested book slug against catalog book_title values.
+ * Prefers exact slug match; falls back to case-insensitive title equality for legacy URLs.
+ */
+export function matchBookTitle(
+  bookTitles: Array<string | null | undefined>,
+  bookSlugOrTitle: string
+): string | null {
+  const requested = bookSlugOrTitle.trim();
+  if (!requested) return null;
+  const requestedSlug = slugifyBookTitle(requested);
+  const unique = [...new Set(bookTitles.filter(Boolean) as string[])];
+  const bySlug = unique.find((title) => slugifyBookTitle(title) === requestedSlug);
+  if (bySlug) return bySlug;
+  const byTitle = unique.find((title) => title.toLowerCase() === requested.toLowerCase());
+  return byTitle || null;
+}

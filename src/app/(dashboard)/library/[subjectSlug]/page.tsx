@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { ArrowLeft, ArrowRight, BookOpen, FileText, Layers3 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { HouseAdBanner } from '@/components/features/ads/HouseAdBanner';
 import {
+  buildBookPath,
   buildCatalogSearch,
   getLibraryResourceTypeLabel,
   isCatalogResourceVisible,
@@ -32,7 +33,7 @@ export async function generateMetadata({ params }: { params: Promise<{ subjectSl
   };
 }
 
-export default async function LibraryBookPage({
+export default async function LibrarySubjectPage({
   params,
   searchParams,
 }: {
@@ -42,6 +43,11 @@ export default async function LibraryBookPage({
   const [{ subjectSlug }, queryParams] = await Promise.all([params, searchParams]);
   const resourceType = parseLibraryResourceType(queryParams.type);
   const requestedBook = queryParams.book?.trim() || null;
+  // Legacy query-param book URLs were indexable duplicates of the subject page (same canonical).
+  // Permanent-redirect them to the stable book path so crawlers consolidate signals.
+  if (requestedBook) {
+    redirect(buildBookPath(subjectSlug, requestedBook, resourceType));
+  }
   const supabase = await createClient();
   const {
     data: { user },
