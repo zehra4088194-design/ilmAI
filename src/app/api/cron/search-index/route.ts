@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { replaceAlgoliaCatalog, type ExternalSearchResult } from '@/lib/search/algolia';
+import { buildBookPath, parseLibraryResourceType } from '@/lib/resources/catalog';
 
 function isAuthorized(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -53,11 +54,15 @@ export async function POST(request: NextRequest) {
     });
   }
   for (const resource of resourcesResult.data || []) {
-    const params = new URLSearchParams({
-      type: resource.resource_type === 'notes' ? 'notes' : 'text_book',
-      resource: resource.id,
-    });
-    if (resource.book_title) params.set('book', resource.book_title);
+    const resourceType = parseLibraryResourceType(resource.resource_type);
+    const subjectSlug = resource.subjects?.slug || 'general';
+    let href: string;
+    if (resource.book_title) {
+      href = buildBookPath(subjectSlug, resource.book_title, resourceType);
+    } else {
+      const params = new URLSearchParams({ type: resourceType, resource: resource.id });
+      href = `/library/${subjectSlug}?${params}`;
+    }
     records.push({
       objectID: `resource:${resource.id}`,
       id: resource.id,
@@ -66,7 +71,7 @@ export async function POST(request: NextRequest) {
       subtitle: resource.subjects?.name
         ? `${resource.subjects.name} - ${resource.resource_type || 'Resource'}`
         : resource.resource_type || 'Library resource',
-      href: `/library/${resource.subjects?.slug || 'general'}?${params}`,
+      href,
     });
   }
   for (const lecture of lecturesResult.data || []) {
